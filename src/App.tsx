@@ -11,6 +11,7 @@ import Chauffeurs from "./pages/Chauffeurs";
 import ChauffeurLanding from "./pages/ChauffeurLanding";
 import ChauffeurProfile from "./pages/ChauffeurProfile";
 import DriverDashboard from "./pages/DriverDashboard";
+import DriverCreateCourse from "./pages/DriverCreateCourse";
 import ClientDashboard from "./pages/ClientDashboard";
 import RegisterClientQR from "./pages/RegisterClientQR";
 import RegisterClientDriver from "./pages/RegisterClientDriver";
@@ -36,6 +37,14 @@ const App = () => (
            <Route path="/register-client" element={<RegisterClientQR />} />
            <Route path="/register-client-driver" element={<RegisterClientDriver />} />
            <Route path="/create-course" element={<CreateCourse />} />
+            <Route
+              path="/driver/create-course"
+              element={
+                <ProtectedRoute allowedRoles={["driver"]}>
+                  <DriverCreateCourse />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/driver-dashboard"
               element={
