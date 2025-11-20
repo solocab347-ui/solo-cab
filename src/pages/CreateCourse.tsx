@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { Car, MapPin, Calendar, Users, ArrowLeft } from "lucide-react";
+import { Car, MapPin, Calendar, Users, ArrowLeft, Tag } from "lucide-react";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -29,8 +30,10 @@ const CreateCourse = () => {
   const [distanceKm, setDistanceKm] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [notes, setNotes] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [availablePromos, setAvailablePromos] = useState<any[]>([]);
 
-  // Fetch driver's max_passengers on component mount
+  // Fetch driver's max_passengers and available promos on component mount
   useEffect(() => {
     const fetchDriverMaxPassengers = async () => {
       if (!driverId) return;
@@ -48,6 +51,59 @@ const CreateCourse = () => {
     
     fetchDriverMaxPassengers();
   }, [driverId]);
+
+  // Fetch available promotions for the client
+  useEffect(() => {
+    const fetchAvailablePromos = async () => {
+      if (!user) return;
+
+      try {
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!clientData) return;
+
+        const { data: promos } = await supabase
+          .from("promotion_assignments")
+          .select(`
+            promotion_id,
+            promotions (
+              id,
+              code,
+              description,
+              type,
+              value,
+              active,
+              valid_until,
+              max_uses,
+              current_uses
+            )
+          `)
+          .eq("client_id", clientData.id);
+
+        if (promos) {
+          const validPromos = promos
+            .filter((p: any) => {
+              const promo = p.promotions;
+              if (!promo || !promo.active) return false;
+              if (promo.valid_until && new Date(promo.valid_until) < new Date()) return false;
+              if (promo.max_uses && promo.current_uses >= promo.max_uses) return false;
+              return true;
+            })
+            .map((p: any) => p.promotions);
+          
+          setAvailablePromos(validPromos);
+        }
+      } catch (error) {
+        console.error("Error fetching promos:", error);
+      }
+    };
+
+    fetchAvailablePromos();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +168,7 @@ const CreateCourse = () => {
           distance_km: distanceKm ? parseFloat(distanceKm) : null,
           duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
           notes: notes || null,
+          promo_code: promoCode || null,
           status: "pending",
           created_by_user_id: user.id, // Client créateur
         })
@@ -280,6 +337,30 @@ const CreateCourse = () => {
                 <p className="text-xs text-muted-foreground">Optionnel - pour estimation du prix</p>
               </div>
             </div>
+
+            {/* Code promo */}
+            {availablePromos.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="promo" className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-success" />
+                  Code promo disponible
+                </Label>
+                <Select value={promoCode} onValueChange={setPromoCode}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez un code promo (optionnel)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun code promo</SelectItem>
+                    {availablePromos.map((promo) => (
+                      <SelectItem key={promo.id} value={promo.code}>
+                        {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
+                        {promo.description && ` (${promo.description})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="space-y-2">

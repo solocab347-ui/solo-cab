@@ -4,9 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Tag, Percent, Euro, Calendar, Users, Mail } from "lucide-react";
+import { Plus, Tag, Percent, Euro, Calendar, Users, Mail, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -28,8 +32,18 @@ interface Promotion {
   created_at: string;
 }
 
+interface Client {
+  id: string;
+  user_id: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
+
 export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
@@ -43,10 +57,15 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
     max_uses: '',
     valid_until: '',
   });
+  
+  // Recipient selection state
+  const [recipientType, setRecipientType] = useState<'all' | 'selected'>('all');
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
 
   useEffect(() => {
     if (driverProfile?.driver?.id) {
       fetchPromotions();
+      fetchClients();
     }
   }, [driverProfile?.driver?.id]);
 
@@ -72,6 +91,30 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
     }
   };
 
+  const fetchClients = async () => {
+    try {
+      const driverId = driverProfile?.driver?.id;
+      if (!driverId) return;
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select(`
+          id,
+          user_id,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
+
+      if (error) throw error;
+      setClients((data || []) as Client[]);
+    } catch (error) {
+      console.error('Erreur lors du chargement des clients:', error);
+    }
+  };
+
   const handleCreatePromotion = async () => {
     try {
       const driverId = driverProfile?.driver?.id;
@@ -82,7 +125,13 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
         return;
       }
 
-      const { error } = await supabase
+      if (recipientType === 'selected' && selectedClients.length === 0) {
+        toast.error('Sélectionnez au moins un client');
+        return;
+      }
+
+      // Insert promotion
+      const { data: newPromo, error } = await supabase
         .from('promotions')
         .insert({
           driver_id: driverId,
@@ -94,11 +143,31 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
           max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
           valid_until: formData.valid_until || null,
           active: true,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success('Code promo créé avec succès');
+      // Assign to clients
+      const clientsToAssign = recipientType === 'all' 
+        ? clients.map(c => c.id) 
+        : selectedClients;
+
+      if (clientsToAssign.length > 0) {
+        const assignments = clientsToAssign.map(clientId => ({
+          promotion_id: newPromo.id,
+          client_id: clientId,
+        }));
+
+        const { error: assignError } = await supabase
+          .from('promotion_assignments')
+          .insert(assignments);
+
+        if (assignError) throw assignError;
+      }
+
+      toast.success(`Code promo créé et envoyé à ${clientsToAssign.length} client(s)`);
       setShowCreateDialog(false);
       setFormData({
         code: '',
@@ -109,6 +178,8 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
         max_uses: '',
         valid_until: '',
       });
+      setRecipientType('all');
+      setSelectedClients([]);
       fetchPromotions();
     } catch (error: any) {
       console.error('Erreur lors de la création:', error);
@@ -118,6 +189,14 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
         toast.error('Erreur lors de la création du code promo');
       }
     }
+  };
+
+  const toggleClientSelection = (clientId: string) => {
+    setSelectedClients(prev => 
+      prev.includes(clientId) 
+        ? prev.filter(id => id !== clientId)
+        : [...prev, clientId]
+    );
   };
 
   const togglePromotionStatus = async (promoId: string, currentStatus: boolean) => {
@@ -143,6 +222,14 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
 
   return (
     <div className="space-y-6 p-4">
+      {/* Warning légal */}
+      <Alert variant="destructive" className="border-destructive/50">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Attention :</strong> La vente à perte est interdite. Utilisez les promotions avec mesure et assurez-vous que votre tarification reste rentable après réduction.
+        </AlertDescription>
+      </Alert>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -244,8 +331,53 @@ export const DriverCampaigns = ({ driverProfile }: DriverCampaignsProps) => {
                 />
               </div>
 
+              {/* Recipient selection */}
+              <div className="space-y-4 pt-4 border-t">
+                <Label>Destinataires</Label>
+                <RadioGroup value={recipientType} onValueChange={(value: any) => setRecipientType(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="all" id="all" />
+                    <Label htmlFor="all" className="font-normal cursor-pointer">
+                      Tous mes clients ({clients.length})
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="selected" id="selected" />
+                    <Label htmlFor="selected" className="font-normal cursor-pointer">
+                      Sélection manuelle
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {recipientType === 'selected' && (
+                  <ScrollArea className="h-[200px] border rounded-md p-4">
+                    <div className="space-y-2">
+                      {clients.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Aucun client disponible</p>
+                      ) : (
+                        clients.map((client) => (
+                          <div key={client.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={client.id}
+                              checked={selectedClients.includes(client.id)}
+                              onCheckedChange={() => toggleClientSelection(client.id)}
+                            />
+                            <Label
+                              htmlFor={client.id}
+                              className="font-normal cursor-pointer flex-1"
+                            >
+                              {client.profiles?.full_name || 'Client'} - {client.profiles?.email || ''}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+
               <Button onClick={handleCreatePromotion} className="w-full">
-                Créer le code promo
+                Créer et envoyer le code promo
               </Button>
             </div>
           </DialogContent>
