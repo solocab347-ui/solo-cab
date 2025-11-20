@@ -153,8 +153,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       toast.success("Course commencée !");
       
-      // Confirm with server data
-      await fetchCourses();
+      // Let realtime subscription handle the update instead of immediate fetch
+      // Removed: await fetchCourses();
     } catch (error: any) {
       console.error("Error starting course:", error);
       toast.error("Erreur lors du démarrage de la course");
@@ -382,6 +382,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0);
     const tvaRate = devis.time_price > 0 ? 20 : 10;
     const tvaAmount = subtotal * (tvaRate / 100);
+    
+    // Déterminer le type de course
+    const isMiseADisposition = devis.time_price > 0 && devis.distance_price === 0;
 
     if (!forClient) {
       // Driver version - detailed breakdown
@@ -396,16 +399,32 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       yPos += 8;
       doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
-      doc.setFillColor(245, 245, 245);
-      doc.rect(20, yPos, 170, 7, 'F');
-      doc.text("Forfait de base", 25, yPos + 5);
-      doc.text(`${devis.base_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
-      yPos += 7;
-      doc.text("Prix au kilomètre", 25, yPos + 5);
-      doc.text(`${devis.distance_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      if (isMiseADisposition) {
+        // Mise à disposition - afficher durée et tarif horaire
+        const hours = course.duration_minutes / 60;
+        const hourlyRate = devis.time_price / hours;
+        
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text(`Mise à disposition (${hours}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
+        doc.text(`${devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      } else {
+        // Course classique - afficher base + distance
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text("Forfait de base", 25, yPos + 5);
+        doc.text(`${devis.base_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 7;
+        doc.text("Prix au kilomètre", 25, yPos + 5);
+        doc.text(`${devis.distance_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      }
       
-      yPos += 9;
       doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
       doc.setFont(undefined, 'bold');
@@ -993,7 +1012,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {[...acceptedCourses, ...inProgressCourses].length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
-            [...acceptedCourses, ...inProgressCourses].map((course) => (
+            [...acceptedCourses, ...inProgressCourses]
+              .sort((a, b) => {
+                // Trier pour que les courses "accepted" apparaissent avant les "in_progress"
+                if (a.status === 'accepted' && b.status === 'in_progress') return -1;
+                if (a.status === 'in_progress' && b.status === 'accepted') return 1;
+                return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
+              })
+              .map((course) => (
               <Card key={course.id} className="p-4">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
