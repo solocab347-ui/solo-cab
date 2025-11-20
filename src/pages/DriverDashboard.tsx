@@ -250,7 +250,7 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 bg-card">
+          <TabsList className="grid w-full grid-cols-11 bg-card">
             <TabsTrigger value="home" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Accueil
@@ -282,6 +282,10 @@ const DriverDashboard = () => {
             <TabsTrigger value="calculator" className="gap-2">
               <Calculator className="w-4 h-4" />
               Calculatrice
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Abonnement
             </TabsTrigger>
             <TabsTrigger value="profile" className="gap-2">
               <Globe className="w-4 h-4" />
@@ -326,17 +330,27 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-
-            {/* Subscription Manager */}
+          {/* Subscription Tab */}
+          <TabsContent value="subscription">
             <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Abonnement</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Gestion de l'Abonnement</h2>
+                  <p className="text-sm text-muted-foreground">Gérez votre abonnement professionnel</p>
+                </div>
+              </div>
               <SubscriptionManager 
                 driverProfile={driverProfile} 
                 onSubscriptionUpdate={fetchDriverProfile}
               />
             </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
 
             {/* Pricing */}
             <Card className="p-6">
