@@ -207,6 +207,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   };
 
+  // Filtrer les courses par statut
+  const pendingCourses = courses.filter(c => c.status === "pending" || c.status === "accepted");
+  const confirmedCourses = courses.filter(c => c.status === "in_progress");
+  const completedCourses = courses.filter(c => c.status === "completed");
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -214,11 +219,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       </div>
     );
   }
-
-  // Filtrer les courses par statut
-  const pendingCourses = courses.filter(c => c.status === "accepted");
-  const confirmedCourses = courses.filter(c => c.status === "in_progress");
-  const completedCourses = courses.filter(c => c.status === "completed");
 
   const renderCourseCard = (course: any) => (
     <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
@@ -293,6 +293,26 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         )}
       </div>
 
+      {course.status === "pending" && (
+        <div className="flex gap-3 pt-4 border-t border-border">
+          <Button
+            onClick={() => handleAccept(course.id)}
+            className="flex-1 bg-gradient-premium"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Accepter et créer devis
+          </Button>
+          <Button
+            onClick={() => handleReject(course.id)}
+            variant="destructive"
+            className="flex-1"
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            Refuser
+          </Button>
+        </div>
+      )}
+
       {course.status === "accepted" && (
         <div className="pt-4 border-t border-border">
           <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
@@ -315,18 +335,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       )}
     </Card>
   );
-
-  if (courses.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">Aucune course</h3>
-        <p className="text-muted-foreground">
-          Les demandes de réservation apparaîtront ici
-        </p>
-      </Card>
-    );
-  }
 
   return (
     <>
@@ -394,7 +402,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Aucune course en attente</h3>
               <p className="text-muted-foreground">
-                Les devis envoyés aux clients apparaîtront ici
+                Les demandes des clients et les devis envoyés apparaîtront ici
               </p>
             </Card>
           ) : (
