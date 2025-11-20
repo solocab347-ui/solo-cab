@@ -454,8 +454,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const handleDownloadFacture = async (course: any, forClient: boolean = false) => {
     const facture = course.factures?.[0];
     const devis = course.devis?.[0];
-    if (!facture || !driverInfo) {
-      toast.error("Informations incomplètes pour générer le PDF");
+    
+    if (!facture) {
+      toast.error("Aucune facture disponible pour cette course");
+      return;
+    }
+    
+    if (!driverInfo || !driverInfo.company_name || !driverInfo.siret) {
+      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET, Adresse)");
       return;
     }
 
@@ -542,10 +548,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     doc.text("TARIFICATION", 20, yPos);
     yPos += 8;
 
-    // Calculate TVA
+    // Calculate TVA - use devis time_price if available, otherwise default to 10%
     const amount = facture.amount;
-    const isHourlyBased = devis?.time_price > 0;
-    const tvaRate = isHourlyBased ? 20 : 10;
+    const tvaRate = devis?.time_price && devis.time_price > 0 ? 20 : 10;
     const subtotalHT = amount / (1 + tvaRate / 100);
     const tvaAmount = amount - subtotalHT;
 
