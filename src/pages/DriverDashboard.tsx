@@ -28,7 +28,6 @@ const DriverDashboard = () => {
   const [vehicleColor, setVehicleColor] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [siret, setSiret] = useState("");
-  const [tvaRate, setTvaRate] = useState("20");
 
   useEffect(() => {
     fetchDriverProfile();
@@ -61,7 +60,6 @@ const DriverDashboard = () => {
       setVehicleColor(driver.vehicle_color || "");
       setCompanyName(driver.company_name || "");
       setSiret(driver.siret || "");
-      setTvaRate(driver.tva_rate?.toString() || "20");
     }
   };
 
@@ -85,7 +83,6 @@ const DriverDashboard = () => {
           vehicle_color: vehicleColor,
           company_name: companyName,
           siret: siret,
-          tva_rate: tvaRate ? parseFloat(tvaRate) : 20,
         })
         .eq("id", driverProfile.driver.id);
 
@@ -304,18 +301,17 @@ const DriverDashboard = () => {
                   />
                   <p className="text-xs text-muted-foreground">Pour les courses au temps</p>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tva">Taux TVA (%)</Label>
-                  <Input
-                    id="tva"
-                    type="number"
-                    step="0.01"
-                    value={tvaRate}
-                    onChange={(e) => setTvaRate(e.target.value)}
-                    placeholder="20.00"
-                  />
-                  <p className="text-xs text-muted-foreground">Taux de TVA appliqué</p>
+              <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  TVA Automatique
+                </h4>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>• <span className="font-medium">10% TVA</span> pour les courses au kilomètre</p>
+                  <p>• <span className="font-medium">20% TVA</span> pour les mises à disposition (horaire)</p>
+                  <p className="text-xs mt-2 italic">La TVA est calculée automatiquement selon le type de course</p>
                 </div>
               </div>
 
