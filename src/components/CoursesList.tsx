@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Facebook } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -865,11 +865,29 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleShareDevis(course, 'sms')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      SMS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleShareDevis(course, 'email')}
                       className="flex-1"
                     >
                       <Mail className="w-4 h-4 mr-2" />
                       Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'facebook')}
+                      className="flex-1"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Facebook
                     </Button>
                   </div>
                 </div>
@@ -990,6 +1008,33 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <MessageCircle className="w-4 h-4 mr-2" />
                       WhatsApp
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'sms')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      SMS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'email')}
+                      className="flex-1"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'facebook')}
+                      className="flex-1"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Facebook
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -1077,11 +1122,29 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleShareFacture(course, 'sms')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      SMS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleShareFacture(course, 'email')}
                       className="flex-1"
                     >
                       <Mail className="w-4 h-4 mr-2" />
                       Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareFacture(course, 'facebook')}
+                      className="flex-1"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Facebook
                     </Button>
                   </div>
                 </div>
@@ -1154,6 +1217,42 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     >
                       <Download className="w-4 h-4 mr-2" />
                       PDF Client
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'whatsapp')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'sms')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      SMS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'email')}
+                      className="flex-1"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'facebook')}
+                      className="flex-1"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Facebook
                     </Button>
                   </div>
                 </div>
