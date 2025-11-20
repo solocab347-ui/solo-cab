@@ -16,6 +16,7 @@ interface DriverDevisListProps {
 
 const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
   const [devisList, setDevisList] = useState<any[]>([]);
+  const [rejectedDevis, setRejectedDevis] = useState<any[]>([]);
   const [filteredDevis, setFilteredDevis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +49,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
   const fetchDevis = async () => {
     try {
+      // Fetch all devis except rejected ones
       const { data, error } = await supabase
         .from("devis")
         .select(`
@@ -64,11 +66,47 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           )
         `)
         .eq("driver_id", driverId)
+        .neq("status", "rejected")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setDevisList(data || []);
       setFilteredDevis(data || []);
+
+      // Fetch last 10 rejected devis separately
+      const { data: rejectedData, error: rejectedError } = await supabase
+        .from("devis")
+        .select(`
+          *,
+          courses!inner(
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            distance_km,
+            duration_minutes
+          ),
+          clients!inner(
+            profiles:user_id(full_name, email, profile_photo_url)
+          )
+        `)
+        .eq("driver_id", driverId)
+        .eq("status", "rejected")
+        .order("updated_at", { ascending: false })
+        .limit(10);
+
+      if (rejectedError) throw rejectedError;
+      setRejectedDevis(rejectedData || []);
+
+      // Delete rejected devis beyond the 10 most recent
+      if (rejectedData && rejectedData.length >= 10) {
+        const oldestKeptDate = rejectedData[9].updated_at;
+        await supabase
+          .from("devis")
+          .delete()
+          .eq("driver_id", driverId)
+          .eq("status", "rejected")
+          .lt("updated_at", oldestKeptDate);
+      }
     } catch (error: any) {
       console.error("Error fetching devis:", error);
       toast.error("Erreur lors du chargement des devis");
@@ -166,7 +204,87 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           <div className="text-center">
             <h3 className="text-3xl font-bold text-yellow-500">{stats.pending}</h3>
             <p className="text-sm text-muted-foreground">En attente</p>
+      </div>
+
+      {/* Rejected Devis Section (max 10) */}
+      {rejectedDevis.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Courses refusées</h2>
+            <Badge variant="outline" className="bg-destructive/10 text-destructive">
+              {rejectedDevis.length} / 10
+            </Badge>
           </div>
+          <div className="space-y-4">
+            {rejectedDevis.map((devis) => (
+              <Card key={devis.id} className="p-6 border-destructive/20 bg-destructive/5">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {devis.clients?.profiles?.profile_photo_url ? (
+                      <img
+                        src={devis.clients.profiles.profile_photo_url}
+                        alt={devis.clients.profiles.full_name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-lg">{devis.quote_number}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Client : {devis.clients?.profiles?.full_name}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                    Refusé
+                  </Badge>
+                </div>
+
+                {/* Rejection reason */}
+                {devis.notes && (
+                  <div className="bg-background/50 border border-destructive/20 rounded-lg p-4 mb-4">
+                    <p className="text-sm font-medium text-destructive mb-2">Raison du refus :</p>
+                    <p className="text-sm text-foreground">{devis.notes}</p>
+                  </div>
+                )}
+
+                {/* Course Details */}
+                <div className="bg-secondary rounded-lg p-4 space-y-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Départ</p>
+                      <p className="text-muted-foreground">{devis.courses.pickup_address}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Arrivée</p>
+                      <p className="text-muted-foreground">{devis.courses.destination_address}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
+                      locale: fr,
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-muted-foreground">
+                  Refusé le {format(new Date(devis.updated_at), "d MMMM yyyy", { locale: fr })}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Regular Devis List */}
         </Card>
         <Card className="p-4">
           <div className="text-center">
@@ -301,6 +419,14 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                   </div>
                 </div>
               </div>
+
+              {/* Rejection reason */}
+              {devis.status === "rejected" && devis.notes && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
+                  <p className="text-sm font-medium text-destructive mb-1">Raison du refus :</p>
+                  <p className="text-sm text-muted-foreground">{devis.notes}</p>
+                </div>
+              )}
 
               {/* Footer */}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
