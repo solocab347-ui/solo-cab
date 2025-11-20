@@ -158,6 +158,27 @@ const DriverDashboard = () => {
     toast.success("QR Code téléchargé !");
   };
 
+  const handleTogglePublicProfile = async (enabled: boolean) => {
+    if (!driverProfile?.driver?.id) return;
+
+    setPublicProfileEnabled(enabled);
+
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({ public_profile_enabled: enabled })
+        .eq("id", driverProfile.driver.id);
+
+      if (error) throw error;
+      toast.success(enabled ? "Profil public activé" : "Profil public désactivé");
+    } catch (error: any) {
+      console.error("Error toggling public profile:", error);
+      toast.error("Erreur lors de la mise à jour");
+      // Revert on error
+      setPublicProfileEnabled(!enabled);
+    }
+  };
+
   const handleUpdateProfile = async () => {
     if (!driverProfile?.driver?.id) return;
 
@@ -561,7 +582,7 @@ const DriverDashboard = () => {
                   </div>
                   <Switch
                     checked={publicProfileEnabled}
-                    onCheckedChange={setPublicProfileEnabled}
+                    onCheckedChange={handleTogglePublicProfile}
                   />
                 </div>
 
