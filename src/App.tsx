@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Chauffeurs from "./pages/Chauffeurs";
+import ChauffeurLanding from "./pages/ChauffeurLanding";
 import ChauffeurProfile from "./pages/ChauffeurProfile";
 import DriverDashboard from "./pages/DriverDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -29,8 +30,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-          <Route path="/chauffeurs" element={<Chauffeurs />} />
-          <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
+           <Route path="/chauffeurs" element={<Chauffeurs />} />
+           <Route path="/devenir-chauffeur" element={<ChauffeurLanding />} />
+           <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
            <Route path="/register-client" element={<RegisterClientQR />} />
            <Route path="/register-client-driver" element={<RegisterClientDriver />} />
            <Route path="/create-course" element={<CreateCourse />} />

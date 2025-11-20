@@ -99,7 +99,7 @@ const Index = () => {
             <Link to="/chauffeurs" className="text-foreground/80 hover:text-foreground transition-colors">
               Trouver un chauffeur
             </Link>
-            <Link to="/login" className="text-foreground/80 hover:text-foreground transition-colors">
+            <Link to="/devenir-chauffeur" className="text-foreground/80 hover:text-foreground transition-colors">
               Devenir chauffeur
             </Link>
           </nav>
@@ -133,7 +133,7 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to="/devenir-chauffeur">
               <Button size="lg" variant="outline" className="group">
                 <Zap className="w-5 h-5 mr-2" />
                 Je suis Chauffeur
@@ -173,7 +173,7 @@ const Index = () => {
               </Card>
             </Link>
 
-            <Link to="/login">
+            <Link to="/devenir-chauffeur">
               <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer group">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center flex-shrink-0">
@@ -318,7 +318,7 @@ const Index = () => {
                 Trouver un Chauffeur
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to="/devenir-chauffeur">
               <Button size="lg" variant="outline" className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20">
                 <Zap className="w-5 h-5 mr-2" />
                 Devenir Chauffeur
@@ -348,7 +348,7 @@ const Index = () => {
               <h4 className="font-bold mb-4">Chauffeurs</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link to="/login" className="hover:text-foreground transition-colors">
+                  <Link to="/devenir-chauffeur" className="hover:text-foreground transition-colors">
                     Devenir chauffeur
                   </Link>
                 </li>
