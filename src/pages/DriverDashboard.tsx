@@ -338,16 +338,17 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hourly">Tarif horaire optionnel (€)</Label>
+                  <Label htmlFor="hourly">Tarif horaire (€)</Label>
                   <Input
                     id="hourly"
                     type="number"
                     step="0.01"
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(e.target.value)}
-                    placeholder="50.00"
+                    placeholder="45.00"
+                    required
                   />
-                  <p className="text-xs text-muted-foreground">Pour les courses au temps</p>
+                  <p className="text-xs text-muted-foreground">Pour les mises à disposition (obligatoire)</p>
                 </div>
               </div>
 
