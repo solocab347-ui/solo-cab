@@ -282,6 +282,9 @@ export type Database = {
           company_name: string | null
           course_counter: number | null
           created_at: string
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
           hourly_rate: number | null
           id: string
           invoice_counter: number | null
@@ -313,6 +316,9 @@ export type Database = {
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           hourly_rate?: number | null
           id?: string
           invoice_counter?: number | null
@@ -344,6 +350,9 @@ export type Database = {
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           hourly_rate?: number | null
           id?: string
           invoice_counter?: number | null
@@ -689,6 +698,31 @@ export type Database = {
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
+      }
+      search_drivers_by_location: {
+        Args: {
+          _address?: string
+          _city?: string
+          _latitude?: number
+          _longitude?: number
+          _max_radius_km?: number
+        }
+        Returns: {
+          base_rate: number
+          bio: string
+          distance_km: number
+          full_name: string
+          home_address: string
+          id: string
+          per_km_rate: number
+          profile_photo_url: string
+          rating: number
+          service_description: string
+          total_rides: number
+          vehicle_color: string
+          vehicle_model: string
+          working_sectors: string[]
+        }[]
       }
       search_public_drivers: {
         Args: { _search_term?: string; _sector?: string }
