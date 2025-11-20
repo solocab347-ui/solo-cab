@@ -1,0 +1,224 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { Car, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const RegisterClientQR = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [driverInfo, setDriverInfo] = useState<any>(null);
+  const [registering, setRegistering] = useState(false);
+
+  const qrId = searchParams.get("qr");
+
+  useEffect(() => {
+    if (!qrId) {
+      toast.error("QR code invalide");
+      navigate("/");
+      return;
+    }
+
+    verifyQRCode();
+  }, [qrId]);
+
+  const verifyQRCode = async () => {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/qr-code-manager?action=verify&qr_id=${qrId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "QR code invalide");
+      }
+
+      setDriverInfo(result);
+    } catch (error: any) {
+      console.error("QR verification error:", error);
+      toast.error(error.message || "QR code invalide ou expiré");
+      setTimeout(() => navigate("/"), 2000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté");
+      navigate("/login");
+      return;
+    }
+
+    setRegistering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("register-client-qr", {
+        body: { qr_code_id: qrId },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        if (data.client) {
+          setTimeout(() => navigate("/client-dashboard"), 1500);
+        }
+        return;
+      }
+
+      toast.success("Inscription réussie ! Vous êtes maintenant client exclusif.");
+      setTimeout(() => navigate("/client-dashboard"), 1500);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error("Erreur lors de l'inscription");
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Vérification du QR code...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!driverInfo) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 text-center max-w-md">
+          <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">QR Code Invalide</h2>
+          <p className="text-muted-foreground mb-6">
+            Ce QR code n'est pas valide ou a expiré.
+          </p>
+          <Button onClick={() => navigate("/")} className="w-full">
+            Retour à l'accueil
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const driver = driverInfo.drivers;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Card className="p-8">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-premium rounded-full flex items-center justify-center mx-auto mb-4">
+              <Car className="w-10 h-10 text-premium-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Inscription Client Exclusif</h1>
+            <p className="text-muted-foreground">
+              Vous êtes sur le point de devenir client exclusif
+            </p>
+          </div>
+
+          <div className="bg-secondary rounded-lg p-6 mb-8">
+            <div className="flex items-start gap-4">
+              {driver.profiles?.profile_photo_url ? (
+                <img
+                  src={driver.profiles.profile_photo_url}
+                  alt={driver.profiles.full_name}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
+                  <Car className="w-8 h-8 text-primary-foreground" />
+                </div>
+              )}
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-1">{driver.profiles?.full_name}</h3>
+                {driver.company_name && (
+                  <p className="text-sm text-muted-foreground mb-2">{driver.company_name}</p>
+                )}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Badge variant="outline">{driver.vehicle_model}</Badge>
+                  {driver.vehicle_color && (
+                    <Badge variant="outline">{driver.vehicle_color}</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-accent/50 rounded-lg p-6 mb-8 border border-border">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-premium" />
+              Avantages Client Exclusif
+            </h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>✓ Service personnalisé avec votre chauffeur attitré</li>
+              <li>✓ Tarification préférentielle</li>
+              <li>✓ Priorité sur les réservations</li>
+              <li>✓ Facturation simplifiée</li>
+            </ul>
+          </div>
+
+          {!user ? (
+            <div className="space-y-4">
+              <p className="text-center text-muted-foreground mb-4">
+                Vous devez vous connecter ou créer un compte pour continuer
+              </p>
+              <Button
+                onClick={() => navigate("/login")}
+                className="w-full bg-gradient-premium"
+                size="lg"
+              >
+                Se connecter / S'inscrire
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Button
+                onClick={handleRegister}
+                disabled={registering}
+                className="w-full bg-gradient-premium"
+                size="lg"
+              >
+                {registering ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Inscription en cours...
+                  </>
+                ) : (
+                  "Confirmer l'inscription"
+                )}
+              </Button>
+              <Button
+                onClick={() => navigate("/")}
+                variant="outline"
+                className="w-full"
+              >
+                Annuler
+              </Button>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterClientQR;

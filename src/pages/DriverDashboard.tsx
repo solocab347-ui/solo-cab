@@ -17,6 +17,8 @@ const DriverDashboard = () => {
   const { signOut, user } = useAuth();
   const [driverProfile, setDriverProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [qrCode, setQrCode] = useState<any>(null);
+  const [loadingQR, setLoadingQR] = useState(false);
 
   // Form states
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
@@ -61,6 +63,50 @@ const DriverDashboard = () => {
       setCompanyName(driver.company_name || "");
       setSiret(driver.siret || "");
     }
+  };
+
+  useEffect(() => {
+    if (driverProfile?.driver?.id) {
+      fetchQRCode();
+    }
+  }, [driverProfile?.driver?.id]);
+
+  const fetchQRCode = async () => {
+    if (!driverProfile?.driver?.id) return;
+
+    setLoadingQR(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/qr-code-manager?action=get&driver_id=${driverProfile.driver.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        setQrCode(data);
+      }
+    } catch (error) {
+      console.error("QR fetch error:", error);
+    } finally {
+      setLoadingQR(false);
+    }
+  };
+
+  const downloadQRCode = () => {
+    if (!qrCode?.qr_code_image) return;
+
+    const link = document.createElement("a");
+    link.href = qrCode.qr_code_image;
+    link.download = `qr-code-${driverProfile?.full_name || "driver"}.png`;
+    link.click();
+    toast.success("QR Code téléchargé !");
   };
 
   const handleUpdateProfile = async () => {
@@ -197,12 +243,47 @@ const DriverDashboard = () => {
                   <p className="text-sm text-muted-foreground">Pour l'inscription de clients exclusifs</p>
                 </div>
               </div>
-              <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
-                <div className="w-48 h-48 bg-card rounded-lg flex items-center justify-center">
-                  <QrCode className="w-32 h-32 text-muted-foreground" />
+
+              {loadingQR ? (
+                <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
+                  <div className="text-center">
+                    <div className="w-48 h-48 bg-card rounded-lg flex items-center justify-center mb-4">
+                      <QrCode className="w-32 h-32 text-muted-foreground animate-pulse" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Génération du QR code...</p>
+                  </div>
                 </div>
-              </div>
-              <Button className="w-full bg-gradient-dark hover:opacity-90">Télécharger le QR Code</Button>
+              ) : qrCode?.qr_code_image ? (
+                <>
+                  <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
+                    <img
+                      src={qrCode.qr_code_image}
+                      alt="QR Code"
+                      className="w-64 h-64 rounded-lg shadow-elegant"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="bg-accent/50 rounded-lg p-4 border border-border">
+                      <p className="text-sm text-muted-foreground mb-1">Scans effectués</p>
+                      <p className="text-2xl font-bold text-premium">{qrCode.scans_count || 0}</p>
+                    </div>
+                    <Button onClick={downloadQRCode} className="w-full bg-gradient-dark hover:opacity-90">
+                      Télécharger le QR Code
+                    </Button>
+                    <Button onClick={fetchQRCode} variant="outline" className="w-full">
+                      Régénérer le QR Code
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-secondary rounded-lg p-8 flex flex-col items-center justify-center mb-4">
+                  <QrCode className="w-32 h-32 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">Aucun QR code généré</p>
+                  <Button onClick={fetchQRCode} className="bg-gradient-premium">
+                    Générer mon QR Code
+                  </Button>
+                </div>
+              )}
             </Card>
           </TabsContent>
 
