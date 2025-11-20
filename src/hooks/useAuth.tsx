@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   userRole: "admin" | "driver" | "client" | null;
+  userRoles: string[];
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: "driver" | "client", additionalData?: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -20,20 +21,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<"admin" | "driver" | "client" | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
+        .from("profiles")
+        .select("roles")
+        .eq("id", userId)
         .maybeSingle();
 
       if (error) throw error;
-      setUserRole(data?.role || null);
-      return data?.role;
+      
+      const roles = data?.roles || [];
+      setUserRoles(roles);
+      
+      // Set primary role (first role in array)
+      const primaryRole = roles.includes("admin") 
+        ? "admin" 
+        : roles.includes("driver")
+        ? "driver"
+        : roles.includes("client")
+        ? "client"
+        : null;
+      
+      setUserRole(primaryRole);
+      return primaryRole;
     } catch (error) {
       console.error("Error fetching user role:", error);
       return null;
@@ -66,6 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
         } else {
           setUserRole(null);
+          setUserRoles([]);
         }
       }
     );
@@ -111,10 +127,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Erreur lors de la création du compte");
 
-      // Create role
+      // Add role to roles array in profiles (will be added by trigger, but we update it here)
       const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({ user_id: data.user.id, role });
+        .from("profiles")
+        .update({ roles: [role] })
+        .eq("id", data.user.id);
 
       if (roleError) throw roleError;
 
@@ -177,6 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setUserRole(null);
+      setUserRoles([]);
       navigate("/login");
       toast.success("Déconnexion réussie");
     } catch (error: any) {
@@ -191,6 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         session,
         userRole,
+        userRoles,
         loading,
         signUp,
         signIn,
