@@ -35,6 +35,21 @@ All colors MUST be HSL.
     --trust: 217 91% 60%;
     --trust-foreground: 0 0% 98%;
 
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 98%;
+
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 98%;
+
+    --magenta: 316 73% 52%;
+    --magenta-foreground: 0 0% 98%;
+
+    --brown: 24 45% 44%;
+    --brown-foreground: 0 0% 98%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
@@ -47,6 +62,10 @@ All colors MUST be HSL.
     --gradient-premium: linear-gradient(135deg, hsl(43 96% 56%), hsl(38 92% 50%));
     --gradient-dark: linear-gradient(135deg, hsl(240 9% 9%), hsl(240 7% 15%));
     --gradient-trust: linear-gradient(135deg, hsl(217 91% 60%), hsl(221 83% 53%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 71% 45%));
+    --gradient-magenta: linear-gradient(135deg, hsl(316 73% 52%), hsl(320 70% 60%));
+    --gradient-warning: linear-gradient(135deg, hsl(25 95% 53%), hsl(30 90% 58%));
+    --gradient-brown: linear-gradient(135deg, hsl(24 45% 44%), hsl(28 40% 52%));
 
     --shadow-elegant: 0 10px 40px -15px hsl(240 9% 9% / 0.25);
     --shadow-premium: 0 0 40px hsl(43 96% 56% / 0.15);
@@ -82,6 +101,21 @@ All colors MUST be HSL.
     --trust: 217 91% 60%;
     --trust-foreground: 0 0% 98%;
 
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 98%;
+
+    --warning: 25 95% 53%;
+    --warning-foreground: 0 0% 98%;
+
+    --magenta: 316 73% 52%;
+    --magenta-foreground: 0 0% 98%;
+
+    --brown: 24 45% 44%;
+    --brown-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
@@ -92,6 +126,10 @@ All colors MUST be HSL.
     --gradient-premium: linear-gradient(135deg, hsl(43 96% 56%), hsl(38 92% 50%));
     --gradient-dark: linear-gradient(135deg, hsl(240 7% 12%), hsl(240 9% 9%));
     --gradient-trust: linear-gradient(135deg, hsl(217 91% 60%), hsl(221 83% 53%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 71% 45%));
+    --gradient-magenta: linear-gradient(135deg, hsl(316 73% 52%), hsl(320 70% 60%));
+    --gradient-warning: linear-gradient(135deg, hsl(25 95% 53%), hsl(30 90% 58%));
+    --gradient-brown: linear-gradient(135deg, hsl(24 45% 44%), hsl(28 40% 52%));
 
     --shadow-elegant: 0 10px 40px -15px hsl(0 0% 0% / 0.5);
     --shadow-premium: 0 0 40px hsl(43 96% 56% / 0.2);
