@@ -139,6 +139,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleStartCourse = async (courseId: string) => {
     try {
+      // Optimistic update - change UI immediately
+      setCourses(prev => prev.map(c => 
+        c.id === courseId ? { ...c, status: "in_progress" as const } : c
+      ));
+
       const { error } = await supabase
         .from("courses")
         .update({ status: "in_progress" })
@@ -148,11 +153,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       toast.success("Course commencée !");
       
-      // Refresh courses immediately to update UI
+      // Confirm with server data
       await fetchCourses();
     } catch (error: any) {
       console.error("Error starting course:", error);
       toast.error("Erreur lors du démarrage de la course");
+      // Revert on error
+      await fetchCourses();
     }
   };
 
