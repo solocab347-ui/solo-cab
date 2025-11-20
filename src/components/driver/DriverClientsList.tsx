@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter } from "lucide-react";
+import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter, Calendar as CalendarIcon } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +35,10 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFilterType, setDateFilterType] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(undefined);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(undefined);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [deleteClientData, setDeleteClientData] = useState<any>(null);
 
@@ -52,16 +60,42 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
     }
 
     // Filtre par date
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
+    if (dateFilterType !== "all" && selectedDate) {
+      const clientDate = new Date(selectedDate);
+      
+      if (dateFilterType === "day") {
+        // Filtrer par jour exact
+        filtered = filtered.filter((client) => {
+          const createdDate = new Date(client.created_at);
+          return createdDate.toDateString() === clientDate.toDateString();
+        });
+      } else if (dateFilterType === "week") {
+        // Filtrer par semaine
+        const weekStart = startOfWeek(clientDate, { locale: fr });
+        const weekEnd = endOfWeek(clientDate, { locale: fr });
+        filtered = filtered.filter((client) => {
+          const createdDate = new Date(client.created_at);
+          return createdDate >= weekStart && createdDate <= weekEnd;
+        });
+      } else if (dateFilterType === "month") {
+        // Filtrer par mois
+        const monthStart = startOfMonth(clientDate);
+        const monthEnd = endOfMonth(clientDate);
+        filtered = filtered.filter((client) => {
+          const createdDate = new Date(client.created_at);
+          return createdDate >= monthStart && createdDate <= monthEnd;
+        });
+      }
+    } else if (dateFilterType === "range" && dateRangeStart && dateRangeEnd) {
+      // Filtrer par plage de dates
       filtered = filtered.filter((client) => {
-        const clientDate = new Date(client.created_at);
-        return clientDate.toDateString() === filterDate.toDateString();
+        const createdDate = new Date(client.created_at);
+        return createdDate >= dateRangeStart && createdDate <= dateRangeEnd;
       });
     }
 
     setFilteredClients(filtered);
-  }, [searchTerm, clientTypeFilter, dateFilter, clients]);
+  }, [searchTerm, clientTypeFilter, dateFilterType, selectedDate, dateRangeStart, dateRangeEnd, clients]);
 
   const fetchClients = async () => {
     try {
@@ -242,21 +276,121 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
             </SelectContent>
           </Select>
 
-          <Input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            placeholder="Filtrer par date"
-          />
+          <Select value={dateFilterType} onValueChange={(value) => {
+            setDateFilterType(value);
+            setSelectedDate(undefined);
+            setDateRangeStart(undefined);
+            setDateRangeEnd(undefined);
+          }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Période" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les dates</SelectItem>
+              <SelectItem value="day">Par jour</SelectItem>
+              <SelectItem value="week">Par semaine</SelectItem>
+              <SelectItem value="month">Par mois</SelectItem>
+              <SelectItem value="range">Plage de dates</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        {(searchTerm || clientTypeFilter !== "all" || dateFilter) && (
+
+        {/* Date pickers conditionnels */}
+        {dateFilterType !== "all" && dateFilterType !== "range" && (
+          <div className="mt-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP", { locale: fr }) : <span>Sélectionner une date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={fr}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+
+        {dateFilterType === "range" && (
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateRangeStart && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRangeStart ? format(dateRangeStart, "PPP", { locale: fr }) : <span>Date de début</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateRangeStart}
+                  onSelect={setDateRangeStart}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={fr}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateRangeEnd && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRangeEnd ? format(dateRangeEnd, "PPP", { locale: fr }) : <span>Date de fin</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateRangeEnd}
+                  onSelect={setDateRangeEnd}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={fr}
+                  disabled={(date) => dateRangeStart ? date < dateRangeStart : false}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+
+        {(searchTerm || clientTypeFilter !== "all" || dateFilterType !== "all") && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
               setSearchTerm("");
               setClientTypeFilter("all");
-              setDateFilter("");
+              setDateFilterType("all");
+              setSelectedDate(undefined);
+              setDateRangeStart(undefined);
+              setDateRangeEnd(undefined);
             }}
             className="mt-3"
           >
