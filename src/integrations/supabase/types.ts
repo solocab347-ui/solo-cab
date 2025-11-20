@@ -403,7 +403,7 @@ export type Database = {
           {
             foreignKeyName: "factures_devis_id_fkey"
             columns: ["devis_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "devis"
             referencedColumns: ["id"]
           },
@@ -487,7 +487,7 @@ export type Database = {
           {
             foreignKeyName: "qr_codes_driver_id_fkey"
             columns: ["driver_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
