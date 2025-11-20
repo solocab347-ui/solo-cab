@@ -12,9 +12,6 @@ export const ProfitabilityCalculator = () => {
     // Véhicule
     vehicleType: 'thermique',
     vehicleValue: '35000',
-    vehicleBrand: '',
-    vehicleModel: '',
-    vehiclePlate: '',
     
     // Paramètres généraux
     totalKmPerYear: '47200',
@@ -154,33 +151,6 @@ export const ProfitabilityCalculator = () => {
                   placeholder="35000"
                 />
               </div>
-
-              <div>
-                <Label>Marque :</Label>
-                <Input
-                  value={formData.vehicleBrand}
-                  onChange={(e) => setFormData({ ...formData, vehicleBrand: e.target.value })}
-                  placeholder="exemplemarque"
-                />
-              </div>
-
-              <div>
-                <Label>Modèle :</Label>
-                <Input
-                  value={formData.vehicleModel}
-                  onChange={(e) => setFormData({ ...formData, vehicleModel: e.target.value })}
-                  placeholder="exemplemodèle"
-                />
-              </div>
-
-              <div>
-                <Label>Plaque d'immatriculation :</Label>
-                <Input
-                  value={formData.vehiclePlate}
-                  onChange={(e) => setFormData({ ...formData, vehiclePlate: e.target.value })}
-                  placeholder="XX-123-YY"
-                />
-              </div>
             </div>
           </Card>
 
@@ -246,9 +216,9 @@ export const ProfitabilityCalculator = () => {
             </div>
           </Card>
 
-          {/* CA et charges */}
+          {/* CA */}
           <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4">Micro-entreprise : chiffre d'affaires</h3>
+            <h3 className="text-lg font-bold mb-4">Chiffre d'affaires</h3>
             
             <div className="space-y-4">
               <div>
@@ -265,7 +235,7 @@ export const ProfitabilityCalculator = () => {
 
           {/* Assurances */}
           <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4">Micro-entreprise : entretien & assurances</h3>
+            <h3 className="text-lg font-bold mb-4">Entretien & assurances</h3>
             
             <div className="space-y-4">
               <div>
