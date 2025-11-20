@@ -46,7 +46,9 @@ const DevisList = ({ clientId }: DevisListProps) => {
           ),
           drivers!inner(
             company_name,
-            profiles:user_id(full_name, profile_photo_url)
+            company_address,
+            siret,
+            profiles:user_id(full_name, phone, profile_photo_url)
           )
         `)
         .eq("client_id", clientId)
@@ -200,54 +202,149 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
   const handleDownloadDevis = (devis: any) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     
-    // En-tête
-    doc.setFontSize(20);
-    doc.text("DEVIS", 105, 20, { align: "center" });
+    // En-tête avec fond bleu
+    doc.setFillColor(0, 102, 204);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setFontSize(28);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text("DEVIS", pageWidth / 2, 18, { align: "center" });
     
     doc.setFontSize(10);
-    doc.text(`Référence: ${devis.quote_number}`, 105, 30, { align: "center" });
-    doc.text(`Date: ${format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}`, 105, 36, { align: "center" });
+    doc.setFont(undefined, 'normal');
+    doc.text(`Référence: ${devis.quote_number}`, pageWidth / 2, 26, { align: "center" });
+    doc.text(`Date: ${format(new Date(devis.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 32, { align: "center" });
+    doc.setTextColor(0, 0, 0);
     
-    // Informations chauffeur
-    doc.setFontSize(12);
-    doc.text("CHAUFFEUR", 20, 50);
+    // Informations Chauffeur (à gauche) - CLIENT VERSION (moins de détails)
+    let yPos = 50;
+    
     doc.setFontSize(10);
-    doc.text(devis.drivers?.profiles?.full_name || "N/A", 20, 58);
-    if (devis.drivers?.company_name) {
-      doc.text(devis.drivers.company_name, 20, 64);
-    }
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, yPos);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 5;
     
-    // Détails de la course
-    doc.setFontSize(12);
-    doc.text("DETAILS DE LA COURSE", 20, 80);
-    doc.setFontSize(10);
-    doc.text(`Départ: ${devis.courses.pickup_address}`, 20, 88);
-    doc.text(`Arrivée: ${devis.courses.destination_address}`, 20, 94);
-    doc.text(`Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 20, 100);
-    if (devis.courses.distance_km) {
-      doc.text(`Distance: ${devis.courses.distance_km} km`, 20, 106);
-    }
-    
-    // Détail du prix
-    doc.setFontSize(12);
-    doc.text("DETAIL DU PRIX", 20, 130);
-    doc.setFontSize(10);
-    let yPos = 138;
-    doc.text(`Forfait de base: ${parseFloat(devis.base_price).toFixed(2)} €`, 20, yPos);
-    yPos += 6;
-    if (parseFloat(devis.distance_price) > 0) {
-      doc.text(`Prix au kilomètre: ${parseFloat(devis.distance_price).toFixed(2)} €`, 20, yPos);
-      yPos += 6;
-    }
-    if (parseFloat(devis.time_price || 0) > 0) {
-      doc.text(`Prix horaire: ${parseFloat(devis.time_price).toFixed(2)} €`, 20, yPos);
-      yPos += 6;
-    }
-    
-    // Total
-    doc.setFontSize(14);
+    const driverName = devis.drivers?.profiles?.full_name || devis.drivers?.company_name || "N/A";
+    doc.text(driverName, 20, yPos);
     yPos += 4;
+    
+    if (devis.drivers?.company_name && devis.drivers.company_name !== driverName) {
+      doc.text(devis.drivers.company_name, 20, yPos);
+      yPos += 4;
+    }
+    
+    if (devis.drivers?.company_address) {
+      const addressLines = doc.splitTextToSize(devis.drivers.company_address, 70);
+      addressLines.forEach((line: string) => {
+        doc.text(line, 20, yPos);
+        yPos += 4;
+      });
+    }
+    
+    yPos += 1;
+    if (devis.drivers?.siret) {
+      doc.text(`SIRET: ${devis.drivers.siret}`, 20, yPos);
+      yPos += 4;
+    }
+    if (devis.drivers?.profiles?.phone) {
+      doc.text(`Tél: ${devis.drivers.profiles.phone}`, 20, yPos);
+    }
+    
+    // Détails de la course (encadré)
+    yPos = 95;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.rect(15, yPos, pageWidth - 30, 40);
+    
+    yPos += 7;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 20, yPos);
+    
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 6;
+    
+    doc.text("Départ:", 20, yPos);
+    const pickupLines = doc.splitTextToSize(devis.courses.pickup_address, pageWidth - 55);
+    doc.text(pickupLines, 45, yPos);
+    yPos += 4 * pickupLines.length;
+    
+    doc.text("Arrivée:", 20, yPos);
+    const destLines = doc.splitTextToSize(devis.courses.destination_address, pageWidth - 55);
+    doc.text(destLines, 45, yPos);
+    yPos += 4 * destLines.length + 1;
+    
+    doc.text("Date:", 20, yPos);
+    doc.text(format(new Date(devis.courses.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
+    
+    if (devis.courses.distance_km) {
+      yPos += 4;
+      doc.text("Distance:", 20, yPos);
+      doc.text(`${devis.courses.distance_km} km`, 45, yPos);
+    }
+    
+    // Tarification - VERSION SIMPLIFIÉE POUR CLIENT (sans détails des calculs)
+    yPos = 155;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("TARIFICATION", 20, yPos);
+    
+    // Calcul TVA
+    const totalHT = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
+    const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
+    const tvaAmount = totalHT * (tvaRate / 100);
+    const totalTTC = totalHT + tvaAmount;
+    
+    yPos += 8;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    
+    // Total HT
+    doc.text("Montant HT", 20, yPos);
+    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    
+    // TVA
+    yPos += 6;
+    doc.text(`TVA (${tvaRate}%)`, 20, yPos);
+    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    
+    // Ligne de séparation
+    yPos += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, yPos, pageWidth - 15, yPos);
+    
+    // Total TTC
+    yPos += 7;
+    doc.setFillColor(0, 102, 204);
+    doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text("TOTAL TTC", 20, yPos + 2);
+    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+    
+    // Validité
+    yPos += 12;
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.text(`Devis valable jusqu'au ${format(new Date(devis.valid_until), "dd/MM/yyyy", { locale: fr })}`, 20, yPos);
+    
+    // Pied de page
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
+    doc.setTextColor(0, 0, 0);
     doc.text(`TOTAL TTC: ${devis.amount.toFixed(2)} €`, 20, yPos);
     
     // Validité
