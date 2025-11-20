@@ -25,7 +25,7 @@ serve(async (req) => {
       .from("courses")
       .select(`
         *,
-        devis!inner(id, amount, base_price, distance_price, time_price, status)
+        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number)
       `)
       .eq("id", course_id)
       .single();
@@ -37,13 +37,21 @@ serve(async (req) => {
     const acceptedDevis = course.devis.find((d: any) => d.status === "accepted");
     if (!acceptedDevis) throw new Error("No accepted devis found for this course");
 
-    // Generate invoice number
-    const { data: invoiceNumber, error: invoiceError } = await supabase
-      .rpc("generate_invoice_number", { _driver_id: course.driver_id });
+    // Use the same reference number as the devis (REV-XXX becomes FAC-XXX with same number)
+    let invoiceNumber = acceptedDevis.quote_number;
+    if (invoiceNumber && invoiceNumber.startsWith("REV-")) {
+      // Replace REV- with FAC- to keep the same reference number
+      invoiceNumber = invoiceNumber.replace("REV-", "FAC-");
+    } else {
+      // Fallback: generate new invoice number if quote_number doesn't exist
+      const { data: generatedNumber, error: invoiceError } = await supabase
+        .rpc("generate_invoice_number", { _driver_id: course.driver_id });
+      
+      if (invoiceError) throw invoiceError;
+      invoiceNumber = generatedNumber;
+    }
 
-    if (invoiceError) throw invoiceError;
-
-    console.log("[CREATE-FACTURE-AUTO] Generated invoice number:", invoiceNumber);
+    console.log("[CREATE-FACTURE-AUTO] Invoice number:", invoiceNumber, "from quote:", acceptedDevis.quote_number);
 
     // Create facture
     const { data: facture, error: insertError } = await supabase
