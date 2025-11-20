@@ -306,7 +306,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>📧 {client.profiles?.email || "Email non renseigné"}</p>
-                    {client.profiles?.phone && <p>📞 {client.profiles.phone}</p>}
+                    <p>📞 {client.profiles?.phone || "Téléphone non renseigné"}</p>
                     <p className="text-premium font-medium mt-2">
                       {client.courses_count} course{client.courses_count !== 1 ? "s" : ""} effectuée{client.courses_count !== 1 ? "s" : ""}
                     </p>
