@@ -251,6 +251,9 @@ export type Database = {
           service_description: string | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
+          subscription_end_date: string | null
+          subscription_status: string | null
+          subscription_stripe_id: string | null
           total_rides: number | null
           tva_rate: number | null
           updated_at: string
@@ -279,6 +282,9 @@ export type Database = {
           service_description?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
           total_rides?: number | null
           tva_rate?: number | null
           updated_at?: string
@@ -307,6 +313,9 @@ export type Database = {
           service_description?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
           total_rides?: number | null
           tva_rate?: number | null
           updated_at?: string

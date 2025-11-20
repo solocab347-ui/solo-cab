@@ -6,16 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle } from "lucide-react";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
 import DriverDevisList from "@/components/driver/DriverDevisList";
 import DriverFacturesList from "@/components/driver/DriverFacturesList";
+import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
+import SubscriptionManager from "@/components/driver/SubscriptionManager";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
@@ -179,16 +182,37 @@ const DriverDashboard = () => {
           <p className="text-muted-foreground">Gérez votre activité professionnelle</p>
         </div>
 
-        <Tabs defaultValue="stats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+        {/* Subscription Alert */}
+        {driverProfile?.driver?.subscription_status !== "active" && (
+          <Alert className="mb-6 bg-destructive/10 border-destructive">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertTitle className="text-destructive">Abonnement Inactif</AlertTitle>
+            <AlertDescription>
+              Votre abonnement n'est pas actif. Activez-le dans l'onglet "Abonnement" pour accéder à toutes les fonctionnalités de la plateforme.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Tabs defaultValue="subscription" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
             <TabsTrigger value="stats">Statistiques</TabsTrigger>
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="devis">Devis</TabsTrigger>
             <TabsTrigger value="factures">Factures</TabsTrigger>
+            <TabsTrigger value="qrcode">QR Code</TabsTrigger>
             <TabsTrigger value="profile">Profil Public</TabsTrigger>
             <TabsTrigger value="pricing">Tarification</TabsTrigger>
           </TabsList>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription">
+            <SubscriptionManager 
+              driverProfile={driverProfile} 
+              onSubscriptionUpdate={fetchDriverProfile}
+            />
+          </TabsContent>
 
           {/* Stats Tab */}
           <TabsContent value="stats" className="space-y-6">
@@ -240,59 +264,11 @@ const DriverDashboard = () => {
               </Card>
             </div>
 
-            {/* QR Code Section */}
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <QrCode className="w-5 h-5 text-premium-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Votre QR Code</h2>
-                  <p className="text-sm text-muted-foreground">Pour l'inscription de clients exclusifs</p>
-                </div>
-              </div>
+          </TabsContent>
 
-              {loadingQR ? (
-                <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
-                  <div className="text-center">
-                    <div className="w-48 h-48 bg-card rounded-lg flex items-center justify-center mb-4">
-                      <QrCode className="w-32 h-32 text-muted-foreground animate-pulse" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">Génération du QR code...</p>
-                  </div>
-                </div>
-              ) : qrCode?.qr_code_image ? (
-                <>
-                  <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
-                    <img
-                      src={qrCode.qr_code_image}
-                      alt="QR Code"
-                      className="w-64 h-64 rounded-lg shadow-elegant"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="bg-accent/50 rounded-lg p-4 border border-border">
-                      <p className="text-sm text-muted-foreground mb-1">Scans effectués</p>
-                      <p className="text-2xl font-bold text-premium">{qrCode.scans_count || 0}</p>
-                    </div>
-                    <Button onClick={downloadQRCode} className="w-full bg-gradient-dark hover:opacity-90">
-                      Télécharger le QR Code
-                    </Button>
-                    <Button onClick={fetchQRCode} variant="outline" className="w-full">
-                      Régénérer le QR Code
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-secondary rounded-lg p-8 flex flex-col items-center justify-center mb-4">
-                  <QrCode className="w-32 h-32 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">Aucun QR code généré</p>
-                  <Button onClick={fetchQRCode} className="bg-gradient-premium">
-                    Générer mon QR Code
-                  </Button>
-                </div>
-              )}
-            </Card>
+          {/* QR Code Tab */}
+          <TabsContent value="qrcode">
+            <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
           </TabsContent>
 
           {/* Clients Tab */}
