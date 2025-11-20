@@ -301,6 +301,7 @@ export type Database = {
           quote_counter: number | null
           rating: number | null
           service_description: string | null
+          services_offered: string[] | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
           subscription_end_date: string | null
@@ -312,9 +313,12 @@ export type Database = {
           updated_at: string
           user_id: string
           validation_date: string | null
+          vehicle_brand: string | null
           vehicle_color: string | null
+          vehicle_equipment: string[] | null
           vehicle_model: string
           vehicle_plate: string | null
+          vehicle_year: number | null
           working_sectors: string[] | null
         }
         Insert: {
@@ -340,6 +344,7 @@ export type Database = {
           quote_counter?: number | null
           rating?: number | null
           service_description?: string | null
+          services_offered?: string[] | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null
@@ -351,9 +356,12 @@ export type Database = {
           updated_at?: string
           user_id: string
           validation_date?: string | null
+          vehicle_brand?: string | null
           vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
           vehicle_model: string
           vehicle_plate?: string | null
+          vehicle_year?: number | null
           working_sectors?: string[] | null
         }
         Update: {
@@ -379,6 +387,7 @@ export type Database = {
           quote_counter?: number | null
           rating?: number | null
           service_description?: string | null
+          services_offered?: string[] | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null
@@ -390,9 +399,12 @@ export type Database = {
           updated_at?: string
           user_id?: string
           validation_date?: string | null
+          vehicle_brand?: string | null
           vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
           vehicle_model?: string
           vehicle_plate?: string | null
+          vehicle_year?: number | null
           working_sectors?: string[] | null
         }
         Relationships: [

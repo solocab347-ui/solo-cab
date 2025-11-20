@@ -21,6 +21,8 @@ import { PriceCalculator } from "@/components/driver/PriceCalculator";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ProfilePhotoUpload } from "@/components/driver/ProfilePhotoUpload";
 import { SectorSelector } from "@/components/driver/SectorSelector";
+import { EquipmentSelector } from "@/components/driver/EquipmentSelector";
+import { ServicesSelector } from "@/components/driver/ServicesSelector";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +56,10 @@ const DriverDashboard = () => {
   const [displayDriverName, setDisplayDriverName] = useState(true);
   const [displayCompanyName, setDisplayCompanyName] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [vehicleEquipment, setVehicleEquipment] = useState<string[]>([]);
+  const [servicesOffered, setServicesOffered] = useState<string[]>([]);
+  const [vehicleBrand, setVehicleBrand] = useState("");
+  const [vehicleYear, setVehicleYear] = useState("");
 
   useEffect(() => {
     fetchDriverProfile();
@@ -98,6 +104,10 @@ const DriverDashboard = () => {
       setTvaIncluded(driver.tva_included || false);
       setDisplayDriverName(driver.display_driver_name !== false);
       setDisplayCompanyName(driver.display_company_name || false);
+      setVehicleEquipment(driver.vehicle_equipment || []);
+      setServicesOffered(driver.services_offered || []);
+      setVehicleBrand(driver.vehicle_brand || "");
+      setVehicleYear(driver.vehicle_year?.toString() || "");
       setProfilePhotoUrl(profile?.profile_photo_url || null);
     }
   };
@@ -164,6 +174,8 @@ const DriverDashboard = () => {
           per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
           hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
           vehicle_color: vehicleColor,
+          vehicle_brand: vehicleBrand,
+          vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
           company_name: companyName,
           company_address: companyAddress,
           siret: siret,
@@ -171,6 +183,8 @@ const DriverDashboard = () => {
           tva_included: tvaIncluded,
           display_driver_name: displayDriverName,
           display_company_name: displayCompanyName,
+          vehicle_equipment: vehicleEquipment,
+          services_offered: servicesOffered,
         })
         .eq("id", driverProfile.driver.id);
 
@@ -592,6 +606,42 @@ const DriverDashboard = () => {
                     value={vehicleColor}
                     onChange={(e) => setVehicleColor(e.target.value)}
                     placeholder="Noir, Gris, Blanc..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="brand">Marque</Label>
+                    <Input
+                      id="brand"
+                      value={vehicleBrand}
+                      onChange={(e) => setVehicleBrand(e.target.value)}
+                      placeholder="Tesla, Mercedes..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Année</Label>
+                    <Input
+                      id="year"
+                      type="number"
+                      value={vehicleYear}
+                      onChange={(e) => setVehicleYear(e.target.value)}
+                      placeholder="2023"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <EquipmentSelector
+                    selectedEquipment={vehicleEquipment}
+                    onChange={setVehicleEquipment}
+                  />
+                </div>
+
+                <div className="border-t pt-6">
+                  <ServicesSelector
+                    selectedServices={servicesOffered}
+                    onChange={setServicesOffered}
                   />
                 </div>
               </div>
