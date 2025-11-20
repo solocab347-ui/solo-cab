@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
@@ -271,7 +272,7 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 bg-card">
+          <TabsList className="grid w-full grid-cols-10 bg-card">
             <TabsTrigger value="home" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Accueil
@@ -284,6 +285,10 @@ const DriverDashboard = () => {
               <Car className="w-4 h-4" />
               Mes Courses
             </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Messages
+            </TabsTrigger>
             <TabsTrigger value="devis" className="gap-2">
               <FileText className="w-4 h-4" />
               Devis
@@ -292,18 +297,25 @@ const DriverDashboard = () => {
               <CreditCard className="w-4 h-4" />
               Factures
             </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="qrcode" className="gap-2">
-              <QrCode className="w-4 h-4" />
-              Mon QR Code
-            </TabsTrigger>
-            <TabsTrigger value="calculator" className="gap-2">
-              <Calculator className="w-4 h-4" />
-              Calculatrice
-            </TabsTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50">
+                  <Wrench className="w-4 h-4" />
+                  Outils
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
+                <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer">
+                  <Calculator className="w-4 h-4" />
+                  Calculatrice
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer">
+                  <QrCode className="w-4 h-4" />
+                  Mon QR Code
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <TabsTrigger value="subscription" className="gap-2">
               <TrendingUp className="w-4 h-4" />
               Abonnement
