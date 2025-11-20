@@ -337,6 +337,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const pendingCourses = courses.filter(c => c.status === "pending");
   const confirmedCourses = courses.filter(c => c.status === "accepted" || c.status === "in_progress");
   const completedCourses = courses.filter(c => c.status === "completed");
+  const rejectedCourses = courses.filter(c => c.status === "cancelled");
 
   if (loading) {
     return (
@@ -613,7 +614,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       </Dialog>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="pending" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             En attente ({pendingCourses.length})
@@ -625,6 +626,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           <TabsTrigger value="completed" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Terminées ({completedCourses.length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="flex items-center gap-2">
+            <XCircle className="w-4 h-4" />
+            Refusées ({rejectedCourses.length})
           </TabsTrigger>
         </TabsList>
 
@@ -667,6 +672,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             </Card>
           ) : (
             completedCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="space-y-4">
+          {rejectedCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course refusée</h3>
+              <p className="text-muted-foreground">
+                Les courses refusées apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            rejectedCourses.map(renderCourseCard)
           )}
         </TabsContent>
       </Tabs>
