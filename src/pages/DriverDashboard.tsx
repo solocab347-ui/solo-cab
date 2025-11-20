@@ -227,37 +227,37 @@ const DriverDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-border bg-card sticky top-0 z-10">
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-primary" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+              <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
               SoloCab
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
-            <div className="flex flex-col items-end">
+            <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium">{driverProfile?.full_name || "Chauffeur"}</span>
-              <Badge variant="outline" className="border-success text-success">
+              <Badge variant="outline" className="border-success text-success text-xs">
                 {driverProfile?.driver?.subscription_status === "active" ? "Actif" : "Inactif"}
               </Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10">
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
             Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} ✨
           </h1>
-          <p className="text-muted-foreground">Voici un aperçu de votre activité</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Voici un aperçu de votre activité</p>
         </div>
 
         {/* Subscription Alert */}
@@ -272,85 +272,105 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 bg-card">
-            <TabsTrigger value="home" className="gap-2">
-              <LayoutGrid className="w-4 h-4" />
-              Accueil
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="gap-2">
-              <Users className="w-4 h-4" />
-              Mes Clients
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="gap-2">
-              <Car className="w-4 h-4" />
-              Mes Courses
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="devis" className="gap-2">
-              <FileText className="w-4 h-4" />
-              Devis
-            </TabsTrigger>
-            <TabsTrigger value="factures" className="gap-2">
-              <CreditCard className="w-4 h-4" />
-              Factures
-            </TabsTrigger>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50">
-                  <Wrench className="w-4 h-4" />
-                  Outils
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer">
-                  <Calculator className="w-4 h-4" />
-                  Calculatrice
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer">
-                  <QrCode className="w-4 h-4" />
-                  Mon QR Code
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50">
-                  <BarChart3 className="w-4 h-4" />
-                  Développement
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer">
-                  <TrendingUp className="w-4 h-4" />
-                  Statistique
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer">
-                  <Megaphone className="w-4 h-4" />
-                  Campagne
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer">
-                  <PieChart className="w-4 h-4" />
-                  Calcul de rentabilité
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <TabsTrigger value="subscription" className="gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Abonnement
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="gap-2">
-              <Globe className="w-4 h-4" />
-              Profil Public
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Paramètres
-            </TabsTrigger>
+          <TabsList className="w-full bg-card flex flex-col gap-2 h-auto p-2">
+            {/* Première ligne */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
+              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Accueil</span>
+                <span className="sm:hidden">Accueil</span>
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Mes Clients</span>
+                <span className="sm:hidden">Clients</span>
+              </TabsTrigger>
+              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <Car className="w-4 h-4" />
+                <span className="hidden sm:inline">Mes Courses</span>
+                <span className="sm:hidden">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <MessageSquare className="w-4 h-4" />
+                <span className="hidden sm:inline">Messages</span>
+                <span className="sm:hidden">Messages</span>
+              </TabsTrigger>
+              <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">Devis</span>
+                <span className="sm:hidden">Devis</span>
+              </TabsTrigger>
+              <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <CreditCard className="w-4 h-4" />
+                <span className="hidden sm:inline">Factures</span>
+                <span className="sm:hidden">Factures</span>
+              </TabsTrigger>
+            </div>
+            
+            {/* Deuxième ligne */}
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 w-full">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50 flex-col sm:flex-row">
+                    <Wrench className="w-4 h-4" />
+                    <span className="hidden sm:inline">Outils</span>
+                    <span className="sm:hidden">Outils</span>
+                    <ChevronDown className="w-3 h-3 hidden sm:inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer">
+                    <Calculator className="w-4 h-4" />
+                    Calculatrice
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer">
+                    <QrCode className="w-4 h-4" />
+                    Mon QR Code
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50 flex-col sm:flex-row">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Développement</span>
+                    <span className="sm:hidden">Dev</span>
+                    <ChevronDown className="w-3 h-3 hidden sm:inline" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer">
+                    <TrendingUp className="w-4 h-4" />
+                    Statistique
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer">
+                    <Megaphone className="w-4 h-4" />
+                    Campagne
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer">
+                    <PieChart className="w-4 h-4" />
+                    Calcul de rentabilité
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <TrendingUp className="w-4 h-4" />
+                <span className="hidden sm:inline">Abonnement</span>
+                <span className="sm:hidden">Abo</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <Globe className="w-4 h-4" />
+                <span className="hidden sm:inline">Profil Public</span>
+                <span className="sm:hidden">Profil</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Paramètres</span>
+                <span className="sm:hidden">Params</span>
+              </TabsTrigger>
+            </div>
           </TabsList>
 
           {/* Home Tab */}
