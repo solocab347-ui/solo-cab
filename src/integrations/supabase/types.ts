@@ -75,6 +75,7 @@ export type Database = {
       courses: {
         Row: {
           client_id: string
+          course_number: string | null
           created_at: string
           destination_address: string
           destination_latitude: number | null
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          course_number?: string | null
           created_at?: string
           destination_address: string
           destination_latitude?: number | null
@@ -115,6 +117,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          course_number?: string | null
           created_at?: string
           destination_address?: string
           destination_latitude?: number | null
@@ -162,6 +165,7 @@ export type Database = {
           driver_id: string
           id: string
           notes: string | null
+          quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
           time_price: number | null
           updated_at: string
@@ -178,6 +182,7 @@ export type Database = {
           driver_id: string
           id?: string
           notes?: string | null
+          quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
           updated_at?: string
@@ -194,6 +199,7 @@ export type Database = {
           driver_id?: string
           id?: string
           notes?: string | null
+          quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
           updated_at?: string
@@ -225,58 +231,85 @@ export type Database = {
       }
       drivers: {
         Row: {
+          base_fare: number | null
           base_rate: number | null
           bio: string | null
+          company_name: string | null
+          course_counter: number | null
           created_at: string
+          hourly_rate: number | null
           id: string
+          invoice_counter: number | null
           license_number: string
           per_km_rate: number | null
           public_profile_enabled: boolean | null
+          quote_counter: number | null
           rating: number | null
           service_description: string | null
+          siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
           total_rides: number | null
+          tva_rate: number | null
           updated_at: string
           user_id: string
           validation_date: string | null
+          vehicle_color: string | null
           vehicle_model: string
           vehicle_plate: string | null
           working_sectors: string[] | null
         }
         Insert: {
+          base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          company_name?: string | null
+          course_counter?: number | null
           created_at?: string
+          hourly_rate?: number | null
           id?: string
+          invoice_counter?: number | null
           license_number: string
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
+          quote_counter?: number | null
           rating?: number | null
           service_description?: string | null
+          siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_rides?: number | null
+          tva_rate?: number | null
           updated_at?: string
           user_id: string
           validation_date?: string | null
+          vehicle_color?: string | null
           vehicle_model: string
           vehicle_plate?: string | null
           working_sectors?: string[] | null
         }
         Update: {
+          base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          company_name?: string | null
+          course_counter?: number | null
           created_at?: string
+          hourly_rate?: number | null
           id?: string
+          invoice_counter?: number | null
           license_number?: string
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
+          quote_counter?: number | null
           rating?: number | null
           service_description?: string | null
+          siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_rides?: number | null
+          tva_rate?: number | null
           updated_at?: string
           user_id?: string
           validation_date?: string | null
+          vehicle_color?: string | null
           vehicle_model?: string
           vehicle_plate?: string | null
           working_sectors?: string[] | null
@@ -301,6 +334,7 @@ export type Database = {
           driver_id: string
           id: string
           invoice_number: string
+          invoice_number_generated: string | null
           paid_at: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -316,6 +350,7 @@ export type Database = {
           driver_id: string
           id?: string
           invoice_number: string
+          invoice_number_generated?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -331,6 +366,7 @@ export type Database = {
           driver_id?: string
           id?: string
           invoice_number?: string
+          invoice_number_generated?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -451,6 +487,25 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: undefined
       }
+      calculate_course_price: {
+        Args: {
+          _distance_km: number
+          _driver_id: string
+          _duration_minutes: number
+          _use_hourly_rate?: boolean
+        }
+        Returns: {
+          base_price: number
+          distance_price: number
+          subtotal: number
+          time_price: number
+          total_price: number
+          tva_amount: number
+        }[]
+      }
+      generate_course_number: { Args: { _driver_id: string }; Returns: string }
+      generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
+      generate_quote_number: { Args: { _driver_id: string }; Returns: string }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
       get_user_roles: { Args: { _user_id: string }; Returns: string[] }

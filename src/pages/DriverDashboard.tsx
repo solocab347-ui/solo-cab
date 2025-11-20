@@ -2,36 +2,104 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
   const [driverProfile, setDriverProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Form states
+  const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
+  const [workingSectors, setWorkingSectors] = useState("");
+  const [serviceDescription, setServiceDescription] = useState("");
+  const [baseFare, setBaseFare] = useState("");
+  const [perKmRate, setPerKmRate] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [vehicleColor, setVehicleColor] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [siret, setSiret] = useState("");
+  const [tvaRate, setTvaRate] = useState("20");
 
   useEffect(() => {
-    const fetchDriverProfile = async () => {
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setDriverProfile({ ...profile, driver });
-    };
-
     fetchDriverProfile();
   }, [user]);
+
+  const fetchDriverProfile = async () => {
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (driver) {
+      setDriverProfile({ ...profile, driver });
+      // Populate form
+      setPublicProfileEnabled(driver.public_profile_enabled || false);
+      setWorkingSectors(driver.working_sectors?.join(", ") || "");
+      setServiceDescription(driver.service_description || "");
+      setBaseFare(driver.base_fare?.toString() || "");
+      setPerKmRate(driver.per_km_rate?.toString() || "");
+      setHourlyRate(driver.hourly_rate?.toString() || "");
+      setVehicleColor(driver.vehicle_color || "");
+      setCompanyName(driver.company_name || "");
+      setSiret(driver.siret || "");
+      setTvaRate(driver.tva_rate?.toString() || "20");
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!driverProfile?.driver?.id) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          public_profile_enabled: publicProfileEnabled,
+          working_sectors: workingSectors
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s),
+          service_description: serviceDescription,
+          base_fare: baseFare ? parseFloat(baseFare) : null,
+          per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
+          hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+          vehicle_color: vehicleColor,
+          company_name: companyName,
+          siret: siret,
+          tva_rate: tvaRate ? parseFloat(tvaRate) : 20,
+        })
+        .eq("id", driverProfile.driver.id);
+
+      if (error) throw error;
+      toast.success("Profil mis à jour avec succès !");
+      fetchDriverProfile();
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error("Erreur lors de la mise à jour");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -47,7 +115,7 @@ const DriverDashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="border-premium text-premium">
-              {driverProfile?.driver?.status === "validated" ? "Chauffeur Vérifié" : "En attente de validation"}
+              {driverProfile?.driver?.status === "validated" ? "Vérifié" : "En attente"}
             </Badge>
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
@@ -57,157 +125,236 @@ const DriverDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
             Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} 👋
           </h1>
-          <p className="text-muted-foreground">
-            Voici un aperçu de votre activité aujourd'hui
-          </p>
+          <p className="text-muted-foreground">Gérez votre activité professionnelle</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6 hover:shadow-elegant transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-trust rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-trust-foreground" />
-              </div>
-              <TrendingUp className="w-5 h-5 text-trust" />
-            </div>
-            <h3 className="text-2xl font-bold mb-1">12</h3>
-            <p className="text-sm text-muted-foreground">Courses ce mois</p>
-          </Card>
+        <Tabs defaultValue="stats" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="stats">Statistiques</TabsTrigger>
+            <TabsTrigger value="profile">Profil Public</TabsTrigger>
+            <TabsTrigger value="pricing">Tarification</TabsTrigger>
+          </TabsList>
 
-          <Card className="p-6 hover:shadow-elegant transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-premium-foreground" />
-              </div>
-              <TrendingUp className="w-5 h-5 text-premium" />
-            </div>
-            <h3 className="text-2xl font-bold mb-1">8</h3>
-            <p className="text-sm text-muted-foreground">Clients exclusifs</p>
-          </Card>
-
-          <Card className="p-6 hover:shadow-elegant transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <TrendingUp className="w-5 h-5 text-foreground" />
-            </div>
-            <h3 className="text-2xl font-bold mb-1">3</h3>
-            <p className="text-sm text-muted-foreground">Courses en attente</p>
-          </Card>
-
-          <Card className="p-6 hover:shadow-elegant transition-all bg-gradient-premium">
-            <div className="mb-4">
-              <div className="w-12 h-12 bg-premium-foreground/10 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-premium-foreground" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold text-premium-foreground mb-1">2 450€</h3>
-            <p className="text-sm text-premium-foreground/80">Revenus ce mois</p>
-          </Card>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* QR Code Section */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                <QrCode className="w-5 h-5 text-premium-foreground" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Votre QR Code</h2>
-                <p className="text-sm text-muted-foreground">
-                  Partagez-le avec vos clients
-                </p>
-              </div>
-            </div>
-            <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
-              <div className="w-48 h-48 bg-card rounded-lg flex items-center justify-center">
-                <QrCode className="w-32 h-32 text-muted-foreground" />
-              </div>
-            </div>
-            <Button className="w-full bg-gradient-dark hover:opacity-90">
-              Télécharger le QR Code
-            </Button>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold mb-6">Courses récentes</h2>
-            <div className="space-y-4">
-              {[
-                { client: "Marie L.", date: "Aujourd'hui 14:30", amount: "45€", status: "completed" },
-                { client: "Pierre D.", date: "Aujourd'hui 10:15", amount: "32€", status: "completed" },
-                { client: "Sophie M.", date: "Hier 18:00", amount: "78€", status: "completed" },
-              ].map((course, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-trust rounded-full flex items-center justify-center text-trust-foreground font-semibold">
-                      {course.client.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{course.client}</p>
-                      <p className="text-sm text-muted-foreground">{course.date}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-premium">{course.amount}</p>
-                    <Badge variant="outline" className="border-trust text-trust mt-1">
-                      Terminée
-                    </Badge>
+          {/* Stats Tab */}
+          <TabsContent value="stats" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid md:grid-cols-4 gap-6">
+              <Card className="p-6 hover:shadow-elegant transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-trust rounded-lg flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-trust-foreground" />
                   </div>
                 </div>
-              ))}
-            </div>
-            <Button variant="outline" className="w-full mt-4">
-              Voir toutes les courses
-            </Button>
-          </Card>
-        </div>
+                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.quote_counter || 0}</h3>
+                <p className="text-sm text-muted-foreground">Devis générés</p>
+                <p className="text-xs text-premium mt-1">REV-{String(driverProfile?.driver?.quote_counter || 0).padStart(3, "0")}</p>
+              </Card>
 
-        {/* Pending Quotes */}
-        <Card className="p-6 mt-8">
-          <h2 className="text-xl font-bold mb-6">Devis en attente</h2>
-          <div className="space-y-3">
-            {[
-              { client: "Thomas B.", route: "Paris → Orly", date: "Demain 08:00" },
-              { client: "Emma R.", route: "Versailles → CDG", date: "15 Nov, 16:30" },
-            ].map((quote, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-premium transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-premium rounded-full flex items-center justify-center text-premium-foreground font-semibold">
-                    {quote.client.charAt(0)}
+              <Card className="p-6 hover:shadow-elegant transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-premium-foreground" />
                   </div>
+                </div>
+                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.course_counter || 0}</h3>
+                <p className="text-sm text-muted-foreground">Courses réalisées</p>
+                <p className="text-xs text-premium mt-1">DEV-{String(driverProfile?.driver?.course_counter || 0).padStart(3, "0")}</p>
+              </Card>
+
+              <Card className="p-6 hover:shadow-elegant transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.invoice_counter || 0}</h3>
+                <p className="text-sm text-muted-foreground">Factures émises</p>
+                <p className="text-xs text-premium mt-1">FAC-{String(driverProfile?.driver?.invoice_counter || 0).padStart(3, "0")}</p>
+              </Card>
+
+              <Card className="p-6 hover:shadow-elegant transition-all bg-gradient-premium">
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-premium-foreground/10 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-premium-foreground" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-premium-foreground mb-1">
+                  {driverProfile?.driver?.rating?.toFixed(1) || "0.0"} ⭐
+                </h3>
+                <p className="text-sm text-premium-foreground/80">Note moyenne</p>
+              </Card>
+            </div>
+
+            {/* QR Code Section */}
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Votre QR Code</h2>
+                  <p className="text-sm text-muted-foreground">Pour l'inscription de clients exclusifs</p>
+                </div>
+              </div>
+              <div className="bg-secondary rounded-lg p-8 flex items-center justify-center mb-4">
+                <div className="w-48 h-48 bg-card rounded-lg flex items-center justify-center">
+                  <QrCode className="w-32 h-32 text-muted-foreground" />
+                </div>
+              </div>
+              <Button className="w-full bg-gradient-dark hover:opacity-90">Télécharger le QR Code</Button>
+            </Card>
+          </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Profil Public</h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold">{quote.client}</p>
-                    <p className="text-sm text-muted-foreground">{quote.route}</p>
-                    <p className="text-sm text-muted-foreground">{quote.date}</p>
+                    <Label className="text-base">Activer le profil public</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Apparaître sur /chauffeurs pour les clients libres
+                    </p>
                   </div>
+                  <Switch
+                    checked={publicProfileEnabled}
+                    onCheckedChange={setPublicProfileEnabled}
+                  />
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
-                    Refuser
-                  </Button>
-                  <Button size="sm" className="bg-gradient-premium">
-                    Accepter
-                  </Button>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sectors">Secteurs desservis (séparés par virgule)</Label>
+                  <Input
+                    id="sectors"
+                    value={workingSectors}
+                    onChange={(e) => setWorkingSectors(e.target.value)}
+                    placeholder="Paris, 75, 92, Hauts-de-Seine"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description du service</Label>
+                  <Textarea
+                    id="description"
+                    value={serviceDescription}
+                    onChange={(e) => setServiceDescription(e.target.value)}
+                    placeholder="Décrivez votre service, vos spécialités..."
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="color">Couleur du véhicule</Label>
+                  <Input
+                    id="color"
+                    value={vehicleColor}
+                    onChange={(e) => setVehicleColor(e.target.value)}
+                    placeholder="Noir, Gris, Blanc..."
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        </Card>
+            </Card>
+          </TabsContent>
+
+          {/* Pricing Tab */}
+          <TabsContent value="pricing" className="space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Tarification Professionnelle</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="baseFare">Forfait de base (€)</Label>
+                  <Input
+                    id="baseFare"
+                    type="number"
+                    step="0.01"
+                    value={baseFare}
+                    onChange={(e) => setBaseFare(e.target.value)}
+                    placeholder="10.00"
+                  />
+                  <p className="text-xs text-muted-foreground">Prix de départ de la course</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="perKm">Prix par kilomètre (€)</Label>
+                  <Input
+                    id="perKm"
+                    type="number"
+                    step="0.01"
+                    value={perKmRate}
+                    onChange={(e) => setPerKmRate(e.target.value)}
+                    placeholder="1.50"
+                  />
+                  <p className="text-xs text-muted-foreground">Coût par km parcouru</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hourly">Tarif horaire optionnel (€)</Label>
+                  <Input
+                    id="hourly"
+                    type="number"
+                    step="0.01"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(e.target.value)}
+                    placeholder="50.00"
+                  />
+                  <p className="text-xs text-muted-foreground">Pour les courses au temps</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tva">Taux TVA (%)</Label>
+                  <Input
+                    id="tva"
+                    type="number"
+                    step="0.01"
+                    value={tvaRate}
+                    onChange={(e) => setTvaRate(e.target.value)}
+                    placeholder="20.00"
+                  />
+                  <p className="text-xs text-muted-foreground">Taux de TVA appliqué</p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-border">
+                <h3 className="font-semibold mb-4">Informations Professionnelles</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Nom de l'entreprise</Label>
+                    <Input
+                      id="company"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Transport Dupont SARL"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="siret">SIRET</Label>
+                    <Input
+                      id="siret"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      placeholder="123 456 789 00012"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Button
+              onClick={handleUpdateProfile}
+              disabled={loading}
+              className="w-full bg-gradient-premium hover:opacity-90"
+              size="lg"
+            >
+              {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+            </Button>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
