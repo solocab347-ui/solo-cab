@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, Home, MessageSquare, Globe } from "lucide-react";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
 import DriverDevisList from "@/components/driver/DriverDevisList";
 import DriverFacturesList from "@/components/driver/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/SubscriptionManager";
+import { DriverHome } from "@/components/driver/DriverHome";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
 
   // Form states
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
@@ -164,9 +166,12 @@ const DriverDashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <Badge variant="outline" className="border-premium text-premium">
-              {driverProfile?.driver?.status === "validated" ? "Vérifié" : "En attente"}
-            </Badge>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-medium">{driverProfile?.full_name || "Chauffeur"}</span>
+              <Badge variant="outline" className="border-success text-success">
+                {driverProfile?.driver?.subscription_status === "active" ? "Actif" : "Inactif"}
+              </Badge>
+            </div>
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
             </Button>
@@ -177,9 +182,9 @@ const DriverDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} 👋
+            Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} ✨
           </h1>
-          <p className="text-muted-foreground">Gérez votre activité professionnelle</p>
+          <p className="text-muted-foreground">Voici un aperçu de votre activité</p>
         </div>
 
         {/* Subscription Alert */}
@@ -193,83 +198,162 @@ const DriverDashboard = () => {
           </Alert>
         )}
 
-        <Tabs defaultValue="subscription" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
-            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
-            <TabsTrigger value="stats">Statistiques</TabsTrigger>
-            <TabsTrigger value="clients">Clients</TabsTrigger>
-            <TabsTrigger value="courses">Courses</TabsTrigger>
-            <TabsTrigger value="devis">Devis</TabsTrigger>
-            <TabsTrigger value="factures">Factures</TabsTrigger>
-            <TabsTrigger value="qrcode">QR Code</TabsTrigger>
-            <TabsTrigger value="profile">Profil Public</TabsTrigger>
-            <TabsTrigger value="pricing">Tarification</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8 bg-card">
+            <TabsTrigger value="home" className="gap-2">
+              <Home className="w-4 h-4" />
+              Accueil
+            </TabsTrigger>
+            <TabsTrigger value="clients" className="gap-2">
+              <Users className="w-4 h-4" />
+              Mes Clients
+            </TabsTrigger>
+            <TabsTrigger value="courses" className="gap-2">
+              <Car className="w-4 h-4" />
+              Mes Courses
+            </TabsTrigger>
+            <TabsTrigger value="devis" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Devis
+            </TabsTrigger>
+            <TabsTrigger value="factures" className="gap-2">
+              <CreditCard className="w-4 h-4" />
+              Factures
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Messages
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="gap-2">
+              <Globe className="w-4 h-4" />
+              Profil Public
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              Paramètres
+            </TabsTrigger>
           </TabsList>
 
-          {/* Subscription Tab */}
-          <TabsContent value="subscription">
-            <SubscriptionManager 
-              driverProfile={driverProfile} 
-              onSubscriptionUpdate={fetchDriverProfile}
-            />
+          {/* Home Tab */}
+          <TabsContent value="home">
+            <DriverHome driverProfile={driverProfile} onTabChange={setActiveTab} />
           </TabsContent>
 
-          {/* Stats Tab */}
-          <TabsContent value="stats" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid md:grid-cols-4 gap-6">
-              <Card className="p-6 hover:shadow-elegant transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-trust rounded-lg flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-trust-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.quote_counter || 0}</h3>
-                <p className="text-sm text-muted-foreground">Devis générés</p>
-                <p className="text-xs text-premium mt-1">REV-{String(driverProfile?.driver?.quote_counter || 0).padStart(3, "0")}</p>
-              </Card>
+          {/* Messages Tab */}
+          <TabsContent value="messages">
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-4">Messages</h2>
+              <p className="text-muted-foreground">Fonctionnalité de messagerie à venir...</p>
+            </Card>
+          </TabsContent>
 
-              <Card className="p-6 hover:shadow-elegant transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-premium-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.course_counter || 0}</h3>
-                <p className="text-sm text-muted-foreground">Courses réalisées</p>
-                <p className="text-xs text-premium mt-1">DEV-{String(driverProfile?.driver?.course_counter || 0).padStart(3, "0")}</p>
-              </Card>
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            {/* QR Code Section */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Mon QR Code</h2>
+              <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
+            </Card>
 
-              <Card className="p-6 hover:shadow-elegant transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold mb-1">{driverProfile?.driver?.invoice_counter || 0}</h3>
-                <p className="text-sm text-muted-foreground">Factures émises</p>
-                <p className="text-xs text-premium mt-1">FAC-{String(driverProfile?.driver?.invoice_counter || 0).padStart(3, "0")}</p>
-              </Card>
+            {/* Subscription Manager */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Abonnement</h2>
+              <SubscriptionManager 
+                driverProfile={driverProfile} 
+                onSubscriptionUpdate={fetchDriverProfile}
+              />
+            </Card>
 
-              <Card className="p-6 hover:shadow-elegant transition-all bg-gradient-premium">
-                <div className="mb-4">
-                  <div className="w-12 h-12 bg-premium-foreground/10 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-premium-foreground" />
-                  </div>
+            {/* Pricing */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Tarification Professionnelle</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="baseFare">Forfait de base (€)</Label>
+                  <Input
+                    id="baseFare"
+                    type="number"
+                    step="0.01"
+                    value={baseFare}
+                    onChange={(e) => setBaseFare(e.target.value)}
+                    placeholder="10.00"
+                  />
+                  <p className="text-xs text-muted-foreground">Prix de départ de la course</p>
                 </div>
-                <h3 className="text-2xl font-bold text-premium-foreground mb-1">
-                  {driverProfile?.driver?.rating?.toFixed(1) || "0.0"} ⭐
-                </h3>
-                <p className="text-sm text-premium-foreground/80">Note moyenne</p>
-              </Card>
+
+                <div className="space-y-2">
+                  <Label htmlFor="perKm">Prix par kilomètre (€)</Label>
+                  <Input
+                    id="perKm"
+                    type="number"
+                    step="0.01"
+                    value={perKmRate}
+                    onChange={(e) => setPerKmRate(e.target.value)}
+                    placeholder="1.50"
+                  />
+                  <p className="text-xs text-muted-foreground">Coût par km parcouru</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hourly">Tarif horaire optionnel (€)</Label>
+                  <Input
+                    id="hourly"
+                    type="number"
+                    step="0.01"
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(e.target.value)}
+                    placeholder="50.00"
+                  />
+                  <p className="text-xs text-muted-foreground">Pour les courses au temps</p>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  TVA Automatique
+                </h4>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>• <span className="font-medium">10% TVA</span> pour les courses au kilomètre</p>
+                  <p>• <span className="font-medium">20% TVA</span> pour les mises à disposition (horaire)</p>
+                  <p className="text-xs mt-2 italic">La TVA est calculée automatiquement selon le type de course</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Company Info */}
+            <Card className="p-6">
+              <h2 className="text-xl font-bold mb-6">Informations Entreprise</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="company">Nom de l'entreprise</Label>
+                  <Input
+                    id="company"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="VTC Excellence"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="siret">SIRET</Label>
+                  <Input
+                    id="siret"
+                    value={siret}
+                    onChange={(e) => setSiret(e.target.value)}
+                    placeholder="123 456 789 00012"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <div className="flex justify-end">
+              <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
+                {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+              </Button>
             </div>
-
           </TabsContent>
 
-          {/* QR Code Tab */}
-          <TabsContent value="qrcode">
-            <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
-          </TabsContent>
 
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-6">
@@ -363,98 +447,6 @@ const DriverDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Pricing Tab */}
-          <TabsContent value="pricing" className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Tarification Professionnelle</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="baseFare">Forfait de base (€)</Label>
-                  <Input
-                    id="baseFare"
-                    type="number"
-                    step="0.01"
-                    value={baseFare}
-                    onChange={(e) => setBaseFare(e.target.value)}
-                    placeholder="10.00"
-                  />
-                  <p className="text-xs text-muted-foreground">Prix de départ de la course</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="perKm">Prix par kilomètre (€)</Label>
-                  <Input
-                    id="perKm"
-                    type="number"
-                    step="0.01"
-                    value={perKmRate}
-                    onChange={(e) => setPerKmRate(e.target.value)}
-                    placeholder="1.50"
-                  />
-                  <p className="text-xs text-muted-foreground">Coût par km parcouru</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="hourly">Tarif horaire optionnel (€)</Label>
-                  <Input
-                    id="hourly"
-                    type="number"
-                    step="0.01"
-                    value={hourlyRate}
-                    onChange={(e) => setHourlyRate(e.target.value)}
-                    placeholder="50.00"
-                  />
-                  <p className="text-xs text-muted-foreground">Pour les courses au temps</p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  TVA Automatique
-                </h4>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>• <span className="font-medium">10% TVA</span> pour les courses au kilomètre</p>
-                  <p>• <span className="font-medium">20% TVA</span> pour les mises à disposition (horaire)</p>
-                  <p className="text-xs mt-2 italic">La TVA est calculée automatiquement selon le type de course</p>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-border">
-                <h3 className="font-semibold mb-4">Informations Professionnelles</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Nom de l'entreprise</Label>
-                    <Input
-                      id="company"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="Transport Dupont SARL"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET</Label>
-                    <Input
-                      id="siret"
-                      value={siret}
-                      onChange={(e) => setSiret(e.target.value)}
-                      placeholder="123 456 789 00012"
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Button
-              onClick={handleUpdateProfile}
-              disabled={loading}
-              className="w-full bg-gradient-premium hover:opacity-90"
-              size="lg"
-            >
-              {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-            </Button>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

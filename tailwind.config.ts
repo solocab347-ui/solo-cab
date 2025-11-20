@@ -47,6 +47,26 @@ export default {
           DEFAULT: "hsl(var(--trust))",
           foreground: "hsl(var(--trust-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        magenta: {
+          DEFAULT: "hsl(var(--magenta))",
+          foreground: "hsl(var(--magenta-foreground))",
+        },
+        brown: {
+          DEFAULT: "hsl(var(--brown))",
+          foreground: "hsl(var(--brown-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -60,6 +80,10 @@ export default {
         "gradient-premium": "var(--gradient-premium)",
         "gradient-dark": "var(--gradient-dark)",
         "gradient-trust": "var(--gradient-trust)",
+        "gradient-success": "var(--gradient-success)",
+        "gradient-magenta": "var(--gradient-magenta)",
+        "gradient-warning": "var(--gradient-warning)",
+        "gradient-brown": "var(--gradient-brown)",
       },
       boxShadow: {
         elegant: "var(--shadow-elegant)",
