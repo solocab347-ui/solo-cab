@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Car, LogOut, Shield } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import AdminStats from "@/components/admin/AdminStats";
 import DriversValidation from "@/components/admin/DriversValidation";
 import UsersList from "@/components/admin/UsersList";
@@ -78,9 +79,12 @@ const AdminDashboard = () => {
               SoloCab Admin
             </span>
           </div>
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={signOut}>
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 

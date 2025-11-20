@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
 import DriverDevisList from "@/components/driver/DriverDevisList";
@@ -167,6 +168,7 @@ const DriverDashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <div className="flex flex-col items-end">
               <span className="text-sm font-medium">{driverProfile?.full_name || "Chauffeur"}</span>
               <Badge variant="outline" className="border-success text-success">
