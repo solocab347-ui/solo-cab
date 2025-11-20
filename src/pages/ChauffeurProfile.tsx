@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 
 interface DriverProfile {
   id: string;
@@ -26,7 +27,10 @@ interface DriverProfile {
   phone: string;
   profile_photo_url: string;
   vehicle_model: string;
+  vehicle_brand: string;
+  vehicle_year: number;
   vehicle_plate: string;
+  vehicle_color: string;
   bio: string;
   rating: number;
   total_rides: number;
@@ -38,6 +42,8 @@ interface DriverProfile {
   company_name: string;
   display_driver_name: boolean;
   display_company_name: boolean;
+  vehicle_equipment: string[];
+  services_offered: string[];
 }
 
 const ChauffeurProfile = () => {
@@ -66,7 +72,10 @@ const ChauffeurProfile = () => {
           id,
           user_id,
           vehicle_model,
+          vehicle_brand,
+          vehicle_year,
           vehicle_plate,
+          vehicle_color,
           bio,
           rating,
           total_rides,
@@ -79,6 +88,8 @@ const ChauffeurProfile = () => {
           company_name,
           display_driver_name,
           display_company_name,
+          vehicle_equipment,
+          services_offered,
           profiles (
             full_name,
             email,
@@ -219,7 +230,10 @@ const ChauffeurProfile = () => {
                   <div className="flex items-center gap-2 mb-4">
                     <Car className="w-5 h-5 text-muted-foreground" />
                     <span className="font-medium">
+                      {driver.vehicle_brand && `${driver.vehicle_brand} `}
                       {driver.vehicle_model}
+                      {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                      {driver.vehicle_color && ` · ${driver.vehicle_color}`}
                       {driver.vehicle_plate && ` · ${driver.vehicle_plate}`}
                     </span>
                   </div>
@@ -266,7 +280,7 @@ const ChauffeurProfile = () => {
 
             {/* Service Areas */}
             <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">Secteurs desservis</h2>
+              <h2 className="text-xl font-bold mb-4">Secteurs de travail</h2>
               <div className="flex flex-wrap gap-2">
                 {driver.working_sectors?.map((sector) => (
                   <Badge
@@ -286,6 +300,55 @@ const ChauffeurProfile = () => {
                 )}
               </div>
             </Card>
+
+            {/* Vehicle Equipment */}
+            {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">🚗 Équipements disponibles</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {driver.vehicle_equipment.map((equipmentId) => {
+                    const equipment = VEHICLE_EQUIPMENT.find((e) => e.id === equipmentId);
+                    if (!equipment) return null;
+                    return (
+                      <div
+                        key={equipmentId}
+                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                      >
+                        <span className="text-lg">{equipment.icon}</span>
+                        <span className="text-sm">{equipment.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* Services Offered */}
+            {driver.services_offered && driver.services_offered.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">💼 Services proposés</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {driver.services_offered.map((serviceId) => {
+                    const service = DRIVER_SERVICES.find((s) => s.id === serviceId);
+                    if (!service) return null;
+                    return (
+                      <div
+                        key={serviceId}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                      >
+                        <span className="text-xl">{service.icon}</span>
+                        <div>
+                          <div className="font-medium text-sm">{service.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {service.description}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Right Column - Booking Card */}
