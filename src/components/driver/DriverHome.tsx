@@ -125,13 +125,14 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           {/* Nouvelle Course */}
           <Card 
             className="p-8 bg-gradient-trust hover:shadow-elegant transition-all cursor-pointer border-0"
-            onClick={() => navigate("/create-course")}
+            onClick={() => navigate("/driver/create-course")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 bg-trust-foreground/10 rounded-full flex items-center justify-center">
                 <Plus className="w-8 h-8 text-trust-foreground" />
               </div>
               <h3 className="text-xl font-bold text-trust-foreground">Nouvelle Course</h3>
+              <p className="text-sm text-trust-foreground/70">Créer pour un client</p>
             </div>
           </Card>
 
