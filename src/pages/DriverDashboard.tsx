@@ -351,6 +351,25 @@ const DriverDashboard = () => {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
+            {/* Important Warning */}
+            <Alert className="border-warning bg-warning/10">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              <AlertTitle className="text-warning font-semibold">Configuration obligatoire</AlertTitle>
+              <AlertDescription className="text-sm">
+                <p className="mb-2">
+                  <strong>Tous les paramètres ci-dessous sont obligatoires</strong> pour le bon fonctionnement de votre activité sur SoloCab.
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Les <strong>tarifs</strong> servent à calculer automatiquement vos devis</li>
+                  <li>Les <strong>informations entreprise</strong> apparaissent sur toutes vos factures</li>
+                  <li>Les <strong>détails véhicule</strong> sont visibles par vos clients</li>
+                  <li>Les <strong>équipements et services</strong> améliorent votre visibilité</li>
+                </ul>
+                <p className="mt-2 text-warning font-medium">
+                  ⚠️ Des informations manquantes peuvent bloquer la génération de vos devis et factures.
+                </p>
+              </AlertDescription>
+            </Alert>
 
             {/* Pricing */}
             <Card className="p-6">
