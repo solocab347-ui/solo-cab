@@ -608,6 +608,14 @@ const DriverDashboard = () => {
                       soit le lieu où vous récupérez votre véhicule chaque jour. Plus votre localisation est précise, 
                       plus vous avez de chances de trouver des clients à proximité !
                     </p>
+                    <div className="flex items-start gap-2 pt-2 border-t border-border/50">
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
+                      <p className="text-primary">
+                        <span className="font-medium">Confidentialité :</span> Cette adresse n'est visible ni par les clients 
+                        ni par les autres chauffeurs. Elle sert uniquement au système de géolocalisation pour vous proposer 
+                        aux clients recherchant un chauffeur à proximité.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
