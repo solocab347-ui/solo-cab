@@ -118,7 +118,8 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             destination_address,
             scheduled_date,
             distance_km,
-            duration_minutes
+            duration_minutes,
+            passengers_count
           ),
           devis!inner(
             base_price,
@@ -127,7 +128,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           )
         `)
         .eq("driver_id", driverId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       setFactures(data || []);
@@ -148,164 +149,183 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     }
   };
 
-  const handleDownloadPDF = (facture: any, forClient: boolean = false) => {
+  const handleDownloadPDF = async (facture: any, forClient: boolean = false) => {
     if (!driverInfo) {
       toast.error("Informations chauffeur manquantes");
       return;
     }
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const isPaid = facture.payment_status === 'paid';
     
-    // Header with color based on payment status
-    const fillColor = isPaid ? [34, 197, 94] : [156, 163, 175]; // green for paid, grey for unpaid
-    doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    if (!driverInfo.company_name || !driverInfo.siret) {
+      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET, Adresse)");
+      return;
+    }
+
+    const jsPDF = (await import("jspdf")).default;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Green color for invoices
+    const headerColor: [number, number, number] = [46, 204, 113]; // Green
+
+    // Header
+    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.rect(0, 0, pageWidth, 50, 'F');
     
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FACTURE', pageWidth / 2, 20, { align: 'center' });
+    doc.setFontSize(28);
+    doc.text("FACTURE", pageWidth / 2, 25, { align: "center" });
     
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`N° ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 30, { align: 'center' });
-    
+    doc.setFontSize(10);
+    doc.text(`N°: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 35, { align: "center" });
+    doc.text(`Date: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
+
     // Driver info (left side)
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Émetteur:', 15, 55);
-    doc.setFont('helvetica', 'normal');
-    doc.text(driverInfo.profiles?.full_name || 'Chauffeur', 15, 62);
-    if (driverInfo.company_name) doc.text(driverInfo.company_name, 15, 69);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
+    doc.text(driverName, 20, 71);
+    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
+      doc.text(driverInfo.company_name, 20, 76);
+    }
+    doc.text(`SIRET: ${driverInfo.siret || 'N/A'}`, 20, 81);
+    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
+    
     if (driverInfo.company_address) {
-      const addressLines = doc.splitTextToSize(driverInfo.company_address, 80);
-      doc.text(addressLines, 15, 76);
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
+      doc.text(addressLines, 20, 91);
     }
-    if (driverInfo.siret) doc.text(`SIRET: ${driverInfo.siret}`, 15, 90);
-    if (driverInfo.profiles?.phone) doc.text(`Tél: ${driverInfo.profiles.phone}`, 15, 97);
-    
-    // Client info (right side)
-    doc.setFont('helvetica', 'bold');
-    doc.text('Client:', pageWidth - 95, 55);
-    doc.setFont('helvetica', 'normal');
-    doc.text(facture.clients.profiles.full_name, pageWidth - 95, 62);
-    if (facture.clients.profiles.email) doc.text(facture.clients.profiles.email, pageWidth - 95, 69);
-    if (facture.clients.profiles.phone) doc.text(facture.clients.profiles.phone, pageWidth - 95, 76);
-    
-    // Course details section
-    let yPos = 115;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Détails de la course', 15, yPos);
-    
-    yPos += 10;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Départ: ${facture.courses.pickup_address}`, 15, yPos);
-    yPos += 7;
-    doc.text(`Arrivée: ${facture.courses.destination_address}`, 15, yPos);
-    yPos += 7;
-    doc.text(`Date: ${format(new Date(facture.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 15, yPos);
-    
-    if (facture.courses.distance_km) {
-      yPos += 7;
-      doc.text(`Distance: ${parseFloat(facture.courses.distance_km).toFixed(2)} km`, 15, yPos);
-    }
-    
-    if (facture.courses.duration_minutes) {
-      yPos += 7;
-      doc.text(`Durée: ${facture.courses.duration_minutes} minutes`, 15, yPos);
-    }
-    
-    // Payment info
-    if (facture.payment_method) {
-      yPos += 7;
-      doc.text(`Mode de paiement: ${facture.payment_method}`, 15, yPos);
-    }
-    
-    if (facture.paid_at) {
-      yPos += 7;
-      doc.text(`Date de paiement: ${format(new Date(facture.paid_at), "d MMMM yyyy", { locale: fr })}`, 15, yPos);
-    }
-    
-    // Price breakdown section
-    yPos += 15;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Détail du prix', 15, yPos);
-    
-    yPos += 10;
-    doc.setFontSize(10);
 
-    if (!forClient && facture.devis) {
-      // Driver version: show all pricing details
-      doc.setFont('helvetica', 'normal');
-      if (parseFloat(facture.devis.base_price) > 0) {
-        doc.text(`Forfait de base:`, 15, yPos);
-        doc.text(`${parseFloat(facture.devis.base_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-        yPos += 7;
-      }
+    // Client info (right side)
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("CLIENT", 145, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text(facture.clients?.profiles?.full_name || "N/A", 145, 71);
+
+    // Service details box
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, 110, 170, 55);
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 25, 118);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const pickupLines = doc.splitTextToSize(facture.courses.pickup_address, 140);
+    const destLines = doc.splitTextToSize(facture.courses.destination_address, 140);
+    
+    doc.text("Départ:", 25, 126);
+    doc.text(pickupLines, 50, 126);
+    
+    let currentY = 126 + (pickupLines.length * 5);
+    doc.text("Arrivée:", 25, currentY);
+    doc.text(destLines, 50, currentY);
+    
+    currentY += (destLines.length * 5);
+    doc.text(`Date: ${format(new Date(facture.courses.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    doc.text(`Passagers: ${facture.courses.passengers_count}`, 25, currentY + 5);
+    doc.text(`Distance: ${facture.courses.distance_km} km`, 105, currentY + 5);
+
+    // Payment info
+    let yPos = 175;
+    doc.text(`Mode de paiement: ${facture.payment_method || 'N/A'}`, 20, yPos);
+
+    // Pricing table
+    yPos += 5;
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("TARIFICATION", 20, yPos);
+    yPos += 8;
+
+    // Calculate TVA - use devis time_price if available, otherwise default to 10%
+    const amount = facture.amount;
+    const tvaRate = facture.devis?.time_price && facture.devis.time_price > 0 ? 20 : 10;
+    const subtotalHT = amount / (1 + tvaRate / 100);
+    const tvaAmount = amount - subtotalHT;
+
+    if (!forClient) {
+      // Driver version - with payment details
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
       
-      if (parseFloat(facture.devis.distance_price) > 0) {
-        doc.text(`Prix au kilomètre:`, 15, yPos);
-        doc.text(`${parseFloat(facture.devis.distance_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-        yPos += 7;
-      }
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
-      if (parseFloat(facture.devis.time_price || 0) > 0) {
-        doc.text(`Prix horaire:`, 15, yPos);
-        doc.text(`${parseFloat(facture.devis.time_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-        yPos += 7;
-      }
-    }
-    
-    // Subtotal, TVA, Total (for both versions)
-    const subtotal = facture.devis ? 
-      (parseFloat(facture.devis.base_price) + parseFloat(facture.devis.distance_price) + parseFloat(facture.devis.time_price || 0)) :
-      parseFloat(facture.amount) * 0.9; // fallback approximation
-    const tvaAmount = parseFloat(facture.amount) - subtotal;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Sous-total HT:`, 15, yPos);
-    doc.text(`${subtotal.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-    yPos += 7;
-    
-    doc.text(`TVA:`, 15, yPos);
-    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-    yPos += 10;
-    
-    // Total line
-    const lineColor = isPaid ? [34, 197, 94] : [156, 163, 175];
-    doc.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
-    doc.setLineWidth(0.5);
-    doc.line(15, yPos - 3, pageWidth - 15, yPos - 3);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text(`Total TTC:`, 15, yPos);
-    doc.text(`${parseFloat(facture.amount).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
-    
-    // Payment status
-    yPos += 15;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    if (isPaid) {
-      doc.setTextColor(34, 197, 94);
-      doc.text('✓ PAYÉE', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 7;
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
+      
+      yPos += 15;
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'italic');
+      const noteLines = doc.splitTextToSize("Note: Le client reçoit une version simplifiée.", 170);
+      doc.text(noteLines, 20, yPos);
     } else {
-      doc.setTextColor(156, 163, 175);
-      doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, yPos, { align: 'center' });
+      // Client version - simplified
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
+      
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
     }
-    
+
     // Footer
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFillColor(240, 240, 240);
+    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
     doc.setFontSize(8);
-    doc.text(`Généré le ${format(new Date(), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-    
+    doc.setFont(undefined, 'normal');
+    doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
+
     doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}${forClient ? '-client' : ''}.pdf`);
     toast.success("Facture téléchargée");
   };
