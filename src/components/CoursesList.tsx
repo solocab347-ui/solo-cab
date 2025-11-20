@@ -417,16 +417,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         )}
       </div>
 
-      {/* Prix du devis si disponible */}
-      {course.devis?.[0] && (
-        <div className="mb-4 p-4 bg-gradient-dark rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Montant du devis :</span>
-            <span className="text-2xl font-bold text-premium">{course.devis[0].amount.toFixed(2)}€</span>
-          </div>
-        </div>
-      )}
-
       {/* Status message avec icône dynamique */}
       {(() => {
         const statusInfo = getDevisStatus(course);
@@ -439,36 +429,50 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         );
       })()}
 
-      {/* Boutons de partage si devis disponible */}
+      {/* Prix et partage du devis - Affiché dans toutes les sections si devis existe */}
       {course.devis?.[0] && (
-        <div className="flex gap-2 mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleShareDevis(course, 'whatsapp')}
-            className="flex-1"
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            WhatsApp
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleShareDevis(course, 'email')}
-            className="flex-1"
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Email
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleShareDevis(course, 'sms')}
-            className="flex-1"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            SMS
-          </Button>
+        <div className="space-y-3 pt-3 border-t border-border">
+          {/* Prix du devis */}
+          <div className="p-4 bg-gradient-to-r from-premium/10 to-premium/5 rounded-lg border border-premium/20">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Montant du devis</span>
+              <span className="text-3xl font-bold text-premium">{course.devis[0].amount.toFixed(2)}€</span>
+            </div>
+            {course.devis[0].quote_number && (
+              <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
+            )}
+          </div>
+
+          {/* Boutons de partage */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareDevis(course, 'whatsapp')}
+              className="flex-1"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareDevis(course, 'email')}
+              className="flex-1"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareDevis(course, 'sms')}
+              className="flex-1"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              SMS
+            </Button>
+          </div>
         </div>
       )}
 
