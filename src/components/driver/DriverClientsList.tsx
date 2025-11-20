@@ -316,7 +316,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                     <Button
                       size="sm"
                       className="flex-1 bg-gradient-premium text-premium-foreground"
-                      onClick={() => navigate(`/driver-create-course?client_id=${client.id}`)}
+                      onClick={() => navigate(`/driver/create-course?client_id=${client.id}`)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Créer une course
