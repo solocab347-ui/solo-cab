@@ -152,7 +152,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           {/* Calculatrice */}
           <Card 
             className="p-8 bg-gradient-brown hover:shadow-elegant transition-all cursor-pointer border-0"
-            onClick={() => onTabChange("pricing")}
+            onClick={() => onTabChange("calculator")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 bg-brown-foreground/10 rounded-full flex items-center justify-center">

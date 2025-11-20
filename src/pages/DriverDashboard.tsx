@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
@@ -16,6 +16,7 @@ import DriverFacturesList from "@/components/driver/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/SubscriptionManager";
 import { DriverHome } from "@/components/driver/DriverHome";
+import { PriceCalculator } from "@/components/driver/PriceCalculator";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -215,7 +216,7 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 bg-card">
+          <TabsList className="grid w-full grid-cols-10 bg-card">
             <TabsTrigger value="home" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Accueil
@@ -243,6 +244,10 @@ const DriverDashboard = () => {
             <TabsTrigger value="qrcode" className="gap-2">
               <QrCode className="w-4 h-4" />
               Mon QR Code
+            </TabsTrigger>
+            <TabsTrigger value="calculator" className="gap-2">
+              <Calculator className="w-4 h-4" />
+              Calculatrice
             </TabsTrigger>
             <TabsTrigger value="profile" className="gap-2">
               <Globe className="w-4 h-4" />
@@ -278,6 +283,13 @@ const DriverDashboard = () => {
               </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
+          </TabsContent>
+
+          {/* Calculator Tab */}
+          <TabsContent value="calculator">
+            {driverProfile?.driver?.id && (
+              <PriceCalculator driverProfile={driverProfile} />
+            )}
           </TabsContent>
 
           {/* Settings Tab */}
