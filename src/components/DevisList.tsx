@@ -85,6 +85,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
   const handleAccept = async (devisId: string) => {
     try {
+      // ========== FLUX SYSTÉMATIQUE D'ACCEPTATION ==========
       // Récupérer les infos du devis et de la course
       const { data: devisData, error: fetchError } = await supabase
         .from("devis")
@@ -115,7 +116,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
         isDriverCreated = profileData?.roles?.includes('driver') || false;
       }
 
-      // 1. Mettre le devis à "accepted"
+      // Étape 1: TOUJOURS accepter le devis d'abord
       const { error: updateError } = await supabase
         .from("devis")
         .update({ 
@@ -126,7 +127,8 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
       if (updateError) throw updateError;
 
-      // 2. Si chauffeur a créé → course confirmée directement
+      // ========== CAS 1: CHAUFFEUR A CRÉÉ LA COURSE ==========
+      // Flux: Chauffeur crée → Client accepte → Course CONFIRMÉE DIRECTEMENT
       if (isDriverCreated) {
         const { error: courseError } = await supabase
           .from("courses")
@@ -136,8 +138,11 @@ const DevisList = ({ clientId }: DevisListProps) => {
         if (courseError) throw courseError;
 
         toast.success("Devis accepté ! Course confirmée.");
-      } else {
-        // 3. Si client a créé → notifier le chauffeur pour acceptation
+      } 
+      // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
+      // Flux: Client crée → Client accepte → Chauffeur doit accepter → Course confirmée
+      else {
+        // Notifier le chauffeur qu'il doit maintenant accepter la course
         await supabase.from("notifications").insert({
           user_id: devisData.driver_id,
           title: "Nouveau devis accepté",
