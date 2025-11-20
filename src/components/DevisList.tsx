@@ -85,22 +85,74 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
   const handleAccept = async (devisId: string) => {
     try {
-      toast.loading("Redirection vers le paiement...");
-      
-      const { data, error } = await supabase.functions.invoke("create-stripe-checkout", {
-        body: { devis_id: devisId },
-      });
+      // Récupérer les infos du devis et de la course
+      const { data: devisData, error: fetchError } = await supabase
+        .from("devis")
+        .select(`
+          *,
+          courses!inner(
+            id,
+            created_by_user_id,
+            status
+          )
+        `)
+        .eq("id", devisId)
+        .single();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL received");
+      const course = devisData.courses;
+
+      // Vérifier si le créateur est un chauffeur
+      let isDriverCreated = false;
+      if (course.created_by_user_id) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("roles")
+          .eq("id", course.created_by_user_id)
+          .single();
+        
+        isDriverCreated = profileData?.roles?.includes('driver') || false;
       }
+
+      // 1. Mettre le devis à "accepted"
+      const { error: updateError } = await supabase
+        .from("devis")
+        .update({ 
+          status: "accepted",
+          accepted_at: new Date().toISOString()
+        })
+        .eq("id", devisId);
+
+      if (updateError) throw updateError;
+
+      // 2. Si chauffeur a créé → course confirmée directement
+      if (isDriverCreated) {
+        const { error: courseError } = await supabase
+          .from("courses")
+          .update({ status: "accepted" })
+          .eq("id", course.id);
+
+        if (courseError) throw courseError;
+
+        toast.success("Devis accepté ! Course confirmée.");
+      } else {
+        // 3. Si client a créé → notifier le chauffeur pour acceptation
+        await supabase.from("notifications").insert({
+          user_id: devisData.driver_id,
+          title: "Nouveau devis accepté",
+          message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
+          type: "devis_accepted",
+          link: "/driver-dashboard?tab=courses"
+        });
+
+        toast.success("Devis accepté ! En attente de confirmation du chauffeur.");
+      }
+
+      fetchDevis();
     } catch (error: any) {
-      console.error("Error creating checkout session:", error);
-      toast.error("Erreur lors de la création de la session de paiement");
+      console.error("Error accepting devis:", error);
+      toast.error("Erreur lors de l'acceptation du devis");
     }
   };
 

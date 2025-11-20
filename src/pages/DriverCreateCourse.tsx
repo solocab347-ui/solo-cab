@@ -210,7 +210,7 @@ const DriverCreateCourse = () => {
         return;
       }
 
-      // Create course
+      // Create course (chauffeur créé = une seule acceptation client suffit)
       const { data: course, error: courseError } = await supabase
         .from("courses")
         .insert({
@@ -229,6 +229,7 @@ const DriverCreateCourse = () => {
           duration_minutes: courseType === "hourly" ? parseFloat(durationHours) * 60 : durationMinutes,
           notes: notes || null,
           status: "pending",
+          created_by_user_id: user.id, // Chauffeur créateur
         })
         .select()
         .single();
