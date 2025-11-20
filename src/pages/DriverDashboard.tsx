@@ -14,6 +14,7 @@ import DriverFacturesList from "@/components/driver/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/SubscriptionManager";
 import { DriverHome } from "@/components/driver/DriverHome";
+import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -241,10 +242,7 @@ const DriverDashboard = () => {
 
           {/* Messages Tab */}
           <TabsContent value="messages">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">Messages</h2>
-              <p className="text-muted-foreground">Fonctionnalité de messagerie à venir...</p>
-            </Card>
+            <MessagingInterface />
           </TabsContent>
 
           {/* Settings Tab */}

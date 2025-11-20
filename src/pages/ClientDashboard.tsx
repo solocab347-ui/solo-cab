@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Car, LogOut, Plus, Euro, FileText } from "lucide-react";
+import { Car, LogOut, Plus, Euro, FileText, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import DevisList from "@/components/DevisList";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientFacturesList from "@/components/client/ClientFacturesList";
 import ClientProfile from "@/components/client/ClientProfile";
+import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
@@ -207,10 +208,14 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="devis" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="courses">Mes Courses</TabsTrigger>
             <TabsTrigger value="devis">Mes Devis</TabsTrigger>
             <TabsTrigger value="factures">Mes Factures</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Messages
+            </TabsTrigger>
             <TabsTrigger value="profile">Profil</TabsTrigger>
           </TabsList>
 
@@ -230,6 +235,10 @@ const ClientDashboard = () => {
             {clientProfile?.client?.id && (
               <ClientFacturesList clientId={clientProfile.client.id} />
             )}
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-6">
+            <MessagingInterface />
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
