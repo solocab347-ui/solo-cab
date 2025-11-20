@@ -234,7 +234,6 @@ const ChauffeurProfile = () => {
                       {driver.vehicle_model}
                       {driver.vehicle_year && ` (${driver.vehicle_year})`}
                       {driver.vehicle_color && ` · ${driver.vehicle_color}`}
-                      {driver.vehicle_plate && ` · ${driver.vehicle_plate}`}
                     </span>
                   </div>
                 </div>

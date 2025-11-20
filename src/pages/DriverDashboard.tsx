@@ -39,7 +39,7 @@ const DriverDashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
 
   // Form states
-  const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
+  const [publicProfileEnabled, setPublicProfileEnabled] = useState(false); // Désactivé par défaut
   const [workingSectors, setWorkingSectors] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
@@ -48,6 +48,7 @@ const DriverDashboard = () => {
   const [perKmRate, setPerKmRate] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [siret, setSiret] = useState("");
@@ -97,6 +98,7 @@ const DriverDashboard = () => {
       setPerKmRate(driver.per_km_rate?.toString() || "");
       setHourlyRate(driver.hourly_rate?.toString() || "");
       setVehicleColor(driver.vehicle_color || "");
+      setVehiclePlate(driver.vehicle_plate || "");
       setCompanyName(driver.company_name || "");
       setCompanyAddress(driver.company_address || "");
       setSiret(driver.siret || "");
@@ -174,6 +176,7 @@ const DriverDashboard = () => {
           per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
           hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
           vehicle_color: vehicleColor,
+          vehicle_plate: vehiclePlate,
           vehicle_brand: vehicleBrand,
           vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
           company_name: companyName,
@@ -584,7 +587,7 @@ const DriverDashboard = () => {
                 <div className="space-y-2">
                   <Label htmlFor="homeAddress" className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    Adresse de proximité (pour la recherche géographique)
+                    📍 Adresse de Localisation
                   </Label>
                   <AddressAutocomplete
                     value={homeAddress}
@@ -594,19 +597,18 @@ const DriverDashboard = () => {
                     }}
                     placeholder="Tapez votre adresse de départ habituelle..."
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Cette adresse sera utilisée pour vous proposer aux clients à proximité
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="color">Couleur du véhicule</Label>
-                  <Input
-                    id="color"
-                    value={vehicleColor}
-                    onChange={(e) => setVehicleColor(e.target.value)}
-                    placeholder="Noir, Gris, Blanc..."
-                  />
+                  <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded-lg">
+                    <p className="font-medium text-foreground">Pourquoi cette adresse est importante ?</p>
+                    <p>
+                      Cette adresse servira à vous géolocaliser quand un client cherche des chauffeurs à proximité. 
+                      C'est dans votre intérêt de renseigner l'adresse de départ d'où vous décollez tous les jours.
+                    </p>
+                    <p className="pt-1">
+                      💡 <span className="font-medium">Conseil :</span> Cela peut être soit votre lieu d'habitation, 
+                      soit le lieu où vous récupérez votre véhicule chaque jour. Plus votre localisation est précise, 
+                      plus vous avez de chances de trouver des clients à proximité !
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -616,7 +618,7 @@ const DriverDashboard = () => {
                       id="brand"
                       value={vehicleBrand}
                       onChange={(e) => setVehicleBrand(e.target.value)}
-                      placeholder="Tesla, Mercedes..."
+                      placeholder="Tesla, Mercedes, BMW..."
                     />
                   </div>
                   <div className="space-y-2">
@@ -628,6 +630,35 @@ const DriverDashboard = () => {
                       onChange={(e) => setVehicleYear(e.target.value)}
                       placeholder="2023"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="color">Couleur du véhicule</Label>
+                  <Input
+                    id="color"
+                    value={vehicleColor}
+                    onChange={(e) => setVehicleColor(e.target.value)}
+                    placeholder="Noir, Gris, Blanc, Bleu..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="plate">Plaque d'immatriculation</Label>
+                  <Input
+                    id="plate"
+                    value={vehiclePlate}
+                    onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
+                    placeholder="AB-123-CD"
+                    maxLength={12}
+                  />
+                  <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded-lg">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <p>
+                      <span className="font-medium">Information confidentielle :</span> Cette plaque n'est visible 
+                      que par vos clients inscrits dans leur espace client. Elle n'apparaît jamais sur votre profil 
+                      public pour protéger votre vie privée.
+                    </p>
                   </div>
                 </div>
 
