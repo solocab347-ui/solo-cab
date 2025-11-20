@@ -74,7 +74,7 @@ const CreateCourse = () => {
         return;
       }
 
-      // Create course
+      // Create course (client créé = besoin double acceptation)
       const { data: course, error: courseError } = await supabase
         .from("courses")
         .insert({
@@ -93,6 +93,7 @@ const CreateCourse = () => {
           duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
           notes: notes || null,
           status: "pending",
+          created_by_user_id: user.id, // Client créateur
         })
         .select()
         .single();

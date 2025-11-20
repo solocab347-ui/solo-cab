@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Facebook } from "lucide-react";
 import { format } from "date-fns";
@@ -21,6 +22,7 @@ interface CoursesListProps {
 const isDriver = true; // Assuming this is driver dashboard
 
 const CoursesList = ({ driverId }: CoursesListProps) => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [driverInfo, setDriverInfo] = useState<any>(null);
@@ -119,6 +121,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleAcceptCourse = async (courseId: string) => {
     try {
+      // Chauffeur accepte une course créée par le client
       const { error } = await supabase
         .from("courses")
         .update({ status: "accepted" })
@@ -126,7 +129,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      toast.success("Course acceptée !");
+      toast.success("Course acceptée et confirmée !");
       await fetchCourses();
     } catch (error: any) {
       console.error("Error accepting course:", error);
@@ -851,29 +854,60 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                   )}
 
-                  {/* Show Accept/Reject buttons for courses awaiting driver acceptance */}
-                  {(!course.devis || course.devis.length === 0 || course.devis[0].status === "pending") && (
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleAcceptCourse(course.id)}
-                        className="flex-1"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Accepter
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCancelCourse(course.id)}
-                        className="flex-1"
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Refuser
-                      </Button>
-                    </div>
-                  )}
+                  {/* Accept/Reject buttons logic based on creator */}
+                  {(() => {
+                    const devis = course.devis?.[0];
+                    
+                    // Déterminer si course créée par chauffeur connecté
+                    const isDriverCreated = user && course.created_by_user_id === user.id;
+                    
+                    // Course créée par chauffeur : attente acceptation client uniquement
+                    if (isDriverCreated) {
+                      return devis?.status === "pending" ? (
+                        <div className="text-sm text-muted-foreground italic">
+                          ⏳ En attente de l'acceptation du client
+                        </div>
+                      ) : null;
+                    }
+                    
+                    // Course créée par client : double acceptation requise
+                    // Si devis accepté par client, chauffeur doit maintenant accepter
+                    if (devis?.status === "accepted" && course.status === "pending") {
+                      return (
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleAcceptCourse(course.id)}
+                            className="flex-1"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Accepter la course
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelCourse(course.id)}
+                            className="flex-1"
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Refuser
+                          </Button>
+                        </div>
+                      );
+                    }
+                    
+                    // Devis en attente d'acceptation client
+                    if (devis?.status === "pending") {
+                      return (
+                        <div className="text-sm text-muted-foreground italic">
+                          ⏳ En attente de l'acceptation du client
+                        </div>
+                      );
+                    }
+                    
+                    return null;
+                  })()}
 
                   <div className="flex gap-2 flex-wrap">
                     <Button
