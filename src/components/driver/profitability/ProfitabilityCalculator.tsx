@@ -9,9 +9,6 @@ import { Calculator, Car, Fuel, Euro, TrendingUp, AlertTriangle, FileText } from
 
 export const ProfitabilityCalculator = () => {
   const [formData, setFormData] = useState({
-    // Forme juridique
-    legalForm: 'micro-entreprise',
-    
     // Véhicule
     vehicleType: 'thermique',
     vehicleValue: '35000',
@@ -126,40 +123,6 @@ export const ProfitabilityCalculator = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Formulaire */}
         <div className="space-y-6">
-          {/* Forme juridique */}
-          <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Forme juridique
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <Label>Choisissez votre forme juridique :</Label>
-                <Select value={formData.legalForm} onValueChange={(value) => setFormData({ ...formData, legalForm: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="micro-entreprise">Micro-entreprise</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Avertissement micro-entreprise :</strong>
-                  <ul className="list-disc ml-4 mt-2 text-sm space-y-1">
-                    <li>Franchise de TVA possible sous un certain seuil (72 500 € pour VTC)</li>
-                    <li>Charges sociales simplifiées (~22%), pas de fiche de paie mensuelle</li>
-                    <li>Les charges sociales sont automatiquement prises en compte dans le calcul global</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          </Card>
-
           {/* Informations véhicule */}
           <Card className="p-6">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
