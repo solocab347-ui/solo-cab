@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle } from "lucide-react";
@@ -22,6 +23,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+  const [customReason, setCustomReason] = useState<string>("");
+  const [courseToReject, setCourseToReject] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -111,15 +116,37 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
   };
 
-  const handleReject = async (courseId: string) => {
+  const openRejectDialog = (courseId: string) => {
+    setCourseToReject(courseId);
+    setRejectionReason("");
+    setCustomReason("");
+    setRejectDialogOpen(true);
+  };
+
+  const handleReject = async () => {
+    if (!courseToReject) return;
+    
+    const finalReason = rejectionReason === "Autre" ? customReason : rejectionReason;
+    
+    if (!finalReason.trim()) {
+      toast.error("Veuillez indiquer un motif de refus");
+      return;
+    }
+
     try {
+      const course = courses.find(c => c.id === courseToReject);
       const { error } = await supabase
         .from("courses")
-        .update({ status: "cancelled" })
-        .eq("id", courseId);
+        .update({ 
+          status: "cancelled",
+          notes: `Motif de refus: ${finalReason}${course?.notes ? `\n\nNotes originales: ${course.notes}` : ''}`
+        })
+        .eq("id", courseToReject);
 
       if (error) throw error;
+      
       toast.success("Course refusée");
+      setRejectDialogOpen(false);
       fetchCourses();
     } catch (error: any) {
       console.error("Error rejecting course:", error);
@@ -208,8 +235,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   };
 
   // Filtrer les courses par statut
-  const pendingCourses = courses.filter(c => c.status === "pending" || c.status === "accepted");
-  const confirmedCourses = courses.filter(c => c.status === "in_progress");
+  const pendingCourses = courses.filter(c => c.status === "pending");
+  const confirmedCourses = courses.filter(c => c.status === "accepted" || c.status === "in_progress");
   const completedCourses = courses.filter(c => c.status === "completed");
 
   if (loading) {
@@ -303,7 +330,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             Accepter et créer devis
           </Button>
           <Button
-            onClick={() => handleReject(course.id)}
+            onClick={() => openRejectDialog(course.id)}
             variant="destructive"
             className="flex-1"
           >
@@ -375,6 +402,62 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             <Button onClick={handleCompleteCourse} className="bg-gradient-premium">
               <CheckCircle className="w-4 h-4 mr-2" />
               Confirmer et générer facture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motif de refus</DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer la raison du refus de cette course
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <RadioGroup value={rejectionReason} onValueChange={setRejectionReason}>
+              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
+                <RadioGroupItem value="Prix trop élevé" id="price" />
+                <Label htmlFor="price" className="cursor-pointer flex-1">Prix trop élevé</Label>
+              </div>
+              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
+                <RadioGroupItem value="L'horaire ne me convient pas" id="schedule" />
+                <Label htmlFor="schedule" className="cursor-pointer flex-1">L'horaire ne me convient pas</Label>
+              </div>
+              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
+                <RadioGroupItem value="Changer l'horaire" id="reschedule" />
+                <Label htmlFor="reschedule" className="cursor-pointer flex-1">Demande de changement d'horaire</Label>
+              </div>
+              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
+                <RadioGroupItem value="Autre" id="other" />
+                <Label htmlFor="other" className="cursor-pointer flex-1">Autre motif</Label>
+              </div>
+            </RadioGroup>
+            
+            {rejectionReason === "Autre" && (
+              <div className="space-y-2">
+                <Label htmlFor="customReason">Précisez le motif</Label>
+                <Textarea
+                  id="customReason"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Entrez votre motif de refus..."
+                  rows={4}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleReject}
+              disabled={!rejectionReason || (rejectionReason === "Autre" && !customReason.trim())}
+            >
+              Confirmer le refus
             </Button>
           </DialogFooter>
         </DialogContent>
