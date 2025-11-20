@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, Euro, MapPin, Calendar, MessageCircle, Mail, Share2 } from "lucide-react";
-import { format } from "date-fns";
+import { FileText, Search, Download, MapPin, Calendar, Euro } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
+import jsPDF from "jspdf";
 
 interface DriverDevisListProps {
   driverId: string;
@@ -16,15 +17,18 @@ interface DriverDevisListProps {
 
 const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
   const [devisList, setDevisList] = useState<any[]>([]);
-  const [rejectedDevis, setRejectedDevis] = useState<any[]>([]);
   const [filteredDevis, setFilteredDevis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [clients, setClients] = useState<any[]>([]);
+  const [driverInfo, setDriverInfo] = useState<any>(null);
 
   useEffect(() => {
     fetchDevis();
-    setupRealtimeSubscription();
+    fetchDriverInfo();
   }, [driverId]);
 
   useEffect(() => {
@@ -33,6 +37,40 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     // Filter by status
     if (statusFilter !== "all") {
       filtered = filtered.filter((devis) => devis.status === statusFilter);
+    }
+
+    // Filter by client
+    if (clientFilter !== "all") {
+      filtered = filtered.filter((devis) => devis.client_id === clientFilter);
+    }
+
+    // Filter by date
+    if (dateFilter !== "all") {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+
+      switch (dateFilter) {
+        case "this_week":
+          startDate = startOfWeek(now, { weekStartsOn: 1 });
+          endDate = endOfWeek(now, { weekStartsOn: 1 });
+          break;
+        case "this_month":
+          startDate = startOfMonth(now);
+          endDate = endOfMonth(now);
+          break;
+        case "last_month":
+          startDate = startOfMonth(subMonths(now, 1));
+          endDate = endOfMonth(subMonths(now, 1));
+          break;
+        default:
+          startDate = new Date(0);
+      }
+
+      filtered = filtered.filter((devis) => {
+        const devisDate = new Date(devis.created_at);
+        return devisDate >= startDate && devisDate <= endDate;
+      });
     }
 
     // Filter by search term
@@ -45,11 +83,27 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     }
 
     setFilteredDevis(filtered);
-  }, [searchTerm, statusFilter, devisList]);
+  }, [searchTerm, statusFilter, clientFilter, dateFilter, devisList]);
+
+  const fetchDriverInfo = async () => {
+    try {
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select(`
+          *,
+          profiles:user_id(full_name, phone)
+        `)
+        .eq("id", driverId)
+        .single();
+      
+      setDriverInfo(driverData);
+    } catch (error) {
+      console.error("Error fetching driver info:", error);
+    }
+  };
 
   const fetchDevis = async () => {
     try {
-      // Fetch all devis except rejected ones
       const { data, error } = await supabase
         .from("devis")
         .select(`
@@ -62,51 +116,24 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             duration_minutes
           ),
           clients!inner(
-            profiles:user_id(full_name, email, profile_photo_url)
+            id,
+            profiles:user_id(full_name, email, phone, profile_photo_url)
           )
         `)
         .eq("driver_id", driverId)
-        .neq("status", "rejected")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setDevisList(data || []);
       setFilteredDevis(data || []);
 
-      // Fetch last 10 rejected devis separately
-      const { data: rejectedData, error: rejectedError } = await supabase
-        .from("devis")
-        .select(`
-          *,
-          courses!inner(
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes
-          ),
-          clients!inner(
-            profiles:user_id(full_name, email, profile_photo_url)
-          )
-        `)
-        .eq("driver_id", driverId)
-        .eq("status", "rejected")
-        .order("updated_at", { ascending: false })
-        .limit(10);
-
-      if (rejectedError) throw rejectedError;
-      setRejectedDevis(rejectedData || []);
-
-      // Delete rejected devis beyond the 10 most recent
-      if (rejectedData && rejectedData.length >= 10) {
-        const oldestKeptDate = rejectedData[9].updated_at;
-        await supabase
-          .from("devis")
-          .delete()
-          .eq("driver_id", driverId)
-          .eq("status", "rejected")
-          .lt("updated_at", oldestKeptDate);
-      }
+      // Extract unique clients for filter
+      const uniqueClients = Array.from(
+        new Map(
+          data?.map((d) => [d.clients.id, { id: d.clients.id, name: d.clients.profiles.full_name }])
+        ).values()
+      );
+      setClients(uniqueClients);
     } catch (error: any) {
       console.error("Error fetching devis:", error);
       toast.error("Erreur lors du chargement des devis");
@@ -115,54 +142,143 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     }
   };
 
-  const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel("driver-devis-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "devis",
-          filter: `driver_id=eq.${driverId}`,
-        },
-        () => fetchDevis()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const handleDownloadPDF = (devisId: string) => {
-    toast.info("Génération PDF en cours de développement");
-    // TODO: Implement PDF generation
-  };
-
-  const handleShareDevis = (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
-    const message = `Devis ${devis.quote_number} - ${devis.clients?.profiles?.full_name}\n` +
-                   `Trajet: ${devis.courses.pickup_address} → ${devis.courses.destination_address}\n` +
-                   `Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
-                   `Montant: ${parseFloat(devis.amount).toFixed(2)}€`;
-
-    const encodedMessage = encodeURIComponent(message);
-
-    switch (method) {
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-        break;
-      case 'sms':
-        window.open(`sms:?body=${encodedMessage}`, '_blank');
-        break;
-      case 'email':
-        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
-        break;
+  const handleDownloadPDF = (devis: any, forClient: boolean = false) => {
+    if (!driverInfo) {
+      toast.error("Informations chauffeur manquantes");
+      return;
     }
-    toast.success("Partage ouvert");
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header with blue background
+    doc.setFillColor(59, 130, 246);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DEVIS', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`N° ${devis.quote_number}`, pageWidth / 2, 30, { align: 'center' });
+    
+    // Driver info (left side)
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Émetteur:', 15, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(driverInfo.profiles?.full_name || 'Chauffeur', 15, 62);
+    if (driverInfo.company_name) doc.text(driverInfo.company_name, 15, 69);
+    if (driverInfo.company_address) {
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 80);
+      doc.text(addressLines, 15, 76);
+    }
+    if (driverInfo.siret) doc.text(`SIRET: ${driverInfo.siret}`, 15, 90);
+    if (driverInfo.profiles?.phone) doc.text(`Tél: ${driverInfo.profiles.phone}`, 15, 97);
+    
+    // Client info (right side)
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client:', pageWidth - 95, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(devis.clients.profiles.full_name, pageWidth - 95, 62);
+    if (devis.clients.profiles.email) doc.text(devis.clients.profiles.email, pageWidth - 95, 69);
+    if (devis.clients.profiles.phone) doc.text(devis.clients.profiles.phone, pageWidth - 95, 76);
+    
+    // Course details section
+    let yPos = 115;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Détails de la course', 15, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Départ: ${devis.courses.pickup_address}`, 15, yPos);
+    yPos += 7;
+    doc.text(`Arrivée: ${devis.courses.destination_address}`, 15, yPos);
+    yPos += 7;
+    doc.text(`Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 15, yPos);
+    
+    if (devis.courses.distance_km) {
+      yPos += 7;
+      doc.text(`Distance: ${parseFloat(devis.courses.distance_km).toFixed(2)} km`, 15, yPos);
+    }
+    
+    if (devis.courses.duration_minutes) {
+      yPos += 7;
+      doc.text(`Durée estimée: ${devis.courses.duration_minutes} minutes`, 15, yPos);
+    }
+    
+    // Price breakdown section
+    yPos += 15;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Détail du prix', 15, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+
+    if (!forClient) {
+      // Driver version: show all pricing details
+      doc.setFont('helvetica', 'normal');
+      if (parseFloat(devis.base_price) > 0) {
+        doc.text(`Forfait de base:`, 15, yPos);
+        doc.text(`${parseFloat(devis.base_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+      
+      if (parseFloat(devis.distance_price) > 0) {
+        doc.text(`Prix au kilomètre:`, 15, yPos);
+        doc.text(`${parseFloat(devis.distance_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+      
+      if (parseFloat(devis.time_price || 0) > 0) {
+        doc.text(`Prix horaire:`, 15, yPos);
+        doc.text(`${parseFloat(devis.time_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+    }
+    
+    // Subtotal, TVA, Total (for both versions)
+    const subtotal = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
+    const tvaAmount = parseFloat(devis.amount) - subtotal;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Sous-total HT:`, 15, yPos);
+    doc.text(`${subtotal.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    yPos += 7;
+    
+    doc.text(`TVA:`, 15, yPos);
+    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    yPos += 10;
+    
+    // Total line
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(0.5);
+    doc.line(15, yPos - 3, pageWidth - 15, yPos - 3);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`Total TTC:`, 15, yPos);
+    doc.text(`${parseFloat(devis.amount).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    
+    // Valid until
+    yPos += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Devis valable jusqu'au: ${format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}`, 15, yPos);
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.text(`Généré le ${format(new Date(), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+    
+    doc.save(`devis-${devis.quote_number}${forClient ? '-client' : ''}.pdf`);
+    toast.success("Devis téléchargé");
   };
 
   const getStatusBadge = (status: string, validUntil: string) => {
@@ -184,7 +300,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     };
 
     const labels = {
-      pending: "En attente client",
+      pending: "En attente",
       accepted: "Accepté",
       rejected: "Refusé",
       expired: "Expiré",
@@ -210,9 +326,6 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     pending: devisList.filter((d) => d.status === "pending").length,
     accepted: devisList.filter((d) => d.status === "accepted").length,
     rejected: devisList.filter((d) => d.status === "rejected").length,
-    totalAmount: devisList
-      .filter((d) => d.status === "accepted")
-      .reduce((sum, d) => sum + parseFloat(d.amount), 0),
   };
 
   return (
@@ -229,87 +342,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           <div className="text-center">
             <h3 className="text-3xl font-bold text-yellow-500">{stats.pending}</h3>
             <p className="text-sm text-muted-foreground">En attente</p>
-      </div>
-
-      {/* Rejected Devis Section (max 10) */}
-      {rejectedDevis.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Courses refusées</h2>
-            <Badge variant="outline" className="bg-destructive/10 text-destructive">
-              {rejectedDevis.length} / 10
-            </Badge>
           </div>
-          <div className="space-y-4">
-            {rejectedDevis.map((devis) => (
-              <Card key={devis.id} className="p-6 border-destructive/20 bg-destructive/5">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    {devis.clients?.profiles?.profile_photo_url ? (
-                      <img
-                        src={devis.clients.profiles.profile_photo_url}
-                        alt={devis.clients.profiles.full_name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-primary-foreground" />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-lg">{devis.quote_number}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Client : {devis.clients?.profiles?.full_name}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                    Refusé
-                  </Badge>
-                </div>
-
-                {/* Rejection reason */}
-                {devis.notes && (
-                  <div className="bg-background/50 border border-destructive/20 rounded-lg p-4 mb-4">
-                    <p className="text-sm font-medium text-destructive mb-2">Raison du refus :</p>
-                    <p className="text-sm text-foreground">{devis.notes}</p>
-                  </div>
-                )}
-
-                {/* Course Details */}
-                <div className="bg-secondary rounded-lg p-4 space-y-2">
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">Départ</p>
-                      <p className="text-muted-foreground">{devis.courses.pickup_address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium">Arrivée</p>
-                      <p className="text-muted-foreground">{devis.courses.destination_address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
-                      locale: fr,
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-4 text-xs text-muted-foreground">
-                  Refusé le {format(new Date(devis.updated_at), "d MMMM yyyy", { locale: fr })}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Regular Devis List */}
         </Card>
         <Card className="p-4">
           <div className="text-center">
@@ -317,12 +350,10 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             <p className="text-sm text-muted-foreground">Acceptés</p>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-premium">
+        <Card className="p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-premium-foreground">
-              {stats.totalAmount.toFixed(2)} €
-            </h3>
-            <p className="text-sm text-premium-foreground/80">CA Devis acceptés</p>
+            <h3 className="text-3xl font-bold text-destructive">{stats.rejected}</h3>
+            <p className="text-sm text-muted-foreground">Refusés</p>
           </div>
         </Card>
       </div>
@@ -339,14 +370,38 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue />
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
             <SelectItem value="pending">En attente</SelectItem>
             <SelectItem value="accepted">Acceptés</SelectItem>
             <SelectItem value="rejected">Refusés</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les clients</SelectItem>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Période" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les dates</SelectItem>
+            <SelectItem value="this_week">Cette semaine</SelectItem>
+            <SelectItem value="this_month">Ce mois</SelectItem>
+            <SelectItem value="last_month">Mois dernier</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -357,9 +412,9 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2">Aucun devis</h3>
           <p className="text-muted-foreground">
-            {searchTerm || statusFilter !== "all"
+            {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
               ? "Aucun devis ne correspond à vos critères"
-              : "Vos devis apparaîtront ici après acceptation de courses"}
+              : "Vos devis apparaîtront ici"}
           </p>
         </Card>
       ) : (
@@ -382,7 +437,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                   <div>
                     <h3 className="font-bold text-lg">{devis.quote_number}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Client : {devis.clients?.profiles?.full_name}
+                      {devis.clients?.profiles?.full_name}
                     </p>
                   </div>
                 </div>
@@ -413,94 +468,42 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                 </div>
               </div>
 
-              {/* Price Breakdown */}
+              {/* Price */}
               <div className="border border-border rounded-lg p-4 mb-4">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Euro className="w-4 h-4" />
-                  Détail du prix
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Forfait de base</span>
-                    <span className="font-medium">{parseFloat(devis.base_price).toFixed(2)} €</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Euro className="w-5 h-5 text-premium" />
+                    <span className="font-semibold">Montant TTC</span>
                   </div>
-                  {parseFloat(devis.distance_price) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Prix au kilomètre</span>
-                      <span className="font-medium">
-                        {parseFloat(devis.distance_price).toFixed(2)} €
-                      </span>
-                    </div>
-                  )}
-                  {parseFloat(devis.time_price || 0) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Prix horaire</span>
-                      <span className="font-medium">{parseFloat(devis.time_price).toFixed(2)} €</span>
-                    </div>
-                  )}
-                  <div className="pt-2 border-t border-border flex justify-between text-lg font-bold">
-                    <span>Total TTC</span>
-                    <span className="text-premium">{parseFloat(devis.amount).toFixed(2)} €</span>
-                  </div>
+                  <span className="text-2xl font-bold text-premium">
+                    {parseFloat(devis.amount).toFixed(2)} €
+                  </span>
                 </div>
               </div>
 
-              {/* Rejection reason */}
-              {devis.status === "rejected" && devis.notes && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
-                  <p className="text-sm font-medium text-destructive mb-1">Raison du refus :</p>
-                  <p className="text-sm text-muted-foreground">{devis.notes}</p>
-                </div>
-              )}
-
-              {/* Boutons de partage */}
-              {(devis.status === "pending" || devis.status === "accepted") && (
-                <div className="flex gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleShareDevis(devis, 'whatsapp')}
-                    className="flex-1"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleShareDevis(devis, 'email')}
-                    className="flex-1"
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Email
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleShareDevis(devis, 'sms')}
-                    className="flex-1"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    SMS
-                  </Button>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
+              {/* Actions */}
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">
                   Créé le {format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}
-                  {" • "}
-                  Valide jusqu'au {format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadPDF(devis.id)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  PDF
-                </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(devis, false)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF Détaillé
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(devis, true)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF Client
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}

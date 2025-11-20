@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, Euro, CreditCard, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
+import { FileText, Search, Download, Euro, CheckCircle, CreditCard } from "lucide-react";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
+import jsPDF from "jspdf";
 
 interface DriverFacturesListProps {
   driverId: string;
@@ -20,9 +21,14 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [clients, setClients] = useState<any[]>([]);
+  const [driverInfo, setDriverInfo] = useState<any>(null);
 
   useEffect(() => {
     fetchFactures();
+    fetchDriverInfo();
   }, [driverId]);
 
   useEffect(() => {
@@ -33,17 +39,69 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       filtered = filtered.filter((facture) => facture.payment_status === statusFilter);
     }
 
+    // Filter by client
+    if (clientFilter !== "all") {
+      filtered = filtered.filter((facture) => facture.client_id === clientFilter);
+    }
+
+    // Filter by date
+    if (dateFilter !== "all") {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+
+      switch (dateFilter) {
+        case "this_week":
+          startDate = startOfWeek(now, { weekStartsOn: 1 });
+          endDate = endOfWeek(now, { weekStartsOn: 1 });
+          break;
+        case "this_month":
+          startDate = startOfMonth(now);
+          endDate = endOfMonth(now);
+          break;
+        case "last_month":
+          startDate = startOfMonth(subMonths(now, 1));
+          endDate = endOfMonth(subMonths(now, 1));
+          break;
+        default:
+          startDate = new Date(0);
+      }
+
+      filtered = filtered.filter((facture) => {
+        const factureDate = new Date(facture.created_at);
+        return factureDate >= startDate && factureDate <= endDate;
+      });
+    }
+
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(
         (facture) =>
           facture.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          facture.invoice_number_generated?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           facture.clients?.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredFactures(filtered);
-  }, [searchTerm, statusFilter, factures]);
+  }, [searchTerm, statusFilter, clientFilter, dateFilter, factures]);
+
+  const fetchDriverInfo = async () => {
+    try {
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select(`
+          *,
+          profiles:user_id(full_name, phone)
+        `)
+        .eq("id", driverId)
+        .single();
+      
+      setDriverInfo(driverData);
+    } catch (error) {
+      console.error("Error fetching driver info:", error);
+    }
+  };
 
   const fetchFactures = async () => {
     try {
@@ -52,12 +110,20 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         .select(`
           *,
           clients!inner(
-            profiles:user_id(full_name, email, profile_photo_url)
+            id,
+            profiles:user_id(full_name, email, phone, profile_photo_url)
           ),
           courses!inner(
             pickup_address,
             destination_address,
-            scheduled_date
+            scheduled_date,
+            distance_km,
+            duration_minutes
+          ),
+          devis!inner(
+            base_price,
+            distance_price,
+            time_price
           )
         `)
         .eq("driver_id", driverId)
@@ -66,6 +132,14 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       if (error) throw error;
       setFactures(data || []);
       setFilteredFactures(data || []);
+
+      // Extract unique clients for filter
+      const uniqueClients = Array.from(
+        new Map(
+          data?.map((f) => [f.clients.id, { id: f.clients.id, name: f.clients.profiles.full_name }])
+        ).values()
+      );
+      setClients(uniqueClients);
     } catch (error: any) {
       console.error("Error fetching factures:", error);
       toast.error("Erreur lors du chargement des factures");
@@ -74,9 +148,166 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     }
   };
 
-  const handleDownloadPDF = (factureId: string) => {
-    toast.info("Génération PDF en cours de développement");
-    // TODO: Implement PDF generation
+  const handleDownloadPDF = (facture: any, forClient: boolean = false) => {
+    if (!driverInfo) {
+      toast.error("Informations chauffeur manquantes");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const isPaid = facture.payment_status === 'paid';
+    
+    // Header with color based on payment status
+    const fillColor = isPaid ? [34, 197, 94] : [156, 163, 175]; // green for paid, grey for unpaid
+    doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FACTURE', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`N° ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 30, { align: 'center' });
+    
+    // Driver info (left side)
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Émetteur:', 15, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(driverInfo.profiles?.full_name || 'Chauffeur', 15, 62);
+    if (driverInfo.company_name) doc.text(driverInfo.company_name, 15, 69);
+    if (driverInfo.company_address) {
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 80);
+      doc.text(addressLines, 15, 76);
+    }
+    if (driverInfo.siret) doc.text(`SIRET: ${driverInfo.siret}`, 15, 90);
+    if (driverInfo.profiles?.phone) doc.text(`Tél: ${driverInfo.profiles.phone}`, 15, 97);
+    
+    // Client info (right side)
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client:', pageWidth - 95, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(facture.clients.profiles.full_name, pageWidth - 95, 62);
+    if (facture.clients.profiles.email) doc.text(facture.clients.profiles.email, pageWidth - 95, 69);
+    if (facture.clients.profiles.phone) doc.text(facture.clients.profiles.phone, pageWidth - 95, 76);
+    
+    // Course details section
+    let yPos = 115;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Détails de la course', 15, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Départ: ${facture.courses.pickup_address}`, 15, yPos);
+    yPos += 7;
+    doc.text(`Arrivée: ${facture.courses.destination_address}`, 15, yPos);
+    yPos += 7;
+    doc.text(`Date: ${format(new Date(facture.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 15, yPos);
+    
+    if (facture.courses.distance_km) {
+      yPos += 7;
+      doc.text(`Distance: ${parseFloat(facture.courses.distance_km).toFixed(2)} km`, 15, yPos);
+    }
+    
+    if (facture.courses.duration_minutes) {
+      yPos += 7;
+      doc.text(`Durée: ${facture.courses.duration_minutes} minutes`, 15, yPos);
+    }
+    
+    // Payment info
+    if (facture.payment_method) {
+      yPos += 7;
+      doc.text(`Mode de paiement: ${facture.payment_method}`, 15, yPos);
+    }
+    
+    if (facture.paid_at) {
+      yPos += 7;
+      doc.text(`Date de paiement: ${format(new Date(facture.paid_at), "d MMMM yyyy", { locale: fr })}`, 15, yPos);
+    }
+    
+    // Price breakdown section
+    yPos += 15;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Détail du prix', 15, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+
+    if (!forClient && facture.devis) {
+      // Driver version: show all pricing details
+      doc.setFont('helvetica', 'normal');
+      if (parseFloat(facture.devis.base_price) > 0) {
+        doc.text(`Forfait de base:`, 15, yPos);
+        doc.text(`${parseFloat(facture.devis.base_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+      
+      if (parseFloat(facture.devis.distance_price) > 0) {
+        doc.text(`Prix au kilomètre:`, 15, yPos);
+        doc.text(`${parseFloat(facture.devis.distance_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+      
+      if (parseFloat(facture.devis.time_price || 0) > 0) {
+        doc.text(`Prix horaire:`, 15, yPos);
+        doc.text(`${parseFloat(facture.devis.time_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+        yPos += 7;
+      }
+    }
+    
+    // Subtotal, TVA, Total (for both versions)
+    const subtotal = facture.devis ? 
+      (parseFloat(facture.devis.base_price) + parseFloat(facture.devis.distance_price) + parseFloat(facture.devis.time_price || 0)) :
+      parseFloat(facture.amount) * 0.9; // fallback approximation
+    const tvaAmount = parseFloat(facture.amount) - subtotal;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Sous-total HT:`, 15, yPos);
+    doc.text(`${subtotal.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    yPos += 7;
+    
+    doc.text(`TVA:`, 15, yPos);
+    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    yPos += 10;
+    
+    // Total line
+    const lineColor = isPaid ? [34, 197, 94] : [156, 163, 175];
+    doc.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
+    doc.setLineWidth(0.5);
+    doc.line(15, yPos - 3, pageWidth - 15, yPos - 3);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`Total TTC:`, 15, yPos);
+    doc.text(`${parseFloat(facture.amount).toFixed(2)} €`, pageWidth - 15, yPos, { align: 'right' });
+    
+    // Payment status
+    yPos += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    if (isPaid) {
+      doc.setTextColor(34, 197, 94);
+      doc.text('✓ PAYÉE', pageWidth / 2, yPos, { align: 'center' });
+    } else {
+      doc.setTextColor(156, 163, 175);
+      doc.text('EN ATTENTE DE PAIEMENT', pageWidth / 2, yPos, { align: 'center' });
+    }
+    
+    // Footer
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Généré le ${format(new Date(), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+    
+    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}${forClient ? '-client' : ''}.pdf`);
+    toast.success("Facture téléchargée");
   };
 
   const getStatusBadge = (status: string) => {
@@ -102,12 +333,6 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     );
   };
 
-  const getPaymentMethodIcon = (method: string | null) => {
-    if (!method) return <CreditCard className="w-4 h-4" />;
-    if (method.includes("card")) return <CreditCard className="w-4 h-4" />;
-    return <CreditCard className="w-4 h-4" />;
-  };
-
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -120,9 +345,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     total: factures.length,
     paid: factures.filter((f) => f.payment_status === "paid").length,
     pending: factures.filter((f) => f.payment_status === "pending").length,
-    totalRevenue: factures
-      .filter((f) => f.payment_status === "paid")
-      .reduce((sum, f) => sum + parseFloat(f.amount), 0),
+    failed: factures.filter((f) => f.payment_status === "failed").length,
   };
 
   return (
@@ -147,12 +370,10 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             <p className="text-sm text-muted-foreground">En attente</p>
           </div>
         </Card>
-        <Card className="p-4 bg-gradient-premium">
+        <Card className="p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-premium-foreground">
-              {stats.totalRevenue.toFixed(2)} €
-            </h3>
-            <p className="text-sm text-premium-foreground/80">Revenus encaissés</p>
+            <h3 className="text-3xl font-bold text-destructive">{stats.failed}</h3>
+            <p className="text-sm text-muted-foreground">Échecs</p>
           </div>
         </Card>
       </div>
@@ -169,8 +390,8 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue />
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
@@ -178,6 +399,30 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             <SelectItem value="pending">En attente</SelectItem>
             <SelectItem value="failed">Échec</SelectItem>
             <SelectItem value="refunded">Remboursées</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les clients</SelectItem>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Période" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les dates</SelectItem>
+            <SelectItem value="this_week">Cette semaine</SelectItem>
+            <SelectItem value="this_month">Ce mois</SelectItem>
+            <SelectItem value="last_month">Mois dernier</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -188,9 +433,9 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2">Aucune facture</h3>
           <p className="text-muted-foreground">
-            {searchTerm || statusFilter !== "all"
+            {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
               ? "Aucune facture ne correspond à vos critères"
-              : "Vos factures apparaîtront ici après paiement des devis"}
+              : "Vos factures apparaîtront ici"}
           </p>
         </Card>
       ) : (
@@ -211,16 +456,18 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg">{facture.invoice_number}</h3>
+                    <h3 className="font-bold text-lg">
+                      {facture.invoice_number_generated || facture.invoice_number}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      Client : {facture.clients?.profiles?.full_name}
+                      {facture.clients?.profiles?.full_name}
                     </p>
                   </div>
                 </div>
                 {getStatusBadge(facture.payment_status)}
               </div>
 
-              {/* Course Info */}
+              {/* Course info */}
               <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2 text-sm">
                 <div>
                   <span className="font-medium">Course :</span>
@@ -236,52 +483,55 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                     })}
                   </span>
                 </div>
-              </div>
-
-              {/* Payment Info */}
-              <div className="border border-border rounded-lg p-4 mb-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Montant TTC</span>
-                    <span className="text-2xl font-bold text-premium">
-                      {parseFloat(facture.amount).toFixed(2)} €
+                {facture.payment_method && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      Paiement : <span className="capitalize">{facture.payment_method}</span>
                     </span>
                   </div>
-                  {facture.payment_method && (
-                    <div className="flex justify-between items-center text-muted-foreground">
-                      <span>Méthode de paiement</span>
-                      <div className="flex items-center gap-2">
-                        {getPaymentMethodIcon(facture.payment_method)}
-                        <span className="capitalize">{facture.payment_method}</span>
-                      </div>
-                    </div>
-                  )}
-                  {facture.paid_at && (
-                    <div className="flex justify-between items-center text-muted-foreground">
-                      <span>Date de paiement</span>
-                      <span>
-                        {format(new Date(facture.paid_at), "d MMMM yyyy 'à' HH:mm", {
-                          locale: fr,
-                        })}
-                      </span>
-                    </div>
-                  )}
+                )}
+              </div>
+
+              {/* Price */}
+              <div className="border border-border rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Euro className="w-5 h-5 text-premium" />
+                    <span className="font-semibold">Montant TTC</span>
+                  </div>
+                  <span className="text-2xl font-bold text-premium">
+                    {parseFloat(facture.amount).toFixed(2)} €
+                  </span>
                 </div>
               </div>
 
-              {/* Footer */}
+              {/* Actions */}
               <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
                   Créée le {format(new Date(facture.created_at), "d MMMM yyyy", { locale: fr })}
+                  {facture.paid_at && (
+                    <> • Payée le {format(new Date(facture.paid_at), "d MMMM yyyy", { locale: fr })}</>
+                  )}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownloadPDF(facture.id)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Télécharger PDF
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(facture, false)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF Détaillé
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadPDF(facture, true)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF Client
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
