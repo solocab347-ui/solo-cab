@@ -127,7 +127,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       if (error) throw error;
 
       toast.success("Course commencée !");
-      fetchCourses();
+      
+      // Refresh courses immediately to update UI
+      await fetchCourses();
     } catch (error: any) {
       console.error("Error starting course:", error);
       toast.error("Erreur lors du démarrage de la course");
@@ -187,7 +189,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       toast.success("Course terminée ! Facture générée automatiquement.");
       setShowPaymentDialog(false);
-      fetchCourses();
+      setPaymentMethod("");
+      
+      // Refresh courses immediately
+      await fetchCourses();
     } catch (error: any) {
       console.error("Error completing course:", error);
       toast.error("Erreur lors de la finalisation: " + error.message);
