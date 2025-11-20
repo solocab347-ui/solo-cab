@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,9 @@ interface Client {
 
 const DriverCreateCourse = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const preSelectedClientId = searchParams.get("client_id");
 
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -55,6 +57,12 @@ const DriverCreateCourse = () => {
     fetchDriverProfile();
     fetchClients();
   }, [user]);
+
+  useEffect(() => {
+    if (preSelectedClientId && clients.length > 0) {
+      setSelectedClientId(preSelectedClientId);
+    }
+  }, [preSelectedClientId, clients]);
 
   useEffect(() => {
     if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
