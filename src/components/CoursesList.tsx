@@ -36,7 +36,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   useEffect(() => {
     fetchCourses();
-    setupRealtimeSubscription();
+    // Désactivation de la souscription temps réel pour éviter que les courses bougent automatiquement
+    // setupRealtimeSubscription();
   }, [driverId]);
 
   const fetchCourses = async () => {
@@ -121,6 +122,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleAcceptCourse = async (courseId: string) => {
     try {
+      // Optimistic update - keep course in place
+      setCourses(prev => prev.map(c => 
+        c.id === courseId ? { ...c, status: "accepted" as const } : c
+      ));
+
       // Chauffeur accepte une course créée par le client
       const { error } = await supabase
         .from("courses")
@@ -130,10 +136,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       if (error) throw error;
 
       toast.success("Course acceptée et confirmée !");
-      await fetchCourses();
+      
+      // Ne PAS recharger pour garder la course à sa place
+      // await fetchCourses();
     } catch (error: any) {
       console.error("Error accepting course:", error);
       toast.error("Erreur lors de l'acceptation de la course");
+      // Revert on error
+      await fetchCourses();
     }
   };
 
@@ -175,6 +185,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
 
     try {
+      // Optimistic update - keep course in place
+      setCourses(prev => prev.map(c => 
+        c.id === selectedCourseId ? { ...c, status: "completed" as const } : c
+      ));
+
       // Update course status to completed
       const { error: courseError } = await supabase
         .from("courses")
@@ -218,11 +233,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       setShowPaymentDialog(false);
       setPaymentMethod("");
       
-      // Refresh courses immediately
-      await fetchCourses();
+      // Ne PAS recharger pour garder la course à sa place
+      // await fetchCourses();
     } catch (error: any) {
       console.error("Error completing course:", error);
       toast.error("Erreur lors de la finalisation: " + error.message);
+      // Revert on error
+      await fetchCourses();
     }
   };
 
@@ -242,6 +259,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
 
     try {
+      // Optimistic update - keep course in place
+      setCourses(prev => prev.map(c => 
+        c.id === courseToReject 
+          ? { 
+              ...c, 
+              status: "cancelled" as const,
+              notes: `Motif de refus: ${finalReason}\n\n${c.notes || ''}`
+            } 
+          : c
+      ));
+
       const { error } = await supabase
         .from("courses")
         .update({ 
@@ -257,10 +285,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       setRejectionReason("");
       setCustomReason("");
       setCourseToReject(null);
-      fetchCourses();
+      
+      // Ne PAS recharger pour garder la course à sa place
+      // fetchCourses();
     } catch (error: any) {
       console.error("Error rejecting course:", error);
       toast.error("Erreur lors de l'annulation");
+      // Revert on error
+      await fetchCourses();
     }
   };
 
