@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, Euro, MapPin, Calendar } from "lucide-react";
+import { FileText, Search, Download, Euro, MapPin, Calendar, MessageCircle, Mail, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -138,6 +138,31 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
   const handleDownloadPDF = (devisId: string) => {
     toast.info("Génération PDF en cours de développement");
     // TODO: Implement PDF generation
+  };
+
+  const handleShareDevis = (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const message = `Devis ${devis.quote_number} - ${devis.clients?.profiles?.full_name}\n` +
+                   `Trajet: ${devis.courses.pickup_address} → ${devis.courses.destination_address}\n` +
+                   `Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${parseFloat(devis.amount).toFixed(2)}€`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
   };
 
   const getStatusBadge = (status: string, validUntil: string) => {
@@ -425,6 +450,39 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
                   <p className="text-sm font-medium text-destructive mb-1">Raison du refus :</p>
                   <p className="text-sm text-muted-foreground">{devis.notes}</p>
+                </div>
+              )}
+
+              {/* Boutons de partage */}
+              {(devis.status === "pending" || devis.status === "accepted") && (
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareDevis(devis, 'whatsapp')}
+                    className="flex-1"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareDevis(devis, 'email')}
+                    className="flex-1"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Email
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareDevis(devis, 'sms')}
+                    className="flex-1"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    SMS
+                  </Button>
                 </div>
               )}
 

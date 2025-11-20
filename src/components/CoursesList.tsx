@@ -453,8 +453,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         );
       })()}
 
-      {/* Boutons de partage si devis disponible */}
-      {course.devis?.[0] && (course.status === "pending" || course.status === "accepted") && (
+      {/* Boutons de partage si devis disponible et course acceptée */}
+      {course.devis?.[0] && course.status === "accepted" && (
         <div className="flex gap-2 mb-3">
           <Button
             variant="outline"
@@ -575,16 +575,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           <div className="space-y-4 py-4">
             <RadioGroup value={rejectionReason} onValueChange={setRejectionReason}>
               <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Prix trop élevé" id="price" />
-                <Label htmlFor="price" className="cursor-pointer flex-1">Prix trop élevé</Label>
+                <RadioGroupItem value="Client trop éloigné de ma zone" id="distance" />
+                <Label htmlFor="distance" className="cursor-pointer flex-1">Client trop éloigné de ma zone</Label>
               </div>
               <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="L'horaire ne me convient pas" id="schedule" />
-                <Label htmlFor="schedule" className="cursor-pointer flex-1">L'horaire ne me convient pas</Label>
+                <RadioGroupItem value="Horaire non disponible" id="schedule" />
+                <Label htmlFor="schedule" className="cursor-pointer flex-1">Horaire non disponible</Label>
               </div>
               <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Changer l'horaire" id="reschedule" />
-                <Label htmlFor="reschedule" className="cursor-pointer flex-1">Demande de changement d'horaire</Label>
+                <RadioGroupItem value="Véhicule non adapté pour cette course" id="vehicle" />
+                <Label htmlFor="vehicle" className="cursor-pointer flex-1">Véhicule non adapté pour cette course</Label>
               </div>
               <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
                 <RadioGroupItem value="Autre" id="other" />
