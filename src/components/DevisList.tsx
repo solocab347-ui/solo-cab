@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FileText, CheckCircle, XCircle, Clock, Euro } from "lucide-react";
@@ -15,6 +19,10 @@ interface DevisListProps {
 const DevisList = ({ clientId }: DevisListProps) => {
   const [devisList, setDevisList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [selectedDevisId, setSelectedDevisId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>("");
+  const [customReason, setCustomReason] = useState<string>("");
 
   useEffect(() => {
     fetchDevis();
@@ -93,15 +101,66 @@ const DevisList = ({ clientId }: DevisListProps) => {
     }
   };
 
-  const handleReject = async (devisId: string) => {
-    try {
-      const { error } = await supabase
-        .from("devis")
-        .update({ status: "rejected" })
-        .eq("id", devisId);
+  const openRejectDialog = (devisId: string) => {
+    setSelectedDevisId(devisId);
+    setRejectReason("");
+    setCustomReason("");
+    setShowRejectDialog(true);
+  };
 
-      if (error) throw error;
+  const handleReject = async () => {
+    if (!selectedDevisId) return;
+    
+    if (!rejectReason) {
+      toast.error("Veuillez sélectionner une raison de refus");
+      return;
+    }
+
+    if (rejectReason === "Autre" && !customReason.trim()) {
+      toast.error("Veuillez préciser la raison du refus");
+      return;
+    }
+
+    try {
+      const finalReason = rejectReason === "Autre" ? customReason : rejectReason;
+
+      // Update devis status
+      const { error: devisError } = await supabase
+        .from("devis")
+        .update({ 
+          status: "rejected",
+          notes: finalReason
+        })
+        .eq("id", selectedDevisId);
+
+      if (devisError) throw devisError;
+
+      // Get devis details for notification
+      const { data: devisData } = await supabase
+        .from("devis")
+        .select(`
+          quote_number,
+          driver_id,
+          clients!inner(
+            profiles:user_id(full_name)
+          )
+        `)
+        .eq("id", selectedDevisId)
+        .single();
+
+      // Create notification for driver
+      if (devisData) {
+        await supabase.from("notifications").insert({
+          user_id: devisData.driver_id,
+          title: "Devis refusé",
+          message: `Le devis ${devisData.quote_number} a été refusé par ${devisData.clients.profiles.full_name}. Raison : ${finalReason}`,
+          type: "devis_rejected",
+          link: "/driver-dashboard?tab=devis"
+        });
+      }
+
       toast.success("Devis refusé");
+      setShowRejectDialog(false);
       fetchDevis();
     } catch (error: any) {
       console.error("Error rejecting devis:", error);
@@ -162,8 +221,67 @@ const DevisList = ({ clientId }: DevisListProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      {devisList.map((devis) => {
+    <>
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Refuser le devis</DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer la raison du refus. Cette information sera transmise au chauffeur.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <RadioGroup value={rejectReason} onValueChange={setRejectReason}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Prix trop élevé" id="price" />
+                <Label htmlFor="price" className="cursor-pointer">Prix trop élevé</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="L'horaire ne me convient pas" id="time" />
+                <Label htmlFor="time" className="cursor-pointer">L'horaire ne me convient pas</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Je souhaite changer l'horaire" id="reschedule" />
+                <Label htmlFor="reschedule" className="cursor-pointer">Je souhaite changer l'horaire</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Je ne souhaite plus effectuer cette course" id="cancel" />
+                <Label htmlFor="cancel" className="cursor-pointer">Je ne souhaite plus effectuer cette course</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Autre" id="other" />
+                <Label htmlFor="other" className="cursor-pointer">Autre raison</Label>
+              </div>
+            </RadioGroup>
+
+            {rejectReason === "Autre" && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-reason">Précisez la raison</Label>
+                <Textarea
+                  id="custom-reason"
+                  placeholder="Décrivez votre raison..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleReject}>
+              Confirmer le refus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-4">
+        {devisList.map((devis) => {
         const isExpired = new Date(devis.valid_until) < new Date();
         const canAccept = devis.status === "pending" && !isExpired;
 
@@ -256,7 +374,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
                   Accepter le devis
                 </Button>
                 <Button
-                  onClick={() => handleReject(devis.id)}
+                  onClick={() => openRejectDialog(devis.id)}
                   variant="outline"
                   className="flex-1"
                 >
@@ -275,7 +393,8 @@ const DevisList = ({ clientId }: DevisListProps) => {
           </Card>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 };
 
