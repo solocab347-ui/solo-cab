@@ -156,7 +156,7 @@ const Login = () => {
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Je suis un...</Label>
+                  <Label>Type de compte</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       type="button"
