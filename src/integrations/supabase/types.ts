@@ -286,6 +286,8 @@ export type Database = {
           company_name: string | null
           course_counter: number | null
           created_at: string
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -323,6 +325,8 @@ export type Database = {
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -360,6 +364,8 @@ export type Database = {
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null

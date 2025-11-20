@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -18,6 +19,8 @@ import SubscriptionManager from "@/components/driver/SubscriptionManager";
 import { DriverHome } from "@/components/driver/DriverHome";
 import { PriceCalculator } from "@/components/driver/PriceCalculator";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
+import { ProfilePhotoUpload } from "@/components/driver/ProfilePhotoUpload";
+import { SectorSelector } from "@/components/driver/SectorSelector";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +38,7 @@ const DriverDashboard = () => {
 
   // Form states
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
-  const [workingSectors, setWorkingSectors] = useState("");
+  const [workingSectors, setWorkingSectors] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
   const [homeCoordinates, setHomeCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -48,6 +51,9 @@ const DriverDashboard = () => {
   const [siret, setSiret] = useState("");
   const [maxPassengers, setMaxPassengers] = useState("4");
   const [tvaIncluded, setTvaIncluded] = useState(false);
+  const [displayDriverName, setDisplayDriverName] = useState(true);
+  const [displayCompanyName, setDisplayCompanyName] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDriverProfile();
@@ -72,7 +78,7 @@ const DriverDashboard = () => {
       setDriverProfile({ ...profile, driver });
       // Populate form
       setPublicProfileEnabled(driver.public_profile_enabled || false);
-      setWorkingSectors(driver.working_sectors?.join(", ") || "");
+      setWorkingSectors(driver.working_sectors || []);
       setServiceDescription(driver.service_description || "");
       setHomeAddress(driver.home_address || "");
       if (driver.home_latitude && driver.home_longitude) {
@@ -90,6 +96,9 @@ const DriverDashboard = () => {
       setSiret(driver.siret || "");
       setMaxPassengers(driver.max_passengers?.toString() || "4");
       setTvaIncluded(driver.tva_included || false);
+      setDisplayDriverName(driver.display_driver_name !== false);
+      setDisplayCompanyName(driver.display_company_name || false);
+      setProfilePhotoUrl(profile?.profile_photo_url || null);
     }
   };
 
@@ -146,10 +155,7 @@ const DriverDashboard = () => {
         .from("drivers")
         .update({
           public_profile_enabled: publicProfileEnabled,
-          working_sectors: workingSectors
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s),
+          working_sectors: workingSectors,
           service_description: serviceDescription,
           home_address: homeAddress,
           home_latitude: homeCoordinates?.latitude || null,
@@ -163,6 +169,8 @@ const DriverDashboard = () => {
           siret: siret,
           max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
           tva_included: tvaIncluded,
+          display_driver_name: displayDriverName,
+          display_company_name: displayCompanyName,
         })
         .eq("id", driverProfile.driver.id);
 
@@ -507,15 +515,46 @@ const DriverDashboard = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sectors">Secteurs desservis (séparés par virgule)</Label>
-                  <Input
-                    id="sectors"
-                    value={workingSectors}
-                    onChange={(e) => setWorkingSectors(e.target.value)}
-                    placeholder="Paris, 75, 92, Hauts-de-Seine"
-                  />
+                <ProfilePhotoUpload
+                  currentPhotoUrl={profilePhotoUrl}
+                  userId={user?.id || ""}
+                  driverName={driverProfile?.full_name || ""}
+                  onPhotoUpdate={setProfilePhotoUrl}
+                />
+
+                <div className="border-t pt-6">
+                  <Label className="text-base mb-4 block">Affichage dans le profil public</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="displayName"
+                        checked={displayDriverName}
+                        onCheckedChange={(checked) => setDisplayDriverName(checked as boolean)}
+                      />
+                      <Label htmlFor="displayName" className="font-normal cursor-pointer">
+                        Afficher mon nom ({driverProfile?.full_name || "Non défini"})
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="displayCompany"
+                        checked={displayCompanyName}
+                        onCheckedChange={(checked) => setDisplayCompanyName(checked as boolean)}
+                      />
+                      <Label htmlFor="displayCompany" className="font-normal cursor-pointer">
+                        Afficher le nom de mon entreprise ({companyName || "Non défini"})
+                      </Label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Vous pouvez afficher votre nom, celui de votre entreprise, ou les deux
+                  </p>
                 </div>
+
+                <SectorSelector
+                  selectedSectors={workingSectors}
+                  onChange={setWorkingSectors}
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description du service</Label>

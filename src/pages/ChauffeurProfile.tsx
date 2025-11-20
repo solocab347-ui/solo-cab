@@ -35,6 +35,9 @@ interface DriverProfile {
   base_rate: number;
   per_km_rate: number;
   created_at: string;
+  company_name: string;
+  display_driver_name: boolean;
+  display_company_name: boolean;
 }
 
 const ChauffeurProfile = () => {
@@ -73,6 +76,9 @@ const ChauffeurProfile = () => {
           per_km_rate,
           public_profile_enabled,
           created_at,
+          company_name,
+          display_driver_name,
+          display_company_name,
           profiles (
             full_name,
             email,
@@ -192,7 +198,9 @@ const ChauffeurProfile = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h1 className="text-3xl font-bold mb-2">
-                        {driver.full_name}
+                        {driver.display_driver_name && driver.full_name}
+                        {driver.display_driver_name && driver.display_company_name && " - "}
+                        {driver.display_company_name && driver.company_name}
                       </h1>
                       <div className="flex items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-1">
