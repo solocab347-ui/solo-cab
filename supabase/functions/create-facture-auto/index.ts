@@ -37,11 +37,11 @@ serve(async (req) => {
     const acceptedDevis = course.devis.find((d: any) => d.status === "accepted");
     if (!acceptedDevis) throw new Error("No accepted devis found for this course");
 
-    // Use the same reference number as the devis (REV-XXX becomes FAC-XXX with same number)
+    // Use the same reference number as the devis (RES-XXX becomes FAC-XXX with same number)
     let invoiceNumber = acceptedDevis.quote_number;
-    if (invoiceNumber && invoiceNumber.startsWith("REV-")) {
-      // Replace REV- with FAC- to keep the same reference number
-      invoiceNumber = invoiceNumber.replace("REV-", "FAC-");
+    if (invoiceNumber && invoiceNumber.startsWith("RES-")) {
+      // Replace RES- with FAC- to keep the same reference number
+      invoiceNumber = invoiceNumber.replace("RES-", "FAC-");
     } else {
       // Fallback: generate new invoice number if quote_number doesn't exist
       const { data: generatedNumber, error: invoiceError } = await supabase
