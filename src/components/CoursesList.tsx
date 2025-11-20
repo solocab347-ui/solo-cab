@@ -35,7 +35,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const fetchCourses = async () => {
     try {
-      // Dual association query with devis data
+      // Dual association query with devis data - explicit foreign key relation
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -45,7 +45,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
           ),
-          devis!left(
+          devis:devis!course_id(
             id,
             amount,
             status,
@@ -57,6 +57,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .order("scheduled_date", { ascending: false });
 
       if (error) throw error;
+      
+      console.log("Courses chargées avec devis:", data);
       setCourses(data || []);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
