@@ -128,7 +128,7 @@ const Index = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/chauffeurs">
               <Button size="lg" className="bg-gradient-premium group">
-                <Car className="w-5 h-5 mr-2" />
+                <Search className="w-5 h-5 mr-2" />
                 Trouver un Chauffeur
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -266,40 +266,35 @@ const Index = () => {
               Pour les Clients
             </Badge>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Des chauffeurs de confiance
+              Comment rejoindre SoloCab
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Trouvez des professionnels qualifiés sans intermédiaire
+              Deux façons de vous inscrire avec un chauffeur professionnel
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <Card className="p-8 bg-gradient-premium">
-              <FileText className="w-12 h-12 text-premium-foreground mb-4" />
+              <QrCode className="w-12 h-12 text-premium-foreground mb-4" />
               <h3 className="text-2xl font-bold text-premium-foreground mb-3">
-                Transparence totale
+                Via QR Code
               </h3>
               <p className="text-premium-foreground/90 mb-6">
-                Profils vérifiés, tarifs clairs, avis clients authentiques
+                Scannez le code QR de votre chauffeur pour vous inscrire comme client exclusif et accéder à ses services
               </p>
-              <Link to="/chauffeurs">
-                <Button variant="outline" className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20">
-                  Parcourir les chauffeurs
-                </Button>
-              </Link>
             </Card>
 
             <Card className="p-8">
-              <TrendingUp className="w-12 h-12 text-premium mb-4" />
+              <Search className="w-12 h-12 text-premium mb-4" />
               <h3 className="text-2xl font-bold mb-3">
-                Sans commission
+                Via la vitrine
               </h3>
               <p className="text-muted-foreground mb-6">
-                Des tarifs justes car aucune commission n'est prélevée sur les courses
+                Parcourez les chauffeurs publics et inscrivez-vous directement avec celui de votre choix
               </p>
-              <Link to="/login">
+              <Link to="/chauffeurs">
                 <Button className="bg-gradient-premium">
-                  Créer un compte
+                  Voir les chauffeurs
                 </Button>
               </Link>
             </Card>
@@ -314,19 +309,19 @@ const Index = () => {
             Prêt à commencer ?
           </h2>
           <p className="text-xl text-premium-foreground/90 mb-8 max-w-2xl mx-auto">
-            Rejoignez une communauté de chauffeurs indépendants et de clients engagés
+            Rejoignez une communauté de chauffeurs indépendants qui reprennent le contrôle de leur activité
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/chauffeurs">
               <Button size="lg" className="bg-premium-foreground text-premium hover:bg-premium-foreground/90">
-                <Car className="w-5 h-5 mr-2" />
-                Je cherche un Chauffeur
+                <Search className="w-5 h-5 mr-2" />
+                Trouver un Chauffeur
               </Button>
             </Link>
             <Link to="/login">
               <Button size="lg" variant="outline" className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20">
-                <Users className="w-5 h-5 mr-2" />
-                Je suis Chauffeur
+                <Zap className="w-5 h-5 mr-2" />
+                Devenir Chauffeur
               </Button>
             </Link>
           </div>
@@ -371,11 +366,6 @@ const Index = () => {
                 <li>
                   <Link to="/chauffeurs" className="hover:text-foreground transition-colors">
                     Trouver un chauffeur
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/login" className="hover:text-foreground transition-colors">
-                    S'inscrire
                   </Link>
                 </li>
               </ul>
