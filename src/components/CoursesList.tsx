@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle } from "lucide-react";
@@ -214,6 +215,107 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   }
 
+  // Filtrer les courses par statut
+  const pendingCourses = courses.filter(c => c.status === "accepted");
+  const confirmedCourses = courses.filter(c => c.status === "in_progress");
+  const completedCourses = courses.filter(c => c.status === "completed");
+
+  const renderCourseCard = (course: any) => (
+    <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {course.clients?.profiles?.profile_photo_url ? (
+            <img
+              src={course.clients.profiles.profile_photo_url}
+              alt={course.clients.profiles.full_name}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
+              <Users className="w-6 h-6 text-primary-foreground" />
+            </div>
+          )}
+          <div>
+            <h3 className="font-bold">{course.clients?.profiles?.full_name}</h3>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {course.clients?.is_exclusive && (
+                <Badge variant="outline" className="text-xs">Client exclusif</Badge>
+              )}
+              {course.course_number && (
+                <span className="text-xs text-premium">{course.course_number}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        {getStatusBadge(course.status)}
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <div className="flex items-start gap-2">
+          <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium">Départ</p>
+            <p className="text-muted-foreground">{course.pickup_address}</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium">Arrivée</p>
+            <p className="text-muted-foreground">{course.destination_address}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            {course.passengers_count} passager{course.passengers_count > 1 ? "s" : ""}
+          </div>
+        </div>
+
+        {course.distance_km && (
+          <div className="text-sm text-muted-foreground">
+            Distance estimée : {course.distance_km} km
+            {course.duration_minutes && ` • Durée : ${course.duration_minutes} min`}
+          </div>
+        )}
+
+        {course.notes && (
+          <div className="text-sm bg-secondary p-3 rounded-lg">
+            <p className="font-medium mb-1">Notes :</p>
+            <p className="text-muted-foreground">{course.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {course.status === "accepted" && (
+        <div className="pt-4 border-t border-border">
+          <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
+            <Clock className="w-4 h-4 text-premium" />
+            Devis envoyé au client - En attente d'acceptation
+          </div>
+        </div>
+      )}
+
+      {course.status === "in_progress" && (
+        <div className="pt-4 border-t border-border">
+          <Button
+            onClick={() => openPaymentDialog(course.id)}
+            className="w-full bg-gradient-premium"
+          >
+            <StopCircle className="w-4 h-4 mr-2" />
+            Terminer la course
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+
   if (courses.length === 0) {
     return (
       <Card className="p-8 text-center">
@@ -270,134 +372,64 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-4">
-        {courses.map((course) => (
-          <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                {course.clients?.profiles?.profile_photo_url ? (
-                  <img
-                    src={course.clients.profiles.profile_photo_url}
-                    alt={course.clients.profiles.full_name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                    <Users className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-bold">{course.clients?.profiles?.full_name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {course.clients?.is_exclusive && (
-                      <Badge variant="outline" className="text-xs">Client exclusif</Badge>
-                    )}
-                    {course.course_number && (
-                      <span className="text-xs text-premium">{course.course_number}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              {getStatusBadge(course.status)}
-            </div>
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            En attente ({pendingCourses.length})
+          </TabsTrigger>
+          <TabsTrigger value="confirmed" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Confirmées ({confirmedCourses.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Terminées ({completedCourses.length})
+          </TabsTrigger>
+        </TabsList>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium">Départ</p>
-                  <p className="text-muted-foreground">{course.pickup_address}</p>
-                </div>
-              </div>
+        <TabsContent value="pending" className="space-y-4">
+          {pendingCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course en attente</h3>
+              <p className="text-muted-foreground">
+                Les devis envoyés aux clients apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            pendingCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
 
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium">Arrivée</p>
-                  <p className="text-muted-foreground">{course.destination_address}</p>
-                </div>
-              </div>
+        <TabsContent value="confirmed" className="space-y-4">
+          {confirmedCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course confirmée</h3>
+              <p className="text-muted-foreground">
+                Les courses acceptées par les clients apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            confirmedCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4" />
-                  {course.passengers_count} passager{course.passengers_count > 1 ? "s" : ""}
-                </div>
-              </div>
-
-              {course.distance_km && (
-                <div className="text-sm text-muted-foreground">
-                  Distance estimée : {course.distance_km} km
-                  {course.duration_minutes && ` • Durée : ${course.duration_minutes} min`}
-                </div>
-              )}
-
-              {course.notes && (
-                <div className="text-sm bg-secondary p-3 rounded-lg">
-                  <p className="font-medium mb-1">Notes :</p>
-                  <p className="text-muted-foreground">{course.notes}</p>
-                </div>
-              )}
-            </div>
-
-            {course.status === "pending" && (
-              <div className="flex gap-3 pt-4 border-t border-border">
-                <Button
-                  onClick={() => handleAccept(course.id)}
-                  className="flex-1 bg-gradient-premium"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Accepter et créer devis
-                </Button>
-                <Button
-                  onClick={() => handleReject(course.id)}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Refuser
-                </Button>
-              </div>
-            )}
-
-            {course.status === "accepted" && (
-              <div className="pt-4 border-t border-border">
-                <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-premium" />
-                  Devis envoyé au client - En attente d'acceptation
-                </div>
-                <Button
-                  onClick={() => handleStartCourse(course.id)}
-                  className="w-full bg-blue-500 hover:bg-blue-600"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Commencer la course
-                </Button>
-              </div>
-            )}
-
-            {course.status === "in_progress" && (
-              <div className="pt-4 border-t border-border">
-                <div className="text-sm text-blue-500 flex items-center gap-2 mb-3">
-                  <Play className="w-4 h-4" />
-                  Course en cours
-                </div>
-                <Button
-                  onClick={() => openPaymentDialog(course.id)}
-                  className="w-full bg-gradient-premium"
-                >
-                  <StopCircle className="w-4 h-4 mr-2" />
-                  Terminer la course
-                </Button>
-              </div>
-            )}
-          </Card>
-        ))}
-      </div>
+        <TabsContent value="completed" className="space-y-4">
+          {completedCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course terminée</h3>
+              <p className="text-muted-foreground">
+                Les courses complétées apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            completedCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+      </Tabs>
     </>
   );
 };
