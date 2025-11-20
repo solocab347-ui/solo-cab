@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { Car, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Car, CheckCircle, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const RegisterClientQR = () => {
@@ -15,6 +17,15 @@ const RegisterClientQR = () => {
   const [loading, setLoading] = useState(true);
   const [driverInfo, setDriverInfo] = useState<any>(null);
   const [registering, setRegistering] = useState(false);
+  
+  // Form states
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const qrId = searchParams.get("qr");
 
@@ -59,14 +70,64 @@ const RegisterClientQR = () => {
   };
 
   const handleRegister = async () => {
-    if (!user) {
-      toast.error("Vous devez être connecté");
-      navigate("/login");
+    // Validation
+    if (!fullName.trim() || !email.trim() || !phone.trim() || !password || !confirmPassword) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
       return;
     }
 
     setRegistering(true);
     try {
+      // 1. Créer le compte utilisateur
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+
+      // 2. Créer le profil
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert({
+          id: authData.user.id,
+          email: email.trim(),
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          roles: ["client"],
+        });
+
+      if (profileError) throw profileError;
+
+      // 3. Ajouter le rôle
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "client",
+        });
+
+      if (roleError) throw roleError;
+
+      // 4. Créer le client exclusif via Edge Function
       const { data, error } = await supabase.functions.invoke("register-client-qr", {
         body: { qr_code_id: qrId },
       });
@@ -75,17 +136,14 @@ const RegisterClientQR = () => {
 
       if (data.error) {
         toast.error(data.error);
-        if (data.client) {
-          setTimeout(() => navigate("/client-dashboard"), 1500);
-        }
         return;
       }
 
-      toast.success("Inscription réussie ! Vous êtes maintenant client exclusif.");
-      setTimeout(() => navigate("/client-dashboard"), 1500);
+      toast.success("Inscription réussie ! Bienvenue sur SoloCab 🎉");
+      setTimeout(() => navigate("/client-dashboard"), 2000);
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast.error("Erreur lors de l'inscription");
+      toast.error(error.message || "Erreur lors de l'inscription");
     } finally {
       setRegistering(false);
     }
@@ -176,21 +234,12 @@ const RegisterClientQR = () => {
             </ul>
           </div>
 
-          {!user ? (
+          {user ? (
+            // Si déjà connecté, juste lier avec le chauffeur
             <div className="space-y-4">
-              <p className="text-center text-muted-foreground mb-4">
-                Vous devez vous connecter ou créer un compte pour continuer
+              <p className="text-center text-sm text-muted-foreground mb-4">
+                Vous êtes connecté en tant que {user.email}
               </p>
-              <Button
-                onClick={() => navigate("/login")}
-                className="w-full bg-gradient-premium"
-                size="lg"
-              >
-                Se connecter / S'inscrire
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
               <Button
                 onClick={handleRegister}
                 disabled={registering}
@@ -203,16 +252,137 @@ const RegisterClientQR = () => {
                     Inscription en cours...
                   </>
                 ) : (
-                  "Confirmer l'inscription"
+                  "Devenir client exclusif de ce chauffeur"
                 )}
               </Button>
+            </div>
+          ) : (
+            // Formulaire d'inscription complet
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nom complet *</Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Jean Dupont"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="jean.dupont@example.com"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+33 6 12 34 56 78"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               <Button
-                onClick={() => navigate("/")}
-                variant="outline"
-                className="w-full"
+                onClick={handleRegister}
+                disabled={registering}
+                className="w-full bg-gradient-premium"
+                size="lg"
               >
-                Annuler
+                {registering ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Inscription en cours...
+                  </>
+                ) : (
+                  "S'inscrire et devenir client exclusif"
+                )}
               </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                En vous inscrivant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
+              </p>
+
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Vous avez déjà un compte ?
+                </p>
+                <Button
+                  onClick={() => navigate("/login")}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Se connecter
+                </Button>
+              </div>
             </div>
           )}
         </Card>
