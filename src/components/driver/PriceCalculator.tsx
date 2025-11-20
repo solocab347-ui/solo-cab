@@ -33,7 +33,11 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
 
     setCalculating(true);
     try {
-      const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+      // Obtenir le token Mapbox depuis l'Edge Function
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-mapbox-token");
+      
+      if (tokenError) throw new Error("Impossible de récupérer le token Mapbox");
+      const mapboxToken = tokenData.token;
       
       // Obtenir la distance et durée via Mapbox Directions API
       const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.longitude},${pickupCoordinates.latitude};${destinationCoordinates.longitude},${destinationCoordinates.latitude}?access_token=${mapboxToken}&geometries=geojson`;

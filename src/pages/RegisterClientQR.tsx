@@ -234,30 +234,8 @@ const RegisterClientQR = () => {
             </ul>
           </div>
 
-          {user ? (
-            // Si déjà connecté, juste lier avec le chauffeur
-            <div className="space-y-4">
-              <p className="text-center text-sm text-muted-foreground mb-4">
-                Vous êtes connecté en tant que {user.email}
-              </p>
-              <Button
-                onClick={handleRegister}
-                disabled={registering}
-                className="w-full bg-gradient-premium"
-                size="lg"
-              >
-                {registering ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Inscription en cours...
-                  </>
-                ) : (
-                  "Devenir client exclusif de ce chauffeur"
-                )}
-              </Button>
-            </div>
-          ) : (
-            // Formulaire d'inscription complet
+          {/* Formulaire d'inscription complet */}
+          <div className="space-y-6">{/* Removed conditional rendering - always show registration form */}
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -370,21 +348,8 @@ const RegisterClientQR = () => {
               <p className="text-xs text-center text-muted-foreground">
                 En vous inscrivant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
               </p>
-
-              <div className="text-center pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Vous avez déjà un compte ?
-                </p>
-                <Button
-                  onClick={() => navigate("/login")}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Se connecter
-                </Button>
-              </div>
             </div>
-          )}
+          </div>
         </Card>
       </div>
     </div>
