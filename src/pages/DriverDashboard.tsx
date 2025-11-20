@@ -44,6 +44,7 @@ const DriverDashboard = () => {
   const [hourlyRate, setHourlyRate] = useState("");
   const [vehicleColor, setVehicleColor] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [siret, setSiret] = useState("");
 
   useEffect(() => {
@@ -83,6 +84,7 @@ const DriverDashboard = () => {
       setHourlyRate(driver.hourly_rate?.toString() || "");
       setVehicleColor(driver.vehicle_color || "");
       setCompanyName(driver.company_name || "");
+      setCompanyAddress(driver.company_address || "");
       setSiret(driver.siret || "");
     }
   };
@@ -153,6 +155,7 @@ const DriverDashboard = () => {
           hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
           vehicle_color: vehicleColor,
           company_name: companyName,
+          company_address: companyAddress,
           siret: siret,
         })
         .eq("id", driverProfile.driver.id);
@@ -364,25 +367,39 @@ const DriverDashboard = () => {
             {/* Company Info */}
             <Card className="p-6">
               <h2 className="text-xl font-bold mb-6">Informations Entreprise</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="company">Nom de l'entreprise</Label>
-                  <Input
-                    id="company"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="VTC Excellence"
-                  />
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Nom de l'entreprise</Label>
+                    <Input
+                      id="company"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="VTC Excellence"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="siret">SIRET</Label>
+                    <Input
+                      id="siret"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      placeholder="123 456 789 00012"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="siret">SIRET</Label>
-                  <Input
-                    id="siret"
-                    value={siret}
-                    onChange={(e) => setSiret(e.target.value)}
-                    placeholder="123 456 789 00012"
+                  <Label htmlFor="companyAddress">Adresse de l'entreprise</Label>
+                  <Textarea
+                    id="companyAddress"
+                    value={companyAddress}
+                    onChange={(e) => setCompanyAddress(e.target.value)}
+                    placeholder="123 Rue de la République, 75001 Paris"
+                    rows={3}
                   />
+                  <p className="text-xs text-muted-foreground">Cette adresse apparaîtra sur vos devis et factures</p>
                 </div>
               </div>
             </Card>
