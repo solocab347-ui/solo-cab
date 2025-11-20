@@ -279,6 +279,7 @@ export type Database = {
           base_fare: number | null
           base_rate: number | null
           bio: string | null
+          company_address: string | null
           company_name: string | null
           course_counter: number | null
           created_at: string
@@ -313,6 +314,7 @@ export type Database = {
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          company_address?: string | null
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
@@ -347,6 +349,7 @@ export type Database = {
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          company_address?: string | null
           company_name?: string | null
           course_counter?: number | null
           created_at?: string
