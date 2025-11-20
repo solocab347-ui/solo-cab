@@ -34,7 +34,7 @@ const App = () => (
            <Route path="/chauffeurs" element={<Chauffeurs />} />
            <Route path="/devenir-chauffeur" element={<ChauffeurLanding />} />
            <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
-           <Route path="/register-client" element={<RegisterClientQR />} />
+           <Route path="/register-client-qr" element={<RegisterClientQR />} />
            <Route path="/register-client-driver" element={<RegisterClientDriver />} />
            <Route path="/create-course" element={<CreateCourse />} />
             <Route
