@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, Home, MessageSquare, Globe } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe } from "lucide-react";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
 import DriverDevisList from "@/components/driver/DriverDevisList";
@@ -201,7 +201,7 @@ const DriverDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-8 bg-card">
             <TabsTrigger value="home" className="gap-2">
-              <Home className="w-4 h-4" />
+              <LayoutGrid className="w-4 h-4" />
               Accueil
             </TabsTrigger>
             <TabsTrigger value="clients" className="gap-2">
@@ -443,6 +443,12 @@ const DriverDashboard = () => {
                     placeholder="Noir, Gris, Blanc..."
                   />
                 </div>
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
+                  {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+                </Button>
               </div>
             </Card>
           </TabsContent>
