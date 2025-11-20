@@ -96,10 +96,35 @@ const CreateCourse = () => {
         return;
       }
 
-      toast.success("Réservation créée avec succès !");
+      console.log("Course created:", course);
+
+      // CORRECTION: Génération automatique du devis après création de course
+      try {
+        const { data: devisData, error: devisError } = await supabase.functions.invoke(
+          'create-devis-auto',
+          {
+            body: {
+              course_id: course.id,
+              driver_id: assignedDriverId,
+              use_hourly_rate: false, // Par défaut: facturation au km (TVA 10%)
+            },
+          }
+        );
+
+        if (devisError) {
+          console.error("Devis auto-generation error:", devisError);
+          toast.warning("Réservation créée mais erreur lors de la génération du devis");
+        } else {
+          console.log("Devis auto-generated:", devisData);
+          toast.success("Réservation et devis créés avec succès !");
+        }
+      } catch (devisGenError) {
+        console.error("Devis generation exception:", devisGenError);
+        toast.warning("Réservation créée, le devis sera généré ultérieurement");
+      }
       
       // Redirect to client dashboard
-      setTimeout(() => navigate("/client-dashboard"), 1000);
+      setTimeout(() => navigate("/client-dashboard"), 1500);
 
     } catch (error: any) {
       console.error("Error:", error);
