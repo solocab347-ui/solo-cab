@@ -73,21 +73,23 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
   const handleAccept = async (devisId: string) => {
     try {
-      const { error } = await supabase
-        .from("devis")
-        .update({ 
-          status: "accepted",
-          accepted_at: new Date().toISOString()
-        })
-        .eq("id", devisId);
+      toast.loading("Redirection vers le paiement...");
+      
+      const { data, error } = await supabase.functions.invoke("create-stripe-checkout", {
+        body: { devis_id: devisId },
+      });
 
       if (error) throw error;
 
-      toast.success("Devis accepté ! Votre chauffeur va être notifié.");
-      fetchDevis();
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (error: any) {
-      console.error("Error accepting devis:", error);
-      toast.error("Erreur lors de l'acceptation du devis");
+      console.error("Error creating checkout session:", error);
+      toast.error("Erreur lors de la création de la session de paiement");
     }
   };
 
