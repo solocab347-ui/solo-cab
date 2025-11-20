@@ -37,7 +37,65 @@ serve(async (req) => {
 
     console.log("[STRIPE-WEBHOOK] Event received:", event.type);
 
-    // Handle successful payment
+    // Handle subscription events for driver subscriptions
+    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      console.log("[STRIPE-WEBHOOK] Subscription event:", subscription.id, subscription.status);
+
+      const driverId = subscription.metadata?.driver_id;
+      if (driverId) {
+        const { error } = await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_status: subscription.status === "active" ? "active" : subscription.status,
+            subscription_stripe_id: subscription.id,
+            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+          })
+          .eq("id", driverId);
+
+        if (error) {
+          console.error("[STRIPE-WEBHOOK] Error updating driver subscription:", error);
+        } else {
+          console.log("[STRIPE-WEBHOOK] Driver subscription updated:", driverId);
+        }
+      }
+      
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Handle subscription cancellation
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object as Stripe.Subscription;
+      console.log("[STRIPE-WEBHOOK] Subscription cancelled:", subscription.id);
+
+      const driverId = subscription.metadata?.driver_id;
+      if (driverId) {
+        const { error } = await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_status: "canceled",
+            subscription_stripe_id: null,
+            subscription_end_date: null,
+          })
+          .eq("id", driverId);
+
+        if (error) {
+          console.error("[STRIPE-WEBHOOK] Error cancelling driver subscription:", error);
+        } else {
+          console.log("[STRIPE-WEBHOOK] Driver subscription cancelled:", driverId);
+        }
+      }
+
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Handle successful payment for courses
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       console.log("[STRIPE-WEBHOOK] Processing payment:", session.id);
