@@ -182,8 +182,16 @@ const ChauffeurProfile = () => {
                     </span>
                   </div>
                 </div>
-              </div>
-            </Card>
+            </div>
+
+            <Button
+              onClick={() => navigate(`/create-course?driver_id=${id}`)}
+              size="lg"
+              className="w-full bg-gradient-premium hover:opacity-90"
+            >
+              Réserver ce chauffeur
+            </Button>
+          </Card>
 
             {/* About */}
             <Card className="p-6">

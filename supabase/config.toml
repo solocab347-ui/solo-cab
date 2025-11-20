@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.register-client-qr]
 verify_jwt = false
+
+[functions.create-devis-auto]
+verify_jwt = true

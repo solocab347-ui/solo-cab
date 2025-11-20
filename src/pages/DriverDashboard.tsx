@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin } from "lucide-react";
+import CoursesList from "@/components/CoursesList";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -176,8 +177,9 @@ const DriverDashboard = () => {
         </div>
 
         <Tabs defaultValue="stats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="stats">Statistiques</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="profile">Profil Public</TabsTrigger>
             <TabsTrigger value="pricing">Tarification</TabsTrigger>
           </TabsList>
@@ -283,6 +285,25 @@ const DriverDashboard = () => {
                     Générer mon QR Code
                   </Button>
                 </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* Courses Tab */}
+          <TabsContent value="courses" className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Demandes de Réservation</h2>
+                  <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
+                </div>
+              </div>
+
+              {driverProfile?.driver?.id && (
+                <CoursesList driverId={driverProfile.driver.id} />
               )}
             </Card>
           </TabsContent>

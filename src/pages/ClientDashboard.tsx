@@ -2,20 +2,28 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Car, MapPin, Calendar, Clock, User, LogOut, Plus } from "lucide-react";
+import { Car, LogOut, Plus, Euro, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DevisList from "@/components/DevisList";
 
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
   const [clientProfile, setClientProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchClientProfile = async () => {
-      if (!user) return;
+    fetchClientProfile();
+  }, [user]);
 
+  const fetchClientProfile = async () => {
+    if (!user) return;
+
+    try {
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -24,18 +32,47 @@ const ClientDashboard = () => {
 
       const { data: client } = await supabase
         .from("clients")
-        .select("*, drivers(*)")
+        .select(`
+          *,
+          drivers:driver_id(
+            id,
+            company_name,
+            vehicle_model,
+            profiles:user_id(full_name, profile_photo_url)
+          )
+        `)
         .eq("user_id", user.id)
         .maybeSingle();
 
-      setClientProfile({ ...profile, client });
-    };
+      if (client) {
+        setClientProfile({ ...profile, client });
+      }
+    } catch (error: any) {
+      console.error("Error fetching client profile:", error);
+      toast.error("Erreur lors du chargement du profil");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchClientProfile();
-  }, [user]);
+  const handleNewReservation = () => {
+    if (clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_id) {
+      navigate(`/create-course?driver_id=${clientProfile.client.driver_id}`);
+    } else {
+      navigate("/chauffeurs");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -47,14 +84,9 @@ const ClientDashboard = () => {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-trust rounded-full flex items-center justify-center text-trust-foreground text-sm font-semibold">
-                {clientProfile?.full_name?.charAt(0) || "U"}
-              </div>
-              <span className="font-medium hidden sm:inline">
-                {clientProfile?.full_name?.split(" ")[0] || "Utilisateur"}
-              </span>
-            </div>
+            <Badge variant="outline" className="border-premium text-premium">
+              {clientProfile?.client?.is_exclusive ? "Client Exclusif" : "Client Libre"}
+            </Badge>
             <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
             </Button>
@@ -63,235 +95,124 @@ const ClientDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            Bonjour {clientProfile?.full_name?.split(" ")[0] || "Client"} 👋
+            Bonjour, {clientProfile?.full_name?.split(" ")[0] || "Client"} 👋
           </h1>
-          <p className="text-muted-foreground">
-            Réservez votre prochaine course avec votre chauffeur
-          </p>
+          <p className="text-muted-foreground">Gérez vos réservations et trajets</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <div className="lg:col-span-2">
-            <Card className="p-6 shadow-elegant">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-premium-foreground" />
-                </div>
-                <h2 className="text-2xl font-bold">Nouvelle réservation</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pickup">Lieu de départ</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="pickup"
-                        placeholder="Adresse de départ"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="destination">Destination</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 w-5 h-5 text-premium" />
-                      <Input
-                        id="destination"
-                        placeholder="Adresse d'arrivée"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Date</Label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="date"
-                        type="date"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time">Heure</Label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="time"
-                        type="time"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="passengers">Nombre de passagers</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="passengers"
-                      type="number"
-                      min="1"
-                      max="8"
-                      defaultValue="1"
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-secondary rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Distance estimée</span>
-                    <span className="font-semibold">42 km</span>
-                  </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Durée estimée</span>
-                    <span className="font-semibold">35 min</span>
-                  </div>
-                  <div className="h-px bg-border my-3"></div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">Prix estimé</span>
-                    <span className="text-2xl font-bold text-premium">78€</span>
-                  </div>
-                </div>
-
-                <Button className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6">
-                  Demander un devis
-                </Button>
-              </div>
-            </Card>
-
-            {/* My Bookings */}
-            <Card className="p-6 mt-8">
-              <h2 className="text-xl font-bold mb-6">Mes réservations</h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    date: "15 Nov 2024",
-                    time: "14:30",
-                    from: "Paris 8ème",
-                    to: "CDG Terminal 2",
-                    status: "confirmed",
-                    price: "65€",
-                  },
-                  {
-                    date: "20 Nov 2024",
-                    time: "09:00",
-                    from: "Versailles",
-                    to: "La Défense",
-                    status: "pending",
-                    price: "45€",
-                  },
-                ].map((booking, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-lg border border-border hover:border-premium transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-semibold">{booking.date}</span>
-                        <span className="text-muted-foreground">à {booking.time}</span>
-                      </div>
-                      <Badge
-                        variant={booking.status === "confirmed" ? "default" : "outline"}
-                        className={
-                          booking.status === "confirmed"
-                            ? "bg-gradient-trust border-0"
-                            : "border-premium text-premium"
-                        }
-                      >
-                        {booking.status === "confirmed" ? "Confirmée" : "En attente"}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1 mb-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span>{booking.from}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-premium" />
-                        <span>{booking.to}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-premium">{booking.price}</span>
-                      <Button variant="outline" size="sm">
-                        Détails
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+        <Card className="p-6 mb-8 bg-gradient-premium">
+          <div className="flex items-center justify-between">
+            <div className="text-premium-foreground">
+              <h2 className="text-xl font-bold mb-1">Nouvelle Réservation</h2>
+              <p className="text-sm opacity-90">
+                {clientProfile?.client?.is_exclusive
+                  ? "Réservez avec votre chauffeur attitré"
+                  : "Choisissez un chauffeur et réservez"}
+              </p>
+            </div>
+            <Button
+              onClick={handleNewReservation}
+              className="bg-premium-foreground text-premium hover:bg-premium-foreground/90"
+              size="lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Réserver
+            </Button>
           </div>
+        </Card>
 
-          {/* Driver Info */}
-          <div className="space-y-6">
-            <Card className="p-6 bg-gradient-dark text-primary-foreground shadow-elegant">
-              <div className="text-center mb-6">
-                <div className="w-24 h-24 bg-gradient-premium rounded-full flex items-center justify-center text-premium-foreground text-3xl font-bold mx-auto mb-4">
-                  {clientProfile?.client?.drivers?.full_name?.charAt(0) || "C"}
+        {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
+          <Card className="p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">Votre Chauffeur Attitré</h2>
+            <div className="flex items-center gap-4">
+              {clientProfile.client.drivers.profiles?.profile_photo_url ? (
+                <img
+                  src={clientProfile.client.drivers.profiles.profile_photo_url}
+                  alt={clientProfile.client.drivers.profiles.full_name}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
+                  <Car className="w-8 h-8 text-primary-foreground" />
                 </div>
-                <h3 className="text-xl font-bold mb-1">
-                  {clientProfile?.client?.drivers?.full_name || "Votre chauffeur"}
+              )}
+              <div>
+                <h3 className="font-bold text-lg">
+                  {clientProfile.client.drivers.profiles?.full_name}
                 </h3>
-                <p className="text-sm opacity-80">
-                  {clientProfile?.client?.is_exclusive ? "Votre chauffeur exclusif" : "Chauffeur"}
-                </p>
+                {clientProfile.client.drivers.company_name && (
+                  <p className="text-sm text-muted-foreground">
+                    {clientProfile.client.drivers.company_name}
+                  </p>
+                )}
+                <Badge variant="outline" className="mt-1">
+                  {clientProfile.client.drivers.vehicle_model}
+                </Badge>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b border-primary-foreground/20">
-                  <span className="text-sm opacity-80">Véhicule</span>
-                  <span className="font-semibold">Mercedes Classe E</span>
-                </div>
-                <div className="flex items-center justify-between py-2 border-b border-primary-foreground/20">
-                  <span className="text-sm opacity-80">Note</span>
-                  <span className="font-semibold">4.9 ⭐</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm opacity-80">Courses effectuées</span>
-                  <span className="font-semibold">1,250+</span>
-                </div>
-              </div>
-            </Card>
+            </div>
+          </Card>
+        )}
 
-            <Card className="p-6">
-              <h3 className="font-bold mb-4">Statistiques</h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Courses ce mois</span>
-                    <span className="font-semibold">8</span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-trust w-2/3"></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Dépenses totales</span>
-                    <span className="font-semibold text-premium">450€</span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-premium w-1/2"></div>
-                  </div>
-                </div>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
+                <Car className="w-6 h-6 text-premium-foreground" />
               </div>
-            </Card>
-          </div>
+            </div>
+            <h3 className="text-2xl font-bold mb-1">
+              {clientProfile?.client?.total_rides || 0}
+            </h3>
+            <p className="text-sm text-muted-foreground">Courses réalisées</p>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center">
+                <Euro className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold mb-1">
+              {parseFloat(clientProfile?.client?.total_spent || 0).toFixed(2)} €
+            </h3>
+            <p className="text-sm text-muted-foreground">Total dépensé</p>
+          </Card>
+
+          <Card className="p-6 bg-gradient-premium">
+            <div className="mb-4">
+              <div className="w-12 h-12 bg-premium-foreground/10 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-premium-foreground" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-premium-foreground mb-1">En attente</h3>
+            <p className="text-sm text-premium-foreground/80">Devis à traiter</p>
+          </Card>
         </div>
+
+        <Tabs defaultValue="devis" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="devis">Mes Devis</TabsTrigger>
+            <TabsTrigger value="factures">Mes Factures</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="devis" className="space-y-6">
+            {clientProfile?.client?.id && (
+              <DevisList clientId={clientProfile.client.id} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="factures" className="space-y-6">
+            <Card className="p-8 text-center">
+              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Module en cours de développement</h3>
+              <p className="text-muted-foreground">
+                La gestion des factures sera disponible prochainement
+              </p>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
