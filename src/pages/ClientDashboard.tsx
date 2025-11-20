@@ -15,9 +15,9 @@ import {
   Users,
   QrCode,
   User,
-  Bell,
   Sparkles
 } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -318,9 +318,7 @@ const ClientDashboard = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle demande
               </Button>
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
+              <NotificationBell />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{clientProfile?.full_name?.split(" ")[0]}</span>
                 <Button variant="ghost" size="icon" onClick={signOut}>
