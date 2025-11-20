@@ -854,25 +854,26 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                   )}
 
-                  {/* Accept/Reject buttons logic based on creator */}
+                  {/* Accept/Reject buttons logic - Flux systématique */}
                   {(() => {
                     const devis = course.devis?.[0];
                     
                     // Déterminer si course créée par chauffeur connecté
                     const isDriverCreated = user && course.created_by_user_id === user.id;
                     
-                    // Course créée par chauffeur : attente acceptation client uniquement
-                    if (isDriverCreated) {
-                      return devis?.status === "pending" ? (
+                    // FLUX 1: Chauffeur crée → Client accepte → Confirmée
+                    // Pas de boutons pour chauffeur, juste attendre l'acceptation client
+                    if (isDriverCreated && devis?.status === "pending") {
+                      return (
                         <div className="text-sm text-muted-foreground italic">
                           ⏳ En attente de l'acceptation du client
                         </div>
-                      ) : null;
+                      );
                     }
                     
-                    // Course créée par client : double acceptation requise
-                    // Si devis accepté par client, chauffeur doit maintenant accepter
-                    if (devis?.status === "accepted" && course.status === "pending") {
+                    // FLUX 2: Client crée → Client accepte → Chauffeur accepte → Confirmée
+                    // Le client a créé ET accepté, maintenant le chauffeur doit accepter
+                    if (!isDriverCreated && devis?.status === "accepted") {
                       return (
                         <div className="flex gap-2 flex-wrap">
                           <Button
@@ -897,8 +898,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       );
                     }
                     
-                    // Devis en attente d'acceptation client
-                    if (devis?.status === "pending") {
+                    // FLUX 2 (suite): Client crée mais n'a pas encore accepté
+                    // Attendre que le client accepte le devis
+                    if (!isDriverCreated && devis?.status === "pending") {
                       return (
                         <div className="text-sm text-muted-foreground italic">
                           ⏳ En attente de l'acceptation du client
