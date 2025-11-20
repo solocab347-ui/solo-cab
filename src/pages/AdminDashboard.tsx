@@ -9,6 +9,8 @@ import { Car, LogOut, Shield } from "lucide-react";
 import AdminStats from "@/components/admin/AdminStats";
 import DriversValidation from "@/components/admin/DriversValidation";
 import UsersList from "@/components/admin/UsersList";
+import AdminDriversManagement from "@/components/admin/AdminDriversManagement";
+import AdminClientsManagement from "@/components/admin/AdminClientsManagement";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -91,9 +93,11 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="stats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="stats">Statistiques</TabsTrigger>
-            <TabsTrigger value="drivers">Validation Chauffeurs</TabsTrigger>
+            <TabsTrigger value="validation">Validation</TabsTrigger>
+            <TabsTrigger value="drivers">Chauffeurs</TabsTrigger>
+            <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
           </TabsList>
 
@@ -101,8 +105,16 @@ const AdminDashboard = () => {
             <AdminStats />
           </TabsContent>
 
-          <TabsContent value="drivers">
+          <TabsContent value="validation">
             <DriversValidation />
+          </TabsContent>
+
+          <TabsContent value="drivers">
+            <AdminDriversManagement />
+          </TabsContent>
+
+          <TabsContent value="clients">
+            <AdminClientsManagement />
           </TabsContent>
 
           <TabsContent value="users">

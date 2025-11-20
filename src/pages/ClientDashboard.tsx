@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DevisList from "@/components/DevisList";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientFacturesList from "@/components/client/ClientFacturesList";
+import ClientProfile from "@/components/client/ClientProfile";
 
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
@@ -206,10 +207,11 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="devis" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="courses">Mes Courses</TabsTrigger>
             <TabsTrigger value="devis">Mes Devis</TabsTrigger>
             <TabsTrigger value="factures">Mes Factures</TabsTrigger>
+            <TabsTrigger value="profile">Profil</TabsTrigger>
           </TabsList>
 
           <TabsContent value="courses" className="space-y-6">
@@ -228,6 +230,10 @@ const ClientDashboard = () => {
             {clientProfile?.client?.id && (
               <ClientFacturesList clientId={clientProfile.client.id} />
             )}
+          </TabsContent>
+
+          <TabsContent value="profile" className="space-y-6">
+            <ClientProfile />
           </TabsContent>
         </Tabs>
       </div>

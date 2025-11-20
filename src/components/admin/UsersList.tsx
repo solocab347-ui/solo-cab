@@ -2,9 +2,20 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Search, Users as UsersIcon } from "lucide-react";
+import { Search, Users as UsersIcon, Ban, CheckCircle, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Pagination from "@/components/Pagination";
 
 const UsersList = () => {
@@ -13,6 +24,10 @@ const UsersList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    user: any;
+  }>({ open: false, user: null });
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -64,6 +79,24 @@ const UsersList = () => {
       toast.error("Erreur lors du chargement des utilisateurs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteDialog.user) return;
+
+    try {
+      // Delete from auth.users (cascade will handle related data)
+      const { error } = await supabase.auth.admin.deleteUser(deleteDialog.user.id);
+
+      if (error) throw error;
+
+      toast.success("Utilisateur supprimé avec succès");
+      fetchUsers();
+      setDeleteDialog({ open: false, user: null });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error("Erreur lors de la suppression de l'utilisateur");
     }
   };
 
@@ -148,6 +181,16 @@ const UsersList = () => {
                       )}
                     </div>
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteDialog({ open: true, user })}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </Button>
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     Inscrit le {new Date(user.created_at).toLocaleDateString("fr-FR")}
                   </div>
@@ -164,6 +207,27 @@ const UsersList = () => {
           />
         </>
       )}
+
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => !open && setDeleteDialog({ open: false, user: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est
+              irréversible et supprimera toutes les données associées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser}>
+              Confirmer la suppression
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
