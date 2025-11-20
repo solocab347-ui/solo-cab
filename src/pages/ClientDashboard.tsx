@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DevisList from "@/components/DevisList";
+import ClientCoursesList from "@/components/client/ClientCoursesList";
+import ClientFacturesList from "@/components/client/ClientFacturesList";
 
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
@@ -204,10 +206,17 @@ const ClientDashboard = () => {
         </div>
 
         <Tabs defaultValue="devis" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="courses">Mes Courses</TabsTrigger>
             <TabsTrigger value="devis">Mes Devis</TabsTrigger>
             <TabsTrigger value="factures">Mes Factures</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="courses" className="space-y-6">
+            {clientProfile?.client?.id && (
+              <ClientCoursesList clientId={clientProfile.client.id} />
+            )}
+          </TabsContent>
 
           <TabsContent value="devis" className="space-y-6">
             {clientProfile?.client?.id && (
@@ -216,13 +225,9 @@ const ClientDashboard = () => {
           </TabsContent>
 
           <TabsContent value="factures" className="space-y-6">
-            <Card className="p-8 text-center">
-              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Module en cours de développement</h3>
-              <p className="text-muted-foreground">
-                La gestion des factures sera disponible prochainement
-              </p>
-            </Card>
+            {clientProfile?.client?.id && (
+              <ClientFacturesList clientId={clientProfile.client.id} />
+            )}
           </TabsContent>
         </Tabs>
       </div>

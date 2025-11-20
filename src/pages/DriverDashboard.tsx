@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin } from "lucide-react";
 import CoursesList from "@/components/CoursesList";
+import DriverClientsList from "@/components/driver/DriverClientsList";
+import DriverDevisList from "@/components/driver/DriverDevisList";
+import DriverFacturesList from "@/components/driver/DriverFacturesList";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,9 +180,12 @@ const DriverDashboard = () => {
         </div>
 
         <Tabs defaultValue="stats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="stats">Statistiques</TabsTrigger>
+            <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="devis">Devis</TabsTrigger>
+            <TabsTrigger value="factures">Factures</TabsTrigger>
             <TabsTrigger value="profile">Profil Public</TabsTrigger>
             <TabsTrigger value="pricing">Tarification</TabsTrigger>
           </TabsList>
@@ -289,6 +295,13 @@ const DriverDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Clients Tab */}
+          <TabsContent value="clients" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <DriverClientsList driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
             <Card className="p-6">
@@ -306,6 +319,20 @@ const DriverDashboard = () => {
                 <CoursesList driverId={driverProfile.driver.id} />
               )}
             </Card>
+          </TabsContent>
+
+          {/* Devis Tab */}
+          <TabsContent value="devis" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <DriverDevisList driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
+          {/* Factures Tab */}
+          <TabsContent value="factures" className="space-y-6">
+            {driverProfile?.driver?.id && (
+              <DriverFacturesList driverId={driverProfile.driver.id} />
+            )}
           </TabsContent>
 
           {/* Profile Tab */}
