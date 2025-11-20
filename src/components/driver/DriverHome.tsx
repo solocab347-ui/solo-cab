@@ -50,7 +50,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const driverId = driverProfile?.driver?.id;
       if (!driverId) return;
 
-      // Courses d'aujourd'hui (vérifier driver_id ET driver_ids array)
+      // Courses d'aujourd'hui
       const { data: todayCoursesData } = await supabase
         .from('courses')
         .select('id')
@@ -58,7 +58,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         .gte('created_at', todayStart)
         .lte('created_at', todayEnd);
 
-      // Revenue d'aujourd'hui (factures payées aujourd'hui)
+      // Revenue d'aujourd'hui
       const { data: todayFactures } = await supabase
         .from('factures')
         .select('amount')
@@ -67,7 +67,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         .gte('paid_at', todayStart)
         .lte('paid_at', todayEnd);
 
-      // Clients du mois (nouveaux clients)
+      // Clients du mois
       const { data: monthClientsData } = await supabase
         .from('clients')
         .select('id')
@@ -75,7 +75,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
-      // Courses du mois (vérifier driver_id ET driver_ids array)
+      // Courses du mois
       const { data: monthCoursesData } = await supabase
         .from('courses')
         .select('id')
@@ -83,7 +83,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
-      // Courses terminées du mois (vérifier driver_id ET driver_ids array)
+      // Courses terminées du mois
       const { data: monthCompletedData } = await supabase
         .from('courses')
         .select('id')
@@ -92,7 +92,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         .gte('updated_at', monthStart)
         .lte('updated_at', monthEnd);
 
-      // CA total du mois (factures payées)
+      // CA total du mois
       const { data: monthFactures } = await supabase
         .from('factures')
         .select('amount')
@@ -120,66 +120,80 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      {/* Welcome Header */}
+      <div className="text-center sm:text-left animate-fade-in">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          Bonjour, {driverProfile?.full_name || 'Chauffeur'} ✨
+        </h1>
+        <p className="text-muted-foreground">Voici un aperçu de votre activité</p>
+      </div>
+
       {/* Accès Rapide */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Accès Rapide</h2>
-        <div className="grid md:grid-cols-3 gap-6">
+      <div className="animate-fade-in">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Accès Rapide</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
-            className="p-8 bg-gradient-trust hover:shadow-elegant transition-all cursor-pointer border-0"
+            className="p-6 sm:p-8 bg-gradient-trust hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => navigate("/driver/create-course")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-trust-foreground/10 rounded-full flex items-center justify-center">
-                <Plus className="w-8 h-8 text-trust-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-trust-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="w-7 h-7 sm:w-8 sm:h-8 text-trust-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-trust-foreground">Nouvelle Course</h3>
-              <p className="text-sm text-trust-foreground/70">Créer pour un client</p>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-trust-foreground mb-1">Nouvelle Course</h3>
+                <p className="text-sm text-trust-foreground/70">Créer pour un client</p>
+              </div>
             </div>
           </Card>
 
           {/* Mon QR Code */}
           <Card 
-            className="p-8 bg-gradient-magenta hover:shadow-elegant transition-all cursor-pointer border-0"
+            className="p-6 sm:p-8 bg-gradient-magenta hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => onTabChange("qrcode")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-magenta-foreground/10 rounded-full flex items-center justify-center">
-                <QrCode className="w-8 h-8 text-magenta-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-magenta-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <QrCode className="w-7 h-7 sm:w-8 sm:h-8 text-magenta-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-magenta-foreground">Mon QR Code</h3>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-magenta-foreground">Mon QR Code</h3>
+              </div>
             </div>
           </Card>
 
           {/* Calculatrice */}
           <Card 
-            className="p-8 bg-gradient-brown hover:shadow-elegant transition-all cursor-pointer border-0"
+            className="p-6 sm:p-8 bg-gradient-brown hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => onTabChange("calculator")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-brown-foreground/10 rounded-full flex items-center justify-center">
-                <Calculator className="w-8 h-8 text-brown-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brown-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Calculator className="w-7 h-7 sm:w-8 sm:h-8 text-brown-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-brown-foreground">Calculatrice</h3>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-brown-foreground">Calculatrice</h3>
+              </div>
             </div>
           </Card>
         </div>
       </div>
 
       {/* Aujourd'hui */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Aujourd'hui</h2>
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="animate-fade-in">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Aujourd'hui</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Courses */}
-          <Card className="p-6 bg-gradient-trust hover:shadow-elegant transition-all border-0">
+          <Card className="p-6 bg-gradient-trust hover:shadow-lg transition-all border-0">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-trust-foreground/10 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Car className="w-6 h-6 text-trust-foreground" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-trust-foreground/80 mb-1">Courses</p>
-                <h3 className="text-4xl font-bold text-trust-foreground">
+                <h3 className="text-3xl sm:text-4xl font-bold text-trust-foreground truncate">
                   {loading ? "..." : stats.todayCourses}
                 </h3>
               </div>
@@ -187,15 +201,15 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* Revenue */}
-          <Card className="p-6 bg-gradient-warning hover:shadow-elegant transition-all border-0">
+          <Card className="p-6 bg-gradient-warning hover:shadow-lg transition-all border-0">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-warning-foreground/10 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-warning-foreground/10 rounded-xl flex items-center justify-center flex-shrink-0">
                 <TrendingUp className="w-6 h-6 text-warning-foreground" />
               </div>
-              <div>
-                <p className="text-sm text-warning-foreground/80 mb-1">Revenue</p>
-                <h3 className="text-4xl font-bold text-warning-foreground">
-                  {loading ? "..." : `${stats.todayRevenue.toFixed(2)}€`}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-warning-foreground/80 mb-1">Revenus</p>
+                <h3 className="text-3xl sm:text-4xl font-bold text-warning-foreground truncate">
+                  {loading ? "..." : `${stats.todayRevenue.toFixed(0)}€`}
                 </h3>
               </div>
             </div>
@@ -204,59 +218,67 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       </div>
 
       {/* Ce mois */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Ce mois</h2>
-        <div className="grid md:grid-cols-4 gap-6">
+      <div className="animate-fade-in">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Ce mois</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {/* Clients */}
-          <Card className="p-6 bg-gradient-trust hover:shadow-elegant transition-all border-0">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-trust-foreground/10 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-trust-foreground" />
+          <Card className="p-4 sm:p-6 bg-gradient-trust hover:shadow-lg transition-all border-0">
+            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-xl flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-trust-foreground" />
+              </div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-trust-foreground">
+                  {loading ? "..." : stats.monthClients}
+                </h3>
+                <p className="text-xs sm:text-sm text-trust-foreground/80 mt-1">Clients</p>
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-trust-foreground mb-1">
-              {loading ? "..." : stats.monthClients}
-            </h3>
-            <p className="text-sm text-trust-foreground/80">Clients</p>
           </Card>
 
           {/* Courses */}
-          <Card className="p-6 bg-gradient-success hover:shadow-elegant transition-all border-0">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-success-foreground/10 rounded-lg flex items-center justify-center">
-                <Car className="w-5 h-5 text-success-foreground" />
+          <Card className="p-4 sm:p-6 bg-gradient-success hover:shadow-lg transition-all border-0">
+            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-xl flex items-center justify-center">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-success-foreground" />
+              </div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-success-foreground">
+                  {loading ? "..." : stats.monthCourses}
+                </h3>
+                <p className="text-xs sm:text-sm text-success-foreground/80 mt-1">Courses</p>
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-success-foreground mb-1">
-              {loading ? "..." : stats.monthCourses}
-            </h3>
-            <p className="text-sm text-success-foreground/80">Courses</p>
           </Card>
 
           {/* Terminées */}
-          <Card className="p-6 bg-gradient-magenta hover:shadow-elegant transition-all border-0">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-magenta-foreground/10 rounded-lg flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-magenta-foreground" />
+          <Card className="p-4 sm:p-6 bg-gradient-magenta hover:shadow-lg transition-all border-0">
+            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-magenta-foreground/10 rounded-xl flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-magenta-foreground" />
+              </div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-magenta-foreground">
+                  {loading ? "..." : stats.monthCompleted}
+                </h3>
+                <p className="text-xs sm:text-sm text-magenta-foreground/80 mt-1">Terminées</p>
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-magenta-foreground mb-1">
-              {loading ? "..." : stats.monthCompleted}
-            </h3>
-            <p className="text-sm text-magenta-foreground/80">Terminées</p>
           </Card>
 
           {/* CA Total */}
-          <Card className="p-6 bg-gradient-warning hover:shadow-elegant transition-all border-0">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 bg-warning-foreground/10 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-warning-foreground" />
+          <Card className="p-4 sm:p-6 bg-gradient-warning hover:shadow-lg transition-all border-0">
+            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-warning-foreground/10 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-warning-foreground" />
+              </div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-warning-foreground truncate w-full">
+                  {loading ? "..." : `${stats.monthRevenue.toFixed(0)}€`}
+                </h3>
+                <p className="text-xs sm:text-sm text-warning-foreground/80 mt-1">CA Total</p>
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-warning-foreground mb-1">
-              {loading ? "..." : `${stats.monthRevenue.toFixed(2)}€`}
-            </h3>
-            <p className="text-sm text-warning-foreground/80">CA Total</p>
           </Card>
         </div>
       </div>
