@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          message: string
+          promotion_id: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          sent_count: number | null
+          status: string
+          target_audience: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          message: string
+          promotion_id?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          target_audience: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          message?: string
+          promotion_id?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          target_audience?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -126,6 +186,7 @@ export type Database = {
           destination_address: string
           destination_latitude: number | null
           destination_longitude: number | null
+          discount_amount: number | null
           distance_km: number | null
           driver_id: string | null
           driver_ids: string[] | null
@@ -136,6 +197,7 @@ export type Database = {
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
+          promo_code: string | null
           scheduled_date: string
           status: Database["public"]["Enums"]["course_status"]
           updated_at: string
@@ -148,6 +210,7 @@ export type Database = {
           destination_address: string
           destination_latitude?: number | null
           destination_longitude?: number | null
+          discount_amount?: number | null
           distance_km?: number | null
           driver_id?: string | null
           driver_ids?: string[] | null
@@ -158,6 +221,7 @@ export type Database = {
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          promo_code?: string | null
           scheduled_date: string
           status?: Database["public"]["Enums"]["course_status"]
           updated_at?: string
@@ -170,6 +234,7 @@ export type Database = {
           destination_address?: string
           destination_latitude?: number | null
           destination_longitude?: number | null
+          discount_amount?: number | null
           distance_km?: number | null
           driver_id?: string | null
           driver_ids?: string[] | null
@@ -180,6 +245,7 @@ export type Database = {
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
+          promo_code?: string | null
           scheduled_date?: string
           status?: Database["public"]["Enums"]["course_status"]
           updated_at?: string
@@ -613,6 +679,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      promotions: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string
+          current_uses: number | null
+          description: string | null
+          driver_id: string
+          id: string
+          max_uses: number | null
+          min_amount: number | null
+          type: string
+          updated_at: string
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          driver_id: string
+          id?: string
+          max_uses?: number | null
+          min_amount?: number | null
+          type: string
+          updated_at?: string
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          driver_id?: string
+          id?: string
+          max_uses?: number | null
+          min_amount?: number | null
+          type?: string
+          updated_at?: string
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       qr_codes: {
         Row: {
