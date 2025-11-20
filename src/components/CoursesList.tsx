@@ -117,6 +117,23 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
   };
 
+  const handleAcceptCourse = async (courseId: string) => {
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({ status: "accepted" })
+        .eq("id", courseId);
+
+      if (error) throw error;
+
+      toast.success("Course acceptée !");
+      await fetchCourses();
+    } catch (error: any) {
+      console.error("Error accepting course:", error);
+      toast.error("Erreur lors de l'acceptation de la course");
+    }
+  };
+
   const handleStartCourse = async (courseId: string) => {
     try {
       const { error } = await supabase
@@ -831,6 +848,30 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.devis[0].quote_number && (
                         <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
                       )}
+                    </div>
+                  )}
+
+                  {/* Show Accept/Reject buttons for courses awaiting driver acceptance */}
+                  {(!course.devis || course.devis.length === 0 || course.devis[0].status === "pending") && (
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleAcceptCourse(course.id)}
+                        className="flex-1"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Accepter
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelCourse(course.id)}
+                        className="flex-1"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Refuser
+                      </Button>
                     </div>
                   )}
 
