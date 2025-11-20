@@ -484,6 +484,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -514,8 +535,21 @@ export type Database = {
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_platform_stats: { Args: never; Returns: Json }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_user_roles: { Args: { _user_id: string }; Returns: string[] }
-      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | { Args: { _role: string; _user_id: string }; Returns: boolean }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
@@ -538,6 +572,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "driver" | "client"
       course_status:
         | "pending"
         | "accepted"
@@ -674,6 +709,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "driver", "client"],
       course_status: [
         "pending",
         "accepted",
