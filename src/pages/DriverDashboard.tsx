@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
@@ -272,7 +272,7 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 bg-card">
+          <TabsList className="grid w-full grid-cols-11 bg-card">
             <TabsTrigger value="home" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Accueil
@@ -313,6 +313,29 @@ const DriverDashboard = () => {
                 <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer">
                   <QrCode className="w-4 h-4" />
                   Mon QR Code
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50">
+                  <BarChart3 className="w-4 h-4" />
+                  Développement
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
+                <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer">
+                  <TrendingUp className="w-4 h-4" />
+                  Statistique
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer">
+                  <Megaphone className="w-4 h-4" />
+                  Campagne
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer">
+                  <PieChart className="w-4 h-4" />
+                  Calcul de rentabilité
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -755,6 +778,63 @@ const DriverDashboard = () => {
                 <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
                   {loading ? "Enregistrement..." : "Enregistrer les modifications"}
                 </Button>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Statistics Tab */}
+          <TabsContent value="statistics" className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Statistique</h2>
+                  <p className="text-sm text-muted-foreground">Analysez vos performances et votre activité</p>
+                </div>
+              </div>
+              <div className="text-center py-12 text-muted-foreground">
+                <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Section en développement</p>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Campaigns Tab */}
+          <TabsContent value="campaigns" className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Campagne</h2>
+                  <p className="text-sm text-muted-foreground">Gérez vos campagnes marketing</p>
+                </div>
+              </div>
+              <div className="text-center py-12 text-muted-foreground">
+                <Megaphone className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Section en développement</p>
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Profitability Tab */}
+          <TabsContent value="profitability" className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                  <PieChart className="w-5 h-5 text-premium-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Calcul de rentabilité</h2>
+                  <p className="text-sm text-muted-foreground">Analysez votre rentabilité et vos marges</p>
+                </div>
+              </div>
+              <div className="text-center py-12 text-muted-foreground">
+                <PieChart className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Section en développement</p>
               </div>
             </Card>
           </TabsContent>
