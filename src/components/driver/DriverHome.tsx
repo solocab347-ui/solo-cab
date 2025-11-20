@@ -33,10 +33,10 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (driverProfile?.id) {
+    if (driverProfile?.driver?.id) {
       fetchStats();
     }
-  }, [driverProfile?.id]);
+  }, [driverProfile?.driver?.id]);
 
   const fetchStats = async () => {
     try {
@@ -47,11 +47,14 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const monthStart = startOfMonth(today).toISOString();
       const monthEnd = endOfMonth(today).toISOString();
 
-      // Courses d'aujourd'hui
+      const driverId = driverProfile?.driver?.id;
+      if (!driverId) return;
+
+      // Courses d'aujourd'hui (vérifier driver_id ET driver_ids array)
       const { data: todayCoursesData } = await supabase
         .from('courses')
         .select('id')
-        .eq('driver_id', driverProfile.id)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .gte('created_at', todayStart)
         .lte('created_at', todayEnd);
 
@@ -59,7 +62,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const { data: todayFactures } = await supabase
         .from('factures')
         .select('amount')
-        .eq('driver_id', driverProfile.id)
+        .eq('driver_id', driverId)
         .eq('payment_status', 'paid')
         .gte('paid_at', todayStart)
         .lte('paid_at', todayEnd);
@@ -68,23 +71,23 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const { data: monthClientsData } = await supabase
         .from('clients')
         .select('id')
-        .or(`driver_id.eq.${driverProfile.id},driver_ids.cs.{${driverProfile.id}}`)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
-      // Courses du mois
+      // Courses du mois (vérifier driver_id ET driver_ids array)
       const { data: monthCoursesData } = await supabase
         .from('courses')
         .select('id')
-        .eq('driver_id', driverProfile.id)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .gte('created_at', monthStart)
         .lte('created_at', monthEnd);
 
-      // Courses terminées du mois
+      // Courses terminées du mois (vérifier driver_id ET driver_ids array)
       const { data: monthCompletedData } = await supabase
         .from('courses')
         .select('id')
-        .eq('driver_id', driverProfile.id)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .eq('status', 'completed')
         .gte('updated_at', monthStart)
         .lte('updated_at', monthEnd);
@@ -93,7 +96,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const { data: monthFactures } = await supabase
         .from('factures')
         .select('amount')
-        .eq('driver_id', driverProfile.id)
+        .eq('driver_id', driverId)
         .eq('payment_status', 'paid')
         .gte('paid_at', monthStart)
         .lte('paid_at', monthEnd);
