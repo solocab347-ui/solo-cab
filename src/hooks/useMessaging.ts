@@ -140,6 +140,18 @@ export const useMessaging = () => {
   const sendMessage = useCallback(async (conversationId: string, content: string) => {
     if (!user || !content.trim()) return;
 
+    // Optimistic update: add message immediately to local state
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: content.trim(),
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
     try {
       const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
@@ -151,6 +163,8 @@ export const useMessaging = () => {
     } catch (error: any) {
       console.error("Error sending message:", error);
       toast.error("Erreur lors de l'envoi du message");
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
     }
   }, [user]);
 
@@ -196,7 +210,14 @@ export const useMessaging = () => {
           if (payload.new && selectedConversation) {
             const newMsg = payload.new as Message;
             if (newMsg.conversation_id === selectedConversation) {
-              setMessages((prev) => [...prev, newMsg]);
+              // Avoid duplicates (optimistic updates)
+              setMessages((prev) => {
+                const exists = prev.some((m) => m.id === newMsg.id);
+                if (exists) return prev;
+                // Remove temp message if exists
+                const filtered = prev.filter((m) => !m.id.startsWith("temp-"));
+                return [...filtered, newMsg];
+              });
               // Mark as read if not from current user
               if (newMsg.sender_id !== user.id) {
                 supabase
