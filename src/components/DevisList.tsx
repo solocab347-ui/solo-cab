@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -90,7 +91,6 @@ const DevisList = ({ clientId }: DevisListProps) => {
       if (error) throw error;
 
       if (data?.url) {
-        // Redirect to Stripe Checkout
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL received");
@@ -124,7 +124,6 @@ const DevisList = ({ clientId }: DevisListProps) => {
     try {
       const finalReason = rejectReason === "Autre" ? customReason : rejectReason;
 
-      // Update devis status
       const { error: devisError } = await supabase
         .from("devis")
         .update({ 
@@ -135,7 +134,6 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
       if (devisError) throw devisError;
 
-      // Get devis details for notification
       const { data: devisData } = await supabase
         .from("devis")
         .select(`
@@ -148,7 +146,6 @@ const DevisList = ({ clientId }: DevisListProps) => {
         .eq("id", selectedDevisId)
         .single();
 
-      // Create notification for driver
       if (devisData) {
         await supabase.from("notifications").insert({
           user_id: devisData.driver_id,
@@ -220,6 +217,127 @@ const DevisList = ({ clientId }: DevisListProps) => {
     );
   }
 
+  // Filtrer les devis par statut
+  const pendingDevis = devisList.filter(d => d.status === "pending" && new Date(d.valid_until) >= new Date());
+  const acceptedDevis = devisList.filter(d => d.status === "accepted");
+  const rejectedDevis = devisList.filter(d => d.status === "rejected");
+
+  const renderDevisCard = (devis: any) => {
+    const isExpired = new Date(devis.valid_until) < new Date();
+    const canAccept = devis.status === "pending" && !isExpired;
+
+    return (
+      <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-lg">Devis {devis.quote_number}</h3>
+              {getStatusBadge(devis.status, devis.valid_until)}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Chauffeur : {devis.drivers?.profiles?.full_name}
+              {devis.drivers?.company_name && ` • ${devis.drivers.company_name}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2 text-sm">
+          <div>
+            <span className="font-medium">Départ :</span>
+            <span className="text-muted-foreground ml-2">{devis.courses.pickup_address}</span>
+          </div>
+          <div>
+            <span className="font-medium">Arrivée :</span>
+            <span className="text-muted-foreground ml-2">{devis.courses.destination_address}</span>
+          </div>
+          <div>
+            <span className="font-medium">Date :</span>
+            <span className="text-muted-foreground ml-2">
+              {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+            </span>
+          </div>
+          {devis.courses.distance_km && (
+            <div>
+              <span className="font-medium">Distance :</span>
+              <span className="text-muted-foreground ml-2">{devis.courses.distance_km} km</span>
+            </div>
+          )}
+        </div>
+
+        <div className="border border-border rounded-lg p-4 mb-4">
+          <h4 className="font-semibold mb-3 flex items-center gap-2">
+            <Euro className="w-4 h-4" />
+            Détail du prix
+          </h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Forfait de base</span>
+              <span className="font-medium">{parseFloat(devis.base_price).toFixed(2)} €</span>
+            </div>
+            {parseFloat(devis.distance_price) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Prix au kilomètre</span>
+                <span className="font-medium">{parseFloat(devis.distance_price).toFixed(2)} €</span>
+              </div>
+            )}
+            {parseFloat(devis.time_price || 0) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Prix horaire</span>
+                <span className="font-medium">{parseFloat(devis.time_price).toFixed(2)} €</span>
+              </div>
+            )}
+            <div className="pt-2 border-t border-border flex justify-between text-lg font-bold">
+              <span>Total TTC</span>
+              <span className="text-premium">{parseFloat(devis.amount).toFixed(2)} €</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground mb-4">
+          {isExpired ? (
+            <span className="text-destructive">Devis expiré</span>
+          ) : (
+            <span>Valable jusqu'au {format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}</span>
+          )}
+        </div>
+
+        {devis.status === "rejected" && devis.notes && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
+            <p className="text-sm text-destructive font-medium mb-1">Motif du refus :</p>
+            <p className="text-sm text-muted-foreground">{devis.notes}</p>
+          </div>
+        )}
+
+        {canAccept && (
+          <div className="flex gap-3 pt-4 border-t border-border">
+            <Button
+              onClick={() => handleAccept(devis.id)}
+              className="flex-1 bg-gradient-premium"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Accepter le devis
+            </Button>
+            <Button
+              onClick={() => openRejectDialog(devis.id)}
+              variant="outline"
+              className="flex-1"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Refuser
+            </Button>
+          </div>
+        )}
+
+        {devis.status === "accepted" && (
+          <div className="pt-4 border-t border-border text-sm text-green-600 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Devis accepté le {format(new Date(devis.accepted_at), "d MMMM yyyy", { locale: fr })}
+          </div>
+        )}
+      </Card>
+    );
+  };
+
   return (
     <>
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
@@ -280,120 +398,64 @@ const DevisList = ({ clientId }: DevisListProps) => {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-4">
-        {devisList.map((devis) => {
-        const isExpired = new Date(devis.valid_until) < new Date();
-        const canAccept = devis.status === "pending" && !isExpired;
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            En attente ({pendingDevis.length})
+          </TabsTrigger>
+          <TabsTrigger value="accepted" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Acceptés ({acceptedDevis.length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="flex items-center gap-2">
+            <XCircle className="w-4 h-4" />
+            Refusés ({rejectedDevis.length})
+          </TabsTrigger>
+        </TabsList>
 
-        return (
-          <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg">Devis {devis.quote_number}</h3>
-                  {getStatusBadge(devis.status, devis.valid_until)}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Chauffeur : {devis.drivers?.profiles?.full_name}
-                  {devis.drivers?.company_name && ` • ${devis.drivers.company_name}`}
-                </p>
-              </div>
-            </div>
+        <TabsContent value="pending" className="space-y-4">
+          {pendingDevis.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucun devis en attente</h3>
+              <p className="text-muted-foreground">
+                Les devis envoyés par votre chauffeur apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            pendingDevis.map(renderDevisCard)
+          )}
+        </TabsContent>
 
-            {/* Course Details */}
-            <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2 text-sm">
-              <div>
-                <span className="font-medium">Départ :</span>
-                <span className="text-muted-foreground ml-2">{devis.courses.pickup_address}</span>
-              </div>
-              <div>
-                <span className="font-medium">Arrivée :</span>
-                <span className="text-muted-foreground ml-2">{devis.courses.destination_address}</span>
-              </div>
-              <div>
-                <span className="font-medium">Date :</span>
-                <span className="text-muted-foreground ml-2">
-                  {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                </span>
-              </div>
-              {devis.courses.distance_km && (
-                <div>
-                  <span className="font-medium">Distance :</span>
-                  <span className="text-muted-foreground ml-2">{devis.courses.distance_km} km</span>
-                </div>
-              )}
-            </div>
+        <TabsContent value="accepted" className="space-y-4">
+          {acceptedDevis.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucun devis accepté</h3>
+              <p className="text-muted-foreground">
+                Les devis que vous avez acceptés apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            acceptedDevis.map(renderDevisCard)
+          )}
+        </TabsContent>
 
-            {/* Price Breakdown */}
-            <div className="border border-border rounded-lg p-4 mb-4">
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Euro className="w-4 h-4" />
-                Détail du prix
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Forfait de base</span>
-                  <span className="font-medium">{parseFloat(devis.base_price).toFixed(2)} €</span>
-                </div>
-                {parseFloat(devis.distance_price) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Prix au kilomètre</span>
-                    <span className="font-medium">{parseFloat(devis.distance_price).toFixed(2)} €</span>
-                  </div>
-                )}
-                {parseFloat(devis.time_price || 0) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Prix horaire</span>
-                    <span className="font-medium">{parseFloat(devis.time_price).toFixed(2)} €</span>
-                  </div>
-                )}
-                <div className="pt-2 border-t border-border flex justify-between text-lg font-bold">
-                  <span>Total TTC</span>
-                  <span className="text-premium">{parseFloat(devis.amount).toFixed(2)} €</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Validity */}
-            <div className="text-xs text-muted-foreground mb-4">
-              {isExpired ? (
-                <span className="text-destructive">Devis expiré</span>
-              ) : (
-                <span>Valable jusqu'au {format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}</span>
-              )}
-            </div>
-
-            {/* Actions */}
-            {canAccept && (
-              <div className="flex gap-3 pt-4 border-t border-border">
-                <Button
-                  onClick={() => handleAccept(devis.id)}
-                  className="flex-1 bg-gradient-premium"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Accepter le devis
-                </Button>
-                <Button
-                  onClick={() => openRejectDialog(devis.id)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Refuser
-                </Button>
-              </div>
-            )}
-
-            {devis.status === "accepted" && (
-              <div className="pt-4 border-t border-border text-sm text-green-600 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                Devis accepté le {format(new Date(devis.accepted_at), "d MMMM yyyy", { locale: fr })}
-              </div>
-            )}
-          </Card>
-        );
-      })}
-      </div>
+        <TabsContent value="rejected" className="space-y-4">
+          {rejectedDevis.length === 0 ? (
+            <Card className="p-8 text-center">
+              <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucun devis refusé</h3>
+              <p className="text-muted-foreground">
+                Les devis que vous avez refusés apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            rejectedDevis.map(renderDevisCard)
+          )}
+        </TabsContent>
+      </Tabs>
     </>
   );
 };
