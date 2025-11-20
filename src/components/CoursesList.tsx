@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -35,7 +35,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const fetchCourses = async () => {
     try {
-      // Dual association query
+      // Dual association query with devis data
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -44,6 +44,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             user_id,
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
+          ),
+          devis!left(
+            id,
+            amount,
+            status,
+            quote_number,
+            valid_until
           )
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
@@ -176,6 +183,37 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setShowPaymentDialog(true);
   };
 
+  const handleShareDevis = (course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const devis = course.devis?.[0];
+    if (!devis) {
+      toast.error("Aucun devis disponible");
+      return;
+    }
+
+    const message = `Devis ${devis.quote_number} - ${course.clients?.profiles?.full_name}\n` +
+                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
+                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${devis.amount.toFixed(2)}€`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
+  };
+
   const handleCompleteCourse = async () => {
     if (!selectedCourseId || !paymentMethod) {
       toast.error("Veuillez sélectionner un moyen de paiement");
@@ -208,6 +246,79 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       console.error("Error completing course:", error);
       toast.error("Erreur lors de la finalisation");
     }
+  };
+
+  const getDevisStatus = (course: any) => {
+    const devis = course.devis?.[0];
+    
+    if (course.status === "pending") {
+      return {
+        icon: Clock,
+        text: "En attente d'acceptation du chauffeur",
+        color: "text-yellow-500"
+      };
+    }
+    
+    if (course.status === "accepted" && devis) {
+      if (devis.status === "pending") {
+        return {
+          icon: Clock,
+          text: "Devis envoyé au client - En attente d'acceptation",
+          color: "text-premium"
+        };
+      }
+      if (devis.status === "accepted") {
+        return {
+          icon: CheckCircle,
+          text: "Devis accepté par le client - Course confirmée",
+          color: "text-green-500"
+        };
+      }
+      if (devis.status === "rejected") {
+        return {
+          icon: XCircle,
+          text: "Devis refusé par le client",
+          color: "text-destructive"
+        };
+      }
+      if (devis.status === "expired") {
+        return {
+          icon: Clock,
+          text: "Devis expiré",
+          color: "text-muted-foreground"
+        };
+      }
+    }
+    
+    if (course.status === "in_progress") {
+      return {
+        icon: Play,
+        text: "Course en cours",
+        color: "text-blue-500"
+      };
+    }
+    
+    if (course.status === "completed") {
+      return {
+        icon: CheckCircle,
+        text: "Course terminée - Facture générée",
+        color: "text-green-500"
+      };
+    }
+    
+    if (course.status === "cancelled") {
+      return {
+        icon: XCircle,
+        text: "Course annulée",
+        color: "text-destructive"
+      };
+    }
+
+    return {
+      icon: Clock,
+      text: "En attente",
+      color: "text-muted-foreground"
+    };
   };
 
   const getStatusBadge = (status: string) => {
@@ -320,6 +431,61 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         )}
       </div>
 
+      {/* Prix du devis si disponible */}
+      {course.devis?.[0] && (
+        <div className="mb-4 p-4 bg-gradient-dark rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Montant du devis :</span>
+            <span className="text-2xl font-bold text-premium">{course.devis[0].amount.toFixed(2)}€</span>
+          </div>
+        </div>
+      )}
+
+      {/* Status message avec icône dynamique */}
+      {(() => {
+        const statusInfo = getDevisStatus(course);
+        const StatusIcon = statusInfo.icon;
+        return (
+          <div className={`text-sm flex items-center gap-2 mb-3 ${statusInfo.color}`}>
+            <StatusIcon className="w-4 h-4" />
+            {statusInfo.text}
+          </div>
+        );
+      })()}
+
+      {/* Boutons de partage si devis disponible */}
+      {course.devis?.[0] && (course.status === "pending" || course.status === "accepted") && (
+        <div className="flex gap-2 mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(course, 'whatsapp')}
+            className="flex-1"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(course, 'email')}
+            className="flex-1"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Email
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(course, 'sms')}
+            className="flex-1"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            SMS
+          </Button>
+        </div>
+      )}
+
       {course.status === "pending" && (
         <div className="flex gap-3 pt-4 border-t border-border">
           <Button
@@ -337,15 +503,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             <XCircle className="w-4 h-4 mr-2" />
             Refuser
           </Button>
-        </div>
-      )}
-
-      {course.status === "accepted" && (
-        <div className="pt-4 border-t border-border">
-          <div className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-premium" />
-            Devis envoyé au client - En attente d'acceptation
-          </div>
         </div>
       )}
 
