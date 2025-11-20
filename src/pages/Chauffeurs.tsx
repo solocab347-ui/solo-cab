@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Car, Search, MapPin, Star, ArrowRight } from "lucide-react";
+import { Car, Search, MapPin, Star, ArrowRight, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PublicDriver {
   id: string;
@@ -23,8 +24,11 @@ interface PublicDriver {
 }
 
 const Chauffeurs = () => {
+  const { user } = useAuth();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExclusiveClient, setIsExclusiveClient] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -35,8 +39,43 @@ const Chauffeurs = () => {
   ).sort();
 
   useEffect(() => {
-    fetchPublicDrivers();
-  }, [searchTerm, selectedSector]);
+    checkClientAccess();
+  }, [user]);
+
+  useEffect(() => {
+    if (!checkingAccess && !isExclusiveClient) {
+      fetchPublicDrivers();
+    }
+  }, [searchTerm, selectedSector, checkingAccess, isExclusiveClient]);
+
+  const checkClientAccess = async () => {
+    if (!user) {
+      setCheckingAccess(false);
+      return;
+    }
+
+    try {
+      const { data: client, error } = await supabase
+        .from("clients")
+        .select("is_exclusive")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        throw error;
+      }
+
+      if (client?.is_exclusive) {
+        setIsExclusiveClient(true);
+        toast.error("Les clients exclusifs ne peuvent pas accéder à la vitrine publique");
+        setTimeout(() => navigate("/client-dashboard"), 2000);
+      }
+    } catch (error: any) {
+      console.error("Error checking client access:", error);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
   const fetchPublicDrivers = async () => {
     try {
@@ -56,6 +95,35 @@ const Chauffeurs = () => {
     }
   };
 
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-4 border-premium border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-muted-foreground">Vérification de l'accès...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExclusiveClient) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-8 text-center max-w-md">
+          <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Accès Restreint</h2>
+          <p className="text-muted-foreground mb-6">
+            En tant que client exclusif, vous ne pouvez pas accéder à la vitrine publique.
+            Vous êtes déjà lié à votre chauffeur attitré.
+          </p>
+          <Button onClick={() => navigate("/client-dashboard")} className="w-full">
+            Retour au tableau de bord
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -71,11 +139,11 @@ const Chauffeurs = () => {
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="ghost">Connexion</Button>
+              <Button variant="ghost">Connexion Chauffeur</Button>
             </Link>
             <Link to="/login">
               <Button className="bg-gradient-premium hover:opacity-90 transition-opacity">
-                S'inscrire
+                Devenir Chauffeur
               </Button>
             </Link>
           </div>

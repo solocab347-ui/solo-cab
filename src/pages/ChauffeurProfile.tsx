@@ -12,9 +12,11 @@ import {
   ArrowLeft,
   Calendar,
   Award,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DriverProfile {
   id: string;
@@ -38,8 +40,10 @@ interface DriverProfile {
 const ChauffeurProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -99,6 +103,36 @@ const ChauffeurProfile = () => {
       navigate("/chauffeurs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegisterWithDriver = async () => {
+    if (!user) {
+      toast.error("Vous devez d'abord créer un compte");
+      navigate(`/register-client-driver?driver_id=${id}`);
+      return;
+    }
+
+    setRegistering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("register-client-driver", {
+        body: { driver_id: id },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success("Inscription réussie ! Vous êtes maintenant client de ce chauffeur.");
+      setTimeout(() => navigate("/client-dashboard"), 1500);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error("Erreur lors de l'inscription");
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -184,13 +218,32 @@ const ChauffeurProfile = () => {
                 </div>
             </div>
 
-            <Button
-              onClick={() => navigate(`/create-course?driver_id=${id}`)}
-              size="lg"
-              className="w-full bg-gradient-premium hover:opacity-90"
-            >
-              Réserver ce chauffeur
-            </Button>
+            {user ? (
+              <Button
+                onClick={() => navigate(`/create-course?driver_id=${id}`)}
+                size="lg"
+                className="w-full bg-gradient-premium hover:opacity-90"
+              >
+                <Calendar className="w-5 h-5 mr-2" />
+                Réserver une course
+              </Button>
+            ) : (
+              <Button
+                onClick={handleRegisterWithDriver}
+                disabled={registering}
+                size="lg"
+                className="w-full bg-gradient-premium hover:opacity-90"
+              >
+                {registering ? (
+                  <>Inscription en cours...</>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    M'inscrire avec ce chauffeur
+                  </>
+                )}
+              </Button>
+            )}
           </Card>
 
             {/* About */}
@@ -255,15 +308,28 @@ const ChauffeurProfile = () => {
                   </p>
                 )}
               </div>
-              <Link to="/login">
-                <Button className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Réserver une course
-                </Button>
-              </Link>
-              <p className="text-xs text-center opacity-60 mt-4">
-                Connectez-vous pour réserver
-              </p>
+              {user ? (
+                <Link to={`/create-course?driver_id=${id}`}>
+                  <Button className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Réserver une course
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleRegisterWithDriver}
+                    disabled={registering}
+                    className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6"
+                  >
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    {registering ? "Inscription..." : "M'inscrire avec ce chauffeur"}
+                  </Button>
+                  <p className="text-xs text-center opacity-60 mt-4">
+                    Créez votre compte et inscrivez-vous avec ce chauffeur
+                  </p>
+                </>
+              )}
             </Card>
 
             {/* Contact Card */}
