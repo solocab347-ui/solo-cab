@@ -187,9 +187,9 @@ const RegisterClientQR = () => {
             <div className="w-20 h-20 bg-gradient-premium rounded-full flex items-center justify-center mx-auto mb-4">
               <Car className="w-10 h-10 text-premium-foreground" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Inscription Client Exclusif</h1>
+            <h1 className="text-3xl font-bold mb-2">Inscription Client</h1>
             <p className="text-muted-foreground">
-              Vous êtes sur le point de devenir client exclusif
+              Créez votre compte pour réserver avec {driver.profiles?.full_name}
             </p>
           </div>
 
