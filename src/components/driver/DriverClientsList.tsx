@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle } from "lucide-react";
+import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +24,13 @@ interface DriverClientsListProps {
 }
 
 const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [filteredClients, setFilteredClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState("");
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [deleteClientData, setDeleteClientData] = useState<any>(null);
 
@@ -34,12 +39,29 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
   }, [driverId]);
 
   useEffect(() => {
-    const filtered = clients.filter((client) =>
+    let filtered = clients.filter((client) =>
       client.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.profiles.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Filtre par type de client
+    if (clientTypeFilter === "exclusive") {
+      filtered = filtered.filter((client) => client.is_exclusive);
+    } else if (clientTypeFilter === "free") {
+      filtered = filtered.filter((client) => !client.is_exclusive);
+    }
+
+    // Filtre par date
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      filtered = filtered.filter((client) => {
+        const clientDate = new Date(client.created_at);
+        return clientDate.toDateString() === filterDate.toDateString();
+      });
+    }
+
     setFilteredClients(filtered);
-  }, [searchTerm, clients]);
+  }, [searchTerm, clientTypeFilter, dateFilter, clients]);
 
   const fetchClients = async () => {
     try {
@@ -186,16 +208,56 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher par nom ou email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Filtres et recherche */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-muted-foreground" />
+          <h3 className="font-semibold">Filtres</h3>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Nom ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Type de client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les clients</SelectItem>
+              <SelectItem value="exclusive">Clients exclusifs</SelectItem>
+              <SelectItem value="free">Clients libres</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            placeholder="Filtrer par date"
+          />
+        </div>
+        {(searchTerm || clientTypeFilter !== "all" || dateFilter) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearchTerm("");
+              setClientTypeFilter("all");
+              setDateFilter("");
+            }}
+            className="mt-3"
+          >
+            Réinitialiser les filtres
+          </Button>
+        )}
+      </Card>
 
       {/* Clients List */}
       {filteredClients.length === 0 ? (
@@ -246,13 +308,19 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
                   <div className="flex gap-2 mt-4">
                     <Button
+                      size="sm"
+                      className="flex-1 bg-gradient-premium text-premium-foreground"
+                      onClick={() => navigate(`/driver-create-course?client_id=${client.id}`)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer une course
+                    </Button>
+                    <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
                       onClick={() => toast.info("Messagerie en cours de développement")}
                     >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Message
+                      <MessageSquare className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"
