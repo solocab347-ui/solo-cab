@@ -1,9 +1,26 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Car, Shield, Star, Users, ArrowRight, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { user, userRole } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect authenticated users to their dashboard
+    if (user && userRole) {
+      if (userRole === "driver") {
+        navigate("/driver-dashboard");
+      } else if (userRole === "client") {
+        navigate("/client-dashboard");
+      } else if (userRole === "admin") {
+        navigate("/admin-dashboard");
+      }
+    }
+  }, [user, userRole, navigate]);
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}

@@ -14,16 +14,468 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          id: string
+          is_exclusive: boolean
+          qr_code_id: string | null
+          total_rides: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_exclusive?: boolean
+          qr_code_id?: string | null
+          total_rides?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          is_exclusive?: boolean
+          qr_code_id?: string | null
+          total_rides?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          client_id: string
+          created_at: string
+          destination_address: string
+          destination_latitude: number | null
+          destination_longitude: number | null
+          distance_km: number | null
+          driver_id: string | null
+          driver_ids: string[] | null
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          passengers_count: number
+          pickup_address: string
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          scheduled_date: string
+          status: Database["public"]["Enums"]["course_status"]
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          destination_address: string
+          destination_latitude?: number | null
+          destination_longitude?: number | null
+          distance_km?: number | null
+          driver_id?: string | null
+          driver_ids?: string[] | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          passengers_count?: number
+          pickup_address: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          scheduled_date: string
+          status?: Database["public"]["Enums"]["course_status"]
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          destination_address?: string
+          destination_latitude?: number | null
+          destination_longitude?: number | null
+          distance_km?: number | null
+          driver_id?: string | null
+          driver_ids?: string[] | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          passengers_count?: number
+          pickup_address?: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          scheduled_date?: string
+          status?: Database["public"]["Enums"]["course_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devis: {
+        Row: {
+          accepted_at: string | null
+          amount: number
+          base_price: number
+          client_id: string
+          course_id: string
+          created_at: string
+          distance_price: number
+          driver_id: string
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["devis_status"]
+          time_price: number | null
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          amount: number
+          base_price: number
+          client_id: string
+          course_id: string
+          created_at?: string
+          distance_price: number
+          driver_id: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["devis_status"]
+          time_price?: number | null
+          updated_at?: string
+          valid_until: string
+        }
+        Update: {
+          accepted_at?: string | null
+          amount?: number
+          base_price?: number
+          client_id?: string
+          course_id?: string
+          created_at?: string
+          distance_price?: number
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["devis_status"]
+          time_price?: number | null
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devis_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          bio: string | null
+          created_at: string
+          id: string
+          license_number: string
+          rating: number | null
+          status: Database["public"]["Enums"]["driver_status"]
+          total_rides: number | null
+          updated_at: string
+          user_id: string
+          validation_date: string | null
+          vehicle_model: string
+          vehicle_plate: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          license_number: string
+          rating?: number | null
+          status?: Database["public"]["Enums"]["driver_status"]
+          total_rides?: number | null
+          updated_at?: string
+          user_id: string
+          validation_date?: string | null
+          vehicle_model: string
+          vehicle_plate?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          id?: string
+          license_number?: string
+          rating?: number | null
+          status?: Database["public"]["Enums"]["driver_status"]
+          total_rides?: number | null
+          updated_at?: string
+          user_id?: string
+          validation_date?: string | null
+          vehicle_model?: string
+          vehicle_plate?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factures: {
+        Row: {
+          amount: number
+          client_id: string
+          course_id: string
+          created_at: string
+          devis_id: string | null
+          driver_id: string
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          course_id: string
+          created_at?: string
+          devis_id?: string | null
+          driver_id: string
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          course_id?: string
+          created_at?: string
+          devis_id?: string | null
+          driver_id?: string
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_devis_id_fkey"
+            columns: ["devis_id"]
+            isOneToOne: false
+            referencedRelation: "devis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      qr_codes: {
+        Row: {
+          code: string
+          created_at: string
+          driver_id: string
+          id: string
+          is_active: boolean
+          scans_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          is_active?: boolean
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          is_active?: boolean
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_client_id: { Args: { _user_id: string }; Returns: string }
+      get_driver_id: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "driver" | "client"
+      course_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      devis_status: "pending" | "accepted" | "rejected" | "expired"
+      driver_status: "pending" | "validated" | "rejected"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +602,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "driver", "client"],
+      course_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      devis_status: ["pending", "accepted", "rejected", "expired"],
+      driver_status: ["pending", "validated", "rejected"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+    },
   },
 } as const
