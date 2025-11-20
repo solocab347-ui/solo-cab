@@ -20,12 +20,34 @@ serve(async (req) => {
 
     console.log("[CREATE-FACTURE-AUTO] Processing:", { course_id, payment_method });
 
-    // Get course details with devis
+    // Check if facture already exists for this course
+    const { data: existingFacture } = await supabase
+      .from("factures")
+      .select("*")
+      .eq("course_id", course_id)
+      .maybeSingle();
+
+    if (existingFacture) {
+      console.log("[CREATE-FACTURE-AUTO] Facture already exists:", existingFacture.id);
+      return new Response(
+        JSON.stringify({ 
+          facture: existingFacture,
+          message: "Facture already exists"
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
+      );
+    }
+
+    // Get course details with devis and client user_id
     const { data: course, error: courseError } = await supabase
       .from("courses")
       .select(`
         *,
-        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number)
+        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number),
+        clients!inner(user_id)
       `)
       .eq("id", course_id)
       .single();
@@ -74,14 +96,14 @@ serve(async (req) => {
 
     console.log("[CREATE-FACTURE-AUTO] Facture created:", facture.id);
 
-    // Create notification for client
-    await supabase.from("notifications").insert({
-      user_id: course.client_id,
-      title: "Facture disponible",
-      message: `Votre facture ${invoiceNumber} est maintenant disponible en téléchargement.`,
-      type: "facture_generated",
-      link: "/client-dashboard?tab=factures"
-    });
+      // Create notification for client using their user_id
+      await supabase.from("notifications").insert({
+        user_id: course.clients.user_id,
+        title: "Facture disponible",
+        message: `Votre facture ${invoiceNumber} est maintenant disponible en téléchargement.`,
+        type: "facture_generated",
+        link: "/client-dashboard?tab=factures"
+      });
 
     return new Response(
       JSON.stringify({ 
