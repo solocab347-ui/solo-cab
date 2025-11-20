@@ -40,8 +40,8 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
   useEffect(() => {
     let filtered = clients.filter((client) =>
-      client.profiles.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.profiles.email.toLowerCase().includes(searchTerm.toLowerCase())
+      client.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Filtre par type de client
@@ -275,10 +275,10 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
           {filteredClients.map((client) => (
             <Card key={client.id} className="p-6 hover:shadow-elegant transition-all">
               <div className="flex items-start gap-4">
-                {client.profiles.profile_photo_url ? (
+                {client.profiles?.profile_photo_url ? (
                   <img
                     src={client.profiles.profile_photo_url}
-                    alt={client.profiles.full_name}
+                    alt={client.profiles?.full_name || "Client"}
                     className="w-14 h-14 rounded-full object-cover"
                   />
                 ) : (
@@ -289,7 +289,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold">{client.profiles.full_name}</h3>
+                    <h3 className="font-bold">{client.profiles?.full_name || "Client sans nom"}</h3>
                     {client.is_exclusive && (
                       <Badge className="bg-gradient-premium text-premium-foreground border-0">
                         <Crown className="w-3 h-3 mr-1" />
@@ -299,8 +299,8 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                   </div>
 
                   <div className="space-y-1 text-sm text-muted-foreground">
-                    <p>📧 {client.profiles.email}</p>
-                    {client.profiles.phone && <p>📞 {client.profiles.phone}</p>}
+                    <p>📧 {client.profiles?.email || "Email non renseigné"}</p>
+                    {client.profiles?.phone && <p>📞 {client.profiles.phone}</p>}
                     <p className="text-premium font-medium mt-2">
                       {client.courses_count} course{client.courses_count !== 1 ? "s" : ""} effectuée{client.courses_count !== 1 ? "s" : ""}
                     </p>
