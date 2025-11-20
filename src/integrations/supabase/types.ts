@@ -293,6 +293,7 @@ export type Database = {
           id: string
           invoice_counter: number | null
           license_number: string
+          max_passengers: number
           per_km_rate: number | null
           public_profile_enabled: boolean | null
           quote_counter: number | null
@@ -304,6 +305,7 @@ export type Database = {
           subscription_status: string | null
           subscription_stripe_id: string | null
           total_rides: number | null
+          tva_included: boolean
           tva_rate: number | null
           updated_at: string
           user_id: string
@@ -328,6 +330,7 @@ export type Database = {
           id?: string
           invoice_counter?: number | null
           license_number: string
+          max_passengers?: number
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -339,6 +342,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          tva_included?: boolean
           tva_rate?: number | null
           updated_at?: string
           user_id: string
@@ -363,6 +367,7 @@ export type Database = {
           id?: string
           invoice_counter?: number | null
           license_number?: string
+          max_passengers?: number
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -374,6 +379,7 @@ export type Database = {
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
+          tva_included?: boolean
           tva_rate?: number | null
           updated_at?: string
           user_id?: string
