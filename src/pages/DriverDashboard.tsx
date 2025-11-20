@@ -1,10 +1,37 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const DriverDashboard = () => {
+  const { signOut, user } = useAuth();
+  const [driverProfile, setDriverProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchDriverProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      setDriverProfile({ ...profile, driver });
+    };
+
+    fetchDriverProfile();
+  }, [user]);
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -20,9 +47,9 @@ const DriverDashboard = () => {
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="border-premium text-premium">
-              Chauffeur Vérifié
+              {driverProfile?.driver?.status === "validated" ? "Chauffeur Vérifié" : "En attente de validation"}
             </Badge>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
@@ -32,7 +59,9 @@ const DriverDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bonjour, Jean 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} 👋
+          </h1>
           <p className="text-muted-foreground">
             Voici un aperçu de votre activité aujourd'hui
           </p>

@@ -1,11 +1,38 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, MapPin, Calendar, Clock, User, LogOut, Plus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const ClientDashboard = () => {
+  const { signOut, user } = useAuth();
+  const [clientProfile, setClientProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchClientProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const { data: client } = await supabase
+        .from("clients")
+        .select("*, drivers(*)")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      setClientProfile({ ...profile, client });
+    };
+
+    fetchClientProfile();
+  }, [user]);
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -22,11 +49,13 @@ const ClientDashboard = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-trust rounded-full flex items-center justify-center text-trust-foreground text-sm font-semibold">
-                M
+                {clientProfile?.full_name?.charAt(0) || "U"}
               </div>
-              <span className="font-medium hidden sm:inline">Marie</span>
+              <span className="font-medium hidden sm:inline">
+                {clientProfile?.full_name?.split(" ")[0] || "Utilisateur"}
+              </span>
             </div>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={signOut}>
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
@@ -36,7 +65,9 @@ const ClientDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bonjour Marie 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            Bonjour {clientProfile?.full_name?.split(" ")[0] || "Client"} 👋
+          </h1>
           <p className="text-muted-foreground">
             Réservez votre prochaine course avec votre chauffeur
           </p>
@@ -211,10 +242,14 @@ const ClientDashboard = () => {
             <Card className="p-6 bg-gradient-dark text-primary-foreground shadow-elegant">
               <div className="text-center mb-6">
                 <div className="w-24 h-24 bg-gradient-premium rounded-full flex items-center justify-center text-premium-foreground text-3xl font-bold mx-auto mb-4">
-                  JD
+                  {clientProfile?.client?.drivers?.full_name?.charAt(0) || "C"}
                 </div>
-                <h3 className="text-xl font-bold mb-1">Jean Dupont</h3>
-                <p className="text-sm opacity-80">Votre chauffeur exclusif</p>
+                <h3 className="text-xl font-bold mb-1">
+                  {clientProfile?.client?.drivers?.full_name || "Votre chauffeur"}
+                </h3>
+                <p className="text-sm opacity-80">
+                  {clientProfile?.client?.is_exclusive ? "Votre chauffeur exclusif" : "Chauffeur"}
+                </p>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2 border-b border-primary-foreground/20">
