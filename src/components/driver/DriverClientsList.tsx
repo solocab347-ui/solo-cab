@@ -75,7 +75,12 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching clients:", error);
+        throw error;
+      }
+
+      console.log("Clients fetched:", data);
 
       // Get courses count for each client
       const clientsWithCourses = await Promise.all(
@@ -93,6 +98,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
         })
       );
 
+      console.log("Clients with courses count:", clientsWithCourses);
       setClients(clientsWithCourses);
       setFilteredClients(clientsWithCourses);
     } catch (error: any) {
