@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +20,9 @@ const CreateCourse = () => {
 
   const [loading, setLoading] = useState(false);
   const [pickupAddress, setPickupAddress] = useState("");
+  const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationAddress, setDestinationAddress] = useState("");
+  const [destinationCoordinates, setDestinationCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState("1");
   const [distanceKm, setDistanceKm] = useState("");
@@ -79,7 +82,11 @@ const CreateCourse = () => {
           driver_id: assignedDriverId,
           driver_ids: driverIds,
           pickup_address: pickupAddress,
+          pickup_latitude: pickupCoordinates?.latitude || null,
+          pickup_longitude: pickupCoordinates?.longitude || null,
           destination_address: destinationAddress,
+          destination_latitude: destinationCoordinates?.latitude || null,
+          destination_longitude: destinationCoordinates?.longitude || null,
           scheduled_date: new Date(scheduledDate).toISOString(),
           passengers_count: parseInt(passengersCount),
           distance_km: distanceKm ? parseFloat(distanceKm) : null,
@@ -165,12 +172,13 @@ const CreateCourse = () => {
                   <MapPin className="w-4 h-4 text-premium" />
                   Adresse de départ *
                 </Label>
-                <Input
-                  id="pickup"
+                <AddressAutocomplete
                   value={pickupAddress}
-                  onChange={(e) => setPickupAddress(e.target.value)}
-                  placeholder="123 Rue de la Paix, Paris"
-                  required
+                  onChange={(address, coords) => {
+                    setPickupAddress(address);
+                    if (coords) setPickupCoordinates(coords);
+                  }}
+                  placeholder="Commencez à taper : 123 Rue de la Paix, Paris..."
                 />
               </div>
 
@@ -179,12 +187,13 @@ const CreateCourse = () => {
                   <MapPin className="w-4 h-4 text-destructive" />
                   Adresse d'arrivée *
                 </Label>
-                <Input
-                  id="destination"
+                <AddressAutocomplete
                   value={destinationAddress}
-                  onChange={(e) => setDestinationAddress(e.target.value)}
-                  placeholder="456 Avenue des Champs-Élysées, Paris"
-                  required
+                  onChange={(address, coords) => {
+                    setDestinationAddress(address);
+                    if (coords) setDestinationCoordinates(coords);
+                  }}
+                  placeholder="Commencez à taper : 456 Avenue des Champs, Paris..."
                 />
               </div>
             </div>

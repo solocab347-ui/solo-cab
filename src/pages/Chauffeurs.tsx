@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Car, Search, MapPin, Star, ArrowRight, AlertTriangle, Navigation } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -209,12 +210,10 @@ const Chauffeurs = () => {
                     <Navigation className="w-4 h-4 text-purple-600" />
                     Par adresse et rayon
                   </label>
-                  <Input
-                    placeholder="Tapez votre adresse : 12 Rue de la Paix, Paris..."
+                  <AddressAutocomplete
                     value={addressSearch}
-                    onChange={(e) => setAddressSearch(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                    className="text-base"
+                    onChange={(address) => setAddressSearch(address)}
+                    placeholder="Tapez votre adresse : 12 Rue de la Paix, Paris..."
                   />
                 </div>
                 <div>
