@@ -215,7 +215,7 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-card">
+          <TabsList className="grid w-full grid-cols-9 bg-card">
             <TabsTrigger value="home" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
               Accueil
@@ -240,6 +240,10 @@ const DriverDashboard = () => {
               <MessageSquare className="w-4 h-4" />
               Messages
             </TabsTrigger>
+            <TabsTrigger value="qrcode" className="gap-2">
+              <QrCode className="w-4 h-4" />
+              Mon QR Code
+            </TabsTrigger>
             <TabsTrigger value="profile" className="gap-2">
               <Globe className="w-4 h-4" />
               Profil Public
@@ -260,13 +264,24 @@ const DriverDashboard = () => {
             <MessagingInterface />
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            {/* QR Code Section */}
+          {/* QR Code Tab */}
+          <TabsContent value="qrcode">
             <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Mon QR Code</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-magenta rounded-lg flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-magenta-foreground" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Mon QR Code Personnel</h2>
+                  <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
+                </div>
+              </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
             </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
 
             {/* Subscription Manager */}
             <Card className="p-6">
