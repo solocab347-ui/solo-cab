@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-driver-validation-email]
 verify_jwt = false
+
+[functions.cleanup-old-messages]
+verify_jwt = false
