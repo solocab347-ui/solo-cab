@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,29 @@ const CreateCourse = () => {
   const [destinationCoordinates, setDestinationCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState("1");
+  const [maxPassengers, setMaxPassengers] = useState(4);
   const [distanceKm, setDistanceKm] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Fetch driver's max_passengers on component mount
+  useEffect(() => {
+    const fetchDriverMaxPassengers = async () => {
+      if (!driverId) return;
+      
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("max_passengers")
+        .eq("id", driverId)
+        .maybeSingle();
+      
+      if (driverData && driverData.max_passengers) {
+        setMaxPassengers(driverData.max_passengers);
+      }
+    };
+    
+    fetchDriverMaxPassengers();
+  }, [driverId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,11 +244,12 @@ const CreateCourse = () => {
                   id="passengers"
                   type="number"
                   min="1"
-                  max="8"
+                  max={maxPassengers}
                   value={passengersCount}
                   onChange={(e) => setPassengersCount(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">Maximum {maxPassengers} passagers</p>
               </div>
             </div>
 

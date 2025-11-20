@@ -46,6 +46,8 @@ const DriverDashboard = () => {
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [siret, setSiret] = useState("");
+  const [maxPassengers, setMaxPassengers] = useState("4");
+  const [tvaIncluded, setTvaIncluded] = useState(false);
 
   useEffect(() => {
     fetchDriverProfile();
@@ -86,6 +88,8 @@ const DriverDashboard = () => {
       setCompanyName(driver.company_name || "");
       setCompanyAddress(driver.company_address || "");
       setSiret(driver.siret || "");
+      setMaxPassengers(driver.max_passengers?.toString() || "4");
+      setTvaIncluded(driver.tva_included || false);
     }
   };
 
@@ -157,6 +161,8 @@ const DriverDashboard = () => {
           company_name: companyName,
           company_address: companyAddress,
           siret: siret,
+          max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
+          tva_included: tvaIncluded,
         })
         .eq("id", driverProfile.driver.id);
 
@@ -349,6 +355,36 @@ const DriverDashboard = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground">Pour les mises à disposition (obligatoire)</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="maxPassengers">Nombre maximum de passagers</Label>
+                  <Input
+                    id="maxPassengers"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={maxPassengers}
+                    onChange={(e) => setMaxPassengers(e.target.value)}
+                    placeholder="4"
+                  />
+                  <p className="text-xs text-muted-foreground">Places disponibles (4 par défaut, augmentez pour van)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border">
+                    <div>
+                      <Label htmlFor="tvaIncluded" className="font-semibold">TVA comprise</Label>
+                      <p className="text-xs text-muted-foreground">Vos tarifs incluent-ils déjà la TVA ?</p>
+                    </div>
+                    <Switch
+                      id="tvaIncluded"
+                      checked={tvaIncluded}
+                      onCheckedChange={setTvaIncluded}
+                    />
+                  </div>
                 </div>
               </div>
 
