@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
-import QRCode from 'https://esm.sh/qrcode@1.5.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +30,8 @@ Deno.serve(async (req) => {
         });
       }
 
+      console.log('Getting QR code for driver:', driverId);
+
       // Check if QR code already exists
       let { data: existingQR } = await supabaseClient
         .from('qr_codes')
@@ -38,6 +39,8 @@ Deno.serve(async (req) => {
         .eq('driver_id', driverId)
         .eq('is_active', true)
         .maybeSingle();
+
+      console.log('Existing QR:', existingQR);
 
       if (existingQR && existingQR.qr_code_image) {
         return new Response(JSON.stringify(existingQR), {
@@ -47,16 +50,24 @@ Deno.serve(async (req) => {
 
       // Generate new QR code
       const qrCodeId = existingQR?.id || crypto.randomUUID();
-      const registrationUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '')}/register-client?qr=${qrCodeId}`;
+      const registrationUrl = `https://bb7de2de-cc6d-441a-a380-0f8d244f90e4.lovableproject.com/register-client-qr?qr=${qrCodeId}`;
       
-      const qrCodeImage = await QRCode.toDataURL(registrationUrl, {
-        width: 512,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
+      console.log('Generating QR code for URL:', registrationUrl);
+
+      // Utiliser l'API QRServer pour générer le QR code
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(registrationUrl)}`;
+      
+      // Télécharger l'image QR
+      const qrResponse = await fetch(qrApiUrl);
+      if (!qrResponse.ok) {
+        throw new Error('Failed to generate QR code from API');
+      }
+      
+      const qrImageBuffer = await qrResponse.arrayBuffer();
+      const base64QR = btoa(String.fromCharCode(...new Uint8Array(qrImageBuffer)));
+      const qrCodeImage = `data:image/png;base64,${base64QR}`;
+
+      console.log('QR code generated successfully');
 
       if (existingQR) {
         // Update existing QR with image
@@ -67,7 +78,12 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating QR:', error);
+          throw error;
+        }
+        
+        console.log('QR code updated');
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -85,7 +101,12 @@ Deno.serve(async (req) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating QR:', error);
+          throw error;
+        }
+        
+        console.log('QR code created');
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
