@@ -23,6 +23,9 @@ import { ProfilePhotoUpload } from "@/components/driver/ProfilePhotoUpload";
 import { SectorSelector } from "@/components/driver/SectorSelector";
 import { EquipmentSelector } from "@/components/driver/EquipmentSelector";
 import { ServicesSelector } from "@/components/driver/ServicesSelector";
+import { DriverStatistics } from "@/components/driver/stats/DriverStatistics";
+import { DriverCampaigns } from "@/components/driver/promo/DriverCampaigns";
+import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -804,59 +807,17 @@ const DriverDashboard = () => {
 
           {/* Statistics Tab */}
           <TabsContent value="statistics" className="space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-premium-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Statistique</h2>
-                  <p className="text-sm text-muted-foreground">Analysez vos performances et votre activité</p>
-                </div>
-              </div>
-              <div className="text-center py-12 text-muted-foreground">
-                <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Section en développement</p>
-              </div>
-            </Card>
+            <DriverStatistics driverProfile={driverProfile} />
           </TabsContent>
 
           {/* Campaigns Tab */}
           <TabsContent value="campaigns" className="space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <Megaphone className="w-5 h-5 text-premium-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Campagne</h2>
-                  <p className="text-sm text-muted-foreground">Gérez vos campagnes marketing</p>
-                </div>
-              </div>
-              <div className="text-center py-12 text-muted-foreground">
-                <Megaphone className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Section en développement</p>
-              </div>
-            </Card>
+            <DriverCampaigns driverProfile={driverProfile} />
           </TabsContent>
 
           {/* Profitability Tab */}
           <TabsContent value="profitability" className="space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <PieChart className="w-5 h-5 text-premium-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Calcul de rentabilité</h2>
-                  <p className="text-sm text-muted-foreground">Analysez votre rentabilité et vos marges</p>
-                </div>
-              </div>
-              <div className="text-center py-12 text-muted-foreground">
-                <PieChart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Section en développement</p>
-              </div>
-            </Card>
+            <ProfitabilityCalculator />
           </TabsContent>
 
         </Tabs>
