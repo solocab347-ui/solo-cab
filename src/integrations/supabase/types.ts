@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           driver_id: string | null
+          driver_ids: string[] | null
           id: string
           is_exclusive: boolean
           qr_code_id: string | null
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           created_at?: string
           driver_id?: string | null
+          driver_ids?: string[] | null
           id?: string
           is_exclusive?: boolean
           qr_code_id?: string | null
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           created_at?: string
           driver_id?: string | null
+          driver_ids?: string[] | null
           id?: string
           is_exclusive?: boolean
           qr_code_id?: string | null
@@ -447,6 +450,7 @@ export type Database = {
           driver_id: string
           id: string
           is_active: boolean
+          qr_code_image: string | null
           scans_count: number | null
           updated_at: string
         }
@@ -456,6 +460,7 @@ export type Database = {
           driver_id: string
           id?: string
           is_active?: boolean
+          qr_code_image?: string | null
           scans_count?: number | null
           updated_at?: string
         }
@@ -465,6 +470,7 @@ export type Database = {
           driver_id?: string
           id?: string
           is_active?: boolean
+          qr_code_image?: string | null
           scans_count?: number | null
           updated_at?: string
         }

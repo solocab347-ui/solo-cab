@@ -1,1 +1,7 @@
 project_id = "iyothopplhbwcfrpxryc"
+
+[functions.qr-code-manager]
+verify_jwt = false
+
+[functions.register-client-qr]
+verify_jwt = false
