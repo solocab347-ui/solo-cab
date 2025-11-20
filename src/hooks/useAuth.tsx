@@ -28,17 +28,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("roles")
-        .eq("id", userId)
-        .maybeSingle();
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
 
       if (error) throw error;
       
-      const roles = data?.roles || [];
+      const roles = data?.map((r) => r.role) || [];
       setUserRoles(roles);
       
-      // Set primary role (first role in array)
+      // Set primary role (priority: admin > driver > client)
       const primaryRole = roles.includes("admin") 
         ? "admin" 
         : roles.includes("driver")
@@ -127,15 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Erreur lors de la création du compte");
 
-      // Add role to roles array in profiles (will be added by trigger, but we update it here)
-      const { error: roleError } = await supabase
-        .from("profiles")
-        .update({ roles: [role] })
-        .eq("id", data.user.id);
-
-      if (roleError) throw roleError;
-
-      // Create driver or client profile
+      // Create driver or client profile FIRST (trigger will assign role automatically)
       if (role === "driver" && additionalData) {
         const { error: driverError } = await supabase
           .from("drivers")
