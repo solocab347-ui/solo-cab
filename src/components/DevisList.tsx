@@ -9,9 +9,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, CheckCircle, XCircle, Clock, Euro } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, Euro, Download, MessageCircle, Mail, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import jsPDF from "jspdf";
 
 interface DevisListProps {
   clientId: string;
@@ -197,6 +198,92 @@ const DevisList = ({ clientId }: DevisListProps) => {
     );
   };
 
+  const handleDownloadDevis = (devis: any) => {
+    const doc = new jsPDF();
+    
+    // En-tête
+    doc.setFontSize(20);
+    doc.text("DEVIS", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Référence: ${devis.quote_number}`, 105, 30, { align: "center" });
+    doc.text(`Date: ${format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}`, 105, 36, { align: "center" });
+    
+    // Informations chauffeur
+    doc.setFontSize(12);
+    doc.text("CHAUFFEUR", 20, 50);
+    doc.setFontSize(10);
+    doc.text(devis.drivers?.profiles?.full_name || "N/A", 20, 58);
+    if (devis.drivers?.company_name) {
+      doc.text(devis.drivers.company_name, 20, 64);
+    }
+    
+    // Détails de la course
+    doc.setFontSize(12);
+    doc.text("DETAILS DE LA COURSE", 20, 80);
+    doc.setFontSize(10);
+    doc.text(`Départ: ${devis.courses.pickup_address}`, 20, 88);
+    doc.text(`Arrivée: ${devis.courses.destination_address}`, 20, 94);
+    doc.text(`Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 20, 100);
+    if (devis.courses.distance_km) {
+      doc.text(`Distance: ${devis.courses.distance_km} km`, 20, 106);
+    }
+    
+    // Détail du prix
+    doc.setFontSize(12);
+    doc.text("DETAIL DU PRIX", 20, 130);
+    doc.setFontSize(10);
+    let yPos = 138;
+    doc.text(`Forfait de base: ${parseFloat(devis.base_price).toFixed(2)} €`, 20, yPos);
+    yPos += 6;
+    if (parseFloat(devis.distance_price) > 0) {
+      doc.text(`Prix au kilomètre: ${parseFloat(devis.distance_price).toFixed(2)} €`, 20, yPos);
+      yPos += 6;
+    }
+    if (parseFloat(devis.time_price || 0) > 0) {
+      doc.text(`Prix horaire: ${parseFloat(devis.time_price).toFixed(2)} €`, 20, yPos);
+      yPos += 6;
+    }
+    
+    // Total
+    doc.setFontSize(14);
+    yPos += 4;
+    doc.text(`TOTAL TTC: ${devis.amount.toFixed(2)} €`, 20, yPos);
+    
+    // Validité
+    doc.setFontSize(10);
+    yPos += 10;
+    doc.text(`Valable jusqu'au ${format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    
+    doc.save(`devis-${devis.quote_number}.pdf`);
+    toast.success("Devis téléchargé");
+  };
+
+  const handleShareDevis = (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const message = `Devis ${devis.quote_number}\n` +
+                   `Trajet: ${devis.courses.pickup_address} → ${devis.courses.destination_address}\n` +
+                   `Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${devis.amount.toFixed(2)}€`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -307,6 +394,46 @@ const DevisList = ({ clientId }: DevisListProps) => {
             <p className="text-sm text-muted-foreground">{devis.notes}</p>
           </div>
         )}
+
+        {/* Boutons de partage et téléchargement - toujours visibles */}
+        <div className="flex gap-2 pt-4 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDownloadDevis(devis)}
+            className="flex-1"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(devis, 'whatsapp')}
+            className="flex-1"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(devis, 'email')}
+            className="flex-1"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Email
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShareDevis(devis, 'sms')}
+            className="flex-1"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            SMS
+          </Button>
+        </div>
 
         {canAccept && (
           <div className="flex gap-3 pt-4 border-t border-border">

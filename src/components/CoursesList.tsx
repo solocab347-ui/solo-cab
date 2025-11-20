@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import jsPDF from "jspdf";
 
 interface CoursesListProps {
   driverId: string;
@@ -35,7 +36,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const fetchCourses = async () => {
     try {
-      // Dual association query with devis data - explicit foreign key relation
+      // Dual association query with devis and factures data
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -50,7 +51,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             amount,
             status,
             quote_number,
-            valid_until
+            valid_until,
+            base_price,
+            distance_price,
+            time_price,
+            created_at
+          ),
+          factures:factures!course_id(
+            id,
+            invoice_number,
+            invoice_number_generated,
+            amount,
+            payment_status,
+            payment_method,
+            paid_at,
+            created_at
           )
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
@@ -58,7 +73,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
       
-      console.log("Courses chargées avec devis:", data);
+      console.log("Courses chargées avec devis et factures:", data);
       setCourses(data || []);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
@@ -208,6 +223,179 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         break;
       case 'email':
         window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
+  };
+
+  const handleDownloadDevis = (course: any) => {
+    const devis = course.devis?.[0];
+    if (!devis) {
+      toast.error("Aucun devis disponible");
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // En-tête
+    doc.setFontSize(20);
+    doc.text("DEVIS", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Référence: ${devis.quote_number}`, 105, 30, { align: "center" });
+    doc.text(`Date: ${format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}`, 105, 36, { align: "center" });
+    
+    // Informations client
+    doc.setFontSize(12);
+    doc.text("CLIENT", 20, 50);
+    doc.setFontSize(10);
+    doc.text(course.clients?.profiles?.full_name || "N/A", 20, 58);
+    doc.text(course.clients?.profiles?.phone || "N/A", 20, 64);
+    
+    // Détails de la course
+    doc.setFontSize(12);
+    doc.text("DETAILS DE LA COURSE", 20, 80);
+    doc.setFontSize(10);
+    doc.text(`Départ: ${course.pickup_address}`, 20, 88);
+    doc.text(`Arrivée: ${course.destination_address}`, 20, 94);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 20, 100);
+    doc.text(`Passagers: ${course.passengers_count}`, 20, 106);
+    if (course.distance_km) {
+      doc.text(`Distance: ${course.distance_km} km`, 20, 112);
+    }
+    
+    // Détail du prix
+    doc.setFontSize(12);
+    doc.text("DETAIL DU PRIX", 20, 130);
+    doc.setFontSize(10);
+    let yPos = 138;
+    doc.text(`Forfait de base: ${parseFloat(devis.base_price).toFixed(2)} €`, 20, yPos);
+    yPos += 6;
+    if (parseFloat(devis.distance_price) > 0) {
+      doc.text(`Prix au kilomètre: ${parseFloat(devis.distance_price).toFixed(2)} €`, 20, yPos);
+      yPos += 6;
+    }
+    if (parseFloat(devis.time_price || 0) > 0) {
+      doc.text(`Prix horaire: ${parseFloat(devis.time_price).toFixed(2)} €`, 20, yPos);
+      yPos += 6;
+    }
+    
+    // Total
+    doc.setFontSize(14);
+    yPos += 4;
+    doc.text(`TOTAL TTC: ${devis.amount.toFixed(2)} €`, 20, yPos);
+    
+    // Validité
+    doc.setFontSize(10);
+    yPos += 10;
+    doc.text(`Valable jusqu'au ${format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    
+    doc.save(`devis-${devis.quote_number}.pdf`);
+    toast.success("Devis téléchargé");
+  };
+
+  const handleDownloadFacture = (course: any) => {
+    const facture = course.factures?.[0];
+    if (!facture) {
+      toast.error("Aucune facture disponible");
+      return;
+    }
+
+    const devis = course.devis?.[0];
+    const doc = new jsPDF();
+    
+    // En-tête
+    doc.setFontSize(20);
+    doc.text("FACTURE", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Référence: ${facture.invoice_number_generated || facture.invoice_number}`, 105, 30, { align: "center" });
+    doc.text(`Date: ${format(new Date(facture.created_at), "d MMMM yyyy", { locale: fr })}`, 105, 36, { align: "center" });
+    
+    // Informations client
+    doc.setFontSize(12);
+    doc.text("CLIENT", 20, 50);
+    doc.setFontSize(10);
+    doc.text(course.clients?.profiles?.full_name || "N/A", 20, 58);
+    doc.text(course.clients?.profiles?.phone || "N/A", 20, 64);
+    
+    // Détails de la course
+    doc.setFontSize(12);
+    doc.text("DETAILS DE LA COURSE", 20, 80);
+    doc.setFontSize(10);
+    doc.text(`Départ: ${course.pickup_address}`, 20, 88);
+    doc.text(`Arrivée: ${course.destination_address}`, 20, 94);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`, 20, 100);
+    doc.text(`Passagers: ${course.passengers_count}`, 20, 106);
+    if (course.distance_km) {
+      doc.text(`Distance: ${course.distance_km} km`, 20, 112);
+    }
+    
+    // Détail du prix (si devis disponible)
+    if (devis) {
+      doc.setFontSize(12);
+      doc.text("DETAIL DU PRIX", 20, 130);
+      doc.setFontSize(10);
+      let yPos = 138;
+      doc.text(`Forfait de base: ${parseFloat(devis.base_price).toFixed(2)} €`, 20, yPos);
+      yPos += 6;
+      if (parseFloat(devis.distance_price) > 0) {
+        doc.text(`Prix au kilomètre: ${parseFloat(devis.distance_price).toFixed(2)} €`, 20, yPos);
+        yPos += 6;
+      }
+      if (parseFloat(devis.time_price || 0) > 0) {
+        doc.text(`Prix horaire: ${parseFloat(devis.time_price).toFixed(2)} €`, 20, yPos);
+        yPos += 6;
+      }
+      
+      // Total
+      doc.setFontSize(14);
+      yPos += 4;
+      doc.text(`TOTAL TTC: ${facture.amount.toFixed(2)} €`, 20, yPos);
+      
+      // Paiement
+      doc.setFontSize(10);
+      yPos += 10;
+      if (facture.payment_method) {
+        doc.text(`Moyen de paiement: ${facture.payment_method}`, 20, yPos);
+        yPos += 6;
+      }
+      if (facture.paid_at) {
+        doc.text(`Payé le: ${format(new Date(facture.paid_at), "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+      }
+    }
+    
+    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}.pdf`);
+    toast.success("Facture téléchargée");
+  };
+
+  const handleShareFacture = (course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const facture = course.factures?.[0];
+    if (!facture) {
+      toast.error("Aucune facture disponible");
+      return;
+    }
+
+    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number} - ${course.clients?.profiles?.full_name}\n` +
+                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
+                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${facture.amount.toFixed(2)}€\n` +
+                   `Statut: ${facture.payment_status === 'paid' ? 'Payée' : 'En attente'}`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Facture ${facture.invoice_number_generated || facture.invoice_number}&body=${encodedMessage}`, '_blank');
         break;
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
@@ -446,8 +634,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             )}
           </div>
 
-          {/* Boutons de partage */}
+          {/* Boutons de partage et téléchargement */}
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownloadDevis(course)}
+              className="flex-1"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -470,6 +667,70 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               variant="outline"
               size="sm"
               onClick={() => handleShareDevis(course, 'sms')}
+              className="flex-1"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              SMS
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Prix et partage de la facture - Affiché dans la section Terminées si facture existe */}
+      {course.status === "completed" && course.factures?.[0] && (
+        <div className="space-y-3 pt-3 border-t border-border">
+          {/* Prix de la facture */}
+          <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Montant de la facture</span>
+              <span className="text-3xl font-bold text-green-600">{course.factures[0].amount.toFixed(2)}€</span>
+            </div>
+            {course.factures[0].invoice_number_generated && (
+              <p className="text-xs text-muted-foreground mt-1">Réf: {course.factures[0].invoice_number_generated}</p>
+            )}
+            <div className="mt-2 text-xs text-muted-foreground">
+              {course.factures[0].payment_method && (
+                <span>Paiement: {course.factures[0].payment_method}</span>
+              )}
+              {course.factures[0].paid_at && (
+                <span className="ml-2">• Payé le {format(new Date(course.factures[0].paid_at), "d MMM yyyy", { locale: fr })}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Boutons de partage et téléchargement */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownloadFacture(course)}
+              className="flex-1"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareFacture(course, 'whatsapp')}
+              className="flex-1"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareFacture(course, 'email')}
+              className="flex-1"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleShareFacture(course, 'sms')}
               className="flex-1"
             >
               <Share2 className="w-4 h-4 mr-2" />
