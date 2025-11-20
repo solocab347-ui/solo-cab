@@ -2,22 +2,119 @@ import { Card } from "@/components/ui/card";
 import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
 
 interface DriverHomeProps {
   driverProfile: any;
   onTabChange: (tab: string) => void;
 }
 
+interface Stats {
+  todayCourses: number;
+  todayRevenue: number;
+  monthClients: number;
+  monthCourses: number;
+  monthCompleted: number;
+  monthRevenue: number;
+}
+
 export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState<Stats>({
+    todayCourses: 0,
+    todayRevenue: 0,
+    monthClients: 0,
+    monthCourses: 0,
+    monthCompleted: 0,
+    monthRevenue: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // Calculate stats
-  const todayCourses = 0; // TODO: fetch from API
-  const todayRevenue = 0; // TODO: fetch from API
-  const monthClients = 2; // TODO: fetch from API - actual number from DB
-  const monthCourses = 2; // TODO: fetch from API
-  const monthCompleted = 0; // TODO: fetch from API
-  const monthRevenue = 0; // TODO: fetch from API
+  useEffect(() => {
+    if (driverProfile?.id) {
+      fetchStats();
+    }
+  }, [driverProfile?.id]);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const today = new Date();
+      const todayStart = startOfDay(today).toISOString();
+      const todayEnd = endOfDay(today).toISOString();
+      const monthStart = startOfMonth(today).toISOString();
+      const monthEnd = endOfMonth(today).toISOString();
+
+      // Courses d'aujourd'hui
+      const { data: todayCoursesData } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('driver_id', driverProfile.id)
+        .gte('created_at', todayStart)
+        .lte('created_at', todayEnd);
+
+      // Revenue d'aujourd'hui (factures payées aujourd'hui)
+      const { data: todayFactures } = await supabase
+        .from('factures')
+        .select('amount')
+        .eq('driver_id', driverProfile.id)
+        .eq('payment_status', 'paid')
+        .gte('paid_at', todayStart)
+        .lte('paid_at', todayEnd);
+
+      // Clients du mois (nouveaux clients)
+      const { data: monthClientsData } = await supabase
+        .from('clients')
+        .select('id')
+        .or(`driver_id.eq.${driverProfile.id},driver_ids.cs.{${driverProfile.id}}`)
+        .gte('created_at', monthStart)
+        .lte('created_at', monthEnd);
+
+      // Courses du mois
+      const { data: monthCoursesData } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('driver_id', driverProfile.id)
+        .gte('created_at', monthStart)
+        .lte('created_at', monthEnd);
+
+      // Courses terminées du mois
+      const { data: monthCompletedData } = await supabase
+        .from('courses')
+        .select('id')
+        .eq('driver_id', driverProfile.id)
+        .eq('status', 'completed')
+        .gte('updated_at', monthStart)
+        .lte('updated_at', monthEnd);
+
+      // CA total du mois (factures payées)
+      const { data: monthFactures } = await supabase
+        .from('factures')
+        .select('amount')
+        .eq('driver_id', driverProfile.id)
+        .eq('payment_status', 'paid')
+        .gte('paid_at', monthStart)
+        .lte('paid_at', monthEnd);
+
+      const todayRevenue = todayFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+      const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+
+      setStats({
+        todayCourses: todayCoursesData?.length || 0,
+        todayRevenue: todayRevenue,
+        monthClients: monthClientsData?.length || 0,
+        monthCourses: monthCoursesData?.length || 0,
+        monthCompleted: monthCompletedData?.length || 0,
+        monthRevenue: monthRevenue,
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement des statistiques:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -78,7 +175,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               </div>
               <div>
                 <p className="text-sm text-trust-foreground/80 mb-1">Courses</p>
-                <h3 className="text-4xl font-bold text-trust-foreground">{todayCourses}</h3>
+                <h3 className="text-4xl font-bold text-trust-foreground">
+                  {loading ? "..." : stats.todayCourses}
+                </h3>
               </div>
             </div>
           </Card>
@@ -91,7 +190,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               </div>
               <div>
                 <p className="text-sm text-warning-foreground/80 mb-1">Revenue</p>
-                <h3 className="text-4xl font-bold text-warning-foreground">{todayRevenue}€</h3>
+                <h3 className="text-4xl font-bold text-warning-foreground">
+                  {loading ? "..." : `${stats.todayRevenue.toFixed(2)}€`}
+                </h3>
               </div>
             </div>
           </Card>
@@ -109,7 +210,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
                 <Users className="w-5 h-5 text-trust-foreground" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-trust-foreground mb-1">{monthClients}</h3>
+            <h3 className="text-3xl font-bold text-trust-foreground mb-1">
+              {loading ? "..." : stats.monthClients}
+            </h3>
             <p className="text-sm text-trust-foreground/80">Clients</p>
           </Card>
 
@@ -120,7 +223,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
                 <Car className="w-5 h-5 text-success-foreground" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-success-foreground mb-1">{monthCourses}</h3>
+            <h3 className="text-3xl font-bold text-success-foreground mb-1">
+              {loading ? "..." : stats.monthCourses}
+            </h3>
             <p className="text-sm text-success-foreground/80">Courses</p>
           </Card>
 
@@ -131,7 +236,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
                 <CheckCircle2 className="w-5 h-5 text-magenta-foreground" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-magenta-foreground mb-1">{monthCompleted}</h3>
+            <h3 className="text-3xl font-bold text-magenta-foreground mb-1">
+              {loading ? "..." : stats.monthCompleted}
+            </h3>
             <p className="text-sm text-magenta-foreground/80">Terminées</p>
           </Card>
 
@@ -142,7 +249,9 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
                 <TrendingUp className="w-5 h-5 text-warning-foreground" />
               </div>
             </div>
-            <h3 className="text-3xl font-bold text-warning-foreground mb-1">{monthRevenue}€</h3>
+            <h3 className="text-3xl font-bold text-warning-foreground mb-1">
+              {loading ? "..." : `${stats.monthRevenue.toFixed(2)}€`}
+            </h3>
             <p className="text-sm text-warning-foreground/80">CA Total</p>
           </Card>
         </div>
