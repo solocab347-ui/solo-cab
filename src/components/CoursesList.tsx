@@ -251,6 +251,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const getDevisStatus = (course: any) => {
     const devis = course.devis?.[0];
     
+    // Status cohérent selon la section où apparaît la course
     if (course.status === "pending") {
       return {
         icon: Clock,
@@ -259,49 +260,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       };
     }
     
-    if (course.status === "accepted" && devis) {
-      if (devis.status === "pending") {
-        return {
-          icon: Clock,
-          text: "Devis envoyé au client - En attente d'acceptation",
-          color: "text-premium"
-        };
-      }
-      if (devis.status === "accepted") {
+    if (course.status === "accepted") {
+      // Dans la section Confirmées, toujours afficher "Confirmée"
+      if (devis?.status === "pending") {
         return {
           icon: CheckCircle,
-          text: "Devis accepté par le client - Course confirmée",
+          text: "Confirmée - Devis envoyé au client",
           color: "text-green-500"
         };
       }
-      if (devis.status === "rejected") {
-        return {
-          icon: XCircle,
-          text: "Devis refusé par le client",
-          color: "text-destructive"
-        };
-      }
-      if (devis.status === "expired") {
-        return {
-          icon: Clock,
-          text: "Devis expiré",
-          color: "text-muted-foreground"
-        };
-      }
+      return {
+        icon: CheckCircle,
+        text: "Confirmée",
+        color: "text-green-500"
+      };
     }
     
     if (course.status === "in_progress") {
       return {
-        icon: Play,
-        text: "Course en cours",
-        color: "text-blue-500"
+        icon: CheckCircle,
+        text: "Confirmée - En cours",
+        color: "text-green-500"
       };
     }
     
     if (course.status === "completed") {
       return {
         icon: CheckCircle,
-        text: "Course terminée - Facture générée",
+        text: "Terminée",
         color: "text-green-500"
       };
     }
@@ -453,8 +439,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         );
       })()}
 
-      {/* Boutons de partage si devis disponible et course acceptée */}
-      {course.devis?.[0] && course.status === "accepted" && (
+      {/* Boutons de partage si devis disponible */}
+      {course.devis?.[0] && (
         <div className="flex gap-2 mb-3">
           <Button
             variant="outline"
