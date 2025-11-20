@@ -18,6 +18,8 @@ interface CoursesListProps {
   driverId: string;
 }
 
+const isDriver = true; // Assuming this is driver dashboard
+
 const CoursesList = ({ driverId }: CoursesListProps) => {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +51,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       
       setDriverInfo(driverData);
 
-      // Dual association query with devis and factures data
-      const { data, error } = await supabase
+      const { data: coursesData, error } = await supabase
         .from("courses")
         .select(`
           *,
@@ -85,9 +86,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .order("scheduled_date", { ascending: false });
 
       if (error) throw error;
-      
-      console.log("Courses chargées avec devis et factures:", data);
-      setCourses(data || []);
+      setCourses(coursesData || []);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -98,97 +97,24 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const setupRealtimeSubscription = () => {
     const channel = supabase
-      .channel("courses-changes")
+      .channel("courses_changes")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "courses",
+          filter: `driver_id=eq.${driverId}`,
         },
-        () => fetchCourses()
+        () => {
+          fetchCourses();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  };
-
-  const handleAccept = async (courseId: string) => {
-    try {
-      // Update course status
-      const { error: updateError } = await supabase
-        .from("courses")
-        .update({ status: "accepted" })
-        .eq("id", courseId);
-
-      if (updateError) throw updateError;
-
-      // Generate course number
-      const { data: courseNumber } = await supabase
-        .rpc("generate_course_number", { _driver_id: driverId });
-
-      await supabase
-        .from("courses")
-        .update({ course_number: courseNumber })
-        .eq("id", courseId);
-
-      // Create devis automatically
-      const response = await supabase.functions.invoke("create-devis-auto", {
-        body: {
-          course_id: courseId,
-          driver_id: driverId,
-          use_hourly_rate: false,
-        },
-      });
-
-      if (response.error) throw response.error;
-
-      toast.success("Course acceptée ! Devis généré automatiquement.");
-      fetchCourses();
-    } catch (error: any) {
-      console.error("Error accepting course:", error);
-      toast.error("Erreur lors de l'acceptation");
-    }
-  };
-
-  const openRejectDialog = (courseId: string) => {
-    setCourseToReject(courseId);
-    setRejectionReason("");
-    setCustomReason("");
-    setRejectDialogOpen(true);
-  };
-
-  const handleReject = async () => {
-    if (!courseToReject) return;
-    
-    const finalReason = rejectionReason === "Autre" ? customReason : rejectionReason;
-    
-    if (!finalReason.trim()) {
-      toast.error("Veuillez indiquer un motif de refus");
-      return;
-    }
-
-    try {
-      const course = courses.find(c => c.id === courseToReject);
-      const { error } = await supabase
-        .from("courses")
-        .update({ 
-          status: "cancelled",
-          notes: `Motif de refus: ${finalReason}${course?.notes ? `\n\nNotes originales: ${course.notes}` : ''}`
-        })
-        .eq("id", courseToReject);
-
-      if (error) throw error;
-      
-      toast.success("Course refusée");
-      setRejectDialogOpen(false);
-      fetchCourses();
-    } catch (error: any) {
-      console.error("Error rejecting course:", error);
-      toast.error("Erreur lors du refus");
-    }
   };
 
   const handleStartCourse = async (courseId: string) => {
@@ -199,18 +125,111 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .eq("id", courseId);
 
       if (error) throw error;
-      toast.success("Course démarrée");
+
+      toast.success("Course commencée !");
       fetchCourses();
     } catch (error: any) {
       console.error("Error starting course:", error);
-      toast.error("Erreur lors du démarrage");
+      toast.error("Erreur lors du démarrage de la course");
     }
   };
 
-  const openPaymentDialog = (courseId: string) => {
+  const handleEndCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
-    setPaymentMethod("");
     setShowPaymentDialog(true);
+  };
+
+  const handleCompleteCourse = async () => {
+    if (!selectedCourseId || !paymentMethod) {
+      toast.error("Veuillez sélectionner un moyen de paiement");
+      return;
+    }
+
+    try {
+      // Update course status to completed
+      const { error: courseError } = await supabase
+        .from("courses")
+        .update({ status: "completed" })
+        .eq("id", selectedCourseId);
+
+      if (courseError) throw courseError;
+
+      // First, get the course to find the most recent devis
+      const { data: courseData } = await supabase
+        .from("courses")
+        .select("*, devis(*)")
+        .eq("id", selectedCourseId)
+        .single();
+
+      // Accept the most recent devis if not already accepted
+      if (courseData?.devis && courseData.devis.length > 0) {
+        const mostRecentDevis = courseData.devis.sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )[0];
+        
+        if (mostRecentDevis.status !== "accepted") {
+          await supabase
+            .from("devis")
+            .update({ status: "accepted", accepted_at: new Date().toISOString() })
+            .eq("id", mostRecentDevis.id);
+        }
+      }
+
+      // Generate facture automatically
+      const { data, error: factureError } = await supabase.functions.invoke("create-facture-auto", {
+        body: {
+          course_id: selectedCourseId,
+          payment_method: paymentMethod
+        }
+      });
+
+      if (factureError) throw factureError;
+
+      toast.success("Course terminée ! Facture générée automatiquement.");
+      setShowPaymentDialog(false);
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error completing course:", error);
+      toast.error("Erreur lors de la finalisation: " + error.message);
+    }
+  };
+
+  const handleCancelCourse = (courseId: string) => {
+    setCourseToReject(courseId);
+    setRejectDialogOpen(true);
+  };
+
+  const handleRejectCourse = async () => {
+    if (!courseToReject) return;
+
+    const finalReason = rejectionReason === "custom" ? customReason : rejectionReason;
+    
+    if (!finalReason) {
+      toast.error("Veuillez sélectionner ou saisir un motif");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({ 
+          status: "cancelled",
+          notes: `Motif de refus: ${finalReason}\n\n${courses.find(c => c.id === courseToReject)?.notes || ''}`
+        })
+        .eq("id", courseToReject);
+
+      if (error) throw error;
+
+      toast.success("Course annulée");
+      setRejectDialogOpen(false);
+      setRejectionReason("");
+      setCustomReason("");
+      setCourseToReject(null);
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error rejecting course:", error);
+      toast.error("Erreur lors de l'annulation");
+    }
   };
 
   const handleShareDevis = (course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
@@ -223,7 +242,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     const message = `Devis ${devis.quote_number} - ${course.clients?.profiles?.full_name}\n` +
                    `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
                    `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
-                   `Montant: ${devis.amount.toFixed(2)}€`;
+                   `Montant: ${devis.amount.toFixed(2)}€\n` +
+                   `Valable jusqu'au: ${format(new Date(devis.valid_until), "d MMMM yyyy", { locale: fr })}`;
 
     const encodedMessage = encodeURIComponent(message);
 
@@ -244,206 +264,194 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     toast.success("Partage ouvert");
   };
 
-  const handleDownloadDevis = (course: any) => {
+  const handleDownloadDevis = async (course: any, forClient: boolean = false) => {
     const devis = course.devis?.[0];
     if (!devis || !driverInfo) {
       toast.error("Informations incomplètes pour générer le PDF");
       return;
     }
 
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
+
+    // Header with blue background
+    doc.setFillColor(41, 128, 185);
+    doc.rect(0, 0, pageWidth, 50, 'F');
     
-    // En-tête avec fond bleu
-    doc.setFillColor(0, 102, 204);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text("DEVIS", pageWidth / 2, 18, { align: "center" });
+    doc.text("DEVIS", pageWidth / 2, 25, { align: "center" });
     
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Référence: ${devis.quote_number}`, pageWidth / 2, 26, { align: "center" });
-    doc.text(`Date: ${format(new Date(devis.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 32, { align: "center" });
+    doc.text(`Référence: ${devis.quote_number}`, pageWidth / 2, 35, { align: "center" });
+    doc.text(`Date: ${format(new Date(devis.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
+
+    // Driver info (left side)
     doc.setTextColor(0, 0, 0);
-    
-    // Informations Chauffeur (à gauche) et Client (à droite)
-    let yPos = 50;
-    
-    // Chauffeur (gauche)
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 20, yPos);
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 5;
-    
-    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
-    doc.text(driverName, 20, yPos);
-    yPos += 4;
-    
-    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
-      doc.text(driverInfo.company_name, 20, yPos);
-      yPos += 4;
-    }
-    
-    if (driverInfo.company_address) {
-      const addressLines = doc.splitTextToSize(driverInfo.company_address, 70);
-      addressLines.forEach((line: string) => {
-        doc.text(line, 20, yPos);
-        yPos += 4;
-      });
-    }
-    
-    yPos += 1;
-    if (driverInfo.siret) {
-      doc.text(`SIRET: ${driverInfo.siret}`, 20, yPos);
-      yPos += 4;
-    }
-    if (driverInfo.profiles?.phone) {
-      doc.text(`Tél: ${driverInfo.profiles.phone}`, 20, yPos);
-    }
-    
-    // Client (droite)
-    yPos = 50;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", pageWidth - 20, yPos, { align: "right" });
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 5;
-    doc.text(course.clients?.profiles?.full_name || "N/A", pageWidth - 20, yPos, { align: "right" });
-    yPos += 4;
-    if (course.clients?.profiles?.phone) {
-      doc.text(course.clients.profiles.phone, pageWidth - 20, yPos, { align: "right" });
-    }
-    
-    // Détails de la course (encadré)
-    yPos = 95;
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.5);
-    doc.rect(15, yPos, pageWidth - 30, 40);
-    
-    yPos += 7;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("DÉTAILS DE LA PRESTATION", 20, yPos);
-    
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 6;
-    
-    doc.text("Départ:", 20, yPos);
-    const pickupLines = doc.splitTextToSize(course.pickup_address, pageWidth - 55);
-    doc.text(pickupLines, 45, yPos);
-    yPos += 4 * pickupLines.length;
-    
-    doc.text("Arrivée:", 20, yPos);
-    const destLines = doc.splitTextToSize(course.destination_address, pageWidth - 55);
-    doc.text(destLines, 45, yPos);
-    yPos += 4 * destLines.length + 1;
-    
-    doc.text("Date:", 20, yPos);
-    doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
-    yPos += 4;
-    
-    doc.text("Passagers:", 20, yPos);
-    doc.text(`${course.passengers_count}`, 45, yPos);
-    if (course.distance_km) {
-      yPos += 4;
-      doc.text("Distance:", 20, yPos);
-      doc.text(`${course.distance_km} km`, 45, yPos);
-    }
-    
-    // Tarification (tableau) - VERSION DÉTAILLÉE POUR CHAUFFEUR
-    yPos = 155;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("TARIFICATION", 20, yPos);
-    
-    yPos += 6;
-    doc.setFillColor(0, 102, 204);
-    doc.rect(15, yPos, pageWidth - 30, 7, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.text("Description", 20, yPos + 4.5);
-    doc.text("Montant HT", pageWidth - 20, yPos + 4.5, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-    
-    yPos += 9;
-    doc.setFont(undefined, 'normal');
-    doc.text("Forfait de base", 20, yPos);
-    doc.text(`${parseFloat(devis.base_price).toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    
-    if (parseFloat(devis.distance_price) > 0) {
-      yPos += 5;
-      doc.text("Prix au kilomètre", 20, yPos);
-      doc.text(`${parseFloat(devis.distance_price).toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    }
-    
-    if (parseFloat(devis.time_price || 0) > 0) {
-      yPos += 5;
-      doc.text("Mise à disposition", 20, yPos);
-      doc.text(`${parseFloat(devis.time_price).toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    }
-    
-    // Calcul TVA
-    const totalHT = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
-    const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10; // 20% si mise à dispo, sinon 10%
-    const tvaAmount = totalHT * (tvaRate / 100);
-    const totalTTC = totalHT + tvaAmount;
-    
-    // Ligne de séparation
-    yPos += 3;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(15, yPos, pageWidth - 15, yPos);
-    
-    // Sous-total HT
-    yPos += 6;
-    doc.setFont(undefined, 'bold');
-    doc.text("Sous-total HT", 20, yPos);
-    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    
-    // TVA
-    yPos += 5;
-    doc.setFont(undefined, 'normal');
-    doc.text(`TVA (${tvaRate}%)`, 20, yPos);
-    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    
-    // Total TTC
-    yPos += 5;
-    doc.setFillColor(0, 102, 204);
-    doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text("TOTAL TTC", 20, yPos + 2);
-    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
-    doc.setTextColor(0, 0, 0);
+    doc.text("CHAUFFEUR VTC", 20, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
+    doc.text(driverName, 20, 71);
+    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
+      doc.text(driverInfo.company_name, 20, 76);
+    }
+    doc.text(`SIRET: ${driverInfo.siret || 'N/A'}`, 20, 81);
+    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
     
-    // Validité
-    yPos += 12;
+    if (driverInfo.company_address) {
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
+      doc.text(addressLines, 20, 91);
+    }
+
+    // Client info (right side)
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("CLIENT", 145, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text(course.clients?.profiles?.full_name || "N/A", 145, 71);
+
+    // Service details box
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, 110, 170, 55);
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 25, 118);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const pickupLines = doc.splitTextToSize(course.pickup_address, 140);
+    const destLines = doc.splitTextToSize(course.destination_address, 140);
+    
+    doc.text("Départ:", 25, 126);
+    doc.text(pickupLines, 50, 126);
+    
+    let currentY = 126 + (pickupLines.length * 5);
+    doc.text("Arrivée:", 25, currentY);
+    doc.text(destLines, 50, currentY);
+    
+    currentY += (destLines.length * 5);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    doc.text(`Passagers: ${course.passengers_count}`, 25, currentY + 5);
+    doc.text(`Distance: ${course.distance_km} km`, 105, currentY + 5);
+
+    // Pricing table
+    let yPos = 180;
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("TARIFICATION", 20, yPos);
+    yPos += 8;
+
+    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0);
+    const tvaRate = devis.time_price > 0 ? 20 : 10;
+    const tvaAmount = subtotal * (tvaRate / 100);
+
+    if (!forClient) {
+      // Driver version - detailed breakdown
+      doc.setFillColor(41, 128, 185);
+      doc.rect(20, yPos, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant HT", 175, yPos + 5.5, { align: 'right' });
+      
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Forfait de base", 25, yPos + 5);
+      doc.text(`${devis.base_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.text("Prix au kilomètre", 25, yPos + 5);
+      doc.text(`${devis.distance_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotal.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.setFont(undefined, 'normal');
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(41, 128, 185);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${devis.amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
+      
+      yPos += 15;
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'italic');
+      const noteLines = doc.splitTextToSize("Note: Le client reçoit une version simplifiée sans le détail des tarifs.", 170);
+      doc.text(noteLines, 20, yPos);
+    } else {
+      // Client version - simplified
+      doc.setFillColor(41, 128, 185);
+      doc.rect(20, yPos, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
+      
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotal.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(41, 128, 185);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${devis.amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
+    }
+
+    // Validity
+    yPos += 15;
+    doc.setTextColor(100, 100, 100);
     doc.setFontSize(8);
     doc.setFont(undefined, 'italic');
     doc.text(`Devis valable jusqu'au ${format(new Date(devis.valid_until), "dd/MM/yyyy", { locale: fr })}`, 20, yPos);
-    
-    // Pied de page
-    doc.setFillColor(245, 245, 245);
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFillColor(240, 240, 240);
     doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
-    doc.setTextColor(100, 100, 100);
     doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-    
-    doc.save(`devis-${devis.quote_number}.pdf`);
+
+    doc.save(`devis-${devis.quote_number}${forClient ? '-client' : ''}.pdf`);
     toast.success("Devis téléchargé");
   };
 
-  const handleDownloadFacture = (course: any) => {
+  const handleDownloadFacture = async (course: any, forClient: boolean = false) => {
     const facture = course.factures?.[0];
     const devis = course.devis?.[0];
     if (!facture || !driverInfo) {
@@ -451,188 +459,174 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       return;
     }
 
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    
-    // En-tête avec fond vert (facture payée)
-    const headerColor: [number, number, number] = facture.payment_status === 'paid' ? [40, 167, 69] : [108, 117, 125];
+
+    // Green color for invoices
+    const headerColor: [number, number, number] = [46, 204, 113]; // Green
+
+    // Header
     doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.rect(0, 0, pageWidth, 50, 'F');
     
-    doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text("FACTURE", pageWidth / 2, 18, { align: "center" });
+    doc.setFontSize(28);
+    doc.text("FACTURE", pageWidth / 2, 25, { align: "center" });
     
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text(`N° ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`Date: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 34, { align: "center" });
+    doc.text(`N°: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 35, { align: "center" });
+    doc.text(`Date: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
+
+    // Driver info (left side)
     doc.setTextColor(0, 0, 0);
-    
-    // Ligne de séparation
-    doc.setDrawColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.setLineWidth(1);
-    doc.line(10, 42, pageWidth - 10, 42);
-    
-    // Informations Chauffeur (à gauche) et Client (à droite)
-    let yPos = 55;
-    
-    // Chauffeur (gauche)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 15, yPos);
-    doc.setFontSize(9);
+    doc.text("CHAUFFEUR VTC", 20, 65);
     doc.setFont(undefined, 'normal');
-    yPos += 6;
-    doc.text(driverInfo.profiles?.full_name || driverInfo.company_name || "N/A", 15, yPos);
-    yPos += 5;
-    if (driverInfo.company_name && driverInfo.company_name !== driverInfo.profiles?.full_name) {
-      doc.text(driverInfo.company_name, 15, yPos);
-      yPos += 5;
+    doc.setFontSize(9);
+    const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || "N/A";
+    doc.text(driverName, 20, 71);
+    if (driverInfo.company_name && driverInfo.company_name !== driverName) {
+      doc.text(driverInfo.company_name, 20, 76);
     }
+    doc.text(`SIRET: ${driverInfo.siret || 'N/A'}`, 20, 81);
+    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
+    
     if (driverInfo.company_address) {
-      const addressLines = doc.splitTextToSize(driverInfo.company_address, 80);
-      doc.text(addressLines, 15, yPos);
-      yPos += 5 * addressLines.length;
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
+      doc.text(addressLines, 20, 91);
     }
-    if (driverInfo.siret) {
-      doc.text(`SIRET: ${driverInfo.siret}`, 15, yPos);
-      yPos += 5;
-    }
-    if (driverInfo.profiles?.phone) {
-      doc.text(`Tél: ${driverInfo.profiles.phone}`, 15, yPos);
-    }
-    
-    // Client (droite)
-    yPos = 55;
+
+    // Client info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", pageWidth - 15, yPos, { align: "right" });
-    doc.setFontSize(9);
+    doc.text("CLIENT", 145, 65);
     doc.setFont(undefined, 'normal');
-    yPos += 6;
-    doc.text(course.clients?.profiles?.full_name || "N/A", pageWidth - 15, yPos, { align: "right" });
-    yPos += 5;
-    if (course.clients?.profiles?.phone) {
-      doc.text(course.clients.profiles.phone, pageWidth - 15, yPos, { align: "right" });
-    }
-    
-    // Détails de la course (encadré)
-    yPos = 105;
-    doc.setFillColor(248, 249, 250);
-    doc.rect(10, yPos, pageWidth - 20, 45, 'F');
+    doc.setFontSize(9);
+    doc.text(course.clients?.profiles?.full_name || "N/A", 145, 71);
+
+    // Service details box
     doc.setDrawColor(200, 200, 200);
-    doc.rect(10, yPos, pageWidth - 20, 45);
+    doc.rect(20, 110, 170, 55);
     
-    yPos += 8;
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("DÉTAILS DE LA COURSE", 15, yPos);
-    
-    doc.setFontSize(9);
+    doc.text("DÉTAILS DE LA PRESTATION", 25, 118);
     doc.setFont(undefined, 'normal');
-    yPos += 7;
-    doc.text("Départ:", 15, yPos);
-    doc.text(course.pickup_address, 40, yPos);
-    yPos += 6;
-    doc.text("Arrivée:", 15, yPos);
-    doc.text(course.destination_address, 40, yPos);
-    yPos += 6;
-    doc.text("Date:", 15, yPos);
-    doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 40, yPos);
-    yPos += 6;
-    doc.text("Passagers:", 15, yPos);
-    doc.text(`${course.passengers_count}`, 40, yPos);
-    if (course.distance_km) {
-      yPos += 6;
-      doc.text("Distance:", 15, yPos);
-      doc.text(`${course.distance_km} km`, 40, yPos);
-    }
+    doc.setFontSize(9);
     
-    // Détail du prix (tableau)
-    yPos = 165;
+    const pickupLines = doc.splitTextToSize(course.pickup_address, 140);
+    const destLines = doc.splitTextToSize(course.destination_address, 140);
+    
+    doc.text("Départ:", 25, 126);
+    doc.text(pickupLines, 50, 126);
+    
+    let currentY = 126 + (pickupLines.length * 5);
+    doc.text("Arrivée:", 25, currentY);
+    doc.text(destLines, 50, currentY);
+    
+    currentY += (destLines.length * 5);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    doc.text(`Passagers: ${course.passengers_count}`, 25, currentY + 5);
+    doc.text(`Distance: ${course.distance_km} km`, 105, currentY + 5);
+
+    // Payment info
+    let yPos = 175;
+    doc.text(`Mode de paiement: ${facture.payment_method || 'N/A'}`, 20, yPos);
+
+    // Pricing table
+    yPos += 5;
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("DÉTAIL DU PRIX", 15, yPos);
-    
-    if (devis) {
-      yPos += 8;
+    doc.text("TARIFICATION", 20, yPos);
+    yPos += 8;
+
+    // Calculate TVA
+    const amount = facture.amount;
+    const isHourlyBased = devis?.time_price > 0;
+    const tvaRate = isHourlyBased ? 20 : 10;
+    const subtotalHT = amount / (1 + tvaRate / 100);
+    const tvaAmount = amount - subtotalHT;
+
+    if (!forClient) {
+      // Driver version - with payment details
       doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+      doc.rect(20, yPos, 170, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
-      doc.text("Désignation", 15, yPos + 5);
-      doc.text("Montant", pageWidth - 15, yPos + 5, { align: "right" });
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
+      
+      yPos += 8;
       doc.setTextColor(0, 0, 0);
-      
-      yPos += 10;
       doc.setFont(undefined, 'normal');
-      doc.text("Forfait de base", 15, yPos);
-      doc.text(`${parseFloat(devis.base_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: "right" });
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
-      if (parseFloat(devis.distance_price) > 0) {
-        yPos += 6;
-        doc.text("Prix au kilomètre", 15, yPos);
-        doc.text(`${parseFloat(devis.distance_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: "right" });
-      }
+      yPos += 7;
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
-      if (parseFloat(devis.time_price || 0) > 0) {
-        yPos += 6;
-        doc.text("Prix horaire (mise à disposition)", 15, yPos);
-        doc.text(`${parseFloat(devis.time_price).toFixed(2)} €`, pageWidth - 15, yPos, { align: "right" });
-      }
+      yPos += 9;
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
       
-      // Ligne de séparation
-      yPos += 4;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(10, yPos, pageWidth - 10, yPos);
+      yPos += 15;
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'italic');
+      const noteLines = doc.splitTextToSize("Note: Le client reçoit une version simplifiée.", 170);
+      doc.text(noteLines, 20, yPos);
+    } else {
+      // Client version - simplified
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text("Description", 25, yPos + 5.5);
+      doc.text("Montant", 175, yPos + 5.5, { align: 'right' });
+      
+      yPos += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 9;
+      doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+      doc.rect(20, yPos, 170, 9, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(11);
+      doc.text("TOTAL TTC", 25, yPos + 6);
+      doc.text(`${amount.toFixed(2)} €`, 175, yPos + 6, { align: 'right' });
     }
-    
-    // Total TTC
-    yPos += 8;
-    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.rect(10, yPos - 4, pageWidth - 20, 10, 'F');
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text("TOTAL TTC", 15, yPos + 2);
-    doc.text(`${facture.amount.toFixed(2)} €`, pageWidth - 15, yPos + 2, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-    
-    // Informations de paiement
-    yPos += 15;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("INFORMATIONS DE PAIEMENT", 15, yPos);
-    
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    yPos += 6;
-    if (facture.payment_method) {
-      doc.text(`Moyen de paiement: ${facture.payment_method}`, 15, yPos);
-      yPos += 5;
-    }
-    if (facture.paid_at) {
-      doc.text(`Payé le: ${format(new Date(facture.paid_at), "dd/MM/yyyy", { locale: fr })}`, 15, yPos);
-      yPos += 5;
-    }
-    doc.setFont(undefined, 'bold');
-    const statusText = facture.payment_status === 'paid' ? 'PAYÉE' : 'EN ATTENTE';
-    const statusColor: [number, number, number] = facture.payment_status === 'paid' ? [40, 167, 69] : [220, 53, 69];
-    doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-    doc.text(`Statut: ${statusText}`, 15, yPos);
-    doc.setTextColor(0, 0, 0);
-    
-    // Pied de page
-    yPos = doc.internal.pageSize.height - 20;
+
+    // Footer
+    const pageHeight = doc.internal.pageSize.height;
     doc.setFillColor(240, 240, 240);
-    doc.rect(0, yPos - 5, pageWidth, 25, 'F');
+    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
     doc.setFontSize(8);
     doc.setFont(undefined, 'normal');
-    doc.text("Merci de votre confiance", pageWidth / 2, yPos, { align: "center" });
-    
-    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}.pdf`);
+    doc.text("Merci de votre confiance", pageWidth / 2, pageHeight - 8, { align: "center" });
+
+    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}${forClient ? '-client' : ''}.pdf`);
     toast.success("Facture téléchargée");
   };
 
@@ -668,44 +662,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     toast.success("Partage ouvert");
   };
 
-  const handleCompleteCourse = async () => {
-    if (!selectedCourseId || !paymentMethod) {
-      toast.error("Veuillez sélectionner un moyen de paiement");
-      return;
-    }
-
-    try {
-      // Update course status to completed
-      const { error: courseError } = await supabase
-        .from("courses")
-        .update({ status: "completed" })
-        .eq("id", selectedCourseId);
-
-      if (courseError) throw courseError;
-
-      // Generate facture automatically
-      const { data, error: factureError } = await supabase.functions.invoke("create-facture-auto", {
-        body: {
-          course_id: selectedCourseId,
-          payment_method: paymentMethod
-        }
-      });
-
-      if (factureError) throw factureError;
-
-      toast.success("Course terminée ! Facture générée automatiquement.");
-      setShowPaymentDialog(false);
-      fetchCourses();
-    } catch (error: any) {
-      console.error("Error completing course:", error);
-      toast.error("Erreur lors de la finalisation");
-    }
-  };
-
   const getDevisStatus = (course: any) => {
     const devis = course.devis?.[0];
     
-    // Status cohérent selon la section où apparaît la course
     if (course.status === "pending") {
       return {
         icon: Clock,
@@ -715,7 +674,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
     
     if (course.status === "accepted") {
-      // Dans la section Confirmées, toujours afficher "Confirmée"
       if (devis?.status === "pending") {
         return {
           icon: CheckCircle,
@@ -779,461 +737,501 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
-        {labels[status as keyof typeof labels]}
+      <Badge className={`${styles[status as keyof typeof styles]} border`}>
+        {labels[status as keyof typeof labels] || status}
       </Badge>
     );
   };
 
-  // Filtrer les courses par statut
   const pendingCourses = courses.filter(c => c.status === "pending");
-  const confirmedCourses = courses.filter(c => c.status === "accepted" || c.status === "in_progress");
+  const acceptedCourses = courses.filter(c => c.status === "accepted");
+  const inProgressCourses = courses.filter(c => c.status === "in_progress");
   const completedCourses = courses.filter(c => c.status === "completed");
-  const rejectedCourses = courses.filter(c => c.status === "cancelled");
+  const cancelledCourses = courses.filter(c => c.status === "cancelled");
 
   if (loading) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Chargement des courses...</p>
-      </div>
-    );
+    return <div className="text-center py-8">Chargement...</div>;
   }
 
-  const renderCourseCard = (course: any) => (
-    <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {course.clients?.profiles?.profile_photo_url ? (
-            <img
-              src={course.clients.profiles.profile_photo_url}
-              alt={course.clients.profiles.full_name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary-foreground" />
-            </div>
-          )}
-          <div>
-            <h3 className="font-bold">{course.clients?.profiles?.full_name}</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {course.clients?.is_exclusive && (
-                <Badge variant="outline" className="text-xs">Client exclusif</Badge>
-              )}
-              {course.course_number && (
-                <span className="text-xs text-premium">{course.course_number}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        {getStatusBadge(course.status)}
-      </div>
-
-      <div className="space-y-3 mb-4">
-        <div className="flex items-start gap-2">
-          <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium">Départ</p>
-            <p className="text-muted-foreground">{course.pickup_address}</p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2">
-          <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium">Arrivée</p>
-            <p className="text-muted-foreground">{course.destination_address}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
-            {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {course.passengers_count} passager{course.passengers_count > 1 ? "s" : ""}
-          </div>
-        </div>
-
-        {course.distance_km && (
-          <div className="text-sm text-muted-foreground">
-            Distance estimée : {course.distance_km} km
-            {course.duration_minutes && ` • Durée : ${course.duration_minutes} min`}
-          </div>
-        )}
-
-        {course.notes && (
-          <div className="text-sm bg-secondary p-3 rounded-lg">
-            <p className="font-medium mb-1">Notes :</p>
-            <p className="text-muted-foreground">{course.notes}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Status message avec icône dynamique */}
-      {(() => {
-        const statusInfo = getDevisStatus(course);
-        const StatusIcon = statusInfo.icon;
-        return (
-          <div className={`text-sm flex items-center gap-2 mb-3 ${statusInfo.color}`}>
-            <StatusIcon className="w-4 h-4" />
-            {statusInfo.text}
-          </div>
-        );
-      })()}
-
-      {/* Prix et partage du devis - Affiché dans toutes les sections si devis existe */}
-      {course.devis?.[0] && (
-        <div className="space-y-3 pt-3 border-t border-border">
-          {/* Prix du devis */}
-          <div className="p-4 bg-gradient-to-r from-premium/10 to-premium/5 rounded-lg border border-premium/20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Montant du devis</span>
-              <span className="text-3xl font-bold text-premium">{course.devis[0].amount.toFixed(2)}€</span>
-            </div>
-            {course.devis[0].quote_number && (
-              <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
-            )}
-          </div>
-
-          {/* Boutons de partage et téléchargement */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDownloadDevis(course)}
-              className="flex-1"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareDevis(course, 'whatsapp')}
-              className="flex-1"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              WhatsApp
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareDevis(course, 'email')}
-              className="flex-1"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareDevis(course, 'sms')}
-              className="flex-1"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              SMS
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Prix et partage de la facture - Affiché dans la section Terminées si facture existe */}
-      {course.status === "completed" && course.factures?.[0] && (
-        <div className="space-y-3 pt-3 border-t border-border">
-          {/* Prix de la facture */}
-          <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Montant de la facture</span>
-              <span className="text-3xl font-bold text-green-600">{course.factures[0].amount.toFixed(2)}€</span>
-            </div>
-            {course.factures[0].invoice_number_generated && (
-              <p className="text-xs text-muted-foreground mt-1">Réf: {course.factures[0].invoice_number_generated}</p>
-            )}
-            <div className="mt-2 text-xs text-muted-foreground">
-              {course.factures[0].payment_method && (
-                <span>Paiement: {course.factures[0].payment_method}</span>
-              )}
-              {course.factures[0].paid_at && (
-                <span className="ml-2">• Payé le {format(new Date(course.factures[0].paid_at), "d MMM yyyy", { locale: fr })}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Boutons de partage et téléchargement */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDownloadFacture(course)}
-              className="flex-1"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareFacture(course, 'whatsapp')}
-              className="flex-1"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              WhatsApp
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareFacture(course, 'email')}
-              className="flex-1"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShareFacture(course, 'sms')}
-              className="flex-1"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              SMS
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {course.status === "pending" && (
-        <div className="flex gap-3 pt-4 border-t border-border">
-          <Button
-            onClick={() => handleAccept(course.id)}
-            className="flex-1 bg-gradient-premium"
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Accepter et créer devis
-          </Button>
-          <Button
-            onClick={() => openRejectDialog(course.id)}
-            variant="destructive"
-            className="flex-1"
-          >
-            <XCircle className="w-4 h-4 mr-2" />
-            Refuser
-          </Button>
-        </div>
-      )}
-
-      {(course.status === "accepted" || course.status === "in_progress") && (
-        <div className="flex gap-3 pt-4 border-t border-border">
-          {course.status === "accepted" && (
-            <Button
-              onClick={() => handleStartCourse(course.id)}
-              className="flex-1 bg-gradient-trust"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              Commencer la course
-            </Button>
-          )}
-          {course.status === "in_progress" && (
-            <Button
-              onClick={() => openPaymentDialog(course.id)}
-              className="flex-1 bg-gradient-success"
-            >
-              <StopCircle className="w-4 h-4 mr-2" />
-              Terminer la course
-            </Button>
-          )}
-          <Button
-            onClick={() => openRejectDialog(course.id)}
-            variant="destructive"
-            size="sm"
-          >
-            <XCircle className="w-4 h-4 mr-2" />
-            Annuler
-          </Button>
-        </div>
-      )}
-    </Card>
-  );
-
   return (
-    <>
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle>Terminer la course</DialogTitle>
-            <DialogDescription>
-              Sélectionnez le moyen de paiement utilisé par le client
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Espèces" id="cash" />
-                <Label htmlFor="cash" className="cursor-pointer flex-1">Espèces</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Carte bancaire" id="card" />
-                <Label htmlFor="card" className="cursor-pointer flex-1">Carte bancaire</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Virement" id="transfer" />
-                <Label htmlFor="transfer" className="cursor-pointer flex-1">Virement</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Chèque" id="check" />
-                <Label htmlFor="check" className="cursor-pointer flex-1">Chèque</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCompleteCourse} className="bg-gradient-premium">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Confirmer et générer facture
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Motif de refus</DialogTitle>
-            <DialogDescription>
-              Veuillez indiquer la raison du refus de cette course
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <RadioGroup value={rejectionReason} onValueChange={setRejectionReason}>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Client trop éloigné de ma zone" id="distance" />
-                <Label htmlFor="distance" className="cursor-pointer flex-1">Client trop éloigné de ma zone</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Horaire non disponible" id="schedule" />
-                <Label htmlFor="schedule" className="cursor-pointer flex-1">Horaire non disponible</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Véhicule non adapté pour cette course" id="vehicle" />
-                <Label htmlFor="vehicle" className="cursor-pointer flex-1">Véhicule non adapté pour cette course</Label>
-              </div>
-              <div className="flex items-center space-x-2 p-3 border border-border rounded-lg hover:bg-secondary cursor-pointer">
-                <RadioGroupItem value="Autre" id="other" />
-                <Label htmlFor="other" className="cursor-pointer flex-1">Autre motif</Label>
-              </div>
-            </RadioGroup>
-            
-            {rejectionReason === "Autre" && (
-              <div className="space-y-2">
-                <Label htmlFor="customReason">Précisez le motif</Label>
-                <Textarea
-                  id="customReason"
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="Entrez votre motif de refus..."
-                  rows={4}
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleReject}
-              disabled={!rejectionReason || (rejectionReason === "Autre" && !customReason.trim())}
-            >
-              Confirmer le refus
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+    <div className="space-y-6">
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
-          <TabsTrigger value="pending" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="pending">
             En attente ({pendingCourses.length})
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Confirmées ({confirmedCourses.length})
+          <TabsTrigger value="confirmed">
+            Confirmées ({acceptedCourses.length + inProgressCourses.length})
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
+          <TabsTrigger value="completed">
             Terminées ({completedCourses.length})
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="flex items-center gap-2">
-            <XCircle className="w-4 h-4" />
-            Refusées ({rejectedCourses.length})
+          <TabsTrigger value="rejected">
+            Refusées ({cancelledCourses.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
           {pendingCourses.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune course en attente</h3>
-              <p className="text-muted-foreground">
-                Les demandes des clients et les devis envoyés apparaîtront ici
-              </p>
-            </Card>
+            <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : (
-            pendingCourses.map(renderCourseCard)
+            pendingCourses.map((course) => (
+              <Card key={course.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{course.clients?.profiles?.full_name}</h3>
+                        {getStatusBadge(course.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-destructive shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      {course.passengers_count} passager(s)
+                    </div>
+                  </div>
+
+                  {course.devis && course.devis.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Montant du devis</span>
+                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                      </div>
+                      {course.devis[0].quote_number && (
+                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, false)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Détaillé
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, true)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Client
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'whatsapp')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'email')}
+                      className="flex-1"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
           )}
         </TabsContent>
 
         <TabsContent value="confirmed" className="space-y-4">
-          {confirmedCourses.length === 0 ? (
-            <Card className="p-8 text-center">
-              <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune course confirmée</h3>
-              <p className="text-muted-foreground">
-                Les courses acceptées par les clients apparaîtront ici
-              </p>
-            </Card>
+          {[...acceptedCourses, ...inProgressCourses].length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
-            confirmedCourses.map(renderCourseCard)
+            [...acceptedCourses, ...inProgressCourses].map((course) => (
+              <Card key={course.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{course.clients?.profiles?.full_name}</h3>
+                        {getStatusBadge(course.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-destructive shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      {course.passengers_count} passager(s)
+                    </div>
+                  </div>
+
+                  {course.devis && course.devis.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Montant du devis</span>
+                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    {course.status === "accepted" && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleStartCourse(course.id)}
+                        className="flex-1"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Commencer
+                      </Button>
+                    )}
+                    {course.status === "in_progress" && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleEndCourse(course.id)}
+                        className="flex-1"
+                      >
+                        <StopCircle className="w-4 h-4 mr-2" />
+                        Terminer
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCancelCourse(course.id)}
+                      className="flex-1"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Annuler
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, false)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Détaillé
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, true)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Client
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareDevis(course, 'whatsapp')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
           )}
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
           {completedCourses.length === 0 ? (
-            <Card className="p-8 text-center">
-              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune course terminée</h3>
-              <p className="text-muted-foreground">
-                Les courses complétées apparaîtront ici
-              </p>
-            </Card>
+            <p className="text-center text-muted-foreground py-8">Aucune course terminée</p>
           ) : (
-            completedCourses.map(renderCourseCard)
+            completedCourses.map((course) => (
+              <Card key={course.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{course.clients?.profiles?.full_name}</h3>
+                        {getStatusBadge(course.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-destructive shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {course.factures && course.factures.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Montant de la facture</span>
+                        <span className="text-3xl font-bold text-green-600">{course.factures[0].amount.toFixed(2)}€</span>
+                      </div>
+                      {course.factures[0].invoice_number_generated && (
+                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.factures[0].invoice_number_generated}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadFacture(course, false)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Facture Détaillée
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadFacture(course, true)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Facture Client
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareFacture(course, 'whatsapp')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareFacture(course, 'email')}
+                      className="flex-1"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
           )}
         </TabsContent>
 
         <TabsContent value="rejected" className="space-y-4">
-          {rejectedCourses.length === 0 ? (
-            <Card className="p-8 text-center">
-              <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune course refusée</h3>
-              <p className="text-muted-foreground">
-                Les courses refusées apparaîtront ici
-              </p>
-            </Card>
+          {cancelledCourses.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Aucune course refusée</p>
           ) : (
-            rejectedCourses.map(renderCourseCard)
+            cancelledCourses.map((course) => (
+              <Card key={course.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{course.clients?.profiles?.full_name}</h3>
+                        {getStatusBadge(course.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-destructive shrink-0 mt-1" />
+                      <div className="text-sm">
+                        <p className="font-medium">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {course.devis && course.devis.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-foreground">Montant du devis</span>
+                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, false)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Détaillé
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadDevis(course, true)}
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      PDF Client
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
           )}
         </TabsContent>
       </Tabs>
-    </>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finaliser la course</DialogTitle>
+            <DialogDescription>
+              Sélectionnez le moyen de paiement utilisé par le client
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Carte bancaire" id="card" />
+              <Label htmlFor="card">Carte bancaire</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Espèces" id="cash" />
+              <Label htmlFor="cash">Espèces</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Virement" id="transfer" />
+              <Label htmlFor="transfer">Virement</Label>
+            </div>
+          </RadioGroup>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleCompleteCourse} disabled={!paymentMethod}>
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Annuler la course</DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer la raison de l'annulation
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={rejectionReason} onValueChange={setRejectionReason}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Horaire non disponible" id="schedule" />
+              <Label htmlFor="schedule">Horaire non disponible</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Distance trop importante" id="distance" />
+              <Label htmlFor="distance">Distance trop importante</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Problème technique" id="technical" />
+              <Label htmlFor="technical">Problème technique</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="custom" id="custom" />
+              <Label htmlFor="custom">Autre raison</Label>
+            </div>
+          </RadioGroup>
+          {rejectionReason === "custom" && (
+            <Textarea
+              placeholder="Précisez la raison..."
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleRejectCourse}>
+              Confirmer l'annulation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
