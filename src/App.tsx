@@ -12,6 +12,7 @@ import ChauffeurProfile from "./pages/ChauffeurProfile";
 import DriverDashboard from "./pages/DriverDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import RegisterClientQR from "./pages/RegisterClientQR";
+import AdminDashboard from "./pages/AdminDashboard";
 import CreateCourse from "./pages/CreateCourse";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["client"]}>
                   <ClientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
