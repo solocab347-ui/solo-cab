@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
@@ -35,6 +36,8 @@ const DriverDashboard = () => {
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
   const [workingSectors, setWorkingSectors] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
+  const [homeCoordinates, setHomeCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [baseFare, setBaseFare] = useState("");
   const [perKmRate, setPerKmRate] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
@@ -67,6 +70,13 @@ const DriverDashboard = () => {
       setPublicProfileEnabled(driver.public_profile_enabled || false);
       setWorkingSectors(driver.working_sectors?.join(", ") || "");
       setServiceDescription(driver.service_description || "");
+      setHomeAddress(driver.home_address || "");
+      if (driver.home_latitude && driver.home_longitude) {
+        setHomeCoordinates({
+          latitude: driver.home_latitude,
+          longitude: driver.home_longitude,
+        });
+      }
       setBaseFare(driver.base_fare?.toString() || "");
       setPerKmRate(driver.per_km_rate?.toString() || "");
       setHourlyRate(driver.hourly_rate?.toString() || "");
@@ -134,6 +144,9 @@ const DriverDashboard = () => {
             .map((s) => s.trim())
             .filter((s) => s),
           service_description: serviceDescription,
+          home_address: homeAddress,
+          home_latitude: homeCoordinates?.latitude || null,
+          home_longitude: homeCoordinates?.longitude || null,
           base_fare: baseFare ? parseFloat(baseFare) : null,
           per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
           hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
@@ -432,6 +445,24 @@ const DriverDashboard = () => {
                     placeholder="Décrivez votre service, vos spécialités..."
                     rows={4}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="homeAddress" className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Adresse de proximité (pour la recherche géographique)
+                  </Label>
+                  <AddressAutocomplete
+                    value={homeAddress}
+                    onChange={(address, coords) => {
+                      setHomeAddress(address);
+                      if (coords) setHomeCoordinates(coords);
+                    }}
+                    placeholder="Tapez votre adresse de départ habituelle..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Cette adresse sera utilisée pour vous proposer aux clients à proximité
+                  </p>
                 </div>
 
                 <div className="space-y-2">
