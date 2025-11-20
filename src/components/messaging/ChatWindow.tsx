@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
 import { Message } from "@/hooks/useMessaging";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface ChatWindowProps {
@@ -68,6 +68,9 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
         <div className="space-y-4">
           {messages.map((message) => {
             const isOwnMessage = message.sender_id === user?.id;
+            const senderName = isOwnMessage 
+              ? user?.user_metadata?.full_name || "Moi" 
+              : otherUser.full_name;
 
             return (
               <div
@@ -76,7 +79,7 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
                   isOwnMessage ? "flex-row-reverse" : "flex-row"
                 }`}
               >
-                <Avatar className="w-8 h-8">
+                <Avatar className="w-10 h-10 shrink-0">
                   <AvatarImage
                     src={
                       isOwnMessage
@@ -98,10 +101,18 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
                 </Avatar>
 
                 <div
-                  className={`max-w-[70%] ${
+                  className={`max-w-[70%] flex flex-col ${
                     isOwnMessage ? "items-end" : "items-start"
                   }`}
                 >
+                  <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
+                    <span className="text-xs font-semibold text-foreground">
+                      {senderName}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(message.created_at), "d MMM 'à' HH:mm", { locale: fr })}
+                    </span>
+                  </div>
                   <Card
                     className={`p-3 ${
                       isOwnMessage
@@ -113,16 +124,6 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
                       {message.content}
                     </p>
                   </Card>
-                  <p
-                    className={`text-xs text-muted-foreground mt-1 ${
-                      isOwnMessage ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {formatDistanceToNow(new Date(message.created_at), {
-                      addSuffix: true,
-                      locale: fr,
-                    })}
-                  </p>
                 </div>
               </div>
             );
