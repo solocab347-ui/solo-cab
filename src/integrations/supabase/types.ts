@@ -225,11 +225,15 @@ export type Database = {
       }
       drivers: {
         Row: {
+          base_rate: number | null
           bio: string | null
           created_at: string
           id: string
           license_number: string
+          per_km_rate: number | null
+          public_profile_enabled: boolean | null
           rating: number | null
+          service_description: string | null
           status: Database["public"]["Enums"]["driver_status"]
           total_rides: number | null
           updated_at: string
@@ -237,13 +241,18 @@ export type Database = {
           validation_date: string | null
           vehicle_model: string
           vehicle_plate: string | null
+          working_sectors: string[] | null
         }
         Insert: {
+          base_rate?: number | null
           bio?: string | null
           created_at?: string
           id?: string
           license_number: string
+          per_km_rate?: number | null
+          public_profile_enabled?: boolean | null
           rating?: number | null
+          service_description?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_rides?: number | null
           updated_at?: string
@@ -251,13 +260,18 @@ export type Database = {
           validation_date?: string | null
           vehicle_model: string
           vehicle_plate?: string | null
+          working_sectors?: string[] | null
         }
         Update: {
+          base_rate?: number | null
           bio?: string | null
           created_at?: string
           id?: string
           license_number?: string
+          per_km_rate?: number | null
+          public_profile_enabled?: boolean | null
           rating?: number | null
+          service_description?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           total_rides?: number | null
           updated_at?: string
@@ -265,6 +279,7 @@ export type Database = {
           validation_date?: string | null
           vehicle_model?: string
           vehicle_plate?: string | null
+          working_sectors?: string[] | null
         }
         Relationships: [
           {
@@ -443,6 +458,22 @@ export type Database = {
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
+      }
+      search_public_drivers: {
+        Args: { _search_term?: string; _sector?: string }
+        Returns: {
+          base_rate: number
+          bio: string
+          full_name: string
+          id: string
+          per_km_rate: number
+          profile_photo_url: string
+          rating: number
+          service_description: string
+          total_rides: number
+          vehicle_model: string
+          working_sectors: string[]
+        }[]
       }
     }
     Enums: {

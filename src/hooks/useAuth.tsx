@@ -148,11 +148,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (driverError) throw driverError;
       } else if (role === "client") {
+        // Clients are FREE by default (is_exclusive: false)
+        // Only QR code registration will set is_exclusive: true
         const { error: clientError } = await supabase
           .from("clients")
           .insert({
             user_id: data.user.id,
             is_exclusive: additionalData?.isExclusive ?? false,
+            driver_id: additionalData?.driverId ?? null,
+            qr_code_id: additionalData?.qrCodeId ?? null,
           });
 
         if (clientError) throw clientError;
