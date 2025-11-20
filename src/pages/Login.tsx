@@ -12,7 +12,6 @@ import { toast } from "sonner";
 const Login = () => {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<"client" | "driver">("client");
   const [loading, setLoading] = useState(false);
 
   // Form states for login
@@ -59,18 +58,15 @@ const Login = () => {
       return;
     }
 
-    if (role === "driver" && (!licenseNumber || !vehicleModel)) {
+    if (!licenseNumber || !vehicleModel) {
       toast.error("Veuillez remplir les informations du chauffeur");
       return;
     }
 
     setLoading(true);
     try {
-      const additionalData = role === "driver"
-        ? { licenseNumber, vehicleModel, vehiclePlate }
-        : { isExclusive: false };
-
-      await signUp(signupEmail, signupPassword, signupName, role, additionalData);
+      const additionalData = { licenseNumber, vehicleModel, vehiclePlate };
+      await signUp(signupEmail, signupPassword, signupName, "driver", additionalData);
     } catch (error) {
       // Error handled in useAuth
     } finally {
@@ -91,9 +87,9 @@ const Login = () => {
               SoloCab
             </span>
           </Link>
-          <h1 className="text-2xl font-bold mt-4">Bienvenue</h1>
+          <h1 className="text-2xl font-bold mt-4">Espace Chauffeur</h1>
           <p className="text-muted-foreground mt-2">
-            Connectez-vous pour accéder à votre espace
+            Connectez-vous ou inscrivez-vous en tant que chauffeur
           </p>
         </div>
 
@@ -155,28 +151,10 @@ const Login = () => {
 
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Type de compte</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={role === "client" ? "default" : "outline"}
-                      onClick={() => setRole("client")}
-                      disabled={loading}
-                      className={role === "client" ? "bg-gradient-premium" : ""}
-                    >
-                      Client
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={role === "driver" ? "default" : "outline"}
-                      onClick={() => setRole("driver")}
-                      disabled={loading}
-                      className={role === "driver" ? "bg-gradient-premium" : ""}
-                    >
-                      Chauffeur
-                    </Button>
-                  </div>
+                <div className="bg-accent/50 p-4 rounded-lg border border-border mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Inscription chauffeur uniquement.</strong> Les clients s'inscrivent via QR code ou en choisissant un chauffeur dans la vitrine publique.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Nom complet *</Label>
@@ -217,9 +195,7 @@ const Login = () => {
                     className="transition-all focus:shadow-sm"
                   />
                 </div>
-                {role === "driver" && (
-                  <>
-                    <div className="space-y-2">
+                <div className="space-y-2">
                       <Label htmlFor="license">Numéro de permis *</Label>
                       <Input
                         id="license"
@@ -257,8 +233,6 @@ const Login = () => {
                         className="transition-all focus:shadow-sm"
                       />
                     </div>
-                  </>
-                )}
                 <Button
                   type="submit"
                   disabled={loading}

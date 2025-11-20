@@ -12,6 +12,7 @@ import ChauffeurProfile from "./pages/ChauffeurProfile";
 import DriverDashboard from "./pages/DriverDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import RegisterClientQR from "./pages/RegisterClientQR";
+import RegisterClientDriver from "./pages/RegisterClientDriver";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateCourse from "./pages/CreateCourse";
 import NotFound from "./pages/NotFound";
@@ -30,8 +31,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
           <Route path="/chauffeurs" element={<Chauffeurs />} />
           <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
-          <Route path="/register-client" element={<RegisterClientQR />} />
-          <Route path="/create-course" element={<CreateCourse />} />
+           <Route path="/register-client" element={<RegisterClientQR />} />
+           <Route path="/register-client-driver" element={<RegisterClientDriver />} />
+           <Route path="/create-course" element={<CreateCourse />} />
             <Route
               path="/driver-dashboard"
               element={
