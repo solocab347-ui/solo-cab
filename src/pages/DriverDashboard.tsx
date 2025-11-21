@@ -57,6 +57,7 @@ const DriverDashboard = () => {
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
   const [siret, setSiret] = useState("");
+  const [siren, setSiren] = useState("");
   const [maxPassengers, setMaxPassengers] = useState("4");
   const [tvaIncluded, setTvaIncluded] = useState(false);
   const [displayDriverName, setDisplayDriverName] = useState(true);
@@ -107,6 +108,7 @@ const DriverDashboard = () => {
       setCompanyName(driver.company_name || "");
       setCompanyAddress(driver.company_address || "");
       setSiret(driver.siret || "");
+      setSiren(driver.siren || "");
       setMaxPassengers(driver.max_passengers?.toString() || "4");
       setTvaIncluded(driver.tva_included || false);
       setDisplayDriverName(driver.display_driver_name !== false);
@@ -208,6 +210,7 @@ const DriverDashboard = () => {
           company_name: companyName,
           company_address: companyAddress,
           siret: siret,
+          siren: siren,
           max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
           tva_included: tvaIncluded,
           display_driver_name: displayDriverName,
@@ -555,13 +558,27 @@ const DriverDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="siret" className="text-white">SIRET</Label>
+                    <Label htmlFor="siret" className="text-white">SIRET (14 chiffres)</Label>
                     <Input
                       id="siret"
                       value={siret}
                       onChange={(e) => setSiret(e.target.value)}
                       placeholder="123 456 789 00012"
+                      maxLength={14}
                     />
+                    <p className="text-xs text-white/70">Ou remplissez le SIREN ci-dessous</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="siren" className="text-white">SIREN (9 chiffres)</Label>
+                    <Input
+                      id="siren"
+                      value={siren}
+                      onChange={(e) => setSiren(e.target.value)}
+                      placeholder="123 456 789"
+                      maxLength={9}
+                    />
+                    <p className="text-xs text-white/70">Alternative au SIRET (9 premiers chiffres)</p>
                   </div>
                 </div>
 

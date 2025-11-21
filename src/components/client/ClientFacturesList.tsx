@@ -115,7 +115,11 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     if (facture.drivers?.company_name && facture.drivers.company_name !== driverName) {
       doc.text(facture.drivers.company_name, 20, 76);
     }
-    doc.text(`SIRET: ${facture.drivers?.siret || 'N/A'}`, 20, 81);
+    if (facture.drivers?.siret) {
+      doc.text(`SIRET: ${facture.drivers.siret}`, 20, 81);
+    } else if (facture.drivers?.siren) {
+      doc.text(`SIREN: ${facture.drivers.siren}`, 20, 81);
+    }
     doc.text(`Tél: ${facture.drivers?.profiles?.phone || 'N/A'}`, 20, 86);
     
     if (facture.drivers?.company_address) {
