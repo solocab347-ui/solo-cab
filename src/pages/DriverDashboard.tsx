@@ -229,9 +229,9 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Header */}
-      <header className="border-b border-border/50 bg-gradient-triple shadow-elegant sticky top-0 z-10 backdrop-blur-sm">
+      <header className="border-b border-white/10 bg-black shadow-elegant sticky top-0 z-10 backdrop-blur-sm">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
@@ -258,10 +258,10 @@ const DriverDashboard = () => {
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
             Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} ✨
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Voici un aperçu de votre activité</p>
+          <p className="text-sm sm:text-base text-gray-400">Voici un aperçu de votre activité</p>
         </div>
 
         {/* Subscription Alert */}
@@ -276,36 +276,36 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full bg-card/80 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-primary/10">
+          <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
             {/* Première ligne */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
-              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-success data-[state=active]:text-white">
-                <LayoutGrid className="w-4 h-4 text-primary" />
+              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+                <LayoutGrid className="w-4 h-4" />
                 <span className="hidden sm:inline">Accueil</span>
                 <span className="sm:hidden">Accueil</span>
               </TabsTrigger>
-              <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-trust data-[state=active]:text-white">
-                <Users className="w-4 h-4 text-secondary" />
+              <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+                <Users className="w-4 h-4" />
                 <span className="hidden sm:inline">Mes Clients</span>
                 <span className="sm:hidden">Clients</span>
               </TabsTrigger>
-              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-premium data-[state=active]:text-white">
-                <Car className="w-4 h-4 text-accent" />
+              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                <Car className="w-4 h-4" />
                 <span className="hidden sm:inline">Mes Courses</span>
                 <span className="sm:hidden">Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-independence data-[state=active]:text-white">
-                <MessageSquare className="w-4 h-4 text-info" />
+              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+                <MessageSquare className="w-4 h-4" />
                 <span className="hidden sm:inline">Messages</span>
                 <span className="sm:hidden">Messages</span>
               </TabsTrigger>
-              <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-renewal data-[state=active]:text-white">
-                <FileText className="w-4 h-4 text-primary" />
+              <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+                <FileText className="w-4 h-4" />
                 <span className="hidden sm:inline">Devis</span>
                 <span className="sm:hidden">Devis</span>
               </TabsTrigger>
-              <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-freedom data-[state=active]:text-white">
-                <CreditCard className="w-4 h-4 text-secondary" />
+              <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+                <CreditCard className="w-4 h-4" />
                 <span className="hidden sm:inline">Factures</span>
                 <span className="sm:hidden">Factures</span>
               </TabsTrigger>
@@ -315,20 +315,20 @@ const DriverDashboard = () => {
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 w-full">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-gradient-premium hover:text-white flex-col sm:flex-row">
-                    <Wrench className="w-4 h-4 text-accent" />
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white flex-col sm:flex-row">
+                    <Wrench className="w-4 h-4" />
                     <span className="hidden sm:inline">Outils</span>
                     <span className="sm:hidden">Outils</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-gradient-premium hover:text-white">
-                    <Calculator className="w-4 h-4 text-primary" />
+                <DropdownMenuContent align="start" className="w-48 bg-[#1a2942] border border-white/10 z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white">
+                    <Calculator className="w-4 h-4" />
                     Calculatrice
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer hover:bg-gradient-success hover:text-white">
-                    <QrCode className="w-4 h-4 text-secondary" />
+                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
+                    <QrCode className="w-4 h-4" />
                     Mon QR Code
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -336,41 +336,41 @@ const DriverDashboard = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-gradient-trust hover:text-white flex-col sm:flex-row">
-                    <BarChart3 className="w-4 h-4 text-secondary" />
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-600 hover:text-white flex-col sm:flex-row">
+                    <BarChart3 className="w-4 h-4" />
                     <span className="hidden sm:inline">Développement</span>
                     <span className="sm:hidden">Dev</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer hover:bg-gradient-independence hover:text-white">
-                    <TrendingUp className="w-4 h-4 text-info" />
+                <DropdownMenuContent align="start" className="w-56 bg-[#1a2942] border border-white/10 z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600 hover:text-white">
+                    <TrendingUp className="w-4 h-4" />
                     Statistique
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer hover:bg-gradient-renewal hover:text-white">
-                    <Megaphone className="w-4 h-4 text-accent" />
+                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-blue-600 hover:text-white">
+                    <Megaphone className="w-4 h-4" />
                     Campagne
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-gradient-freedom hover:text-white">
-                    <PieChart className="w-4 h-4 text-primary" />
+                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
+                    <PieChart className="w-4 h-4" />
                     Calcul de rentabilité
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-premium data-[state=active]:text-white">
-                <TrendingUp className="w-4 h-4 text-accent" />
+              <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                <TrendingUp className="w-4 h-4" />
                 <span className="hidden sm:inline">Abonnement</span>
                 <span className="sm:hidden">Abo</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-trust data-[state=active]:text-white">
-                <Globe className="w-4 h-4 text-secondary" />
+              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+                <Globe className="w-4 h-4" />
                 <span className="hidden sm:inline">Profil Public</span>
                 <span className="sm:hidden">Profil</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-independence data-[state=active]:text-white">
-                <Settings className="w-4 h-4 text-info" />
+              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+                <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Paramètres</span>
                 <span className="sm:hidden">Params</span>
               </TabsTrigger>
@@ -389,7 +389,7 @@ const DriverDashboard = () => {
 
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
-            <Card className="p-6 bg-gradient-independence border-0 shadow-trust">
+            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                   <QrCode className="w-5 h-5 text-white" />
@@ -452,7 +452,7 @@ const DriverDashboard = () => {
             </Alert>
 
             {/* Pricing */}
-            <Card className="p-6 bg-gradient-freedom border-0 shadow-success">
+            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <h2 className="text-xl font-bold mb-6 text-white">Tarification Professionnelle</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -540,7 +540,7 @@ const DriverDashboard = () => {
             </Card>
 
             {/* Company Info */}
-            <Card className="p-6 bg-gradient-renewal border-0 shadow-premium">
+            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <h2 className="text-xl font-bold mb-6 text-white">Informations Entreprise</h2>
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -596,7 +596,7 @@ const DriverDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
-            <Card className="p-6 bg-gradient-trust border-0 shadow-trust">
+            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
                   <MapPin className="w-5 h-5 text-white" />
@@ -629,13 +629,13 @@ const DriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
-              <h2 className="text-xl font-bold mb-6 text-foreground">Profil Public</h2>
+            <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
+              <h2 className="text-xl font-bold mb-6 text-white">Profil Public</h2>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base text-foreground">Activer le profil public</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-base text-white">Activer le profil public</Label>
+                    <p className="text-sm text-gray-400">
                       Apparaître sur /chauffeurs pour les clients libres
                     </p>
                   </div>
@@ -652,8 +652,8 @@ const DriverDashboard = () => {
                   onPhotoUpdate={setProfilePhotoUrl}
                 />
 
-                <div className="border-t pt-6">
-                  <Label className="text-base mb-4 block">Affichage dans le profil public</Label>
+                <div className="border-t border-white/10 pt-6">
+                  <Label className="text-base mb-4 block text-white">Affichage dans le profil public</Label>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <Checkbox
@@ -661,7 +661,7 @@ const DriverDashboard = () => {
                         checked={displayDriverName}
                         onCheckedChange={(checked) => setDisplayDriverName(checked as boolean)}
                       />
-                      <Label htmlFor="displayName" className="font-normal cursor-pointer">
+                      <Label htmlFor="displayName" className="font-normal cursor-pointer text-gray-300">
                         Afficher mon nom ({driverProfile?.full_name || "Non défini"})
                       </Label>
                     </div>
@@ -671,12 +671,12 @@ const DriverDashboard = () => {
                         checked={displayCompanyName}
                         onCheckedChange={(checked) => setDisplayCompanyName(checked as boolean)}
                       />
-                      <Label htmlFor="displayCompany" className="font-normal cursor-pointer">
+                      <Label htmlFor="displayCompany" className="font-normal cursor-pointer text-gray-300">
                         Afficher le nom de mon entreprise ({companyName || "Non défini"})
                       </Label>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-xs text-gray-400 mt-2">
                     Vous pouvez afficher votre nom, celui de votre entreprise, ou les deux
                   </p>
                 </div>
@@ -687,7 +687,7 @@ const DriverDashboard = () => {
                 />
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description du service</Label>
+                  <Label htmlFor="description" className="text-white">Description du service</Label>
                   <Textarea
                     id="description"
                     value={serviceDescription}
@@ -698,7 +698,7 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="homeAddress" className="flex items-center gap-2">
+                  <Label htmlFor="homeAddress" className="flex items-center gap-2 text-white">
                     <MapPin className="w-4 h-4" />
                     📍 Adresse de Localisation
                   </Label>
@@ -710,8 +710,8 @@ const DriverDashboard = () => {
                     }}
                     placeholder="Tapez votre adresse de départ habituelle..."
                   />
-                  <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded-lg">
-                    <p className="font-medium text-foreground">Pourquoi cette adresse est importante ?</p>
+                  <div className="text-xs text-gray-300 space-y-1 bg-white/5 p-3 rounded-lg border border-white/10">
+                    <p className="font-medium text-white">Pourquoi cette adresse est importante ?</p>
                     <p>
                       Cette adresse servira à vous géolocaliser quand un client cherche des chauffeurs à proximité. 
                       C'est dans votre intérêt de renseigner l'adresse de départ d'où vous décollez tous les jours.
@@ -721,9 +721,9 @@ const DriverDashboard = () => {
                       soit le lieu où vous récupérez votre véhicule chaque jour. Plus votre localisation est précise, 
                       plus vous avez de chances de trouver des clients à proximité !
                     </p>
-                    <div className="flex items-start gap-2 pt-2 border-t border-border/50">
-                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
-                      <p className="text-primary">
+                    <div className="flex items-start gap-2 pt-2 border-t border-white/10">
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-cyan-400" />
+                      <p className="text-cyan-400">
                         <span className="font-medium">Confidentialité :</span> Cette adresse n'est visible ni par les clients 
                         ni par les autres chauffeurs. Elle sert uniquement au système de géolocalisation pour vous proposer 
                         aux clients recherchant un chauffeur à proximité.
@@ -734,7 +734,7 @@ const DriverDashboard = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="brand">Marque</Label>
+                    <Label htmlFor="brand" className="text-white">Marque</Label>
                     <Input
                       id="brand"
                       value={vehicleBrand}
@@ -743,7 +743,7 @@ const DriverDashboard = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="year">Année</Label>
+                    <Label htmlFor="year" className="text-white">Année</Label>
                     <Input
                       id="year"
                       type="number"
@@ -755,7 +755,7 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="color">Couleur du véhicule</Label>
+                  <Label htmlFor="color" className="text-white">Couleur du véhicule</Label>
                   <Input
                     id="color"
                     value={vehicleColor}
@@ -765,7 +765,7 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="plate">Plaque d'immatriculation</Label>
+                  <Label htmlFor="plate" className="text-white">Plaque d'immatriculation</Label>
                   <Input
                     id="plate"
                     value={vehiclePlate}
@@ -773,7 +773,7 @@ const DriverDashboard = () => {
                     placeholder="AB-123-CD"
                     maxLength={12}
                   />
-                  <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/20 p-2 rounded-lg">
+                  <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <p>
                       <span className="font-medium">Information confidentielle :</span> Cette plaque n'est visible 
@@ -783,14 +783,14 @@ const DriverDashboard = () => {
                   </div>
                 </div>
 
-                <div className="border-t pt-6">
+                <div className="border-t border-white/10 pt-6">
                   <EquipmentSelector
                     selectedEquipment={vehicleEquipment}
                     onChange={setVehicleEquipment}
                   />
                 </div>
 
-                <div className="border-t pt-6">
+                <div className="border-t border-white/10 pt-6">
                   <ServicesSelector
                     selectedServices={servicesOffered}
                     onChange={setServicesOffered}
