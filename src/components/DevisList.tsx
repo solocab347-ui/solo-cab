@@ -317,6 +317,9 @@ const DevisList = ({ clientId }: DevisListProps) => {
     if (devis.drivers?.siret) {
       doc.text(`SIRET: ${devis.drivers.siret}`, 20, yPos);
       yPos += 4;
+    } else if (devis.drivers?.siren) {
+      doc.text(`SIREN: ${devis.drivers.siren}`, 20, yPos);
+      yPos += 4;
     }
     if (devis.drivers?.profiles?.phone) {
       doc.text(`Tél: ${devis.drivers.profiles.phone}`, 20, yPos);

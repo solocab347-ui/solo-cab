@@ -458,6 +458,7 @@ export type Database = {
           rating: number | null
           service_description: string | null
           services_offered: string[] | null
+          siren: string | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
           subscription_end_date: string | null
@@ -503,6 +504,7 @@ export type Database = {
           rating?: number | null
           service_description?: string | null
           services_offered?: string[] | null
+          siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null
@@ -548,6 +550,7 @@ export type Database = {
           rating?: number | null
           service_description?: string | null
           services_offered?: string[] | null
+          siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null

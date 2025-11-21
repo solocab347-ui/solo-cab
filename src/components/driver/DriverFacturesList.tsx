@@ -155,8 +155,8 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       return;
     }
     
-    if (!driverInfo.company_name || !driverInfo.siret) {
-      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET, Adresse)");
+    if (!driverInfo.company_name || (!driverInfo.siret && !driverInfo.siren)) {
+      toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)");
       return;
     }
 
@@ -191,7 +191,11 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     if (driverInfo.company_name && driverInfo.company_name !== driverName) {
       doc.text(driverInfo.company_name, 20, 76);
     }
-    doc.text(`SIRET: ${driverInfo.siret || 'N/A'}`, 20, 81);
+    if (driverInfo.siret) {
+      doc.text(`SIRET: ${driverInfo.siret}`, 20, 81);
+    } else if (driverInfo.siren) {
+      doc.text(`SIREN: ${driverInfo.siren}`, 20, 81);
+    }
     doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
     
     if (driverInfo.company_address) {

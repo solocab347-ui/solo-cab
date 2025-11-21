@@ -176,7 +176,11 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     if (driverInfo.company_name && driverInfo.company_name !== driverName) {
       doc.text(driverInfo.company_name, 20, 76);
     }
-    doc.text(`SIRET: ${driverInfo.siret || 'N/A'}`, 20, 81);
+    if (driverInfo.siret) {
+      doc.text(`SIRET: ${driverInfo.siret}`, 20, 81);
+    } else if (driverInfo.siren) {
+      doc.text(`SIREN: ${driverInfo.siren}`, 20, 81);
+    }
     doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
     
     if (driverInfo.company_address) {
