@@ -56,10 +56,16 @@ export const ChatWindow = ({ messages, onSendMessage, otherUser }: ChatWindowPro
               {otherUser.full_name?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <h3 className="font-semibold">{otherUser.full_name}</h3>
             <p className="text-xs text-muted-foreground">En ligne</p>
           </div>
+        </div>
+        {/* Note conservation messages */}
+        <div className="mt-3 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-xs text-blue-600 dark:text-blue-400">
+            ℹ️ Les messages sont conservés pendant 3 mois puis automatiquement supprimés
+          </p>
         </div>
       </div>
 
