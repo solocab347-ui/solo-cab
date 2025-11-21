@@ -23,13 +23,12 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import DevisList from "@/components/DevisList";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
-import ClientFacturesList from "@/components/client/ClientFacturesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
 import ClientDriversList from "@/components/client/ClientDriversList";
 import ClientQRScanner from "@/components/client/ClientQRScanner";
+import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { cn } from "@/lib/utils";
 
@@ -159,6 +158,7 @@ const ClientDashboard = () => {
   const menuItems = [
     { id: "accueil", label: "Accueil", icon: Home },
     { id: "courses", label: "Courses", icon: Clock },
+    { id: "devis-factures", label: "Devis & Factures", icon: FileText },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users },
@@ -269,6 +269,10 @@ const ClientDashboard = () => {
         return clientProfile?.client?.id ? (
           <ClientCoursesList clientId={clientProfile.client.id} />
         ) : null;
+      case "devis-factures":
+        return clientProfile?.client?.id ? (
+          <ClientDevisFactures clientId={clientProfile.client.id} />
+        ) : null;
       case "messages":
         return <MessagingInterface />;
       case "notes":
@@ -279,14 +283,6 @@ const ClientDashboard = () => {
         return <ClientQRScanner />;
       case "compte":
         return <ClientProfile />;
-      case "devis":
-        return clientProfile?.client?.id ? (
-          <DevisList clientId={clientProfile.client.id} />
-        ) : null;
-      case "factures":
-        return clientProfile?.client?.id ? (
-          <ClientFacturesList clientId={clientProfile.client.id} />
-        ) : null;
       default:
         return null;
     }
