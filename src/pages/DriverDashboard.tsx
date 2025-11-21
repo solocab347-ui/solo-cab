@@ -389,14 +389,14 @@ const DriverDashboard = () => {
 
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-independence border-0 shadow-trust">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-magenta rounded-lg flex items-center justify-center">
-                  <QrCode className="w-5 h-5 text-magenta-foreground" />
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <QrCode className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Mon QR Code Personnel</h2>
-                  <p className="text-sm text-muted-foreground">Recrutez vos clients exclusifs en 30 secondes</p>
+                  <h2 className="text-xl font-bold text-white">Mon QR Code Personnel</h2>
+                  <p className="text-sm text-white/80">Recrutez vos clients exclusifs en 30 secondes</p>
                 </div>
               </div>
               <QRCodeDisplay qrCode={qrCode} loadingQR={loadingQR} driverProfile={driverProfile} />
@@ -412,14 +412,14 @@ const DriverDashboard = () => {
 
           {/* Subscription Tab */}
           <TabsContent value="subscription">
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-premium border-0 shadow-premium">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-premium-foreground" />
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Gestion de l'Abonnement</h2>
-                  <p className="text-sm text-muted-foreground">Gérez votre abonnement professionnel</p>
+                  <h2 className="text-xl font-bold text-white">Gestion de l'Abonnement</h2>
+                  <p className="text-sm text-white/80">Gérez votre abonnement professionnel</p>
                 </div>
               </div>
               <SubscriptionManager 
@@ -452,8 +452,8 @@ const DriverDashboard = () => {
             </Alert>
 
             {/* Pricing */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Tarification Professionnelle</h2>
+            <Card className="p-6 bg-gradient-freedom border-0 shadow-success">
+              <h2 className="text-xl font-bold mb-6 text-white">Tarification Professionnelle</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="baseFare">Forfait de base (€)</Label>
@@ -540,8 +540,8 @@ const DriverDashboard = () => {
             </Card>
 
             {/* Company Info */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Informations Entreprise</h2>
+            <Card className="p-6 bg-gradient-renewal border-0 shadow-premium">
+              <h2 className="text-xl font-bold mb-6 text-white">Informations Entreprise</h2>
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -596,14 +596,14 @@ const DriverDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
-            <Card className="p-6">
+            <Card className="p-6 bg-gradient-trust border-0 shadow-trust">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-premium-foreground" />
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Demandes de Réservation</h2>
-                  <p className="text-sm text-muted-foreground">Gérez vos courses et créez des devis</p>
+                  <h2 className="text-xl font-bold text-white">Demandes de Réservation</h2>
+                  <p className="text-sm text-white/80">Gérez vos courses et créez des devis</p>
                 </div>
               </div>
 
@@ -629,13 +629,13 @@ const DriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-6">Profil Public</h2>
+            <Card className="p-6 bg-gradient-premium border-0 shadow-premium">
+              <h2 className="text-xl font-bold mb-6 text-white">Profil Public</h2>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">Activer le profil public</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="text-base text-white">Activer le profil public</Label>
+                    <p className="text-sm text-white/80">
                       Apparaître sur /chauffeurs pour les clients libres
                     </p>
                   </div>
