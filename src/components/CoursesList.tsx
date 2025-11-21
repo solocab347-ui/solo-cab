@@ -846,26 +846,38 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 bg-card/80 backdrop-blur-sm">
-          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30">
-            <span className="hidden sm:inline">En attente</span>
-            <span className="sm:hidden">Attente</span>
-            <span className="ml-1">({pendingCourses.length})</span>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 mb-6 h-auto bg-transparent p-0">
+          <TabsTrigger 
+            value="pending" 
+            className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-200 data-[state=active]:border-yellow-500 border-2 border-white/10 bg-card/50 text-white h-auto py-3 px-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 hover:bg-yellow-500/10 transition-all"
+          >
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold">En attente</span>
+            <Badge className="bg-yellow-500/30 text-yellow-200 text-xs font-bold">{pendingCourses.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="text-xs sm:text-sm py-2 data-[state=active]:bg-success/20 data-[state=active]:text-success data-[state=active]:border-success/30">
-            <span className="hidden sm:inline">Confirmées</span>
-            <span className="sm:hidden">Confirm.</span>
-            <span className="ml-1">({acceptedCourses.length + inProgressCourses.length})</span>
+          <TabsTrigger 
+            value="confirmed"
+            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-200 data-[state=active]:border-blue-500 border-2 border-white/10 bg-card/50 text-white h-auto py-3 px-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 hover:bg-blue-500/10 transition-all"
+          >
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold">Confirmée</span>
+            <Badge className="bg-blue-500/30 text-blue-200 text-xs font-bold">{acceptedCourses.length + inProgressCourses.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs sm:text-sm py-2 data-[state=active]:bg-accent/20 data-[state=active]:text-accent data-[state=active]:border-accent/30">
-            <span className="hidden sm:inline">Terminées</span>
-            <span className="sm:hidden">Termin.</span>
-            <span className="ml-1">({completedCourses.length})</span>
+          <TabsTrigger 
+            value="completed"
+            className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-200 data-[state=active]:border-green-500 border-2 border-white/10 bg-card/50 text-white h-auto py-3 px-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 hover:bg-green-500/10 transition-all"
+          >
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold">Terminée</span>
+            <Badge className="bg-green-500/30 text-green-200 text-xs font-bold">{completedCourses.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2 data-[state=active]:bg-destructive/20 data-[state=active]:text-destructive data-[state=active]:border-destructive/30">
-            <span className="hidden sm:inline">Refusées</span>
-            <span className="sm:hidden">Refus.</span>
-            <span className="ml-1">({cancelledCourses.length})</span>
+          <TabsTrigger 
+            value="rejected"
+            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-200 data-[state=active]:border-red-500 border-2 border-white/10 bg-card/50 text-white h-auto py-3 px-2 sm:px-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 hover:bg-red-500/10 transition-all"
+          >
+            <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold">Refusé</span>
+            <Badge className="bg-red-500/30 text-red-200 text-xs font-bold">{cancelledCourses.length}</Badge>
           </TabsTrigger>
         </TabsList>
 

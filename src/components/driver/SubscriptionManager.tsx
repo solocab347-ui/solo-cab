@@ -117,11 +117,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {/* Subscription Info */}
-      <Card className="p-4 sm:p-6">
+      <Card className="p-4 sm:p-6 bg-card/80 border-white/10">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
-            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2">Abonnement SoloCab</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">
+            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-white">Abonnement SoloCab</h3>
+            <p className="text-xs sm:text-sm text-gray-300">
               Accès complet à la plateforme professionnelle
             </p>
           </div>
@@ -134,51 +134,51 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </div>
 
         <div className="space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-border">
-            <span className="text-xs sm:text-sm text-muted-foreground">Tarif mensuel</span>
-            <span className="font-bold text-sm sm:text-base">49,99€ / mois</span>
+          <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
+            <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel</span>
+            <span className="font-bold text-sm sm:text-base text-white">49,99€ / mois</span>
           </div>
 
           {isActive && driverProfile?.driver?.subscription_end_date && (
-            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-border">
-              <span className="text-xs sm:text-sm text-muted-foreground">Prochaine facturation</span>
-              <span className="font-medium flex items-center gap-2 text-xs sm:text-sm">
+            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
+              <span className="text-xs sm:text-sm text-gray-300">Prochaine facturation</span>
+              <span className="font-medium flex items-center gap-2 text-xs sm:text-sm text-white">
                 <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                 {format(new Date(driverProfile.driver.subscription_end_date), "d MMM yyyy", { locale: fr })}
               </span>
             </div>
           )}
 
-          <div className="bg-secondary rounded-lg p-3 sm:p-4 space-y-2">
-            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">✓ Inclus dans l'abonnement :</h4>
+          <div className="bg-white/5 rounded-lg p-3 sm:p-4 space-y-2 border border-white/10">
+            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">✓ Inclus dans l'abonnement :</h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>Gestion illimitée de clients</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">Gestion illimitée de clients</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>Réservations et courses sans limite</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">Réservations et courses sans limite</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>Génération automatique de devis et factures</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">Génération automatique de devis et factures</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>QR Code personnel pour recruter des clients</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">QR Code personnel pour recruter des clients</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>Profil public sur la vitrine</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">Profil public sur la vitrine</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>0% de commission sur vos courses</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">0% de commission sur vos courses</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                <span>Support 7j/7</span>
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
+                <span className="text-gray-200">Support 7j/7</span>
               </li>
             </ul>
           </div>
