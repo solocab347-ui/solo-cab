@@ -370,30 +370,30 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card className="p-4">
+      {/* Stats - Horizontal on all screens */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-premium">{stats.total}</h3>
-            <p className="text-sm text-muted-foreground">Factures totales</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-premium">{stats.total}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Factures totales</p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-green-500">{stats.paid}</h3>
-            <p className="text-sm text-muted-foreground">Payées</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-green-500">{stats.paid}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Payées</p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-yellow-500">{stats.pending}</h3>
-            <p className="text-sm text-muted-foreground">En attente</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-yellow-500">{stats.pending}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-destructive">{stats.failed}</h3>
-            <p className="text-sm text-muted-foreground">Échecs</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-destructive">{stats.failed}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Échecs</p>
           </div>
         </Card>
       </div>
