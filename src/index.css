@@ -8,8 +8,8 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base colors - neutral backgrounds */
-    --background: 0 0% 100%;
+    /* Base colors - fond coloré dégradé subtil */
+    --background: 200 35% 96%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -79,6 +79,7 @@ All colors MUST be HSL.
     --gradient-trust: linear-gradient(135deg, hsl(200 98% 39%), hsl(200 98% 49%));
     --gradient-success: linear-gradient(135deg, hsl(158 64% 52%), hsl(158 64% 62%));
     --gradient-triple: linear-gradient(135deg, hsl(158 64% 52%), hsl(200 98% 39%), hsl(271 76% 53%));
+    --gradient-bg: linear-gradient(180deg, hsl(200 35% 96%), hsl(271 25% 97%), hsl(158 30% 96%));
 
     /* Shadows élégantes */
     --shadow-elegant: 0 10px 40px -15px hsl(222 47% 11% / 0.15);
@@ -90,11 +91,11 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Base colors - dark backgrounds */
+    /* Base colors - fond sombre coloré */
     --background: 222 47% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 222 47% 11%;
+    --card: 222 47% 12%;
     --card-foreground: 0 0% 98%;
 
     --popover: 222 47% 11%;
@@ -159,6 +160,7 @@ All colors MUST be HSL.
     --gradient-trust: linear-gradient(135deg, hsl(200 98% 45%), hsl(200 98% 55%));
     --gradient-success: linear-gradient(135deg, hsl(158 64% 55%), hsl(158 64% 65%));
     --gradient-triple: linear-gradient(135deg, hsl(158 64% 55%), hsl(200 98% 45%), hsl(271 76% 60%));
+    --gradient-bg: linear-gradient(180deg, hsl(222 47% 8%), hsl(222 47% 10%), hsl(222 47% 9%));
 
     /* Shadows élégantes en mode sombre */
     --shadow-elegant: 0 10px 40px -15px hsl(0 0% 0% / 0.6);
@@ -174,6 +176,6 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-bg text-foreground;
   }
 }

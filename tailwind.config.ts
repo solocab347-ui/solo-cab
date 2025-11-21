@@ -82,6 +82,7 @@ export default {
         "gradient-trust": "var(--gradient-trust)",
         "gradient-success": "var(--gradient-success)",
         "gradient-triple": "var(--gradient-triple)",
+        "gradient-bg": "var(--gradient-bg)",
       },
       boxShadow: {
         elegant: "var(--shadow-elegant)",
