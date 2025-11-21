@@ -21,11 +21,21 @@ export default {
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          light: "hsl(var(--primary-light))",
+          dark: "hsl(var(--primary-dark))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
+          light: "hsl(var(--secondary-light))",
+          dark: "hsl(var(--secondary-dark))",
           foreground: "hsl(var(--secondary-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          light: "hsl(var(--accent-light))",
+          dark: "hsl(var(--accent-dark))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -34,10 +44,6 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
         },
         premium: {
           DEFAULT: "hsl(var(--premium))",
@@ -59,14 +65,6 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
-        magenta: {
-          DEFAULT: "hsl(var(--magenta))",
-          foreground: "hsl(var(--magenta-foreground))",
-        },
-        brown: {
-          DEFAULT: "hsl(var(--brown))",
-          foreground: "hsl(var(--brown-foreground))",
-        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -77,17 +75,19 @@ export default {
         },
       },
       backgroundImage: {
+        "gradient-freedom": "var(--gradient-freedom)",
+        "gradient-independence": "var(--gradient-independence)",
+        "gradient-renewal": "var(--gradient-renewal)",
         "gradient-premium": "var(--gradient-premium)",
-        "gradient-dark": "var(--gradient-dark)",
         "gradient-trust": "var(--gradient-trust)",
         "gradient-success": "var(--gradient-success)",
-        "gradient-magenta": "var(--gradient-magenta)",
-        "gradient-warning": "var(--gradient-warning)",
-        "gradient-brown": "var(--gradient-brown)",
+        "gradient-triple": "var(--gradient-triple)",
       },
       boxShadow: {
         elegant: "var(--shadow-elegant)",
         premium: "var(--shadow-premium)",
+        success: "var(--shadow-success)",
+        trust: "var(--shadow-trust)",
       },
       transitionProperty: {
         smooth: "var(--transition-smooth)",
