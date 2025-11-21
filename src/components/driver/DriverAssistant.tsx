@@ -18,7 +18,7 @@ export const DriverAssistant = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Salut ! Je suis Max, ton assistant SoloCab 🚗\n\nJe suis là pour t'aider avec toutes les fonctionnalités de la plateforme. Pose-moi tes questions sur les courses, devis, factures, paramètres, ou n'importe quelle autre fonctionnalité !"
+      content: "Salut ! Je suis Liberty, ton assistant SoloCab 🚗\n\nJe suis là pour t'aider avec toutes les fonctionnalités de la plateforme. Pose-moi tes questions sur les courses, devis, factures, paramètres, ou n'importe quelle autre fonctionnalité !"
     }
   ]);
   const [input, setInput] = useState('');
@@ -208,7 +208,7 @@ export const DriverAssistant = () => {
       <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50 p-0"
-        aria-label="Ouvrir l'assistant Max"
+        aria-label="Ouvrir l'assistant Liberty"
       >
         <Bot className="h-6 w-6" />
       </Button>
@@ -228,7 +228,7 @@ export const DriverAssistant = () => {
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 sm:h-6 sm:h-6" />
           <div>
-            <h3 className="font-bold text-sm sm:text-base">Max - Assistant SoloCab</h3>
+            <h3 className="font-bold text-sm sm:text-base">Liberty - Assistant SoloCab</h3>
             <p className="text-xs opacity-90">Support 24/7</p>
           </div>
         </div>
@@ -321,7 +321,7 @@ export const DriverAssistant = () => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Pose ta question à Max..."
+                    placeholder="Pose ta question à Liberty..."
                     disabled={isLoading}
                     className="flex-1 text-sm"
                   />
@@ -341,7 +341,7 @@ export const DriverAssistant = () => {
                   className="w-full text-xs"
                 >
                   <HelpCircle className="h-3 w-3 mr-2" />
-                  Max ne peut pas répondre ? Contactez l'admin
+                  Liberty ne peut pas répondre ? Contactez l'admin
                 </Button>
               </div>
             )}
