@@ -124,30 +124,38 @@ const DriverCreateCourse = () => {
 
     setCalculating(true);
     try {
-      // Appel à l'API Mapbox Directions
-      const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
-      const mapboxToken = tokenData?.token;
+      console.log("🗺️ Calcul itinéraire via Edge Function...");
+      
+      // SYSTÈME RENFORCÉ: Appel à l'Edge Function calculate-mapbox-route
+      const { data: routeData, error: routeError } = await supabase.functions.invoke(
+        'calculate-mapbox-route',
+        {
+          body: {
+            pickup_latitude: pickupCoordinates.latitude,
+            pickup_longitude: pickupCoordinates.longitude,
+            destination_latitude: destinationCoordinates.latitude,
+            destination_longitude: destinationCoordinates.longitude,
+          },
+        }
+      );
 
-      if (!mapboxToken) {
-        toast.error("Erreur de configuration Mapbox");
+      if (routeError) {
+        console.error("❌ Erreur Edge Function Mapbox:", routeError);
+        toast.error("Erreur lors du calcul de l'itinéraire");
         return;
       }
 
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.longitude},${pickupCoordinates.latitude};${destinationCoordinates.longitude},${destinationCoordinates.latitude}?access_token=${mapboxToken}&geometries=geojson`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        const distanceInKm = route.distance / 1000; // Convertir en km
-        const durationInMinutes = Math.ceil(route.duration / 60); // Convertir en minutes
-
-        setDistanceKm(parseFloat(distanceInKm.toFixed(2)));
-        setDurationMinutes(durationInMinutes);
+      if (routeData?.success) {
+        setDistanceKm(routeData.distance_km);
+        setDurationMinutes(routeData.duration_minutes);
+        
+        console.log("✅ Itinéraire calculé:");
+        console.log("   - Distance:", routeData.distance_km, "km");
+        console.log("   - Durée:", routeData.duration_minutes, "minutes");
       }
     } catch (error) {
-      console.error("Erreur calcul itinéraire:", error);
+      console.error("❌ Erreur calcul itinéraire:", error);
+      toast.error("Impossible de calculer l'itinéraire");
     } finally {
       setCalculating(false);
     }
