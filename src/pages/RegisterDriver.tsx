@@ -16,7 +16,6 @@ const driverRegistrationSchema = z.object({
   fullName: z.string().trim().min(2, "Le nom complet doit contenir au moins 2 caractères").max(100),
   email: z.string().trim().email("Email invalide").max(255),
   phone: z.string().trim().min(10, "Numéro de téléphone invalide").max(20),
-  address: z.string().trim().min(5, "Adresse complète requise").max(255),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -39,7 +38,6 @@ const RegisterDriver = () => {
     fullName: "",
     email: "",
     phone: "",
-    address: "",
     password: "",
     confirmPassword: "",
   });
@@ -115,7 +113,6 @@ const RegisterDriver = () => {
           per_km_rate: 0,
           hourly_rate: 0,
           subscription_paid: false,
-          home_address: formData.address.trim(),
         })
         .select()
         .single();
@@ -315,19 +312,19 @@ const RegisterDriver = () => {
           <form onSubmit={handleStep1Submit} className="space-y-6">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="fullName" className="text-white">Nom complet *</Label>
+                <Label htmlFor="fullName" className="text-white font-medium">Nom complet *</Label>
                 <Input
                   id="fullName"
                   value={formData.fullName}
                   onChange={(e) => handleInputChange("fullName", e.target.value)}
                   placeholder="Jean Dupont"
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-white">Email *</Label>
+                <Label htmlFor="email" className="text-white font-medium">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -335,12 +332,12 @@ const RegisterDriver = () => {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="jean@example.com"
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
 
               <div>
-                <Label htmlFor="phone" className="text-white">Téléphone *</Label>
+                <Label htmlFor="phone" className="text-white font-medium">Téléphone *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -348,24 +345,12 @@ const RegisterDriver = () => {
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder="+33 6 12 34 56 78"
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
 
               <div>
-                <Label htmlFor="address" className="text-white">Adresse *</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  placeholder="10 Rue de Rivoli, Paris"
-                  required
-                  className="bg-background/50 border-primary/20 text-white"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password" className="text-white">Mot de passe *</Label>
+                <Label htmlFor="password" className="text-white font-medium">Mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -374,12 +359,12 @@ const RegisterDriver = () => {
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     placeholder="Min. 6 caractères"
                     required
-                    className="bg-background/50 border-primary/20 text-white pr-10"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -387,7 +372,7 @@ const RegisterDriver = () => {
               </div>
 
               <div>
-                <Label htmlFor="confirmPassword" className="text-white">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword" className="text-white font-medium">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -396,12 +381,12 @@ const RegisterDriver = () => {
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     placeholder="Retapez votre mot de passe"
                     required
-                    className="bg-background/50 border-primary/20 text-white pr-10"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -448,18 +433,18 @@ const RegisterDriver = () => {
               </div>
 
               <div>
-                <Label className="text-white">Pièce d'identité - Recto *</Label>
+                <Label className="text-white font-medium">Pièce d'identité - Recto *</Label>
                 <Input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("id_recto", e.target.files?.[0] || null)}
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
 
               <div>
-                <Label className="text-white">
+                <Label className="text-white font-medium">
                   Pièce d'identité - Verso {isPassport && "(Optionnel)"}
                   {!isPassport && " *"}
                 </Label>
@@ -468,51 +453,51 @@ const RegisterDriver = () => {
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("id_verso", e.target.files?.[0] || null)}
                   required={!isPassport}
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
 
               <div>
-                <Label className="text-white">Carte VTC - Recto *</Label>
+                <Label className="text-white font-medium">Carte VTC - Recto *</Label>
                 <Input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("vtc_recto", e.target.files?.[0] || null)}
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
 
               <div>
-                <Label className="text-white">Carte VTC - Verso *</Label>
+                <Label className="text-white font-medium">Carte VTC - Verso *</Label>
                 <Input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("vtc_verso", e.target.files?.[0] || null)}
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
 
               <div>
-                <Label className="text-white">Carte grise du véhicule *</Label>
+                <Label className="text-white font-medium">Carte grise du véhicule *</Label>
                 <Input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("carte_grise", e.target.files?.[0] || null)}
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
 
               <div>
-                <Label className="text-white">Attestation d'assurance *</Label>
+                <Label className="text-white font-medium">Attestation d'assurance *</Label>
                 <Input
                   type="file"
                   accept="image/*,.pdf"
                   onChange={(e) => handleFileChange("assurance", e.target.files?.[0] || null)}
                   required
-                  className="bg-background/50 border-primary/20 text-white"
+                  className="bg-white/10 border-white/20 text-white file:text-white"
                 />
               </div>
             </div>
