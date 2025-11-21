@@ -88,7 +88,7 @@ const ChauffeurLanding = () => {
                 Connexion
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to="/register-driver">
               <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base px-3 sm:px-4 h-9 sm:h-10">
                 <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 S'inscrire
@@ -137,7 +137,7 @@ const ChauffeurLanding = () => {
               </Card>
             </div>
 
-            <Link to="/login">
+            <Link to="/register-driver">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl">
                 Je reprends le contrôle
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -231,7 +231,7 @@ const ChauffeurLanding = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Link to="/login">
+            <Link to="/register-driver">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-xl">
                 Je reprends mon indépendance maintenant
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -664,7 +664,7 @@ const ChauffeurLanding = () => {
                   <p className="text-3xl font-bold text-white">{costs.solocab.annual.toFixed(2)}€</p>
                 </div>
               </div>
-              <Link to="/login">
+              <Link to="/register-driver">
                 <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-xl">
                   S'inscrire
                 </Button>
@@ -708,7 +708,7 @@ const ChauffeurLanding = () => {
                 Rejoignez les chauffeurs qui ont repris le contrôle de leur activité.
               </p>
               <p className="text-gray-400 mb-6">Abonnement test à 1€/mois.</p>
-              <Link to="/login">
+              <Link to="/register-driver">
                 <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl">
                   S'inscrire maintenant
                   <ArrowRight className="w-5 h-5 ml-2" />
