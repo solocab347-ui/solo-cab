@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import {
   Car,
   Users,
@@ -13,18 +14,29 @@ import {
   Star,
   MessageSquare,
   Calendar,
-  FileText,
-  TrendingUp,
   Shield,
   Zap,
   CheckCircle,
   ArrowRight,
   Search,
+  Globe,
+  DollarSign,
+  FileText,
+  Target,
+  Bell,
+  Lock,
+  Heart,
+  ClipboardList,
+  MessageCircle,
+  CreditCard,
+  CalendarCheck,
+  TrendingUp,
 } from "lucide-react";
 
 const Index = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<"clients" | "drivers">("clients");
 
   useEffect(() => {
     // Redirect authenticated users to their dashboard
@@ -39,46 +51,105 @@ const Index = () => {
     }
   }, [user, userRole, navigate]);
 
-  const driverFeatures = [
+  const clientFeatures = [
     {
-      icon: Users,
-      title: "Profil Public Automatique",
-      description: "Votre profil professionnel est visible par tous les clients potentiels",
+      icon: Search,
+      title: "Trouvez LE bon chauffeur",
+      description: "Parcourez les profils, notes et services de chauffeurs près de chez vous",
+      gradient: "from-pink-500 to-purple-600",
+    },
+    {
+      icon: DollarSign,
+      title: "Tarifs Transparents",
+      description: "Devis instantané avant chaque course. Pas de mauvaise surprise",
+      gradient: "from-green-500 to-emerald-600",
     },
     {
       icon: Shield,
+      title: "Chauffeurs Vérifiés",
+      description: "Tous nos chauffeurs sont des professionnels certifiés VTC",
+      gradient: "from-blue-500 to-cyan-600",
+    },
+    {
+      icon: Heart,
+      title: "Votre Chauffeur Préféré",
+      description: "Définissez un chauffeur favori pour vos courses régulières",
+      gradient: "from-red-500 to-pink-600",
+    },
+    {
+      icon: CalendarCheck,
+      title: "Réservation Facile",
+      description: "Réservez en quelques clics depuis votre téléphone",
+      gradient: "from-cyan-500 to-blue-600",
+    },
+    {
+      icon: MessageCircle,
+      title: "Communication Directe",
+      description: "Messagerie intégrée avec votre chauffeur",
+      gradient: "from-orange-500 to-red-600",
+    },
+    {
+      icon: Bell,
+      title: "Notifications en Temps Réel",
+      description: "Soyez informé à chaque étape de votre course",
+      gradient: "from-amber-500 to-orange-600",
+    },
+    {
+      icon: CreditCard,
+      title: "Paiement Sécurisé",
+      description: "Vos données bancaires sont protégées et sécurisées",
+      gradient: "from-purple-500 to-pink-600",
+    },
+  ];
+
+  const driverFeatures = [
+    {
+      icon: Globe,
+      title: "Profil Public Automatique",
+      description: "Votre profil professionnel est visible par tous les clients potentiels",
+      gradient: "from-blue-500 to-cyan-600",
+    },
+    {
+      icon: Users,
       title: "Vos Clients Privés",
       description: "Construisez votre propre base de clients fidèles sans intermédiaire",
+      gradient: "from-pink-500 to-purple-600",
     },
     {
       icon: QrCode,
       title: "QR Code Personnel",
       description: "Vos clients scannent votre code et s'inscrivent en 30 secondes",
+      gradient: "from-orange-500 to-red-600",
     },
     {
-      icon: Euro,
+      icon: DollarSign,
       title: "0% de Commission",
       description: "Gardez 100% de vos revenus. Plus de commissions aux plateformes",
+      gradient: "from-green-500 to-emerald-600",
     },
     {
-      icon: Calendar,
+      icon: ClipboardList,
       title: "Gestion Complète",
       description: "Planning, devis, factures, messages : tout au même endroit",
+      gradient: "from-cyan-500 to-blue-600",
     },
     {
       icon: BarChart3,
       title: "Statistiques & Objectifs",
       description: "Suivez votre activité en temps réel et pilotez votre business",
+      gradient: "from-purple-500 to-pink-600",
     },
     {
       icon: Star,
       title: "Système de Notes",
       description: "Collectez des avis clients pour booster votre réputation",
+      gradient: "from-amber-500 to-orange-600",
     },
     {
-      icon: MessageSquare,
+      icon: Target,
       title: "Campagnes Marketing",
       description: "Envoyez des offres promotionnelles à vos clients par SMS",
+      gradient: "from-red-500 to-pink-600",
     },
   ];
 
@@ -113,188 +184,178 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="py-20 md:py-32 bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-4 text-center">
-          <Badge variant="outline" className="mb-6 border-premium text-premium">
-            La plateforme pour les chauffeurs indépendants
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-dark bg-clip-text text-transparent leading-tight">
-            La plateforme pour les<br />
-            chauffeurs indépendants<br />
-            et les clients engagés
-          </h1>
-          <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Une communauté où les chauffeurs VTC reprennent leur indépendance et où les clients trouvent des professionnels de confiance. Sans intermédiaire, sans commission.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/chauffeurs">
-              <Button size="lg" className="bg-gradient-premium group">
-                <Search className="w-5 h-5 mr-2" />
-                Trouver un Chauffeur
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/devenir-chauffeur">
-              <Button size="lg" variant="outline" className="group">
-                <Zap className="w-5 h-5 mr-2" />
-                Je suis Chauffeur
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Actions */}
-      <section className="py-16 bg-secondary/30">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-6">
-            <Link to="/chauffeurs">
-              <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Search className="w-6 h-6 text-premium-foreground" />
-                  </div>
-                  <div>
-                    <Badge className="mb-2 bg-premium/10 text-premium border-premium/20">
-                      Populaire
-                    </Badge>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-premium transition-colors">
-                      Trouver un Chauffeur
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Des chauffeurs professionnels à votre service
-                    </p>
-                    <Button variant="link" className="p-0 h-auto mt-2 text-premium group-hover:gap-2">
-                      Rechercher
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-
-            <Link to="/devenir-chauffeur">
-              <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-dark rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Users className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-premium transition-colors">
-                      Je suis Chauffeur
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Rejoignez la communauté des chauffeurs indépendants
-                    </p>
-                    <Button variant="link" className="p-0 h-auto mt-2 text-premium group-hover:gap-2">
-                      Commencer
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-
-            <Link to="/login">
-              <Card className="p-6 hover:shadow-elegant transition-all cursor-pointer group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-6 h-6 text-premium-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1 group-hover:text-premium transition-colors">
-                      Se Connecter
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Accédez à votre espace personnel
-                    </p>
-                    <Button variant="link" className="p-0 h-auto mt-2 text-premium group-hover:gap-2">
-                      Connexion
-                      <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </Link>
+          {/* Toggle Buttons */}
+          <div className="flex justify-center mb-12">
+            <div className="inline-flex rounded-lg bg-secondary/50 p-1 backdrop-blur-sm border border-border">
+              <button
+                onClick={() => setActiveView("clients")}
+                className={cn(
+                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  activeView === "clients"
+                    ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Users className="w-4 h-4" />
+                Pour les Clients
+              </button>
+              <button
+                onClick={() => setActiveView("drivers")}
+                className={cn(
+                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  activeView === "drivers"
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Car className="w-4 h-4" />
+                Pour les Chauffeurs
+              </button>
+            </div>
           </div>
+
+          {/* Clients View */}
+          {activeView === "clients" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
+              </h1>
+              <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+                Des professionnels indépendants, des tarifs transparents
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                {clientFeatures.map((feature, index) => (
+                  <Card 
+                    key={index} 
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50"
+                  >
+                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
+                      <feature.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link to="/chauffeurs">
+                  <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg">
+                    <Search className="w-5 h-5 mr-2" />
+                    Rechercher un chauffeur
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Drivers View */}
+          {activeView === "drivers" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                Devenez un <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Chauffeur Indépendant</span>
+              </h1>
+              <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+                Profil automatique, clients privés, zéro commission
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                {driverFeatures.map((feature, index) => (
+                  <Card 
+                    key={index} 
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50"
+                  >
+                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
+                      <feature.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link to="/devenir-chauffeur">
+                  <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
+                    <Zap className="w-5 h-5 mr-2" />
+                    Rejoindre la communauté
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* For Drivers Section */}
-      <section className="py-20 bg-gradient-to-b from-background to-secondary/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-premium text-premium">
-              Pour les Chauffeurs
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Devenez un Chauffeur Indépendant
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Profil automatique, clients privés, zéro commission
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {driverFeatures.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-elegant transition-all">
-                <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-premium-foreground" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/login">
-              <Button size="lg" className="bg-gradient-premium">
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Rejoindre la communauté
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* For Clients Section */}
+      {/* Platform Overview */}
       <section className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-premium text-premium">
-              Pour les Clients
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0">
+              ✨ Zéro commission • Contrôle total
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Comment rejoindre SoloCab
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              La plateforme pour les
+              <br />
+              <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">chauffeurs indépendants</span>
+              <br />
+              et les <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">clients engagés</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Deux façons de vous inscrire avec un chauffeur professionnel
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Une communauté où les <span className="text-purple-500 font-semibold">chauffeurs VTC reprennent leur indépendance</span> et où les <span className="text-green-500 font-semibold">clients trouvent des professionnels de confiance</span>. Sans intermédiaire, sans commission.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="p-8 bg-gradient-premium">
-              <QrCode className="w-12 h-12 text-premium-foreground mb-4" />
-              <h3 className="text-2xl font-bold text-premium-foreground mb-3">
-                Via QR Code
-              </h3>
-              <p className="text-premium-foreground/90 mb-6">
-                Scannez le code QR de votre chauffeur pour vous inscrire comme client exclusif et accéder à ses services
-              </p>
-            </Card>
-
-            <Card className="p-8">
-              <Search className="w-12 h-12 text-premium mb-4" />
-              <h3 className="text-2xl font-bold mb-3">
-                Via la vitrine
-              </h3>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+              <div className="relative inline-block mb-6">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                  <Search className="w-10 h-10 text-white" />
+                </div>
+                <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
+                  Populaire
+                </Badge>
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Trouver un Chauffeur</h3>
               <p className="text-muted-foreground mb-6">
-                Parcourez les chauffeurs publics et inscrivez-vous directement avec celui de votre choix
+                Des chauffeurs professionnels à votre service
               </p>
               <Link to="/chauffeurs">
-                <Button className="bg-gradient-premium">
-                  Voir les chauffeurs
+                <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white">
+                  Rechercher
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </Card>
+
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
+                <Car className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Je suis Chauffeur</h3>
+              <p className="text-muted-foreground mb-6">
+                Rejoignez la communauté des chauffeurs indépendants
+              </p>
+              <Link to="/devenir-chauffeur">
+                <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+                  Commencer
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </Card>
+
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-6">
+                <ArrowRight className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Se Connecter</h3>
+              <p className="text-muted-foreground mb-6">
+                Accédez à votre espace personnel
+              </p>
+              <Link to="/login">
+                <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
+                  Connexion
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </Card>
@@ -303,23 +364,23 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-premium">
+      <section className="py-20 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-premium-foreground mb-6">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
             Prêt à commencer ?
           </h2>
-          <p className="text-xl text-premium-foreground/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Rejoignez une communauté de chauffeurs indépendants qui reprennent le contrôle de leur activité
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/chauffeurs">
-              <Button size="lg" className="bg-premium-foreground text-premium hover:bg-premium-foreground/90">
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90">
                 <Search className="w-5 h-5 mr-2" />
                 Trouver un Chauffeur
               </Button>
             </Link>
             <Link to="/devenir-chauffeur">
-              <Button size="lg" variant="outline" className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
                 <Zap className="w-5 h-5 mr-2" />
                 Devenir Chauffeur
               </Button>
