@@ -937,7 +937,43 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   {/* FLUX SYSTÉMATIQUE D'ACCEPTATION */}
                   {(() => {
                     const devis = course.devis?.[0];
-                    if (!devis) return null;
+                    
+                    // CAS SPÉCIAL: Pas de devis → Erreur lors de la création
+                    if (!devis) {
+                      return (
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 space-y-2">
+                          <p className="text-sm text-destructive font-medium">⚠️ Devis manquant</p>
+                          <p className="text-xs text-muted-foreground">
+                            Le devis n'a pas pu être généré automatiquement. Veuillez le générer manuellement.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.functions.invoke('create-devis-auto', {
+                                  body: {
+                                    course_id: course.id,
+                                    driver_id: driverId,
+                                    use_hourly_rate: false
+                                  }
+                                });
+                                if (error) throw error;
+                                toast.success("Devis généré avec succès !");
+                                fetchCourses();
+                              } catch (err: any) {
+                                console.error("Error generating devis:", err);
+                                toast.error("Erreur lors de la génération du devis");
+                              }
+                            }}
+                            className="w-full border-destructive/30 hover:bg-destructive/10"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Générer le devis
+                          </Button>
+                        </div>
+                      );
+                    }
                     
                     // Déterminer qui a créé la course
                     const isDriverCreated = user && course.created_by_user_id === user.id;
@@ -960,39 +996,54 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     }
                     
                     // ========== CAS 2: CLIENT CRÉÉ LA COURSE ==========
-                    // Flux: Client crée → Client accepte → Chauffeur accepte → Confirmée
+                    // Flux: Client crée → Client accepte devis → Chauffeur accepte course → Confirmée
                     
                     // Client n'a pas encore accepté le devis
                     if (devis.status === "pending") {
                       return (
-                        <div className="text-sm text-muted-foreground italic">
-                          ⏳ En attente de l'acceptation du client
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                          <p className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">
+                            ⏳ En attente de l'acceptation du devis par le client
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Le client doit d'abord accepter le devis avant que vous puissiez accepter la course.
+                          </p>
                         </div>
                       );
                     }
                     
-                    // Client a accepté, maintenant le CHAUFFEUR doit accepter
+                    // Client a accepté le devis, maintenant le CHAUFFEUR doit accepter la course
                     if (devis.status === "accepted" && course.status === "pending") {
                       return (
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleAcceptCourse(course.id)}
-                            className="flex-1 bg-success/90 hover:bg-success text-success-foreground border-0"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Accepter la course
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCancelCourse(course.id)}
-                            className="flex-1 border-border hover:bg-muted"
-                          >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Refuser
-                          </Button>
+                        <div className="space-y-2">
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                            <p className="text-sm text-green-600 dark:text-green-500 font-medium">
+                              ✅ Devis accepté par le client
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Vous pouvez maintenant accepter ou refuser cette course.
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleAcceptCourse(course.id)}
+                              className="flex-1 bg-success/90 hover:bg-success text-success-foreground border-0"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Accepter la course
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelCourse(course.id)}
+                              className="flex-1 border-border hover:bg-muted"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Refuser
+                            </Button>
+                          </div>
                         </div>
                       );
                     }
