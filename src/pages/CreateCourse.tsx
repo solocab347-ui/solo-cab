@@ -27,8 +27,6 @@ const CreateCourse = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState("1");
   const [maxPassengers, setMaxPassengers] = useState(4);
-  const [distanceKm, setDistanceKm] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState("");
   const [notes, setNotes] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [availablePromos, setAvailablePromos] = useState<any[]>([]);
@@ -165,8 +163,8 @@ const CreateCourse = () => {
           destination_longitude: destinationCoordinates?.longitude || null,
           scheduled_date: new Date(scheduledDate).toISOString(),
           passengers_count: parseInt(passengersCount),
-          distance_km: distanceKm ? parseFloat(distanceKm) : null,
-          duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
+          distance_km: null,
+          duration_minutes: null,
           notes: notes || null,
           promo_code: promoCode || null,
           status: "pending",
@@ -326,34 +324,6 @@ const CreateCourse = () => {
                   required
                 />
                 <p className="text-xs text-muted-foreground">Maximum {maxPassengers} passagers</p>
-              </div>
-            </div>
-
-            {/* Distance et durée (optionnels) */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="distance">Distance estimée (km)</Label>
-                <Input
-                  id="distance"
-                  type="number"
-                  step="0.1"
-                  value={distanceKm}
-                  onChange={(e) => setDistanceKm(e.target.value)}
-                  placeholder="15.5"
-                />
-                <p className="text-xs text-muted-foreground">Optionnel - pour estimation du prix</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="duration">Durée estimée (minutes)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(e.target.value)}
-                  placeholder="30"
-                />
-                <p className="text-xs text-muted-foreground">Optionnel - pour estimation du prix</p>
               </div>
             </div>
 
