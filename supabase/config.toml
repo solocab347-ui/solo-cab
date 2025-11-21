@@ -1,5 +1,8 @@
 project_id = "iyothopplhbwcfrpxryc"
 
+[functions.create-admin-account]
+verify_jwt = false
+
 [functions.recreate-test-clients]
 verify_jwt = false
 
