@@ -456,6 +456,7 @@ export type Database = {
           public_profile_enabled: boolean | null
           quote_counter: number | null
           rating: number | null
+          reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
           siren: string | null
@@ -502,6 +503,7 @@ export type Database = {
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
           rating?: number | null
+          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
           siren?: string | null
@@ -548,6 +550,7 @@ export type Database = {
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
           rating?: number | null
+          reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
           siren?: string | null
@@ -1004,6 +1007,10 @@ export type Database = {
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
+      generate_reservation_number: {
+        Args: { _driver_id: string }
+        Returns: string
+      }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_driver_clients_count: {
         Args: { _driver_id: string }
