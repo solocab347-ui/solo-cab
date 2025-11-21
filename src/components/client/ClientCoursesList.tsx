@@ -403,6 +403,32 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
     toast.success("Partage ouvert");
   };
 
+  const handleAcceptDevis = async (devisId: string, courseId: string) => {
+    try {
+      // Accepter le devis
+      const { error: devisError } = await supabase
+        .from("devis")
+        .update({ status: "accepted", accepted_at: new Date().toISOString() })
+        .eq("id", devisId);
+
+      if (devisError) throw devisError;
+
+      // Mettre à jour le statut de la course à "accepted"
+      const { error: courseError } = await supabase
+        .from("courses")
+        .update({ status: "accepted" })
+        .eq("id", courseId);
+
+      if (courseError) throw courseError;
+
+      toast.success("Devis accepté avec succès !");
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error accepting devis:", error);
+      toast.error("Erreur lors de l'acceptation du devis");
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -497,6 +523,18 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
               <span className="text-sm font-medium">Devis {devis.quote_number}</span>
               <span className="text-2xl font-bold text-orange-500">{devis.amount.toFixed(2)}€</span>
             </div>
+            
+            {/* Bouton accepter pour devis pending dans la section En attente */}
+            {course.status === "pending" && devis.status === "pending" && (
+              <Button
+                onClick={() => handleAcceptDevis(devis.id, course.id)}
+                className="w-full mb-2 bg-green-500 hover:bg-green-600"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Accepter le devis
+              </Button>
+            )}
+            
             <div className="flex gap-2">
               <Button
                 variant="outline"
