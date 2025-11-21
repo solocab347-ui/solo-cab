@@ -127,19 +127,32 @@ const RegisterClientQR = () => {
 
       if (roleError) throw roleError;
 
-      // 4. Créer le client exclusif via Edge Function
-      const { data, error } = await supabase.functions.invoke("register-client-qr", {
-        body: { qr_code_id: qrId },
-      });
+      // 4. Vérifier le QR code et récupérer le driver_id
+      const { data: qrCode, error: qrError } = await supabase
+        .from("qr_codes")
+        .select("driver_id")
+        .eq("id", qrId)
+        .eq("is_active", true)
+        .single();
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast.error(data.error);
-        return;
+      if (qrError || !qrCode) {
+        throw new Error("QR code invalide ou expiré");
       }
 
-      // 5. Envoyer l'email de bienvenue
+      // 5. Créer le client exclusif directement avec dual association
+      const { error: clientError } = await supabase
+        .from("clients")
+        .insert({
+          user_id: authData.user.id,
+          driver_id: qrCode.driver_id,
+          driver_ids: [qrCode.driver_id],
+          qr_code_id: qrId,
+          is_exclusive: true,
+        });
+
+      if (clientError) throw clientError;
+
+      // 6. Envoyer l'email de bienvenue
       try {
         await supabase.functions.invoke("send-email", {
           body: {
