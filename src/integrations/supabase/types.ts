@@ -63,6 +63,13 @@ export type Database = {
             foreignKeyName: "assistant_requests_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -112,6 +119,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
           {
             foreignKeyName: "campaigns_driver_id_fkey"
             columns: ["driver_id"]
@@ -166,6 +180,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
           {
             foreignKeyName: "clients_driver_id_fkey"
             columns: ["driver_id"]
@@ -316,6 +337,13 @@ export type Database = {
             foreignKeyName: "courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -387,6 +415,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
           },
           {
             foreignKeyName: "devis_driver_id_fkey"
@@ -618,6 +653,13 @@ export type Database = {
             foreignKeyName: "factures_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -827,6 +869,13 @@ export type Database = {
             foreignKeyName: "promotions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -868,6 +917,13 @@ export type Database = {
             foreignKeyName: "qr_codes_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: true
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -896,7 +952,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      driver_data_isolation: {
+        Row: {
+          driver_id: string | null
+          driver_name: string | null
+          total_clients: number | null
+          total_courses: number | null
+          total_devis: number | null
+          total_factures: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_user_role: {
@@ -919,10 +985,31 @@ export type Database = {
           tva_amount: number
         }[]
       }
+      create_client_via_qr: {
+        Args: { _qr_code_id: string; _user_id: string }
+        Returns: string
+      }
+      create_driver_account: {
+        Args: {
+          _license_number: string
+          _max_passengers?: number
+          _user_id: string
+          _vehicle_model: string
+        }
+        Returns: string
+      }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
       get_client_id: { Args: { _user_id: string }; Returns: string }
+      get_driver_clients_count: {
+        Args: { _driver_id: string }
+        Returns: number
+      }
+      get_driver_courses_count: {
+        Args: { _driver_id: string }
+        Returns: number
+      }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
       get_or_create_conversation: {
         Args: { user1_id: string; user2_id: string }
@@ -987,6 +1074,10 @@ export type Database = {
           vehicle_model: string
           working_sectors: string[]
         }[]
+      }
+      verify_client_driver_association: {
+        Args: { _client_id: string; _driver_id: string }
+        Returns: boolean
       }
     }
     Enums: {
