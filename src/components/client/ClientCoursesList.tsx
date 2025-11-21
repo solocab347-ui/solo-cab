@@ -556,13 +556,23 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             
             {/* Bouton accepter pour devis pending dans la section En attente */}
             {course.status === "pending" && devis.status === "pending" && (
-              <Button
-                onClick={() => handleAcceptDevis(devis.id, course.id)}
-                className="w-full mb-2 bg-green-500 hover:bg-green-600"
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Accepter le devis
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleAcceptDevis(devis.id, course.id)}
+                  className="flex-1 bg-green-500 hover:bg-green-600"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Accepter le devis
+                </Button>
+                <Button
+                  onClick={() => setCancelCourseId(course.id)}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Refuser
+                </Button>
+              </div>
             )}
             
             <div className="flex gap-2">
