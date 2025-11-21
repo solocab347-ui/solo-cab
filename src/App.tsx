@@ -18,6 +18,7 @@ import RegisterClientDriver from "./pages/RegisterClientDriver";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateCourse from "./pages/CreateCourse";
 import CreateTestAccounts from "./pages/CreateTestAccounts";
+import RegisterDriver from "./pages/RegisterDriver";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
            <Route path="/chauffeur/:id" element={<ChauffeurProfile />} />
            <Route path="/register-client-qr" element={<RegisterClientQR />} />
            <Route path="/register-client-driver" element={<RegisterClientDriver />} />
+           <Route path="/register-driver" element={<RegisterDriver />} />
            <Route path="/create-course" element={<CreateCourse />} />
            <Route path="/create-test-accounts" element={<CreateTestAccounts />} />
             <Route

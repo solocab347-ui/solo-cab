@@ -139,6 +139,21 @@ const RegisterClientQR = () => {
         return;
       }
 
+      // 5. Envoyer l'email de bienvenue
+      try {
+        await supabase.functions.invoke("send-email", {
+          body: {
+            to: email.trim(),
+            type: "client_welcome",
+            data: {
+              clientName: fullName.trim(),
+            },
+          },
+        });
+      } catch (emailErr) {
+        console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+      }
+
       toast.success("Inscription réussie ! Bienvenue sur SoloCab 🎉");
       setTimeout(() => navigate("/client-dashboard"), 2000);
     } catch (error: any) {

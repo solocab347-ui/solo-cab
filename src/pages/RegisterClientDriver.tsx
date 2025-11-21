@@ -106,6 +106,21 @@ const RegisterClientDriver = () => {
         return;
       }
 
+      // Step 3: Send welcome email
+      try {
+        await supabase.functions.invoke("send-email", {
+          body: {
+            to: email,
+            type: "client_welcome",
+            data: {
+              clientName: fullName,
+            },
+          },
+        });
+      } catch (emailErr) {
+        console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+      }
+
       toast.success("Compte créé ! Vous êtes maintenant client de ce chauffeur.");
       setTimeout(() => navigate("/client-dashboard"), 1500);
     } catch (error: any) {
