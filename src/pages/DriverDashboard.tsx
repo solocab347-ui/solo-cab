@@ -26,6 +26,7 @@ import { ServicesSelector } from "@/components/driver/ServicesSelector";
 import { DriverStatistics } from "@/components/driver/stats/DriverStatistics";
 import { DriverCampaigns } from "@/components/driver/promo/DriverCampaigns";
 import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
+import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -822,6 +823,9 @@ const DriverDashboard = () => {
 
         </Tabs>
       </div>
+      
+      {/* Assistant virtuel Max */}
+      <DriverAssistant />
     </div>
   );
 };
