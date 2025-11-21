@@ -413,6 +413,17 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   const handleAcceptDevis = async (devisId: string, courseId: string) => {
     try {
+      // Récupérer les informations du devis pour la notification
+      const { data: devisData } = await supabase
+        .from("devis")
+        .select(`
+          quote_number,
+          driver_id,
+          drivers!inner(user_id)
+        `)
+        .eq("id", devisId)
+        .single();
+
       // Accepter le devis
       const { error: devisError } = await supabase
         .from("devis")
@@ -428,6 +439,17 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         .eq("id", courseId);
 
       if (courseError) throw courseError;
+
+      // Notifier le chauffeur de l'acceptation
+      if (devisData?.drivers?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: devisData.drivers.user_id,
+          title: "Devis accepté !",
+          message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
+          type: "devis_accepted",
+          link: "/driver-dashboard?tab=courses"
+        });
+      }
 
       toast.success("Devis accepté avec succès !");
       fetchCourses();

@@ -136,6 +136,15 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
         if (courseError) throw courseError;
 
+        // Notifier le chauffeur que son devis a été accepté
+        await supabase.from("notifications").insert({
+          user_id: driverUserId,
+          title: "Devis accepté !",
+          message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
+          type: "devis_accepted",
+          link: "/driver-dashboard?tab=courses"
+        });
+
         toast.success("Devis accepté ! Course confirmée.");
       } 
       // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
