@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Car, 
   LogOut, 
@@ -15,7 +16,8 @@ import {
   Users,
   QrCode,
   User,
-  Sparkles
+  Sparkles,
+  Menu
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +40,7 @@ const ClientDashboard = () => {
   const [clientProfile, setClientProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("accueil");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
     upcomingCourses: 0,
     pendingDevis: 0,
@@ -159,73 +162,102 @@ const ClientDashboard = () => {
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users },
-    { id: "scanner", label: "Scanner QR Code", icon: QrCode },
+    { id: "scanner", label: "Scanner QR", icon: QrCode },
     { id: "compte", label: "Mon Compte", icon: User },
   ];
+
+  const renderNavigation = () => (
+    <nav className="space-y-1 flex-1">
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleTabChange(item.id)}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+              activeTab === item.id
+                ? "bg-orange-500/10 text-orange-500 font-medium"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            <Icon className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case "accueil":
         return (
-          <div className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600">
-                <div className="flex items-center gap-3 mb-4">
-                  <Clock className="w-6 h-6 text-white" />
-                  <h3 className="text-lg font-semibold text-white">Courses à venir</h3>
+          <div className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-500 to-blue-600">
+                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                  <Clock className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
+                  <h3 className="text-sm md:text-lg font-semibold text-white">Courses à venir</h3>
                 </div>
-                <p className="text-4xl font-bold text-white mb-2">{stats.upcomingCourses}</p>
+                <p className="text-3xl md:text-4xl font-bold text-white">{stats.upcomingCourses}</p>
               </Card>
 
-              <Card className="p-6 bg-gradient-to-br from-orange-500 to-orange-600">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileText className="w-6 h-6 text-white" />
-                  <h3 className="text-lg font-semibold text-white">Devis en attente</h3>
+              <Card className="p-4 md:p-6 bg-gradient-to-br from-orange-500 to-orange-600">
+                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                  <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
+                  <h3 className="text-sm md:text-lg font-semibold text-white">Devis en attente</h3>
                 </div>
-                <p className="text-4xl font-bold text-white mb-2">{stats.pendingDevis}</p>
+                <p className="text-3xl md:text-4xl font-bold text-white mb-2">{stats.pendingDevis}</p>
                 {stats.pendingDevis > 0 && (
                   <Button
                     variant="ghost"
-                    className="text-white hover:text-white hover:bg-white/10 p-0"
-                    onClick={() => setActiveTab("devis")}
+                    size="sm"
+                    className="text-white hover:text-white hover:bg-white/10 p-0 h-auto text-xs md:text-sm"
+                    onClick={() => handleTabChange("devis")}
                   >
                     Voir les devis →
                   </Button>
                 )}
               </Card>
 
-              <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileText className="w-6 h-6 text-white" />
-                  <h3 className="text-lg font-semibold text-white">Factures impayées</h3>
+              <Card className="p-4 md:p-6 bg-gradient-to-br from-green-500 to-green-600">
+                <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                  <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
+                  <h3 className="text-sm md:text-lg font-semibold text-white">Factures impayées</h3>
                 </div>
-                <p className="text-4xl font-bold text-white mb-2">{stats.unpaidInvoices}</p>
+                <p className="text-3xl md:text-4xl font-bold text-white">{stats.unpaidInvoices}</p>
               </Card>
             </div>
 
             {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">Mon Chauffeur Préféré</h2>
-                <div className="flex items-center gap-4">
+              <Card className="p-4 md:p-6">
+                <h2 className="text-lg md:text-xl font-bold mb-4">Mon Chauffeur</h2>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
                   {clientProfile.client.drivers.profiles?.profile_photo_url ? (
                     <img
                       src={clientProfile.client.drivers.profiles.profile_photo_url}
                       alt={clientProfile.client.drivers.profiles.full_name}
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <Car className="w-10 h-10 text-white" />
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Car className="w-8 h-8 md:w-10 md:h-10 text-white" />
                     </div>
                   )}
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-1">Votre chauffeur privé</p>
-                    <h3 className="font-bold text-xl mb-2">
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">Votre chauffeur privé</p>
+                    <h3 className="font-bold text-lg md:text-xl mb-2">
                       {clientProfile.client.drivers.profiles?.full_name || "Votre chauffeur"}
                     </h3>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm">
                       <User className="w-4 h-4 mr-2" />
-                      Voir le profil complet
+                      Voir le profil
                     </Button>
                   </div>
                 </div>
@@ -261,9 +293,9 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 border-r border-border bg-card/50 p-4 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden md:flex w-64 border-r border-border bg-card/50 p-4 flex-col">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
@@ -273,64 +305,76 @@ const ClientDashboard = () => {
           </div>
           <p className="text-sm text-muted-foreground">Navigation</p>
         </div>
-
-        <nav className="space-y-1 flex-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                  activeTab === item.id
-                    ? "bg-orange-500/10 text-orange-500 font-medium"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+        {renderNavigation()}
       </aside>
 
+      {/* Mobile Sidebar */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-64 p-4">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+                <Car className="w-6 h-6 text-premium-foreground" />
+              </div>
+              <span className="text-xl font-bold">SoloCab</span>
+            </div>
+            <p className="text-sm text-muted-foreground">Navigation</p>
+          </div>
+          {renderNavigation()}
+        </SheetContent>
+      </Sheet>
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="border-b border-border bg-card">
-          <div className="px-8 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
+        <header className="border-b border-border bg-card sticky top-0 z-10">
+          <div className="px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-2">
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden flex-shrink-0"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2 truncate">
                 Bonjour, {clientProfile?.full_name?.split(" ")[0] || "Client"}
-                <Sparkles className="w-6 h-6 text-yellow-500" />
+                <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-500 flex-shrink-0" />
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
                 Gérez vos courses facilement
               </p>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
               <Button
                 onClick={handleNewReservation}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white hidden sm:flex"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle demande
               </Button>
+              <Button
+                onClick={handleNewReservation}
+                size="icon"
+                className="bg-orange-500 hover:bg-orange-600 text-white sm:hidden"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
               <NotificationBell />
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{clientProfile?.full_name?.split(" ")[0]}</span>
-                <Button variant="ghost" size="icon" onClick={signOut}>
-                  <LogOut className="w-5 h-5" />
-                </Button>
-              </div>
+              <Button variant="ghost" size="icon" onClick={signOut} className="flex-shrink-0">
+                <LogOut className="w-4 h-4 md:w-5 md:h-5" />
+              </Button>
             </div>
           </div>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
           {renderContent()}
         </main>
       </div>
