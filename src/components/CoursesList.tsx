@@ -65,7 +65,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
           ),
-          devis:devis!course_id(
+          devis:devis(
             id,
             amount,
             status,
@@ -76,7 +76,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             time_price,
             created_at
           ),
-          factures:factures!course_id(
+          factures:factures(
             id,
             invoice_number,
             invoice_number_generated,

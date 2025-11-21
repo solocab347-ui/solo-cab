@@ -121,7 +121,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             duration_minutes,
             passengers_count
           ),
-          devis!inner(
+          devis(
             base_price,
             distance_price,
             time_price
