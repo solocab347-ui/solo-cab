@@ -887,7 +887,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <h3 className="font-semibold text-sm sm:text-base text-white">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-xs sm:text-sm text-white/80 flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-white flex items-center gap-1">
                         <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                         <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                       </p>
@@ -896,20 +896,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
                         <p className="font-medium text-white">Départ</p>
-                        <p className="text-white/70 break-words">{course.pickup_address}</p>
+                        <p className="text-white break-words">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
                         <p className="font-medium text-white">Arrivée</p>
-                        <p className="text-white/70 break-words">{course.destination_address}</p>
+                        <p className="text-white break-words">{course.destination_address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-white/80">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-white">
                       <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                       {course.passengers_count} passager(s)
                     </div>
@@ -922,7 +922,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <span className="text-2xl sm:text-3xl font-bold text-white">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                       {course.devis[0].quote_number && (
-                        <p className="text-xs text-white/70 mt-1">Réf: {course.devis[0].quote_number}</p>
+                        <p className="text-xs text-white mt-1">Réf: {course.devis[0].quote_number}</p>
                       )}
                     </div>
                   )}

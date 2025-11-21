@@ -465,7 +465,7 @@ const DriverDashboard = () => {
                     onChange={(e) => setBaseFare(e.target.value)}
                     placeholder="10.00"
                   />
-                  <p className="text-xs text-white/70">Prix de départ de la course</p>
+                  <p className="text-xs text-white">Prix de départ de la course</p>
                 </div>
 
                 <div className="space-y-2">
@@ -478,7 +478,7 @@ const DriverDashboard = () => {
                     onChange={(e) => setPerKmRate(e.target.value)}
                     placeholder="1.50"
                   />
-                  <p className="text-xs text-white/70">Coût par km parcouru</p>
+                  <p className="text-xs text-white">Coût par km parcouru</p>
                 </div>
 
                 <div className="space-y-2">
@@ -492,7 +492,7 @@ const DriverDashboard = () => {
                     placeholder="45.00"
                     required
                   />
-                  <p className="text-xs text-white/70">Pour les mises à disposition (obligatoire)</p>
+                  <p className="text-xs text-white">Pour les mises à disposition (obligatoire)</p>
                 </div>
               </div>
 
@@ -508,14 +508,14 @@ const DriverDashboard = () => {
                     onChange={(e) => setMaxPassengers(e.target.value)}
                     placeholder="4"
                   />
-                  <p className="text-xs text-white/70">Places disponibles (4 par défaut, augmentez pour van)</p>
+                  <p className="text-xs text-white">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                     <div>
                       <Label htmlFor="tvaIncluded" className="font-semibold text-white">TVA comprise</Label>
-                      <p className="text-xs text-white/70">Vos tarifs incluent-ils déjà la TVA ?</p>
+                      <p className="text-xs text-white">Vos tarifs incluent-ils déjà la TVA ?</p>
                     </div>
                     <Switch
                       id="tvaIncluded"
@@ -534,7 +534,7 @@ const DriverDashboard = () => {
                 <div className="space-y-1 text-sm text-white/80">
                   <p>• <span className="font-medium text-white">10% TVA</span> pour les courses au kilomètre</p>
                   <p>• <span className="font-medium text-white">20% TVA</span> pour les mises à disposition (horaire)</p>
-                  <p className="text-xs mt-2 italic text-white/70">La TVA est calculée automatiquement selon le type de course</p>
+                  <p className="text-xs mt-2 italic text-white">La TVA est calculée automatiquement selon le type de course</p>
                 </div>
               </div>
             </Card>
@@ -574,7 +574,7 @@ const DriverDashboard = () => {
                     placeholder="123 Rue de la République, 75001 Paris"
                     rows={3}
                   />
-                  <p className="text-xs text-white/70">Cette adresse apparaîtra sur vos devis et factures</p>
+                  <p className="text-xs text-white">Cette adresse apparaîtra sur vos devis et factures</p>
                 </div>
               </div>
             </Card>
