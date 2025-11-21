@@ -148,39 +148,51 @@ const CreateCourse = () => {
         return;
       }
 
-      // Calculer la distance et la durée via Mapbox avant de créer la course
+      // SYSTÈME RENFORCÉ: Calculer la distance et la durée via Edge Function Mapbox
       let calculatedDistance: number | null = null;
       let calculatedDuration: number | null = null;
 
       if (pickupCoordinates && destinationCoordinates) {
         try {
-          // Obtenir le token Mapbox
-          const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-mapbox-token");
+          console.log("🗺️ Appel Edge Function calculate-mapbox-route...");
           
-          if (!tokenError && tokenData?.token) {
-            const mapboxToken = tokenData.token;
-            
-            // Appeler l'API Directions de Mapbox pour calculer distance et durée
-            const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.longitude},${pickupCoordinates.latitude};${destinationCoordinates.longitude},${destinationCoordinates.latitude}?access_token=${mapboxToken}&geometries=geojson`;
-            
-            const directionsResponse = await fetch(directionsUrl);
-            const directionsData = await directionsResponse.json();
-
-            if (directionsData.routes && directionsData.routes.length > 0) {
-              const route = directionsData.routes[0];
-              calculatedDistance = parseFloat((route.distance / 1000).toFixed(2)); // Convertir en km
-              calculatedDuration = Math.round(route.duration / 60); // Convertir en minutes
-              
-              console.log("✅ Distance calculée via Mapbox:", calculatedDistance, "km");
-              console.log("✅ Durée calculée via Mapbox:", calculatedDuration, "minutes");
-            } else {
-              console.warn("⚠️ Aucun itinéraire trouvé via Mapbox");
+          const { data: routeData, error: routeError } = await supabase.functions.invoke(
+            'calculate-mapbox-route',
+            {
+              body: {
+                pickup_latitude: pickupCoordinates.latitude,
+                pickup_longitude: pickupCoordinates.longitude,
+                destination_latitude: destinationCoordinates.latitude,
+                destination_longitude: destinationCoordinates.longitude,
+              },
             }
+          );
+
+          if (routeError) {
+            console.error("❌ Erreur Edge Function Mapbox:", routeError);
+            toast.error("Impossible de calculer la distance automatiquement");
+            throw routeError;
+          }
+
+          if (routeData?.success) {
+            calculatedDistance = routeData.distance_km;
+            calculatedDuration = routeData.duration_minutes;
+            
+            console.log("✅ CALCUL MAPBOX RÉUSSI:");
+            console.log("   - Distance:", calculatedDistance, "km");
+            console.log("   - Durée:", calculatedDuration, "minutes");
+            
+            toast.success(`Distance calculée: ${calculatedDistance} km`);
+          } else {
+            console.warn("⚠️ Aucun itinéraire trouvé");
+            toast.warning("Distance non calculée - le devis sera basé sur le forfait de base uniquement");
           }
         } catch (mapboxError) {
-          console.error("❌ Erreur calcul Mapbox:", mapboxError);
-          toast.warning("Distance non calculée - le devis sera basé sur le forfait de base uniquement");
+          console.error("❌ ERREUR CRITIQUE calcul Mapbox:", mapboxError);
+          toast.error("Erreur lors du calcul de la distance");
         }
+      } else {
+        console.warn("⚠️ Coordonnées manquantes pour le calcul Mapbox");
       }
 
       // Create course (client créé = besoin double acceptation)

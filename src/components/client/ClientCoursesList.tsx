@@ -413,18 +413,37 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   const handleAcceptDevis = async (devisId: string, courseId: string) => {
     try {
-      // Récupérer les informations du devis pour la notification
-      const { data: devisData } = await supabase
+      // ========== SYNCHRONISATION SYSTÈME Course/Devis ==========
+      // Récupérer les informations du devis, de la course et du créateur
+      const { data: devisData, error: fetchError } = await supabase
         .from("devis")
         .select(`
-          quote_number,
-          driver_id,
-          drivers!inner(user_id)
+          *,
+          courses!inner(
+            id,
+            created_by_user_id,
+            status
+          ),
+          drivers!inner(
+            user_id
+          )
         `)
         .eq("id", devisId)
         .single();
 
-      // Accepter le devis
+      if (fetchError) throw fetchError;
+
+      const course = devisData.courses;
+      const driverUserId = devisData.drivers.user_id;
+      
+      // Récupérer l'ID du client actuel
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // CORRECTION CRITIQUE: Vérifier si c'est LE CHAUFFEUR qui a créé la course
+      // en comparant created_by_user_id avec le user_id du chauffeur
+      const isDriverCreated = course.created_by_user_id === driverUserId;
+
+      // Étape 1: TOUJOURS accepter le devis d'abord
       const { error: devisError } = await supabase
         .from("devis")
         .update({ status: "accepted", accepted_at: new Date().toISOString() })
@@ -432,29 +451,46 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
       if (devisError) throw devisError;
 
-      // Mettre à jour le statut de la course à "accepted"
-      const { error: courseError } = await supabase
-        .from("courses")
-        .update({ status: "accepted" })
-        .eq("id", courseId);
+      // ========== CAS 1: CHAUFFEUR A CRÉÉ LA COURSE ==========
+      // Flux: Chauffeur crée → Client accepte → Course CONFIRMÉE DIRECTEMENT
+      if (isDriverCreated) {
+        const { error: courseError } = await supabase
+          .from("courses")
+          .update({ status: "accepted" })
+          .eq("id", courseId);
 
-      if (courseError) throw courseError;
+        if (courseError) throw courseError;
 
-      // Notifier le chauffeur de l'acceptation
-      if (devisData?.drivers?.user_id) {
+        // Notifier le chauffeur que son devis a été accepté
         await supabase.from("notifications").insert({
-          user_id: devisData.drivers.user_id,
+          user_id: driverUserId,
           title: "Devis accepté !",
           message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
           type: "devis_accepted",
           link: "/driver-dashboard?tab=courses"
         });
+
+        toast.success("Devis accepté ! Course confirmée.");
+      } 
+      // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
+      // Flux: Client crée → Client accepte → Chauffeur doit accepter → Course confirmée
+      else {
+        // Course reste "pending", le chauffeur doit maintenant l'accepter
+        // Notifier le chauffeur qu'il doit maintenant accepter la course
+        await supabase.from("notifications").insert({
+          user_id: driverUserId,
+          title: "Nouveau devis accepté",
+          message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
+          type: "devis_accepted",
+          link: "/driver-dashboard?tab=courses"
+        });
+
+        toast.success("Devis accepté ! En attente de confirmation du chauffeur.");
       }
 
-      toast.success("Devis accepté avec succès !");
-      fetchCourses();
-    } catch (error: any) {
-      console.error("Error accepting devis:", error);
+      await fetchCourses();
+    } catch (error) {
+      console.error("Erreur acceptation devis:", error);
       toast.error("Erreur lors de l'acceptation du devis");
     }
   };
