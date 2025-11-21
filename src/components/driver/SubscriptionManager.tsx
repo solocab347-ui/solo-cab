@@ -90,10 +90,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <Button 
                 onClick={handleSubscribe} 
                 disabled={loading} 
-                className="bg-gradient-premium w-full sm:w-auto text-sm sm:text-base"
+                className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Souscrire - 49,99€/mois
+                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">Souscrire - 49,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -187,10 +187,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
-              className="w-full bg-gradient-premium text-sm sm:text-lg py-4 sm:py-6"
+              className="w-full bg-gradient-premium text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4"
             >
-              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Activer mon abonnement - 49,99€/mois
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Activer - 49,99€/mois</span>
             </Button>
           )}
         </div>
@@ -198,19 +198,19 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Comparison */}
       {isInactive && (
-        <Card className="p-4 sm:p-6 bg-gradient-premium">
-          <h4 className="font-bold text-base sm:text-lg text-premium-foreground mb-3 sm:mb-4">
+        <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
+          <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
             💰 Économisez jusqu'à 15 000€/an
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
             <div className="bg-premium-foreground/10 rounded-lg p-3 sm:p-4">
-              <p className="text-premium-foreground/80 mb-2 text-xs sm:text-sm">Uber / Bolt</p>
-              <p className="text-xl sm:text-2xl font-bold text-premium-foreground">~1 250€/mois</p>
+              <p className="text-premium-foreground/80 mb-1 sm:mb-2 text-xs sm:text-sm">Uber / Bolt</p>
+              <p className="text-lg sm:text-2xl font-bold text-premium-foreground break-words">~1 250€/mois</p>
               <p className="text-premium-foreground/70 text-xs">Commission 25%</p>
             </div>
             <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
-              <p className="text-premium/80 mb-2 text-xs sm:text-sm">SoloCab</p>
-              <p className="text-xl sm:text-2xl font-bold text-premium">49,99€/mois</p>
+              <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
+              <p className="text-lg sm:text-2xl font-bold text-premium break-words">49,99€/mois</p>
               <p className="text-premium/70 text-xs">0% commission</p>
             </div>
           </div>
