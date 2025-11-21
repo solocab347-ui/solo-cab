@@ -255,6 +255,7 @@ export type Database = {
       courses: {
         Row: {
           client_id: string
+          client_rating: number | null
           course_number: string | null
           created_at: string
           created_by_user_id: string | null
@@ -279,6 +280,7 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          client_rating?: number | null
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -303,6 +305,7 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          client_rating?: number | null
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null

@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import jsPDF from "jspdf";
+import { CourseRating } from "@/components/CourseRating";
 
 interface ClientCoursesListProps {
   clientId: string;
@@ -679,6 +680,18 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
                 Email
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Rating section for completed courses */}
+        {course.status === "completed" && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-sm font-medium mb-3">Évaluer cette course :</p>
+            <CourseRating
+              courseId={course.id}
+              currentRating={course.client_rating}
+              onRatingSubmitted={fetchCourses}
+            />
           </div>
         )}
 
