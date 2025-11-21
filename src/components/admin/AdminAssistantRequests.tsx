@@ -177,7 +177,7 @@ export const AdminAssistantRequests = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              Demandes d'assistance Max
+              Demandes d'assistance Liberty
             </CardTitle>
             <div className="flex gap-2">
               <Button

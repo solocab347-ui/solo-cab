@@ -78,7 +78,7 @@ const AdminDashboard = () => {
   const menuItems = [
     { id: "overview", label: "Vue d'ensemble", icon: Home },
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
-    { id: "assistant", label: "Demandes Max", icon: Bot },
+    { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
