@@ -202,10 +202,20 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     // Client info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", 145, 65);
+    doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(facture.clients?.profiles?.full_name || "N/A", 145, 71);
+    
+    const clientName = facture.clients?.profiles?.full_name || "N/A";
+    doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+    
+    if (facture.clients?.profiles?.email) {
+      doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+    }
+    
+    if (facture.clients?.profiles?.phone) {
+      doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    }
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
