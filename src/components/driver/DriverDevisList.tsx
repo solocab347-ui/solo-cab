@@ -352,17 +352,17 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
     if (isExpired && status === "pending") {
       return (
-        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+        <Badge className="bg-destructive/90 text-white border-0 shadow-md">
           Expiré
         </Badge>
       );
     }
 
     const styles = {
-      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      accepted: "bg-green-500/10 text-green-500 border-green-500/20",
-      rejected: "bg-destructive/10 text-destructive border-destructive/20",
-      expired: "bg-muted text-muted-foreground border-border",
+      pending: "bg-gradient-trust text-white border-0 shadow-md",
+      accepted: "bg-gradient-success text-white border-0 shadow-md",
+      rejected: "bg-destructive/90 text-white border-0 shadow-md",
+      expired: "bg-muted/90 text-white border-0 shadow-md",
     };
 
     const labels = {
@@ -373,7 +373,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     };
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
+      <Badge className={styles[status as keyof typeof styles]}>
         {labels[status as keyof typeof labels]}
       </Badge>
     );
@@ -398,43 +398,44 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     <div className="space-y-6">
       {/* Stats - Horizontal on all screens */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-premium border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-premium">{stats.total}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Devis totaux</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.total}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Devis totaux</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-trust border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-yellow-500">{stats.pending}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.pending}</h3>
+            <p className="text-xs sm:text-sm text-white/80">En attente</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-success border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-green-500">{stats.accepted}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Acceptés</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.accepted}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Acceptés</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-independence border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-destructive">{stats.rejected}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Refusés</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.rejected}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Refusés</p>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par numéro ou client..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <Card className="p-4 bg-card/80 backdrop-blur-sm border-primary/10">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
+            <Input
+              placeholder="Rechercher par numéro ou client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-background/50"
+            />
+          </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Statut" />
@@ -470,14 +471,15 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             <SelectItem value="last_month">Mois dernier</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        </div>
+      </Card>
 
       {/* Devis List */}
       {filteredDevis.length === 0 ? (
-        <Card className="p-8 text-center">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Aucun devis</h3>
-          <p className="text-muted-foreground">
+        <Card className="p-8 text-center bg-gradient-trust border-0">
+          <FileText className="w-16 h-16 text-white/70 mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2 text-white">Aucun devis</h3>
+          <p className="text-white/80">
             {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
               ? "Aucun devis ne correspond à vos critères"
               : "Vos devis apparaîtront ici"}
@@ -485,24 +487,27 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredDevis.map((devis) => (
-            <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
+          {filteredDevis.map((devis, index) => {
+            const gradients = ['bg-gradient-trust', 'bg-gradient-freedom', 'bg-gradient-renewal'];
+            const gradient = gradients[index % 3];
+            return (
+            <Card key={devis.id} className={`p-6 hover:shadow-elegant transition-all ${gradient} border-0`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {devis.clients?.profiles?.profile_photo_url ? (
                     <img
                       src={devis.clients.profiles.profile_photo_url}
                       alt={devis.clients.profiles.full_name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
                     />
                   ) : (
-                    <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-primary-foreground" />
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold border-2 border-white/30">
+                      {devis.clients?.profiles?.full_name?.[0] || "?"}
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg">{devis.quote_number}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="font-bold text-lg text-white">{devis.quote_number}</h3>
+                    <p className="text-sm text-white/80">
                       {devis.clients?.profiles?.full_name}
                     </p>
                   </div>
@@ -511,23 +516,23 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               </div>
 
               {/* Course Details */}
-              <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 border border-white/20">
                 <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium">Départ</p>
-                    <p className="text-muted-foreground">{devis.courses.pickup_address}</p>
+                    <p className="font-medium text-white">Départ</p>
+                    <p className="text-white/80">{devis.courses.pickup_address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium">Arrivée</p>
-                    <p className="text-muted-foreground">{devis.courses.destination_address}</p>
+                    <p className="font-medium text-white">Arrivée</p>
+                    <p className="text-white/80">{devis.courses.destination_address}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-sm text-white/80">
+                  <Calendar className="w-4 h-4 text-white" />
                   {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
                     locale: fr,
                   })}
@@ -535,13 +540,13 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               </div>
 
               {/* Price */}
-              <div className="border border-border rounded-lg p-4 mb-4">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Euro className="w-5 h-5 text-premium" />
-                    <span className="font-semibold">Montant TTC</span>
+                    <Euro className="w-5 h-5 text-white" />
+                    <span className="font-semibold text-white">Montant TTC</span>
                   </div>
-                  <span className="text-2xl font-bold text-premium">
+                  <span className="text-2xl font-bold text-white">
                     {parseFloat(devis.amount).toFixed(2)} €
                   </span>
                 </div>
@@ -549,7 +554,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-white/70">
                   Créé le {format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}
                 </div>
                 <div className="flex gap-2">
@@ -557,6 +562,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownloadPDF(devis, false)}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     PDF Détaillé
@@ -565,6 +571,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownloadPDF(devis, true)}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     PDF Client
@@ -572,7 +579,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                 </div>
               </div>
             </Card>
-          ))}
+          )})}
         </div>
       )}
     </div>
