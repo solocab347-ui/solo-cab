@@ -123,15 +123,15 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       {/* Welcome Header */}
       <div className="text-center sm:text-left animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
           Bonjour, {driverProfile?.full_name || 'Chauffeur'} ✨
         </h1>
-        <p className="text-muted-foreground">Voici un aperçu de votre activité</p>
+        <p className="text-gray-300">Voici un aperçu de votre activité</p>
       </div>
 
       {/* Accès Rapide */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Accès Rapide</h2>
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Accès Rapide</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
@@ -183,7 +183,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
       {/* Aujourd'hui */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Aujourd'hui</h2>
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Aujourd'hui</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Courses */}
           <Card className="p-6 bg-gradient-trust hover:shadow-trust transition-all border-0">
@@ -219,7 +219,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
       {/* Ce mois */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Ce mois</h2>
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Ce mois</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {/* Clients */}
           <Card className="p-4 sm:p-6 bg-gradient-freedom hover:shadow-success transition-all border-0">
