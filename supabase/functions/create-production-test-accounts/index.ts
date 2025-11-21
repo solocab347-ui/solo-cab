@@ -120,24 +120,53 @@ serve(async (req) => {
       try {
         console.log(`📝 Création du compte: ${account.email}`);
 
-        // 1. Créer l'utilisateur dans auth
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: account.email,
-          password: account.password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: account.fullName
+        // 1. Vérifier si l'utilisateur existe déjà
+        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = existingUsers?.users?.find(u => u.email === account.email);
+
+        let userId: string;
+
+        if (existingUser) {
+          userId = existingUser.id;
+          console.log(`♻️ Utilisateur existant trouvé: ${userId}, mise à jour du mot de passe...`);
+          
+          // Réinitialiser le mot de passe
+          const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { 
+              password: account.password,
+              email_confirm: true,
+              user_metadata: {
+                full_name: account.fullName
+              }
+            }
+          );
+
+          if (updateError) {
+            console.error(`❌ Erreur mise à jour pour ${account.email}:`, updateError);
+            results.errors.push({ email: account.email, error: updateError.message });
+            continue;
           }
-        });
+        } else {
+          // Créer l'utilisateur dans auth
+          const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: account.email,
+            password: account.password,
+            email_confirm: true,
+            user_metadata: {
+              full_name: account.fullName
+            }
+          });
 
-        if (authError) {
-          console.error(`❌ Erreur auth pour ${account.email}:`, authError);
-          results.errors.push({ email: account.email, error: authError.message });
-          continue;
+          if (authError) {
+            console.error(`❌ Erreur auth pour ${account.email}:`, authError);
+            results.errors.push({ email: account.email, error: authError.message });
+            continue;
+          }
+
+          userId = authData.user.id;
+          console.log(`✅ Utilisateur auth créé: ${userId}`);
         }
-
-        const userId = authData.user.id;
-        console.log(`✅ Utilisateur auth créé: ${userId}`);
 
         // 2. Créer/Mettre à jour le profil
         const { error: profileError } = await supabaseAdmin
