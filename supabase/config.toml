@@ -1,5 +1,8 @@
 project_id = "iyothopplhbwcfrpxryc"
 
+[functions.recreate-test-clients]
+verify_jwt = false
+
 [functions.qr-code-manager]
 verify_jwt = false
 
