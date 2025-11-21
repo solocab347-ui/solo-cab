@@ -8,8 +8,8 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base colors - fond coloré dégradé subtil */
-    --background: 200 35% 96%;
+    /* Base colors - fond neutre professionnel */
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -18,80 +18,80 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary - Vert émeraude (Liberté & Renouveau) */
-    --primary: 158 64% 52%;
-    --primary-light: 158 64% 62%;
-    --primary-dark: 158 64% 42%;
+    /* Primary - Bleu marine profond (Confiance & Professionnalisme) */
+    --primary: 217 91% 28%;
+    --primary-light: 217 91% 35%;
+    --primary-dark: 217 91% 22%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Bleu cyan (Indépendance & Confiance) */
-    --secondary: 200 98% 39%;
-    --secondary-light: 200 98% 49%;
-    --secondary-dark: 200 98% 29%;
+    /* Secondary - Vert émeraude moderne (Performance & Croissance) */
+    --secondary: 160 84% 39%;
+    --secondary-light: 160 84% 46%;
+    --secondary-dark: 160 84% 32%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Accent - Violet améthyste (Transformation & Premium) */
-    --accent: 271 76% 53%;
-    --accent-light: 271 76% 63%;
-    --accent-dark: 271 76% 43%;
+    /* Accent - Orange brûlé dynamique (Énergie & Action) */
+    --accent: 24 95% 53%;
+    --accent-light: 24 95% 60%;
+    --accent-dark: 24 95% 46%;
     --accent-foreground: 0 0% 100%;
 
-    /* Muted - Gris doux pour les éléments secondaires */
+    /* Muted - Gris professionnel pour les éléments secondaires */
     --muted: 220 13% 95%;
     --muted-foreground: 220 9% 46%;
 
-    /* Trust - Bleu profond (même famille que secondary) */
-    --trust: 200 98% 39%;
+    /* Trust - Bleu marine (même que primary) */
+    --trust: 217 91% 28%;
     --trust-foreground: 0 0% 100%;
 
-    /* Success - Vert nature (même famille que primary) */
-    --success: 158 64% 52%;
+    /* Success - Vert émeraude (même que secondary) */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    /* Info - Cyan clair */
-    --info: 188 94% 42%;
+    /* Info - Cyan moderne */
+    --info: 188 94% 45%;
     --info-foreground: 0 0% 100%;
 
-    /* Warning - Orange doux */
-    --warning: 35 91% 55%;
+    /* Warning - Ambre */
+    --warning: 32 95% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Premium - Violet royal (même famille que accent) */
-    --premium: 271 76% 53%;
+    /* Premium - Orange premium */
+    --premium: 24 95% 53%;
     --premium-foreground: 0 0% 100%;
 
-    /* Destructive - Rouge corail */
+    /* Destructive - Rouge professionnel */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 158 64% 52%;
+    --ring: 217 91% 28%;
 
     --radius: 0.75rem;
 
-    /* Gradients harmonieux - Vert → Bleu → Violet */
-    --gradient-freedom: linear-gradient(135deg, hsl(158 64% 52%), hsl(200 98% 39%));
-    --gradient-independence: linear-gradient(135deg, hsl(200 98% 39%), hsl(271 76% 53%));
-    --gradient-renewal: linear-gradient(135deg, hsl(158 64% 52%), hsl(271 76% 53%));
-    --gradient-premium: linear-gradient(135deg, hsl(271 76% 53%), hsl(271 76% 63%));
-    --gradient-trust: linear-gradient(135deg, hsl(200 98% 39%), hsl(200 98% 49%));
-    --gradient-success: linear-gradient(135deg, hsl(158 64% 52%), hsl(158 64% 62%));
-    --gradient-triple: linear-gradient(135deg, hsl(158 64% 52%), hsl(200 98% 39%), hsl(271 76% 53%));
-    --gradient-bg: linear-gradient(180deg, hsl(200 35% 96%), hsl(271 25% 97%), hsl(158 30% 96%));
+    /* Gradients professionnels modernes */
+    --gradient-freedom: linear-gradient(135deg, hsl(160 84% 39%), hsl(188 94% 45%));
+    --gradient-independence: linear-gradient(135deg, hsl(217 91% 28%), hsl(188 94% 45%));
+    --gradient-renewal: linear-gradient(135deg, hsl(188 94% 45%), hsl(217 91% 35%));
+    --gradient-premium: linear-gradient(135deg, hsl(24 95% 53%), hsl(32 95% 50%));
+    --gradient-trust: linear-gradient(135deg, hsl(217 91% 28%), hsl(217 91% 35%));
+    --gradient-success: linear-gradient(135deg, hsl(160 84% 39%), hsl(160 84% 46%));
+    --gradient-triple: linear-gradient(135deg, hsl(217 91% 28%), hsl(188 94% 45%), hsl(24 95% 53%));
+    --gradient-bg: linear-gradient(135deg, hsl(220 18% 20%) 0%, hsl(220 26% 14%) 50%, hsl(220 18% 20%) 100%);
 
-    /* Shadows élégantes */
-    --shadow-elegant: 0 10px 40px -15px hsl(222 47% 11% / 0.15);
-    --shadow-premium: 0 0 30px hsl(271 76% 53% / 0.2);
-    --shadow-success: 0 0 25px hsl(158 64% 52% / 0.2);
-    --shadow-trust: 0 0 25px hsl(200 98% 39% / 0.2);
+    /* Shadows élégantes professionnelles */
+    --shadow-elegant: 0 10px 40px -15px hsl(217 91% 28% / 0.3);
+    --shadow-premium: 0 0 30px hsl(24 95% 53% / 0.35);
+    --shadow-success: 0 0 25px hsl(160 84% 39% / 0.35);
+    --shadow-trust: 0 0 25px hsl(217 91% 28% / 0.35);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    /* Base colors - fond sombre coloré */
+    /* Base colors - fond sombre professionnel */
     --background: 222 47% 8%;
     --foreground: 0 0% 98%;
 
@@ -101,72 +101,72 @@ All colors MUST be HSL.
     --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary - Vert émeraude lumineux en mode sombre */
-    --primary: 158 64% 55%;
-    --primary-light: 158 64% 65%;
-    --primary-dark: 158 64% 45%;
-    --primary-foreground: 222 47% 11%;
+    /* Primary - Bleu marine lumineux */
+    --primary: 217 91% 35%;
+    --primary-light: 217 91% 42%;
+    --primary-dark: 217 91% 28%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Bleu cyan lumineux */
-    --secondary: 200 98% 45%;
-    --secondary-light: 200 98% 55%;
-    --secondary-dark: 200 98% 35%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - Vert émeraude lumineux */
+    --secondary: 160 84% 46%;
+    --secondary-light: 160 84% 52%;
+    --secondary-dark: 160 84% 39%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Accent - Violet améthyste lumineux */
-    --accent: 271 76% 60%;
-    --accent-light: 271 76% 70%;
-    --accent-dark: 271 76% 50%;
-    --accent-foreground: 222 47% 11%;
+    /* Accent - Orange brûlé lumineux */
+    --accent: 24 95% 58%;
+    --accent-light: 24 95% 65%;
+    --accent-dark: 24 95% 51%;
+    --accent-foreground: 0 0% 100%;
 
     /* Muted - Gris sombre pour les éléments secondaires */
     --muted: 222 47% 15%;
     --muted-foreground: 220 9% 65%;
 
-    /* Trust - Bleu profond lumineux */
-    --trust: 200 98% 45%;
-    --trust-foreground: 222 47% 11%;
+    /* Trust - Bleu marine lumineux */
+    --trust: 217 91% 35%;
+    --trust-foreground: 0 0% 100%;
 
-    /* Success - Vert nature lumineux */
-    --success: 158 64% 55%;
-    --success-foreground: 222 47% 11%;
+    /* Success - Vert émeraude lumineux */
+    --success: 160 84% 46%;
+    --success-foreground: 0 0% 100%;
 
     /* Info - Cyan lumineux */
-    --info: 188 94% 48%;
-    --info-foreground: 222 47% 11%;
+    --info: 188 94% 50%;
+    --info-foreground: 0 0% 100%;
 
-    /* Warning - Orange doux */
-    --warning: 35 91% 60%;
-    --warning-foreground: 222 47% 11%;
+    /* Warning - Ambre lumineux */
+    --warning: 32 95% 55%;
+    --warning-foreground: 0 0% 100%;
 
-    /* Premium - Violet royal lumineux */
-    --premium: 271 76% 60%;
-    --premium-foreground: 222 47% 11%;
+    /* Premium - Orange premium lumineux */
+    --premium: 24 95% 58%;
+    --premium-foreground: 0 0% 100%;
 
-    /* Destructive - Rouge corail */
+    /* Destructive - Rouge professionnel */
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
     --border: 222 47% 20%;
     --input: 222 47% 20%;
-    --ring: 158 64% 55%;
+    --ring: 217 91% 35%;
 
-    /* Gradients harmonieux en mode sombre */
-    --gradient-freedom: linear-gradient(135deg, hsl(158 64% 55%), hsl(200 98% 45%));
-    --gradient-independence: linear-gradient(135deg, hsl(200 98% 45%), hsl(271 76% 60%));
-    --gradient-renewal: linear-gradient(135deg, hsl(158 64% 55%), hsl(271 76% 60%));
-    --gradient-premium: linear-gradient(135deg, hsl(271 76% 60%), hsl(271 76% 70%));
-    --gradient-trust: linear-gradient(135deg, hsl(200 98% 45%), hsl(200 98% 55%));
-    --gradient-success: linear-gradient(135deg, hsl(158 64% 55%), hsl(158 64% 65%));
-    --gradient-triple: linear-gradient(135deg, hsl(158 64% 55%), hsl(200 98% 45%), hsl(271 76% 60%));
-    --gradient-bg: linear-gradient(180deg, hsl(222 47% 8%), hsl(222 47% 10%), hsl(222 47% 9%));
+    /* Gradients professionnels en mode sombre */
+    --gradient-freedom: linear-gradient(135deg, hsl(160 84% 46%), hsl(188 94% 50%));
+    --gradient-independence: linear-gradient(135deg, hsl(217 91% 35%), hsl(188 94% 50%));
+    --gradient-renewal: linear-gradient(135deg, hsl(188 94% 50%), hsl(217 91% 42%));
+    --gradient-premium: linear-gradient(135deg, hsl(24 95% 58%), hsl(32 95% 55%));
+    --gradient-trust: linear-gradient(135deg, hsl(217 91% 35%), hsl(217 91% 42%));
+    --gradient-success: linear-gradient(135deg, hsl(160 84% 46%), hsl(160 84% 52%));
+    --gradient-triple: linear-gradient(135deg, hsl(217 91% 35%), hsl(188 94% 50%), hsl(24 95% 58%));
+    --gradient-bg: linear-gradient(135deg, hsl(220 18% 20%) 0%, hsl(220 26% 14%) 50%, hsl(220 18% 20%) 100%);
 
     /* Shadows élégantes en mode sombre */
     --shadow-elegant: 0 10px 40px -15px hsl(0 0% 0% / 0.6);
-    --shadow-premium: 0 0 35px hsl(271 76% 60% / 0.25);
-    --shadow-success: 0 0 30px hsl(158 64% 55% / 0.25);
-    --shadow-trust: 0 0 30px hsl(200 98% 45% / 0.25);
+    --shadow-premium: 0 0 35px hsl(24 95% 58% / 0.4);
+    --shadow-success: 0 0 30px hsl(160 84% 46% / 0.4);
+    --shadow-trust: 0 0 30px hsl(217 91% 35% / 0.4);
   }
 }
 
