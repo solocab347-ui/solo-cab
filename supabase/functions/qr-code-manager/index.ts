@@ -50,7 +50,8 @@ Deno.serve(async (req) => {
 
       // Generate new QR code
       const qrCodeId = existingQR?.id || crypto.randomUUID();
-      const registrationUrl = `https://bb7de2de-cc6d-441a-a380-0f8d244f90e4.lovableproject.com/register-client-qr?qr=${qrCodeId}`;
+      const appUrl = Deno.env.get('APP_URL') || 'https://solocab.fr';
+      const registrationUrl = `${appUrl}/register-client-qr?qr=${qrCodeId}`;
       
       console.log('Generating QR code for URL:', registrationUrl);
 
