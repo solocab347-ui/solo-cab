@@ -116,23 +116,23 @@ const ChauffeurLanding = () => {
               Fidélisez VOS clients sans intermédiaire.
             </p>
 
-            <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-3xl mx-auto">
-              <Card className="p-8 bg-gradient-to-br from-emerald-500 to-green-600 border-0 rounded-2xl">
-                <div className="text-sm text-white/80 mb-2">Commission</div>
-                <div className="text-5xl font-bold text-white mb-1">0%</div>
-                <div className="text-sm text-white/70">Vos revenus</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-12 max-w-3xl mx-auto px-4">
+              <Card className="p-6 md:p-8 bg-gradient-to-br from-emerald-500 to-green-600 border-0 rounded-2xl">
+                <div className="text-xs md:text-sm text-white/80 mb-2">Commission</div>
+                <div className="text-4xl md:text-5xl font-bold text-white mb-1">0%</div>
+                <div className="text-xs md:text-sm text-white/70">Vos revenus</div>
                 <div className="text-white/80 text-xs mt-2">100% conservés</div>
               </Card>
-              <Card className="p-8 bg-gradient-to-br from-blue-500 to-blue-600 border-0 rounded-2xl">
-                <div className="text-sm text-white/80 mb-2">Vos clients</div>
-                <div className="text-5xl font-bold text-white mb-1">100%</div>
-                <div className="text-sm text-white/70">vous appartiennent</div>
+              <Card className="p-6 md:p-8 bg-gradient-to-br from-blue-500 to-blue-600 border-0 rounded-2xl">
+                <div className="text-xs md:text-sm text-white/80 mb-2">Vos clients</div>
+                <div className="text-4xl md:text-5xl font-bold text-white mb-1">100%</div>
+                <div className="text-xs md:text-sm text-white/70">vous appartiennent</div>
                 <div className="text-white/80 text-xs mt-2">Base de données privée</div>
               </Card>
-              <Card className="p-8 bg-gradient-to-br from-purple-500 to-purple-600 border-0 rounded-2xl">
-                <div className="text-sm text-white/80 mb-2">Inscription client</div>
-                <div className="text-5xl font-bold text-white mb-1">30s</div>
-                <div className="text-sm text-white/70">via QR code</div>
+              <Card className="p-6 md:p-8 bg-gradient-to-br from-purple-500 to-purple-600 border-0 rounded-2xl">
+                <div className="text-xs md:text-sm text-white/80 mb-2">Inscription client</div>
+                <div className="text-4xl md:text-5xl font-bold text-white mb-1">30s</div>
+                <div className="text-xs md:text-sm text-white/70">via QR code</div>
                 <div className="text-white/80 text-xs mt-2">Via QR Code unique</div>
               </Card>
             </div>
@@ -170,8 +170,8 @@ const ChauffeurLanding = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 bg-[#1a2332]/50 border-red-500/30 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto px-4">
+            <Card className="p-6 md:p-8 bg-[#1a2332]/50 border-red-500/30 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-6">
                 <X className="w-6 h-6 text-red-500" />
                 <h3 className="text-2xl font-bold text-white">Plateformes classiques</h3>
@@ -205,7 +205,7 @@ const ChauffeurLanding = () => {
               </ul>
             </Card>
 
-            <Card className="p-8 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-green-500/30 backdrop-blur-sm">
+            <Card className="p-6 md:p-8 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-green-500/30 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-6">
                 <Check className="w-6 h-6 text-green-400" />
                 <h3 className="text-2xl font-bold text-white">✅ SoloCab</h3>
@@ -260,66 +260,66 @@ const ChauffeurLanding = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto items-center">
-            <div className="space-y-6">
-              <Card className="p-6 bg-[#0f1e35]/50 border-emerald-500/20 backdrop-blur-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto items-center px-4">
+            <div className="space-y-4 md:space-y-6">
+              <Card className="p-4 md:p-6 bg-[#0f1e35]/50 border-emerald-500/20 backdrop-blur-sm">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Check className="w-6 h-6 text-emerald-400" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-2 text-white">Inscription Ultra-Rapide</h3>
-                    <p className="text-gray-400">
+                    <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 text-white">Inscription Ultra-Rapide</h3>
+                    <p className="text-sm md:text-base text-gray-400">
                       Scan + 3 champs = Client inscrit. Fini la saisie manuelle !
                     </p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6 bg-[#0f1e35]/50 border-blue-500/20 backdrop-blur-sm">
+              <Card className="p-4 md:p-6 bg-[#0f1e35]/50 border-blue-500/20 backdrop-blur-sm">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Check className="w-6 h-6 text-blue-400" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-2 text-white">Lien Automatique</h3>
-                    <p className="text-gray-400">
+                    <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 text-white">Lien Automatique</h3>
+                    <p className="text-sm md:text-base text-gray-400">
                       Le client est directement rattaché à VOUS, aucune manipulation
                     </p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6 bg-[#0f1e35]/50 border-orange-500/20 backdrop-blur-sm">
+              <Card className="p-4 md:p-6 bg-[#0f1e35]/50 border-orange-500/20 backdrop-blur-sm">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Check className="w-6 h-6 text-orange-400" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-2 text-white">Affichez-le Partout</h3>
-                    <p className="text-gray-400">
+                    <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2 text-white">Affichez-le Partout</h3>
+                    <p className="text-sm md:text-base text-gray-400">
                       Dans votre véhicule, sur vos cartes de visite, par SMS...
                     </p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6 bg-yellow-500/10 border-yellow-500/30 backdrop-blur-sm">
-                <p className="text-sm text-gray-300">
+              <Card className="p-4 md:p-6 bg-yellow-500/10 border-yellow-500/30 backdrop-blur-sm">
+                <p className="text-xs md:text-sm text-gray-300">
                   <strong className="text-yellow-400">💡 Astuce :</strong> Vos clients Uber/Bolt actuels peuvent scanner votre QR et réserver
                   directement avec vous à l'avenir !
                 </p>
               </Card>
             </div>
 
-            <Card className="p-8 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-purple-500/30 backdrop-blur-sm text-center">
-              <div className="w-48 h-48 bg-white rounded-xl mx-auto mb-6 flex items-center justify-center">
-                <div className="w-40 h-40 border-4 border-purple-500 rounded-lg flex items-center justify-center">
-                  <QrCode className="w-32 h-32 text-purple-500" />
+            <Card className="p-6 md:p-8 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-purple-500/30 backdrop-blur-sm text-center">
+              <div className="w-32 h-32 md:w-48 md:h-48 bg-white rounded-xl mx-auto mb-4 md:mb-6 flex items-center justify-center">
+                <div className="w-28 h-28 md:w-40 md:h-40 border-2 md:border-4 border-purple-500 rounded-lg flex items-center justify-center">
+                  <QrCode className="w-20 h-20 md:w-32 md:h-32 text-purple-500" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold mb-2 text-white">Votre QR Code Unique</h3>
-              <p className="text-gray-400 mb-4">Généré instantanément à votre inscription</p>
+              <h3 className="text-xl md:text-2xl font-bold mb-2 text-white">Votre QR Code Unique</h3>
+              <p className="text-sm md:text-base text-gray-400 mb-4">Généré instantanément à votre inscription</p>
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
                 Scan → Inscription → Client
               </Badge>
@@ -340,30 +340,30 @@ const ChauffeurLanding = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="p-8 bg-[#1a2332]/50 border-blue-500/30 backdrop-blur-sm hover:border-blue-500/50 transition-all">
-              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-blue-400" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto px-4">
+            <Card className="p-6 md:p-8 bg-[#1a2332]/50 border-blue-500/30 backdrop-blur-sm hover:border-blue-500/50 transition-all">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-7 h-7 md:w-8 md:h-8 text-blue-400" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white text-center">Messagerie Intégrée</h3>
-              <p className="text-gray-400 text-center">
+              <h3 className="text-xl md:text-2xl font-bold mb-3 text-white text-center">Messagerie Intégrée</h3>
+              <p className="text-sm md:text-base text-gray-400 text-center">
                 Échangez directement avec vos clients sans donner votre numéro personnel. Relation client
                 professionnelle et privée.
               </p>
             </Card>
 
-            <Card className="p-8 bg-[#1a2332]/50 border-pink-500/30 backdrop-blur-sm hover:border-pink-500/50 transition-all">
-              <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Gift className="w-8 h-8 text-pink-400" />
+            <Card className="p-6 md:p-8 bg-[#1a2332]/50 border-pink-500/30 backdrop-blur-sm hover:border-pink-500/50 transition-all">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Gift className="w-7 h-7 md:w-8 md:h-8 text-pink-400" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white text-center">Offres Promotionnelles</h3>
-              <p className="text-gray-400 text-center">
+              <h3 className="text-xl md:text-2xl font-bold mb-3 text-white text-center">Offres Promotionnelles</h3>
+              <p className="text-sm md:text-base text-gray-400 text-center">
                 Envoyez des offres spéciales à vos clients fidèles. Augmentez votre taux de réservation avec des
                 promotions ciblées.
               </p>
             </Card>
 
-            <Card className="p-8 bg-[#1a2332]/50 border-cyan-500/30 backdrop-blur-sm hover:border-cyan-500/50 transition-all">
+            <Card className="p-6 md:p-8 bg-[#1a2332]/50 border-cyan-500/30 backdrop-blur-sm hover:border-cyan-500/50 transition-all">
               <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-cyan-400" />
               </div>
