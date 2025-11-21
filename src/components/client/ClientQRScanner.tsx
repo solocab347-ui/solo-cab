@@ -23,20 +23,10 @@ const ClientQRScanner = () => {
 
   const startScanning = async () => {
     setCameraError(null);
+    setScanning(true);
     
     try {
-      // Vérifier les permissions caméra d'abord
-      console.log("Demande d'accès à la caméra...");
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
-      });
-      
-      // Fermer le stream immédiatement (html5-qrcode va le rouvrir)
-      stream.getTracks().forEach(track => track.stop());
-      
-      console.log("Accès caméra accordé, initialisation du scanner...");
-      setScanning(true);
+      console.log("Initialisation du scanner QR...");
 
       const html5QrcodeScanner = new Html5QrcodeScanner(
         "qr-reader",
@@ -46,6 +36,7 @@ const ClientQRScanner = () => {
           aspectRatio: 1.0,
           showTorchButtonIfSupported: true,
           useBarCodeDetectorIfSupported: true,
+          rememberLastUsedCamera: true,
         },
         false
       );
@@ -85,10 +76,11 @@ const ClientQRScanner = () => {
       );
 
       setScanner(html5QrcodeScanner);
+      console.log("Scanner QR initialisé avec succès");
     } catch (error: any) {
-      console.error("Erreur d'accès à la caméra:", error);
+      console.error("Erreur d'initialisation du scanner:", error);
       
-      let errorMsg = "Impossible d'accéder à la caméra";
+      let errorMsg = "Impossible d'initialiser le scanner";
       if (error.name === "NotAllowedError") {
         errorMsg = "Vous devez autoriser l'accès à la caméra pour scanner un QR code";
       } else if (error.name === "NotFoundError") {

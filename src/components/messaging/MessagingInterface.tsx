@@ -20,6 +20,7 @@ export const MessagingInterface = () => {
   const {
     messages,
     selectedConversation,
+    setSelectedConversation,
     sendMessage,
     getOrCreateConversation,
     fetchMessages,
@@ -125,6 +126,7 @@ export const MessagingInterface = () => {
     setSelectedContact(contact);
     const conversationId = await getOrCreateConversation(contactId);
     if (conversationId) {
+      setSelectedConversation(conversationId);
       await fetchMessages(conversationId);
     } else {
       toast.error("Erreur lors de la création de la conversation");
