@@ -229,27 +229,27 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-bg">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
+      <header className="border-b border-border/50 bg-gradient-triple shadow-elegant sticky top-0 z-10 backdrop-blur-sm">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
               <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
               SoloCab
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-medium">{driverProfile?.full_name || "Chauffeur"}</span>
-              <Badge variant="outline" className="border-success text-success text-xs">
+              <span className="text-sm font-medium text-white drop-shadow">{driverProfile?.full_name || "Chauffeur"}</span>
+              <Badge variant="outline" className="border-white/30 text-white text-xs bg-white/10 backdrop-blur-sm">
                 {driverProfile?.driver?.subscription_status === "active" ? "Actif" : "Inactif"}
               </Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10">
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10">
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
@@ -276,36 +276,36 @@ const DriverDashboard = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full bg-card flex flex-col gap-2 h-auto p-2">
+          <TabsList className="w-full bg-card/80 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-primary/10">
             {/* Première ligne */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
-              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <LayoutGrid className="w-4 h-4" />
+              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-success data-[state=active]:text-white">
+                <LayoutGrid className="w-4 h-4 text-primary" />
                 <span className="hidden sm:inline">Accueil</span>
                 <span className="sm:hidden">Accueil</span>
               </TabsTrigger>
-              <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <Users className="w-4 h-4" />
+              <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-trust data-[state=active]:text-white">
+                <Users className="w-4 h-4 text-secondary" />
                 <span className="hidden sm:inline">Mes Clients</span>
                 <span className="sm:hidden">Clients</span>
               </TabsTrigger>
-              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <Car className="w-4 h-4" />
+              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-premium data-[state=active]:text-white">
+                <Car className="w-4 h-4 text-accent" />
                 <span className="hidden sm:inline">Mes Courses</span>
                 <span className="sm:hidden">Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <MessageSquare className="w-4 h-4" />
+              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-independence data-[state=active]:text-white">
+                <MessageSquare className="w-4 h-4 text-info" />
                 <span className="hidden sm:inline">Messages</span>
                 <span className="sm:hidden">Messages</span>
               </TabsTrigger>
-              <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <FileText className="w-4 h-4" />
+              <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-renewal data-[state=active]:text-white">
+                <FileText className="w-4 h-4 text-primary" />
                 <span className="hidden sm:inline">Devis</span>
                 <span className="sm:hidden">Devis</span>
               </TabsTrigger>
-              <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <CreditCard className="w-4 h-4" />
+              <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-freedom data-[state=active]:text-white">
+                <CreditCard className="w-4 h-4 text-secondary" />
                 <span className="hidden sm:inline">Factures</span>
                 <span className="sm:hidden">Factures</span>
               </TabsTrigger>
@@ -315,20 +315,20 @@ const DriverDashboard = () => {
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 w-full">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50 flex-col sm:flex-row">
-                    <Wrench className="w-4 h-4" />
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-gradient-premium hover:text-white flex-col sm:flex-row">
+                    <Wrench className="w-4 h-4 text-accent" />
                     <span className="hidden sm:inline">Outils</span>
                     <span className="sm:hidden">Outils</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer">
-                    <Calculator className="w-4 h-4" />
+                  <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer hover:bg-gradient-premium hover:text-white">
+                    <Calculator className="w-4 h-4 text-primary" />
                     Calculatrice
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer">
-                    <QrCode className="w-4 h-4" />
+                  <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer hover:bg-gradient-success hover:text-white">
+                    <QrCode className="w-4 h-4 text-secondary" />
                     Mon QR Code
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -336,41 +336,41 @@ const DriverDashboard = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-muted/50 flex-col sm:flex-row">
-                    <BarChart3 className="w-4 h-4" />
+                  <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-gradient-trust hover:text-white flex-col sm:flex-row">
+                    <BarChart3 className="w-4 h-4 text-secondary" />
                     <span className="hidden sm:inline">Développement</span>
                     <span className="sm:hidden">Dev</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-card border border-border z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer">
-                    <TrendingUp className="w-4 h-4" />
+                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer hover:bg-gradient-independence hover:text-white">
+                    <TrendingUp className="w-4 h-4 text-info" />
                     Statistique
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer">
-                    <Megaphone className="w-4 h-4" />
+                  <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer hover:bg-gradient-renewal hover:text-white">
+                    <Megaphone className="w-4 h-4 text-accent" />
                     Campagne
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer">
-                    <PieChart className="w-4 h-4" />
+                  <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer hover:bg-gradient-freedom hover:text-white">
+                    <PieChart className="w-4 h-4 text-primary" />
                     Calcul de rentabilité
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <TrendingUp className="w-4 h-4" />
+              <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-premium data-[state=active]:text-white">
+                <TrendingUp className="w-4 h-4 text-accent" />
                 <span className="hidden sm:inline">Abonnement</span>
                 <span className="sm:hidden">Abo</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <Globe className="w-4 h-4" />
+              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-trust data-[state=active]:text-white">
+                <Globe className="w-4 h-4 text-secondary" />
                 <span className="hidden sm:inline">Profil Public</span>
                 <span className="sm:hidden">Profil</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5">
-                <Settings className="w-4 h-4" />
+              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 data-[state=active]:bg-gradient-independence data-[state=active]:text-white">
+                <Settings className="w-4 h-4 text-info" />
                 <span className="hidden sm:inline">Paramètres</span>
                 <span className="sm:hidden">Params</span>
               </TabsTrigger>
