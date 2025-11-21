@@ -154,9 +154,9 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Navigation with black background */}
-      <header className="border-b border-border/20 bg-black backdrop-blur-lg sticky top-0 z-50">
+      <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
@@ -167,10 +167,10 @@ const Index = () => {
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/chauffeurs" className="text-gray-300 hover:text-white transition-colors">
+            <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">
               Trouver un chauffeur
             </Link>
-            <Link to="/devenir-chauffeur" className="text-gray-300 hover:text-white transition-colors">
+            <Link to="/devenir-chauffeur" className="text-gray-400 hover:text-white transition-colors">
               Devenir chauffeur
             </Link>
           </nav>
@@ -183,18 +183,18 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-background to-secondary/20">
+      <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
         <div className="container mx-auto px-4">
           {/* Toggle Buttons */}
           <div className="flex justify-center mb-12">
-            <div className="inline-flex rounded-lg bg-secondary/50 p-1 backdrop-blur-sm border border-border">
+            <div className="inline-flex rounded-lg bg-white/5 p-1 backdrop-blur-sm border border-white/10">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
                   "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-gray-400 hover:text-white"
                 )}
               >
                 <Users className="w-4 h-4" />
@@ -206,7 +206,7 @@ const Index = () => {
                   "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-gray-400 hover:text-white"
                 )}
               >
                 <Car className="w-4 h-4" />
@@ -218,23 +218,23 @@ const Index = () => {
           {/* Clients View */}
           {activeView === "clients" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
                 Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
                 Des professionnels indépendants, des tarifs transparents
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {clientFeatures.map((feature, index) => (
                   <Card 
                     key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50"
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
                   >
                     <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
                       <feature.icon className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
                   </Card>
                 ))}
               </div>
@@ -253,23 +253,23 @@ const Index = () => {
           {/* Drivers View */}
           {activeView === "drivers" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
                 Devenez un <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Chauffeur Indépendant</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
                 Profil automatique, clients privés, zéro commission
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {driverFeatures.map((feature, index) => (
                   <Card 
                     key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50"
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
                   >
                     <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
                       <feature.icon className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
                   </Card>
                 ))}
               </div>
@@ -288,26 +288,26 @@ const Index = () => {
       </section>
 
       {/* Platform Overview */}
-      <section className="py-20 bg-secondary/20">
+      <section className="py-20 bg-[#0f1e35]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <Badge className="mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0">
               ✨ Zéro commission • Contrôle total
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight text-white">
               La plateforme pour les
               <br />
-              <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">chauffeurs indépendants</span>
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">chauffeurs indépendants</span>
               <br />
-              et les <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">clients engagés</span>
+              et les <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">clients engagés</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Une communauté où les <span className="text-purple-500 font-semibold">chauffeurs VTC reprennent leur indépendance</span> et où les <span className="text-green-500 font-semibold">clients trouvent des professionnels de confiance</span>. Sans intermédiaire, sans commission.
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Une communauté où les <span className="text-purple-400 font-semibold">chauffeurs VTC reprennent leur indépendance</span> et où les <span className="text-green-400 font-semibold">clients trouvent des professionnels de confiance</span>. Sans intermédiaire, sans commission.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
               <div className="relative inline-block mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
                   <Search className="w-10 h-10 text-white" />
@@ -316,8 +316,8 @@ const Index = () => {
                   Populaire
                 </Badge>
               </div>
-              <h3 className="text-2xl font-bold mb-3">Trouver un Chauffeur</h3>
-              <p className="text-muted-foreground mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-white">Trouver un Chauffeur</h3>
+              <p className="text-gray-400 mb-6">
                 Des chauffeurs professionnels à votre service
               </p>
               <Link to="/chauffeurs">
@@ -328,12 +328,12 @@ const Index = () => {
               </Link>
             </Card>
 
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-6">
                 <Car className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Je suis Chauffeur</h3>
-              <p className="text-muted-foreground mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-white">Je suis Chauffeur</h3>
+              <p className="text-gray-400 mb-6">
                 Rejoignez la communauté des chauffeurs indépendants
               </p>
               <Link to="/devenir-chauffeur">
@@ -344,12 +344,12 @@ const Index = () => {
               </Link>
             </Card>
 
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-card/50 backdrop-blur-sm">
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-white/5 backdrop-blur-sm border-white/10">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-6">
                 <ArrowRight className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Se Connecter</h3>
-              <p className="text-muted-foreground mb-6">
+              <h3 className="text-2xl font-bold mb-3 text-white">Se Connecter</h3>
+              <p className="text-gray-400 mb-6">
                 Accédez à votre espace personnel
               </p>
               <Link to="/login">
@@ -364,16 +364,16 @@ const Index = () => {
       </section>
 
       {/* For Clients Section */}
-      <section className="py-20 bg-gradient-to-b from-background to-secondary/10">
+      <section className="py-20 bg-[#1a2942]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4 border-pink-500 text-pink-500">
               Pour les Clients
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
               Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Des professionnels indépendants, des tarifs transparents
             </p>
           </div>
@@ -382,14 +382,14 @@ const Index = () => {
             {clientFeatures.map((feature, index) => (
               <Card 
                 key={index} 
-                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 animate-fade-in"
+                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50 animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
                   <feature.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
               </Card>
             ))}
           </div>
@@ -413,10 +413,10 @@ const Index = () => {
             <Badge variant="outline" className="mb-4 border-blue-500 text-blue-500">
               Pour les Chauffeurs
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Devenez un <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Chauffeur Indépendant</span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+              Devenez un <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Chauffeur Indépendant</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Profil automatique, clients privés, zéro commission
             </p>
           </div>
@@ -425,14 +425,14 @@ const Index = () => {
             {driverFeatures.map((feature, index) => (
               <Card 
                 key={index} 
-                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 animate-fade-in"
+                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50 animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
                   <feature.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
               </Card>
             ))}
           </div>
@@ -450,7 +450,7 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600">
+      <section className="py-20 bg-gradient-to-r from-blue-900/50 to-purple-900/50">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
             Prêt à commencer ?
@@ -476,7 +476,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border bg-card">
+      <footer className="py-12 border-t border-white/10 bg-black">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -484,23 +484,23 @@ const Index = () => {
                 <div className="w-8 h-8 bg-gradient-premium rounded-lg flex items-center justify-center">
                   <Car className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-xl font-bold">SoloCab</span>
+                <span className="text-xl font-bold text-white">SoloCab</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-400">
                 La plateforme pour les chauffeurs indépendants et les clients engagés
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Chauffeurs</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-4 text-white">Chauffeurs</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <Link to="/devenir-chauffeur" className="hover:text-foreground transition-colors">
+                  <Link to="/chauffeurs" className="hover:text-white transition-colors">
                     Devenir chauffeur
                   </Link>
                 </li>
                 <li>
-                  <Link to="/login" className="hover:text-foreground transition-colors">
+                  <Link to="/login" className="hover:text-white transition-colors">
                     Connexion
                   </Link>
                 </li>
@@ -508,10 +508,10 @@ const Index = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Clients</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-4 text-white">Clients</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <Link to="/chauffeurs" className="hover:text-foreground transition-colors">
+                  <Link to="/chauffeurs" className="hover:text-white transition-colors">
                     Trouver un chauffeur
                   </Link>
                 </li>
@@ -519,25 +519,25 @@ const Index = () => {
             </div>
 
             <div>
-              <h4 className="font-bold mb-4">Légal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-bold mb-4 text-white">Légal</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Mentions légales
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Politique de confidentialité
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     CGU
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Cookies
                   </a>
                 </li>
@@ -545,7 +545,7 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
+          <div className="pt-8 border-t border-white/10 text-center text-sm text-gray-400">
             <p>&copy; {new Date().getFullYear()} SoloCab. Tous droits réservés.</p>
           </div>
         </div>
