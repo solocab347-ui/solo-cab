@@ -2,11 +2,23 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, XCircle, MessageSquare, Car, Search } from "lucide-react";
+import { 
+  MapPin, 
+  Calendar, 
+  Users, 
+  XCircle, 
+  MessageSquare, 
+  Car, 
+  Clock, 
+  CheckCircle, 
+  FileText,
+  Download,
+  Mail,
+  Share2
+} from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -19,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import jsPDF from "jspdf";
 
 interface ClientCoursesListProps {
   clientId: string;
@@ -26,37 +39,13 @@ interface ClientCoursesListProps {
 
 const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
   const [courses, setCourses] = useState<any[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCourses();
     setupRealtimeSubscription();
   }, [clientId]);
-
-  useEffect(() => {
-    let filtered = courses;
-
-    // Filter by status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((course) => course.status === statusFilter);
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (course) =>
-          course.course_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          course.pickup_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          course.destination_address.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredCourses(filtered);
-  }, [searchTerm, statusFilter, courses]);
 
   const fetchCourses = async () => {
     try {
@@ -66,9 +55,29 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
           *,
           drivers!inner(
             company_name,
+            company_address,
+            siret,
             vehicle_model,
             vehicle_color,
             profiles:user_id(full_name, phone, profile_photo_url)
+          ),
+          devis(
+            id,
+            quote_number,
+            amount,
+            status,
+            base_price,
+            distance_price,
+            time_price,
+            valid_until
+          ),
+          factures(
+            id,
+            invoice_number,
+            invoice_number_generated,
+            amount,
+            payment_status,
+            payment_method
           )
         `)
         .eq("client_id", clientId)
@@ -76,7 +85,6 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
 
       if (error) throw error;
       setCourses(data || []);
-      setFilteredCourses(data || []);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -135,7 +143,7 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
 
     const labels = {
       pending: "En attente",
-      accepted: "Acceptée",
+      accepted: "Confirmée",
       in_progress: "En cours",
       completed: "Terminée",
       cancelled: "Annulée",
@@ -148,6 +156,253 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
     );
   };
 
+  const handleDownloadDevis = (devis: any, course: any) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    
+    // En-tête bleu
+    doc.setFillColor(0, 102, 204);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setFontSize(28);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text("DEVIS", pageWidth / 2, 18, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Référence: ${devis.quote_number}`, pageWidth / 2, 26, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    
+    let yPos = 50;
+    
+    // Info chauffeur
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, yPos);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 5;
+    
+    const driverName = course.drivers?.profiles?.full_name || "N/A";
+    doc.text(driverName, 20, yPos);
+    yPos += 4;
+    
+    if (course.drivers?.company_name) {
+      doc.text(course.drivers.company_name, 20, yPos);
+      yPos += 4;
+    }
+    
+    // Détails course
+    yPos = 95;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.rect(15, yPos, pageWidth - 30, 40);
+    
+    yPos += 7;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 20, yPos);
+    
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 6;
+    
+    doc.text("Départ:", 20, yPos);
+    doc.text(course.pickup_address, 45, yPos);
+    yPos += 4;
+    
+    doc.text("Arrivée:", 20, yPos);
+    doc.text(course.destination_address, 45, yPos);
+    yPos += 4;
+    
+    doc.text("Date:", 20, yPos);
+    doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
+    
+    // Tarification
+    yPos = 155;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("TARIFICATION", 20, yPos);
+    
+    const totalHT = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
+    const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
+    const tvaAmount = totalHT * (tvaRate / 100);
+    const totalTTC = totalHT + tvaAmount;
+    
+    yPos += 8;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    
+    doc.text("Montant HT", 20, yPos);
+    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    
+    yPos += 6;
+    doc.text(`TVA (${tvaRate}%)`, 20, yPos);
+    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    
+    yPos += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, yPos, pageWidth - 15, yPos);
+    
+    yPos += 7;
+    doc.setFillColor(0, 102, 204);
+    doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text("TOTAL TTC", 20, yPos + 2);
+    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+    
+    doc.save(`devis-${devis.quote_number}.pdf`);
+    toast.success("Devis téléchargé");
+  };
+
+  const handleDownloadFacture = (facture: any, course: any) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    
+    // En-tête vert pour facture payée, gris pour impayée
+    const isPaid = facture.payment_status === 'paid';
+    if (isPaid) {
+      doc.setFillColor(34, 197, 94); // green
+    } else {
+      doc.setFillColor(148, 163, 184); // grey
+    }
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setFontSize(28);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text("FACTURE", pageWidth / 2, 18, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Numéro: ${facture.invoice_number_generated || facture.invoice_number}`, pageWidth / 2, 26, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+    
+    let yPos = 50;
+    
+    // Info chauffeur
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, yPos);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 5;
+    
+    const driverName = course.drivers?.profiles?.full_name || "N/A";
+    doc.text(driverName, 20, yPos);
+    yPos += 4;
+    
+    if (course.drivers?.company_name) {
+      doc.text(course.drivers.company_name, 20, yPos);
+      yPos += 4;
+    }
+    
+    // Détails course
+    yPos = 95;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.rect(15, yPos, pageWidth - 30, 40);
+    
+    yPos += 7;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 20, yPos);
+    
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    yPos += 6;
+    
+    doc.text("Départ:", 20, yPos);
+    doc.text(course.pickup_address, 45, yPos);
+    yPos += 4;
+    
+    doc.text("Arrivée:", 20, yPos);
+    doc.text(course.destination_address, 45, yPos);
+    yPos += 4;
+    
+    doc.text("Date:", 20, yPos);
+    doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
+    
+    // Montant
+    yPos = 155;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("MONTANT", 20, yPos);
+    
+    yPos += 8;
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    if (isPaid) {
+      doc.setFillColor(34, 197, 94);
+    } else {
+      doc.setFillColor(148, 163, 184);
+    }
+    doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text("TOTAL TTC", 20, yPos + 2);
+    doc.text(`${facture.amount.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+    
+    doc.save(`facture-${facture.invoice_number_generated || facture.invoice_number}.pdf`);
+    toast.success("Facture téléchargée");
+  };
+
+  const handleShareDevis = (devis: any, course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const message = `Devis ${devis.quote_number}\n` +
+                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
+                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${devis.amount.toFixed(2)}€`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
+  };
+
+  const handleShareFacture = (facture: any, course: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number}\n` +
+                   `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
+                   `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
+                   `Montant: ${facture.amount.toFixed(2)}€`;
+
+    const encodedMessage = encodeURIComponent(message);
+
+    switch (method) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.open(`mailto:?subject=Facture ${facture.invoice_number_generated || facture.invoice_number}&body=${encodedMessage}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
+    }
+    toast.success("Partage ouvert");
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -156,175 +411,281 @@ const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
     );
   }
 
-  const stats = {
-    total: courses.length,
-    pending: courses.filter((c) => c.status === "pending").length,
-    completed: courses.filter((c) => c.status === "completed").length,
-    cancelled: courses.filter((c) => c.status === "cancelled").length,
+  // Filtrer les courses par statut
+  const pendingCourses = courses.filter((c) => c.status === "pending");
+  const confirmedCourses = courses.filter((c) => c.status === "accepted" || c.status === "in_progress");
+  const completedCourses = courses.filter((c) => c.status === "completed");
+  const cancelledCourses = courses.filter((c) => c.status === "cancelled");
+
+  const renderCourseCard = (course: any) => {
+    const devis = course.devis?.[0];
+    const facture = course.factures?.[0];
+
+    return (
+      <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {course.drivers?.profiles?.profile_photo_url ? (
+              <img
+                src={course.drivers.profiles.profile_photo_url}
+                alt={course.drivers.profiles.full_name}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
+                <Car className="w-6 h-6 text-primary-foreground" />
+              </div>
+            )}
+            <div>
+              <h3 className="font-bold">{course.drivers?.profiles?.full_name}</h3>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{course.drivers?.vehicle_model}</span>
+                {course.course_number && (
+                  <>
+                    <span>•</span>
+                    <span className="text-premium">{course.course_number}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          {getStatusBadge(course.status)}
+        </div>
+
+        <div className="space-y-3 mb-4">
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium">Départ</p>
+              <p className="text-muted-foreground">{course.pickup_address}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium">Arrivée</p>
+              <p className="text-muted-foreground">{course.destination_address}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
+                locale: fr,
+              })}
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {course.passengers_count} passager{course.passengers_count > 1 ? "s" : ""}
+            </div>
+          </div>
+
+          {course.notes && (
+            <div className="text-sm bg-secondary p-3 rounded-lg">
+              <p className="font-medium mb-1">Notes :</p>
+              <p className="text-muted-foreground">{course.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Afficher devis si disponible */}
+        {devis && (
+          <div className="p-3 bg-orange-500/10 rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Devis {devis.quote_number}</span>
+              <span className="text-2xl font-bold text-orange-500">{devis.amount.toFixed(2)}€</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadDevis(devis, course)}
+                className="flex-1"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleShareDevis(devis, course, 'whatsapp')}
+                className="flex-1"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleShareDevis(devis, course, 'email')}
+                className="flex-1"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Email
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Afficher facture si disponible */}
+        {facture && (
+          <div className="p-3 bg-green-500/10 rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Facture {facture.invoice_number_generated || facture.invoice_number}</span>
+              <span className="text-2xl font-bold text-green-500">{facture.amount.toFixed(2)}€</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadFacture(facture, course)}
+                className="flex-1"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleShareFacture(facture, course, 'whatsapp')}
+                className="flex-1"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleShareFacture(facture, course, 'email')}
+                className="flex-1"
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Email
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {course.status === "pending" && (
+          <div className="flex gap-3 pt-4 border-t border-border">
+            <Button
+              onClick={() => toast.info("Messagerie disponible dans l'onglet Messages")}
+              variant="outline"
+              className="flex-1"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Contacter
+            </Button>
+            <Button
+              onClick={() => setCancelCourseId(course.id)}
+              variant="outline"
+              className="flex-1 text-destructive hover:text-destructive"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              Annuler
+            </Button>
+          </div>
+        )}
+      </Card>
+    );
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="text-center">
-            <h3 className="text-3xl font-bold text-premium">{stats.total}</h3>
-            <p className="text-sm text-muted-foreground">Courses totales</p>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-center">
-            <h3 className="text-3xl font-bold text-yellow-500">{stats.pending}</h3>
-            <p className="text-sm text-muted-foreground">En attente</p>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-center">
-            <h3 className="text-3xl font-bold text-green-500">{stats.completed}</h3>
-            <p className="text-sm text-muted-foreground">Terminées</p>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-center">
-            <h3 className="text-3xl font-bold text-muted-foreground">{stats.cancelled}</h3>
-            <p className="text-sm text-muted-foreground">Annulées</p>
-          </div>
-        </Card>
-      </div>
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger 
+            value="pending"
+            className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-500"
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            En attente
+            <Badge className="ml-2 bg-yellow-500/30">{pendingCourses.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="confirmed"
+            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Confirmée
+            <Badge className="ml-2 bg-blue-500/30">{confirmedCourses.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="completed"
+            className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Terminée
+            <Badge className="ml-2 bg-green-500/30">{completedCourses.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="cancelled"
+            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500"
+          >
+            <XCircle className="w-4 h-4 mr-2" />
+            Refusé
+            <Badge className="ml-2 bg-red-500/30">{cancelledCourses.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par adresse ou numéro..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="accepted">Acceptées</SelectItem>
-            <SelectItem value="in_progress">En cours</SelectItem>
-            <SelectItem value="completed">Terminées</SelectItem>
-            <SelectItem value="cancelled">Annulées</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Courses List */}
-      {filteredCourses.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Car className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Aucune course</h3>
-          <p className="text-muted-foreground">
-            {searchTerm || statusFilter !== "all"
-              ? "Aucune course ne correspond à vos critères"
-              : "Vos courses apparaîtront ici après réservation"}
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {course.drivers?.profiles?.profile_photo_url ? (
-                    <img
-                      src={course.drivers.profiles.profile_photo_url}
-                      alt={course.drivers.profiles.full_name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                      <Car className="w-6 h-6 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-bold">{course.drivers?.profiles?.full_name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{course.drivers?.vehicle_model}</span>
-                      {course.course_number && (
-                        <>
-                          <span>•</span>
-                          <span className="text-premium">{course.course_number}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {getStatusBadge(course.status)}
-              </div>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-premium mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium">Départ</p>
-                    <p className="text-muted-foreground">{course.pickup_address}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium">Arrivée</p>
-                    <p className="text-muted-foreground">{course.destination_address}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
-                      locale: fr,
-                    })}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {course.passengers_count} passager{course.passengers_count > 1 ? "s" : ""}
-                  </div>
-                </div>
-
-                {course.notes && (
-                  <div className="text-sm bg-secondary p-3 rounded-lg">
-                    <p className="font-medium mb-1">Notes :</p>
-                    <p className="text-muted-foreground">{course.notes}</p>
-                  </div>
-                )}
-              </div>
-
-              {course.status === "pending" && (
-                <div className="flex gap-3 pt-4 border-t border-border">
-                  <Button
-                    onClick={() => toast.info("Messagerie en cours de développement")}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    Contacter
-                  </Button>
-                  <Button
-                    onClick={() => setCancelCourseId(course.id)}
-                    variant="outline"
-                    className="flex-1 text-destructive hover:text-destructive"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Annuler
-                  </Button>
-                </div>
-              )}
+        <TabsContent value="pending" className="space-y-4 mt-6">
+          {pendingCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course en attente</h3>
+              <p className="text-muted-foreground">
+                Vos demandes de courses apparaîtront ici
+              </p>
             </Card>
-          ))}
-        </div>
-      )}
+          ) : (
+            pendingCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="confirmed" className="space-y-4 mt-6">
+          {confirmedCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course confirmée</h3>
+              <p className="text-muted-foreground">
+                Vos courses confirmées apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            confirmedCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="completed" className="space-y-4 mt-6">
+          {completedCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course terminée</h3>
+              <p className="text-muted-foreground">
+                Vos courses terminées apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            completedCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="cancelled" className="space-y-4 mt-6">
+          {cancelledCourses.length === 0 ? (
+            <Card className="p-8 text-center">
+              <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune course annulée</h3>
+              <p className="text-muted-foreground">
+                Vos courses annulées apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            cancelledCourses.map(renderCourseCard)
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={!!cancelCourseId} onOpenChange={(open) => !open && setCancelCourseId(null)}>
