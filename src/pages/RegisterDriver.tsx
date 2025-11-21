@@ -98,7 +98,25 @@ const RegisterDriver = () => {
       // Attendre que le profil soit créé
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Créer le profil chauffeur (status: pending, subscription_paid: false)
+      // Attendre que les triggers de base se finalisent
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Ajouter le rôle driver AVANT de créer le profil driver
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "driver",
+        });
+
+      if (roleError) {
+        console.error("❌ Erreur ajout rôle:", roleError);
+        throw new Error("Impossible d'ajouter le rôle driver");
+      }
+
+      console.log("✅ Rôle driver ajouté");
+
+      // Créer le profil chauffeur avec tous les champs obligatoires
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
@@ -113,23 +131,18 @@ const RegisterDriver = () => {
           per_km_rate: 0,
           hourly_rate: 0,
           subscription_paid: false,
+          public_profile_enabled: false,
         })
         .select()
         .single();
 
-      if (driverError) throw driverError;
+      if (driverError) {
+        console.error("❌ Erreur création driver:", driverError);
+        throw new Error("Impossible de créer le profil chauffeur");
+      }
+
       console.log("✅ Profil chauffeur créé:", driverData.id);
       setDriverId(driverData.id);
-
-      // Ajouter le rôle driver
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: "driver",
-        });
-
-      if (roleError) throw roleError;
 
       toast.success("Compte créé avec succès !");
       setCurrentStep(2);
