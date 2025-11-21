@@ -64,6 +64,9 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
             base_price,
             distance_price,
             time_price
+          ),
+          clients!inner(
+            profiles:user_id(full_name, phone, email)
           )
         `)
         .eq("client_id", clientId)
@@ -120,10 +123,23 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
       doc.text(addressLines, 20, 91);
     }
 
-    // Client info (right side) - empty for client version, just label
+    // Client info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", 145, 65);
+    doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const clientName = facture.clients?.profiles?.full_name || "N/A";
+    doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+    
+    if (facture.clients?.profiles?.email) {
+      doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+    }
+    
+    if (facture.clients?.profiles?.phone) {
+      doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    }
 
     // Service details box
     doc.setDrawColor(200, 200, 200);

@@ -49,6 +49,9 @@ const DevisList = ({ clientId }: DevisListProps) => {
             company_address,
             siret,
             profiles:user_id(full_name, phone, profile_photo_url)
+          ),
+          clients!inner(
+            profiles:user_id(full_name, phone, email)
           )
         `)
         .eq("client_id", clientId)
@@ -274,7 +277,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
     doc.text(`Date: ${format(new Date(devis.created_at), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 32, { align: "center" });
     doc.setTextColor(0, 0, 0);
     
-    // Informations Chauffeur (à gauche) - CLIENT VERSION (moins de détails)
+    // Informations Chauffeur (à gauche)
     let yPos = 50;
     
     doc.setFontSize(10);
@@ -308,6 +311,28 @@ const DevisList = ({ clientId }: DevisListProps) => {
     }
     if (devis.drivers?.profiles?.phone) {
       doc.text(`Tél: ${devis.drivers.profiles.phone}`, 20, yPos);
+    }
+    
+    // Informations Client (à droite)
+    let clientYPos = 50;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("CLIENT", pageWidth - 20, clientYPos, { align: 'right' });
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    clientYPos += 5;
+    
+    const clientName = devis.clients?.profiles?.full_name || "N/A";
+    doc.text(clientName, pageWidth - 20, clientYPos, { align: 'right' });
+    clientYPos += 4;
+    
+    if (devis.clients?.profiles?.email) {
+      doc.text(devis.clients.profiles.email, pageWidth - 20, clientYPos, { align: 'right' });
+      clientYPos += 4;
+    }
+    
+    if (devis.clients?.profiles?.phone) {
+      doc.text(`Tél: ${devis.clients.profiles.phone}`, pageWidth - 20, clientYPos, { align: 'right' });
     }
     
     // Détails de la course (encadré)
@@ -385,11 +410,16 @@ const DevisList = ({ clientId }: DevisListProps) => {
     doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
     doc.setTextColor(0, 0, 0);
     
-    // Validité
+    // Validité (encadré avec mention 7 jours)
     yPos += 12;
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'italic');
-    doc.text(`Devis valable jusqu'au ${format(new Date(devis.valid_until), "dd/MM/yyyy", { locale: fr })}`, 20, yPos);
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(1);
+    doc.rect(15, yPos - 3, pageWidth - 30, 10);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 102, 204);
+    doc.text(`⏰ Devis valable 7 jours - jusqu'au ${format(new Date(devis.valid_until), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, yPos + 2, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
     
     // Pied de page
     doc.setFillColor(245, 245, 245);
