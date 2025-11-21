@@ -20,8 +20,10 @@ const ClientProfile = () => {
     email: "",
     phone: "",
     address: "",
-    profile_photo_url: "",
   });
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
@@ -71,8 +73,7 @@ const ClientProfile = () => {
         full_name: profileData.full_name || "",
         email: profileData.email || "",
         phone: profileData.phone || "",
-        address: "",
-        profile_photo_url: profileData.profile_photo_url || "",
+        address: profileData.address || "",
       });
     } catch (error: any) {
       console.error("Error fetching profile:", error);
@@ -82,24 +83,99 @@ const ClientProfile = () => {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error("Veuillez sélectionner une image");
+        return;
+      }
+      
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("L'image doit faire moins de 5MB");
+        return;
+      }
+      
+      setPhotoFile(file);
+    }
+  };
+
+  const uploadPhoto = async () => {
+    if (!photoFile) return null;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Non authentifié");
+
+    setUploading(true);
+    try {
+      // Delete old photo if exists
+      if (profile.profile_photo_url) {
+        const oldPath = profile.profile_photo_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('profile-photos')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new photo
+      const fileExt = photoFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(filePath, photoFile);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      toast.error("Erreur lors du téléchargement de la photo");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
+      // Upload photo if selected
+      let photoUrl = profile.profile_photo_url;
+      if (photoFile) {
+        const uploadedUrl = await uploadPhoto();
+        if (uploadedUrl) {
+          photoUrl = uploadedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: formData.full_name,
           phone: formData.phone,
-          profile_photo_url: formData.profile_photo_url,
+          address: formData.address,
+          profile_photo_url: photoUrl,
         })
         .eq("id", user.id);
 
       if (error) throw error;
 
       toast.success("Profil mis à jour avec succès");
+      setPhotoFile(null);
       fetchProfileData();
     } catch (error: any) {
       console.error("Error updating profile:", error);
@@ -205,41 +281,60 @@ const ClientProfile = () => {
           </div>
 
           <div>
-            <Label htmlFor="address">Adresse</Label>
+            <Label htmlFor="address" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              <span>Adresse</span>
+              <span className="text-xs text-muted-foreground">(Recommandé pour créer vos courses rapidement)</span>
+            </Label>
             <Textarea
               id="address"
               value={formData.address}
               onChange={(e) =>
                 setFormData({ ...formData, address: e.target.value })
               }
+              placeholder="Votre adresse complète..."
               rows={3}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              En enregistrant votre adresse, vous pourrez la sélectionner automatiquement lors de la création de courses
+            </p>
           </div>
 
           <div>
-            <Label htmlFor="profile_photo_url">URL Photo de profil</Label>
-            <Input
-              id="profile_photo_url"
-              type="url"
-              value={formData.profile_photo_url}
-              onChange={(e) =>
-                setFormData({ ...formData, profile_photo_url: e.target.value })
-              }
-              placeholder="https://..."
-            />
-            {formData.profile_photo_url && (
-              <div className="mt-2">
-                <img
-                  src={formData.profile_photo_url}
-                  alt="Aperçu"
-                  className="w-24 h-24 rounded-full object-cover"
-                />
-              </div>
-            )}
+            <Label htmlFor="photo" className="flex items-center gap-2">
+              <Camera className="w-4 h-4" />
+              <span>Photo de profil</span>
+            </Label>
+            <div className="space-y-3">
+              {(profile?.profile_photo_url || photoFile) && (
+                <div className="flex items-center gap-4">
+                  <img
+                    src={photoFile ? URL.createObjectURL(photoFile) : profile?.profile_photo_url}
+                    alt="Photo de profil"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                  />
+                  {photoFile && (
+                    <div className="text-sm text-muted-foreground">
+                      Nouvelle photo sélectionnée
+                    </div>
+                  )}
+                </div>
+              )}
+              <Input
+                id="photo"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="cursor-pointer"
+              />
+              <p className="text-xs text-muted-foreground">
+                Formats acceptés : JPG, PNG, WEBP. Taille max : 5MB
+              </p>
+            </div>
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="w-full">
-            {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+          <Button onClick={handleSave} disabled={saving || uploading} className="w-full">
+            {uploading ? "Téléchargement de la photo..." : saving ? "Enregistrement..." : "Enregistrer les modifications"}
           </Button>
         </div>
       </Card>

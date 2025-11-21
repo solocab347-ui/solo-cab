@@ -1,79 +1,139 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { QrCode, Camera } from "lucide-react";
-import { toast } from "sonner";
+import { Camera, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const ClientQRScanner = () => {
+  const [scanning, setScanning] = useState(false);
+  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
   const navigate = useNavigate();
-  const [qrCode, setQrCode] = useState("");
 
-  const handleScan = () => {
-    if (!qrCode.trim()) {
-      toast.error("Veuillez entrer un code QR");
-      return;
+  useEffect(() => {
+    return () => {
+      if (scanner) {
+        scanner.clear();
+      }
+    };
+  }, [scanner]);
+
+  const startScanning = () => {
+    setScanning(true);
+
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader",
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      },
+      false
+    );
+
+    html5QrcodeScanner.render(
+      (decodedText) => {
+        console.log("QR Code détecté:", decodedText);
+        
+        // Extraire l'ID du QR code depuis l'URL
+        try {
+          const url = new URL(decodedText);
+          const qrCodeId = url.searchParams.get("qr");
+          
+          if (qrCodeId) {
+            // Rediriger vers la page d'inscription avec le QR code
+            navigate(`/register-client-qr?qr=${qrCodeId}`);
+            toast.success("QR code scanné avec succès !");
+          } else {
+            toast.error("QR code invalide");
+          }
+        } catch (error) {
+          console.error("Erreur de parsing URL:", error);
+          toast.error("Format de QR code non reconnu");
+        }
+
+        // Arrêter le scanner
+        html5QrcodeScanner.clear();
+        setScanning(false);
+        setScanner(null);
+      },
+      (errorMessage) => {
+        // Ignorer les erreurs de scan continues
+        console.debug("Scan error:", errorMessage);
+      }
+    );
+
+    setScanner(html5QrcodeScanner);
+  };
+
+  const stopScanning = () => {
+    if (scanner) {
+      scanner.clear();
+      setScanner(null);
     }
-
-    // Redirect to QR registration page with the code
-    navigate(`/register-client-qr?code=${qrCode}`);
+    setScanning(false);
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="p-8 text-center">
-        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-premium rounded-full flex items-center justify-center">
-          <QrCode className="w-10 h-10 text-premium-foreground" />
-        </div>
-        
+    <div className="space-y-6">
+      <div>
         <h2 className="text-2xl font-bold mb-2">Scanner un QR Code</h2>
-        <p className="text-muted-foreground mb-6">
+        <p className="text-muted-foreground">
           Scannez le QR code d'un chauffeur pour vous inscrire avec lui
         </p>
+      </div>
 
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Code QR du chauffeur"
-              value={qrCode}
-              onChange={(e) => setQrCode(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={handleScan}>
-              Scanner
+      {!scanning ? (
+        <Card className="p-8 text-center">
+          <Camera className="w-16 h-16 text-primary mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2">Démarrer le scan</h3>
+          <p className="text-muted-foreground mb-6">
+            Utilisez votre caméra pour scanner le QR code d'un chauffeur
+          </p>
+          <Button
+            onClick={startScanning}
+            className="bg-gradient-premium hover:opacity-90"
+            size="lg"
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Ouvrir la caméra
+          </Button>
+        </Card>
+      ) : (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Scan en cours...</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={stopScanning}
+              className="text-destructive"
+            >
+              <X className="w-5 h-5" />
             </Button>
           </div>
+          
+          <div id="qr-reader" className="w-full" />
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                ou
-              </span>
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Placez le QR code devant la caméra</span>
             </div>
           </div>
+        </Card>
+      )}
 
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => toast.info("Fonctionnalité à venir")}
-          >
-            <Camera className="w-4 h-4 mr-2" />
-            Utiliser la caméra
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-6">
-        <h3 className="font-semibold mb-3">Comment ça marche ?</h3>
-        <ol className="space-y-2 text-sm text-muted-foreground">
-          <li>1. Demandez le QR code à votre chauffeur</li>
-          <li>2. Scannez-le ou entrez le code manuellement</li>
-          <li>3. Complétez votre inscription</li>
-          <li>4. Commencez à réserver vos courses !</li>
+      <Card className="p-4 bg-blue-500/10 border-blue-500/20">
+        <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">
+          Comment utiliser le scanner ?
+        </h4>
+        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+          <li>Cliquez sur "Ouvrir la caméra"</li>
+          <li>Autorisez l'accès à votre caméra</li>
+          <li>Placez le QR code du chauffeur devant la caméra</li>
+          <li>Le scan se fera automatiquement</li>
         </ol>
       </Card>
     </div>

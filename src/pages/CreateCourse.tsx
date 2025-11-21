@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,47 @@ const CreateCourse = () => {
   const [notes, setNotes] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [availablePromos, setAvailablePromos] = useState<any[]>([]);
+  const [clientAddress, setClientAddress] = useState("");
+  const [useAddressPickup, setUseAddressPickup] = useState(false);
+  const [useAddressDestination, setUseAddressDestination] = useState(false);
+
+  // Fetch client address on mount
+  useEffect(() => {
+    const fetchClientAddress = async () => {
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("address")
+        .eq("id", user.id)
+        .single();
+
+      if (profileData?.address) {
+        setClientAddress(profileData.address);
+      }
+    };
+
+    fetchClientAddress();
+  }, [user]);
+
+  // Apply client address when checkbox is checked
+  useEffect(() => {
+    if (useAddressPickup && clientAddress) {
+      setPickupAddress(clientAddress);
+      // Note: coordinates would need geocoding for the address
+    } else if (!useAddressPickup) {
+      setPickupAddress("");
+    }
+  }, [useAddressPickup, clientAddress]);
+
+  useEffect(() => {
+    if (useAddressDestination && clientAddress) {
+      setDestinationAddress(clientAddress);
+      // Note: coordinates would need geocoding for the address
+    } else if (!useAddressDestination) {
+      setDestinationAddress("");
+    }
+  }, [useAddressDestination, clientAddress]);
 
   // Fetch driver's max_passengers and available promos on component mount
   useEffect(() => {
@@ -314,13 +356,27 @@ const CreateCourse = () => {
                   <MapPin className="w-4 h-4 text-premium" />
                   Adresse de départ *
                 </Label>
+                {clientAddress && (
+                  <div className="flex items-center gap-2 mb-2 p-3 bg-muted/50 rounded-lg">
+                    <Checkbox
+                      id="use-address-pickup"
+                      checked={useAddressPickup}
+                      onCheckedChange={(checked) => setUseAddressPickup(checked as boolean)}
+                    />
+                    <label htmlFor="use-address-pickup" className="text-sm cursor-pointer font-medium">
+                      À partir de mon adresse
+                    </label>
+                  </div>
+                )}
                 <AddressAutocomplete
                   value={pickupAddress}
                   onChange={(address, coords) => {
                     setPickupAddress(address);
                     if (coords) setPickupCoordinates(coords);
+                    setUseAddressPickup(false);
                   }}
                   placeholder="Commencez à taper : 123 Rue de la Paix, Paris..."
+                  disabled={useAddressPickup}
                 />
               </div>
 
@@ -329,13 +385,27 @@ const CreateCourse = () => {
                   <MapPin className="w-4 h-4 text-destructive" />
                   Adresse d'arrivée *
                 </Label>
+                {clientAddress && (
+                  <div className="flex items-center gap-2 mb-2 p-3 bg-muted/50 rounded-lg">
+                    <Checkbox
+                      id="use-address-destination"
+                      checked={useAddressDestination}
+                      onCheckedChange={(checked) => setUseAddressDestination(checked as boolean)}
+                    />
+                    <label htmlFor="use-address-destination" className="text-sm cursor-pointer font-medium">
+                      Rentrer à mon adresse
+                    </label>
+                  </div>
+                )}
                 <AddressAutocomplete
                   value={destinationAddress}
                   onChange={(address, coords) => {
                     setDestinationAddress(address);
                     if (coords) setDestinationCoordinates(coords);
+                    setUseAddressDestination(false);
                   }}
                   placeholder="Commencez à taper : 456 Avenue des Champs, Paris..."
+                  disabled={useAddressDestination}
                 />
               </div>
             </div>
