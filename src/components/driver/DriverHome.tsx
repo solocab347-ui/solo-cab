@@ -135,46 +135,46 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-trust hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="p-6 sm:p-8 bg-gradient-success hover:shadow-success hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => navigate("/driver/create-course")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-trust-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus className="w-7 h-7 sm:w-8 sm:h-8 text-trust-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-trust-foreground mb-1">Nouvelle Course</h3>
-                <p className="text-sm text-trust-foreground/70">Créer pour un client</p>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Nouvelle Course</h3>
+                <p className="text-sm text-white/80">Créer pour un client</p>
               </div>
             </div>
           </Card>
 
           {/* Mon QR Code */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-magenta hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="p-6 sm:p-8 bg-gradient-independence hover:shadow-premium hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => onTabChange("qrcode")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-magenta-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <QrCode className="w-7 h-7 sm:w-8 sm:h-8 text-magenta-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <QrCode className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-magenta-foreground">Mon QR Code</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white">Mon QR Code</h3>
               </div>
             </div>
           </Card>
 
           {/* Calculatrice */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-brown hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="p-6 sm:p-8 bg-gradient-renewal hover:shadow-trust hover:scale-[1.02] transition-all cursor-pointer border-0 group"
             onClick={() => onTabChange("calculator")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-brown-foreground/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Calculator className="w-7 h-7 sm:w-8 sm:h-8 text-brown-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Calculator className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-brown-foreground">Calculatrice</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-white">Calculatrice</h3>
               </div>
             </div>
           </Card>
@@ -186,14 +186,14 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         <h2 className="text-lg sm:text-xl font-bold mb-4">Aujourd'hui</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Courses */}
-          <Card className="p-6 bg-gradient-trust hover:shadow-lg transition-all border-0">
+          <Card className="p-6 bg-gradient-trust hover:shadow-trust transition-all border-0">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-trust-foreground/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Car className="w-6 h-6 text-trust-foreground" />
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Car className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-trust-foreground/80 mb-1">Courses</p>
-                <h3 className="text-3xl sm:text-4xl font-bold text-trust-foreground truncate">
+                <p className="text-sm text-white/80 mb-1">Courses</p>
+                <h3 className="text-3xl sm:text-4xl font-bold text-white truncate">
                   {loading ? "..." : stats.todayCourses}
                 </h3>
               </div>
@@ -201,14 +201,14 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           </Card>
 
           {/* Revenue */}
-          <Card className="p-6 bg-gradient-warning hover:shadow-lg transition-all border-0">
+          <Card className="p-6 bg-gradient-premium hover:shadow-premium transition-all border-0">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-warning-foreground/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-6 h-6 text-warning-foreground" />
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-warning-foreground/80 mb-1">Revenus</p>
-                <h3 className="text-3xl sm:text-4xl font-bold text-warning-foreground truncate">
+                <p className="text-sm text-white/80 mb-1">Revenus</p>
+                <h3 className="text-3xl sm:text-4xl font-bold text-white truncate">
                   {loading ? "..." : `${stats.todayRevenue.toFixed(0)}€`}
                 </h3>
               </div>
@@ -222,61 +222,61 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         <h2 className="text-lg sm:text-xl font-bold mb-4">Ce mois</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {/* Clients */}
-          <Card className="p-4 sm:p-6 bg-gradient-trust hover:shadow-lg transition-all border-0">
+          <Card className="p-4 sm:p-6 bg-gradient-freedom hover:shadow-success transition-all border-0">
             <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-trust-foreground/10 rounded-xl flex items-center justify-center">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-trust-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-trust-foreground">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white">
                   {loading ? "..." : stats.monthClients}
                 </h3>
-                <p className="text-xs sm:text-sm text-trust-foreground/80 mt-1">Clients</p>
+                <p className="text-xs sm:text-sm text-white/80 mt-1">Clients</p>
               </div>
             </div>
           </Card>
 
           {/* Courses */}
-          <Card className="p-4 sm:p-6 bg-gradient-success hover:shadow-lg transition-all border-0">
+          <Card className="p-4 sm:p-6 bg-gradient-independence hover:shadow-trust transition-all border-0">
             <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-success-foreground/10 rounded-xl flex items-center justify-center">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-success-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-success-foreground">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white">
                   {loading ? "..." : stats.monthCourses}
                 </h3>
-                <p className="text-xs sm:text-sm text-success-foreground/80 mt-1">Courses</p>
+                <p className="text-xs sm:text-sm text-white/80 mt-1">Courses</p>
               </div>
             </div>
           </Card>
 
           {/* Terminées */}
-          <Card className="p-4 sm:p-6 bg-gradient-magenta hover:shadow-lg transition-all border-0">
+          <Card className="p-4 sm:p-6 bg-gradient-renewal hover:shadow-premium transition-all border-0">
             <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-magenta-foreground/10 rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-magenta-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-magenta-foreground">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white">
                   {loading ? "..." : stats.monthCompleted}
                 </h3>
-                <p className="text-xs sm:text-sm text-magenta-foreground/80 mt-1">Terminées</p>
+                <p className="text-xs sm:text-sm text-white/80 mt-1">Terminées</p>
               </div>
             </div>
           </Card>
 
           {/* CA Total */}
-          <Card className="p-4 sm:p-6 bg-gradient-warning hover:shadow-lg transition-all border-0">
+          <Card className="p-4 sm:p-6 bg-gradient-success hover:shadow-success transition-all border-0">
             <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-warning-foreground/10 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-warning-foreground" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-warning-foreground truncate w-full">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white truncate w-full">
                   {loading ? "..." : `${stats.monthRevenue.toFixed(0)}€`}
                 </h3>
-                <p className="text-xs sm:text-sm text-warning-foreground/80 mt-1">CA Total</p>
+                <p className="text-xs sm:text-sm text-white/80 mt-1">CA Total</p>
               </div>
             </div>
           </Card>

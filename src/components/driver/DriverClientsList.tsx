@@ -211,45 +211,45 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="p-4">
+        <Card className="p-4 bg-gradient-freedom border-0 shadow-success">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-premium-foreground" />
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold">{stats.total}</h3>
-              <p className="text-sm text-muted-foreground">Clients totaux</p>
+              <h3 className="text-2xl font-bold text-white">{stats.total}</h3>
+              <p className="text-sm text-white/80">Clients totaux</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-4 bg-gradient-independence border-0 shadow-trust">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-dark rounded-lg flex items-center justify-center">
-              <Crown className="w-5 h-5 text-primary-foreground" />
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Crown className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold">{stats.exclusive}</h3>
-              <p className="text-sm text-muted-foreground">Clients exclusifs</p>
+              <h3 className="text-2xl font-bold text-white">{stats.exclusive}</h3>
+              <p className="text-sm text-white/80">Clients exclusifs</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card className="p-4 bg-gradient-renewal border-0 shadow-premium">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-muted-foreground" />
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold">{stats.totalCourses}</h3>
-              <p className="text-sm text-muted-foreground">Courses ce mois</p>
+              <h3 className="text-2xl font-bold text-white">{stats.totalCourses}</h3>
+              <p className="text-sm text-white/80">Courses ce mois</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Filtres et recherche */}
-      <Card className="p-4">
+      <Card className="p-4 bg-card/80 backdrop-blur-sm border border-primary/20 shadow-elegant">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5 text-muted-foreground" />
           <h3 className="font-semibold">Filtres</h3>
@@ -401,8 +401,8 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
       {/* Clients List */}
       {filteredClients.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+        <Card className="p-8 text-center bg-card/60 backdrop-blur-sm border border-accent/20">
+          <Users className="w-16 h-16 text-primary mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2">Aucun client</h3>
           <p className="text-muted-foreground">
             {searchTerm
@@ -412,36 +412,39 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
         </Card>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {filteredClients.map((client) => (
-            <Card key={client.id} className="p-6 hover:shadow-elegant transition-all">
+          {filteredClients.map((client, index) => (
+            <Card key={client.id} className={cn(
+              "p-6 hover:shadow-elegant transition-all border-0",
+              index % 2 === 0 ? "bg-gradient-trust" : "bg-gradient-success"
+            )}>
               <div className="flex items-start gap-4">
                 {client.profiles?.profile_photo_url ? (
                   <img
                     src={client.profiles.profile_photo_url}
                     alt={client.profiles?.full_name || "Client"}
-                    className="w-14 h-14 rounded-full object-cover"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white/30"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-gradient-dark rounded-full flex items-center justify-center">
-                    <Users className="w-7 h-7 text-primary-foreground" />
+                  <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
+                    <Users className="w-7 h-7 text-white" />
                   </div>
                 )}
 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold">{client.profiles?.full_name || "Client sans nom"}</h3>
+                    <h3 className="font-bold text-white">{client.profiles?.full_name || "Client sans nom"}</h3>
                     {client.is_exclusive && (
-                      <Badge className="bg-gradient-premium text-premium-foreground border-0">
+                      <Badge className="bg-white/20 text-white border-0">
                         <Crown className="w-3 h-3 mr-1" />
                         Exclusif
                       </Badge>
                     )}
                   </div>
 
-                  <div className="space-y-1 text-sm text-muted-foreground">
+                  <div className="space-y-1 text-sm text-white/80">
                     <p>📧 {client.profiles?.email || "Email non renseigné"}</p>
                     <p>📞 {client.profiles?.phone || "Téléphone non renseigné"}</p>
-                    <p className="text-premium font-medium mt-2">
+                    <p className="text-white font-medium mt-2">
                       {client.courses_count} course{client.courses_count !== 1 ? "s" : ""} effectuée{client.courses_count !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -449,7 +452,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                   <div className="flex gap-2 mt-4">
                     <Button
                       size="sm"
-                      className="flex-1 bg-gradient-premium text-premium-foreground"
+                      className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
                       onClick={() => navigate(`/driver/create-course?client_id=${client.id}`)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -458,6 +461,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="bg-white/10 hover:bg-white/20 text-white border-white/30"
                       onClick={() => toast.info("Messagerie en cours de développement")}
                     >
                       <MessageSquare className="w-4 h-4" />

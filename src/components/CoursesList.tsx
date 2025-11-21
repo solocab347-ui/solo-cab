@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
+import { cn } from "@/lib/utils";
 
 interface CoursesListProps {
   driverId: string;
@@ -810,11 +811,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      accepted: "bg-green-500/10 text-green-500 border-green-500/20",
-      in_progress: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      completed: "bg-premium/10 text-premium border-premium/20",
-      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+      pending: "bg-gradient-trust text-white border-0",
+      accepted: "bg-gradient-success text-white border-0",
+      in_progress: "bg-gradient-independence text-white border-0",
+      completed: "bg-gradient-premium text-white border-0",
+      cancelled: "bg-destructive/90 text-white border-0",
     };
 
     const labels = {
@@ -826,7 +827,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
 
     return (
-      <Badge className={`${styles[status as keyof typeof styles]} border`}>
+      <Badge className={`${styles[status as keyof typeof styles]}`}>
         {labels[status as keyof typeof labels] || status}
       </Badge>
     );
@@ -845,23 +846,23 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
-          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 bg-card/80 backdrop-blur-sm">
+          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-trust data-[state=active]:text-white">
             <span className="hidden sm:inline">En attente</span>
             <span className="sm:hidden">Attente</span>
             <span className="ml-1">({pendingCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="text-xs sm:text-sm py-2">
+          <TabsTrigger value="confirmed" className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-success data-[state=active]:text-white">
             <span className="hidden sm:inline">Confirmées</span>
             <span className="sm:hidden">Confirm.</span>
             <span className="ml-1">({acceptedCourses.length + inProgressCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs sm:text-sm py-2">
+          <TabsTrigger value="completed" className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-premium data-[state=active]:text-white">
             <span className="hidden sm:inline">Terminées</span>
             <span className="sm:hidden">Termin.</span>
             <span className="ml-1">({completedCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2">
+          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-independence data-[state=active]:text-white">
             <span className="hidden sm:inline">Refusées</span>
             <span className="sm:hidden">Refus.</span>
             <span className="ml-1">({cancelledCourses.length})</span>
@@ -872,17 +873,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {pendingCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : (
-            pendingCourses.map((course) => (
-              <Card key={course.id} className="p-3 sm:p-4">
+            pendingCourses.map((course, index) => (
+              <Card key={course.id} className={cn(
+                "p-3 sm:p-4 border-0 shadow-elegant",
+                index % 3 === 0 && "bg-gradient-trust",
+                index % 3 === 1 && "bg-gradient-freedom",
+                index % 3 === 2 && "bg-gradient-renewal"
+              )}>
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                     <div className="space-y-1 w-full">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-sm sm:text-base">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-sm sm:text-base text-white">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <p className="text-xs sm:text-sm text-white/80 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                         <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                       </p>
                     </div>
@@ -890,33 +896,33 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground shrink-0 mt-1" />
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/70 shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
-                        <p className="font-medium">Départ</p>
-                        <p className="text-muted-foreground break-words">{course.pickup_address}</p>
+                        <p className="font-medium text-white">Départ</p>
+                        <p className="text-white/70 break-words">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-destructive shrink-0 mt-1" />
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
-                        <p className="font-medium">Arrivée</p>
-                        <p className="text-muted-foreground break-words">{course.destination_address}</p>
+                        <p className="font-medium text-white">Arrivée</p>
+                        <p className="text-white/70 break-words">{course.destination_address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-white/80">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                       {course.passengers_count} passager(s)
                     </div>
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
-                    <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                    <div className="p-3 sm:p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm font-medium text-foreground">Montant du devis</span>
-                        <span className="text-2xl sm:text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                        <span className="text-xs sm:text-sm font-medium text-white">Montant du devis</span>
+                        <span className="text-2xl sm:text-3xl font-bold text-white">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                       {course.devis[0].quote_number && (
-                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
+                        <p className="text-xs text-white/70 mt-1">Réf: {course.devis[0].quote_number}</p>
                       )}
                     </div>
                   )}
@@ -936,9 +942,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     if (isDriverCreated) {
                       if (devis.status === "pending") {
                         return (
-                          <div className="text-sm text-muted-foreground italic">
-                            ⏳ En attente de l'acceptation du client
-                          </div>
+                        <div className="text-sm text-white/80 italic">
+                          ⏳ En attente de l'acceptation du client
+                        </div>
                         );
                       }
                       // Si devis accepté et course encore pending, c'est anormal
@@ -952,7 +958,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     // Client n'a pas encore accepté le devis
                     if (devis.status === "pending") {
                       return (
-                        <div className="text-sm text-muted-foreground italic">
+                        <div className="text-sm text-white/80 italic">
                           ⏳ En attente de l'acceptation du client
                         </div>
                       );
@@ -966,7 +972,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                             variant="default"
                             size="sm"
                             onClick={() => handleAcceptCourse(course.id)}
-                            className="flex-1"
+                            className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
                           >
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Accepter la course
@@ -975,7 +981,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleCancelCourse(course.id)}
-                            className="flex-1"
+                            className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30"
                           >
                             <XCircle className="w-4 h-4 mr-2" />
                             Refuser
@@ -992,7 +998,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDownloadDevis(course, false)}
-                      className="flex-1"
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       PDF Détaillé
@@ -1001,7 +1007,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDownloadDevis(course, true)}
-                      className="flex-1"
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       PDF Client
@@ -1010,7 +1016,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleShareDevis(course, 'whatsapp')}
-                      className="flex-1"
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30"
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       WhatsApp
