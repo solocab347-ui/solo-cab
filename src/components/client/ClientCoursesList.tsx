@@ -721,39 +721,39 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2 h-auto p-2">
           <TabsTrigger 
             value="pending"
-            className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-500"
+            className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-500 flex-col md:flex-row gap-1 md:gap-2 h-auto py-2 md:py-3"
           >
-            <Clock className="w-4 h-4 mr-2" />
-            En attente
-            <Badge className="ml-2 bg-yellow-500/30">{pendingCourses.length}</Badge>
+            <Clock className="w-4 h-4" />
+            <span className="text-xs md:text-sm">En attente</span>
+            <Badge className="bg-yellow-500/30 text-xs">{pendingCourses.length}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="confirmed"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500"
+            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500 flex-col md:flex-row gap-1 md:gap-2 h-auto py-2 md:py-3"
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Confirmée
-            <Badge className="ml-2 bg-blue-500/30">{confirmedCourses.length}</Badge>
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-xs md:text-sm">Confirmée</span>
+            <Badge className="bg-blue-500/30 text-xs">{confirmedCourses.length}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="completed"
-            className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500"
+            className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500 flex-col md:flex-row gap-1 md:gap-2 h-auto py-2 md:py-3"
           >
-            <FileText className="w-4 h-4 mr-2" />
-            Terminée
-            <Badge className="ml-2 bg-green-500/30">{completedCourses.length}</Badge>
+            <FileText className="w-4 h-4" />
+            <span className="text-xs md:text-sm">Terminée</span>
+            <Badge className="bg-green-500/30 text-xs">{completedCourses.length}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="cancelled"
-            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500"
+            className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500 flex-col md:flex-row gap-1 md:gap-2 h-auto py-2 md:py-3"
           >
-            <XCircle className="w-4 h-4 mr-2" />
-            Refusé
-            <Badge className="ml-2 bg-red-500/30">{cancelledCourses.length}</Badge>
+            <XCircle className="w-4 h-4" />
+            <span className="text-xs md:text-sm">Refusé</span>
+            <Badge className="bg-red-500/30 text-xs">{cancelledCourses.length}</Badge>
           </TabsTrigger>
         </TabsList>
 

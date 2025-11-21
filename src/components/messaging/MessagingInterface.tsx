@@ -1,37 +1,131 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MessageSquarePlus } from "lucide-react";
-import { ConversationsList } from "./ConversationsList";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChatWindow } from "./ChatWindow";
-import { ContactSelector } from "./ContactSelector";
 import { useMessaging } from "@/hooks/useMessaging";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface Contact {
+  id: string;
+  full_name: string;
+  profile_photo_url: string | null;
+}
 
 export const MessagingInterface = () => {
+  const { user, userRole } = useAuth();
   const {
-    conversations,
     messages,
     selectedConversation,
-    loading,
-    setSelectedConversation,
-    fetchMessages,
     sendMessage,
     getOrCreateConversation,
+    fetchMessages,
   } = useMessaging();
 
-  const [showContactSelector, setShowContactSelector] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSelectConversation = async (conversationId: string) => {
-    setSelectedConversation(conversationId);
-    await fetchMessages(conversationId);
-    setShowContactSelector(false);
+  useEffect(() => {
+    fetchContacts();
+  }, [user, userRole]);
+
+  const fetchContacts = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      if (userRole === "driver") {
+        // Driver: fetch all clients
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!driverData) return;
+
+        const { data: clientsData } = await supabase
+          .from("clients")
+          .select(`
+            user_id,
+            profiles:user_id (
+              id,
+              full_name,
+              profile_photo_url
+            )
+          `)
+          .or(`driver_id.eq.${driverData.id},driver_ids.cs.{${driverData.id}}`);
+
+        if (clientsData) {
+          const contactsList = clientsData
+            .map((c: any) => c.profiles)
+            .filter(Boolean);
+          setContacts(contactsList);
+        }
+      } else if (userRole === "client") {
+        // Client: fetch their driver(s)
+        const { data: clientData } = await supabase
+          .from("clients")
+          .select("driver_id, driver_ids, is_exclusive")
+          .eq("user_id", user.id)
+          .single();
+
+        if (!clientData) return;
+
+        let driverIds: string[] = [];
+
+        if (clientData.is_exclusive && clientData.driver_id) {
+          driverIds = [clientData.driver_id];
+        } else if (clientData.driver_ids && clientData.driver_ids.length > 0) {
+          driverIds = clientData.driver_ids;
+        }
+
+        if (driverIds.length > 0) {
+          const { data: driversData } = await supabase
+            .from("drivers")
+            .select(`
+              user_id,
+              profiles:user_id (
+                id,
+                full_name,
+                profile_photo_url
+              )
+            `)
+            .in("id", driverIds);
+
+          if (driversData) {
+            const contactsList = driversData
+              .map((d: any) => d.profiles)
+              .filter(Boolean);
+            setContacts(contactsList);
+            // Auto-select if exclusive client with single driver
+            if (contactsList.length === 1) {
+              handleSelectContact(contactsList[0].id);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching contacts:", error);
+      toast.error("Erreur lors du chargement des contacts");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectContact = async (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact) return;
+    
+    setSelectedContact(contact);
     const conversationId = await getOrCreateConversation(contactId);
     if (conversationId) {
-      await handleSelectConversation(conversationId);
+      await fetchMessages(conversationId);
     } else {
       toast.error("Erreur lors de la création de la conversation");
     }
@@ -43,63 +137,83 @@ export const MessagingInterface = () => {
     }
   };
 
-  const selectedConvo = conversations.find((c) => c.id === selectedConversation);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[500px]">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 h-auto lg:h-[calc(100vh-250px)]">
-      {/* Conversations List */}
-      <Card className="lg:col-span-4 overflow-hidden flex flex-col max-h-[400px] lg:max-h-none">
-        <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base sm:text-xl font-bold">Messages</h2>
-          <Button
-            size="sm"
-            className="bg-gradient-premium hover:opacity-90 text-xs sm:text-sm"
-            onClick={() => setShowContactSelector(true)}
+    <div className="space-y-4">
+      {/* Contact Selector - Mobile style */}
+      <Card className="p-4">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">
+              {userRole === "driver" ? "Sélectionnez un client" : "Sélectionnez votre chauffeur"}
+            </h3>
+          </div>
+          
+          <Select 
+            value={selectedContact?.id || ""} 
+            onValueChange={handleSelectContact}
           >
-            <MessageSquarePlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Nouveau</span>
-            <span className="sm:hidden">+</span>
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-hidden">
-          <ConversationsList
-            conversations={conversations}
-            selectedConversation={selectedConversation}
-            onSelectConversation={handleSelectConversation}
-            loading={loading}
-          />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={contacts.length === 0 ? "Aucun contact disponible" : "Choisir un contact"}>
+                {selectedContact && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={selectedContact.profile_photo_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-xs">
+                        {selectedContact.full_name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{selectedContact.full_name}</span>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border">
+              {contacts.map((contact) => (
+                <SelectItem key={contact.id} value={contact.id} className="cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={contact.profile_photo_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-xs">
+                        {contact.full_name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{contact.full_name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
-      {/* Chat Window or Contact Selector */}
-      <Card className="lg:col-span-8 overflow-hidden min-h-[500px] lg:min-h-0">
-        {showContactSelector ? (
-          <ContactSelector
-            onSelectContact={handleSelectContact}
-            onClose={() => setShowContactSelector(false)}
-          />
-        ) : selectedConvo ? (
+      {/* Chat Window */}
+      <Card className="overflow-hidden min-h-[500px]">
+        {selectedContact ? (
           <ChatWindow
             messages={messages}
             onSendMessage={handleSendMessage}
-            otherUser={selectedConvo.other_user}
+            otherUser={selectedContact}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-center p-4 sm:p-6">
+          <div className="flex items-center justify-center h-[500px] text-center p-6">
             <div className="max-w-sm">
-              <MessageSquarePlus className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-3 sm:mb-4" />
-              <h3 className="text-base sm:text-lg font-semibold mb-2">Sélectionnez une conversation</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                Choisissez une conversation existante ou créez-en une nouvelle
+              <MessageSquare className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Sélectionnez un contact</h3>
+              <p className="text-sm text-muted-foreground">
+                {contacts.length === 0 
+                  ? "Aucun contact disponible pour le moment"
+                  : "Choisissez un contact ci-dessus pour démarrer la conversation"
+                }
               </p>
-              <Button
-                className="bg-gradient-premium hover:opacity-90 text-xs sm:text-sm w-full sm:w-auto"
-                onClick={() => setShowContactSelector(true)}
-              >
-                <MessageSquarePlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                Nouvelle conversation
-              </Button>
             </div>
           </div>
         )}
