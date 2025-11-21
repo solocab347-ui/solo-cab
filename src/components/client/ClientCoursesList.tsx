@@ -35,9 +35,17 @@ import jsPDF from "jspdf";
 
 interface ClientCoursesListProps {
   clientId: string;
+  defaultTab?: string | null;
 }
 
-const ClientCoursesList = ({ clientId }: ClientCoursesListProps) => {
+const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => {
+  const [activeTab, setActiveTab] = useState("pending");
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
