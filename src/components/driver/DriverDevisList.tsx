@@ -477,9 +477,9 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       {/* Devis List */}
       {filteredDevis.length === 0 ? (
         <Card className="p-8 text-center bg-gradient-trust border-0">
-          <FileText className="w-16 h-16 text-white/70 mx-auto mb-4" />
+          <FileText className="w-16 h-16 text-white mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2 text-white">Aucun devis</h3>
-          <p className="text-white/80">
+          <p className="text-white">
             {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
               ? "Aucun devis ne correspond à vos critères"
               : "Vos devis apparaîtront ici"}
@@ -554,7 +554,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <div className="text-xs text-white/70">
+                <div className="text-xs text-white">
                   Créé le {format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}
                 </div>
                 <div className="flex gap-2">
