@@ -33,13 +33,13 @@ export const NotificationBell = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "success":
-        return "text-green-600";
+        return "text-success";
       case "warning":
-        return "text-orange-600";
+        return "text-warning";
       case "error":
-        return "text-red-600";
+        return "text-destructive";
       default:
-        return "text-blue-600";
+        return "text-primary";
     }
   };
 
