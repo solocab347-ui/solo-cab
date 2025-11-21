@@ -70,25 +70,25 @@ Deno.serve(async (req) => {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        // Generate quote number
-        const { data: quoteNumber, error: quoteError } = await supabaseClient
-          .rpc('generate_quote_number', { _driver_id: driver_id });
+        // Generate unified reservation number (same for course, devis, facture)
+        const { data: reservationNumber, error: reservationError } = await supabaseClient
+          .rpc('generate_reservation_number', { _driver_id: driver_id });
 
-        if (quoteError) {
-          console.error('Quote number generation error:', quoteError);
-          throw new Error('Erreur génération numéro devis');
+        if (reservationError) {
+          console.error('Reservation number generation error:', reservationError);
+          throw new Error('Erreur génération numéro réservation');
         }
 
-        console.log(`Attempt ${attempt + 1}: Trying to create devis with number ${quoteNumber}`);
+        console.log(`Attempt ${attempt + 1}: Trying to create devis with number ${reservationNumber}`);
 
-        // Try to create devis
+        // Try to create devis with unified reservation number
         const { data: createdDevis, error: devisError } = await supabaseClient
           .from('devis')
           .insert({
             course_id: course_id,
             driver_id: driver_id,
             client_id: course.client_id,
-            quote_number: quoteNumber,
+            quote_number: reservationNumber, // RES-001, RES-002, etc.
             base_price: pricing.base_price,
             distance_price: pricing.distance_price,
             time_price: pricing.time_price || 0,
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
         if (devisError) {
           // Check if it's a duplicate key error
           if (devisError.code === '23505' && devisError.message?.includes('quote_number')) {
-            console.warn(`Quote number ${quoteNumber} already exists, retrying...`);
+            console.warn(`Reservation number ${reservationNumber} already exists, retrying...`);
             lastError = devisError;
             continue; // Retry with a new number
           }
@@ -112,7 +112,15 @@ Deno.serve(async (req) => {
 
         // Success!
         devis = createdDevis;
-        console.log('Devis created successfully:', devis);
+        console.log('Devis created successfully with reservation number:', reservationNumber);
+        
+        // COHÉRENCE: Mettre à jour la course avec le même numéro de réservation
+        await supabaseClient
+          .from('courses')
+          .update({ course_number: reservationNumber })
+          .eq('id', course_id);
+        
+        console.log('Course updated with reservation number:', reservationNumber);
         break;
 
       } catch (error: any) {
