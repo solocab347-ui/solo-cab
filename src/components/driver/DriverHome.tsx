@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2 } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -126,7 +126,18 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
         <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
           Bonjour, {driverProfile?.full_name || 'Chauffeur'} ✨
         </h1>
-        <p className="text-gray-300">Voici un aperçu de votre activité</p>
+        <div className="flex items-center gap-4 justify-center sm:justify-start">
+          <p className="text-gray-300">Voici un aperçu de votre activité</p>
+          {driverProfile?.driver?.rating && (
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-white font-semibold">
+                {Number(driverProfile.driver.rating).toFixed(1)}/5
+              </span>
+              <span className="text-xs text-gray-300">Note moyenne</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Accès Rapide */}
