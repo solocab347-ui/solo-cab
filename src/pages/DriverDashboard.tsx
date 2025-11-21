@@ -456,7 +456,7 @@ const DriverDashboard = () => {
               <h2 className="text-xl font-bold mb-6 text-white">Tarification Professionnelle</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="baseFare">Forfait de base (€)</Label>
+                  <Label htmlFor="baseFare" className="text-white">Forfait de base (€)</Label>
                   <Input
                     id="baseFare"
                     type="number"
@@ -465,11 +465,11 @@ const DriverDashboard = () => {
                     onChange={(e) => setBaseFare(e.target.value)}
                     placeholder="10.00"
                   />
-                  <p className="text-xs text-muted-foreground">Prix de départ de la course</p>
+                  <p className="text-xs text-white/70">Prix de départ de la course</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="perKm">Prix par kilomètre (€)</Label>
+                  <Label htmlFor="perKm" className="text-white">Prix par kilomètre (€)</Label>
                   <Input
                     id="perKm"
                     type="number"
@@ -478,11 +478,11 @@ const DriverDashboard = () => {
                     onChange={(e) => setPerKmRate(e.target.value)}
                     placeholder="1.50"
                   />
-                  <p className="text-xs text-muted-foreground">Coût par km parcouru</p>
+                  <p className="text-xs text-white/70">Coût par km parcouru</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hourly">Tarif horaire (€)</Label>
+                  <Label htmlFor="hourly" className="text-white">Tarif horaire (€)</Label>
                   <Input
                     id="hourly"
                     type="number"
@@ -492,13 +492,13 @@ const DriverDashboard = () => {
                     placeholder="45.00"
                     required
                   />
-                  <p className="text-xs text-muted-foreground">Pour les mises à disposition (obligatoire)</p>
+                  <p className="text-xs text-white/70">Pour les mises à disposition (obligatoire)</p>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="maxPassengers">Nombre maximum de passagers</Label>
+                  <Label htmlFor="maxPassengers" className="text-white">Nombre maximum de passagers</Label>
                   <Input
                     id="maxPassengers"
                     type="number"
@@ -508,14 +508,14 @@ const DriverDashboard = () => {
                     onChange={(e) => setMaxPassengers(e.target.value)}
                     placeholder="4"
                   />
-                  <p className="text-xs text-muted-foreground">Places disponibles (4 par défaut, augmentez pour van)</p>
+                  <p className="text-xs text-white/70">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-border">
+                  <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                     <div>
-                      <Label htmlFor="tvaIncluded" className="font-semibold">TVA comprise</Label>
-                      <p className="text-xs text-muted-foreground">Vos tarifs incluent-ils déjà la TVA ?</p>
+                      <Label htmlFor="tvaIncluded" className="font-semibold text-white">TVA comprise</Label>
+                      <p className="text-xs text-white/70">Vos tarifs incluent-ils déjà la TVA ?</p>
                     </div>
                     <Switch
                       id="tvaIncluded"
@@ -526,15 +526,15 @@ const DriverDashboard = () => {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-secondary/50 rounded-lg border border-border">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
+              <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
+                  <FileText className="w-4 h-4 text-white" />
                   TVA Automatique
                 </h4>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>• <span className="font-medium">10% TVA</span> pour les courses au kilomètre</p>
-                  <p>• <span className="font-medium">20% TVA</span> pour les mises à disposition (horaire)</p>
-                  <p className="text-xs mt-2 italic">La TVA est calculée automatiquement selon le type de course</p>
+                <div className="space-y-1 text-sm text-white/80">
+                  <p>• <span className="font-medium text-white">10% TVA</span> pour les courses au kilomètre</p>
+                  <p>• <span className="font-medium text-white">20% TVA</span> pour les mises à disposition (horaire)</p>
+                  <p className="text-xs mt-2 italic text-white/70">La TVA est calculée automatiquement selon le type de course</p>
                 </div>
               </div>
             </Card>
@@ -545,7 +545,7 @@ const DriverDashboard = () => {
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="company">Nom de l'entreprise</Label>
+                    <Label htmlFor="company" className="text-white">Nom de l'entreprise</Label>
                     <Input
                       id="company"
                       value={companyName}
@@ -555,7 +555,7 @@ const DriverDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET</Label>
+                    <Label htmlFor="siret" className="text-white">SIRET</Label>
                     <Input
                       id="siret"
                       value={siret}
@@ -566,7 +566,7 @@ const DriverDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="companyAddress">Adresse de l'entreprise</Label>
+                  <Label htmlFor="companyAddress" className="text-white">Adresse de l'entreprise</Label>
                   <Textarea
                     id="companyAddress"
                     value={companyAddress}
@@ -574,7 +574,7 @@ const DriverDashboard = () => {
                     placeholder="123 Rue de la République, 75001 Paris"
                     rows={3}
                   />
-                  <p className="text-xs text-muted-foreground">Cette adresse apparaîtra sur vos devis et factures</p>
+                  <p className="text-xs text-white/70">Cette adresse apparaîtra sur vos devis et factures</p>
                 </div>
               </div>
             </Card>
