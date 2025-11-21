@@ -95,6 +95,9 @@ const DevisList = ({ clientId }: DevisListProps) => {
             id,
             created_by_user_id,
             status
+          ),
+          drivers!inner(
+            user_id
           )
         `)
         .eq("id", devisId)
@@ -103,18 +106,11 @@ const DevisList = ({ clientId }: DevisListProps) => {
       if (fetchError) throw fetchError;
 
       const course = devisData.courses;
+      const driverUserId = devisData.drivers.user_id;
 
-      // Vérifier si le créateur est un chauffeur
-      let isDriverCreated = false;
-      if (course.created_by_user_id) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("roles")
-          .eq("id", course.created_by_user_id)
-          .single();
-        
-        isDriverCreated = profileData?.roles?.includes('driver') || false;
-      }
+      // CORRECTION CRITIQUE: Vérifier si c'est CE CHAUFFEUR PRÉCIS qui a créé la course
+      // en comparant created_by_user_id avec le user_id du chauffeur
+      const isDriverCreated = course.created_by_user_id === driverUserId;
 
       // Étape 1: TOUJOURS accepter le devis d'abord
       const { error: updateError } = await supabase
@@ -142,9 +138,10 @@ const DevisList = ({ clientId }: DevisListProps) => {
       // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
       // Flux: Client crée → Client accepte → Chauffeur doit accepter → Course confirmée
       else {
+        // Course reste "pending", le chauffeur doit maintenant l'accepter
         // Notifier le chauffeur qu'il doit maintenant accepter la course
         await supabase.from("notifications").insert({
-          user_id: devisData.driver_id,
+          user_id: driverUserId,
           title: "Nouveau devis accepté",
           message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
           type: "devis_accepted",
