@@ -155,27 +155,27 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-50">
+      {/* Navigation with black background */}
+      <header className="border-b border-border/20 bg-black backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-primary" />
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+              <Car className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
+            <span className="text-2xl font-bold text-white">
               SoloCab
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link to="/chauffeurs" className="text-foreground/80 hover:text-foreground transition-colors">
+            <Link to="/chauffeurs" className="text-gray-300 hover:text-white transition-colors">
               Trouver un chauffeur
             </Link>
-            <Link to="/devenir-chauffeur" className="text-foreground/80 hover:text-foreground transition-colors">
+            <Link to="/devenir-chauffeur" className="text-gray-300 hover:text-white transition-colors">
               Devenir chauffeur
             </Link>
           </nav>
           <Link to="/login">
-            <Button className="bg-gradient-premium">
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
               Se Connecter
             </Button>
           </Link>
