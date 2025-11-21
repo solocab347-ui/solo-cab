@@ -29,6 +29,7 @@ import ClientNotes from "@/components/client/ClientNotes";
 import ClientDriversList from "@/components/client/ClientDriversList";
 import ClientQRScanner from "@/components/client/ClientQRScanner";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
+import ClientDriverProfile from "@/components/client/ClientDriverProfile";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,8 @@ const ClientDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("accueil");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [coursesSubTab, setCoursesSubTab] = useState<string | null>(null);
+  const [devisFacturesSubTab, setDevisFacturesSubTab] = useState<string | null>(null);
   const [stats, setStats] = useState({
     upcomingCourses: 0,
     pendingDevis: 0,
@@ -163,6 +166,7 @@ const ClientDashboard = () => {
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users },
     { id: "scanner", label: "Scanner QR", icon: QrCode },
+    { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User },
     { id: "compte", label: "Mon Compte", icon: User },
   ];
 
@@ -189,9 +193,21 @@ const ClientDashboard = () => {
     </nav>
   );
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = (tab: string, subTab?: string | null) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
+    
+    if (tab === "courses" && subTab) {
+      setCoursesSubTab(subTab);
+    } else if (tab === "courses") {
+      setCoursesSubTab(null);
+    }
+    
+    if (tab === "devis-factures" && subTab) {
+      setDevisFacturesSubTab(subTab);
+    } else if (tab === "devis-factures") {
+      setDevisFacturesSubTab(null);
+    }
   };
 
   const renderContent = () => {
@@ -200,7 +216,10 @@ const ClientDashboard = () => {
         return (
           <div className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-500 to-blue-600">
+              <Card 
+                className="p-4 md:p-6 bg-gradient-to-br from-blue-500 to-blue-600 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleTabChange("courses", "confirmed")}
+              >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <Clock className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
                   <h3 className="text-sm md:text-lg font-semibold text-white">Courses à venir</h3>
@@ -208,25 +227,21 @@ const ClientDashboard = () => {
                 <p className="text-3xl md:text-4xl font-bold text-white">{stats.upcomingCourses}</p>
               </Card>
 
-              <Card className="p-4 md:p-6 bg-gradient-to-br from-orange-500 to-orange-600">
+              <Card 
+                className="p-4 md:p-6 bg-gradient-to-br from-orange-500 to-orange-600 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleTabChange("courses", "pending")}
+              >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
                   <h3 className="text-sm md:text-lg font-semibold text-white">Devis en attente</h3>
                 </div>
                 <p className="text-3xl md:text-4xl font-bold text-white mb-2">{stats.pendingDevis}</p>
-                {stats.pendingDevis > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:text-white hover:bg-white/10 p-0 h-auto text-xs md:text-sm"
-                    onClick={() => handleTabChange("devis")}
-                  >
-                    Voir les devis →
-                  </Button>
-                )}
               </Card>
 
-              <Card className="p-4 md:p-6 bg-gradient-to-br from-green-500 to-green-600">
+              <Card 
+                className="p-4 md:p-6 bg-gradient-to-br from-green-500 to-green-600 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleTabChange("devis-factures", "factures")}
+              >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
                   <h3 className="text-sm md:text-lg font-semibold text-white">Factures impayées</h3>
@@ -255,7 +270,11 @@ const ClientDashboard = () => {
                     <h3 className="font-bold text-lg md:text-xl mb-2">
                       {clientProfile.client.drivers.profiles?.full_name || "Votre chauffeur"}
                     </h3>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleTabChange("profil-chauffeur")}
+                    >
                       <User className="w-4 h-4 mr-2" />
                       Voir le profil
                     </Button>
@@ -267,11 +286,17 @@ const ClientDashboard = () => {
         );
       case "courses":
         return clientProfile?.client?.id ? (
-          <ClientCoursesList clientId={clientProfile.client.id} />
+          <ClientCoursesList 
+            clientId={clientProfile.client.id} 
+            defaultTab={coursesSubTab}
+          />
         ) : null;
       case "devis-factures":
         return clientProfile?.client?.id ? (
-          <ClientDevisFactures clientId={clientProfile.client.id} />
+          <ClientDevisFactures 
+            clientId={clientProfile.client.id}
+            defaultTab={devisFacturesSubTab}
+          />
         ) : null;
       case "messages":
         return <MessagingInterface />;
@@ -281,6 +306,8 @@ const ClientDashboard = () => {
         return <ClientDriversList />;
       case "scanner":
         return <ClientQRScanner />;
+      case "profil-chauffeur":
+        return <ClientDriverProfile />;
       case "compte":
         return <ClientProfile />;
       default:

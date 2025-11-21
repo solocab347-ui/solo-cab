@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Search, MapPin, Star, ArrowRight, AlertTriangle, Navigation } from "lucide-react";
+import { Car, Search, MapPin, Star, ArrowRight, AlertTriangle, Navigation, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PublicDriver {
   id: string;
@@ -28,6 +29,7 @@ interface PublicDriver {
 }
 
 const Chauffeurs = () => {
+  const { user } = useAuth();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchMode, setSearchMode] = useState<"city" | "address">("city");
@@ -35,7 +37,36 @@ const Chauffeurs = () => {
   const [addressSearch, setAddressSearch] = useState("");
   const [radius, setRadius] = useState([20]);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [isExclusiveClient, setIsExclusiveClient] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkClientAccess();
+  }, [user]);
+
+  const checkClientAccess = async () => {
+    if (!user) {
+      setCheckingAccess(false);
+      return;
+    }
+
+    try {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("is_exclusive")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (client?.is_exclusive) {
+        setIsExclusiveClient(true);
+      }
+    } catch (error) {
+      console.error("Error checking client access:", error);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
   // Geocoding function using a public API
   const geocodeAddress = async (address: string) => {
@@ -115,6 +146,34 @@ const Chauffeurs = () => {
       setLoading(false);
     }
   };
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
+
+  if (isExclusiveClient) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-12 max-w-md text-center">
+          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-amber-600" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Accès Restreint</h1>
+          <p className="text-muted-foreground mb-6">
+            En tant que client exclusif, vous avez déjà un chauffeur attitré. 
+            Vous ne pouvez pas accéder à la vitrine publique des chauffeurs.
+          </p>
+          <Button onClick={() => navigate("/client-dashboard")}>
+            Retour au tableau de bord
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

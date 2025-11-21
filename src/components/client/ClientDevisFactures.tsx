@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FileText, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -7,10 +7,17 @@ import ClientFacturesList from "@/components/client/ClientFacturesList";
 
 interface ClientDevisFacturesProps {
   clientId: string;
+  defaultTab?: string | null;
 }
 
-const ClientDevisFactures = ({ clientId }: ClientDevisFacturesProps) => {
+const ClientDevisFactures = ({ clientId, defaultTab }: ClientDevisFacturesProps) => {
   const [activeTab, setActiveTab] = useState<"devis" | "factures">("devis");
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab as "devis" | "factures");
+    }
+  }, [defaultTab]);
 
   return (
     <div className="space-y-6">
