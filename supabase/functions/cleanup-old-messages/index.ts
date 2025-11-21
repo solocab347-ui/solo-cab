@@ -17,17 +17,17 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Calculer la date il y a 2 mois (60 jours)
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setDate(twoMonthsAgo.getDate() - 60);
+    // Calculer la date il y a 3 mois (90 jours)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setDate(threeMonthsAgo.getDate() - 90);
 
-    console.log(`Suppression des messages avant le ${twoMonthsAgo.toISOString()}`);
+    console.log(`Suppression des messages avant le ${threeMonthsAgo.toISOString()}`);
 
-    // Supprimer les messages de plus de 2 mois
+    // Supprimer les messages de plus de 3 mois
     const { error, count } = await supabaseClient
       .from("messages")
       .delete({ count: "exact" })
-      .lt("created_at", twoMonthsAgo.toISOString());
+      .lt("created_at", threeMonthsAgo.toISOString());
 
     if (error) {
       console.error("Erreur lors de la suppression des messages:", error);
@@ -41,7 +41,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         deletedCount,
-        message: `${deletedCount} messages de plus de 2 mois ont été supprimés`,
+        message: `${deletedCount} messages de plus de 3 mois ont été supprimés`,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

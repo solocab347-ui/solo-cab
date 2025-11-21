@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, X, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Camera, X, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const ClientQRScanner = () => {
   const [scanning, setScanning] = useState(false);
   const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,60 +21,95 @@ const ClientQRScanner = () => {
     };
   }, [scanner]);
 
-  const startScanning = () => {
-    setScanning(true);
+  const startScanning = async () => {
+    setCameraError(null);
+    
+    try {
+      // Vérifier les permissions caméra d'abord
+      console.log("Demande d'accès à la caméra...");
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      
+      // Fermer le stream immédiatement (html5-qrcode va le rouvrir)
+      stream.getTracks().forEach(track => track.stop());
+      
+      console.log("Accès caméra accordé, initialisation du scanner...");
+      setScanning(true);
 
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "qr-reader",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-      },
-      false
-    );
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          showTorchButtonIfSupported: true,
+          useBarCodeDetectorIfSupported: true,
+        },
+        false
+      );
 
-    html5QrcodeScanner.render(
-      (decodedText) => {
-        console.log("QR Code détecté:", decodedText);
-        
-        // Extraire l'ID du QR code depuis l'URL
-        try {
-          const url = new URL(decodedText);
-          const qrCodeId = url.searchParams.get("qr");
+      html5QrcodeScanner.render(
+        (decodedText) => {
+          console.log("QR Code détecté:", decodedText);
           
-          if (qrCodeId) {
-            // Rediriger vers la page d'inscription avec le QR code
-            navigate(`/register-client-qr?qr=${qrCodeId}`);
-            toast.success("QR code scanné avec succès !");
-          } else {
-            toast.error("QR code invalide");
+          // Extraire l'ID du QR code depuis l'URL
+          try {
+            const url = new URL(decodedText);
+            const qrCodeId = url.searchParams.get("qr");
+            
+            if (qrCodeId) {
+              // Arrêter le scanner avant la redirection
+              html5QrcodeScanner.clear().catch(console.error);
+              setScanning(false);
+              setScanner(null);
+              
+              // Rediriger vers la page d'inscription avec le QR code
+              navigate(`/register-client-qr?qr=${qrCodeId}`);
+              toast.success("QR code scanné avec succès !");
+            } else {
+              toast.error("QR code invalide");
+            }
+          } catch (error) {
+            console.error("Erreur de parsing URL:", error);
+            toast.error("Format de QR code non reconnu");
           }
-        } catch (error) {
-          console.error("Erreur de parsing URL:", error);
-          toast.error("Format de QR code non reconnu");
+        },
+        (errorMessage) => {
+          // Ignorer les erreurs de scan continues (pas de QR détecté)
+          if (!errorMessage.includes("NotFoundException")) {
+            console.debug("Scan error:", errorMessage);
+          }
         }
+      );
 
-        // Arrêter le scanner
-        html5QrcodeScanner.clear();
-        setScanning(false);
-        setScanner(null);
-      },
-      (errorMessage) => {
-        // Ignorer les erreurs de scan continues
-        console.debug("Scan error:", errorMessage);
+      setScanner(html5QrcodeScanner);
+    } catch (error: any) {
+      console.error("Erreur d'accès à la caméra:", error);
+      
+      let errorMsg = "Impossible d'accéder à la caméra";
+      if (error.name === "NotAllowedError") {
+        errorMsg = "Vous devez autoriser l'accès à la caméra pour scanner un QR code";
+      } else if (error.name === "NotFoundError") {
+        errorMsg = "Aucune caméra détectée sur cet appareil";
+      } else if (error.name === "NotReadableError") {
+        errorMsg = "La caméra est déjà utilisée par une autre application";
       }
-    );
-
-    setScanner(html5QrcodeScanner);
+      
+      setCameraError(errorMsg);
+      toast.error(errorMsg);
+      setScanning(false);
+    }
   };
 
   const stopScanning = () => {
     if (scanner) {
-      scanner.clear();
+      scanner.clear().catch(console.error);
       setScanner(null);
     }
     setScanning(false);
+    setCameraError(null);
   };
 
   return (
@@ -83,6 +120,13 @@ const ClientQRScanner = () => {
           Scannez le QR code d'un chauffeur pour vous inscrire avec lui
         </p>
       </div>
+
+      {cameraError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{cameraError}</AlertDescription>
+        </Alert>
+      )}
 
       {!scanning ? (
         <Card className="p-8 text-center">
