@@ -332,10 +332,10 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      paid: "bg-green-500/10 text-green-500 border-green-500/20",
-      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      failed: "bg-destructive/10 text-destructive border-destructive/20",
-      refunded: "bg-muted text-muted-foreground border-border",
+      paid: "bg-gradient-success text-white border-0 shadow-md",
+      pending: "bg-gradient-trust text-white border-0 shadow-md",
+      failed: "bg-destructive/90 text-white border-0 shadow-md",
+      refunded: "bg-muted/90 text-white border-0 shadow-md",
     };
 
     const labels = {
@@ -346,7 +346,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     };
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
+      <Badge className={styles[status as keyof typeof styles]}>
         <CheckCircle className="w-3 h-3 mr-1" />
         {labels[status as keyof typeof labels]}
       </Badge>
@@ -372,43 +372,44 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     <div className="space-y-6">
       {/* Stats - Horizontal on all screens */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-premium border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-premium">{stats.total}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Factures totales</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.total}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Factures totales</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-success border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-green-500">{stats.paid}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Payées</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.paid}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Payées</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-trust border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-yellow-500">{stats.pending}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">En attente</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.pending}</h3>
+            <p className="text-xs sm:text-sm text-white/80">En attente</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
+        <Card className="p-3 sm:p-4 bg-gradient-independence border-0 shadow-elegant">
           <div className="text-center">
-            <h3 className="text-xl sm:text-3xl font-bold text-destructive">{stats.failed}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground">Échecs</p>
+            <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.failed}</h3>
+            <p className="text-xs sm:text-sm text-white/80">Échecs</p>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par numéro ou client..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <Card className="p-4 bg-card/80 backdrop-blur-sm border-primary/10">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
+            <Input
+              placeholder="Rechercher par numéro ou client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-background/50"
+            />
+          </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Statut" />
@@ -445,14 +446,15 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             <SelectItem value="last_month">Mois dernier</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        </div>
+      </Card>
 
       {/* Factures List */}
       {filteredFactures.length === 0 ? (
-        <Card className="p-8 text-center">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Aucune facture</h3>
-          <p className="text-muted-foreground">
+        <Card className="p-8 text-center bg-gradient-success border-0">
+          <FileText className="w-16 h-16 text-white/70 mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2 text-white">Aucune facture</h3>
+          <p className="text-white/80">
             {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
               ? "Aucune facture ne correspond à vos critères"
               : "Vos factures apparaîtront ici"}
@@ -460,26 +462,29 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredFactures.map((facture) => (
-            <Card key={facture.id} className="p-6 hover:shadow-elegant transition-all">
+          {filteredFactures.map((facture, index) => {
+            const gradients = ['bg-gradient-success', 'bg-gradient-premium', 'bg-gradient-trust'];
+            const gradient = gradients[index % 3];
+            return (
+            <Card key={facture.id} className={`p-6 hover:shadow-elegant transition-all ${gradient} border-0`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {facture.clients?.profiles?.profile_photo_url ? (
                     <img
                       src={facture.clients.profiles.profile_photo_url}
                       alt={facture.clients.profiles.full_name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
                     />
                   ) : (
-                    <div className="w-12 h-12 bg-gradient-dark rounded-full flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-primary-foreground" />
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold border-2 border-white/30">
+                      {facture.clients?.profiles?.full_name?.[0] || "?"}
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg">
+                    <h3 className="font-bold text-lg text-white">
                       {facture.invoice_number_generated || facture.invoice_number}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-white/80">
                       {facture.clients?.profiles?.full_name}
                     </p>
                   </div>
@@ -488,16 +493,16 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
               </div>
 
               {/* Course info */}
-              <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2 text-sm">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 text-sm border border-white/20">
                 <div>
-                  <span className="font-medium">Course :</span>
-                  <span className="text-muted-foreground ml-2">
+                  <span className="font-medium text-white">Course :</span>
+                  <span className="text-white/80 ml-2">
                     {facture.courses.pickup_address} → {facture.courses.destination_address}
                   </span>
                 </div>
                 <div>
-                  <span className="font-medium">Date course :</span>
-                  <span className="text-muted-foreground ml-2">
+                  <span className="font-medium text-white">Date course :</span>
+                  <span className="text-white/80 ml-2">
                     {format(new Date(facture.courses.scheduled_date), "d MMMM yyyy", {
                       locale: fr,
                     })}
@@ -505,8 +510,8 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                 </div>
                 {facture.payment_method && (
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
+                    <CreditCard className="w-4 h-4 text-white" />
+                    <span className="text-white/80">
                       Paiement : <span className="capitalize">{facture.payment_method}</span>
                     </span>
                   </div>
@@ -514,13 +519,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
               </div>
 
               {/* Price */}
-              <div className="border border-border rounded-lg p-4 mb-4">
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Euro className="w-5 h-5 text-premium" />
-                    <span className="font-semibold">Montant TTC</span>
+                    <Euro className="w-5 h-5 text-white" />
+                    <span className="font-semibold text-white">Montant TTC</span>
                   </div>
-                  <span className="text-2xl font-bold text-premium">
+                  <span className="text-2xl font-bold text-white">
                     {parseFloat(facture.amount).toFixed(2)} €
                   </span>
                 </div>
@@ -528,7 +533,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-white/70">
                   Créée le {format(new Date(facture.created_at), "d MMMM yyyy", { locale: fr })}
                   {facture.paid_at && (
                     <> • Payée le {format(new Date(facture.paid_at), "d MMMM yyyy", { locale: fr })}</>
@@ -539,6 +544,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownloadPDF(facture, false)}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     PDF Détaillé
@@ -547,6 +553,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownloadPDF(facture, true)}
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     PDF Client
@@ -554,7 +561,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                 </div>
               </div>
             </Card>
-          ))}
+          )})}
         </div>
       )}
     </div>
