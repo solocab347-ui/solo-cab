@@ -412,14 +412,14 @@ const DriverDashboard = () => {
 
           {/* Subscription Tab */}
           <TabsContent value="subscription">
-            <Card className="p-6 bg-gradient-premium border-0 shadow-premium">
+            <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Gestion de l'Abonnement</h2>
-                  <p className="text-sm text-white/80">Gérez votre abonnement professionnel</p>
+                  <h2 className="text-xl font-bold text-foreground">Gestion de l'Abonnement</h2>
+                  <p className="text-sm text-muted-foreground">Gérez votre abonnement professionnel</p>
                 </div>
               </div>
               <SubscriptionManager 
@@ -629,13 +629,13 @@ const DriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card className="p-6 bg-gradient-premium border-0 shadow-premium">
-              <h2 className="text-xl font-bold mb-6 text-white">Profil Public</h2>
+            <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
+              <h2 className="text-xl font-bold mb-6 text-foreground">Profil Public</h2>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base text-white">Activer le profil public</Label>
-                    <p className="text-sm text-white/80">
+                    <Label className="text-base text-foreground">Activer le profil public</Label>
+                    <p className="text-sm text-muted-foreground">
                       Apparaître sur /chauffeurs pour les clients libres
                     </p>
                   </div>
