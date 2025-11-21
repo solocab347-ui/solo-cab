@@ -843,69 +843,77 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pending">
-            En attente ({pendingCourses.length})
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+          <TabsTrigger value="pending" className="text-xs sm:text-sm py-2">
+            <span className="hidden sm:inline">En attente</span>
+            <span className="sm:hidden">Attente</span>
+            <span className="ml-1">({pendingCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="confirmed">
-            Confirmées ({acceptedCourses.length + inProgressCourses.length})
+          <TabsTrigger value="confirmed" className="text-xs sm:text-sm py-2">
+            <span className="hidden sm:inline">Confirmées</span>
+            <span className="sm:hidden">Confirm.</span>
+            <span className="ml-1">({acceptedCourses.length + inProgressCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            Terminées ({completedCourses.length})
+          <TabsTrigger value="completed" className="text-xs sm:text-sm py-2">
+            <span className="hidden sm:inline">Terminées</span>
+            <span className="sm:hidden">Termin.</span>
+            <span className="ml-1">({completedCourses.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="rejected">
-            Refusées ({cancelledCourses.length})
+          <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2">
+            <span className="hidden sm:inline">Refusées</span>
+            <span className="sm:hidden">Refus.</span>
+            <span className="ml-1">({cancelledCourses.length})</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="space-y-4">
+        <TabsContent value="pending" className="space-y-3 sm:space-y-4 mt-4">
           {pendingCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : (
             pendingCourses.map((course) => (
-              <Card key={course.id} className="p-4">
+              <Card key={course.id} className="p-3 sm:p-4">
                 <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{course.clients?.profiles?.full_name}</h3>
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                    <div className="space-y-1 w-full">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-sm sm:text-base">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
-                      <div className="text-sm">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground shrink-0 mt-1" />
+                      <div className="text-xs sm:text-sm min-w-0 flex-1">
                         <p className="font-medium">Départ</p>
-                        <p className="text-muted-foreground">{course.pickup_address}</p>
+                        <p className="text-muted-foreground break-words">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-destructive shrink-0 mt-1" />
-                      <div className="text-sm">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-destructive shrink-0 mt-1" />
+                      <div className="text-xs sm:text-sm min-w-0 flex-1">
                         <p className="font-medium">Arrivée</p>
-                        <p className="text-muted-foreground">{course.destination_address}</p>
+                        <p className="text-muted-foreground break-words">{course.destination_address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                       {course.passengers_count} passager(s)
                     </div>
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                    <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Montant du devis</span>
-                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                        <span className="text-xs sm:text-sm font-medium text-foreground">Montant du devis</span>
+                        <span className="text-2xl sm:text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                       {course.devis[0].quote_number && (
                         <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>

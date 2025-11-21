@@ -46,18 +46,19 @@ export const MessagingInterface = () => {
   const selectedConvo = conversations.find((c) => c.id === selectedConversation);
 
   return (
-    <div className="grid grid-cols-12 gap-6 h-[calc(100vh-250px)]">
+    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-6 h-auto lg:h-[calc(100vh-250px)]">
       {/* Conversations List */}
-      <Card className="col-span-4 overflow-hidden flex flex-col">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-xl font-bold">Messages</h2>
+      <Card className="lg:col-span-4 overflow-hidden flex flex-col max-h-[400px] lg:max-h-none">
+        <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-base sm:text-xl font-bold">Messages</h2>
           <Button
             size="sm"
-            className="bg-gradient-premium hover:opacity-90"
+            className="bg-gradient-premium hover:opacity-90 text-xs sm:text-sm"
             onClick={() => setShowContactSelector(true)}
           >
-            <MessageSquarePlus className="w-4 h-4 mr-2" />
-            Nouveau
+            <MessageSquarePlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Nouveau</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
 
@@ -72,7 +73,7 @@ export const MessagingInterface = () => {
       </Card>
 
       {/* Chat Window or Contact Selector */}
-      <Card className="col-span-8 overflow-hidden">
+      <Card className="lg:col-span-8 overflow-hidden min-h-[500px] lg:min-h-0">
         {showContactSelector ? (
           <ContactSelector
             onSelectContact={handleSelectContact}
@@ -85,18 +86,18 @@ export const MessagingInterface = () => {
             otherUser={selectedConvo.other_user}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-center p-6">
-            <div>
-              <MessageSquarePlus className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Sélectionnez une conversation</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+          <div className="flex items-center justify-center h-full text-center p-4 sm:p-6">
+            <div className="max-w-sm">
+              <MessageSquarePlus className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold mb-2">Sélectionnez une conversation</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Choisissez une conversation existante ou créez-en une nouvelle
               </p>
               <Button
-                className="bg-gradient-premium hover:opacity-90"
+                className="bg-gradient-premium hover:opacity-90 text-xs sm:text-sm w-full sm:w-auto"
                 onClick={() => setShowContactSelector(true)}
               >
-                <MessageSquarePlus className="w-4 h-4 mr-2" />
+                <MessageSquarePlus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Nouvelle conversation
               </Button>
             </div>

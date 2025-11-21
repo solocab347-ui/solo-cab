@@ -74,22 +74,26 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Status Alert */}
       {isInactive && (
-        <Card className="p-6 bg-destructive/10 border-destructive">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="w-8 h-8 text-destructive mt-1" />
-            <div className="flex-1">
-              <h3 className="font-bold text-lg text-destructive mb-2">
+        <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
+            <div className="flex-1 w-full">
+              <h3 className="font-bold text-base sm:text-lg text-destructive mb-2">
                 Abonnement Inactif
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Votre accès à la plateforme est limité. Souscrivez à l'abonnement pour activer toutes les fonctionnalités et commencer à recevoir des clients.
               </p>
-              <Button onClick={handleSubscribe} disabled={loading} className="bg-gradient-premium">
+              <Button 
+                onClick={handleSubscribe} 
+                disabled={loading} 
+                className="bg-gradient-premium w-full sm:w-auto text-sm sm:text-base"
+              >
                 <CreditCard className="w-4 h-4 mr-2" />
-                Souscrire maintenant - 49,99€/mois
+                Souscrire - 49,99€/mois
               </Button>
             </div>
           </div>
@@ -97,14 +101,14 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {isPastDue && (
-        <Card className="p-6 bg-yellow-50 dark:bg-yellow-900/10 border-yellow-500">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="w-8 h-8 text-yellow-500 mt-1" />
+        <Card className="p-4 sm:p-6 bg-yellow-50 dark:bg-yellow-900/10 border-yellow-500">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-yellow-700 dark:text-yellow-500 mb-2">
+              <h3 className="font-bold text-base sm:text-lg text-yellow-700 dark:text-yellow-500 mb-2">
                 Paiement en Retard
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Votre dernier paiement n'a pas pu être effectué. Veuillez mettre à jour vos informations de paiement pour continuer à utiliser la plateforme.
               </p>
             </div>
@@ -113,68 +117,68 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {/* Subscription Info */}
-      <Card className="p-6">
-        <div className="flex items-start justify-between mb-6">
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
-            <h3 className="font-bold text-xl mb-2">Abonnement SoloCab</h3>
-            <p className="text-muted-foreground">
+            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2">Abonnement SoloCab</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Accès complet à la plateforme professionnelle
             </p>
           </div>
           {isActive && (
-            <Badge className="bg-green-500">
+            <Badge className="bg-green-500 self-start">
               <Check className="w-3 h-3 mr-1" />
               Actif
             </Badge>
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="flex justify-between py-3 border-b border-border">
-            <span className="text-muted-foreground">Tarif mensuel</span>
-            <span className="font-bold">49,99€ / mois</span>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-border">
+            <span className="text-xs sm:text-sm text-muted-foreground">Tarif mensuel</span>
+            <span className="font-bold text-sm sm:text-base">49,99€ / mois</span>
           </div>
 
           {isActive && driverProfile?.driver?.subscription_end_date && (
-            <div className="flex justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Prochaine facturation</span>
-              <span className="font-medium flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                {format(new Date(driverProfile.driver.subscription_end_date), "d MMMM yyyy", { locale: fr })}
+            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-border">
+              <span className="text-xs sm:text-sm text-muted-foreground">Prochaine facturation</span>
+              <span className="font-medium flex items-center gap-2 text-xs sm:text-sm">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                {format(new Date(driverProfile.driver.subscription_end_date), "d MMM yyyy", { locale: fr })}
               </span>
             </div>
           )}
 
-          <div className="bg-secondary rounded-lg p-4 space-y-2">
-            <h4 className="font-semibold mb-3">✓ Inclus dans l'abonnement :</h4>
-            <ul className="space-y-2 text-sm">
+          <div className="bg-secondary rounded-lg p-3 sm:p-4 space-y-2">
+            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">✓ Inclus dans l'abonnement :</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                Gestion illimitée de clients
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>Gestion illimitée de clients</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                Réservations et courses sans limite
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>Réservations et courses sans limite</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                Génération automatique de devis et factures
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>Génération automatique de devis et factures</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                QR Code personnel pour recruter des clients
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>QR Code personnel pour recruter des clients</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                Profil public sur la vitrine
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>Profil public sur la vitrine</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                0% de commission sur vos courses
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>0% de commission sur vos courses</span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                Support 7j/7
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                <span>Support 7j/7</span>
               </li>
             </ul>
           </div>
@@ -183,9 +187,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
-              className="w-full bg-gradient-premium text-lg py-6"
+              className="w-full bg-gradient-premium text-sm sm:text-lg py-4 sm:py-6"
             >
-              <CreditCard className="w-5 h-5 mr-2" />
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Activer mon abonnement - 49,99€/mois
             </Button>
           )}
@@ -194,20 +198,20 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       {/* Comparison */}
       {isInactive && (
-        <Card className="p-6 bg-gradient-premium">
-          <h4 className="font-bold text-lg text-premium-foreground mb-4">
+        <Card className="p-4 sm:p-6 bg-gradient-premium">
+          <h4 className="font-bold text-base sm:text-lg text-premium-foreground mb-3 sm:mb-4">
             💰 Économisez jusqu'à 15 000€/an
           </h4>
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div className="bg-premium-foreground/10 rounded-lg p-4">
-              <p className="text-premium-foreground/80 mb-2">Uber / Bolt</p>
-              <p className="text-2xl font-bold text-premium-foreground">~1 250€/mois</p>
-              <p className="text-premium-foreground/70">Commission 25%</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+            <div className="bg-premium-foreground/10 rounded-lg p-3 sm:p-4">
+              <p className="text-premium-foreground/80 mb-2 text-xs sm:text-sm">Uber / Bolt</p>
+              <p className="text-xl sm:text-2xl font-bold text-premium-foreground">~1 250€/mois</p>
+              <p className="text-premium-foreground/70 text-xs">Commission 25%</p>
             </div>
-            <div className="bg-premium-foreground rounded-lg p-4">
-              <p className="text-premium/80 mb-2">SoloCab</p>
-              <p className="text-2xl font-bold text-premium">49,99€/mois</p>
-              <p className="text-premium/70">0% commission</p>
+            <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
+              <p className="text-premium/80 mb-2 text-xs sm:text-sm">SoloCab</p>
+              <p className="text-xl sm:text-2xl font-bold text-premium">49,99€/mois</p>
+              <p className="text-premium/70 text-xs">0% commission</p>
             </div>
           </div>
         </Card>
