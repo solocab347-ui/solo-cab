@@ -164,32 +164,40 @@ const ClientDashboard = () => {
     { id: "devis-factures", label: "Devis & Factures", icon: FileText },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
-    { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users },
-    { id: "scanner", label: "Scanner QR", icon: QrCode },
-    { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User },
+    { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users, hideForExclusive: false },
+    { id: "scanner", label: "Scanner QR", icon: QrCode, hideForExclusive: true }, // Only for free clients
+    { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User, hideForExclusive: false },
     { id: "compte", label: "Mon Compte", icon: User },
   ];
 
   const renderNavigation = () => (
     <nav className="space-y-1 flex-1">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <button
-            key={item.id}
-            onClick={() => handleTabChange(item.id)}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
-              activeTab === item.id
-                ? "bg-orange-500/10 text-orange-500 font-medium"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-          >
-            <Icon className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">{item.label}</span>
-          </button>
-        );
-      })}
+      {menuItems
+        .filter((item) => {
+          // Hide scanner for exclusive clients
+          if (item.hideForExclusive && clientProfile?.is_exclusive) {
+            return false;
+          }
+          return true;
+        })
+        .map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabChange(item.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                activeTab === item.id
+                  ? "bg-orange-500/10 text-orange-500 font-medium"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+            >
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate">{item.label}</span>
+            </button>
+          );
+        })}
     </nav>
   );
 
