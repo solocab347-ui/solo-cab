@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Flag, MessageSquare, Shield, LogOut } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Flag, MessageSquare, Shield, LogOut, Bot } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminStats from "@/components/admin/AdminStats";
@@ -18,6 +18,7 @@ import AdminFreeAccess from "@/components/admin/AdminFreeAccess";
 import AdminReports from "@/components/admin/AdminReports";
 import AdminCommunications from "@/components/admin/AdminCommunications";
 import AdminRGPD from "@/components/admin/AdminRGPD";
+import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -77,6 +78,7 @@ const AdminDashboard = () => {
   const menuItems = [
     { id: "overview", label: "Vue d'ensemble", icon: Home },
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
+    { id: "assistant", label: "Demandes Max", icon: Bot },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
@@ -91,6 +93,8 @@ const AdminDashboard = () => {
         return <AdminOverview />;
       case "drivers":
         return <AdminDriversManagement />;
+      case "assistant":
+        return <AdminAssistantRequests />;
       case "subscriptions":
         return <AdminSubscriptions />;
       case "emails":

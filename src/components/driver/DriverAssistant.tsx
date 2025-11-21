@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Bot, X, Send, Minimize2, Maximize2 } from 'lucide-react';
+import { Bot, X, Send, Minimize2, Maximize2, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,6 +23,7 @@ export const DriverAssistant = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showAdminHelp, setShowAdminHelp] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -143,6 +145,64 @@ export const DriverAssistant = () => {
     }
   };
 
+  const handleContactAdmin = async () => {
+    if (!input.trim()) {
+      toast({
+        title: "Question requise",
+        description: "Veuillez saisir votre question avant de contacter l'admin.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Récupérer le driver_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!driverData) throw new Error("Profil chauffeur introuvable");
+
+      // Créer la demande d'assistance
+      const { error } = await supabase
+        .from('assistant_requests')
+        .insert({
+          driver_id: driverData.id,
+          question: input,
+          context: JSON.stringify(messages.slice(-5)), // Les 5 derniers messages pour contexte
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Question envoyée à l'administrateur",
+        description: "Un administrateur reviendra vers vous très prochainement. Vous recevrez une notification.",
+      });
+
+      setInput('');
+      setShowAdminHelp(false);
+      
+      // Ajouter un message de confirmation dans le chat
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "J'ai bien envoyé votre question à l'équipe administrative. Vous recevrez une réponse sous forme de notification dès qu'un administrateur aura traité votre demande. 📧"
+      }]);
+    } catch (error) {
+      console.error('Error contacting admin:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de contacter l'admin. Réessayez.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!isOpen) {
     return (
       <Button
@@ -229,24 +289,62 @@ export const DriverAssistant = () => {
 
           {/* Input */}
           <div className="p-3 sm:p-4 border-t">
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Pose ta question à Max..."
-                disabled={isLoading}
-                className="flex-1 text-sm"
-              />
-              <Button
-                onClick={handleSend}
-                disabled={isLoading || !input.trim()}
-                size="icon"
-                className="flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+            {showAdminHelp ? (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  Votre question sera envoyée directement à l'équipe administrative qui vous répondra par notification.
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowAdminHelp(false)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={handleContactAdmin}
+                    disabled={!input.trim()}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Envoyer à l'admin
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Pose ta question à Max..."
+                    disabled={isLoading}
+                    className="flex-1 text-sm"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={isLoading || !input.trim()}
+                    size="icon"
+                    className="flex-shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button
+                  onClick={() => setShowAdminHelp(true)}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  <HelpCircle className="h-3 w-3 mr-2" />
+                  Max ne peut pas répondre ? Contactez l'admin
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
