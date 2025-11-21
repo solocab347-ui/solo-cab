@@ -59,48 +59,79 @@ Deno.serve(async (req) => {
 
     const pricing = priceData[0];
 
-    // Generate quote number
-    const { data: quoteNumber, error: quoteError } = await supabaseClient
-      .rpc('generate_quote_number', { _driver_id: driver_id });
-
-    if (quoteError) {
-      console.error('Quote number generation error:', quoteError);
-      return new Response(
-        JSON.stringify({ error: 'Erreur génération numéro devis' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create devis
+    // Valid until date
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 7); // Valid for 7 days
 
-    const { data: devis, error: devisError } = await supabaseClient
-      .from('devis')
-      .insert({
-        course_id: course_id,
-        driver_id: driver_id,
-        client_id: course.client_id,
-        quote_number: quoteNumber,
-        base_price: pricing.base_price,
-        distance_price: pricing.distance_price,
-        time_price: pricing.time_price || 0,
-        amount: pricing.total_price,
-        valid_until: validUntil.toISOString(),
-        status: 'pending',
-      })
-      .select()
-      .single();
+    // Retry mechanism for duplicate quote numbers
+    let devis = null;
+    let lastError = null;
+    const maxRetries = 10;
 
-    if (devisError) {
-      console.error('Devis creation error:', devisError);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Generate quote number
+        const { data: quoteNumber, error: quoteError } = await supabaseClient
+          .rpc('generate_quote_number', { _driver_id: driver_id });
+
+        if (quoteError) {
+          console.error('Quote number generation error:', quoteError);
+          throw new Error('Erreur génération numéro devis');
+        }
+
+        console.log(`Attempt ${attempt + 1}: Trying to create devis with number ${quoteNumber}`);
+
+        // Try to create devis
+        const { data: createdDevis, error: devisError } = await supabaseClient
+          .from('devis')
+          .insert({
+            course_id: course_id,
+            driver_id: driver_id,
+            client_id: course.client_id,
+            quote_number: quoteNumber,
+            base_price: pricing.base_price,
+            distance_price: pricing.distance_price,
+            time_price: pricing.time_price || 0,
+            amount: pricing.total_price,
+            valid_until: validUntil.toISOString(),
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (devisError) {
+          // Check if it's a duplicate key error
+          if (devisError.code === '23505' && devisError.message?.includes('quote_number')) {
+            console.warn(`Quote number ${quoteNumber} already exists, retrying...`);
+            lastError = devisError;
+            continue; // Retry with a new number
+          }
+          // For other errors, throw immediately
+          throw devisError;
+        }
+
+        // Success!
+        devis = createdDevis;
+        console.log('Devis created successfully:', devis);
+        break;
+
+      } catch (error: any) {
+        lastError = error;
+        // For non-duplicate errors, don't retry
+        if (!(error.code === '23505' && error.message?.includes('quote_number'))) {
+          break;
+        }
+      }
+    }
+
+    // If we exhausted all retries
+    if (!devis) {
+      console.error('Failed to create devis after all retries:', lastError);
       return new Response(
-        JSON.stringify({ error: 'Erreur création devis' }),
+        JSON.stringify({ error: 'Erreur création devis après plusieurs tentatives' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log('Devis created successfully:', devis);
 
     return new Response(
       JSON.stringify({ 
