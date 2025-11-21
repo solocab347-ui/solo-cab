@@ -57,26 +57,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("Auth state change:", event);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Defer role fetching with setTimeout to avoid potential deadlock
-          setTimeout(async () => {
-            const role = await fetchUserRole(session.user.id);
-            
-            // Auto-redirect based on role
-            if (role && event === "SIGNED_IN") {
-              if (role === "driver") {
-                navigate("/driver-dashboard");
-              } else if (role === "client") {
-                navigate("/client-dashboard");
-              } else if (role === "admin") {
-                navigate("/admin-dashboard");
-              }
-            }
+          // Ne PAS faire de navigation ici - elle est gérée dans signIn()
+          setTimeout(() => {
+            fetchUserRole(session.user.id);
           }, 0);
         } else {
           setUserRole(null);
@@ -167,13 +157,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+      if (!data.user) throw new Error("Erreur de connexion");
+
+      // Récupérer le rôle IMMÉDIATEMENT après connexion
+      const role = await fetchUserRole(data.user.id);
+      
       toast.success("Connexion réussie !");
+
+      // Navigation IMMÉDIATE basée sur le rôle
+      if (role === "driver") {
+        navigate("/driver-dashboard");
+      } else if (role === "client") {
+        navigate("/client-dashboard");
+      } else if (role === "admin") {
+        navigate("/admin-dashboard");
+      }
     } catch (error: any) {
       console.error("Signin error:", error);
       toast.error(error.message || "Email ou mot de passe incorrect");
