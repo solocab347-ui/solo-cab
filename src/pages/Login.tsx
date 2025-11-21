@@ -17,13 +17,6 @@ const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  useEffect(() => {
-    // Redirect if already logged in
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
