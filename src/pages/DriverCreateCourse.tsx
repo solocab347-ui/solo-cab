@@ -290,10 +290,10 @@ const DriverCreateCourse = () => {
           Retour au dashboard
         </Button>
 
-        <Card className="p-8">
+        <Card className="p-8 bg-card border-primary/10">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-premium-foreground" />
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+              <Car className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Créer une Course</h1>
@@ -353,7 +353,7 @@ const DriverCreateCourse = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="pickup" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-premium" />
+                  <MapPin className="w-4 h-4 text-primary" />
                   Adresse de départ *
                 </Label>
                 <AddressAutocomplete
@@ -368,7 +368,7 @@ const DriverCreateCourse = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="destination" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-destructive" />
+                  <MapPin className="w-4 h-4 text-foreground" />
                   Adresse d'arrivée *
                 </Label>
                 <AddressAutocomplete
@@ -384,15 +384,15 @@ const DriverCreateCourse = () => {
 
             {/* Calculs automatiques */}
             {courseType === "classic" && distanceKm !== null && (
-              <Card className="p-4 bg-gradient-trust border-0">
+              <Card className="p-4 bg-primary/5 border border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-trust-foreground/80">Distance calculée</p>
-                    <p className="text-2xl font-bold text-trust-foreground">{distanceKm} km</p>
+                    <p className="text-sm text-muted-foreground">Distance calculée</p>
+                    <p className="text-2xl font-bold text-primary">{distanceKm} km</p>
                   </div>
                   <div>
-                    <p className="text-sm text-trust-foreground/80">Durée estimée</p>
-                    <p className="text-2xl font-bold text-trust-foreground">{durationMinutes} min</p>
+                    <p className="text-sm text-muted-foreground">Durée estimée</p>
+                    <p className="text-2xl font-bold text-primary">{durationMinutes} min</p>
                   </div>
                 </div>
               </Card>
@@ -423,15 +423,15 @@ const DriverCreateCourse = () => {
 
             {/* Prix estimé */}
             {calculatedPrice !== null && (
-              <Card className="p-4 bg-gradient-warning border-0">
+              <Card className="p-4 bg-primary/10 border border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-warning-foreground/80">Prix estimé TTC</p>
-                    <p className="text-sm text-warning-foreground/60 mt-1">
+                    <p className="text-sm text-foreground font-medium">Prix estimé TTC</p>
+                    <p className="text-sm text-muted-foreground mt-1">
                       {courseType === "classic" ? "TVA 10% incluse" : "TVA 20% incluse"}
                     </p>
                   </div>
-                  <p className="text-3xl font-bold text-warning-foreground">{calculatedPrice}€</p>
+                  <p className="text-3xl font-bold text-primary">{calculatedPrice}€</p>
                 </div>
               </Card>
             )}
@@ -494,7 +494,7 @@ const DriverCreateCourse = () => {
               <Button
                 type="submit"
                 disabled={loading || calculating || !selectedClientId}
-                className="flex-1 bg-gradient-premium"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
                 {loading ? "Création..." : calculating ? "Calcul en cours..." : "Créer la course"}
               </Button>

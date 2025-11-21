@@ -231,10 +231,10 @@ const CreateCourse = () => {
           Retour
         </Button>
 
-        <Card className="p-8">
+        <Card className="p-8 bg-card border-primary/10">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-premium-foreground" />
+            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+              <Car className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Nouvelle Réservation</h1>
@@ -387,7 +387,7 @@ const CreateCourse = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-premium"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
                 {loading ? "Création..." : "Créer la réservation"}
               </Button>
