@@ -32,16 +32,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated");
     console.log("[CREATE-DRIVER-SUBSCRIPTION] User authenticated:", user.email);
 
-    // Get driver profile
-    const { data: driver, error: driverError } = await supabaseClient
-      .from("drivers")
-      .select("id, user_id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (driverError) throw new Error(`Error fetching driver: ${driverError.message}`);
-    if (!driver) throw new Error("Driver not found");
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] Driver found:", driver.id);
+    // Get driver_id from request body
+    const { driver_id } = await req.json();
+    if (!driver_id) throw new Error("driver_id is required");
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] Driver ID:", driver_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -55,26 +49,41 @@ serve(async (req) => {
       customerId = customers.data[0].id;
       console.log("[CREATE-DRIVER-SUBSCRIPTION] Existing customer:", customerId);
     } else {
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] Creating new customer");
+      // Create new customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: {
+          user_id: user.id,
+          driver_id: driver_id,
+        },
+      });
+      customerId = customer.id;
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] Created new customer:", customerId);
     }
 
-    // Create checkout session for subscription
-    // Price ID: price_1SVbha34nJZKnmmIhoIPnctn (49.99€/mois)
+    // Create checkout session for one-time payment of 49.99€
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1SVbha34nJZKnmmIhoIPnctn",
+          price_data: {
+            currency: "eur",
+            unit_amount: 4999, // 49.99€
+            product_data: {
+              name: "Abonnement SoloCab - Chauffeur VTC",
+              description: "Inscription et abonnement mensuel à la plateforme SoloCab",
+            },
+          },
           quantity: 1,
         },
       ],
-      mode: "subscription",
-      success_url: `${req.headers.get("origin")}/dashboard?subscription=success`,
-      cancel_url: `${req.headers.get("origin")}/dashboard?subscription=cancelled`,
+      mode: "payment",
+      success_url: `${req.headers.get("origin")}/registration-success?driver_id=${driver_id}`,
+      cancel_url: `${req.headers.get("origin")}/register-driver`,
       metadata: {
-        driver_id: driver.id,
+        driver_id: driver_id,
         user_id: user.id,
+        type: "driver_subscription",
       },
     });
 

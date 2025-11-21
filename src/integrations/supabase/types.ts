@@ -408,6 +408,7 @@ export type Database = {
           created_at: string
           display_company_name: boolean | null
           display_driver_name: boolean | null
+          documents: Json | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -425,6 +426,7 @@ export type Database = {
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
           subscription_end_date: string | null
+          subscription_paid: boolean | null
           subscription_status: string | null
           subscription_stripe_id: string | null
           total_rides: number | null
@@ -451,6 +453,7 @@ export type Database = {
           created_at?: string
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
+          documents?: Json | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -468,6 +471,7 @@ export type Database = {
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null
+          subscription_paid?: boolean | null
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null
@@ -494,6 +498,7 @@ export type Database = {
           created_at?: string
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
+          documents?: Json | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -511,6 +516,7 @@ export type Database = {
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
           subscription_end_date?: string | null
+          subscription_paid?: boolean | null
           subscription_status?: string | null
           subscription_stripe_id?: string | null
           total_rides?: number | null

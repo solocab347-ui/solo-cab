@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Search, Car } from "lucide-react";
+import { CheckCircle, XCircle, Search, Car, FileText } from "lucide-react";
 import Pagination from "@/components/Pagination";
+import DocumentViewer from "./DocumentViewer";
 
 const DriversValidation = () => {
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -14,6 +15,8 @@ const DriversValidation = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  const [showDocuments, setShowDocuments] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -129,7 +132,13 @@ const DriversValidation = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <DocumentViewer
+        open={showDocuments}
+        onOpenChange={setShowDocuments}
+        driver={selectedDriver}
+      />
+      <div className="space-y-6">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -186,26 +195,41 @@ const DriversValidation = () => {
                       </div>
                     </div>
                   </div>
-                  {driver.status === "pending" && (
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    {driver.documents && Object.keys(driver.documents).length > 0 && (
                       <Button
-                        onClick={() => handleValidate(driver.id)}
-                        size="sm"
-                        className="bg-gradient-premium"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Valider
-                      </Button>
-                      <Button
-                        onClick={() => handleReject(driver.id)}
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setShowDocuments(true);
+                        }}
                         variant="outline"
                         size="sm"
                       >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Rejeter
+                        <FileText className="w-4 h-4 mr-2" />
+                        Voir documents
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    {driver.status === "pending" && (
+                      <>
+                        <Button
+                          onClick={() => handleValidate(driver.id)}
+                          size="sm"
+                          className="bg-gradient-premium"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Valider
+                        </Button>
+                        <Button
+                          onClick={() => handleReject(driver.id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Rejeter
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}
@@ -219,7 +243,8 @@ const DriversValidation = () => {
           />
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
