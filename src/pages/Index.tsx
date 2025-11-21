@@ -363,6 +363,92 @@ const Index = () => {
         </div>
       </section>
 
+      {/* For Clients Section */}
+      <section className="py-20 bg-gradient-to-b from-background to-secondary/10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 border-pink-500 text-pink-500">
+              Pour les Clients
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Des professionnels indépendants, des tarifs transparents
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {clientFeatures.map((feature, index) => (
+              <Card 
+                key={index} 
+                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/chauffeurs">
+              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg">
+                <Search className="w-5 h-5 mr-2" />
+                Rechercher un chauffeur
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* For Drivers Section */}
+      <section className="py-20 bg-secondary/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 border-blue-500 text-blue-500">
+              Pour les Chauffeurs
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Devenez un <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Chauffeur Indépendant</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Profil automatique, clients privés, zéro commission
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {driverFeatures.map((feature, index) => (
+              <Card 
+                key={index} 
+                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="font-bold text-base mb-2 group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/devenir-chauffeur">
+              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
+                <Zap className="w-5 h-5 mr-2" />
+                Rejoindre la communauté
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600">
         <div className="container mx-auto px-4 text-center">
