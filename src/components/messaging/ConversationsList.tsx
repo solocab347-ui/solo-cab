@@ -1,14 +1,18 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
-import { Conversation } from "@/hooks/useMessaging";
 import { MessageSquare, Car, FileText, Receipt, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Conversation } from "@/hooks/useMessaging";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -116,79 +120,135 @@ export const ConversationsList = ({
     );
   }
 
+  const selectedConvo = conversations.find(c => c.id === selectedConversation);
+
   return (
-    <ScrollArea className="h-full">
-      <div className="space-y-2 p-4">
-        {conversations.map((conversation) => (
-          <Card
-            key={conversation.id}
-            className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-              selectedConversation === conversation.id
-                ? "bg-primary/10 border-primary"
-                : "hover:bg-muted/50"
-            }`}
-            onClick={() => onSelectConversation(conversation.id)}
-          >
-            <div className="flex items-start gap-3">
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={conversation.other_user.profile_photo_url || undefined} />
+    <div className="p-4">
+      <Select
+        value={selectedConversation || undefined}
+        onValueChange={onSelectConversation}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Sélectionner une conversation">
+            {selectedConvo && (
+              <div className="flex items-center gap-2">
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src={selectedConvo.other_user.profile_photo_url || undefined} />
+                  <AvatarFallback className="bg-gradient-trust text-trust-foreground text-xs">
+                    {selectedConvo.other_user.full_name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate">{selectedConvo.other_user.full_name}</span>
+                {selectedConvo.unread_count > 0 && (
+                  <Badge variant="default" className="bg-primary ml-1">
+                    {selectedConvo.unread_count}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="max-h-[400px]">
+          {conversations.map((conversation) => (
+            <SelectItem key={conversation.id} value={conversation.id}>
+              <div className="flex items-center gap-3 py-1 w-full">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={conversation.other_user.profile_photo_url || undefined} />
+                  <AvatarFallback className="bg-gradient-trust text-trust-foreground text-xs">
+                    {conversation.other_user.full_name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold truncate text-sm">
+                      {conversation.other_user.full_name}
+                    </span>
+                    {conversation.unread_count > 0 && (
+                      <Badge variant="default" className="bg-primary flex items-center gap-1 text-xs">
+                        <MessageCircle className="w-3 h-3" />
+                        {conversation.unread_count}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Notifications badges */}
+                  <div className="flex flex-wrap gap-1">
+                    {notifications[conversation.id]?.courses > 0 && (
+                      <Badge variant="outline" className="bg-accent/10 text-accent border-accent text-xs flex items-center gap-1">
+                        <Car className="w-3 h-3" />
+                        {notifications[conversation.id].courses}
+                      </Badge>
+                    )}
+                    {notifications[conversation.id]?.devis > 0 && (
+                      <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary text-xs flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        {notifications[conversation.id].devis}
+                      </Badge>
+                    )}
+                    {notifications[conversation.id]?.factures > 0 && (
+                      <Badge variant="outline" className="bg-warning/10 text-warning border-warning text-xs flex items-center gap-1">
+                        <Receipt className="w-3 h-3" />
+                        {notifications[conversation.id].factures}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Preview card of selected conversation */}
+      {selectedConvo && (
+        <Card className="mt-4 p-4 border border-border/50">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={selectedConvo.other_user.profile_photo_url || undefined} />
                 <AvatarFallback className="bg-gradient-trust text-trust-foreground">
-                  {conversation.other_user.full_name?.charAt(0) || "U"}
+                  {selectedConvo.other_user.full_name?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
-
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="font-semibold truncate">
-                    {conversation.other_user.full_name}
-                  </h4>
-                  {conversation.unread_count > 0 && (
-                    <Badge variant="default" className="bg-primary ml-2 flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" />
-                      {conversation.unread_count}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Notifications badges */}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {notifications[conversation.id]?.courses > 0 && (
-                    <Badge variant="outline" className="bg-accent/10 text-accent border-accent text-xs flex items-center gap-1">
-                      <Car className="w-3 h-3" />
-                      {notifications[conversation.id].courses} course{notifications[conversation.id].courses > 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                  {notifications[conversation.id]?.devis > 0 && (
-                    <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary text-xs flex items-center gap-1">
-                      <FileText className="w-3 h-3" />
-                      {notifications[conversation.id].devis} devis
-                    </Badge>
-                  )}
-                  {notifications[conversation.id]?.factures > 0 && (
-                    <Badge variant="outline" className="bg-warning/10 text-warning border-warning text-xs flex items-center gap-1">
-                      <Receipt className="w-3 h-3" />
-                      {notifications[conversation.id].factures} facture{notifications[conversation.id].factures > 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                </div>
-
-                {conversation.last_message && (
+                <h4 className="font-semibold truncate">{selectedConvo.other_user.full_name}</h4>
+                {selectedConvo.last_message && (
                   <p className="text-sm text-muted-foreground truncate">
-                    {conversation.last_message.content}
+                    {selectedConvo.last_message.content}
                   </p>
                 )}
-
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatDistanceToNow(new Date(conversation.last_message_at), {
-                    addSuffix: true,
-                    locale: fr,
-                  })}
-                </p>
               </div>
             </div>
-          </Card>
-        ))}
-      </div>
-    </ScrollArea>
+
+            {/* Notifications in preview */}
+            {(notifications[selectedConvo.id]?.courses > 0 || 
+              notifications[selectedConvo.id]?.devis > 0 || 
+              notifications[selectedConvo.id]?.factures > 0) && (
+              <div className="flex flex-wrap gap-1 pt-2 border-t border-border/50">
+                {notifications[selectedConvo.id]?.courses > 0 && (
+                  <Badge variant="outline" className="bg-accent/10 text-accent border-accent text-xs flex items-center gap-1">
+                    <Car className="w-3 h-3" />
+                    {notifications[selectedConvo.id].courses} course{notifications[selectedConvo.id].courses > 1 ? 's' : ''}
+                  </Badge>
+                )}
+                {notifications[selectedConvo.id]?.devis > 0 && (
+                  <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary text-xs flex items-center gap-1">
+                    <FileText className="w-3 h-3" />
+                    {notifications[selectedConvo.id].devis} devis
+                  </Badge>
+                )}
+                {notifications[selectedConvo.id]?.factures > 0 && (
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning text-xs flex items-center gap-1">
+                    <Receipt className="w-3 h-3" />
+                    {notifications[selectedConvo.id].factures} facture{notifications[selectedConvo.id].factures > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+    </div>
   );
 };
