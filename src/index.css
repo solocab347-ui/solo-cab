@@ -91,14 +91,14 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Base colors - Mode sombre avec noir dominant */
-    --background: 0 0% 6%;
+    /* Base colors - Mode sombre avec noir profond dominant */
+    --background: 0 0% 3%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 10%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 8%;
+    --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
     /* Primary - Bleu lumineux */
@@ -119,8 +119,8 @@ All colors MUST be HSL.
     --accent-dark: 280 40% 60%;
     --accent-foreground: 0 0% 100%;
 
-    /* Muted - Gris foncé */
-    --muted: 0 0% 18%;
+    /* Muted - Gris très foncé */
+    --muted: 0 0% 12%;
     --muted-foreground: 0 0% 70%;
 
     /* Trust - Bleu intense */
@@ -148,8 +148,8 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
     --ring: 210 50% 65%;
 
     /* Gradients harmonieux mode sombre */
@@ -160,7 +160,7 @@ All colors MUST be HSL.
     --gradient-trust: linear-gradient(135deg, hsl(210 55% 55%), hsl(210 50% 75%));
     --gradient-success: linear-gradient(135deg, hsl(160 35% 65%), hsl(160 30% 85%));
     --gradient-triple: linear-gradient(135deg, hsl(210 50% 65%), hsl(280 40% 70%), hsl(160 30% 75%));
-    --gradient-bg: linear-gradient(135deg, hsl(0 0% 6%) 0%, hsl(220 15% 4%) 50%, hsl(0 0% 6%) 100%);
+    --gradient-bg: linear-gradient(135deg, hsl(0 0% 3%) 0%, hsl(220 20% 2%) 50%, hsl(0 0% 3%) 100%);
 
     /* Shadows lumineuses */
     --shadow-elegant: 0 10px 40px -15px hsl(210 50% 65% / 0.4);
