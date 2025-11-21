@@ -1099,10 +1099,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                    <div className="p-4 bg-primary/5 backdrop-blur-sm rounded-lg border border-primary/10">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground">Montant du devis</span>
-                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                        <span className="text-3xl font-bold text-primary">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                     </div>
                   )}
@@ -1241,10 +1241,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   </div>
 
                   {course.factures && course.factures.length > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
+                    <div className="p-4 bg-success/5 backdrop-blur-sm rounded-lg border border-success/10">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground">Montant de la facture</span>
-                        <span className="text-3xl font-bold text-green-600">{course.factures[0].amount.toFixed(2)}€</span>
+                        <span className="text-3xl font-bold text-success">{course.factures[0].amount.toFixed(2)}€</span>
                       </div>
                       {course.factures[0].invoice_number_generated && (
                         <p className="text-xs text-muted-foreground mt-1">Réf: {course.factures[0].invoice_number_generated}</p>
@@ -1352,10 +1352,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
-                    <div className="p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
+                    <div className="p-4 bg-primary/5 backdrop-blur-sm rounded-lg border border-primary/10">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground">Montant du devis</span>
-                        <span className="text-3xl font-bold text-blue-600">{course.devis[0].amount.toFixed(2)}€</span>
+                        <span className="text-3xl font-bold text-primary">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                     </div>
                   )}
