@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.driver-assistant]
 verify_jwt = true
+
+[functions.create-production-test-accounts]
+verify_jwt = false
