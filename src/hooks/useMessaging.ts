@@ -153,6 +153,13 @@ export const useMessaging = () => {
     setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
+      // Récupérer les informations de la conversation pour la notification
+      const { data: conversationData } = await supabase
+        .from("conversations")
+        .select("participant_1_id, participant_2_id")
+        .eq("id", conversationId)
+        .single();
+
       const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
@@ -160,6 +167,28 @@ export const useMessaging = () => {
       });
 
       if (error) throw error;
+
+      // Identifier le destinataire et créer une notification
+      if (conversationData) {
+        const recipientId = conversationData.participant_1_id === user.id 
+          ? conversationData.participant_2_id 
+          : conversationData.participant_1_id;
+
+        // Récupérer le nom de l'expéditeur pour la notification
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        await supabase.from("notifications").insert({
+          user_id: recipientId,
+          title: "Nouveau message",
+          message: `${senderProfile?.full_name || "Un utilisateur"} vous a envoyé un message : "${content.trim().substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+          type: "new_message",
+          link: "/driver-dashboard?tab=messages"
+        });
+      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       toast.error("Erreur lors de l'envoi du message");

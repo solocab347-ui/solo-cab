@@ -183,6 +183,13 @@ const CreateCourse = () => {
 
       console.log("Course created:", course);
 
+      // Récupérer le user_id du chauffeur pour la notification
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("user_id")
+        .eq("id", assignedDriverId)
+        .single();
+
       // CORRECTION: Génération automatique du devis après création de course
       try {
         const { data: devisData, error: devisError } = await supabase.functions.invoke(
@@ -201,6 +208,18 @@ const CreateCourse = () => {
           toast.warning("Réservation créée mais erreur lors de la génération du devis");
         } else {
           console.log("Devis auto-generated:", devisData);
+          
+          // Notifier le chauffeur de la nouvelle demande de course
+          if (driverData?.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "Nouvelle demande de course",
+              message: `Vous avez reçu une nouvelle demande de course de ${pickupAddress} à ${destinationAddress}. Un devis a été généré automatiquement.`,
+              type: "course_request",
+              link: "/driver-dashboard?tab=courses"
+            });
+          }
+          
           toast.success("Réservation et devis créés avec succès !");
         }
       } catch (devisGenError) {
