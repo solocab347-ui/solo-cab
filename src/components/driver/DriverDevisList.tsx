@@ -187,10 +187,20 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     // Client info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", 145, 65);
+    doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(devis.clients?.profiles?.full_name || "N/A", 145, 71);
+    
+    const clientName = devis.clients?.profiles?.full_name || "N/A";
+    doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+    
+    if (devis.clients?.profiles?.email) {
+      doc.text(devis.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+    }
+    
+    if (devis.clients?.profiles?.phone) {
+      doc.text(`Tél: ${devis.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    }
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
