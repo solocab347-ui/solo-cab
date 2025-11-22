@@ -10,7 +10,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string;
-  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "course_notification" | "devis_notification";
+  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification";
   data?: {
     driverName?: string;
     clientName?: string;
@@ -266,6 +266,60 @@ const getEmailTemplate = (type: string, data: any) => {
               </div>
               <div class="footer">
                 <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    },
+
+    driver_on_hold: {
+      subject: "⏳ Informations complémentaires requises - SoloCab",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .info-box { background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⏳ Dossier en attente</h1>
+              </div>
+              <div class="content">
+                <p>Bonjour <strong>${data.driverName || "Chauffeur"}</strong>,</p>
+                
+                <p>Nous avons examiné votre demande d'inscription sur SoloCab.</p>
+                
+                <div class="info-box">
+                  <p><strong>📋 Statut de votre dossier :</strong></p>
+                  <p>Votre dossier nécessite des <strong>informations complémentaires</strong> avant validation.</p>
+                </div>
+                
+                <p><strong>Prochaines étapes :</strong></p>
+                <ul>
+                  <li>Notre équipe vous contactera dans les <strong>24 à 48 heures</strong></li>
+                  <li>Nous vous indiquerons les documents ou informations manquants</li>
+                  <li>Une fois complété, votre dossier sera traité rapidement</li>
+                </ul>
+                
+                <p>En attendant, votre compte reste en attente de validation. Vous recevrez un nouvel email dès que nous aurons toutes les informations nécessaires.</p>
+                
+                <p>Merci de votre patience et de votre compréhension !</p>
+                
+                <p>L'équipe SoloCab</p>
+              </div>
+              <div class="footer">
+                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
               </div>
             </div>
           </body>
