@@ -503,6 +503,13 @@ const CreateCourse = () => {
                 {loading ? "Création..." : "Créer la réservation"}
               </Button>
             </div>
+            
+            {/* Message d'information */}
+            <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm text-center text-muted-foreground">
+                ℹ️ Une fois que vous aurez réservé, vous recevrez instantanément un devis.
+              </p>
+            </div>
           </form>
         </Card>
       </div>
