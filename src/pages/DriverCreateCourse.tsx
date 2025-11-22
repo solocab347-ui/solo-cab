@@ -54,54 +54,6 @@ const DriverCreateCourse = () => {
 
   const [driverProfile, setDriverProfile] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchDriverProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data: driver, error } = await supabase
-          .from("drivers")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("❌ Error fetching driver profile:", error);
-          toast.error("Erreur lors du chargement du profil");
-          return;
-        }
-
-        if (driver) {
-          setDriverProfile(driver);
-        }
-      } catch (err) {
-        console.error("❌ Exception fetching driver profile:", err);
-        toast.error("Erreur lors du chargement du profil");
-      }
-    };
-
-    fetchDriverProfile();
-    fetchClients();
-  }, [user]);
-
-  useEffect(() => {
-    if (preSelectedClientId && clients.length > 0) {
-      setSelectedClientId(preSelectedClientId);
-    }
-  }, [preSelectedClientId, clients]);
-
-  useEffect(() => {
-    if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
-      calculateRouteData();
-    }
-  }, [pickupCoordinates, destinationCoordinates, courseType, driverProfile]);
-
-  useEffect(() => {
-    if (driverProfile) {
-      calculateEstimatedPrice();
-    }
-  }, [distanceKm, durationMinutes, durationHours, courseType, driverProfile]);
-
   const fetchDriverProfile = async () => {
     if (!user) return;
 
@@ -114,6 +66,7 @@ const DriverCreateCourse = () => {
 
       if (error) {
         console.error("❌ Error fetching driver profile:", error);
+        toast.error("Erreur lors du chargement du profil");
         return;
       }
 
@@ -122,6 +75,7 @@ const DriverCreateCourse = () => {
       }
     } catch (err) {
       console.error("❌ Exception fetching driver profile:", err);
+      toast.error("Erreur lors du chargement du profil");
     }
   };
 
@@ -173,6 +127,32 @@ const DriverCreateCourse = () => {
       toast.error("Erreur lors du chargement des clients");
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      fetchDriverProfile();
+      fetchClients();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (preSelectedClientId && clients.length > 0) {
+      setSelectedClientId(preSelectedClientId);
+    }
+  }, [preSelectedClientId, clients]);
+
+  useEffect(() => {
+    if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
+      calculateRouteData();
+    }
+  }, [pickupCoordinates, destinationCoordinates, courseType, driverProfile]);
+
+  useEffect(() => {
+    if (driverProfile) {
+      calculateEstimatedPrice();
+    }
+  }, [distanceKm, durationMinutes, durationHours, courseType, driverProfile]);
+
 
   const calculateRouteData = async () => {
     if (!pickupCoordinates || !destinationCoordinates) return;
