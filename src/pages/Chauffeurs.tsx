@@ -38,8 +38,8 @@ const Chauffeurs = () => {
   const [cityCoordinates, setCityCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [addressSearch, setAddressSearch] = useState("");
   const [addressCoordinates, setAddressCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [radiusCity, setRadiusCity] = useState([50]);
-  const [radiusAddress, setRadiusAddress] = useState([50]);
+  const [radiusCity, setRadiusCity] = useState([10]);
+  const [radiusAddress, setRadiusAddress] = useState([10]);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -278,21 +278,36 @@ const Chauffeurs = () => {
                     placeholder="Commencez à taper : Paris, Lyon, Marseille..."
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-3 block">
-                    Rayon de recherche: {radiusCity[0]} km
-                  </label>
-                  <Slider
-                    value={radiusCity}
-                    onValueChange={setRadiusCity}
-                    min={5}
-                    max={50}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>5 km</span>
-                    <span>50 km</span>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Rayon de recherche</label>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
+                        <span className="text-3xl font-bold text-white">{radiusCity[0]}</span>
+                        <span className="text-sm text-white/90 font-medium">km</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative pt-2 pb-4">
+                    <Slider
+                      value={radiusCity}
+                      onValueChange={setRadiusCity}
+                      min={5}
+                      max={50}
+                      step={5}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between mt-3 text-xs text-muted-foreground">
+                      <span>5 km</span>
+                      <span>25 km</span>
+                      <span>50 km</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                    <p>
+                      Recherche jusqu'à <span className="font-semibold text-purple-700 dark:text-purple-400">{radiusCity[0]} km</span> autour de la ville sélectionnée
+                    </p>
                   </div>
                 </div>
               </div>
@@ -315,21 +330,36 @@ const Chauffeurs = () => {
                     placeholder="Tapez votre adresse : 12 Rue de la Paix, Paris..."
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-3 block">
-                    Rayon de recherche: {radiusAddress[0]} km
-                  </label>
-                  <Slider
-                    value={radiusAddress}
-                    onValueChange={setRadiusAddress}
-                    min={5}
-                    max={50}
-                    step={5}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>5 km</span>
-                    <span>50 km</span>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Rayon de recherche</label>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
+                        <span className="text-3xl font-bold text-white">{radiusAddress[0]}</span>
+                        <span className="text-sm text-white/90 font-medium">km</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative pt-2 pb-4">
+                    <Slider
+                      value={radiusAddress}
+                      onValueChange={setRadiusAddress}
+                      min={5}
+                      max={50}
+                      step={5}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between mt-3 text-xs text-muted-foreground">
+                      <span>5 km</span>
+                      <span>25 km</span>
+                      <span>50 km</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <Navigation className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                    <p>
+                      Recherche jusqu'à <span className="font-semibold text-purple-700 dark:text-purple-400">{radiusAddress[0]} km</span> autour de l'adresse saisie
+                    </p>
                   </div>
                 </div>
               </div>
