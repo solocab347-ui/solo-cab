@@ -214,7 +214,7 @@ export const VehiclePhotosManager = ({
               ) : (
                 <Camera className="w-4 h-4 mr-2" />
               )}
-              Télécharger photo
+              Ajouter moi-même l'image de mon véhicule
             </Button>
           </div>
         </div>
