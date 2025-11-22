@@ -12,16 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Car, MapPin, Calendar, Users, ArrowLeft, Tag } from "lucide-react";
-import { geocodeAddress, calculateRoute, validateCourseData } from "@/lib/geocoding";
+import { geocodeAddress } from "@/lib/geocoding";
+import { useCourseCreation } from "@/hooks/useCourseCreation";
+import { validateCoordinates } from "@/lib/courseValidation";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { createCourse, loading } = useCourseCreation();
 
   const driverId = searchParams.get("driver_id");
-
-  const [loading, setLoading] = useState(false);
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -183,27 +184,23 @@ const CreateCourse = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user) {
-      toast.error("Vous devez être connecté");
-      navigate("/login");
+    if (!user || !driverId) {
+      toast.error("Informations manquantes pour créer la course");
       return;
     }
 
-    // VALIDATION STRICTE: Vérification complète des données
-    const validation = validateCourseData(
-      pickupAddress,
-      destinationAddress,
-      pickupCoordinates,
-      destinationCoordinates,
-      scheduledDate
-    );
-
-    if (!validation.valid) {
-      toast.error(validation.error || "Données de course invalides");
+    // VALIDATION: Vérifier les coordonnées
+    if (!validateCoordinates(pickupCoordinates) || !validateCoordinates(destinationCoordinates)) {
+      toast.error("Veuillez sélectionner des adresses valides avec le système d'autocomplétion");
       return;
     }
 
-    setLoading(true);
+    // VALIDATION: Vérifier la date
+    if (!scheduledDate) {
+      toast.error("Veuillez sélectionner une date");
+      return;
+    }
+
     try {
       // Get client_id
       const { data: clientData } = await supabase
@@ -217,134 +214,65 @@ const CreateCourse = () => {
         return;
       }
 
-      // Prepare driver_ids array (dual association)
-      let driverIds: string[] = [];
-      let assignedDriverId: string | null = null;
-
+      // Déterminer le driver assigné
+      let assignedDriverId: string;
       if (clientData.is_exclusive && clientData.driver_id) {
-        // Client exclusif : assigner au chauffeur attitré
         assignedDriverId = clientData.driver_id;
-        driverIds = [clientData.driver_id];
       } else if (driverId) {
-        // Client libre : assigner au chauffeur choisi
         assignedDriverId = driverId;
-        driverIds = [driverId];
       } else {
         toast.error("Aucun chauffeur sélectionné");
         return;
       }
 
-      // SYSTÈME RENFORCÉ: Calcul via fonction centralisée
-      const routeResult = await calculateRoute(pickupCoordinates!, destinationCoordinates!);
-      
-      if (!routeResult.success || !routeResult.distance_km || !routeResult.duration_minutes) {
-        toast.error("Impossible de calculer l'itinéraire. Veuillez vérifier les adresses.");
-        setLoading(false);
-        return;
-      }
+      // Utiliser le hook sécurisé pour créer la course
+      const course = await createCourse({
+        userId: user.id,
+        clientId: clientData.id,
+        driverId: assignedDriverId,
+        pickupAddress,
+        pickupCoordinates,
+        destinationAddress,
+        destinationCoordinates,
+        scheduledDate,
+        passengersCount,
+        notes,
+        promoCode,
+      });
 
-      const calculatedDistance = routeResult.distance_km;
-      const calculatedDuration = routeResult.duration_minutes;
-      
-      toast.success(`Itinéraire calculé: ${calculatedDistance} km`);
+      if (course) {
+        // Notifier le chauffeur
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("user_id")
+          .eq("id", assignedDriverId)
+          .maybeSingle();
 
-      // Create course (client créé = besoin double acceptation)
-      const { data: course, error: courseError } = await supabase
-        .from("courses")
-        .insert({
-          client_id: clientData.id,
-          driver_id: assignedDriverId,
-          driver_ids: driverIds,
-          pickup_address: pickupAddress,
-          pickup_latitude: pickupCoordinates?.latitude || null,
-          pickup_longitude: pickupCoordinates?.longitude || null,
-          destination_address: destinationAddress,
-          destination_latitude: destinationCoordinates?.latitude || null,
-          destination_longitude: destinationCoordinates?.longitude || null,
-          scheduled_date: new Date(scheduledDate).toISOString(),
-          passengers_count: parseInt(passengersCount),
-          distance_km: calculatedDistance,
-          duration_minutes: calculatedDuration,
-          notes: notes || null,
-          promo_code: promoCode !== "none" ? promoCode : null,
-          status: "pending",
-          created_by_user_id: user.id, // Client créateur
-        })
-        .select()
-        .single();
-
-      if (courseError) {
-        console.error("Course creation error:", courseError);
-        toast.error("Erreur lors de la création de la réservation");
-        return;
-      }
-
-      console.log("Course created:", course);
-
-      // Récupérer le user_id du chauffeur pour la notification
-      const { data: driverData } = await supabase
-        .from("drivers")
-        .select("user_id")
-        .eq("id", assignedDriverId)
-        .maybeSingle();
-
-      // CORRECTION: Génération automatique du devis après création de course
-      try {
-        const { data: devisData, error: devisError } = await supabase.functions.invoke(
-          'create-devis-auto',
-          {
-            body: {
-              course_id: course.id,
-              driver_id: assignedDriverId,
-              use_hourly_rate: false, // Par défaut: facturation au km (TVA 10%)
-            },
-          }
-        );
-
-        if (devisError) {
-          console.error("Devis auto-generation error:", devisError);
-          toast.warning("Réservation créée mais erreur lors de la génération du devis");
-        } else {
-          console.log("Devis auto-generated:", devisData);
-          
-          // Notifier le chauffeur de la nouvelle demande de course
-          if (driverData?.user_id) {
-            await supabase.from("notifications").insert({
-              user_id: driverData.user_id,
-              title: "Nouvelle demande de course",
-              message: `Vous avez reçu une nouvelle demande de course de ${pickupAddress} à ${destinationAddress}. Un devis a été généré automatiquement.`,
-              type: "course_request",
-              link: "/driver-dashboard?tab=courses"
-            });
-          }
-          
-          // Notifier le client que le devis est généré
+        if (driverData?.user_id) {
           await supabase.from("notifications").insert({
-            user_id: user.id,
-            title: "Devis généré",
-            message: "Votre devis a été généré automatiquement. Rendez-vous dans la section 'Devis et Factures' pour le consulter et l'accepter.",
-            type: "info",
-            link: "/client-dashboard?tab=devis"
-          });
-          
-          toast.success("Réservation créée avec succès !");
-          toast.info("Votre devis a été généré ! Consultez-le dans la section 'Devis et Factures'.", {
-            duration: 5000,
+            user_id: driverData.user_id,
+            title: "Nouvelle demande de course",
+            message: `Nouvelle demande de ${pickupAddress} à ${destinationAddress}`,
+            type: "course_request",
+            link: "/driver-dashboard?tab=courses",
           });
         }
-      } catch (devisGenError) {
-        console.error("Devis generation exception:", devisGenError);
-        toast.warning("Réservation créée, le devis sera généré ultérieurement");
-      }
-      
-      // Redirect to client dashboard
-      setTimeout(() => navigate("/client-dashboard"), 1500);
 
+        // Notifier le client
+        await supabase.from("notifications").insert({
+          user_id: user.id,
+          title: "Devis généré",
+          message: "Votre devis a été généré. Consultez-le dans 'Devis et Factures'",
+          type: "info",
+          link: "/client-dashboard?tab=devis",
+        });
+
+        toast.info("Consultez votre devis dans 'Devis et Factures'", { duration: 5000 });
+        setTimeout(() => navigate("/client-dashboard"), 1500);
+      }
     } catch (error: any) {
-      console.error("Error:", error);
-      toast.error("Une erreur est survenue");
-    } finally {
-      setLoading(false);
+      console.error("❌ Unexpected error:", error);
+      toast.error("Une erreur inattendue est survenue");
     }
   };
 
