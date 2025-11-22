@@ -450,28 +450,26 @@ const CreateCourse = () => {
             </div>
 
             {/* Code promo */}
-            {availablePromos.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="promo" className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-success" />
-                  Code promo disponible
-                </Label>
-                <Select value={promoCode} onValueChange={setPromoCode}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez un code promo (optionnel)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Aucun code promo</SelectItem>
-                    {availablePromos.map((promo) => (
-                      <SelectItem key={promo.id} value={promo.code}>
-                        {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
-                        {promo.description && ` (${promo.description})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="promo" className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-success" />
+                Code promo {availablePromos.length > 0 ? 'disponible' : '(Aucun disponible)'}
+              </Label>
+              <Select value={promoCode} onValueChange={setPromoCode} disabled={availablePromos.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={availablePromos.length > 0 ? "Sélectionnez un code promo (optionnel)" : "Aucune promotion disponible"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Aucun code promo</SelectItem>
+                  {availablePromos.map((promo) => (
+                    <SelectItem key={promo.id} value={promo.code}>
+                      {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
+                      {promo.description && ` (${promo.description})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Notes */}
             <div className="space-y-2">
