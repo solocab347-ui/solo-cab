@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Car, CheckCircle, Loader2 } from "lucide-react";
+import { Car, CheckCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 const RegisterClientDriver = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [driverInfo, setDriverInfo] = useState<any>(null);
@@ -20,6 +22,9 @@ const RegisterClientDriver = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const driverId = searchParams.get("driver_id");
 
@@ -41,7 +46,10 @@ const RegisterClientDriver = () => {
         .select(`
           id,
           vehicle_model,
+          vehicle_brand,
           vehicle_color,
+          vehicle_year,
+          vehicle_photos,
           bio,
           company_name,
           profiles (
@@ -70,8 +78,47 @@ const RegisterClientDriver = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fullName || !email || !password) {
+    // If user is already logged in, just register them with this driver
+    if (user) {
+      setRegistering(true);
+      try {
+        const { data: clientData, error: clientError } = await supabase.functions.invoke(
+          "register-client-driver",
+          {
+            body: { driver_id: driverId },
+          }
+        );
+
+        if (clientError) throw clientError;
+        if (clientData.error) {
+          toast.error(clientData.error);
+          return;
+        }
+
+        toast.success("Inscription réussie avec ce chauffeur !");
+        setTimeout(() => navigate("/client-dashboard"), 1500);
+      } catch (error: any) {
+        console.error("Registration error:", error);
+        toast.error(error.message || "Erreur lors de l'inscription");
+      } finally {
+        setRegistering(false);
+      }
+      return;
+    }
+    
+    // Otherwise, create new account
+    if (!fullName || !email || !password || !confirmPassword) {
       toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
 
@@ -168,31 +215,44 @@ const RegisterClientDriver = () => {
           </div>
 
           <div className="bg-secondary rounded-lg p-6 mb-8">
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-center text-center gap-4 mb-4">
               {driver.profiles?.profile_photo_url ? (
                 <img
                   src={driver.profiles.profile_photo_url}
                   alt={driver.profiles.full_name}
-                  className="w-16 h-16 rounded-full object-cover"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                 />
               ) : (
-                <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
-                  <Car className="w-8 h-8 text-primary-foreground" />
+                <div className="w-24 h-24 bg-gradient-dark rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                  <Car className="w-12 h-12 text-primary-foreground" />
                 </div>
               )}
-              <div className="flex-1">
-                <h3 className="text-xl font-bold mb-1">{driver.profiles?.full_name}</h3>
+              <div>
+                <h3 className="text-2xl font-bold mb-1">{driver.profiles?.full_name}</h3>
                 {driver.company_name && (
                   <p className="text-sm text-muted-foreground mb-2">{driver.company_name}</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">{driver.vehicle_model}</Badge>
+              </div>
+            </div>
+            {(driver.vehicle_brand || driver.vehicle_model) && (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm text-muted-foreground">Véhicule</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {driver.vehicle_brand && (
+                    <Badge variant="outline">{driver.vehicle_brand}</Badge>
+                  )}
+                  {driver.vehicle_model && (
+                    <Badge variant="outline">{driver.vehicle_model}</Badge>
+                  )}
                   {driver.vehicle_color && (
                     <Badge variant="outline">{driver.vehicle_color}</Badge>
                   )}
+                  {driver.vehicle_year && (
+                    <Badge variant="outline">{driver.vehicle_year}</Badge>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-accent/50 rounded-lg p-6 mb-8 border border-border">
@@ -209,65 +269,123 @@ const RegisterClientDriver = () => {
             </ul>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom complet *</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Jean Dupont"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+          {user ? (
+            <div className="space-y-4">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Vous êtes déjà connecté. Cliquez ci-dessous pour vous inscrire automatiquement avec ce chauffeur.
+                </p>
+              </div>
+              <Button
+                onClick={handleRegister}
                 disabled={registering}
-                required
-              />
+                className="w-full bg-gradient-premium"
+                size="lg"
+              >
+                {registering ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Inscription en cours...
+                  </>
+                ) : (
+                  "S'inscrire avec ce chauffeur"
+                )}
+              </Button>
             </div>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nom complet *</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Jean Dupont"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={registering}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={registering}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={registering}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Minimum 6 caractères
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={registering}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
                 disabled={registering}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe *</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={registering}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Minimum 6 caractères
-              </p>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={registering}
-              className="w-full bg-gradient-premium"
-              size="lg"
-            >
-              {registering ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Création du compte...
-                </>
-              ) : (
-                "Créer mon compte et m'inscrire"
-              )}
-            </Button>
-          </form>
+                className="w-full bg-gradient-premium"
+                size="lg"
+              >
+                {registering ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Création du compte...
+                  </>
+                ) : (
+                  "Créer mon compte et m'inscrire"
+                )}
+              </Button>
+            </form>
+          )}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">

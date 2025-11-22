@@ -59,7 +59,7 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
   return (
     <Card className="group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
       {/* Vehicle Background with Profile Photo Overlay */}
-      <div className="relative h-80 overflow-hidden">
+      <div className="relative h-96 overflow-hidden">
         {/* Vehicle Background Image */}
         <div className="absolute inset-0">
           <img
