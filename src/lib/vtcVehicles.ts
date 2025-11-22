@@ -96,6 +96,20 @@ export const VTC_VEHICLES: VTCVehicle[] = [
     imageUrl: 'tesla-model-x',
   },
   {
+    id: 'toyota-corolla',
+    brand: 'Toyota',
+    model: 'Corolla',
+    category: 'berline',
+    imageUrl: 'toyota-corolla',
+  },
+  {
+    id: 'toyota-prius',
+    brand: 'Toyota',
+    model: 'Prius',
+    category: 'electric',
+    imageUrl: 'toyota-prius',
+  },
+  {
     id: 'vw-caravelle',
     brand: 'Volkswagen',
     model: 'Caravelle',
