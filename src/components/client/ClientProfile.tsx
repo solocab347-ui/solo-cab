@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User, MapPin, Phone, Mail, Camera } from "lucide-react";
@@ -286,14 +286,12 @@ const ClientProfile = () => {
               <span>Adresse</span>
               <span className="text-xs text-muted-foreground">(Recommandé pour créer vos courses rapidement)</span>
             </Label>
-            <Textarea
-              id="address"
+            <AddressAutocomplete
               value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
+              onChange={(address) =>
+                setFormData({ ...formData, address })
               }
-              placeholder="Votre adresse complète..."
-              rows={3}
+              placeholder="Commencez à taper votre adresse..."
             />
             <p className="text-xs text-muted-foreground mt-1">
               En enregistrant votre adresse, vous pourrez la sélectionner automatiquement lors de la création de courses
