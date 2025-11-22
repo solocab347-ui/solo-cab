@@ -115,21 +115,32 @@ const AdminSubscriptions = () => {
 
     setGrantingAccess(true);
     try {
+      // Si le chauffeur a un abonnement actif, l'accès gratuit commence après la fin de l'abonnement actuel
+      // Sinon, il commence immédiatement
+      let startDate: Date;
+      
+      if (selectedDriver.subscription_end_date && selectedDriver.subscription_status === 'active') {
+        // L'accès gratuit commence après la fin de l'abonnement actuel
+        startDate = new Date(selectedDriver.subscription_end_date);
+      } else {
+        // Pas d'abonnement actif, commence immédiatement
+        startDate = new Date();
+      }
+
       let endDate: Date | null = null;
-      const startDate = new Date();
 
       // Calculer la date de fin selon le type d'accès
       if (freeAccessDuration === "1_month") {
-        endDate = new Date();
+        endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 1);
       } else if (freeAccessDuration === "2_months") {
-        endDate = new Date();
+        endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 2);
       } else if (freeAccessDuration === "3_months") {
-        endDate = new Date();
+        endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 3);
       } else if (freeAccessDuration === "custom") {
-        endDate = new Date();
+        endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + parseInt(customMonths));
       }
       // Pour "unlimited", endDate reste null
@@ -147,8 +158,8 @@ const AdminSubscriptions = () => {
 
       if (error) throw error;
 
-      // Suspendre l'abonnement Stripe si actif
-      if (selectedDriver.subscription_stripe_id) {
+      // Suspendre l'abonnement Stripe uniquement si l'accès gratuit commence maintenant
+      if (selectedDriver.subscription_stripe_id && startDate <= new Date()) {
         const { error: stripeError } = await supabase.functions.invoke("manage-driver-subscription", {
           body: {
             driver_id: selectedDriver.id,
@@ -162,7 +173,13 @@ const AdminSubscriptions = () => {
         }
       }
 
-      toast.success("Accès gratuit accordé avec succès");
+      const startDateStr = format(startDate, "dd/MM/yyyy", { locale: fr });
+      if (startDate > new Date()) {
+        toast.success(`Accès gratuit programmé à partir du ${startDateStr}`);
+      } else {
+        toast.success("Accès gratuit accordé avec succès");
+      }
+      
       setSelectedDriver(null);
       setDialogOpen(false);
       fetchDrivers();
@@ -324,7 +341,11 @@ const AdminSubscriptions = () => {
               )}
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ L'abonnement Stripe sera automatiquement suspendu pendant la période d'accès gratuit et reprendra à la fin.
+                  {selectedDriver.subscription_status === 'active' && selectedDriver.subscription_end_date ? (
+                    <>⚠️ L'accès gratuit commencera après la fin de l'abonnement actuel (le {format(new Date(selectedDriver.subscription_end_date), "dd/MM/yyyy", { locale: fr })}) car le chauffeur a déjà payé pour le mois en cours.</>
+                  ) : (
+                    <>⚠️ L'accès gratuit commencera immédiatement. L'abonnement Stripe sera automatiquement suspendu.</>
+                  )}
                 </p>
               </div>
               <div className="flex gap-2 justify-end">

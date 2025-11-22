@@ -16,7 +16,7 @@ import AdminSubscriptions from "@/components/admin/AdminSubscriptions";
 import AdminEmails from "@/components/admin/AdminEmails";
 import AdminFreeAccess from "@/components/admin/AdminFreeAccess";
 import AdminReports from "@/components/admin/AdminReports";
-import AdminCommunications from "@/components/admin/AdminCommunications";
+
 import AdminRGPD from "@/components/admin/AdminRGPD";
 import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
 import AdminDisputes from "@/components/admin/AdminDisputes";
@@ -82,7 +82,6 @@ const AdminDashboard = () => {
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
-    { id: "communications", label: "Communications", icon: MessageSquare },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
     { id: "rgpd", label: "RGPD", icon: Shield },
@@ -100,8 +99,6 @@ const AdminDashboard = () => {
         return <AdminFreeAccess />;
       case "emails":
         return <AdminEmails />;
-      case "communications":
-        return <AdminCommunications />;
       case "assistant":
         return <AdminAssistantRequests />;
       case "disputes":

@@ -441,6 +441,69 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          course_id: string
+          created_at: string
+          description: string
+          id: string
+          reason: string
+          reported_against_user_id: string
+          reported_by_user_id: string
+          reporter_type: string
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          course_id: string
+          created_at?: string
+          description: string
+          id?: string
+          reason: string
+          reported_against_user_id: string
+          reported_by_user_id: string
+          reporter_type: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          course_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reason?: string
+          reported_against_user_id?: string
+          reported_by_user_id?: string
+          reporter_type?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           base_fare: number | null
