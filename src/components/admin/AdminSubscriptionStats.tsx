@@ -7,7 +7,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from "recharts";
-import { TrendingUp, DollarSign, Users, Calendar, Activity } from "lucide-react";
+import { TrendingUp, DollarSign, Users, Calendar, Activity, Euro } from "lucide-react";
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -25,6 +25,7 @@ const AdminSubscriptionStats = () => {
     newThisPeriod: 0,
     churnRate: 0,
     avgLifetime: 0,
+    totalDriversRevenue: 0,
   });
 
   useEffect(() => {
@@ -93,12 +94,30 @@ const AdminSubscriptionStats = () => {
         ? (inactiveCount / totalDrivers.length) * 100 
         : 0;
 
+      // Récupérer le chiffre d'affaires total des chauffeurs (factures payées)
+      const { data: paidInvoices, error: invoicesError } = await supabase
+        .from("factures")
+        .select("amount, paid_at")
+        .eq("payment_status", "paid")
+        .gte("paid_at", start.toISOString())
+        .lte("paid_at", end.toISOString());
+
+      if (invoicesError) {
+        console.error("Error fetching invoices:", invoicesError);
+      }
+
+      const totalDriversRevenue = paidInvoices?.reduce(
+        (sum, invoice) => sum + (Number(invoice.amount) || 0), 
+        0
+      ) || 0;
+
       setKpis({
         mrr,
         totalActive: activeSubscriptions.length,
         newThisPeriod,
         churnRate,
         avgLifetime: 6.5, // Simplification
+        totalDriversRevenue,
       });
 
       // Distribution des statuts
@@ -194,7 +213,7 @@ const AdminSubscriptionStats = () => {
       </Card>
 
       {/* KPIs Principaux */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">MRR Total</CardTitle>
@@ -266,6 +285,21 @@ const AdminSubscriptionStats = () => {
             </div>
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
               Durée moyenne d'abonnement
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-teal-200 dark:border-teal-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">CA Chauffeurs</CardTitle>
+            <Euro className="h-5 w-5 text-teal-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-teal-700 dark:text-teal-400">
+              {kpis.totalDriversRevenue.toFixed(2)}€
+            </div>
+            <p className="text-xs text-teal-600 dark:text-teal-500 mt-1">
+              Factures encaissées cette période
             </p>
           </CardContent>
         </Card>
