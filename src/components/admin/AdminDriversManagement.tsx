@@ -119,7 +119,7 @@ const AdminDriversManagement = () => {
 
         if (error) throw error;
 
-        // Envoyer l'email de validation au chauffeur
+        // Envoyer l'email approprié selon l'action
         if (actionDialog.action === "validate" || actionDialog.action === "reject") {
           try {
             await supabase.functions.invoke("send-email", {
@@ -134,6 +134,22 @@ const AdminDriversManagement = () => {
               },
             });
             console.log("✅ Email de validation envoyé au chauffeur");
+          } catch (emailErr) {
+            console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+          }
+        } else if (actionDialog.action === "on_hold") {
+          // Envoyer l'email de mise en attente
+          try {
+            await supabase.functions.invoke("send-email", {
+              body: {
+                to: actionDialog.driver.profiles.email,
+                type: "driver_on_hold",
+                data: {
+                  driverName: actionDialog.driver.profiles.full_name,
+                },
+              },
+            });
+            console.log("✅ Email de mise en attente envoyé au chauffeur");
           } catch (emailErr) {
             console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
           }
