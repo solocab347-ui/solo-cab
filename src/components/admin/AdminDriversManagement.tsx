@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DocumentViewer from "./DocumentViewer";
-import { format } from "date-fns";
+import DriverAdvancedFilter from "./DriverAdvancedFilter";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface Driver {
@@ -43,6 +44,14 @@ interface Driver {
   };
 }
 
+interface FilterValues {
+  search: string;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
+  vehicle: string;
+  company: string;
+}
+
 const AdminDriversManagement = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +62,36 @@ const AdminDriversManagement = () => {
     action: "validate" | "reject" | "delete" | "on_hold" | null;
     driver: Driver | null;
   }>({ open: false, action: null, driver: null });
+
+  // Filtres pour chaque onglet
+  const [pendingFilters, setPendingFilters] = useState<FilterValues>({
+    search: "",
+    dateFrom: undefined,
+    dateTo: undefined,
+    vehicle: "",
+    company: "",
+  });
+  const [onHoldFilters, setOnHoldFilters] = useState<FilterValues>({
+    search: "",
+    dateFrom: undefined,
+    dateTo: undefined,
+    vehicle: "",
+    company: "",
+  });
+  const [validatedFilters, setValidatedFilters] = useState<FilterValues>({
+    search: "",
+    dateFrom: undefined,
+    dateTo: undefined,
+    vehicle: "",
+    company: "",
+  });
+  const [rejectedFilters, setRejectedFilters] = useState<FilterValues>({
+    search: "",
+    dateFrom: undefined,
+    dateTo: undefined,
+    vehicle: "",
+    company: "",
+  });
 
   useEffect(() => {
     fetchDrivers();
@@ -78,6 +117,59 @@ const AdminDriversManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fonction de filtrage universelle
+  const applyFilters = (driversList: Driver[], filters: FilterValues): Driver[] => {
+    return driversList.filter((driver) => {
+      // Filtre de recherche
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const fullName = driver.profiles.full_name?.toLowerCase() || "";
+        const email = driver.profiles.email?.toLowerCase() || "";
+        const phone = driver.profiles.phone?.toLowerCase() || "";
+        
+        const matchesSearch = 
+          fullName.includes(searchLower) ||
+          email.includes(searchLower) ||
+          phone.includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Filtre par date
+      if (filters.dateFrom || filters.dateTo) {
+        const driverDate = new Date(driver.created_at);
+        
+        if (filters.dateFrom && filters.dateTo) {
+          const isInRange = isWithinInterval(driverDate, {
+            start: startOfDay(filters.dateFrom),
+            end: endOfDay(filters.dateTo),
+          });
+          if (!isInRange) return false;
+        } else if (filters.dateFrom) {
+          if (driverDate < startOfDay(filters.dateFrom)) return false;
+        } else if (filters.dateTo) {
+          if (driverDate > endOfDay(filters.dateTo)) return false;
+        }
+      }
+
+      // Filtre par véhicule
+      if (filters.vehicle) {
+        const vehicleLower = filters.vehicle.toLowerCase();
+        const vehicleModel = driver.vehicle_model?.toLowerCase() || "";
+        if (!vehicleModel.includes(vehicleLower)) return false;
+      }
+
+      // Filtre par entreprise
+      if (filters.company) {
+        const companyLower = filters.company.toLowerCase();
+        const companyName = driver.company_name?.toLowerCase() || "";
+        if (!companyName.includes(companyLower)) return false;
+      }
+
+      return true;
+    });
   };
 
   const handleAction = async () => {
@@ -340,10 +432,16 @@ const AdminDriversManagement = () => {
     );
   }
 
-  const pendingDrivers = drivers.filter((d) => d.status === "pending");
-  const onHoldDrivers = drivers.filter((d) => d.status === "on_hold");
-  const validatedDrivers = drivers.filter((d) => d.status === "validated");
-  const rejectedDrivers = drivers.filter((d) => d.status === "rejected");
+  // Appliquer les filtres à chaque catégorie
+  const allPendingDrivers = drivers.filter((d) => d.status === "pending");
+  const allOnHoldDrivers = drivers.filter((d) => d.status === "on_hold");
+  const allValidatedDrivers = drivers.filter((d) => d.status === "validated");
+  const allRejectedDrivers = drivers.filter((d) => d.status === "rejected");
+
+  const pendingDrivers = applyFilters(allPendingDrivers, pendingFilters);
+  const onHoldDrivers = applyFilters(allOnHoldDrivers, onHoldFilters);
+  const validatedDrivers = applyFilters(allValidatedDrivers, validatedFilters);
+  const rejectedDrivers = applyFilters(allRejectedDrivers, rejectedFilters);
 
   return (
     <div className="space-y-6">
@@ -357,7 +455,7 @@ const AdminDriversManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Demandes reçues</p>
-                <p className="text-2xl font-bold">{pendingDrivers.length}</p>
+                <p className="text-2xl font-bold">{allPendingDrivers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -371,7 +469,7 @@ const AdminDriversManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Mises en attente</p>
-                <p className="text-2xl font-bold">{onHoldDrivers.length}</p>
+                <p className="text-2xl font-bold">{allOnHoldDrivers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -385,7 +483,7 @@ const AdminDriversManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Demandes acceptées</p>
-                <p className="text-2xl font-bold">{validatedDrivers.length}</p>
+                <p className="text-2xl font-bold">{allValidatedDrivers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -399,7 +497,7 @@ const AdminDriversManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Demandes refusées</p>
-                <p className="text-2xl font-bold">{rejectedDrivers.length}</p>
+                <p className="text-2xl font-bold">{allRejectedDrivers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -411,17 +509,17 @@ const AdminDriversManagement = () => {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pending" className="relative">
             Demandes reçues
-            {pendingDrivers.length > 0 && (
+            {allPendingDrivers.length > 0 && (
               <Badge variant="destructive" className="ml-2 px-2 py-0.5 text-xs">
-                {pendingDrivers.length}
+                {allPendingDrivers.length}
               </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="on_hold" className="relative">
             En attente
-            {onHoldDrivers.length > 0 && (
+            {allOnHoldDrivers.length > 0 && (
               <Badge variant="default" className="ml-2 px-2 py-0.5 text-xs">
-                {onHoldDrivers.length}
+                {allOnHoldDrivers.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -430,52 +528,160 @@ const AdminDriversManagement = () => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4">
+          <DriverAdvancedFilter
+            onFilterChange={setPendingFilters}
+            onReset={() => setPendingFilters({
+              search: "",
+              dateFrom: undefined,
+              dateTo: undefined,
+              vehicle: "",
+              company: "",
+            })}
+          />
           {pendingDrivers.length === 0 ? (
             <Card className="p-8 text-center">
               <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune demande en attente</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {allPendingDrivers.length === 0 
+                  ? "Aucune demande en attente"
+                  : "Aucun résultat"
+                }
+              </h3>
               <p className="text-muted-foreground">
-                Toutes les demandes d'inscription ont été traitées
+                {allPendingDrivers.length === 0 
+                  ? "Toutes les demandes d'inscription ont été traitées"
+                  : "Aucun chauffeur ne correspond à vos critères de recherche"
+                }
               </p>
             </Card>
           ) : (
-            pendingDrivers.map(renderDriverCard)
+            <>
+              <div className="text-sm text-muted-foreground mb-2">
+                {pendingDrivers.length} résultat{pendingDrivers.length > 1 ? "s" : ""} 
+                {allPendingDrivers.length !== pendingDrivers.length && 
+                  ` sur ${allPendingDrivers.length}`
+                }
+              </div>
+              {pendingDrivers.map(renderDriverCard)}
+            </>
           )}
         </TabsContent>
 
         <TabsContent value="on_hold" className="space-y-4">
+          <DriverAdvancedFilter
+            onFilterChange={setOnHoldFilters}
+            onReset={() => setOnHoldFilters({
+              search: "",
+              dateFrom: undefined,
+              dateTo: undefined,
+              vehicle: "",
+              company: "",
+            })}
+          />
           {onHoldDrivers.length === 0 ? (
             <Card className="p-8 text-center">
               <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune demande en attente</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {allOnHoldDrivers.length === 0 
+                  ? "Aucune demande en attente"
+                  : "Aucun résultat"
+                }
+              </h3>
               <p className="text-muted-foreground">
-                Les demandes mises en attente apparaîtront ici
+                {allOnHoldDrivers.length === 0 
+                  ? "Les demandes mises en attente apparaîtront ici"
+                  : "Aucun chauffeur ne correspond à vos critères de recherche"
+                }
               </p>
             </Card>
           ) : (
-            onHoldDrivers.map(renderDriverCard)
+            <>
+              <div className="text-sm text-muted-foreground mb-2">
+                {onHoldDrivers.length} résultat{onHoldDrivers.length > 1 ? "s" : ""} 
+                {allOnHoldDrivers.length !== onHoldDrivers.length && 
+                  ` sur ${allOnHoldDrivers.length}`
+                }
+              </div>
+              {onHoldDrivers.map(renderDriverCard)}
+            </>
           )}
         </TabsContent>
 
         <TabsContent value="validated" className="space-y-4">
+          <DriverAdvancedFilter
+            onFilterChange={setValidatedFilters}
+            onReset={() => setValidatedFilters({
+              search: "",
+              dateFrom: undefined,
+              dateTo: undefined,
+              vehicle: "",
+              company: "",
+            })}
+          />
           {validatedDrivers.length === 0 ? (
             <Card className="p-8 text-center">
               <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucun chauffeur validé</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {allValidatedDrivers.length === 0 
+                  ? "Aucun chauffeur validé"
+                  : "Aucun résultat"
+                }
+              </h3>
+              {allValidatedDrivers.length > 0 && (
+                <p className="text-muted-foreground">
+                  Aucun chauffeur ne correspond à vos critères de recherche
+                </p>
+              )}
             </Card>
           ) : (
-            validatedDrivers.map(renderDriverCard)
+            <>
+              <div className="text-sm text-muted-foreground mb-2">
+                {validatedDrivers.length} résultat{validatedDrivers.length > 1 ? "s" : ""} 
+                {allValidatedDrivers.length !== validatedDrivers.length && 
+                  ` sur ${allValidatedDrivers.length}`
+                }
+              </div>
+              {validatedDrivers.map(renderDriverCard)}
+            </>
           )}
         </TabsContent>
 
         <TabsContent value="rejected" className="space-y-4">
+          <DriverAdvancedFilter
+            onFilterChange={setRejectedFilters}
+            onReset={() => setRejectedFilters({
+              search: "",
+              dateFrom: undefined,
+              dateTo: undefined,
+              vehicle: "",
+              company: "",
+            })}
+          />
           {rejectedDrivers.length === 0 ? (
             <Card className="p-8 text-center">
               <X className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Aucune demande refusée</h3>
+              <h3 className="text-xl font-bold mb-2">
+                {allRejectedDrivers.length === 0 
+                  ? "Aucune demande refusée"
+                  : "Aucun résultat"
+                }
+              </h3>
+              {allRejectedDrivers.length > 0 && (
+                <p className="text-muted-foreground">
+                  Aucun chauffeur ne correspond à vos critères de recherche
+                </p>
+              )}
             </Card>
           ) : (
-            rejectedDrivers.map(renderDriverCard)
+            <>
+              <div className="text-sm text-muted-foreground mb-2">
+                {rejectedDrivers.length} résultat{rejectedDrivers.length > 1 ? "s" : ""} 
+                {allRejectedDrivers.length !== rejectedDrivers.length && 
+                  ` sur ${allRejectedDrivers.length}`
+                }
+              </div>
+              {rejectedDrivers.map(renderDriverCard)}
+            </>
           )}
         </TabsContent>
       </Tabs>
