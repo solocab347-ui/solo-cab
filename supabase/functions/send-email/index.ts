@@ -10,7 +10,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string;
-  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification";
+  type: "driver_welcome" | "client_welcome" | "password_reset" | "driver_validation" | "driver_on_hold" | "course_notification" | "devis_notification" | "driver_free_access";
   data?: {
     driverName?: string;
     clientName?: string;
@@ -18,6 +18,9 @@ interface EmailRequest {
     validationStatus?: "approved" | "rejected";
     courseName?: string;
     devisAmount?: number;
+    freeAccessDuration?: string;
+    freeAccessStartDate?: string;
+    freeAccessEndDate?: string;
     [key: string]: any;
   };
 }
@@ -316,6 +319,78 @@ const getEmailTemplate = (type: string, data: any) => {
                 <p>Merci de votre patience et de votre compréhension !</p>
                 
                 <p>L'équipe SoloCab</p>
+              </div>
+              <div class="footer">
+                <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    },
+
+    driver_free_access: {
+      subject: "🎁 Accès gratuit accordé sur SoloCab !",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .button { display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .highlight-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .info-list { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎁 Bonne nouvelle ${data.driverName} !</h1>
+              </div>
+              <div class="content">
+                <p>Nous avons le plaisir de vous informer que vous bénéficiez d'un <strong>accès gratuit</strong> à SoloCab !</p>
+                
+                <div class="highlight-box">
+                  <p><strong>🎯 Détails de votre accès gratuit :</strong></p>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Durée :</strong> ${data.freeAccessDuration}</li>
+                    ${data.freeAccessStartDate ? `<li><strong>Date de début :</strong> ${data.freeAccessStartDate}</li>` : ''}
+                    ${data.freeAccessEndDate ? `<li><strong>Date de fin :</strong> ${data.freeAccessEndDate}</li>` : '<li><strong>Durée :</strong> Illimitée</li>'}
+                  </ul>
+                </div>
+                
+                <div class="info-list">
+                  <p><strong>✨ Pendant cette période, vous profitez de :</strong></p>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Accès complet à toutes les fonctionnalités de SoloCab</li>
+                    <li>Gestion illimitée de vos clients et courses</li>
+                    <li>Génération automatique de devis et factures</li>
+                    <li>Profil public pour attirer de nouveaux clients</li>
+                    <li>Système de messagerie intégré</li>
+                    <li>Aucun frais d'abonnement pendant la période</li>
+                  </ul>
+                </div>
+                
+                <p><strong>💡 Important :</strong></p>
+                <ul>
+                  ${data.freeAccessEndDate ? `<li>Votre accès gratuit prendra fin automatiquement le <strong>${data.freeAccessEndDate}</strong></li>` : ''}
+                  ${data.freeAccessEndDate ? '<li>Vous serez informé avant la fin de la période gratuite</li>' : '<li>Vous bénéficiez d\'un accès gratuit illimité</li>'}
+                  <li>Votre abonnement Stripe est automatiquement suspendu pendant cette période</li>
+                  <li>Vous pouvez continuer à utiliser toutes les fonctionnalités normalement</li>
+                </ul>
+                
+                <div style="text-align: center;">
+                  <a href="https://solocab.fr/driver-dashboard" class="button">Accéder à mon tableau de bord</a>
+                </div>
+                
+                <p>Profitez pleinement de cette période pour développer votre activité !</p>
+                
+                <p>Cordialement,<br><strong>L'équipe SoloCab</strong></p>
               </div>
               <div class="footer">
                 <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>

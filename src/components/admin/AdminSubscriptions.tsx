@@ -173,6 +173,40 @@ const AdminSubscriptions = () => {
         }
       }
 
+      // Envoyer l'email de notification
+      try {
+        const profile = selectedDriver.profiles as any;
+        let durationText = "";
+        
+        if (freeAccessDuration === "1_month") {
+          durationText = "1 mois";
+        } else if (freeAccessDuration === "2_months") {
+          durationText = "2 mois";
+        } else if (freeAccessDuration === "3_months") {
+          durationText = "3 mois";
+        } else if (freeAccessDuration === "custom") {
+          durationText = `${customMonths} mois`;
+        } else {
+          durationText = "Illimité";
+        }
+
+        await supabase.functions.invoke("send-email", {
+          body: {
+            to: profile?.email,
+            type: "driver_free_access",
+            data: {
+              driverName: profile?.full_name,
+              freeAccessDuration: durationText,
+              freeAccessStartDate: format(startDate, "dd/MM/yyyy", { locale: fr }),
+              freeAccessEndDate: endDate ? format(endDate, "dd/MM/yyyy", { locale: fr }) : null,
+            },
+          },
+        });
+      } catch (emailError) {
+        console.error("Erreur lors de l'envoi de l'email:", emailError);
+        // Ne pas bloquer si l'email échoue
+      }
+
       const startDateStr = format(startDate, "dd/MM/yyyy", { locale: fr });
       if (startDate > new Date()) {
         toast.success(`Accès gratuit programmé à partir du ${startDateStr}`);
