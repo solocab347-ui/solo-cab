@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Car, MapPin, Calendar, Users, ArrowLeft, Tag } from "lucide-react";
+import { geocodeAddress, calculateRoute, validateCourseData } from "@/lib/geocoding";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -54,50 +55,14 @@ const CreateCourse = () => {
     fetchClientAddress();
   }, [user]);
 
-  // Geocode client address to get coordinates
-  const geocodeAddress = async (address: string) => {
-    try {
-      const { data: tokenData } = await supabase.functions.invoke("get-mapbox-token");
-      if (!tokenData?.token) {
-        console.error("Mapbox token non disponible");
-        return null;
-      }
-
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          address
-        )}.json?access_token=${tokenData.token}&country=FR&language=fr&limit=1`
-      );
-
-      if (!response.ok) {
-        console.error("Erreur geocoding");
-        return null;
-      }
-
-      const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        const [longitude, latitude] = data.features[0].center;
-        return { latitude, longitude };
-      }
-      return null;
-    } catch (error) {
-      console.error("Erreur lors du géocodage:", error);
-      return null;
-    }
-  };
-
-  // Apply client address when checkbox is checked
+  // SYSTÈME RENFORCÉ: Utilisation du geocoding centralisé
   useEffect(() => {
     const applyPickupAddress = async () => {
       if (useAddressPickup && clientAddress) {
         setPickupAddress(clientAddress);
-        // Géocoder l'adresse pour obtenir les coordonnées
-        const coords = await geocodeAddress(clientAddress);
-        if (coords) {
-          setPickupCoordinates(coords);
-          console.log("✅ Coordonnées départ extraites:", coords);
-        } else {
-          toast.warning("Impossible de localiser l'adresse de départ");
+        const result = await geocodeAddress(clientAddress);
+        if (result.success && result.coordinates) {
+          setPickupCoordinates(result.coordinates);
         }
       } else if (!useAddressPickup) {
         setPickupAddress("");
@@ -112,13 +77,9 @@ const CreateCourse = () => {
     const applyDestinationAddress = async () => {
       if (useAddressDestination && clientAddress) {
         setDestinationAddress(clientAddress);
-        // Géocoder l'adresse pour obtenir les coordonnées
-        const coords = await geocodeAddress(clientAddress);
-        if (coords) {
-          setDestinationCoordinates(coords);
-          console.log("✅ Coordonnées destination extraites:", coords);
-        } else {
-          toast.warning("Impossible de localiser l'adresse de destination");
+        const result = await geocodeAddress(clientAddress);
+        if (result.success && result.coordinates) {
+          setDestinationCoordinates(result.coordinates);
         }
       } else if (!useAddressDestination) {
         setDestinationAddress("");
@@ -210,8 +171,17 @@ const CreateCourse = () => {
       return;
     }
 
-    if (!pickupAddress || !destinationAddress || !scheduledDate) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
+    // VALIDATION STRICTE: Vérification complète des données
+    const validation = validateCourseData(
+      pickupAddress,
+      destinationAddress,
+      pickupCoordinates,
+      destinationCoordinates,
+      scheduledDate
+    );
+
+    if (!validation.valid) {
+      toast.error(validation.error || "Données de course invalides");
       return;
     }
 
@@ -246,52 +216,19 @@ const CreateCourse = () => {
         return;
       }
 
-      // SYSTÈME RENFORCÉ: Calculer la distance et la durée via Edge Function Mapbox
-      let calculatedDistance: number | null = null;
-      let calculatedDuration: number | null = null;
-
-      if (pickupCoordinates && destinationCoordinates) {
-        try {
-          console.log("🗺️ Appel Edge Function calculate-mapbox-route...");
-          
-          const { data: routeData, error: routeError } = await supabase.functions.invoke(
-            'calculate-mapbox-route',
-            {
-              body: {
-                pickup_latitude: pickupCoordinates.latitude,
-                pickup_longitude: pickupCoordinates.longitude,
-                destination_latitude: destinationCoordinates.latitude,
-                destination_longitude: destinationCoordinates.longitude,
-              },
-            }
-          );
-
-          if (routeError) {
-            console.error("❌ Erreur Edge Function Mapbox:", routeError);
-            toast.error("Impossible de calculer la distance automatiquement");
-            throw routeError;
-          }
-
-          if (routeData?.success) {
-            calculatedDistance = routeData.distance_km;
-            calculatedDuration = routeData.duration_minutes;
-            
-            console.log("✅ CALCUL MAPBOX RÉUSSI:");
-            console.log("   - Distance:", calculatedDistance, "km");
-            console.log("   - Durée:", calculatedDuration, "minutes");
-            
-            toast.success(`Distance calculée: ${calculatedDistance} km`);
-          } else {
-            console.warn("⚠️ Aucun itinéraire trouvé");
-            toast.warning("Distance non calculée - le devis sera basé sur le forfait de base uniquement");
-          }
-        } catch (mapboxError) {
-          console.error("❌ ERREUR CRITIQUE calcul Mapbox:", mapboxError);
-          toast.error("Erreur lors du calcul de la distance");
-        }
-      } else {
-        console.warn("⚠️ Coordonnées manquantes pour le calcul Mapbox");
+      // SYSTÈME RENFORCÉ: Calcul via fonction centralisée
+      const routeResult = await calculateRoute(pickupCoordinates!, destinationCoordinates!);
+      
+      if (!routeResult.success || !routeResult.distance_km || !routeResult.duration_minutes) {
+        toast.error("Impossible de calculer l'itinéraire. Veuillez vérifier les adresses.");
+        setLoading(false);
+        return;
       }
+
+      const calculatedDistance = routeResult.distance_km;
+      const calculatedDuration = routeResult.duration_minutes;
+      
+      toast.success(`Itinéraire calculé: ${calculatedDistance} km`);
 
       // Create course (client créé = besoin double acceptation)
       const { data: course, error: courseError } = await supabase

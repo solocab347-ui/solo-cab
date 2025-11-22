@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Car, MapPin, Calendar, Users, ArrowLeft, Calculator, Clock } from "lucide-react";
+import { calculateRoute, validateCourseData } from "@/lib/geocoding";
 
 interface Client {
   id: string;
@@ -66,7 +67,7 @@ const DriverCreateCourse = () => {
 
   useEffect(() => {
     if (courseType === "classic" && pickupCoordinates && destinationCoordinates && driverProfile) {
-      calculateRoute();
+      calculateRouteData();
     }
   }, [pickupCoordinates, destinationCoordinates, courseType, driverProfile]);
 
@@ -119,43 +120,18 @@ const DriverCreateCourse = () => {
     }
   };
 
-  const calculateRoute = async () => {
+  const calculateRouteData = async () => {
     if (!pickupCoordinates || !destinationCoordinates) return;
 
     setCalculating(true);
     try {
-      console.log("🗺️ Calcul itinéraire via Edge Function...");
+      // SYSTÈME RENFORCÉ: Utilisation de la fonction centralisée
+      const routeResult = await calculateRoute(pickupCoordinates, destinationCoordinates);
       
-      // SYSTÈME RENFORCÉ: Appel à l'Edge Function calculate-mapbox-route
-      const { data: routeData, error: routeError } = await supabase.functions.invoke(
-        'calculate-mapbox-route',
-        {
-          body: {
-            pickup_latitude: pickupCoordinates.latitude,
-            pickup_longitude: pickupCoordinates.longitude,
-            destination_latitude: destinationCoordinates.latitude,
-            destination_longitude: destinationCoordinates.longitude,
-          },
-        }
-      );
-
-      if (routeError) {
-        console.error("❌ Erreur Edge Function Mapbox:", routeError);
-        toast.error("Erreur lors du calcul de l'itinéraire");
-        return;
+      if (routeResult.success && routeResult.distance_km && routeResult.duration_minutes) {
+        setDistanceKm(routeResult.distance_km);
+        setDurationMinutes(routeResult.duration_minutes);
       }
-
-      if (routeData?.success) {
-        setDistanceKm(routeData.distance_km);
-        setDurationMinutes(routeData.duration_minutes);
-        
-        console.log("✅ Itinéraire calculé:");
-        console.log("   - Distance:", routeData.distance_km, "km");
-        console.log("   - Durée:", routeData.duration_minutes, "minutes");
-      }
-    } catch (error) {
-      console.error("❌ Erreur calcul itinéraire:", error);
-      toast.error("Impossible de calculer l'itinéraire");
     } finally {
       setCalculating(false);
     }
@@ -195,13 +171,28 @@ const DriverCreateCourse = () => {
       return;
     }
 
-    if (!pickupAddress || !destinationAddress || !scheduledDate) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
+    // VALIDATION STRICTE: Vérification complète des données
+    const validation = validateCourseData(
+      pickupAddress,
+      destinationAddress,
+      pickupCoordinates,
+      destinationCoordinates,
+      scheduledDate
+    );
+
+    if (!validation.valid) {
+      toast.error(validation.error || "Données de course invalides");
       return;
     }
 
     if (courseType === "hourly" && !durationHours) {
       toast.error("Veuillez indiquer la durée en heures pour une mise à disposition");
+      return;
+    }
+
+    // Validation supplémentaire pour course classique
+    if (courseType === "classic" && (!distanceKm || !durationMinutes)) {
+      toast.error("Impossible de créer la course sans calcul de distance. Veuillez vérifier les adresses.");
       return;
     }
 
