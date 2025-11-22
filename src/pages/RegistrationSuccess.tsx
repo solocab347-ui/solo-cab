@@ -31,18 +31,36 @@ const RegistrationSuccess = () => {
 
         console.log("✅ Paiement validé pour le driver:", driverId);
         
-        // Envoyer un email de confirmation à l'admin
-        try {
-          await supabase.functions.invoke("send-email", {
-            body: {
-              type: "new_driver_registration",
-              data: {
-                driver_id: driverId,
+        // Récupérer les infos du driver pour l'email
+        const { data: driverData, error: driverError } = await supabase
+          .from("drivers")
+          .select(`
+            id,
+            profiles:profiles!inner(full_name, email)
+          `)
+          .eq("id", driverId)
+          .single();
+
+        if (driverError) {
+          console.error("❌ Erreur récupération driver:", driverError);
+        }
+
+        // Envoyer l'email de bienvenue au chauffeur
+        if (driverData?.profiles?.email) {
+          try {
+            await supabase.functions.invoke("send-email", {
+              body: {
+                to: driverData.profiles.email,
+                type: "driver_welcome",
+                data: {
+                  driverName: driverData.profiles.full_name,
+                },
               },
-            },
-          });
-        } catch (emailErr) {
-          console.error("⚠️ Erreur envoi email admin (non bloquant):", emailErr);
+            });
+            console.log("✅ Email de bienvenue envoyé au chauffeur");
+          } catch (emailErr) {
+            console.error("⚠️ Erreur envoi email chauffeur (non bloquant):", emailErr);
+          }
         }
 
         toast.success("Inscription terminée avec succès !");
