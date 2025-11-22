@@ -98,23 +98,27 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
             {name}
           </h3>
 
-          {/* Rating & Rides */}
-          <div className="flex items-center gap-4 text-white/90 mb-3">
-            <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              <span className="font-semibold text-sm">
-                {driver.rating.toFixed(1)}
-              </span>
+          {/* Rating & Rides - Only show if there are rides */}
+          {driver.total_rides > 0 && (
+            <div className="flex items-center gap-4 text-white/90 mb-3">
+              {driver.rating > 0 && (
+                <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  <span className="font-semibold text-sm">
+                    {driver.rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                <Award className="w-4 h-4 text-white" />
+                <span className="text-sm font-medium">{driver.total_rides} courses</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-              <Award className="w-4 h-4 text-white" />
-              <span className="text-sm font-medium">{driver.total_rides} courses</span>
-            </div>
-          </div>
+          )}
 
-          {/* Vehicle Info */}
+          {/* Vehicle Info - Only show if info exists */}
           {(driver.vehicle_brand || driver.vehicle_model) && (
-            <div className="flex items-center gap-2 text-white/90 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+            <div className="flex items-center justify-center gap-2 text-white/90 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
               <Car className="w-4 h-4" />
               <span className="font-medium text-sm">
                 {driver.vehicle_brand && `${driver.vehicle_brand} `}
