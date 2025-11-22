@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Chauffeurs from "./pages/Chauffeurs";
@@ -34,8 +35,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
+        <ErrorBoundary>
+          <AuthProvider>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
            <Route path="/chauffeurs" element={<Chauffeurs />} />
@@ -45,13 +47,19 @@ const App = () => (
             <Route path="/register-client-driver" element={<RegisterClientDriver />} />
             <Route path="/register-driver" element={<RegisterDriver />} />
             <Route path="/registration-success" element={<RegistrationSuccess />} />
-            <Route path="/create-course" element={<CreateCourse />} />
+            <Route path="/create-course" element={
+              <ErrorBoundary>
+                <CreateCourse />
+              </ErrorBoundary>
+            } />
             <Route path="/create-test-accounts" element={<CreateTestAccounts />} />
             <Route
               path="/driver/create-course"
               element={
                 <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                  <DriverCreateCourse />
+                  <ErrorBoundary>
+                    <DriverCreateCourse />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />
@@ -117,6 +125,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+      </ErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
