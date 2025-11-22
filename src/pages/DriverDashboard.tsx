@@ -76,20 +76,39 @@ const DriverDashboard = () => {
   const fetchDriverProfile = async () => {
     if (!user) return;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
+    try {
+      // Récupérer le profil ET le driver en une seule requête pour garantir la cohérence
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-    const { data: driver } = await supabase
-      .from("drivers")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+        return;
+      }
 
-    if (driver) {
-      setDriverProfile({ ...profile, driver });
+      const { data: driver, error: driverError } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (driverError) {
+        console.error("Driver fetch error:", driverError);
+        return;
+      }
+
+      // Combiner profile et driver avec garantie du nom
+      const combinedProfile = {
+        ...profile,
+        driver,
+        full_name: profile.full_name || "Chauffeur" // Garantir qu'il y a toujours un nom
+      };
+
+      setDriverProfile(combinedProfile);
+      
       // Populate form
       setPublicProfileEnabled(driver.public_profile_enabled || false);
       setWorkingSectors(driver.working_sectors || []);
@@ -119,6 +138,8 @@ const DriverDashboard = () => {
       setVehicleBrand(driver.vehicle_brand || "");
       setVehicleYear(driver.vehicle_year?.toString() || "");
       setProfilePhotoUrl(profile?.profile_photo_url || null);
+    } catch (error) {
+      console.error("Error fetching driver profile:", error);
     }
   };
 

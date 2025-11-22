@@ -75,33 +75,13 @@ const ChauffeurProfile = () => {
     try {
       setLoading(true);
 
-      // Get driver with profile
+      // Get driver with profile - utiliser maybeSingle au lieu de single pour éviter les erreurs
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .select(
           `
-          id,
-          user_id,
-          vehicle_model,
-          vehicle_brand,
-          vehicle_year,
-          vehicle_plate,
-          vehicle_color,
-          bio,
-          working_sectors,
-          service_description,
-          base_rate,
-          per_km_rate,
-          public_profile_enabled,
-          created_at,
-          company_name,
-          display_driver_name,
-          display_company_name,
-          vehicle_equipment,
-          services_offered,
-          vehicle_photos,
-          gallery_photos,
-          profiles (
+          *,
+          profiles!drivers_user_id_fkey (
             full_name,
             email,
             phone,
@@ -112,10 +92,19 @@ const ChauffeurProfile = () => {
         .eq("id", driverId)
         .eq("public_profile_enabled", true)
         .eq("status", "validated")
-        .single();
+        .maybeSingle();
 
-      if (driverError) throw driverError;
-      if (!driverData) throw new Error("Chauffeur non trouvé");
+      if (driverError) {
+        console.error("Driver error:", driverError);
+        throw driverError;
+      }
+      
+      if (!driverData) {
+        console.error("No driver data found");
+        throw new Error("Chauffeur non trouvé");
+      }
+
+      console.log("Driver data loaded:", driverData);
 
       // Calculate real statistics from courses
       const { data: completedCourses, error: coursesError } = await supabase
@@ -136,16 +125,19 @@ const ChauffeurProfile = () => {
         }
       }
 
-      // Flatten the profile data
-      setDriver({
+      // Flatten the profile data avec toutes les informations
+      const flattenedDriver = {
         ...driverData,
-        full_name: driverData.profiles.full_name,
-        email: driverData.profiles.email,
-        phone: driverData.profiles.phone,
-        profile_photo_url: driverData.profiles.profile_photo_url,
+        full_name: driverData.profiles?.full_name || "Chauffeur",
+        email: driverData.profiles?.email || "",
+        phone: driverData.profiles?.phone || "",
+        profile_photo_url: driverData.profiles?.profile_photo_url || null,
         rating: averageRating,
         total_rides: totalRides,
-      } as DriverProfile);
+      } as DriverProfile;
+
+      console.log("Flattened driver:", flattenedDriver);
+      setDriver(flattenedDriver);
     } catch (error: any) {
       console.error("Error fetching driver profile:", error);
       toast.error("Chauffeur non trouvé ou profil non public");
@@ -224,24 +216,32 @@ const ChauffeurProfile = () => {
           {/* Left Column - Driver Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Profile Header */}
-            <Card className="p-8 shadow-elegant">
-              <div className="flex flex-col items-center text-center gap-6">
-                {/* Large centered profile photo */}
-                <div className="w-48 h-48 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-6xl font-bold shadow-elegant">
-                  {driver.profile_photo_url ? (
-                    <img
-                      src={driver.profile_photo_url}
-                      alt={driver.full_name}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    driver.full_name.charAt(0).toUpperCase()
+            <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+              <div className="flex flex-col items-center text-center gap-8">
+                {/* Large centered profile photo - 280px pour être vraiment visible */}
+                <div className="relative">
+                  <div className="w-72 h-72 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-8xl font-bold shadow-2xl ring-4 ring-primary/20">
+                    {driver.profile_photo_url ? (
+                      <img
+                        src={driver.profile_photo_url}
+                        alt={driver.full_name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      driver.full_name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  {/* Badge de statut professionnel */}
+                  {driver.total_rides > 0 && (
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary px-4 py-2 rounded-full shadow-lg">
+                      <span className="text-sm font-bold text-primary-foreground">Chauffeur Professionnel</span>
+                    </div>
                   )}
                 </div>
                 
                 {/* Driver info centered */}
-                <div className="w-full">
-                  <h1 className="text-3xl font-bold mb-3">
+                <div className="w-full space-y-4">
+                  <h1 className="text-4xl font-bold mb-3 bg-gradient-dark bg-clip-text text-transparent">
                     {(() => {
                       const parts = [];
                       // Toujours afficher le nom du chauffeur par défaut
@@ -257,27 +257,27 @@ const ChauffeurProfile = () => {
                     })()}
                   </h1>
                   
-                  <div className="flex items-center justify-center gap-6 text-muted-foreground mb-4">
+                  <div className="flex items-center justify-center gap-8 text-muted-foreground">
                     {driver.total_rides > 0 && (
                       <>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-5 h-5 text-premium fill-premium" />
-                          <span className="font-semibold text-foreground">
+                        <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
+                          <Star className="w-6 h-6 text-premium fill-premium" />
+                          <span className="font-bold text-xl text-foreground">
                             {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Award className="w-5 h-5" />
-                          <span>{driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}</span>
+                        <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
+                          <Award className="w-6 h-6 text-primary" />
+                          <span className="font-semibold text-lg">{driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}</span>
                         </div>
                       </>
                     )}
                   </div>
                   
                   {(driver.vehicle_brand || driver.vehicle_model) && (
-                    <div className="flex items-center justify-center gap-2">
-                      <Car className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium">
+                    <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full inline-flex mx-auto">
+                      <Car className="w-6 h-6 text-primary" />
+                      <span className="font-semibold text-lg">
                         {driver.vehicle_brand && `${driver.vehicle_brand} `}
                         {driver.vehicle_model}
                         {driver.vehicle_year && ` (${driver.vehicle_year})`}
@@ -318,34 +318,47 @@ const ChauffeurProfile = () => {
 
             {/* Photos Gallery */}
             {(driver.vehicle_photos?.length > 0 || driver.gallery_photos?.length > 0) && (
-              <Card className="p-6 overflow-hidden">
-                <h2 className="text-xl font-bold mb-4">Photos</h2>
-                <Carousel className="w-full">
-                  <CarouselContent>
+              <Card className="p-8 overflow-hidden shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Car className="w-5 h-5 text-primary" />
+                  </div>
+                  Galerie Photos
+                </h2>
+                <Carousel className="w-full" opts={{ align: "start", loop: true }}>
+                  <CarouselContent className="-ml-4">
                     {[...(driver.vehicle_photos || []), ...(driver.gallery_photos || [])].map((photo, index) => (
-                      <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                        <div className="relative aspect-video rounded-lg overflow-hidden group">
+                      <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                        <div className="relative aspect-video rounded-xl overflow-hidden group shadow-lg">
                           <img 
                             src={photo} 
                             alt={`Photo ${index + 1}`} 
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span className="text-white text-sm font-medium">{index + 1}/{[...(driver.vehicle_photos || []), ...(driver.gallery_photos || [])].length}</span>
+                          </div>
                         </div>
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
+                  <CarouselPrevious className="left-2 h-12 w-12 bg-background/80 backdrop-blur-sm hover:bg-background" />
+                  <CarouselNext className="right-2 h-12 w-12 bg-background/80 backdrop-blur-sm hover:bg-background" />
                 </Carousel>
               </Card>
             )}
 
             {/* About */}
             {(driver.bio || driver.service_description) && (
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">À propos</h2>
-                <p className="text-muted-foreground leading-relaxed">
+              <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Award className="w-5 h-5 text-primary" />
+                  </div>
+                  À propos
+                </h2>
+                <p className="text-muted-foreground leading-relaxed text-lg">
                   {driver.bio || driver.service_description}
                 </p>
               </Card>
@@ -353,16 +366,21 @@ const ChauffeurProfile = () => {
 
             {/* Service Areas */}
             {driver.working_sectors && driver.working_sectors.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">Secteurs de travail</h2>
-                <div className="flex flex-wrap gap-2 justify-center">
+              <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  Secteurs de travail
+                </h2>
+                <div className="flex flex-wrap gap-3 justify-center">
                   {driver.working_sectors.map((sector) => (
                     <Badge
                       key={sector}
                       variant="outline"
-                      className="text-sm px-3 py-1"
+                      className="text-base px-4 py-2 hover:bg-primary/10 transition-colors"
                     >
-                      <MapPin className="w-4 h-4 mr-1" />
+                      <MapPin className="w-4 h-4 mr-2" />
                       {sector}
                     </Badge>
                   ))}
@@ -372,19 +390,24 @@ const ChauffeurProfile = () => {
 
             {/* Vehicle Equipment */}
             {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">🚗 Équipements disponibles</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Car className="w-5 h-5 text-primary" />
+                  </div>
+                  Équipements disponibles
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {driver.vehicle_equipment.map((equipmentId) => {
                     const equipment = VEHICLE_EQUIPMENT.find((e) => e.id === equipmentId);
                     if (!equipment) return null;
                     return (
                       <div
                         key={equipmentId}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                        className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                       >
-                        <span className="text-lg">{equipment.icon}</span>
-                        <span className="text-sm">{equipment.label}</span>
+                        <span className="text-2xl">{equipment.icon}</span>
+                        <span className="font-medium">{equipment.label}</span>
                       </div>
                     );
                   })}
@@ -394,21 +417,26 @@ const ChauffeurProfile = () => {
 
             {/* Services Offered */}
             {driver.services_offered && driver.services_offered.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">💼 Services proposés</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Award className="w-5 h-5 text-primary" />
+                  </div>
+                  Services proposés
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {driver.services_offered.map((serviceId) => {
                     const service = DRIVER_SERVICES.find((s) => s.id === serviceId);
                     if (!service) return null;
                     return (
                       <div
                         key={serviceId}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                        className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                       >
-                        <span className="text-xl">{service.icon}</span>
+                        <span className="text-3xl">{service.icon}</span>
                         <div>
-                          <div className="font-medium text-sm">{service.label}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="font-semibold text-base mb-1">{service.label}</div>
+                          <div className="text-sm text-muted-foreground">
                             {service.description}
                           </div>
                         </div>
