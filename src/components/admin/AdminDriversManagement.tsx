@@ -122,7 +122,7 @@ const AdminDriversManagement = () => {
         // Envoyer l'email approprié selon l'action
         if (actionDialog.action === "validate" || actionDialog.action === "reject") {
           try {
-            await supabase.functions.invoke("send-email", {
+            const emailResponse = await supabase.functions.invoke("send-email", {
               body: {
                 to: actionDialog.driver.profiles.email,
                 type: "driver_validation",
@@ -133,14 +133,22 @@ const AdminDriversManagement = () => {
                 },
               },
             });
-            console.log("✅ Email de validation envoyé au chauffeur");
-          } catch (emailErr) {
-            console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+            
+            if (emailResponse.error) {
+              console.error("⚠️ Erreur envoi email:", emailResponse.error);
+              toast.warning(`Email non envoyé: ${emailResponse.error.message}`);
+            } else {
+              console.log("✅ Email de validation envoyé au chauffeur");
+              toast.success("Email de notification envoyé au chauffeur");
+            }
+          } catch (emailErr: any) {
+            console.error("⚠️ Erreur envoi email:", emailErr);
+            toast.error(`Erreur envoi email: ${emailErr.message}`);
           }
         } else if (actionDialog.action === "on_hold") {
           // Envoyer l'email de mise en attente
           try {
-            await supabase.functions.invoke("send-email", {
+            const emailResponse = await supabase.functions.invoke("send-email", {
               body: {
                 to: actionDialog.driver.profiles.email,
                 type: "driver_on_hold",
@@ -149,9 +157,17 @@ const AdminDriversManagement = () => {
                 },
               },
             });
-            console.log("✅ Email de mise en attente envoyé au chauffeur");
-          } catch (emailErr) {
-            console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+            
+            if (emailResponse.error) {
+              console.error("⚠️ Erreur envoi email:", emailResponse.error);
+              toast.warning(`Email non envoyé: ${emailResponse.error.message}`);
+            } else {
+              console.log("✅ Email de mise en attente envoyé au chauffeur");
+              toast.success("Email de notification envoyé au chauffeur");
+            }
+          } catch (emailErr: any) {
+            console.error("⚠️ Erreur envoi email:", emailErr);
+            toast.error(`Erreur envoi email: ${emailErr.message}`);
           }
         }
 
