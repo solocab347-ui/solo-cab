@@ -116,17 +116,18 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
             </div>
           )}
 
-          {/* Vehicle Info - Only show if info exists */}
-          {(driver.vehicle_brand || driver.vehicle_model) && (
+          {/* Vehicle Info - Only show if info exists and not placeholder */}
+          {(driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter") || 
+           (driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter") ? (
             <div className="flex items-center justify-center gap-2 text-white/90 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
               <Car className="w-4 h-4" />
               <span className="font-medium text-sm">
-                {driver.vehicle_brand && `${driver.vehicle_brand} `}
-                {driver.vehicle_model}
+                {driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter" && `${driver.vehicle_brand} `}
+                {driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter" && driver.vehicle_model}
                 {driver.vehicle_year && ` (${driver.vehicle_year})`}
               </span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
