@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Flag, MessageSquare, Shield, LogOut, Bot } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Flag, MessageSquare, Shield, LogOut, Bot, AlertTriangle } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminStats from "@/components/admin/AdminStats";
@@ -19,6 +19,7 @@ import AdminReports from "@/components/admin/AdminReports";
 import AdminCommunications from "@/components/admin/AdminCommunications";
 import AdminRGPD from "@/components/admin/AdminRGPD";
 import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
+import AdminDisputes from "@/components/admin/AdminDisputes";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -78,13 +79,13 @@ const AdminDashboard = () => {
   const menuItems = [
     { id: "overview", label: "Vue d'ensemble", icon: Home },
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
-    { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
-    { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
-    { id: "reports", label: "Signalements & Litiges", icon: Flag },
+    { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "communications", label: "Communications", icon: MessageSquare },
-    { id: "rgpd", label: "RGPD & Confidentialité", icon: Shield },
+    { id: "assistant", label: "Demandes Liberty", icon: Bot },
+    { id: "disputes", label: "Licenciement et Litige", icon: AlertTriangle },
+    { id: "rgpd", label: "RGPD", icon: Shield },
   ];
 
   const renderContent = () => {
@@ -93,18 +94,18 @@ const AdminDashboard = () => {
         return <AdminOverview />;
       case "drivers":
         return <AdminDriversManagement />;
-      case "assistant":
-        return <AdminAssistantRequests />;
       case "subscriptions":
         return <AdminSubscriptions />;
-      case "emails":
-        return <AdminEmails />;
       case "free-access":
         return <AdminFreeAccess />;
-      case "reports":
-        return <AdminReports />;
+      case "emails":
+        return <AdminEmails />;
       case "communications":
         return <AdminCommunications />;
+      case "assistant":
+        return <AdminAssistantRequests />;
+      case "disputes":
+        return <AdminDisputes />;
       case "rgpd":
         return <AdminRGPD />;
       default:
