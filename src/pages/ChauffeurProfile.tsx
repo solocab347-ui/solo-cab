@@ -13,7 +13,16 @@ import {
   Calendar,
   Award,
   UserPlus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +53,8 @@ interface DriverProfile {
   display_company_name: boolean;
   vehicle_equipment: string[];
   services_offered: string[];
+  vehicle_photos: string[];
+  gallery_photos: string[];
 }
 
 const ChauffeurProfile = () => {
@@ -90,6 +101,8 @@ const ChauffeurProfile = () => {
           display_company_name,
           vehicle_equipment,
           services_offered,
+          vehicle_photos,
+          gallery_photos,
           profiles (
             full_name,
             email,
@@ -266,6 +279,31 @@ const ChauffeurProfile = () => {
               </Button>
             )}
           </Card>
+
+            {/* Photos Gallery */}
+            {(driver.vehicle_photos?.length > 0 || driver.gallery_photos?.length > 0) && (
+              <Card className="p-6 overflow-hidden">
+                <h2 className="text-xl font-bold mb-4">Photos</h2>
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {[...(driver.vehicle_photos || []), ...(driver.gallery_photos || [])].map((photo, index) => (
+                      <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                        <div className="relative aspect-video rounded-lg overflow-hidden group">
+                          <img 
+                            src={photo} 
+                            alt={`Photo ${index + 1}`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </Carousel>
+              </Card>
+            )}
 
             {/* About */}
             <Card className="p-6">

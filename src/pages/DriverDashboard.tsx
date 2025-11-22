@@ -27,6 +27,7 @@ import { DriverStatistics } from "@/components/driver/stats/DriverStatistics";
 import { DriverCampaigns } from "@/components/driver/promo/DriverCampaigns";
 import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
+import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -816,6 +817,24 @@ const DriverDashboard = () => {
                   <ServicesSelector
                     selectedServices={servicesOffered}
                     onChange={setServicesOffered}
+                  />
+                </div>
+
+                <div className="border-t border-white/10 pt-6">
+                  <VehiclePhotosManager
+                    driverId={driverProfile?.driver?.id || ""}
+                    currentVehiclePhotos={driverProfile?.driver?.vehicle_photos || []}
+                    currentGalleryPhotos={driverProfile?.driver?.gallery_photos || []}
+                    onPhotosUpdate={(vehiclePhotos, galleryPhotos) => {
+                      setDriverProfile({
+                        ...driverProfile,
+                        driver: {
+                          ...driverProfile.driver,
+                          vehicle_photos: vehiclePhotos,
+                          gallery_photos: galleryPhotos
+                        }
+                      });
+                    }}
                   />
                 </div>
               </div>
