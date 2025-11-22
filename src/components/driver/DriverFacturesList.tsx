@@ -124,7 +124,9 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           devis(
             base_price,
             distance_price,
-            time_price
+            time_price,
+            discount_amount,
+            promo_code
           )
         `)
         .eq("driver_id", driverId)
@@ -282,6 +284,18 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
+      
+      // Afficher la réduction si code promo appliqué
+      if ((facture.promo_code || facture.devis?.promo_code) && (facture.discount_amount > 0 || facture.devis?.discount_amount > 0)) {
+        const discountAmount = facture.discount_amount || facture.devis?.discount_amount || 0;
+        const promoCode = facture.promo_code || facture.devis?.promo_code || '';
+        doc.setTextColor(46, 125, 50); // Vert pour la réduction
+        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
+        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
@@ -319,6 +333,18 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
+      
+      // Afficher la réduction si code promo appliqué (version client)
+      if ((facture.promo_code || facture.devis?.promo_code) && (facture.discount_amount > 0 || facture.devis?.discount_amount > 0)) {
+        const discountAmount = facture.discount_amount || facture.devis?.discount_amount || 0;
+        const promoCode = facture.promo_code || facture.devis?.promo_code || '';
+        doc.setTextColor(46, 125, 50); // Vert pour la réduction
+        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
+        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       

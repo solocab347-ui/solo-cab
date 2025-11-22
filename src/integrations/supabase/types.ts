@@ -360,10 +360,12 @@ export type Database = {
           client_id: string
           course_id: string
           created_at: string
+          discount_amount: number
           distance_price: number
           driver_id: string
           id: string
           notes: string | null
+          promo_code: string | null
           quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
           time_price: number | null
@@ -377,10 +379,12 @@ export type Database = {
           client_id: string
           course_id: string
           created_at?: string
+          discount_amount?: number
           distance_price: number
           driver_id: string
           id?: string
           notes?: string | null
+          promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
@@ -394,10 +398,12 @@ export type Database = {
           client_id?: string
           course_id?: string
           created_at?: string
+          discount_amount?: number
           distance_price?: number
           driver_id?: string
           id?: string
           notes?: string | null
+          promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
@@ -594,6 +600,7 @@ export type Database = {
           course_id: string
           created_at: string
           devis_id: string | null
+          discount_amount: number
           driver_id: string
           id: string
           invoice_number: string
@@ -601,6 +608,7 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          promo_code: string | null
           stripe_payment_id: string | null
           updated_at: string
         }
@@ -610,6 +618,7 @@ export type Database = {
           course_id: string
           created_at?: string
           devis_id?: string | null
+          discount_amount?: number
           driver_id: string
           id?: string
           invoice_number: string
@@ -617,6 +626,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          promo_code?: string | null
           stripe_payment_id?: string | null
           updated_at?: string
         }
@@ -626,6 +636,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           devis_id?: string | null
+          discount_amount?: number
           driver_id?: string
           id?: string
           invoice_number?: string
@@ -633,6 +644,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          promo_code?: string | null
           stripe_payment_id?: string | null
           updated_at?: string
         }

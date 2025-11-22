@@ -25,10 +25,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get course details
+    // Get course details avec code promo
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
-      .select('*, clients!inner(user_id)')
+      .select('*, clients!inner(user_id, id), promo_code, discount_amount')
       .eq('id', course_id)
       .single();
 
@@ -58,6 +58,54 @@ Deno.serve(async (req) => {
     }
 
     const pricing = priceData[0];
+    
+    // Validation et application du code promo
+    let discountAmount = 0;
+    let finalAmount = pricing.total_price;
+    let promoCode = null;
+    
+    if (course.promo_code) {
+      // Récupérer la promotion
+      const { data: promo, error: promoError } = await supabaseClient
+        .from('promotions')
+        .select('*')
+        .eq('code', course.promo_code)
+        .eq('driver_id', driver_id)
+        .eq('active', true)
+        .maybeSingle();
+      
+      if (promo && !promoError) {
+        // Valider la promotion
+        const now = new Date();
+        const isExpired = promo.valid_until && new Date(promo.valid_until) < now;
+        const hasReachedMaxUses = promo.max_uses && promo.current_uses >= promo.max_uses;
+        const meetsMinAmount = !promo.min_amount || pricing.total_price >= promo.min_amount;
+        
+        if (!isExpired && !hasReachedMaxUses && meetsMinAmount) {
+          // Calculer la réduction
+          if (promo.type === 'percentage') {
+            discountAmount = (pricing.total_price * promo.value) / 100;
+          } else {
+            discountAmount = promo.value;
+          }
+          
+          // S'assurer que la réduction ne dépasse pas le montant total
+          discountAmount = Math.min(discountAmount, pricing.total_price);
+          finalAmount = pricing.total_price - discountAmount;
+          promoCode = course.promo_code;
+          
+          // Incrémenter le compteur d'utilisations
+          await supabaseClient
+            .from('promotions')
+            .update({ current_uses: (promo.current_uses || 0) + 1 })
+            .eq('id', promo.id);
+          
+          console.log(`Promo ${promo.code} applied: -${discountAmount}€`);
+        } else {
+          console.warn('Promo validation failed:', { isExpired, hasReachedMaxUses, meetsMinAmount });
+        }
+      }
+    }
 
     // Valid until date
     const validUntil = new Date();
@@ -81,7 +129,7 @@ Deno.serve(async (req) => {
 
         console.log(`Attempt ${attempt + 1}: Trying to create devis with number ${reservationNumber}`);
 
-        // Try to create devis with unified reservation number
+        // Try to create devis with unified reservation number and promo
         const { data: createdDevis, error: devisError } = await supabaseClient
           .from('devis')
           .insert({
@@ -92,7 +140,9 @@ Deno.serve(async (req) => {
             base_price: pricing.base_price,
             distance_price: pricing.distance_price,
             time_price: pricing.time_price || 0,
-            amount: pricing.total_price,
+            amount: finalAmount,
+            discount_amount: discountAmount,
+            promo_code: promoCode,
             valid_until: validUntil.toISOString(),
             status: 'pending',
           })

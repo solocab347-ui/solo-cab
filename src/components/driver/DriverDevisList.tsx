@@ -291,6 +291,17 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       doc.text(`${subtotal.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
+      
+      // Afficher la réduction si code promo appliqué
+      if (devis.promo_code && devis.discount_amount > 0) {
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(46, 125, 50); // Vert pour la réduction
+        doc.text(`Réduction (${devis.promo_code})`, 25, yPos + 5);
+        doc.text(`-${devis.discount_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.setFont(undefined, 'normal');
       doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
@@ -329,6 +340,16 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       doc.text(`${subtotal.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
+      
+      // Afficher la réduction si code promo appliqué
+      if (devis.promo_code && devis.discount_amount > 0) {
+        doc.setTextColor(46, 125, 50); // Vert pour la réduction
+        doc.text(`Réduction (${devis.promo_code})`, 25, yPos + 5);
+        doc.text(`-${devis.discount_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
