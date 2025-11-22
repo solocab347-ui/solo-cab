@@ -17,7 +17,8 @@ import {
   FileText,
   Download,
   Mail,
-  Share2
+  Share2,
+  Phone
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -141,7 +142,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, devis?: any) => {
     const styles = {
       pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
       accepted: "bg-green-500/10 text-green-500 border-green-500/20",
@@ -151,7 +152,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     };
 
     const labels = {
-      pending: "En attente",
+      pending: "En attente d'acceptation par le chauffeur",
       accepted: "Confirmée",
       in_progress: "En cours",
       completed: "Terminée",
@@ -513,6 +514,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const renderCourseCard = (course: any) => {
     const devis = course.devis?.[0];
     const facture = course.factures?.[0];
+    const driverPhone = course.drivers?.profiles?.phone;
 
     return (
       <Card key={course.id} className="p-6 hover:shadow-elegant transition-all">
@@ -542,7 +544,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               </div>
             </div>
           </div>
-          {getStatusBadge(course.status)}
+          {getStatusBadge(course.status, devis)}
         </div>
 
         <div className="space-y-3 mb-4">
@@ -696,7 +698,17 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
         )}
 
         {course.status === "pending" && (
-          <div className="flex gap-3 pt-4 border-t border-border">
+          <div className="flex gap-2 pt-4 border-t border-border">
+            {driverPhone && (
+              <Button
+                onClick={() => window.open(`tel:${driverPhone}`, '_self')}
+                variant="outline"
+                className="flex-1"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                Appeler
+              </Button>
+            )}
             <Button
               onClick={() => toast.info("Messagerie disponible dans l'onglet Messages")}
               variant="outline"
