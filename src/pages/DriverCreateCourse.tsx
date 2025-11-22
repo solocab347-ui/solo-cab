@@ -15,6 +15,7 @@ import { Car, MapPin, Calendar, Users, ArrowLeft, Calculator, Clock } from "luci
 import { calculateRoute } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Client {
   id: string;
@@ -277,8 +278,9 @@ const DriverCreateCourse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Button
           variant="ghost"
           onClick={() => navigate("/driver-dashboard")}
@@ -301,29 +303,50 @@ const DriverCreateCourse = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Sélection du client */}
-            <div className="space-y-2">
-              <Label htmlFor="client" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Client *
-              </Label>
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Sélectionnez un client" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.profiles?.full_name} ({client.profiles?.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {clients.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Aucun client enregistré. Invitez des clients via votre QR code.
-                </p>
-              )}
-            </div>
+            <ErrorBoundary fallback={
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Client *
+                </Label>
+                <Input 
+                  value="Erreur de chargement des clients" 
+                  disabled 
+                  className="bg-destructive/10"
+                />
+              </div>
+            }>
+              <div className="space-y-2">
+                <Label htmlFor="client" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Client *
+                </Label>
+                <Select 
+                  value={selectedClientId} 
+                  onValueChange={setSelectedClientId}
+                  key={`client-select-${clients.length}`}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Sélectionnez un client" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    {clients.map((client) => (
+                      <SelectItem 
+                        key={`client-${client.id}`} 
+                        value={client.id}
+                      >
+                        {client.profiles?.full_name} ({client.profiles?.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {clients.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Aucun client enregistré. Invitez des clients via votre QR code.
+                  </p>
+                )}
+              </div>
+            </ErrorBoundary>
 
             {/* Type de course */}
             <div className="space-y-3">
@@ -501,6 +524,7 @@ const DriverCreateCourse = () => {
         </Card>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 

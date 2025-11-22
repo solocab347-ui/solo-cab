@@ -6,11 +6,40 @@ Ce document décrit le système de sécurité renforcé pour la création de cou
 
 Garantir que la création de courses est **100% fiable, sécurisée et sans bugs** en appliquant :
 - Validation stricte des données
-- Gestion d'erreurs complète  
+- Gestion d'erreurs complète avec ErrorBoundary
 - Protection contre les injections
 - Vérifications de sécurité à plusieurs niveaux
+- Stabilisation des composants UI (Select, Portal)
 
 ## 📁 Architecture du système
+
+### 0. **ErrorBoundary UI** (`src/components/ErrorBoundary.tsx`)
+
+Protection globale contre les erreurs DOM et React pour éviter les pages blanches :
+
+```typescript
+// ✅ Protection de toute la page
+<ErrorBoundary>
+  <CreateCourse />
+</ErrorBoundary>
+
+// ✅ Protection spécifique des composants critiques
+<ErrorBoundary fallback={<SafeInput />}>
+  <Select>...</Select>
+</ErrorBoundary>
+```
+
+**Erreurs capturées :**
+- ✅ Erreurs "removeChild" des composants Radix UI
+- ✅ Erreurs de montage/démontage des portals
+- ✅ Erreurs de rendu React
+- ✅ Erreurs inattendues dans les composants
+
+**Mesures de stabilisation :**
+- ✅ Clés stables sur tous les Select (`key={promo-select-${length}}`)
+- ✅ Fallback Input pour Select vides (évite portal vide)
+- ✅ Préfixes uniques sur SelectItem keys (`client-${id}`, `promo-${id}`)
+- ✅ Protection contre changements rapides de state
 
 ### 1. **Validation centralisée** (`src/lib/courseValidation.ts`)
 
@@ -107,6 +136,13 @@ const data = await retryAsync(
 - 🔴 `unknown` : Erreurs inattendues
 
 ## 🔐 Niveaux de sécurité
+
+### Niveau 0 : Protection ErrorBoundary
+- ✅ ErrorBoundary global sur toutes les pages de création
+- ✅ ErrorBoundary locaux sur composants critiques (Select)
+- ✅ Fallbacks sécurisés en cas d'erreur UI
+- ✅ Clés stables pour éviter remontages intempestifs
+- ✅ Prévention erreurs "removeChild" des portals
 
 ### Niveau 1 : Interface utilisateur
 - ✅ Champs requis marqués avec `*`
@@ -216,12 +252,18 @@ const data = await retryAsync(
    - [ ] Passagers > capacité véhicule
    - [ ] Notes > 1000 caractères
 
-5. **Test injections**
+6. **Test injections**
    - [ ] HTML dans notes : `<script>alert('XSS')</script>`
    - [ ] Caractères spéciaux dans code promo
    - [ ] SQL dans adresses (déjà protégé par Supabase)
 
-6. **Test permissions**
+7. **Test stabilité UI**
+   - [ ] Changements rapides de Select
+   - [ ] Fermeture/ouverture rapide des dropdowns
+   - [ ] Démontage composant pendant chargement
+   - [ ] Navigation pendant soumission formulaire
+
+8. **Test permissions**
    - [ ] Client crée course pour autre client
    - [ ] Driver crée course pour client d'un autre driver
    - [ ] Utilisateur non connecté
@@ -233,6 +275,7 @@ const data = await retryAsync(
 - `⚠️ Retry X/3 failed` : Tentatives échouées
 - `❌ Driver verification error` : Driver invalide
 - `❌ Client verification error` : Client invalide
+- `❌ ErrorBoundary caught an error` : Erreur UI capturée
 
 ### Métriques importantes :
 - Taux de succès création courses (objectif: >99%)
@@ -288,4 +331,4 @@ Avant chaque mise en production :
 ---
 
 **Dernière mise à jour** : 2025-11-22  
-**Version** : 2.0 (Système sécurisé renforcé)
+**Version** : 3.0 (ErrorBoundary + Stabilisation UI)
