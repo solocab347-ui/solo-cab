@@ -12,6 +12,7 @@ import ChauffeurLanding from "./pages/ChauffeurLanding";
 import ChauffeurProfile from "./pages/ChauffeurProfile";
 import DriverDashboard from "./pages/DriverDashboard";
 import DriverCreateCourse from "./pages/DriverCreateCourse";
+import DriverPendingValidation from "./pages/DriverPendingValidation";
 import ClientDashboard from "./pages/ClientDashboard";
 import RegisterClientQR from "./pages/RegisterClientQR";
 import RegisterClientDriver from "./pages/RegisterClientDriver";
@@ -49,7 +50,7 @@ const App = () => (
             <Route
               path="/driver/create-course"
               element={
-                <ProtectedRoute allowedRoles={["driver"]}>
+                <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
                   <DriverCreateCourse />
                 </ProtectedRoute>
               }
@@ -57,8 +58,16 @@ const App = () => (
             <Route
               path="/driver-dashboard"
               element={
-                <ProtectedRoute allowedRoles={["driver"]}>
+                <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
                   <DriverDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/driver-pending-validation"
+              element={
+                <ProtectedRoute allowedRoles={["driver"]}>
+                  <DriverPendingValidation />
                 </ProtectedRoute>
               }
             />
@@ -89,7 +98,7 @@ const App = () => (
             <Route
               path="/client-profile/:clientId"
               element={
-                <ProtectedRoute allowedRoles={["driver"]}>
+                <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
                   <ClientProfileView />
                 </ProtectedRoute>
               }
