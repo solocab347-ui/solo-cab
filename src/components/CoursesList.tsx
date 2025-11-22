@@ -38,11 +38,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [customReason, setCustomReason] = useState<string>("");
   const [courseToReject, setCourseToReject] = useState<string | null>(null);
   
-  // États pour les filtres avancés par date
+  // États pour les filtres avancés
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [showDateFilters, setShowDateFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [minAmount, setMinAmount] = useState<string>("");
+  const [maxAmount, setMaxAmount] = useState<string>("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -896,15 +901,66 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     });
   };
 
+  // Fonction pour appliquer tous les filtres (recherche, date, montant, statut paiement)
+  const applyAllFilters = (coursesList: any[]) => {
+    let filtered = [...coursesList];
+
+    // Filtre par date
+    filtered = filterCoursesByDate(filtered);
+
+    // Filtre par recherche (nom du client)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(course => 
+        course.clients?.profiles?.full_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtre par montant (devis ou facture)
+    if (minAmount || maxAmount) {
+      filtered = filtered.filter(course => {
+        const amount = course.factures?.[0]?.amount || course.devis?.[0]?.amount;
+        if (!amount) return false;
+        
+        const min = minAmount ? parseFloat(minAmount) : 0;
+        const max = maxAmount ? parseFloat(maxAmount) : Infinity;
+        
+        return amount >= min && amount <= max;
+      });
+    }
+
+    // Filtre par statut de paiement (pour courses terminées avec factures)
+    if (paymentStatusFilter !== "all") {
+      filtered = filtered.filter(course => {
+        if (!course.factures?.[0]) return false;
+        return course.factures[0].payment_status === paymentStatusFilter;
+      });
+    }
+
+    return filtered;
+  };
+
+  const resetAllFilters = () => {
+    setDateFilter("all");
+    setCustomStartDate("");
+    setCustomEndDate("");
+    setSearchQuery("");
+    setMinAmount("");
+    setMaxAmount("");
+    setPaymentStatusFilter("all");
+  };
+
   // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN)
   const sortByDate = (coursesList: any[]) => 
     [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  const pendingCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "pending")));
-  const acceptedCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "accepted")));
-  const inProgressCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "in_progress")));
-  const completedCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "completed")));
-  const cancelledCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "cancelled")));
+  const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
+  const acceptedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "accepted")));
+  const inProgressCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "in_progress")));
+  const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
+  const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
+
+  const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all";
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -912,119 +968,219 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      {/* Filtres avancés par date */}
+      {/* BARRE DE RECHERCHE SIMPLE */}
+      <Card className="p-4 bg-card/50 backdrop-blur border border-primary/20">
+        <div className="space-y-3">
+          <Label htmlFor="search" className="text-sm font-semibold">Recherche rapide</Label>
+          <Input
+            id="search"
+            type="text"
+            placeholder="Rechercher par nom de client..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+        </div>
+      </Card>
+
+      {/* FILTRES AVANCÉS */}
       <Card className="p-4 bg-card/50 backdrop-blur border border-primary/20">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Filter className="w-4 h-4" />
-              Filtres par date
+              Filtres avancés
             </h3>
-            {dateFilter !== "all" && (
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetAllFilters}
+                  className="text-xs"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Tout réinitialiser
+                </Button>
+              )}
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => {
-                  setDateFilter("all");
-                  setCustomStartDate("");
-                  setCustomEndDate("");
-                }}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className="text-xs"
               >
-                <X className="w-3 h-3 mr-1" />
-                Réinitialiser
+                {showAdvancedFilters ? "Masquer" : "Afficher"} les filtres
               </Button>
-            )}
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            <Button
-              variant={dateFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateFilter("all")}
-              className="w-full"
-            >
-              Tout
-            </Button>
-            <Button
-              variant={dateFilter === "today" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateFilter("today")}
-              className="w-full"
-            >
-              Aujourd'hui
-            </Button>
-            <Button
-              variant={dateFilter === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateFilter("week")}
-              className="w-full"
-            >
-              Cette semaine
-            </Button>
-            <Button
-              variant={dateFilter === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateFilter("month")}
-              className="w-full"
-            >
-              Ce mois
-            </Button>
-            <Button
-              variant={dateFilter === "last-month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDateFilter("last-month")}
-              className="w-full"
-            >
-              Mois dernier
-            </Button>
-            <Button
-              variant={dateFilter === "custom" ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setDateFilter("custom");
-                setShowDateFilters(!showDateFilters);
-              }}
-              className="w-full"
-            >
-              Personnalisé
-            </Button>
+            </div>
           </div>
 
-          {dateFilter === "custom" && showDateFilters && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
-              <div className="space-y-2">
-                <Label htmlFor="start-date" className="text-xs">Date de début</Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full"
-                />
+          {showAdvancedFilters && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              {/* FILTRES PAR DATE */}
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Filtrer par date</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <Button
+                    variant={dateFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("all")}
+                    className="w-full text-xs"
+                  >
+                    Tout
+                  </Button>
+                  <Button
+                    variant={dateFilter === "today" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("today")}
+                    className="w-full text-xs"
+                  >
+                    Aujourd'hui
+                  </Button>
+                  <Button
+                    variant={dateFilter === "week" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("week")}
+                    className="w-full text-xs"
+                  >
+                    Cette semaine
+                  </Button>
+                  <Button
+                    variant={dateFilter === "month" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("month")}
+                    className="w-full text-xs"
+                  >
+                    Ce mois
+                  </Button>
+                  <Button
+                    variant={dateFilter === "last-month" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateFilter("last-month")}
+                    className="w-full text-xs"
+                  >
+                    Mois dernier
+                  </Button>
+                  <Button
+                    variant={dateFilter === "custom" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setDateFilter("custom");
+                      setShowDateFilters(!showDateFilters);
+                    }}
+                    className="w-full text-xs"
+                  >
+                    Personnalisé
+                  </Button>
+                </div>
+
+                {dateFilter === "custom" && showDateFilters && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="start-date" className="text-xs">Date de début</Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-full text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="end-date" className="text-xs">Date de fin</Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-full text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-date" className="text-xs">Date de fin</Label>
-                <Input
-                  id="end-date"
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full"
-                />
+
+              {/* FILTRES PAR MONTANT */}
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Filtrer par montant (€)</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="min-amount" className="text-xs">Montant minimum</Label>
+                    <Input
+                      id="min-amount"
+                      type="number"
+                      placeholder="Ex: 50"
+                      value={minAmount}
+                      onChange={(e) => setMinAmount(e.target.value)}
+                      className="w-full text-xs"
+                      min="0"
+                      step="10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-amount" className="text-xs">Montant maximum</Label>
+                    <Input
+                      id="max-amount"
+                      type="number"
+                      placeholder="Ex: 200"
+                      value={maxAmount}
+                      onChange={(e) => setMaxAmount(e.target.value)}
+                      className="w-full text-xs"
+                      min="0"
+                      step="10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* FILTRES PAR STATUT DE PAIEMENT */}
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Filtrer par statut de paiement</Label>
+                <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                  <SelectTrigger className="w-full text-xs">
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="paid">Payé</SelectItem>
+                    <SelectItem value="pending">En attente</SelectItem>
+                    <SelectItem value="failed">Échoué</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
 
-          {dateFilter !== "all" && (
-            <p className="text-xs text-muted-foreground">
-              {dateFilter === "today" && "Affichage des courses d'aujourd'hui"}
-              {dateFilter === "week" && "Affichage des courses de cette semaine"}
-              {dateFilter === "month" && "Affichage des courses de ce mois"}
-              {dateFilter === "last-month" && "Affichage des courses du mois dernier"}
-              {dateFilter === "custom" && customStartDate && customEndDate && 
-                `Affichage du ${format(new Date(customStartDate), "dd/MM/yyyy", { locale: fr })} au ${format(new Date(customEndDate), "dd/MM/yyyy", { locale: fr })}`}
-            </p>
+          {/* RÉSUMÉ DES FILTRES ACTIFS */}
+          {hasActiveFilters && (
+            <div className="pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground flex flex-wrap gap-1 items-center">
+                <span className="font-medium">Filtres actifs:</span>
+                {searchQuery && <Badge variant="secondary" className="text-xs">Recherche: {searchQuery}</Badge>}
+                {dateFilter !== "all" && dateFilter !== "custom" && (
+                  <Badge variant="secondary" className="text-xs">
+                    {dateFilter === "today" && "Aujourd'hui"}
+                    {dateFilter === "week" && "Cette semaine"}
+                    {dateFilter === "month" && "Ce mois"}
+                    {dateFilter === "last-month" && "Mois dernier"}
+                  </Badge>
+                )}
+                {dateFilter === "custom" && customStartDate && customEndDate && (
+                  <Badge variant="secondary" className="text-xs">
+                    {format(new Date(customStartDate), "dd/MM/yy", { locale: fr })} - {format(new Date(customEndDate), "dd/MM/yy", { locale: fr })}
+                  </Badge>
+                )}
+                {(minAmount || maxAmount) && (
+                  <Badge variant="secondary" className="text-xs">
+                    Montant: {minAmount || "0"}€ - {maxAmount || "∞"}€
+                  </Badge>
+                )}
+                {paymentStatusFilter !== "all" && (
+                  <Badge variant="secondary" className="text-xs">
+                    Paiement: {paymentStatusFilter === "paid" ? "Payé" : paymentStatusFilter === "pending" ? "En attente" : "Échoué"}
+                  </Badge>
+                )}
+              </p>
+            </div>
           )}
         </div>
       </Card>
