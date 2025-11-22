@@ -300,7 +300,19 @@ const CreateCourse = () => {
             });
           }
           
-          toast.success("Réservation et devis créés avec succès !");
+          // Notifier le client que le devis est généré
+          await supabase.from("notifications").insert({
+            user_id: user.id,
+            title: "Devis généré",
+            message: "Votre devis a été généré automatiquement. Rendez-vous dans la section 'Devis et Factures' pour le consulter et l'accepter.",
+            type: "info",
+            link: "/client-dashboard?tab=devis"
+          });
+          
+          toast.success("Réservation créée avec succès !");
+          toast.info("Votre devis a été généré ! Consultez-le dans la section 'Devis et Factures'.", {
+            duration: 5000,
+          });
         }
       } catch (devisGenError) {
         console.error("Devis generation exception:", devisGenError);
