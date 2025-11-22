@@ -168,6 +168,7 @@ const ClientDashboard = () => {
     { id: "scanner", label: "Scanner QR", icon: QrCode, hideForExclusive: true }, // Only for free clients
     { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User, hideForExclusive: false },
     { id: "compte", label: "Mon Compte", icon: User },
+    { id: "rgpd", label: "Mes Données RGPD", icon: Sparkles, isLink: true, path: "/rgpd-data" },
   ];
 
   const renderNavigation = () => (
@@ -182,6 +183,24 @@ const ClientDashboard = () => {
         })
         .map((item) => {
           const Icon = item.icon;
+          
+          // If it's a link (RGPD), navigate directly
+          if (item.isLink && item.path) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                  "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          }
+          
           return (
             <button
               key={item.id}

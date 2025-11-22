@@ -22,6 +22,7 @@ import RegisterDriver from "./pages/RegisterDriver";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import Notifications from "./pages/Notifications";
 import ClientProfileView from "./pages/ClientProfileView";
+import RGPDData from "./pages/RGPDData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -90,6 +91,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["driver"]}>
                   <ClientProfileView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rgpd-data"
+              element={
+                <ProtectedRoute allowedRoles={["driver", "client"]}>
+                  <RGPDData />
                 </ProtectedRoute>
               }
             />
