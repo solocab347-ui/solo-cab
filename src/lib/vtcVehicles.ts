@@ -158,6 +158,48 @@ export const VTC_VEHICLES: VTCVehicle[] = [
     category: 'berline',
     imageUrl: 'skoda-superb',
   },
+  {
+    id: 'tesla-model-y',
+    brand: 'Tesla',
+    model: 'Model Y',
+    category: 'electric',
+    imageUrl: 'tesla-model-y',
+  },
+  {
+    id: 'toyota-chr',
+    brand: 'Toyota',
+    model: 'C-HR',
+    category: 'berline',
+    imageUrl: 'toyota-chr',
+  },
+  {
+    id: 'byd-seal',
+    brand: 'BYD',
+    model: 'Seal',
+    category: 'electric',
+    imageUrl: 'byd-seal',
+  },
+  {
+    id: 'toyota-rav4',
+    brand: 'Toyota',
+    model: 'RAV4',
+    category: 'berline',
+    imageUrl: 'toyota-rav4',
+  },
+  {
+    id: 'lexus-es',
+    brand: 'Lexus',
+    model: 'ES',
+    category: 'premium',
+    imageUrl: 'lexus-es',
+  },
+  {
+    id: 'lexus-rx',
+    brand: 'Lexus',
+    model: 'RX',
+    category: 'premium',
+    imageUrl: 'lexus-rx',
+  },
 ];
 
 export const getCategoryLabel = (category: string): string => {
