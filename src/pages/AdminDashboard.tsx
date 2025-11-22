@@ -84,7 +84,7 @@ const AdminDashboard = () => {
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "communications", label: "Communications", icon: MessageSquare },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
-    { id: "disputes", label: "Licenciement et Litige", icon: AlertTriangle },
+    { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
     { id: "rgpd", label: "RGPD", icon: Shield },
   ];
 
