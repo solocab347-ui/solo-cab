@@ -41,14 +41,23 @@ const CreateCourse = () => {
     const fetchClientAddress = async () => {
       if (!user) return;
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("address")
-        .eq("id", user.id)
-        .maybeSingle();
+      try {
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (profileData?.address) {
-        setClientAddress(profileData.address);
+        if (error) {
+          console.error("❌ Error fetching profile address:", error);
+          return;
+        }
+
+        if (profileData?.address) {
+          setClientAddress(profileData.address);
+        }
+      } catch (err) {
+        console.error("❌ Exception fetching profile address:", err);
       }
     };
 
@@ -95,14 +104,23 @@ const CreateCourse = () => {
     const fetchDriverMaxPassengers = async () => {
       if (!driverId) return;
       
-      const { data: driverData } = await supabase
-        .from("drivers")
-        .select("max_passengers")
-        .eq("id", driverId)
-        .maybeSingle();
-      
-      if (driverData && driverData.max_passengers) {
-        setMaxPassengers(driverData.max_passengers);
+      try {
+        const { data: driverData, error } = await supabase
+          .from("drivers")
+          .select("max_passengers")
+          .eq("id", driverId)
+          .maybeSingle();
+        
+        if (error) {
+          console.error("❌ Error fetching driver max passengers:", error);
+          return;
+        }
+        
+        if (driverData && driverData.max_passengers) {
+          setMaxPassengers(driverData.max_passengers);
+        }
+      } catch (err) {
+        console.error("❌ Exception fetching driver max passengers:", err);
       }
     };
     

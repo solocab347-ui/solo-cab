@@ -55,6 +55,31 @@ const DriverCreateCourse = () => {
   const [driverProfile, setDriverProfile] = useState<any>(null);
 
   useEffect(() => {
+    const fetchDriverProfile = async () => {
+      if (!user) return;
+
+      try {
+        const { data: driver, error } = await supabase
+          .from("drivers")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("❌ Error fetching driver profile:", error);
+          toast.error("Erreur lors du chargement du profil");
+          return;
+        }
+
+        if (driver) {
+          setDriverProfile(driver);
+        }
+      } catch (err) {
+        console.error("❌ Exception fetching driver profile:", err);
+        toast.error("Erreur lors du chargement du profil");
+      }
+    };
+
     fetchDriverProfile();
     fetchClients();
   }, [user]);
@@ -80,43 +105,72 @@ const DriverCreateCourse = () => {
   const fetchDriverProfile = async () => {
     if (!user) return;
 
-    const { data: driver } = await supabase
-      .from("drivers")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const { data: driver, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (driver) {
-      setDriverProfile(driver);
+      if (error) {
+        console.error("❌ Error fetching driver profile:", error);
+        return;
+      }
+
+      if (driver) {
+        setDriverProfile(driver);
+      }
+    } catch (err) {
+      console.error("❌ Exception fetching driver profile:", err);
     }
   };
 
   const fetchClients = async () => {
     if (!user) return;
 
-    const { data: driverData } = await supabase
-      .from("drivers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (!driverData) return;
+      if (driverError) {
+        console.error("❌ Error fetching driver ID:", driverError);
+        toast.error("Erreur lors du chargement des clients");
+        return;
+      }
 
-    const { data: clientsData } = await supabase
-      .from("clients")
-      .select(`
-        id,
-        user_id,
-        profiles:user_id (
-          full_name,
-          email
-        )
-      `)
-      .or(`driver_id.eq.${driverData.id},driver_ids.cs.{${driverData.id}}`)
-      .order("created_at", { ascending: false });
+      if (!driverData) {
+        console.warn("⚠️ No driver data found for user");
+        return;
+      }
 
-    if (clientsData) {
-      setClients(clientsData as Client[]);
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients")
+        .select(`
+          id,
+          user_id,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .or(`driver_id.eq.${driverData.id},driver_ids.cs.{${driverData.id}}`)
+        .order("created_at", { ascending: false });
+
+      if (clientsError) {
+        console.error("❌ Error fetching clients:", clientsError);
+        toast.error("Erreur lors du chargement des clients");
+        return;
+      }
+
+      if (clientsData) {
+        setClients(clientsData as Client[]);
+      }
+    } catch (err) {
+      console.error("❌ Exception fetching clients:", err);
+      toast.error("Erreur lors du chargement des clients");
     }
   };
 

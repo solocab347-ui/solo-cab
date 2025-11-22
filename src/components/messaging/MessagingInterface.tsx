@@ -42,15 +42,24 @@ export const MessagingInterface = () => {
 
       if (userRole === "driver") {
         // Driver: fetch all clients
-        const { data: driverData } = await supabase
+        const { data: driverData, error: driverError } = await supabase
           .from("drivers")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (!driverData) return;
+        if (driverError) {
+          console.error("❌ Error fetching driver:", driverError);
+          toast.error("Erreur lors du chargement du chauffeur");
+          return;
+        }
 
-        const { data: clientsData } = await supabase
+        if (!driverData) {
+          console.warn("⚠️ No driver data found");
+          return;
+        }
+
+        const { data: clientsData, error: clientsError } = await supabase
           .from("clients")
           .select(`
             user_id,
@@ -62,6 +71,12 @@ export const MessagingInterface = () => {
           `)
           .or(`driver_id.eq.${driverData.id},driver_ids.cs.{${driverData.id}}`);
 
+        if (clientsError) {
+          console.error("❌ Error fetching clients:", clientsError);
+          toast.error("Erreur lors du chargement des clients");
+          return;
+        }
+
         if (clientsData) {
           const contactsList = clientsData
             .map((c: any) => c.profiles)
@@ -70,13 +85,22 @@ export const MessagingInterface = () => {
         }
       } else if (userRole === "client") {
         // Client: fetch their driver(s)
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from("clients")
           .select("driver_id, driver_ids, is_exclusive")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (!clientData) return;
+        if (clientError) {
+          console.error("❌ Error fetching client data:", clientError);
+          toast.error("Erreur lors du chargement du client");
+          return;
+        }
+
+        if (!clientData) {
+          console.warn("⚠️ No client data found");
+          return;
+        }
 
         let driverIds: string[] = [];
 
@@ -87,7 +111,7 @@ export const MessagingInterface = () => {
         }
 
         if (driverIds.length > 0) {
-          const { data: driversData } = await supabase
+          const { data: driversData, error: driversError } = await supabase
             .from("drivers")
             .select(`
               user_id,
@@ -98,6 +122,12 @@ export const MessagingInterface = () => {
               )
             `)
             .in("id", driverIds);
+
+          if (driversError) {
+            console.error("❌ Error fetching drivers:", driversError);
+            toast.error("Erreur lors du chargement des chauffeurs");
+            return;
+          }
 
           if (driversData) {
             const contactsList = driversData
@@ -112,7 +142,7 @@ export const MessagingInterface = () => {
         }
       }
     } catch (error: any) {
-      console.error("Error fetching contacts:", error);
+      console.error("❌ Exception fetching contacts:", error);
       toast.error("Erreur lors du chargement des contacts");
     } finally {
       setLoading(false);
