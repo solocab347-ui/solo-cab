@@ -188,8 +188,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
       
+      // Ignorer les erreurs "session_not_found" car la session peut déjà être expirée
+      // Ce n'est pas une vraie erreur - l'utilisateur est déjà déconnecté
+      if (error && !error.message?.includes("session_not_found")) {
+        throw error;
+      }
+      
+      // Nettoyage local toujours effectué (même si session déjà expirée côté serveur)
       setUser(null);
       setSession(null);
       setUserRole(null);
@@ -197,8 +203,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate("/login");
       toast.success("Déconnexion réussie");
     } catch (error: any) {
-      console.error("Signout error:", error);
-      toast.error("Erreur lors de la déconnexion");
+      console.error("❌ Signout error:", error);
+      
+      // Même en cas d'erreur, on nettoie l'état local pour éviter l'UI bloqué
+      setUser(null);
+      setSession(null);
+      setUserRole(null);
+      setUserRoles([]);
+      navigate("/login");
+      
+      toast.error("Déconnexion effectuée avec avertissement");
     }
   };
 
