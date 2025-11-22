@@ -448,78 +448,46 @@ const ChauffeurProfile = () => {
             )}
           </div>
 
-          {/* Right Column - Booking Card */}
+          {/* Right Column - Contact Card */}
           <div className="space-y-6">
-            {/* Pricing Card */}
-            <Card className="p-6 bg-gradient-dark text-primary-foreground shadow-elegant sticky top-24">
-              <h3 className="text-xl font-bold mb-6">Tarifs</h3>
-              <div className="space-y-4 mb-6">
-                {driver.base_rate > 0 && (
-                  <div className="flex items-center justify-between py-3 border-b border-primary-foreground/20">
-                    <span className="opacity-80">Tarif de base</span>
-                    <span className="text-2xl font-bold text-premium">
-                      {driver.base_rate}€
-                    </span>
+            {/* Contact Card */}
+            <Card className="p-8 shadow-elegant sticky top-24">
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-primary" />
+                </div>
+                Contact
+              </h3>
+              <div className="space-y-4">
+                {driver.phone && (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <Phone className="w-5 h-5 text-primary" />
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Téléphone</div>
+                      <a href={`tel:${driver.phone}`} className="font-semibold text-lg hover:text-primary transition-colors">
+                        {driver.phone}
+                      </a>
+                    </div>
                   </div>
                 )}
-                {driver.per_km_rate > 0 && (
-                  <div className="flex items-center justify-between py-3 border-b border-primary-foreground/20">
-                    <span className="opacity-80">Par kilomètre</span>
-                    <span className="text-xl font-semibold text-premium">
-                      {driver.per_km_rate}€
-                    </span>
+                {driver.email && (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <Mail className="w-5 h-5 text-primary" />
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Email</div>
+                      <a href={`mailto:${driver.email}`} className="font-semibold text-lg hover:text-primary transition-colors break-all">
+                        {driver.email}
+                      </a>
+                    </div>
                   </div>
                 )}
-                {(!driver.base_rate || driver.base_rate === 0) && (!driver.per_km_rate || driver.per_km_rate === 0) && (
-                  <p className="text-center opacity-80">
-                    Tarifs sur devis
+                {!driver.phone && !driver.email && (
+                  <p className="text-center text-muted-foreground py-4">
+                    Aucune information de contact publique disponible
                   </p>
                 )}
               </div>
-              {user ? (
-                <Link to={`/create-course?driver_id=${id}`}>
-                  <Button className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Réserver une course
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Button 
-                    onClick={handleRegisterWithDriver}
-                    disabled={registering}
-                    className="w-full bg-gradient-premium hover:opacity-90 transition-opacity text-lg py-6"
-                  >
-                    <UserPlus className="w-5 h-5 mr-2" />
-                    {registering ? "Inscription..." : "M'inscrire avec ce chauffeur"}
-                  </Button>
-                  <p className="text-xs text-center opacity-60 mt-4">
-                    Créez votre compte et inscrivez-vous avec ce chauffeur
-                  </p>
-                </>
-              )}
             </Card>
-
-            {/* Contact Card */}
-            {(driver.phone || driver.email) && (
-              <Card className="p-6">
-                <h3 className="text-lg font-bold mb-4">Contact</h3>
-                <div className="space-y-3">
-                  {driver.phone && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{driver.phone}</span>
-                    </div>
-                  )}
-                  {driver.email && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{driver.email}</span>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
           </div>
         </div>
       </div>
