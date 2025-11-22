@@ -151,7 +151,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleStartCourse = async (courseId: string) => {
     try {
-      // Optimistic update - change UI immediately
+      // SÉCURITÉ: Mise à jour optimiste SANS re-fetch pour maintenir la position
+      // La course reste exactement à sa position même si son statut change
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "in_progress" as const } : c
       ));
@@ -164,14 +165,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       if (error) throw error;
 
       toast.success("Course commencée !");
-      
-      // Let realtime subscription handle the update instead of immediate fetch
-      // Removed: await fetchCourses();
     } catch (error: any) {
       console.error("Error starting course:", error);
       toast.error("Erreur lors du démarrage de la course");
-      // Revert on error
-      await fetchCourses();
+      // En cas d'erreur, revenir au statut précédent SANS changer la position
+      setCourses(prev => prev.map(c => 
+        c.id === courseId ? { ...c, status: "accepted" as const } : c
+      ));
     }
   };
 
@@ -1127,9 +1127,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           ) : (
             [...acceptedCourses, ...inProgressCourses]
               .sort((a, b) => {
-                // Trier pour que les courses "accepted" apparaissent avant les "in_progress"
-                if (a.status === 'accepted' && b.status === 'in_progress') return -1;
-                if (a.status === 'in_progress' && b.status === 'accepted') return 1;
+                // SÉCURITÉ: Tri uniquement par date de planification (descendant)
+                // Les courses restent FIGÉES à leur position même si le statut change
+                // Cela évite toute confusion et erreur de manipulation par le chauffeur
                 return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
               })
               .map((course) => (
