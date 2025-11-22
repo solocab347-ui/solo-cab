@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail } from "lucide-react";
-import { format } from "date-fns";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X } from "lucide-react";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
@@ -35,6 +37,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [customReason, setCustomReason] = useState<string>("");
   const [courseToReject, setCourseToReject] = useState<string | null>(null);
+  
+  // États pour les filtres avancés par date
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [showDateFilters, setShowDateFilters] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -841,11 +849,62 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   };
 
-  const pendingCourses = courses.filter(c => c.status === "pending");
-  const acceptedCourses = courses.filter(c => c.status === "accepted");
-  const inProgressCourses = courses.filter(c => c.status === "in_progress");
-  const completedCourses = courses.filter(c => c.status === "completed");
-  const cancelledCourses = courses.filter(c => c.status === "cancelled");
+  // Fonction pour filtrer les courses par date
+  const filterCoursesByDate = (coursesList: any[]) => {
+    if (dateFilter === "all") return coursesList;
+
+    const now = new Date();
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    switch (dateFilter) {
+      case "today":
+        startDate = startOfDay(now);
+        endDate = endOfDay(now);
+        break;
+      case "week":
+        startDate = startOfWeek(now, { locale: fr });
+        endDate = endOfWeek(now, { locale: fr });
+        break;
+      case "month":
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
+        break;
+      case "last-month":
+        const lastMonth = subMonths(now, 1);
+        startDate = startOfMonth(lastMonth);
+        endDate = endOfMonth(lastMonth);
+        break;
+      case "custom":
+        if (customStartDate) startDate = startOfDay(new Date(customStartDate));
+        if (customEndDate) endDate = endOfDay(new Date(customEndDate));
+        break;
+    }
+
+    if (!startDate && !endDate) return coursesList;
+
+    return coursesList.filter(course => {
+      const courseDate = new Date(course.scheduled_date);
+      if (startDate && endDate) {
+        return courseDate >= startDate && courseDate <= endDate;
+      } else if (startDate) {
+        return courseDate >= startDate;
+      } else if (endDate) {
+        return courseDate <= endDate;
+      }
+      return true;
+    });
+  };
+
+  // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN)
+  const sortByDate = (coursesList: any[]) => 
+    [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+
+  const pendingCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "pending")));
+  const acceptedCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "accepted")));
+  const inProgressCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "in_progress")));
+  const completedCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "completed")));
+  const cancelledCourses = sortByDate(filterCoursesByDate(courses.filter(c => c.status === "cancelled")));
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -853,6 +912,123 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      {/* Filtres avancés par date */}
+      <Card className="p-4 bg-card/50 backdrop-blur border border-primary/20">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filtres par date
+            </h3>
+            {dateFilter !== "all" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDateFilter("all");
+                  setCustomStartDate("");
+                  setCustomEndDate("");
+                }}
+                className="text-xs"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <Button
+              variant={dateFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilter("all")}
+              className="w-full"
+            >
+              Tout
+            </Button>
+            <Button
+              variant={dateFilter === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilter("today")}
+              className="w-full"
+            >
+              Aujourd'hui
+            </Button>
+            <Button
+              variant={dateFilter === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilter("week")}
+              className="w-full"
+            >
+              Cette semaine
+            </Button>
+            <Button
+              variant={dateFilter === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilter("month")}
+              className="w-full"
+            >
+              Ce mois
+            </Button>
+            <Button
+              variant={dateFilter === "last-month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDateFilter("last-month")}
+              className="w-full"
+            >
+              Mois dernier
+            </Button>
+            <Button
+              variant={dateFilter === "custom" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setDateFilter("custom");
+                setShowDateFilters(!showDateFilters);
+              }}
+              className="w-full"
+            >
+              Personnalisé
+            </Button>
+          </div>
+
+          {dateFilter === "custom" && showDateFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border">
+              <div className="space-y-2">
+                <Label htmlFor="start-date" className="text-xs">Date de début</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date" className="text-xs">Date de fin</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {dateFilter !== "all" && (
+            <p className="text-xs text-muted-foreground">
+              {dateFilter === "today" && "Affichage des courses d'aujourd'hui"}
+              {dateFilter === "week" && "Affichage des courses de cette semaine"}
+              {dateFilter === "month" && "Affichage des courses de ce mois"}
+              {dateFilter === "last-month" && "Affichage des courses du mois dernier"}
+              {dateFilter === "custom" && customStartDate && customEndDate && 
+                `Affichage du ${format(new Date(customStartDate), "dd/MM/yyyy", { locale: fr })} au ${format(new Date(customEndDate), "dd/MM/yyyy", { locale: fr })}`}
+            </p>
+          )}
+        </div>
+      </Card>
+
       <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 mb-6 h-auto bg-transparent p-0">
           <TabsTrigger 
@@ -1311,17 +1487,38 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                   </div>
 
-                  {course.factures && course.factures.length > 0 && (
-                    <div className="p-4 bg-success/5 backdrop-blur-sm rounded-lg border border-success/10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-foreground">Montant de la facture</span>
-                        <span className="text-3xl font-bold text-success">{course.factures[0].amount.toFixed(2)}€</span>
+                  {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
+                  {(() => {
+                    const facture = course.factures?.[0];
+                    const devis = course.devis?.[0];
+                    const amount = facture?.amount || devis?.amount;
+                    const reference = facture?.invoice_number_generated || devis?.quote_number;
+
+                    if (!amount) {
+                      return (
+                        <div className="p-4 bg-destructive/5 backdrop-blur-sm rounded-lg border border-destructive/10">
+                          <p className="text-sm text-destructive font-medium">⚠️ Prix non disponible</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Aucun devis ou facture n'a été généré pour cette course.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="p-4 bg-success/5 backdrop-blur-sm rounded-lg border border-success/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground">
+                            {facture ? "Montant de la facture" : "Montant du devis"}
+                          </span>
+                          <span className="text-3xl font-bold text-success">{amount.toFixed(2)}€</span>
+                        </div>
+                        {reference && (
+                          <p className="text-xs text-muted-foreground mt-1">Réf: {reference}</p>
+                        )}
                       </div>
-                      {course.factures[0].invoice_number_generated && (
-                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.factures[0].invoice_number_generated}</p>
-                      )}
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <div className="flex gap-2 flex-wrap">
                     <Button
