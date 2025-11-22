@@ -242,9 +242,19 @@ const ChauffeurProfile = () => {
                 {/* Driver info centered */}
                 <div className="w-full">
                   <h1 className="text-3xl font-bold mb-3">
-                    {driver.display_driver_name && driver.full_name}
-                    {driver.display_driver_name && driver.display_company_name && " - "}
-                    {driver.display_company_name && driver.company_name}
+                    {(() => {
+                      const parts = [];
+                      // Toujours afficher le nom du chauffeur par défaut
+                      if (driver.display_driver_name !== false || !driver.company_name) {
+                        parts.push(driver.full_name);
+                      }
+                      // Ajouter le nom de l'entreprise si activé
+                      if (driver.display_company_name && driver.company_name) {
+                        parts.push(driver.company_name);
+                      }
+                      // Garantir qu'il y a toujours au moins le nom
+                      return parts.length > 0 ? parts.join(" - ") : driver.full_name;
+                    })()}
                   </h1>
                   
                   <div className="flex items-center justify-center gap-6 text-muted-foreground mb-4">
