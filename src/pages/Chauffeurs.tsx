@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
-import { Car, Search, MapPin, Star, ArrowRight, AlertTriangle, Navigation, Lock } from "lucide-react";
+import { DriverCard } from "@/components/DriverCard";
+import { Car, Search, MapPin, AlertTriangle, Navigation, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -369,78 +370,7 @@ const Chauffeurs = () => {
                 </h3>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {drivers.map((driver) => (
-                    <Card
-                      key={driver.id}
-                      className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
-                      onClick={() => navigate(`/chauffeur/${driver.id}`)}
-                    >
-                      <div className="aspect-video bg-gradient-to-br from-purple-600 to-blue-500 relative">
-                        {driver.profile_photo_url ? (
-                          <img
-                            src={driver.profile_photo_url}
-                            alt={driver.full_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white text-4xl font-bold">
-                            {driver.full_name.charAt(0)}
-                          </div>
-                        )}
-                        <div className="absolute top-3 right-3">
-                          <Badge className="bg-gradient-to-r from-amber-400 to-amber-600 border-0 text-white">
-                            <Star className="w-3 h-3 mr-1 fill-current" />
-                            {driver.rating.toFixed(1)}
-                          </Badge>
-                        </div>
-                        {driver.distance_km && (
-                          <div className="absolute top-3 left-3">
-                            <Badge className="bg-white/90 text-purple-900">
-                              <MapPin className="w-3 h-3 mr-1" />
-                              {driver.distance_km.toFixed(1)} km
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-5">
-                        <h3 className="text-xl font-bold mb-2 group-hover:text-purple-600 transition-colors">
-                          {driver.full_name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                          <Car className="w-4 h-4" />
-                          <span className="text-sm">
-                            {driver.vehicle_model}
-                            {driver.vehicle_color && ` • ${driver.vehicle_color}`}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                          {driver.bio || driver.service_description || "Chauffeur professionnel"}
-                        </p>
-                        {driver.working_sectors && driver.working_sectors.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {driver.working_sectors.slice(0, 3).map((sector) => (
-                              <Badge key={sector} variant="outline" className="text-xs">
-                                {sector}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between pt-4 border-t border-border">
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">À partir de </span>
-                            <span className="font-bold text-purple-600">
-                              {driver.base_rate ? `${driver.base_rate}€` : "Sur devis"}
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-                          >
-                            Voir profil
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
+                    <DriverCard key={driver.id} driver={driver} />
                   ))}
                 </div>
               </>

@@ -520,6 +520,7 @@ export type Database = {
           free_access_granted: boolean | null
           free_access_start_date: string | null
           free_access_type: string | null
+          gallery_photos: string[] | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -552,6 +553,7 @@ export type Database = {
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string
+          vehicle_photos: string[] | null
           vehicle_plate: string | null
           vehicle_year: number | null
           working_sectors: string[] | null
@@ -571,6 +573,7 @@ export type Database = {
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
           free_access_type?: string | null
+          gallery_photos?: string[] | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -603,6 +606,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model: string
+          vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
           working_sectors?: string[] | null
@@ -622,6 +626,7 @@ export type Database = {
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
           free_access_type?: string | null
+          gallery_photos?: string[] | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -654,6 +659,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string
+          vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
           working_sectors?: string[] | null
@@ -1106,6 +1112,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vtc_vehicles: {
+        Row: {
+          brand: string
+          category: string
+          created_at: string | null
+          id: string
+          image_url: string
+          model: string
+        }
+        Insert: {
+          brand: string
+          category: string
+          created_at?: string | null
+          id?: string
+          image_url: string
+          model: string
+        }
+        Update: {
+          brand?: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          model?: string
         }
         Relationships: []
       }
