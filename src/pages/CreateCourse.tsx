@@ -54,23 +54,79 @@ const CreateCourse = () => {
     fetchClientAddress();
   }, [user]);
 
+  // Geocode client address to get coordinates
+  const geocodeAddress = async (address: string) => {
+    try {
+      const { data: tokenData } = await supabase.functions.invoke("get-mapbox-token");
+      if (!tokenData?.token) {
+        console.error("Mapbox token non disponible");
+        return null;
+      }
+
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          address
+        )}.json?access_token=${tokenData.token}&country=FR&language=fr&limit=1`
+      );
+
+      if (!response.ok) {
+        console.error("Erreur geocoding");
+        return null;
+      }
+
+      const data = await response.json();
+      if (data.features && data.features.length > 0) {
+        const [longitude, latitude] = data.features[0].center;
+        return { latitude, longitude };
+      }
+      return null;
+    } catch (error) {
+      console.error("Erreur lors du géocodage:", error);
+      return null;
+    }
+  };
+
   // Apply client address when checkbox is checked
   useEffect(() => {
-    if (useAddressPickup && clientAddress) {
-      setPickupAddress(clientAddress);
-      // Note: coordinates would need geocoding for the address
-    } else if (!useAddressPickup) {
-      setPickupAddress("");
-    }
+    const applyPickupAddress = async () => {
+      if (useAddressPickup && clientAddress) {
+        setPickupAddress(clientAddress);
+        // Géocoder l'adresse pour obtenir les coordonnées
+        const coords = await geocodeAddress(clientAddress);
+        if (coords) {
+          setPickupCoordinates(coords);
+          console.log("✅ Coordonnées départ extraites:", coords);
+        } else {
+          toast.warning("Impossible de localiser l'adresse de départ");
+        }
+      } else if (!useAddressPickup) {
+        setPickupAddress("");
+        setPickupCoordinates(null);
+      }
+    };
+    
+    applyPickupAddress();
   }, [useAddressPickup, clientAddress]);
 
   useEffect(() => {
-    if (useAddressDestination && clientAddress) {
-      setDestinationAddress(clientAddress);
-      // Note: coordinates would need geocoding for the address
-    } else if (!useAddressDestination) {
-      setDestinationAddress("");
-    }
+    const applyDestinationAddress = async () => {
+      if (useAddressDestination && clientAddress) {
+        setDestinationAddress(clientAddress);
+        // Géocoder l'adresse pour obtenir les coordonnées
+        const coords = await geocodeAddress(clientAddress);
+        if (coords) {
+          setDestinationCoordinates(coords);
+          console.log("✅ Coordonnées destination extraites:", coords);
+        } else {
+          toast.warning("Impossible de localiser l'adresse de destination");
+        }
+      } else if (!useAddressDestination) {
+        setDestinationAddress("");
+        setDestinationCoordinates(null);
+      }
+    };
+    
+    applyDestinationAddress();
   }, [useAddressDestination, clientAddress]);
 
   // Fetch driver's max_passengers and available promos on component mount
