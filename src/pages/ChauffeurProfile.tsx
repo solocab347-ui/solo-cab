@@ -88,8 +88,6 @@ const ChauffeurProfile = () => {
           vehicle_plate,
           vehicle_color,
           bio,
-          rating,
-          total_rides,
           working_sectors,
           service_description,
           base_rate,
@@ -119,6 +117,25 @@ const ChauffeurProfile = () => {
       if (driverError) throw driverError;
       if (!driverData) throw new Error("Chauffeur non trouvé");
 
+      // Calculate real statistics from courses
+      const { data: completedCourses, error: coursesError } = await supabase
+        .from("courses")
+        .select("client_rating")
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+        .eq("status", "completed");
+
+      let totalRides = 0;
+      let averageRating = 0;
+
+      if (!coursesError && completedCourses) {
+        totalRides = completedCourses.length;
+        const ratingsWithValues = completedCourses.filter(c => c.client_rating !== null);
+        if (ratingsWithValues.length > 0) {
+          const sum = ratingsWithValues.reduce((acc, c) => acc + (c.client_rating || 0), 0);
+          averageRating = sum / ratingsWithValues.length;
+        }
+      }
+
       // Flatten the profile data
       setDriver({
         ...driverData,
@@ -126,6 +143,8 @@ const ChauffeurProfile = () => {
         email: driverData.profiles.email,
         phone: driverData.profiles.phone,
         profile_photo_url: driverData.profiles.profile_photo_url,
+        rating: averageRating,
+        total_rides: totalRides,
       } as DriverProfile);
     } catch (error: any) {
       console.error("Error fetching driver profile:", error);
@@ -206,8 +225,9 @@ const ChauffeurProfile = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Profile Header */}
             <Card className="p-8 shadow-elegant">
-              <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="w-32 h-32 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-4xl font-bold flex-shrink-0">
+              <div className="flex flex-col items-center text-center gap-6">
+                {/* Large centered profile photo */}
+                <div className="w-48 h-48 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-6xl font-bold shadow-elegant">
                   {driver.profile_photo_url ? (
                     <img
                       src={driver.profile_photo_url}
@@ -215,40 +235,46 @@ const ChauffeurProfile = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    driver.full_name.charAt(0)
+                    driver.full_name.charAt(0).toUpperCase()
                   )}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h1 className="text-3xl font-bold mb-2">
-                        {driver.display_driver_name && driver.full_name}
-                        {driver.display_driver_name && driver.display_company_name && " - "}
-                        {driver.display_company_name && driver.company_name}
-                      </h1>
-                      <div className="flex items-center gap-4 text-muted-foreground">
+                
+                {/* Driver info centered */}
+                <div className="w-full">
+                  <h1 className="text-3xl font-bold mb-3">
+                    {driver.display_driver_name && driver.full_name}
+                    {driver.display_driver_name && driver.display_company_name && " - "}
+                    {driver.display_company_name && driver.company_name}
+                  </h1>
+                  
+                  <div className="flex items-center justify-center gap-6 text-muted-foreground mb-4">
+                    {driver.total_rides > 0 && (
+                      <>
                         <div className="flex items-center gap-1">
                           <Star className="w-5 h-5 text-premium fill-premium" />
                           <span className="font-semibold text-foreground">
-                            {driver.rating.toFixed(1)}
+                            {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Award className="w-5 h-5" />
-                          <span>{driver.total_rides} courses</span>
+                          <span>{driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}</span>
                         </div>
-                      </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {(driver.vehicle_brand || driver.vehicle_model) && (
+                    <div className="flex items-center justify-center gap-2">
+                      <Car className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">
+                        {driver.vehicle_brand && `${driver.vehicle_brand} `}
+                        {driver.vehicle_model}
+                        {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                        {driver.vehicle_color && ` · ${driver.vehicle_color}`}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Car className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">
-                      {driver.vehicle_brand && `${driver.vehicle_brand} `}
-                      {driver.vehicle_model}
-                      {driver.vehicle_year && ` (${driver.vehicle_year})`}
-                      {driver.vehicle_color && ` · ${driver.vehicle_color}`}
-                    </span>
-                  </div>
+                  )}
                 </div>
             </div>
 
@@ -306,37 +332,33 @@ const ChauffeurProfile = () => {
             )}
 
             {/* About */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">À propos</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {driver.bio ||
-                  driver.service_description ||
-                  "Chauffeur professionnel à votre service."}
-              </p>
-            </Card>
+            {(driver.bio || driver.service_description) && (
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">À propos</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {driver.bio || driver.service_description}
+                </p>
+              </Card>
+            )}
 
             {/* Service Areas */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">Secteurs de travail</h2>
-              <div className="flex flex-wrap gap-2">
-                {driver.working_sectors?.map((sector) => (
-                  <Badge
-                    key={sector}
-                    variant="outline"
-                    className="text-sm px-3 py-1"
-                  >
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {sector}
-                  </Badge>
-                ))}
-                {(!driver.working_sectors ||
-                  driver.working_sectors.length === 0) && (
-                  <p className="text-muted-foreground">
-                    Contactez le chauffeur pour plus d'informations
-                  </p>
-                )}
-              </div>
-            </Card>
+            {driver.working_sectors && driver.working_sectors.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-bold mb-4">Secteurs de travail</h2>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {driver.working_sectors.map((sector) => (
+                    <Badge
+                      key={sector}
+                      variant="outline"
+                      className="text-sm px-3 py-1"
+                    >
+                      <MapPin className="w-4 h-4 mr-1" />
+                      {sector}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Vehicle Equipment */}
             {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
@@ -394,7 +416,7 @@ const ChauffeurProfile = () => {
             <Card className="p-6 bg-gradient-dark text-primary-foreground shadow-elegant sticky top-24">
               <h3 className="text-xl font-bold mb-6">Tarifs</h3>
               <div className="space-y-4 mb-6">
-                {driver.base_rate && (
+                {driver.base_rate > 0 && (
                   <div className="flex items-center justify-between py-3 border-b border-primary-foreground/20">
                     <span className="opacity-80">Tarif de base</span>
                     <span className="text-2xl font-bold text-premium">
@@ -402,7 +424,7 @@ const ChauffeurProfile = () => {
                     </span>
                   </div>
                 )}
-                {driver.per_km_rate && (
+                {driver.per_km_rate > 0 && (
                   <div className="flex items-center justify-between py-3 border-b border-primary-foreground/20">
                     <span className="opacity-80">Par kilomètre</span>
                     <span className="text-xl font-semibold text-premium">
@@ -410,9 +432,9 @@ const ChauffeurProfile = () => {
                     </span>
                   </div>
                 )}
-                {!driver.base_rate && !driver.per_km_rate && (
+                {(!driver.base_rate || driver.base_rate === 0) && (!driver.per_km_rate || driver.per_km_rate === 0) && (
                   <p className="text-center opacity-80">
-                    Tarifs personnalisés selon vos besoins
+                    Tarifs sur devis
                   </p>
                 )}
               </div>
@@ -441,23 +463,25 @@ const ChauffeurProfile = () => {
             </Card>
 
             {/* Contact Card */}
-            <Card className="p-6">
-              <h3 className="text-lg font-bold mb-4">Contact</h3>
-              <div className="space-y-3">
-                {driver.phone && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{driver.phone}</span>
-                  </div>
-                )}
-                {driver.email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">{driver.email}</span>
-                  </div>
-                )}
-              </div>
-            </Card>
+            {(driver.phone || driver.email) && (
+              <Card className="p-6">
+                <h3 className="text-lg font-bold mb-4">Contact</h3>
+                <div className="space-y-3">
+                  {driver.phone && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{driver.phone}</span>
+                    </div>
+                  )}
+                  {driver.email && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{driver.email}</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </div>
