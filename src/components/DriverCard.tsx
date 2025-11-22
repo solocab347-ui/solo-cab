@@ -45,10 +45,18 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
     ? allPhotos 
     : ['/placeholder.svg'];
 
+  // Construire le nom d'affichage avec garantie que le nom du chauffeur apparaît toujours
   const displayName = [];
-  if (driver.display_driver_name) displayName.push(driver.full_name);
-  if (driver.display_company_name && driver.company_name) displayName.push(driver.company_name);
-  const name = displayName.length > 0 ? displayName.join(" - ") : "Chauffeur VTC";
+  // Afficher le nom du chauffeur par défaut (sauf si explicitement désactivé ET company_name existe)
+  if (driver.display_driver_name !== false || !driver.company_name) {
+    displayName.push(driver.full_name);
+  }
+  // Ajouter le nom de l'entreprise si activé et présent
+  if (driver.display_company_name && driver.company_name) {
+    displayName.push(driver.company_name);
+  }
+  // Garantir qu'il y a toujours au moins le nom du chauffeur
+  const name = displayName.length > 0 ? displayName.join(" - ") : driver.full_name || "Chauffeur VTC";
 
   return (
     <Card className="group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
