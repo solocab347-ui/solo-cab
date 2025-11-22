@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Download } from "lucide-react";
+import { X, Download, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface DocumentViewerProps {
@@ -9,18 +9,21 @@ interface DocumentViewerProps {
   driver: any;
 }
 
-const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => {
-  if (!driver || !driver.documents) return null;
+const REQUIRED_DOCUMENTS = [
+  { key: "kbis", label: "Kbis" },
+  { key: "carte_grise", label: "Carte grise" },
+  { key: "assurance", label: "Assurance" },
+  { key: "carte_pro_vtc", label: "Carte pro VTC" },
+  { key: "attestation_urssaf", label: "Attestation URSSAF" },
+  { key: "carte_identite_recto", label: "Carte identité recto" },
+  { key: "carte_identite_verso", label: "Carte identité verso / Passeport" },
+  { key: "permis_conduire", label: "Permis de conduire" },
+];
 
-  const documents = driver.documents;
-  const documentLabels: { [key: string]: string } = {
-    id_recto: "Pièce d'identité - Recto",
-    id_verso: "Pièce d'identité - Verso",
-    vtc_recto: "Carte VTC - Recto",
-    vtc_verso: "Carte VTC - Verso",
-    carte_grise: "Carte grise",
-    assurance: "Attestation d'assurance",
-  };
+const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => {
+  if (!driver) return null;
+
+  const documents = driver.documents || {};
 
   const downloadDocument = (url: string, name: string) => {
     const link = document.createElement('a');
@@ -32,9 +35,24 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
     document.body.removeChild(link);
   };
 
+  const getDocumentUrl = (key: string): string | null => {
+    if (typeof documents !== 'object') return null;
+    return documents[key] || null;
+  };
+
+  const isImage = (url: string) => {
+    return url && (
+      url.includes('.jpg') || 
+      url.includes('.jpeg') || 
+      url.includes('.png') || 
+      url.includes('.webp') ||
+      url.includes('.gif')
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center justify-between">
             <span>Documents - {driver.profiles?.full_name}</span>
@@ -48,66 +66,88 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
-          {Object.entries(documents).map(([key, url]) => {
-            if (!url) return null;
-            
-            const isImage = typeof url === 'string' && (
-              url.includes('.jpg') || 
-              url.includes('.jpeg') || 
-              url.includes('.png') || 
-              url.includes('.webp')
-            );
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {REQUIRED_DOCUMENTS.map((doc) => {
+            const url = getDocumentUrl(doc.key);
+            const hasDocument = !!url;
 
             return (
-              <div key={key} className="border border-border rounded-lg p-4">
+              <div
+                key={doc.key}
+                className={`border rounded-lg p-4 ${
+                  hasDocument 
+                    ? "border-green-500/50 bg-green-500/5" 
+                    : "border-red-500/50 bg-red-500/5"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {documentLabels[key] || key}
-                    </h3>
-                    <Badge variant="outline" className="mt-1">
-                      {isImage ? "Image" : "PDF"}
-                    </Badge>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    <div>
+                      <h3 className="font-semibold">{doc.label}</h3>
+                      <Badge 
+                        variant={hasDocument ? "default" : "destructive"}
+                        className="mt-1"
+                      >
+                        {hasDocument ? "Fourni" : "Manquant"}
+                      </Badge>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => downloadDocument(url as string, `${documentLabels[key]}.${isImage ? 'jpg' : 'pdf'}`)}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Télécharger
-                  </Button>
-                </div>
-
-                {isImage ? (
-                  <img
-                    src={url as string}
-                    alt={documentLabels[key]}
-                    className="w-full rounded-lg border border-border"
-                  />
-                ) : (
-                  <div className="bg-muted rounded-lg p-8 text-center">
-                    <p className="text-muted-foreground mb-4">
-                      Prévisualisation PDF non disponible
-                    </p>
+                  {hasDocument && url && (
                     <Button
                       variant="outline"
-                      onClick={() => window.open(url as string, '_blank')}
+                      size="sm"
+                      onClick={() => downloadDocument(url, `${doc.label}`)}
                     >
-                      Ouvrir dans un nouvel onglet
+                      <Download className="w-4 h-4" />
                     </Button>
+                  )}
+                </div>
+
+                {hasDocument && url ? (
+                  isImage(url) ? (
+                    <img
+                      src={url}
+                      alt={doc.label}
+                      className="w-full h-64 object-contain rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => window.open(url, "_blank")}
+                    />
+                  ) : (
+                    <div className="bg-muted rounded-lg p-6 text-center">
+                      <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Prévisualisation PDF non disponible
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(url, '_blank')}
+                      >
+                        Ouvrir le document
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <div className="bg-muted rounded-lg p-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Document non fourni
+                    </p>
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
 
-          {Object.keys(documents).length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Aucun document disponible
-            </div>
-          )}
+        <div className="flex justify-between items-center pt-4 mt-4 border-t">
+          <div>
+            <Badge variant="outline" className="mr-2">
+              {REQUIRED_DOCUMENTS.filter(doc => getDocumentUrl(doc.key)).length} / {REQUIRED_DOCUMENTS.length} documents fournis
+            </Badge>
+          </div>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Fermer
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

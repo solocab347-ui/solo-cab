@@ -1,26 +1,16 @@
 import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Search,
-  Car,
-  Ban,
-  CheckCircle,
   FileText,
-  BarChart3,
-  Filter,
+  CheckCircle,
+  X,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,46 +21,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import Pagination from "@/components/Pagination";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DocumentViewer from "./DocumentViewer";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface Driver {
+  id: string;
+  user_id: string;
+  status: "pending" | "validated" | "rejected";
+  license_number: string;
+  vehicle_model: string;
+  company_name: string | null;
+  documents: any;
+  created_at: string;
+  profiles: {
+    full_name: string;
+    email: string;
+    phone: string | null;
+    profile_photo_url: string | null;
+  };
+}
 
 const AdminDriversManagement = () => {
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [filteredDrivers, setFilteredDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
   const [actionDialog, setActionDialog] = useState<{
     open: boolean;
-    action: "suspend" | "activate" | null;
-    driver: any;
+    action: "validate" | "reject" | "delete" | null;
+    driver: Driver | null;
   }>({ open: false, action: null, driver: null });
-  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchDrivers();
   }, []);
-
-  useEffect(() => {
-    let filtered = drivers;
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (driver) =>
-          driver.profiles.full_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          driver.profiles.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((driver) => driver.status === statusFilter);
-    }
-
-    setFilteredDrivers(filtered);
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, drivers]);
 
   const fetchDrivers = async () => {
     try {
@@ -79,23 +65,13 @@ const AdminDriversManagement = () => {
         .select(
           `
           *,
-          profiles:profiles!inner(full_name, email, phone, profile_photo_url),
-          clients:clients(id),
-          courses:courses(id)
+          profiles:profiles!inner(full_name, email, phone, profile_photo_url)
         `
         )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
-      const driversWithStats = data.map((driver) => ({
-        ...driver,
-        clientsCount: driver.clients?.length || 0,
-        coursesCount: driver.courses?.length || 0,
-      }));
-
-      setDrivers(driversWithStats);
-      setFilteredDrivers(driversWithStats);
+      setDrivers(data || []);
     } catch (error: any) {
       console.error("Error fetching drivers:", error);
       toast.error("Erreur lors du chargement des chauffeurs");
@@ -104,190 +80,286 @@ const AdminDriversManagement = () => {
     }
   };
 
-  const handleStatusChange = async (driverId: string, newStatus: "pending" | "validated" | "rejected") => {
-    try {
-      const { error } = await supabase
-        .from("drivers")
-        .update({ status: newStatus })
-        .eq("id", driverId);
-
-      if (error) throw error;
-
-      toast.success("Statut mis à jour avec succès");
-      fetchDrivers();
-    } catch (error: any) {
-      console.error("Error updating status:", error);
-      toast.error("Erreur lors de la mise à jour du statut");
-    }
-  };
-
   const handleAction = async () => {
     if (!actionDialog.driver || !actionDialog.action) return;
 
     try {
-      const newStatus =
-        actionDialog.action === "suspend" ? "rejected" : "validated";
+      if (actionDialog.action === "delete") {
+        // Supprimer le chauffeur
+        const { error } = await supabase
+          .from("drivers")
+          .delete()
+          .eq("id", actionDialog.driver.id);
 
-      await handleStatusChange(actionDialog.driver.id, newStatus);
+        if (error) throw error;
+        toast.success("Chauffeur supprimé avec succès");
+      } else {
+        // Changer le statut
+        const newStatus = actionDialog.action === "validate" ? "validated" : "rejected";
+        
+        const { error } = await supabase
+          .from("drivers")
+          .update({ 
+            status: newStatus,
+            validation_date: newStatus === "validated" ? new Date().toISOString() : null
+          })
+          .eq("id", actionDialog.driver.id);
+
+        if (error) throw error;
+        
+        toast.success(
+          actionDialog.action === "validate"
+            ? "Chauffeur validé avec succès"
+            : "Demande refusée"
+        );
+      }
+
+      fetchDrivers();
       setActionDialog({ open: false, action: null, driver: null });
     } catch (error: any) {
       console.error("Error performing action:", error);
+      toast.error("Erreur lors de l'action");
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { label: "En attente", color: "bg-yellow-500" },
-      validated: { label: "Validé", color: "bg-green-500" },
-      rejected: { label: "Rejeté", color: "bg-red-500" },
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || {
-      label: status,
-      color: "bg-gray-500",
-    };
-
-    return <Badge className={config.color}>{config.label}</Badge>;
+  const viewDocuments = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setDocumentViewerOpen(true);
   };
+
+  const getStatusBadge = (status: string) => {
+    const config = {
+      pending: { label: "En attente", icon: Clock, className: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
+      validated: { label: "Validé", icon: CheckCircle, className: "bg-green-500/10 text-green-500 border-green-500/20" },
+      rejected: { label: "Refusé", icon: X, className: "bg-red-500/10 text-red-500 border-red-500/20" },
+    };
+
+    const statusConfig = config[status as keyof typeof config] || config.pending;
+    const Icon = statusConfig.icon;
+
+    return (
+      <Badge variant="outline" className={statusConfig.className}>
+        <Icon className="w-3 h-3 mr-1" />
+        {statusConfig.label}
+      </Badge>
+    );
+  };
+
+  const renderDriverCard = (driver: Driver) => (
+    <Card key={driver.id} className="hover:shadow-elegant transition-all">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          {driver.profiles.profile_photo_url ? (
+            <img
+              src={driver.profiles.profile_photo_url}
+              alt={driver.profiles.full_name}
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
+              <span className="text-2xl text-primary-foreground font-bold">
+                {driver.profiles.full_name.charAt(0)}
+              </span>
+            </div>
+          )}
+
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="font-bold text-lg">{driver.profiles.full_name}</h3>
+              {getStatusBadge(driver.status)}
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">{driver.profiles.email}</p>
+            {driver.profiles.phone && (
+              <p className="text-sm text-muted-foreground mb-2">📱 {driver.profiles.phone}</p>
+            )}
+            {driver.company_name && (
+              <p className="text-sm font-medium mb-2">🏢 {driver.company_name}</p>
+            )}
+            <p className="text-sm text-muted-foreground mb-2">
+              🚗 {driver.vehicle_model} • 📄 {driver.license_number}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              📅 Inscrit le {format(new Date(driver.created_at), "d MMMM yyyy", { locale: fr })}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => viewDocuments(driver)}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Documents
+            </Button>
+
+            {driver.status === "pending" && (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() =>
+                    setActionDialog({ open: true, action: "validate", driver })
+                  }
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Valider
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() =>
+                    setActionDialog({ open: true, action: "reject", driver })
+                  }
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Refuser
+                </Button>
+              </>
+            )}
+
+            {(driver.status === "validated" || driver.status === "rejected") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setActionDialog({ open: true, action: "delete", driver })
+                }
+              >
+                <X className="w-4 h-4 mr-2" />
+                Supprimer
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   if (loading) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        Chargement...
+        Chargement des chauffeurs...
       </div>
     );
   }
 
-  const totalPages = Math.ceil(filteredDrivers.length / itemsPerPage);
-  const paginatedDrivers = filteredDrivers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const pendingDrivers = drivers.filter((d) => d.status === "pending");
+  const validatedDrivers = drivers.filter((d) => d.status === "validated");
+  const rejectedDrivers = drivers.filter((d) => d.status === "rejected");
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-48">
-            <SelectValue placeholder="Filtrer par statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="validated">Validé</SelectItem>
-            <SelectItem value="rejected">Rejeté</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                <Clock className="w-6 h-6 text-yellow-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Demandes reçues</p>
+                <p className="text-2xl font-bold">{pendingDrivers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Demandes acceptées</p>
+                <p className="text-2xl font-bold">{validatedDrivers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center">
+                <X className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Demandes refusées</p>
+                <p className="text-2xl font-bold">{rejectedDrivers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {paginatedDrivers.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Car className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-bold mb-2">Aucun chauffeur trouvé</h3>
-        </Card>
-      ) : (
-        <>
-          <div className="space-y-4">
-            {paginatedDrivers.map((driver) => (
-              <Card key={driver.id} className="p-6">
-                <div className="flex items-start gap-4">
-                  {driver.profiles.profile_photo_url ? (
-                    <img
-                      src={driver.profiles.profile_photo_url}
-                      alt={driver.profiles.full_name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
-                      <Car className="w-8 h-8 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-lg">
-                        {driver.profiles.full_name}
-                      </h3>
-                      {getStatusBadge(driver.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {driver.profiles.email}
-                    </p>
-                    {driver.company_name && (
-                      <p className="text-sm font-medium mb-2">
-                        🏢 {driver.company_name}
-                      </p>
-                    )}
-                    <div className="flex gap-4 text-sm">
-                      <Badge variant="outline">
-                        👥 {driver.clientsCount} clients
-                      </Badge>
-                      <Badge variant="outline">
-                        🚗 {driver.coursesCount} courses
-                      </Badge>
-                      {driver.vehicle_model && (
-                        <Badge variant="outline">
-                          🚙 {driver.vehicle_model}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {driver.status === "validated" && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() =>
-                          setActionDialog({
-                            open: true,
-                            action: "suspend",
-                            driver,
-                          })
-                        }
-                      >
-                        <Ban className="w-4 h-4 mr-2" />
-                        Suspendre
-                      </Button>
-                    )}
-                    {driver.status === "rejected" && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() =>
-                          setActionDialog({
-                            open: true,
-                            action: "activate",
-                            driver,
-                          })
-                        }
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Activer
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredDrivers.length}
-          />
-        </>
+      {/* Sections par onglets */}
+      <Tabs defaultValue="pending" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pending" className="relative">
+            Demandes reçues
+            {pendingDrivers.length > 0 && (
+              <Badge variant="destructive" className="ml-2 px-2 py-0.5 text-xs">
+                {pendingDrivers.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="validated">Acceptées</TabsTrigger>
+          <TabsTrigger value="rejected">Refusées</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="space-y-4">
+          {pendingDrivers.length === 0 ? (
+            <Card className="p-8 text-center">
+              <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune demande en attente</h3>
+              <p className="text-muted-foreground">
+                Toutes les demandes d'inscription ont été traitées
+              </p>
+            </Card>
+          ) : (
+            pendingDrivers.map(renderDriverCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="validated" className="space-y-4">
+          {validatedDrivers.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CheckCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucun chauffeur validé</h3>
+            </Card>
+          ) : (
+            validatedDrivers.map(renderDriverCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="space-y-4">
+          {rejectedDrivers.length === 0 ? (
+            <Card className="p-8 text-center">
+              <X className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune demande refusée</h3>
+            </Card>
+          ) : (
+            rejectedDrivers.map(renderDriverCard)
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Document Viewer */}
+      {selectedDriver && (
+        <DocumentViewer
+          open={documentViewerOpen}
+          onOpenChange={(open) => {
+            setDocumentViewerOpen(open);
+            if (!open) setSelectedDriver(null);
+          }}
+          driver={selectedDriver}
+        />
       )}
 
+      {/* Action Dialog */}
       <AlertDialog
         open={actionDialog.open}
         onOpenChange={(open) =>
@@ -297,21 +369,22 @@ const AdminDriversManagement = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {actionDialog.action === "suspend"
-                ? "Suspendre le chauffeur"
-                : "Activer le chauffeur"}
+              {actionDialog.action === "validate" && "Valider le chauffeur"}
+              {actionDialog.action === "reject" && "Refuser la demande"}
+              {actionDialog.action === "delete" && "Supprimer le chauffeur"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {actionDialog.action === "suspend"
-                ? "Êtes-vous sûr de vouloir suspendre ce chauffeur ? Il ne pourra plus accepter de courses."
-                : "Êtes-vous sûr de vouloir activer ce chauffeur ? Il pourra de nouveau accepter des courses."}
+              {actionDialog.action === "validate" &&
+                "Êtes-vous sûr de vouloir valider ce chauffeur ? Il pourra commencer à utiliser la plateforme."}
+              {actionDialog.action === "reject" &&
+                "Êtes-vous sûr de vouloir refuser cette demande ? Le chauffeur ne pourra pas utiliser la plateforme."}
+              {actionDialog.action === "delete" &&
+                "Êtes-vous sûr de vouloir supprimer ce chauffeur ? Cette action est irréversible."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAction}>
-              Confirmer
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleAction}>Confirmer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
