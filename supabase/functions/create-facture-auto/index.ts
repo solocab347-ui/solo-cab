@@ -46,7 +46,7 @@ serve(async (req) => {
       .from("courses")
       .select(`
         *,
-        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number),
+        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number, discount_amount, promo_code),
         clients!inner(user_id)
       `)
       .eq("id", course_id)
@@ -69,7 +69,7 @@ serve(async (req) => {
 
     console.log("[CREATE-FACTURE-AUTO] Using reservation number:", invoiceNumber, "from devis:", acceptedDevis.quote_number);
 
-    // Create facture
+    // Create facture with promo code and discount
     const { data: facture, error: insertError } = await supabase
       .from("factures")
       .insert({
@@ -79,6 +79,8 @@ serve(async (req) => {
         devis_id: acceptedDevis.id,
         invoice_number: invoiceNumber,
         amount: acceptedDevis.amount,
+        discount_amount: acceptedDevis.discount_amount || 0,
+        promo_code: acceptedDevis.promo_code || null,
         payment_method: payment_method,
         payment_status: "paid",
         paid_at: new Date().toISOString()
