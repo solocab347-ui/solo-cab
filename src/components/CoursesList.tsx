@@ -48,12 +48,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [maxAmount, setMaxAmount] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // SYSTÈME DE FIGEMENT: Capture l'ordre initial des courses pour maintenir leur position
+  const [confirmedCoursesOrder, setConfirmedCoursesOrder] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     fetchCourses();
     // Désactivation de la souscription temps réel pour éviter que les courses bougent automatiquement
     // setupRealtimeSubscription();
   }, [driverId]);
+
+  // SYSTÈME DE FIGEMENT: Capture l'ordre initial quand les courses changent
+  useEffect(() => {
+    const confirmed = courses.filter(c => c.status === "accepted" || c.status === "in_progress");
+    const sorted = [...confirmed].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+    
+    const newOrder = new Map<string, number>();
+    sorted.forEach((course, index) => {
+      // Si la course n'a pas encore d'ordre assigné, on lui donne son index actuel
+      if (!confirmedCoursesOrder.has(course.id)) {
+        newOrder.set(course.id, index);
+      } else {
+        // Sinon on garde son ordre existant
+        newOrder.set(course.id, confirmedCoursesOrder.get(course.id)!);
+      }
+    });
+    
+    setConfirmedCoursesOrder(newOrder);
+  }, [courses.length]); // Seulement quand le nombre de courses change (ajout/suppression)
 
   const fetchCourses = async () => {
     try {
@@ -954,9 +976,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const sortByDate = (coursesList: any[]) => 
     [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
+  // SYSTÈME DE FIGEMENT: Tri stable pour les courses confirmées
+  const sortConfirmedByStableOrder = (coursesList: any[]) => {
+    return [...coursesList].sort((a, b) => {
+      const orderA = confirmedCoursesOrder.get(a.id) ?? 999999;
+      const orderB = confirmedCoursesOrder.get(b.id) ?? 999999;
+      return orderA - orderB;
+    });
+  };
+
   const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
-  const acceptedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "accepted")));
-  const inProgressCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "in_progress")));
+  const acceptedCourses = applyAllFilters(courses.filter(c => c.status === "accepted"));
+  const inProgressCourses = applyAllFilters(courses.filter(c => c.status === "in_progress"));
+  const confirmedCoursesCombined = sortConfirmedByStableOrder([...acceptedCourses, ...inProgressCourses]);
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
@@ -1201,7 +1233,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           >
             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-xs sm:text-sm font-bold">Confirmée</span>
-            <Badge className="bg-blue-500/30 text-blue-200 text-xs font-bold">{acceptedCourses.length + inProgressCourses.length}</Badge>
+            <Badge className="bg-blue-500/30 text-blue-200 text-xs font-bold">{confirmedCoursesCombined.length}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="completed"
@@ -1454,17 +1486,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </TabsContent>
 
         <TabsContent value="confirmed" className="space-y-4">
-          {[...acceptedCourses, ...inProgressCourses].length === 0 ? (
+          {confirmedCoursesCombined.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
-            [...acceptedCourses, ...inProgressCourses]
-              .sort((a, b) => {
-                // SÉCURITÉ: Tri uniquement par date de planification (descendant)
-                // Les courses restent FIGÉES à leur position même si le statut change
-                // Cela évite toute confusion et erreur de manipulation par le chauffeur
-                return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
-              })
-              .map((course) => (
+            confirmedCoursesCombined.map((course) => (
               <Card key={course.id} className="p-4">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
