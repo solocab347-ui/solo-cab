@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
@@ -252,6 +252,11 @@ const DriverDashboard = () => {
                 {driverProfile?.driver?.subscription_status === "active" ? "Actif" : "Inactif"}
               </Badge>
             </div>
+            <Link to="/rgpd-data">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10" title="Mes Données RGPD">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10">
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
