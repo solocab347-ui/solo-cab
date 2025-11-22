@@ -30,7 +30,7 @@ const CreateCourse = () => {
   const [passengersCount, setPassengersCount] = useState("1");
   const [maxPassengers, setMaxPassengers] = useState(4);
   const [notes, setNotes] = useState("");
-  const [promoCode, setPromoCode] = useState("");
+  const [promoCode, setPromoCode] = useState("none");
   const [availablePromos, setAvailablePromos] = useState<any[]>([]);
   const [clientAddress, setClientAddress] = useState("");
   const [useAddressPickup, setUseAddressPickup] = useState(false);
@@ -266,7 +266,7 @@ const CreateCourse = () => {
           distance_km: calculatedDistance,
           duration_minutes: calculatedDuration,
           notes: notes || null,
-          promo_code: promoCode || null,
+          promo_code: promoCode !== "none" ? promoCode : null,
           status: "pending",
           created_by_user_id: user.id, // Client créateur
         })
@@ -478,7 +478,7 @@ const CreateCourse = () => {
                   <SelectValue placeholder={availablePromos.length > 0 ? "Sélectionnez un code promo (optionnel)" : "Aucune promotion disponible"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun code promo</SelectItem>
+                  <SelectItem value="none">Aucun code promo</SelectItem>
                   {availablePromos.map((promo) => (
                     <SelectItem key={promo.id} value={promo.code}>
                       {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
