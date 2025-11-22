@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { Car, Search, MapPin, Star, ArrowRight, AlertTriangle, Navigation, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,8 +34,11 @@ const Chauffeurs = () => {
   const [loading, setLoading] = useState(false);
   const [searchMode, setSearchMode] = useState<"city" | "address">("city");
   const [citySearch, setCitySearch] = useState("");
+  const [cityCoordinates, setCityCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [addressSearch, setAddressSearch] = useState("");
-  const [radius, setRadius] = useState([20]);
+  const [addressCoordinates, setAddressCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [radiusCity, setRadiusCity] = useState([50]);
+  const [radiusAddress, setRadiusAddress] = useState([50]);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -68,24 +71,28 @@ const Chauffeurs = () => {
     }
   };
 
-  // Geocoding function using a public API
-  const geocodeAddress = async (address: string) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
-      );
-      const data = await response.json();
-      if (data && data.length > 0) {
-        return {
-          latitude: parseFloat(data[0].lat),
-          longitude: parseFloat(data[0].lon),
-        };
+  // Sort drivers by proximity, then rating, then total rides
+  const sortDrivers = (driversToSort: PublicDriver[]) => {
+    return driversToSort.sort((a, b) => {
+      // First: sort by distance (ascending - closest first)
+      if (a.distance_km !== null && b.distance_km !== null) {
+        if (a.distance_km !== b.distance_km) {
+          return a.distance_km - b.distance_km;
+        }
+      } else if (a.distance_km !== null) {
+        return -1;
+      } else if (b.distance_km !== null) {
+        return 1;
       }
-      return null;
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      return null;
-    }
+
+      // Second: if same distance, sort by rating (descending - highest first)
+      if (a.rating !== b.rating) {
+        return b.rating - a.rating;
+      }
+
+      // Third: if same rating, sort by total_rides (descending - most experienced first)
+      return b.total_rides - a.total_rides;
+    });
   };
 
   const handleSearch = async () => {
@@ -94,50 +101,61 @@ const Chauffeurs = () => {
 
     try {
       if (searchMode === "city" && citySearch.trim()) {
-        // Search by city
-        const { data, error } = await supabase.rpc("search_drivers_by_location", {
-          _city: citySearch.trim(),
-          _address: null,
-          _latitude: null,
-          _longitude: null,
-          _max_radius_km: 50,
-        });
-
-        if (error) throw error;
-        setDrivers(data || []);
-        
-        if (!data || data.length === 0) {
-          toast.info("Aucun chauffeur trouvé dans cette ville. Essayez d'élargir votre recherche.");
-        }
-      } else if (searchMode === "address" && addressSearch.trim()) {
-        // Geocode the address first
-        const coords = await geocodeAddress(addressSearch);
-        
-        if (!coords) {
-          toast.error("Adresse non trouvée. Veuillez vérifier l'adresse saisie.");
-          setDrivers([]);
+        // Validate city coordinates
+        if (!cityCoordinates) {
+          toast.error("Veuillez sélectionner une ville dans les suggestions");
+          setLoading(false);
           return;
         }
 
-        // Search with progressive radius
+        // Search by city with coordinates and radius
         const { data, error } = await supabase.rpc("search_drivers_by_location", {
-          _city: null,
-          _address: addressSearch.trim(),
-          _latitude: coords.latitude,
-          _longitude: coords.longitude,
-          _max_radius_km: radius[0],
+          _city: citySearch.trim(),
+          _address: null,
+          _latitude: cityCoordinates.latitude,
+          _longitude: cityCoordinates.longitude,
+          _max_radius_km: radiusCity[0],
         });
 
         if (error) throw error;
-        setDrivers(data || []);
         
-        if (data && data.length > 0) {
-          toast.success(`${data.length} chauffeur(s) trouvé(s) dans un rayon de ${radius[0]} km`);
+        const sortedDrivers = sortDrivers(data || []);
+        setDrivers(sortedDrivers);
+        
+        if (sortedDrivers.length > 0) {
+          toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusCity[0]} km`);
         } else {
-          toast.info(`Aucun chauffeur trouvé dans un rayon de ${radius[0]} km. Essayez d'augmenter le rayon.`);
+          toast.info(`Aucun chauffeur trouvé dans un rayon de ${radiusCity[0]} km. Essayez d'augmenter le rayon.`);
+        }
+      } else if (searchMode === "address" && addressSearch.trim()) {
+        // Validate address coordinates
+        if (!addressCoordinates) {
+          toast.error("Veuillez sélectionner une adresse dans les suggestions");
+          setLoading(false);
+          return;
+        }
+
+        // Search by address with coordinates and radius
+        const { data, error } = await supabase.rpc("search_drivers_by_location", {
+          _city: null,
+          _address: addressSearch.trim(),
+          _latitude: addressCoordinates.latitude,
+          _longitude: addressCoordinates.longitude,
+          _max_radius_km: radiusAddress[0],
+        });
+
+        if (error) throw error;
+        
+        const sortedDrivers = sortDrivers(data || []);
+        setDrivers(sortedDrivers);
+        
+        if (sortedDrivers.length > 0) {
+          toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusAddress[0]} km`);
+        } else {
+          toast.info(`Aucun chauffeur trouvé dans un rayon de ${radiusAddress[0]} km. Essayez d'augmenter le rayon.`);
         }
       } else {
-        toast.error("Veuillez saisir une ville ou une adresse");
+        toast.error("Veuillez saisir et sélectionner une ville ou une adresse");
       }
     } catch (error: any) {
       console.error("Error searching drivers:", error);
@@ -244,19 +262,37 @@ const Chauffeurs = () => {
 
             {/* City Search */}
             {searchMode === "city" && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <MapPin className="w-4 h-4 text-purple-600" />
-                    Par ville
+                    Recherche par ville
                   </label>
-                  <Input
-                    placeholder="Commencez à taper : Paris, Lyon, Marseille..."
+                  <CityAutocomplete
                     value={citySearch}
-                    onChange={(e) => setCitySearch(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                    className="text-base"
+                    onChange={(city, coords) => {
+                      setCitySearch(city);
+                      setCityCoordinates(coords || null);
+                    }}
+                    placeholder="Commencez à taper : Paris, Lyon, Marseille..."
                   />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-3 block">
+                    Rayon de recherche: {radiusCity[0]} km
+                  </label>
+                  <Slider
+                    value={radiusCity}
+                    onValueChange={setRadiusCity}
+                    min={5}
+                    max={50}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    <span>5 km</span>
+                    <span>50 km</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -267,26 +303,33 @@ const Chauffeurs = () => {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <Navigation className="w-4 h-4 text-purple-600" />
-                    Par adresse et rayon
+                    Recherche par adresse
                   </label>
                   <AddressAutocomplete
                     value={addressSearch}
-                    onChange={(address) => setAddressSearch(address)}
+                    onChange={(address, coords) => {
+                      setAddressSearch(address);
+                      setAddressCoordinates(coords || null);
+                    }}
                     placeholder="Tapez votre adresse : 12 Rue de la Paix, Paris..."
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-3 block">
-                    Rayon: {radius[0]} km
+                    Rayon de recherche: {radiusAddress[0]} km
                   </label>
                   <Slider
-                    value={radius}
-                    onValueChange={setRadius}
+                    value={radiusAddress}
+                    onValueChange={setRadiusAddress}
                     min={5}
-                    max={100}
+                    max={50}
                     step={5}
                     className="w-full"
                   />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                    <span>5 km</span>
+                    <span>50 km</span>
+                  </div>
                 </div>
               </div>
             )}
