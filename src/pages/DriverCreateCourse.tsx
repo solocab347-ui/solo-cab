@@ -198,11 +198,11 @@ const DriverCreateCourse = () => {
 
     setLoading(true);
     try {
-      const { data: driverData } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
+    const { data: driverData } = await supabase
+      .from("drivers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
       if (!driverData) {
         toast.error("Profil chauffeur introuvable");

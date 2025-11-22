@@ -68,7 +68,7 @@ export const useMessaging = () => {
             .from("profiles")
             .select("id, full_name, profile_photo_url")
             .eq("id", otherUserId)
-            .single();
+            .maybeSingle();
 
           // Fetch last message
           const { data: lastMsg } = await supabase
@@ -158,7 +158,7 @@ export const useMessaging = () => {
         .from("conversations")
         .select("participant_1_id, participant_2_id")
         .eq("id", conversationId)
-        .single();
+        .maybeSingle();
 
       const { error } = await supabase.from("messages").insert({
         conversation_id: conversationId,
@@ -179,7 +179,7 @@ export const useMessaging = () => {
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         await supabase.from("notifications").insert({
           user_id: recipientId,
