@@ -1,7 +1,195 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Activity, Gift, Search, Calendar, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface Driver {
+  id: string;
+  user_id: string;
+  subscription_status: string;
+  subscription_end_date: string | null;
+  subscription_stripe_id: string | null;
+  free_access_granted: boolean;
+  free_access_end_date: string | null;
+  created_at: string;
+  profiles: {
+    full_name: string;
+    email: string;
+  };
+}
 
 const AdminSubscriptions = () => {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [freeAccessDuration, setFreeAccessDuration] = useState<string>("1_month");
+  const [customMonths, setCustomMonths] = useState<string>("1");
+  const [grantingAccess, setGrantingAccess] = useState(false);
+
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, filterStatus, drivers]);
+
+  const fetchDrivers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select(`
+          id,
+          user_id,
+          subscription_status,
+          subscription_end_date,
+          subscription_stripe_id,
+          free_access_granted,
+          free_access_end_date,
+          created_at,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .eq("status", "validated")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDrivers(data || []);
+    } catch (error: any) {
+      console.error("Error fetching drivers:", error);
+      toast.error("Erreur lors du chargement des chauffeurs");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...drivers];
+
+    // Filtre de recherche par nom ou email
+    if (searchTerm) {
+      filtered = filtered.filter((driver) => {
+        const profile = driver.profiles as any;
+        const fullName = profile?.full_name?.toLowerCase() || "";
+        const email = profile?.email?.toLowerCase() || "";
+        const term = searchTerm.toLowerCase();
+        return fullName.includes(term) || email.includes(term);
+      });
+    }
+
+    // Filtre par statut
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((driver) => {
+        if (filterStatus === "active") {
+          return driver.subscription_status === "active" && !driver.free_access_granted;
+        }
+        if (filterStatus === "free_access") {
+          return driver.free_access_granted;
+        }
+        if (filterStatus === "inactive") {
+          return driver.subscription_status !== "active" && !driver.free_access_granted;
+        }
+        return true;
+      });
+    }
+
+    setFilteredDrivers(filtered);
+  };
+
+  const handleGrantFreeAccess = async () => {
+    if (!selectedDriver) return;
+
+    setGrantingAccess(true);
+    try {
+      let endDate: Date | null = null;
+      const startDate = new Date();
+
+      // Calculer la date de fin selon le type d'accès
+      if (freeAccessDuration === "1_month") {
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+      } else if (freeAccessDuration === "2_months") {
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 2);
+      } else if (freeAccessDuration === "3_months") {
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 3);
+      } else if (freeAccessDuration === "custom") {
+        endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + parseInt(customMonths));
+      }
+      // Pour "unlimited", endDate reste null
+
+      // Mettre à jour le chauffeur dans la base de données
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          free_access_granted: true,
+          free_access_start_date: startDate.toISOString(),
+          free_access_end_date: endDate ? endDate.toISOString() : null,
+          free_access_type: freeAccessDuration,
+        })
+        .eq("id", selectedDriver.id);
+
+      if (error) throw error;
+
+      // Suspendre l'abonnement Stripe si actif
+      if (selectedDriver.subscription_stripe_id) {
+        const { error: stripeError } = await supabase.functions.invoke("manage-driver-subscription", {
+          body: {
+            driver_id: selectedDriver.id,
+            action: "pause",
+          },
+        });
+
+        if (stripeError) {
+          console.error("Erreur Stripe:", stripeError);
+          toast.error("Accès gratuit accordé mais erreur lors de la suspension Stripe");
+        }
+      }
+
+      toast.success("Accès gratuit accordé avec succès");
+      setSelectedDriver(null);
+      fetchDrivers();
+    } catch (error: any) {
+      console.error("Error granting free access:", error);
+      toast.error("Erreur lors de l'attribution de l'accès gratuit");
+    } finally {
+      setGrantingAccess(false);
+    }
+  };
+
+  const getStatusBadge = (driver: Driver) => {
+    if (driver.free_access_granted) {
+      return <Badge className="bg-green-500">Accès Gratuit</Badge>;
+    }
+    if (driver.subscription_status === "active") {
+      return <Badge className="bg-primary">Abonné</Badge>;
+    }
+    return <Badge variant="secondary">Inactif</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="p-6">
@@ -11,10 +199,138 @@ const AdminSubscriptions = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold">Gestion des Abonnements</h2>
-            <p className="text-muted-foreground">Gérer les souscriptions des chauffeurs</p>
+            <p className="text-muted-foreground">
+              {filteredDrivers.length} chauffeur{filteredDrivers.length > 1 ? "s" : ""}
+            </p>
           </div>
         </div>
-        <p className="text-muted-foreground">Fonctionnalité en cours de développement...</p>
+
+        {/* Filtres */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Filtrer par statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="active">Abonnés actifs</SelectItem>
+              <SelectItem value="free_access">Accès gratuit</SelectItem>
+              <SelectItem value="inactive">Inactifs</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Liste des chauffeurs */}
+        <div className="space-y-3">
+          {filteredDrivers.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Aucun chauffeur trouvé</p>
+          ) : (
+            filteredDrivers.map((driver) => {
+              const profile = driver.profiles as any;
+              return (
+                <Card key={driver.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold">{profile?.full_name || "Non renseigné"}</p>
+                        <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {getStatusBadge(driver)}
+                          {driver.subscription_end_date && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Calendar className="w-3 h-3" />
+                              Expire le {format(new Date(driver.subscription_end_date), "dd/MM/yyyy", { locale: fr })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedDriver(driver)}
+                          disabled={driver.free_access_granted}
+                        >
+                          <Gift className="w-4 h-4 mr-2" />
+                          Accès Gratuit
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Accorder un accès gratuit</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-4">
+                          <div>
+                            <p className="text-sm font-medium mb-2">Chauffeur</p>
+                            <p className="text-sm text-muted-foreground">
+                              {profile?.full_name} ({profile?.email})
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium mb-2">Durée de l'accès gratuit</p>
+                            <Select value={freeAccessDuration} onValueChange={setFreeAccessDuration}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1_month">1 mois</SelectItem>
+                                <SelectItem value="2_months">2 mois</SelectItem>
+                                <SelectItem value="3_months">3 mois</SelectItem>
+                                <SelectItem value="custom">Personnalisé</SelectItem>
+                                <SelectItem value="unlimited">Illimité</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {freeAccessDuration === "custom" && (
+                            <div>
+                              <p className="text-sm font-medium mb-2">Nombre de mois</p>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={customMonths}
+                                onChange={(e) => setCustomMonths(e.target.value)}
+                                placeholder="Nombre de mois"
+                              />
+                            </div>
+                          )}
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                              ⚠️ L'abonnement Stripe sera automatiquement suspendu pendant la période d'accès gratuit et reprendra à la fin.
+                            </p>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="outline" onClick={() => setSelectedDriver(null)}>
+                              Annuler
+                            </Button>
+                            <Button onClick={handleGrantFreeAccess} disabled={grantingAccess}>
+                              {grantingAccess ? "Attribution..." : "Accorder"}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
       </Card>
     </div>
   );
