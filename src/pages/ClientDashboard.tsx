@@ -166,6 +166,7 @@ const ClientDashboard = () => {
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users, hideForExclusive: false },
     { id: "scanner", label: "Scanner QR", icon: QrCode, hideForExclusive: true }, // Only for free clients
+    { id: "vitrine", label: "Vitrine Publique", icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true }, // Only for free clients
     { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User, hideForExclusive: false },
     { id: "compte", label: "Mon Compte", icon: User },
     { id: "rgpd", label: "Mes Données RGPD", icon: Sparkles, isLink: true, path: "/rgpd-data" },
@@ -175,8 +176,8 @@ const ClientDashboard = () => {
     <nav className="space-y-1 flex-1">
       {menuItems
         .filter((item) => {
-          // Hide scanner for exclusive clients
-          if (item.hideForExclusive && clientProfile?.is_exclusive) {
+          // Hide scanner and vitrine for exclusive clients
+          if (item.hideForExclusive && clientProfile?.client?.is_exclusive) {
             return false;
           }
           return true;
