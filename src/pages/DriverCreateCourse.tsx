@@ -12,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Car, MapPin, Calendar, Users, ArrowLeft, Calculator, Clock } from "lucide-react";
-import { calculateRoute, validateCourseData } from "@/lib/geocoding";
+import { calculateRoute } from "@/lib/geocoding";
+import { useCourseCreation } from "@/hooks/useCourseCreation";
+import { validateCoordinates } from "@/lib/courseValidation";
 
 interface Client {
   id: string;
@@ -27,6 +29,7 @@ const DriverCreateCourse = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { createCourse, loading: courseLoading } = useCourseCreation();
   const preSelectedClientId = searchParams.get("client_id");
 
   const [loading, setLoading] = useState(false);
@@ -205,107 +208,69 @@ const DriverCreateCourse = () => {
       return;
     }
 
-    // VALIDATION STRICTE: Vérification complète des données
-    const validation = validateCourseData(
-      pickupAddress,
-      destinationAddress,
-      pickupCoordinates,
-      destinationCoordinates,
-      scheduledDate
-    );
-
-    if (!validation.valid) {
-      toast.error(validation.error || "Données de course invalides");
+    // VALIDATION: Vérifier les coordonnées
+    if (!validateCoordinates(pickupCoordinates) || !validateCoordinates(destinationCoordinates)) {
+      toast.error("Veuillez sélectionner des adresses valides avec le système d'autocomplétion");
       return;
     }
 
+    // VALIDATION: Vérifier la date
+    if (!scheduledDate) {
+      toast.error("Veuillez sélectionner une date");
+      return;
+    }
+
+    // VALIDATION: Pour mise à disposition, vérifier la durée
     if (courseType === "hourly" && !durationHours) {
       toast.error("Veuillez indiquer la durée en heures pour une mise à disposition");
       return;
     }
 
-    // Validation supplémentaire pour course classique
+    // VALIDATION: Pour course classique, vérifier distance
     if (courseType === "classic" && (!distanceKm || !durationMinutes)) {
       toast.error("Impossible de créer la course sans calcul de distance. Veuillez vérifier les adresses.");
       return;
     }
 
     setLoading(true);
+
     try {
-    const { data: driverData } = await supabase
-      .from("drivers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
       if (!driverData) {
         toast.error("Profil chauffeur introuvable");
+        setLoading(false);
         return;
       }
 
-      // Create course (chauffeur créé = une seule acceptation client suffit)
-      const { data: course, error: courseError } = await supabase
-        .from("courses")
-        .insert({
-          client_id: selectedClientId,
-          driver_id: driverData.id,
-          driver_ids: [driverData.id],
-          pickup_address: pickupAddress,
-          pickup_latitude: pickupCoordinates?.latitude || null,
-          pickup_longitude: pickupCoordinates?.longitude || null,
-          destination_address: destinationAddress,
-          destination_latitude: destinationCoordinates?.latitude || null,
-          destination_longitude: destinationCoordinates?.longitude || null,
-          scheduled_date: new Date(scheduledDate).toISOString(),
-          passengers_count: parseInt(passengersCount),
-          distance_km: distanceKm,
-          duration_minutes: courseType === "hourly" ? parseFloat(durationHours) * 60 : durationMinutes,
-          notes: notes || null,
-          status: "pending",
-          created_by_user_id: user.id, // Chauffeur créateur
-        })
-        .select()
-        .single();
+      // Utiliser le hook sécurisé pour créer la course
+      const course = await createCourse({
+        userId: user.id,
+        clientId: selectedClientId,
+        driverId: driverData.id,
+        pickupAddress,
+        pickupCoordinates,
+        destinationAddress,
+        destinationCoordinates,
+        scheduledDate,
+        passengersCount,
+        notes,
+        promoCode: undefined, // Les drivers ne gèrent pas les promos lors de la création
+        courseType,
+        durationHours,
+      });
 
-      if (courseError) {
-        console.error("Course creation error:", courseError);
-        toast.error("Erreur lors de la création de la course");
-        return;
+      if (course) {
+        toast.success("Course et devis créés avec succès !");
+        setTimeout(() => navigate("/driver-dashboard"), 1500);
       }
-
-      console.log("Course created:", course);
-
-      // Génération automatique du devis
-      try {
-        const { data: devisData, error: devisError } = await supabase.functions.invoke(
-          'create-devis-auto',
-          {
-            body: {
-              course_id: course.id,
-              driver_id: driverData.id,
-              use_hourly_rate: courseType === "hourly",
-            },
-          }
-        );
-
-        if (devisError) {
-          console.error("Devis auto-generation error:", devisError);
-          toast.warning("Course créée mais erreur lors de la génération du devis");
-        } else {
-          console.log("Devis auto-generated:", devisData);
-          toast.success("Course et devis créés avec succès !");
-        }
-      } catch (devisGenError) {
-        console.error("Devis generation exception:", devisGenError);
-        toast.warning("Course créée, le devis sera généré ultérieurement");
-      }
-      
-      // Redirect to driver dashboard
-      setTimeout(() => navigate("/driver-dashboard"), 1500);
-
     } catch (error: any) {
-      console.error("Error:", error);
-      toast.error("Une erreur est survenue");
+      console.error("❌ Unexpected error:", error);
+      toast.error("Une erreur inattendue est survenue");
     } finally {
       setLoading(false);
     }
@@ -526,10 +491,10 @@ const DriverCreateCourse = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={loading || calculating || !selectedClientId}
+                disabled={loading || courseLoading || calculating || !selectedClientId}
                 className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
-                {loading ? "Création..." : calculating ? "Calcul en cours..." : "Créer la course"}
+                {loading || courseLoading ? "Création..." : calculating ? "Calcul en cours..." : "Créer la course"}
               </Button>
             </div>
           </form>
