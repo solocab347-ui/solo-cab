@@ -348,7 +348,7 @@ const handler = async (req: Request): Promise<Response> => {
     const template = getEmailTemplate(type, data);
 
     const emailResponse = await resend.emails.send({
-      from: "SoloCab <onboarding@resend.dev>",
+      from: "SoloCab <noreply@solocab.fr>",
       to: [to],
       subject: template.subject,
       html: template.html,
