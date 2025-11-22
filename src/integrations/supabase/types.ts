@@ -1117,7 +1117,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       devis_status: "pending" | "accepted" | "rejected" | "expired"
-      driver_status: "pending" | "validated" | "rejected"
+      driver_status: "pending" | "validated" | "rejected" | "on_hold"
       payment_status: "pending" | "paid" | "failed" | "refunded"
     }
     CompositeTypes: {
@@ -1255,7 +1255,7 @@ export const Constants = {
         "cancelled",
       ],
       devis_status: ["pending", "accepted", "rejected", "expired"],
-      driver_status: ["pending", "validated", "rejected"],
+      driver_status: ["pending", "validated", "rejected", "on_hold"],
       payment_status: ["pending", "paid", "failed", "refunded"],
     },
   },

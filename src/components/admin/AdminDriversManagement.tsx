@@ -29,7 +29,7 @@ import { fr } from "date-fns/locale";
 interface Driver {
   id: string;
   user_id: string;
-  status: "pending" | "validated" | "rejected";
+  status: "pending" | "validated" | "rejected" | "on_hold";
   license_number: string;
   vehicle_model: string;
   company_name: string | null;
@@ -50,7 +50,7 @@ const AdminDriversManagement = () => {
   const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
   const [actionDialog, setActionDialog] = useState<{
     open: boolean;
-    action: "validate" | "reject" | "delete" | null;
+    action: "validate" | "reject" | "delete" | "on_hold" | null;
     driver: Driver | null;
   }>({ open: false, action: null, driver: null });
 
@@ -95,7 +95,19 @@ const AdminDriversManagement = () => {
         toast.success("Chauffeur supprimé avec succès");
       } else {
         // Changer le statut
-        const newStatus = actionDialog.action === "validate" ? "validated" : "rejected";
+        let newStatus: "validated" | "rejected" | "on_hold";
+        let successMessage: string;
+
+        if (actionDialog.action === "validate") {
+          newStatus = "validated";
+          successMessage = "Chauffeur validé avec succès";
+        } else if (actionDialog.action === "on_hold") {
+          newStatus = "on_hold";
+          successMessage = "Demande mise en attente";
+        } else {
+          newStatus = "rejected";
+          successMessage = "Demande refusée";
+        }
         
         const { error } = await supabase
           .from("drivers")
@@ -106,12 +118,7 @@ const AdminDriversManagement = () => {
           .eq("id", actionDialog.driver.id);
 
         if (error) throw error;
-        
-        toast.success(
-          actionDialog.action === "validate"
-            ? "Chauffeur validé avec succès"
-            : "Demande refusée"
-        );
+        toast.success(successMessage);
       }
 
       fetchDrivers();
@@ -132,6 +139,7 @@ const AdminDriversManagement = () => {
       pending: { label: "En attente", icon: Clock, className: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" },
       validated: { label: "Validé", icon: CheckCircle, className: "bg-green-500/10 text-green-500 border-green-500/20" },
       rejected: { label: "Refusé", icon: X, className: "bg-red-500/10 text-red-500 border-red-500/20" },
+      on_hold: { label: "Mis en attente", icon: AlertCircle, className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
     };
 
     const statusConfig = config[status as keyof typeof config] || config.pending;
@@ -206,6 +214,41 @@ const AdminDriversManagement = () => {
                   Valider
                 </Button>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setActionDialog({ open: true, action: "on_hold", driver })
+                  }
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Mettre en attente
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() =>
+                    setActionDialog({ open: true, action: "reject", driver })
+                  }
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Refuser
+                </Button>
+              </>
+            )}
+
+            {driver.status === "on_hold" && (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() =>
+                    setActionDialog({ open: true, action: "validate", driver })
+                  }
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Valider
+                </Button>
+                <Button
                   variant="destructive"
                   size="sm"
                   onClick={() =>
@@ -245,13 +288,14 @@ const AdminDriversManagement = () => {
   }
 
   const pendingDrivers = drivers.filter((d) => d.status === "pending");
+  const onHoldDrivers = drivers.filter((d) => d.status === "on_hold");
   const validatedDrivers = drivers.filter((d) => d.status === "validated");
   const rejectedDrivers = drivers.filter((d) => d.status === "rejected");
 
   return (
     <div className="space-y-6">
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
@@ -261,6 +305,20 @@ const AdminDriversManagement = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Demandes reçues</p>
                 <p className="text-2xl font-bold">{pendingDrivers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Mises en attente</p>
+                <p className="text-2xl font-bold">{onHoldDrivers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -297,12 +355,20 @@ const AdminDriversManagement = () => {
 
       {/* Sections par onglets */}
       <Tabs defaultValue="pending" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pending" className="relative">
             Demandes reçues
             {pendingDrivers.length > 0 && (
               <Badge variant="destructive" className="ml-2 px-2 py-0.5 text-xs">
                 {pendingDrivers.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="on_hold" className="relative">
+            En attente
+            {onHoldDrivers.length > 0 && (
+              <Badge variant="default" className="ml-2 px-2 py-0.5 text-xs">
+                {onHoldDrivers.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -321,6 +387,20 @@ const AdminDriversManagement = () => {
             </Card>
           ) : (
             pendingDrivers.map(renderDriverCard)
+          )}
+        </TabsContent>
+
+        <TabsContent value="on_hold" className="space-y-4">
+          {onHoldDrivers.length === 0 ? (
+            <Card className="p-8 text-center">
+              <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Aucune demande en attente</h3>
+              <p className="text-muted-foreground">
+                Les demandes mises en attente apparaîtront ici
+              </p>
+            </Card>
+          ) : (
+            onHoldDrivers.map(renderDriverCard)
           )}
         </TabsContent>
 
@@ -370,12 +450,15 @@ const AdminDriversManagement = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {actionDialog.action === "validate" && "Valider le chauffeur"}
+              {actionDialog.action === "on_hold" && "Mettre en attente"}
               {actionDialog.action === "reject" && "Refuser la demande"}
               {actionDialog.action === "delete" && "Supprimer le chauffeur"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {actionDialog.action === "validate" &&
                 "Êtes-vous sûr de vouloir valider ce chauffeur ? Il pourra commencer à utiliser la plateforme."}
+              {actionDialog.action === "on_hold" &&
+                "Êtes-vous sûr de vouloir mettre cette demande en attente ? Le chauffeur sera en attente de validation."}
               {actionDialog.action === "reject" &&
                 "Êtes-vous sûr de vouloir refuser cette demande ? Le chauffeur ne pourra pas utiliser la plateforme."}
               {actionDialog.action === "delete" &&
