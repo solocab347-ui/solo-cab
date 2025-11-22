@@ -198,13 +198,14 @@ const RegisterClientDriver = () => {
           <div className="bg-accent/50 rounded-lg p-6 mb-8 border border-border">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-premium" />
-              En vous inscrivant
+              Client Libre - En vous inscrivant
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>✓ Réservez facilement des courses avec ce chauffeur</li>
+              <li>✓ Vous pouvez aussi réserver avec d'autres chauffeurs</li>
               <li>✓ Suivez l'historique de vos trajets</li>
               <li>✓ Gérez vos devis et factures</li>
-              <li>✓ Vous pouvez aussi réserver avec d'autres chauffeurs</li>
+              <li>✓ Accès à la vitrine publique pour découvrir plus de chauffeurs</li>
             </ul>
           </div>
 

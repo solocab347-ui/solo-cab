@@ -148,33 +148,8 @@ const ChauffeurProfile = () => {
   };
 
   const handleRegisterWithDriver = async () => {
-    if (!user) {
-      toast.error("Vous devez d'abord créer un compte");
-      navigate(`/register-client-driver?driver_id=${id}`);
-      return;
-    }
-
-    setRegistering(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("register-client-driver", {
-        body: { driver_id: id },
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      toast.success("Inscription réussie ! Vous êtes maintenant client de ce chauffeur.");
-      setTimeout(() => navigate("/client-dashboard"), 1500);
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      toast.error("Erreur lors de l'inscription");
-    } finally {
-      setRegistering(false);
-    }
+    // Always redirect to registration page (whether logged in or not)
+    navigate(`/register-client-driver?driver_id=${id}`);
   };
 
   if (loading) {
@@ -211,10 +186,9 @@ const ChauffeurProfile = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Driver Info */}
-          <div className="lg:col-span-2 space-y-6">
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Single Column Layout */}
+        <div className="space-y-6">
             {/* Profile Header */}
             <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
               <div className="flex flex-col items-center text-center gap-8">
@@ -288,31 +262,61 @@ const ChauffeurProfile = () => {
                 </div>
             </div>
 
-            {user ? (
-              <Button
-                onClick={() => navigate(`/create-course?driver_id=${id}`)}
-                size="lg"
-                className="w-full bg-gradient-premium hover:opacity-90"
-              >
-                <Calendar className="w-5 h-5 mr-2" />
-                Réserver une course
-              </Button>
-            ) : (
-              <Button
-                onClick={handleRegisterWithDriver}
-                disabled={registering}
-                size="lg"
-                className="w-full bg-gradient-premium hover:opacity-90"
-              >
-                {registering ? (
-                  <>Inscription en cours...</>
-                ) : (
-                  <>
-                    <UserPlus className="w-5 h-5 mr-2" />
-                    M'inscrire avec ce chauffeur
-                  </>
+            {/* Call to Action - Always show registration button */}
+            <Button
+              onClick={handleRegisterWithDriver}
+              disabled={registering}
+              size="lg"
+              className="w-full bg-gradient-premium hover:opacity-90"
+            >
+              {registering ? (
+                <>Inscription en cours...</>
+              ) : (
+                <>
+                  <UserPlus className="w-5 h-5 mr-2" />
+                  S'inscrire avec ce chauffeur
+                </>
+              )}
+            </Button>
+          </Card>
+
+          {/* Contact Information Card */}
+          <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Phone className="w-5 h-5 text-primary" />
+              </div>
+              Contact
+            </h2>
+            {(driver.phone || driver.email) ? (
+              <div className="space-y-4">
+                {driver.phone && (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <Phone className="w-5 h-5 text-primary" />
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Téléphone</div>
+                      <a href={`tel:${driver.phone}`} className="font-semibold text-lg hover:text-primary transition-colors">
+                        {driver.phone}
+                      </a>
+                    </div>
+                  </div>
                 )}
-              </Button>
+                {driver.email && (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <Mail className="w-5 h-5 text-primary" />
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">Email</div>
+                      <a href={`mailto:${driver.email}`} className="font-semibold text-lg hover:text-primary transition-colors break-all">
+                        {driver.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                Aucune information de contact publique
+              </p>
             )}
           </Card>
 
@@ -446,49 +450,6 @@ const ChauffeurProfile = () => {
                 </div>
               </Card>
             )}
-          </div>
-
-          {/* Right Column - Contact Card */}
-          <div className="space-y-6">
-            {/* Contact Card */}
-            <Card className="p-8 shadow-elegant sticky top-24">
-              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-primary" />
-                </div>
-                Contact
-              </h3>
-              <div className="space-y-4">
-                {driver.phone && (
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-                    <Phone className="w-5 h-5 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Téléphone</div>
-                      <a href={`tel:${driver.phone}`} className="font-semibold text-lg hover:text-primary transition-colors">
-                        {driver.phone}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                {driver.email && (
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
-                    <Mail className="w-5 h-5 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Email</div>
-                      <a href={`mailto:${driver.email}`} className="font-semibold text-lg hover:text-primary transition-colors break-all">
-                        {driver.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                {!driver.phone && !driver.email && (
-                  <p className="text-center text-muted-foreground py-4">
-                    Aucune information de contact publique disponible
-                  </p>
-                )}
-              </div>
-            </Card>
-          </div>
         </div>
       </div>
     </div>
