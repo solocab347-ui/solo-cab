@@ -20,6 +20,8 @@ import CreateCourse from "./pages/CreateCourse";
 import CreateTestAccounts from "./pages/CreateTestAccounts";
 import RegisterDriver from "./pages/RegisterDriver";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
+import Notifications from "./pages/Notifications";
+import ClientProfileView from "./pages/ClientProfileView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +74,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client-profile/:clientId"
+              element={
+                <ProtectedRoute allowedRoles={["driver"]}>
+                  <ClientProfileView />
                 </ProtectedRoute>
               }
             />

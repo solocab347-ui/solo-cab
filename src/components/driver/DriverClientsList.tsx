@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter, Calendar as CalendarIcon } from "lucide-react";
+import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -449,14 +449,22 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                     </p>
                   </div>
 
-                  <div className="flex gap-2 mt-4">
+                  <div className="grid grid-cols-2 gap-2 mt-4">
                     <Button
                       size="sm"
-                      className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                      className="bg-white/20 hover:bg-white/30 text-white border-0"
                       onClick={() => navigate(`/driver/create-course?client_id=${client.id}`)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Créer une course
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-blue-500/20 hover:bg-blue-500/30 text-white border-0"
+                      onClick={() => navigate(`/client-profile/${client.id}`)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Voir le profil
                     </Button>
                     <Button
                       variant="outline"
