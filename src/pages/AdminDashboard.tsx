@@ -4,19 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Flag, MessageSquare, Shield, LogOut, Bot, AlertTriangle } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import AdminOverview from "@/components/admin/AdminOverview";
-import AdminStats from "@/components/admin/AdminStats";
-import DriversValidation from "@/components/admin/DriversValidation";
-import UsersList from "@/components/admin/UsersList";
+import AdminSubscriptionStats from "@/components/admin/AdminSubscriptionStats";
 import AdminDriversManagement from "@/components/admin/AdminDriversManagement";
-import AdminClientsManagement from "@/components/admin/AdminClientsManagement";
 import AdminSubscriptions from "@/components/admin/AdminSubscriptions";
 import AdminEmails from "@/components/admin/AdminEmails";
 import AdminFreeAccess from "@/components/admin/AdminFreeAccess";
-import AdminReports from "@/components/admin/AdminReports";
-
 import AdminRGPD from "@/components/admin/AdminRGPD";
 import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
 import AdminDisputes from "@/components/admin/AdminDisputes";
@@ -78,6 +73,7 @@ const AdminDashboard = () => {
 
   const menuItems = [
     { id: "overview", label: "Vue d'ensemble", icon: Home },
+    { id: "stats", label: "Statistiques", icon: TrendingUp },
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
@@ -91,6 +87,8 @@ const AdminDashboard = () => {
     switch (activeSection) {
       case "overview":
         return <AdminOverview />;
+      case "stats":
+        return <AdminSubscriptionStats />;
       case "drivers":
         return <AdminDriversManagement />;
       case "subscriptions":
