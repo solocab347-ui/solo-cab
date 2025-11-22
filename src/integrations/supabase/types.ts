@@ -453,6 +453,10 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          free_access_end_date: string | null
+          free_access_granted: boolean | null
+          free_access_start_date: string | null
+          free_access_type: string | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -500,6 +504,10 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -547,6 +555,10 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
