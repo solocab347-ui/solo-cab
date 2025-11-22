@@ -118,6 +118,27 @@ const AdminDriversManagement = () => {
           .eq("id", actionDialog.driver.id);
 
         if (error) throw error;
+
+        // Envoyer l'email de validation au chauffeur
+        if (actionDialog.action === "validate" || actionDialog.action === "reject") {
+          try {
+            await supabase.functions.invoke("send-email", {
+              body: {
+                to: actionDialog.driver.profiles.email,
+                type: "driver_validation",
+                data: {
+                  driverName: actionDialog.driver.profiles.full_name,
+                  validationStatus: actionDialog.action === "validate" ? "approved" : "rejected",
+                  rejectionReason: actionDialog.action === "reject" ? "Documents incomplets ou non conformes" : undefined,
+                },
+              },
+            });
+            console.log("✅ Email de validation envoyé au chauffeur");
+          } catch (emailErr) {
+            console.error("⚠️ Erreur envoi email (non bloquant):", emailErr);
+          }
+        }
+
         toast.success(successMessage);
       }
 
