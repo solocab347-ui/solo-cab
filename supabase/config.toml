@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.manage-driver-subscription]
 verify_jwt = true
+
+[functions.send-bulk-email]
+verify_jwt = true

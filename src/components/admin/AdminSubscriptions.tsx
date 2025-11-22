@@ -36,6 +36,7 @@ const AdminSubscriptions = () => {
   const [freeAccessDuration, setFreeAccessDuration] = useState<string>("1_month");
   const [customMonths, setCustomMonths] = useState<string>("1");
   const [grantingAccess, setGrantingAccess] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchDrivers();
@@ -163,6 +164,7 @@ const AdminSubscriptions = () => {
 
       toast.success("Accès gratuit accordé avec succès");
       setSelectedDriver(null);
+      setDialogOpen(false);
       fetchDrivers();
     } catch (error: any) {
       console.error("Error granting free access:", error);
@@ -259,72 +261,18 @@ const AdminSubscriptions = () => {
                         </div>
                       </div>
                     </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedDriver(driver)}
-                          disabled={driver.free_access_granted}
-                        >
-                          <Gift className="w-4 h-4 mr-2" />
-                          Accès Gratuit
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Accorder un accès gratuit</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 pt-4">
-                          <div>
-                            <p className="text-sm font-medium mb-2">Chauffeur</p>
-                            <p className="text-sm text-muted-foreground">
-                              {profile?.full_name} ({profile?.email})
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium mb-2">Durée de l'accès gratuit</p>
-                            <Select value={freeAccessDuration} onValueChange={setFreeAccessDuration}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="1_month">1 mois</SelectItem>
-                                <SelectItem value="2_months">2 mois</SelectItem>
-                                <SelectItem value="3_months">3 mois</SelectItem>
-                                <SelectItem value="custom">Personnalisé</SelectItem>
-                                <SelectItem value="unlimited">Illimité</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {freeAccessDuration === "custom" && (
-                            <div>
-                              <p className="text-sm font-medium mb-2">Nombre de mois</p>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={customMonths}
-                                onChange={(e) => setCustomMonths(e.target.value)}
-                                placeholder="Nombre de mois"
-                              />
-                            </div>
-                          )}
-                          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                              ⚠️ L'abonnement Stripe sera automatiquement suspendu pendant la période d'accès gratuit et reprendra à la fin.
-                            </p>
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="outline" onClick={() => setSelectedDriver(null)}>
-                              Annuler
-                            </Button>
-                            <Button onClick={handleGrantFreeAccess} disabled={grantingAccess}>
-                              {grantingAccess ? "Attribution..." : "Accorder"}
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDriver(driver);
+                        setDialogOpen(true);
+                      }}
+                      disabled={driver.free_access_granted}
+                    >
+                      <Gift className="w-4 h-4 mr-2" />
+                      Accès Gratuit
+                    </Button>
                   </div>
                 </Card>
               );
@@ -332,6 +280,65 @@ const AdminSubscriptions = () => {
           )}
         </div>
       </Card>
+
+      {/* Dialog d'attribution d'accès gratuit */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Accorder un accès gratuit</DialogTitle>
+          </DialogHeader>
+          {selectedDriver && (
+            <div className="space-y-4 pt-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Chauffeur</p>
+                <p className="text-sm text-muted-foreground">
+                  {(selectedDriver.profiles as any)?.full_name} ({(selectedDriver.profiles as any)?.email})
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-2">Durée de l'accès gratuit</p>
+                <Select value={freeAccessDuration} onValueChange={setFreeAccessDuration}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1_month">1 mois</SelectItem>
+                    <SelectItem value="2_months">2 mois</SelectItem>
+                    <SelectItem value="3_months">3 mois</SelectItem>
+                    <SelectItem value="custom">Personnalisé</SelectItem>
+                    <SelectItem value="unlimited">Illimité</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {freeAccessDuration === "custom" && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Nombre de mois</p>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={customMonths}
+                    onChange={(e) => setCustomMonths(e.target.value)}
+                    placeholder="Nombre de mois"
+                  />
+                </div>
+              )}
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  ⚠️ L'abonnement Stripe sera automatiquement suspendu pendant la période d'accès gratuit et reprendra à la fin.
+                </p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={handleGrantFreeAccess} disabled={grantingAccess}>
+                  {grantingAccess ? "Attribution..." : "Accorder"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

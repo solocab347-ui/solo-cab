@@ -605,6 +605,66 @@ export type Database = {
           },
         ]
       }
+      email_history: {
+        Row: {
+          content: string
+          created_by: string | null
+          id: string
+          recipient_ids: string[] | null
+          recipient_type: string
+          recipients_count: number
+          sent_at: string | null
+          subject: string
+        }
+        Insert: {
+          content: string
+          created_by?: string | null
+          id?: string
+          recipient_ids?: string[] | null
+          recipient_type: string
+          recipients_count?: number
+          sent_at?: string | null
+          subject: string
+        }
+        Update: {
+          content?: string
+          created_by?: string | null
+          id?: string
+          recipient_ids?: string[] | null
+          recipient_type?: string
+          recipients_count?: number
+          sent_at?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          name: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          name: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       factures: {
         Row: {
           amount: number
