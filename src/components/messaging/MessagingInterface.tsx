@@ -46,7 +46,7 @@ export const MessagingInterface = () => {
           .from("drivers")
           .select("id")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!driverData) return;
 
@@ -74,7 +74,7 @@ export const MessagingInterface = () => {
           .from("clients")
           .select("driver_id, driver_ids, is_exclusive")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!clientData) return;
 

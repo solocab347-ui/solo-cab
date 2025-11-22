@@ -45,7 +45,7 @@ const CreateCourse = () => {
         .from("profiles")
         .select("address")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profileData?.address) {
         setClientAddress(profileData.address);
@@ -268,7 +268,7 @@ const CreateCourse = () => {
         .from("drivers")
         .select("user_id")
         .eq("id", assignedDriverId)
-        .single();
+        .maybeSingle();
 
       // CORRECTION: Génération automatique du devis après création de course
       try {
