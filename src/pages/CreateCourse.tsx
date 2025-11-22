@@ -15,6 +15,7 @@ import { Car, MapPin, Calendar, Users, ArrowLeft, Tag } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -277,8 +278,9 @@ const CreateCourse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-3xl">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -396,26 +398,55 @@ const CreateCourse = () => {
             </div>
 
             {/* Code promo */}
-            <div className="space-y-2">
-              <Label htmlFor="promo" className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-success" />
-                Code promo {availablePromos.length > 0 ? 'disponible' : '(Aucun disponible)'}
-              </Label>
-              <Select value={promoCode} onValueChange={setPromoCode} disabled={availablePromos.length === 0}>
-                <SelectTrigger>
-                  <SelectValue placeholder={availablePromos.length > 0 ? "Sélectionnez un code promo (optionnel)" : "Aucune promotion disponible"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun code promo</SelectItem>
-                  {availablePromos.map((promo) => (
-                    <SelectItem key={promo.id} value={promo.code}>
-                      {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
-                      {promo.description && ` (${promo.description})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ErrorBoundary fallback={
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-success" />
+                  Code promo
+                </Label>
+                <Input 
+                  value="Aucune promotion disponible" 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+            }>
+              <div className="space-y-2">
+                <Label htmlFor="promo" className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-success" />
+                  Code promo {availablePromos.length > 0 ? 'disponible' : '(Aucun disponible)'}
+                </Label>
+                {availablePromos.length === 0 ? (
+                  <Input 
+                    value="Aucune promotion disponible" 
+                    disabled 
+                    className="bg-muted"
+                  />
+                ) : (
+                  <Select 
+                    value={promoCode} 
+                    onValueChange={setPromoCode}
+                    key={`promo-select-${availablePromos.length}`}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez un code promo (optionnel)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun code promo</SelectItem>
+                      {availablePromos.map((promo) => (
+                        <SelectItem 
+                          key={`promo-${promo.id}`} 
+                          value={promo.code || `promo-${promo.id}`}
+                        >
+                          {promo.code} - {promo.type === 'percentage' ? `${promo.value}%` : `${promo.value}€`}
+                          {promo.description && ` (${promo.description})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </ErrorBoundary>
 
             {/* Notes */}
             <div className="space-y-2">
@@ -458,6 +489,7 @@ const CreateCourse = () => {
         </Card>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 
