@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Camera, Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Camera, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -68,8 +69,14 @@ export const ProfilePhotoUpload = ({
   };
 
   return (
-    <div className="space-y-4">
-      <Label>Photo de profil</Label>
+    <div className="space-y-6">
+      <div>
+        <Label>Photo de profil</Label>
+        <p className="text-sm text-muted-foreground mt-1">
+          Utilisée dans votre profil public et la messagerie
+        </p>
+      </div>
+
       <div className="flex items-center gap-4">
         <Avatar className="w-24 h-24">
           <AvatarImage src={currentPhotoUrl || undefined} />
@@ -78,40 +85,98 @@ export const ProfilePhotoUpload = ({
           </AvatarFallback>
         </Avatar>
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Utilisée dans votre profil public et la messagerie
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="file"
-              id="photo-upload"
-              className="hidden"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById("photo-upload")?.click()}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Téléchargement...
-                </>
-              ) : (
-                <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Changer la photo
-                </>
-              )}
-            </Button>
-          </div>
+          <input
+            type="file"
+            id="photo-upload"
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => document.getElementById("photo-upload")?.click()}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Téléchargement...
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4 mr-2" />
+                Changer la photo
+              </>
+            )}
+          </Button>
         </div>
       </div>
+
+      {/* Aperçus de rendu */}
+      {currentPhotoUrl && (
+        <Card className="p-6 bg-muted/30">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Eye className="w-4 h-4" />
+              <span>Aperçu dans votre profil public</span>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Aperçu carte vitrine */}
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground font-medium">
+                  Dans la liste des chauffeurs
+                </p>
+                <div className="bg-background rounded-lg overflow-hidden shadow-md">
+                  <div className="relative h-48 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10">
+                    <img
+                      src={currentPhotoUrl}
+                      alt="Aperçu vitrine"
+                      className="w-full h-full object-cover object-[center_20%]"
+                    />
+                  </div>
+                  <div className="p-3 text-center">
+                    <p className="text-sm font-semibold truncate">{driverName}</p>
+                    <p className="text-xs text-muted-foreground">Chauffeur VTC</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Aperçu profil détaillé */}
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground font-medium">
+                  Dans votre profil détaillé
+                </p>
+                <div className="bg-background rounded-lg p-6 shadow-md flex flex-col items-center gap-3">
+                  <div className="w-40 h-40 bg-gradient-dark rounded-full flex items-center justify-center shadow-2xl ring-4 ring-primary/20">
+                    <img
+                      src={currentPhotoUrl}
+                      alt="Aperçu profil"
+                      className="w-full h-full rounded-full object-cover object-[center_20%]"
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold">{driverName}</p>
+                    <p className="text-xs text-muted-foreground">Chauffeur Professionnel</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <div className="mt-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                <strong>Conseil :</strong> Pour un meilleur rendu, utilisez une photo portrait avec votre visage et le haut du corps bien cadrés au centre de l'image.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
