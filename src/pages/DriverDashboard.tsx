@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
@@ -27,6 +27,7 @@ import { DriverStatistics } from "@/components/driver/stats/DriverStatistics";
 import { DriverCampaigns } from "@/components/driver/promo/DriverCampaigns";
 import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
+import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -403,6 +404,14 @@ const DriverDashboard = () => {
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Paramètres</span>
                 <span className="sm:hidden">Params</span>
+              </TabsTrigger>
+            </div>
+
+            {/* Troisième ligne - Feedback */}
+            <div className="grid grid-cols-1 gap-1 w-full">
+              <TabsTrigger value="feedback" className="gap-1 text-xs sm:text-sm flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                <Lightbulb className="w-4 h-4" />
+                <span>Amélioration & Feedback</span>
               </TabsTrigger>
             </div>
           </TabsList>
@@ -881,6 +890,11 @@ const DriverDashboard = () => {
           {/* Profitability Tab */}
           <TabsContent value="profitability" className="space-y-6">
             <ProfitabilityCalculator />
+          </TabsContent>
+
+          {/* Feedback Tab */}
+          <TabsContent value="feedback" className="space-y-6">
+            <DriverFeedback />
           </TabsContent>
 
         </Tabs>
