@@ -17,6 +17,10 @@ interface PublicDriver {
   full_name: string;
   vehicle_model: string;
   vehicle_color: string;
+  vehicle_brand?: string;
+  vehicle_year?: number;
+  vehicle_photos?: string[];
+  gallery_photos?: string[];
   bio: string;
   rating: number;
   total_rides: number;
@@ -27,6 +31,9 @@ interface PublicDriver {
   profile_photo_url: string;
   home_address: string;
   distance_km: number | null;
+  company_name?: string;
+  display_driver_name?: boolean;
+  display_company_name?: boolean;
 }
 
 const Chauffeurs = () => {
