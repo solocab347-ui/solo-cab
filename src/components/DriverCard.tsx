@@ -43,6 +43,14 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
   // Use first photo as background, or placeholder
   const backgroundPhoto = allPhotos.length > 0 ? allPhotos[0] : '/placeholder.svg';
 
+  // Log pour déboguer l'affichage des photos
+  console.log(`📸 Photos pour ${driver.full_name}:`, {
+    vehicle_photos: driver.vehicle_photos,
+    gallery_photos: driver.gallery_photos,
+    allPhotos,
+    backgroundPhoto
+  });
+
   // Construire le nom d'affichage - toujours afficher le nom, jamais "chauffeur"
   const displayName = [];
   // Afficher le nom du chauffeur par défaut

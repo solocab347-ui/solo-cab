@@ -1241,8 +1241,12 @@ export type Database = {
         Returns: {
           base_rate: number
           bio: string
+          company_name: string
+          display_company_name: boolean
+          display_driver_name: boolean
           distance_km: number
           full_name: string
+          gallery_photos: string[]
           home_address: string
           id: string
           per_km_rate: number
@@ -1250,8 +1254,11 @@ export type Database = {
           rating: number
           service_description: string
           total_rides: number
+          vehicle_brand: string
           vehicle_color: string
           vehicle_model: string
+          vehicle_photos: string[]
+          vehicle_year: number
           working_sectors: string[]
         }[]
       }
