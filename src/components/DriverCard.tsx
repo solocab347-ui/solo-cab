@@ -34,23 +34,6 @@ interface DriverCardProps {
 }
 
 export const DriverCard = ({ driver }: DriverCardProps) => {
-  // Combine vehicle photos and gallery photos for carousel
-  const allPhotos = [
-    ...(driver.vehicle_photos || []),
-    ...(driver.gallery_photos || []),
-  ].filter(Boolean);
-
-  // Use first photo as background, or placeholder
-  const backgroundPhoto = allPhotos.length > 0 ? allPhotos[0] : '/placeholder.svg';
-
-  // Log pour déboguer l'affichage des photos
-  console.log(`📸 Photos pour ${driver.full_name}:`, {
-    vehicle_photos: driver.vehicle_photos,
-    gallery_photos: driver.gallery_photos,
-    allPhotos,
-    backgroundPhoto
-  });
-
   // Construire le nom d'affichage - toujours afficher le nom, jamais "chauffeur"
   const displayName = [];
   // Afficher le nom du chauffeur par défaut
@@ -65,17 +48,23 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
   const name = displayName.length > 0 ? displayName.join(" - ") : driver.full_name;
 
   return (
-    <Card className="group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-      {/* Vehicle Background with Profile Photo Overlay */}
-      <div className="relative h-96 overflow-hidden">
-        {/* Vehicle Background Image */}
+    <Card className="group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 bg-card">
+      {/* Profile Photo Background with gradient overlay */}
+      <div className="relative h-80 overflow-hidden">
+        {/* Profile Photo Background - blurred */}
         <div className="absolute inset-0">
-          <img
-            src={backgroundPhoto}
-            alt={`${name} - Véhicule`}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
+          {driver.profile_photo_url ? (
+            <>
+              <img
+                src={driver.profile_photo_url}
+                alt={name}
+                className="w-full h-full object-cover blur-sm scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/40 to-background/95" />
+            </>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
+          )}
         </div>
 
         {/* Distance Badge */}
@@ -85,9 +74,9 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
           </Badge>
         )}
 
-        {/* Centered Profile Photo */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-32 h-32 rounded-full border-4 border-white/90 bg-gradient-dark overflow-hidden shadow-2xl mb-4">
+        {/* Centered Large Profile Photo */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-40 h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-background">
             {driver.profile_photo_url ? (
               <img
                 src={driver.profile_photo_url}
@@ -95,57 +84,67 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-white">
+              <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-primary bg-primary/10">
                 {driver.full_name?.charAt(0)?.toUpperCase() || "?"}
               </div>
             )}
           </div>
-
-          {/* Centered Driver Name */}
-          <h3 className="text-2xl font-bold text-white text-center px-4 drop-shadow-lg mb-2">
-            {name}
-          </h3>
-
-          {/* Rating & Rides - Only show if there are rides */}
-          {driver.total_rides > 0 && (
-            <div className="flex items-center gap-4 text-white/90 mb-3">
-              {driver.rating > 0 && (
-                <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  <span className="font-semibold text-sm">
-                    {driver.rating.toFixed(1)}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-                <Award className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium">{driver.total_rides} courses</span>
-              </div>
-            </div>
-          )}
-
-          {/* Vehicle Info - Only show if info exists and not placeholder */}
-          {(driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter") || 
-           (driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter") ? (
-            <div className="flex items-center justify-center gap-2 text-white/90 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
-              <Car className="w-4 h-4" />
-              <span className="font-medium text-sm">
-                {driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter" && `${driver.vehicle_brand} `}
-                {driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter" && driver.vehicle_model}
-                {driver.vehicle_year && ` (${driver.vehicle_year})`}
-              </span>
-            </div>
-          ) : null}
         </div>
       </div>
 
-      {/* Content - Sectors */}
-      <div className="p-6 space-y-4">
+      {/* Content Section */}
+      <div className="p-6 space-y-4 bg-card">
+        {/* Driver Name */}
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-foreground mb-1">
+            {name}
+          </h3>
+          
+          {/* Company Name if different */}
+          {driver.company_name && driver.display_company_name && driver.display_driver_name !== false && (
+            <p className="text-sm text-muted-foreground">
+              {driver.company_name}
+            </p>
+          )}
+        </div>
+
+        {/* Rating & Rides - Only show if there are rides */}
+        {driver.total_rides > 0 && (
+          <div className="flex items-center justify-center gap-4">
+            {driver.rating > 0 && (
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="font-semibold text-sm">
+                  {driver.rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Award className="w-4 h-4" />
+              <span className="text-sm">{driver.total_rides} courses</span>
+            </div>
+          </div>
+        )}
+
+        {/* Vehicle Info - Only show if info exists and not placeholder */}
+        {(driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter") || 
+         (driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter") ? (
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Car className="w-4 h-4" />
+            <span className="text-sm">
+              {driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter" && `${driver.vehicle_brand} `}
+              {driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter" && driver.vehicle_model}
+              {driver.vehicle_year && ` (${driver.vehicle_year})`}
+            </span>
+          </div>
+        ) : null}
+
+        {/* Working Sectors */}
         {driver.working_sectors && driver.working_sectors.length > 0 && (
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="w-4 h-4" />
-              <span className="text-sm font-medium">Secteurs d'activité</span>
+              <span className="text-xs font-medium">Secteurs d'activité</span>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
               {driver.working_sectors.slice(0, 3).map((sector) => (
@@ -166,7 +165,7 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
           </div>
         )}
 
-        {/* CTA */}
+        {/* CTA Button */}
         <Link to={`/chauffeur/${driver.id}`}>
           <Button className="w-full bg-gradient-premium hover:opacity-90">
             <UserPlus className="w-4 h-4 mr-2" />
