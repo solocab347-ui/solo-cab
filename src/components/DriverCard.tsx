@@ -49,24 +49,8 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
 
   return (
     <Card className="group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 bg-card">
-      {/* Profile Photo Background with gradient overlay */}
-      <div className="relative h-80 overflow-hidden">
-        {/* Profile Photo Background - blurred */}
-        <div className="absolute inset-0">
-          {driver.profile_photo_url ? (
-            <>
-              <img
-                src={driver.profile_photo_url}
-                alt={name}
-                className="w-full h-full object-cover blur-sm scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/40 to-background/95" />
-            </>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
-          )}
-        </div>
-
+      {/* Large Profile Photo Section */}
+      <div className="relative h-80 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10">
         {/* Distance Badge */}
         {driver.distance_km !== undefined && (
           <Badge className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm z-10">
@@ -74,22 +58,18 @@ export const DriverCard = ({ driver }: DriverCardProps) => {
           </Badge>
         )}
 
-        {/* Centered Large Profile Photo */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-40 h-40 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-background">
-            {driver.profile_photo_url ? (
-              <img
-                src={driver.profile_photo_url}
-                alt={name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-primary bg-primary/10">
-                {driver.full_name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
-            )}
+        {/* Large Profile Photo */}
+        {driver.profile_photo_url ? (
+          <img
+            src={driver.profile_photo_url}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-8xl font-bold text-primary">
+            {driver.full_name?.charAt(0)?.toUpperCase() || "?"}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Content Section */}
