@@ -1254,6 +1254,7 @@ export type Database = {
           rating: number
           service_description: string
           total_rides: number
+          user_id: string
           vehicle_brand: string
           vehicle_color: string
           vehicle_model: string

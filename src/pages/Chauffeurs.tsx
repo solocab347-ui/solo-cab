@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface PublicDriver {
   id: string;
-  user_id: string;
+  user_id?: string;
   full_name: string;
   vehicle_model: string;
   vehicle_color: string;
