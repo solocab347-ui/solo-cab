@@ -581,8 +581,8 @@ const Chauffeurs = () => {
                   {drivers.length} chauffeur{drivers.length > 1 ? "s" : ""} trouvé{drivers.length > 1 ? "s" : ""}
                 </h3>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {drivers.map((driver) => (
-                    <DriverCard key={driver.id} driver={driver} />
+                  {drivers.map((driver, index) => (
+                    <DriverCard key={driver.id} driver={driver} cardIndex={index} />
                   ))}
                 </div>
               </>
