@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface PublicDriver {
   id: string;
+  user_id: string;
   full_name: string;
   vehicle_model: string;
   vehicle_color: string;
@@ -87,6 +88,79 @@ const Chauffeurs = () => {
   useEffect(() => {
     checkClientAccess();
   }, [user]);
+
+  // Écouter les mises à jour en temps réel des profils de chauffeurs
+  useEffect(() => {
+    if (!searchPerformed || drivers.length === 0) return;
+
+    const channel = supabase
+      .channel('driver-profile-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drivers'
+        },
+        (payload) => {
+          console.log('🔄 Mise à jour détectée pour un chauffeur:', payload);
+          
+          // Mettre à jour le chauffeur dans la liste
+          setDrivers(prevDrivers => {
+            const updatedDrivers = prevDrivers.map(driver => {
+              if (driver.id === payload.new.id) {
+                return {
+                  ...driver,
+                  ...payload.new,
+                  // Garder les données de profil
+                  full_name: driver.full_name,
+                  profile_photo_url: driver.profile_photo_url,
+                };
+              }
+              return driver;
+            });
+            
+            // Mettre à jour le sessionStorage
+            sessionStorage.setItem("searchResults", JSON.stringify(updatedDrivers));
+            return updatedDrivers;
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('🔄 Mise à jour détectée pour un profil:', payload);
+          
+          // Mettre à jour les informations de profil du chauffeur
+          setDrivers(prevDrivers => {
+            const updatedDrivers = prevDrivers.map(driver => {
+              if (driver.user_id === payload.new.id) {
+                return {
+                  ...driver,
+                  full_name: payload.new.full_name,
+                  profile_photo_url: payload.new.profile_photo_url,
+                };
+              }
+              return driver;
+            });
+            
+            // Mettre à jour le sessionStorage
+            sessionStorage.setItem("searchResults", JSON.stringify(updatedDrivers));
+            return updatedDrivers;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [searchPerformed, drivers.length]);
 
   // Sauvegarder l'état de recherche dans sessionStorage
   useEffect(() => {
