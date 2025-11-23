@@ -192,14 +192,14 @@ const ChauffeurProfile = () => {
             {/* Profile Header */}
             <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
               <div className="flex flex-col items-center text-center gap-8">
-                {/* Large centered profile photo - 280px pour être vraiment visible */}
+                {/* Large centered profile photo */}
                 <div className="relative">
-                  <div className="w-72 h-72 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-8xl font-bold shadow-2xl ring-4 ring-primary/20">
+                  <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20">
                     {driver.profile_photo_url ? (
                       <img
                         src={driver.profile_photo_url}
                         alt={driver.full_name}
-                        className="w-full h-full rounded-full object-cover"
+                        className="w-full h-full rounded-full object-cover object-[center_20%]"
                       />
                     ) : (
                       driver.full_name.charAt(0).toUpperCase()
