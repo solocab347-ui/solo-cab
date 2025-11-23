@@ -504,6 +504,79 @@ export type Database = {
           },
         ]
       }
+      driver_feedback: {
+        Row: {
+          admin_id: string | null
+          admin_response: string | null
+          ai_analysis: string | null
+          ai_suggestion: string | null
+          created_at: string
+          description: string
+          driver_id: string
+          id: string
+          priority: string | null
+          resolved_at: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_response?: string | null
+          ai_analysis?: string | null
+          ai_suggestion?: string | null
+          created_at?: string
+          description: string
+          driver_id: string
+          id?: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_response?: string | null
+          ai_analysis?: string | null
+          ai_suggestion?: string | null
+          created_at?: string
+          description?: string
+          driver_id?: string
+          id?: string
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_feedback_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           base_fare: number | null

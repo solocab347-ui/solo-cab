@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSubscriptionStats from "@/components/admin/AdminSubscriptionStats";
@@ -15,6 +15,7 @@ import AdminFreeAccess from "@/components/admin/AdminFreeAccess";
 import AdminRGPD from "@/components/admin/AdminRGPD";
 import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
 import AdminDisputes from "@/components/admin/AdminDisputes";
+import AdminFeedback from "@/components/admin/AdminFeedback";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -80,6 +81,7 @@ const AdminDashboard = () => {
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
+    { id: "feedback", label: "Feedbacks Chauffeurs", icon: Lightbulb },
     { id: "rgpd", label: "RGPD", icon: Shield },
   ];
 
@@ -101,6 +103,8 @@ const AdminDashboard = () => {
         return <AdminAssistantRequests />;
       case "disputes":
         return <AdminDisputes />;
+      case "feedback":
+        return <AdminFeedback />;
       case "rgpd":
         return <AdminRGPD />;
       default:
