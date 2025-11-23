@@ -40,21 +40,90 @@ const Chauffeurs = () => {
   const { user } = useAuth();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchMode, setSearchMode] = useState<"city" | "address">("city");
-  const [citySearch, setCitySearch] = useState("");
-  const [cityCoordinates, setCityCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [addressSearch, setAddressSearch] = useState("");
-  const [addressCoordinates, setAddressCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [radiusCity, setRadiusCity] = useState([10]);
-  const [radiusAddress, setRadiusAddress] = useState([10]);
-  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [searchMode, setSearchMode] = useState<"city" | "address">(() => {
+    return (sessionStorage.getItem("searchMode") as "city" | "address") || "city";
+  });
+  const [citySearch, setCitySearch] = useState(() => {
+    return sessionStorage.getItem("citySearch") || "";
+  });
+  const [cityCoordinates, setCityCoordinates] = useState<{ latitude: number; longitude: number } | null>(() => {
+    const stored = sessionStorage.getItem("cityCoordinates");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [addressSearch, setAddressSearch] = useState(() => {
+    return sessionStorage.getItem("addressSearch") || "";
+  });
+  const [addressCoordinates, setAddressCoordinates] = useState<{ latitude: number; longitude: number } | null>(() => {
+    const stored = sessionStorage.getItem("addressCoordinates");
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [radiusCity, setRadiusCity] = useState<number[]>(() => {
+    const stored = sessionStorage.getItem("radiusCity");
+    return stored ? [parseInt(stored)] : [10];
+  });
+  const [radiusAddress, setRadiusAddress] = useState<number[]>(() => {
+    const stored = sessionStorage.getItem("radiusAddress");
+    return stored ? [parseInt(stored)] : [10];
+  });
+  const [searchPerformed, setSearchPerformed] = useState(() => {
+    return sessionStorage.getItem("searchPerformed") === "true";
+  });
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
   const navigate = useNavigate();
 
+  // Restaurer les résultats de recherche au chargement si disponibles
+  useEffect(() => {
+    const storedDrivers = sessionStorage.getItem("searchResults");
+    if (storedDrivers && searchPerformed) {
+      try {
+        setDrivers(JSON.parse(storedDrivers));
+      } catch (error) {
+        console.error("Error parsing stored drivers:", error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     checkClientAccess();
   }, [user]);
+
+  // Sauvegarder l'état de recherche dans sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("searchMode", searchMode);
+  }, [searchMode]);
+
+  useEffect(() => {
+    sessionStorage.setItem("citySearch", citySearch);
+  }, [citySearch]);
+
+  useEffect(() => {
+    if (cityCoordinates) {
+      sessionStorage.setItem("cityCoordinates", JSON.stringify(cityCoordinates));
+    }
+  }, [cityCoordinates]);
+
+  useEffect(() => {
+    sessionStorage.setItem("addressSearch", addressSearch);
+  }, [addressSearch]);
+
+  useEffect(() => {
+    if (addressCoordinates) {
+      sessionStorage.setItem("addressCoordinates", JSON.stringify(addressCoordinates));
+    }
+  }, [addressCoordinates]);
+
+  useEffect(() => {
+    sessionStorage.setItem("radiusCity", radiusCity[0].toString());
+  }, [radiusCity]);
+
+  useEffect(() => {
+    sessionStorage.setItem("radiusAddress", radiusAddress[0].toString());
+  }, [radiusAddress]);
+
+  useEffect(() => {
+    sessionStorage.setItem("searchPerformed", searchPerformed.toString());
+  }, [searchPerformed]);
 
   const checkClientAccess = async () => {
     if (!user) {
@@ -116,6 +185,12 @@ const Chauffeurs = () => {
           return;
         }
 
+        console.log("🔍 Recherche par ville:", {
+          city: citySearch,
+          coordinates: cityCoordinates,
+          radius: radiusCity[0]
+        });
+
         // Search by city with coordinates and radius
         const { data, error } = await supabase.rpc("search_drivers_by_location", {
           _city: citySearch.trim(),
@@ -126,9 +201,19 @@ const Chauffeurs = () => {
         });
 
         if (error) throw error;
+
+        console.log("📊 Résultats de recherche:", data);
+        
+        // Log des distances pour déboguer
+        data?.forEach((driver: PublicDriver) => {
+          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km - Adresse: ${driver.home_address}`);
+        });
         
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
+        
+        // Sauvegarder les résultats dans sessionStorage
+        sessionStorage.setItem("searchResults", JSON.stringify(sortedDrivers));
         
         if (sortedDrivers.length > 0) {
           toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusCity[0]} km`);
@@ -143,6 +228,12 @@ const Chauffeurs = () => {
           return;
         }
 
+        console.log("🔍 Recherche par adresse:", {
+          address: addressSearch,
+          coordinates: addressCoordinates,
+          radius: radiusAddress[0]
+        });
+
         // Search by address with coordinates and radius
         const { data, error } = await supabase.rpc("search_drivers_by_location", {
           _city: null,
@@ -153,9 +244,19 @@ const Chauffeurs = () => {
         });
 
         if (error) throw error;
+
+        console.log("📊 Résultats de recherche:", data);
+        
+        // Log des distances pour déboguer
+        data?.forEach((driver: PublicDriver) => {
+          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km - Adresse: ${driver.home_address}`);
+        });
         
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
+        
+        // Sauvegarder les résultats dans sessionStorage
+        sessionStorage.setItem("searchResults", JSON.stringify(sortedDrivers));
         
         if (sortedDrivers.length > 0) {
           toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusAddress[0]} km`);
@@ -166,7 +267,7 @@ const Chauffeurs = () => {
         toast.error("Veuillez saisir et sélectionner une ville ou une adresse");
       }
     } catch (error: any) {
-      console.error("Error searching drivers:", error);
+      console.error("❌ Erreur de recherche:", error);
       toast.error("Erreur lors de la recherche des chauffeurs");
     } finally {
       setLoading(false);
