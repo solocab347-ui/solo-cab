@@ -25,25 +25,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Cache pour éviter les requêtes dupliquées
-  const roleCache = new Map<string, { roles: string[]; primaryRole: "admin" | "driver" | "client" | null; timestamp: number }>();
-  const CACHE_DURATION = 30000; // 30 secondes
-
+  // Fonction simple pour récupérer le rôle - SANS CACHE
   const fetchUserRole = async (userId: string): Promise<"admin" | "driver" | "client" | null> => {
-    // Vérifier le cache d'abord
-    const cached = roleCache.get(userId);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setUserRoles(cached.roles);
-      setUserRole(cached.primaryRole);
-      return cached.primaryRole;
-    }
-
     try {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
-        .throwOnError();
+        .eq("user_id", userId);
 
       if (error) throw error;
       
@@ -58,9 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? "client"
         : null;
       
-      // Mettre en cache
-      roleCache.set(userId, { roles, primaryRole, timestamp: Date.now() });
-      
       setUserRoles(roles);
       setUserRole(primaryRole);
       return primaryRole;
@@ -74,21 +59,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
-    let fetchingRole = false;
 
-    // Set up auth state listener
+    // TIMEOUT DE SÉCURITÉ: garantir que loading devient false après 3 secondes MAX
+    const safetyTimeout = setTimeout(() => {
+      console.warn("⚠️ Safety timeout: forcing loading to false");
+      setLoading(false);
+    }, 3000);
+
+    // Auth state listener - SIMPLE
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted || fetchingRole) return;
+      (event, session) => {
+        if (!isMounted) return;
         
         console.log("Auth state change:", event);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchingRole = true;
-          await fetchUserRole(session.user.id);
-          fetchingRole = false;
+          // Ne pas bloquer sur fetchUserRole
+          fetchUserRole(session.user.id).catch(console.error);
         } else {
           setUserRole(null);
           setUserRoles([]);
@@ -96,24 +85,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session - UNE SEULE FOIS
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchingRole = true;
-        await fetchUserRole(session.user.id);
-        fetchingRole = false;
+    // Check existing session - AVEC TRY/CATCH
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchUserRole(session.user.id);
+        }
+      } catch (error) {
+        console.error("Init auth error:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
-      
-      setLoading(false);
-    });
+    };
+
+    initAuth();
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -191,29 +196,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Erreur de connexion");
 
-      // Récupérer le rôle avec timeout de sécurité
-      let role: "admin" | "driver" | "client" | null = null;
-      try {
-        const rolePromise = fetchUserRole(data.user.id);
-        const timeoutPromise = new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), 5000)
-        );
-        role = await Promise.race([rolePromise, timeoutPromise]);
-      } catch (roleError) {
-        console.error("Error fetching role:", roleError);
-        // Fallback: essayer de récupérer depuis user_roles directement
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.user.id)
-          .limit(1)
-          .single();
-        role = (roleData?.role as "admin" | "driver" | "client") || null;
-      }
+      // Récupérer le rôle - SIMPLE et RAPIDE
+      const role = await fetchUserRole(data.user.id);
       
       toast.success("Connexion réussie !");
 
-      // Navigation GARANTIE basée sur le rôle avec fallback
+      // Navigation basée sur le rôle
       if (role === "admin") {
         navigate("/admin-dashboard", { replace: true });
       } else if (role === "driver") {
@@ -221,7 +209,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (role === "client") {
         navigate("/client-dashboard", { replace: true });
       } else {
-        // Fallback: rediriger vers une page d'accueil si rôle inconnu
         console.warn("Unknown role, redirecting to home");
         navigate("/", { replace: true });
       }
