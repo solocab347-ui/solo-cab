@@ -9,7 +9,8 @@ import { DriverCard } from "@/components/DriverCard";
 import { Car, Search, MapPin, AlertTriangle, Navigation, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { subscriptionManager } from "@/lib/subscriptionManager";
+import { usePaginatedData } from "@/hooks/usePaginatedQuery";
+import Pagination from "@/components/Pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -42,6 +43,15 @@ const Chauffeurs = () => {
   const { user } = useAuth();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Pagination avec 20 chauffeurs par page
+  const {
+    paginatedData: paginatedDrivers,
+    currentPage,
+    totalPages,
+    goToPage,
+    resetPage
+  } = usePaginatedData(drivers, 20);
   
   // Fonction pour vérifier et récupérer les données du sessionStorage avec expiration
   const getStoredData = (key: string, expirationMinutes: number = 10) => {
@@ -104,47 +114,17 @@ const Chauffeurs = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const navigate = useNavigate();
 
-  // Restaurer les résultats de recherche au chargement si disponibles
+  // Restaurer les résultats UNIQUEMENT (pas de recherche auto)
   useEffect(() => {
     const storedDrivers = getStoredData("searchResults", 10);
     if (storedDrivers && searchPerformed) {
       try {
         setDrivers(storedDrivers);
-        console.log("✅ Résultats de recherche restaurés depuis le cache");
+        console.log("✅ Résultats restaurés depuis le cache");
       } catch (error) {
-        console.error("Error parsing stored drivers:", error);
         sessionStorage.removeItem("searchResults");
       }
-    } else if (!storedDrivers && searchPerformed) {
-      // Les données ont expiré, réinitialiser l'état
-      console.log("🔄 Données de recherche expirées, réinitialisation...");
-      setSearchPerformed(false);
-      setDrivers([]);
     }
-  }, []);
-
-  // Relancer automatiquement la recherche (OPTIMISÉ)
-  useEffect(() => {
-    let isMounted = true;
-    
-    const autoRefreshSearch = async () => {
-      if (!isMounted) return;
-      
-      const hasValidCitySearch = searchMode === "city" && citySearch && cityCoordinates;
-      const hasValidAddressSearch = searchMode === "address" && addressSearch && addressCoordinates;
-      
-      if (hasValidCitySearch || hasValidAddressSearch) {
-        console.log("🔄 Relance automatique de la recherche");
-        await handleSearch();
-      }
-    };
-
-    const timer = setTimeout(autoRefreshSearch, 300);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
   }, []);
 
   useEffect(() => {
@@ -162,122 +142,10 @@ const Chauffeurs = () => {
     };
   }, [user]);
 
-  // Écouter les mises à jour en temps réel OPTIMISÉ avec subscriptionManager
-  useEffect(() => {
-    if (!searchPerformed || drivers.length === 0) return;
+  // Subscriptions Realtime DÉSACTIVÉES pour performance
+  // La page publique n'a pas besoin de mises à jour temps réel
 
-    let isMounted = true;
-    let updateTimeout: NodeJS.Timeout;
-    
-    // Utiliser subscriptionManager pour éviter fuites
-    const cleanupDriver = subscriptionManager.subscribe(
-      'chauffeurs-drivers-updates',
-      {
-        table: 'drivers',
-        event: 'UPDATE',
-        debounceMs: 1000 // Debounce long pour stabilité
-      },
-      (payload) => {
-        if (!isMounted) return;
-        
-        clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(() => {
-          setDrivers(prevDrivers => {
-            const updated = prevDrivers.map(driver => {
-              if (driver.id === payload.new.id) {
-                return {
-                  ...driver,
-                  ...payload.new,
-                  full_name: driver.full_name,
-                  profile_photo_url: driver.profile_photo_url,
-                };
-              }
-              return driver;
-            });
-            
-            requestIdleCallback(() => {
-              if (isMounted) {
-                setStoredData("searchResults", updated);
-              }
-            });
-            
-            return updated;
-          });
-        }, 300);
-      }
-    );
-
-    const cleanupProfile = subscriptionManager.subscribe(
-      'chauffeurs-profiles-updates',
-      {
-        table: 'profiles',
-        event: 'UPDATE',
-        debounceMs: 1000
-      },
-      (payload) => {
-        if (!isMounted) return;
-        
-        clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(() => {
-          setDrivers(prevDrivers => {
-            const updated = prevDrivers.map(driver => {
-              if (driver.user_id === payload.new.id) {
-                return {
-                  ...driver,
-                  full_name: payload.new.full_name,
-                  profile_photo_url: payload.new.profile_photo_url,
-                };
-              }
-              return driver;
-            });
-            
-            requestIdleCallback(() => {
-              if (isMounted) {
-                setStoredData("searchResults", updated);
-              }
-            });
-            
-            return updated;
-          });
-        }, 300);
-      }
-    );
-
-    return () => {
-      isMounted = false;
-      clearTimeout(updateTimeout);
-      cleanupDriver();
-      cleanupProfile();
-    };
-  }, [searchPerformed, drivers.length]);
-
-  // Sauvegarder l'état de recherche dans sessionStorage avec timestamp (OPTIMISÉ)
-  useEffect(() => {
-    // Batch toutes les écritures sessionStorage avec requestIdleCallback
-    const updates = [
-      () => setStoredData("searchMode", searchMode),
-      () => setStoredData("citySearch", citySearch),
-      () => cityCoordinates && setStoredData("cityCoordinates", cityCoordinates),
-      () => setStoredData("addressSearch", addressSearch),
-      () => addressCoordinates && setStoredData("addressCoordinates", addressCoordinates),
-      () => setStoredData("radiusCity", radiusCity[0]),
-      () => setStoredData("radiusAddress", radiusAddress[0]),
-      () => setStoredData("searchPerformed", searchPerformed)
-    ];
-
-    requestIdleCallback(() => {
-      updates.forEach(update => update());
-    });
-  }, [
-    searchMode,
-    citySearch,
-    cityCoordinates,
-    addressSearch,
-    addressCoordinates,
-    radiusCity,
-    radiusAddress,
-    searchPerformed
-  ]);
+  // Sauvegarder UNIQUEMENT au moment de la recherche (pas à chaque changement)
 
   const checkClientAccess = async () => {
     if (!user) {
@@ -329,6 +197,16 @@ const Chauffeurs = () => {
   const handleSearch = async () => {
     setLoading(true);
     setSearchPerformed(true);
+    
+    // Sauvegarder les paramètres de recherche
+    setStoredData("searchMode", searchMode);
+    setStoredData("citySearch", citySearch);
+    cityCoordinates && setStoredData("cityCoordinates", cityCoordinates);
+    setStoredData("addressSearch", addressSearch);
+    addressCoordinates && setStoredData("addressCoordinates", addressCoordinates);
+    setStoredData("radiusCity", radiusCity[0]);
+    setStoredData("radiusAddress", radiusAddress[0]);
+    setStoredData("searchPerformed", true);
 
     try {
       if (searchMode === "city" && citySearch.trim()) {
@@ -365,8 +243,9 @@ const Chauffeurs = () => {
         
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
+        resetPage(); // Reset à la page 1
         
-        // Sauvegarder les résultats dans sessionStorage avec timestamp
+        // Sauvegarder les résultats dans sessionStorage
         setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
@@ -408,8 +287,9 @@ const Chauffeurs = () => {
         
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
+        resetPage(); // Reset à la page 1
         
-        // Sauvegarder les résultats dans sessionStorage avec timestamp
+        // Sauvegarder les résultats dans sessionStorage
         setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
@@ -657,14 +537,34 @@ const Chauffeurs = () => {
               </Card>
             ) : (
               <>
-                <h3 className="text-2xl font-bold mb-6">
-                  {drivers.length} chauffeur{drivers.length > 1 ? "s" : ""} trouvé{drivers.length > 1 ? "s" : ""}
-                </h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold">
+                    {drivers.length} chauffeur{drivers.length > 1 ? "s" : ""} trouvé{drivers.length > 1 ? "s" : ""}
+                  </h3>
+                  {totalPages > 1 && (
+                    <p className="text-sm text-muted-foreground">
+                      Page {currentPage} sur {totalPages}
+                    </p>
+                  )}
+                </div>
+                
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {drivers.map((driver, index) => (
+                  {paginatedDrivers.map((driver, index) => (
                     <DriverCard key={driver.id} driver={driver} cardIndex={index} />
                   ))}
                 </div>
+                
+                {totalPages > 1 && (
+                  <div className="mt-8">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      itemsPerPage={20}
+                      totalItems={drivers.length}
+                      onPageChange={goToPage}
+                    />
+                  </div>
+                )}
               </>
             )}
           </>
