@@ -99,40 +99,49 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
   const fetchClients = async () => {
     try {
-      // Dual association query
+      // Optimisation: Sélectionner colonnes nécessaires uniquement
       const { data, error } = await supabase
         .from("clients")
         .select(`
-          *,
-          profiles:user_id(full_name, email, phone, profile_photo_url)
+          id,
+          user_id,
+          driver_id,
+          driver_ids,
+          is_exclusive,
+          created_at,
+          profiles!inner(full_name, email, phone, profile_photo_url)
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500); // Max 500 clients par driver
 
       if (error) {
         console.error("Error fetching clients:", error);
         throw error;
       }
 
-      console.log("Clients fetched:", data);
+      console.log("Clients fetched:", data?.length || 0);
 
-      // Get courses count for each client
-      const clientsWithCourses = await Promise.all(
-        (data || []).map(async (client) => {
-          const { count } = await supabase
-            .from("courses")
-            .select("*", { count: "exact", head: true })
-            .eq("client_id", client.id)
-            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
+      // Optimisation: Batch count queries
+      const clientIds = (data || []).map(c => c.id);
+      const { data: coursesCounts } = await supabase
+        .from("courses")
+        .select("client_id")
+        .in("client_id", clientIds)
+        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
 
-          return {
-            ...client,
-            courses_count: count || 0,
-          };
-        })
-      );
+      // Map counts
+      const countsMap = new Map<string, number>();
+      coursesCounts?.forEach(c => {
+        countsMap.set(c.client_id, (countsMap.get(c.client_id) || 0) + 1);
+      });
 
-      console.log("Clients with courses count:", clientsWithCourses);
+      const clientsWithCourses = (data || []).map(client => ({
+        ...client,
+        courses_count: countsMap.get(client.id) || 0,
+      }));
+
+      console.log("Clients with courses:", clientsWithCourses.length);
       setClients(clientsWithCourses);
       setFilteredClients(clientsWithCourses);
     } catch (error: any) {

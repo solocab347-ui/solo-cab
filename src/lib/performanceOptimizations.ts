@@ -3,17 +3,23 @@
  * Utilitaires pour éviter les gels d'interface et améliorer la réactivité
  */
 
-// Debounce function pour limiter les appels fréquents
+// Debounce function optimisé pour scalabilité (500ms standard)
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number = 500 // Défaut 500ms pour recherches
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
+  let lastArgs: Parameters<T> | null = null;
   
   return function executedFunction(...args: Parameters<T>) {
+    lastArgs = args;
+    
     const later = () => {
       clearTimeout(timeout);
-      func(...args);
+      if (lastArgs) {
+        func(...lastArgs);
+        lastArgs = null;
+      }
     };
     
     clearTimeout(timeout);

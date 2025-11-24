@@ -52,17 +52,24 @@ const AdminClientsManagement = () => {
 
   const fetchClients = async () => {
     try {
+      // Optimisation: Sélectionner uniquement les colonnes nécessaires
       const { data, error } = await supabase
         .from("clients")
         .select(
           `
-          *,
-          profiles:profiles!inner(full_name, email, phone, profile_photo_url),
-          drivers:drivers(id, profiles:profiles!inner(full_name)),
+          id,
+          user_id,
+          driver_id,
+          driver_ids,
+          is_exclusive,
+          created_at,
+          profiles!inner(full_name, email, phone, profile_photo_url),
+          drivers:drivers(id, profiles!inner(full_name)),
           courses:courses(id)
         `
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10000); // Support 500k clients via pagination
 
       if (error) throw error;
 

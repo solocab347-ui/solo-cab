@@ -8,28 +8,28 @@ import { QueryClient, QueryFunction } from '@tanstack/react-query';
 export const optimizedQueryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Augmenter le stale time pour réduire les refetch
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      // Cache ultra-long pour scalabilité (1000 drivers)
+      staleTime: 5 * 60 * 1000, // 5 minutes - données considérées fraîches
+      gcTime: 30 * 60 * 1000, // 30 minutes - garde en cache pour navigation rapide
       
-      // Cache plus long
-      gcTime: 10 * 60 * 1000, // 10 minutes (anciennement cacheTime)
-      
-      // Désactiver refetch automatique excessif
+      // Désactiver refetch automatique pour économiser la bande passante
       refetchOnWindowFocus: false,
       refetchOnMount: false,
-      refetchOnReconnect: true,
+      refetchOnReconnect: false, // Désactivé pour éviter requêtes automatiques
       
-      // Retry avec backoff
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // Retry avec backoff exponentiel
+      retry: 1, // Réduit à 1 pour scalabilité
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
       
-      // Éviter les erreurs silencieuses
+      // Ne pas jeter d'erreurs automatiquement
       throwOnError: false,
+      
+      // Keepalive des queries inactives
+      structuralSharing: true, // Optimise mémoire en réutilisant références
     },
     mutations: {
-      // Retry pour les mutations critiques
-      retry: 1,
-      retryDelay: 1000,
+      retry: 0, // Pas de retry automatique sur mutations
+      retryDelay: 500,
     },
   },
 });
