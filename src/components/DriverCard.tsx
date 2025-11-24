@@ -68,11 +68,15 @@ export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
         )}
 
       {/* Large Profile Photo */}
-        {driver.profile_photo_url && driver.profile_photo_url.trim() !== '' ? (
+        {driver.profile_photo_url ? (
           <img
             src={driver.profile_photo_url}
             alt={name}
             className="w-full h-full object-cover object-[center_20%]"
+            onError={(e) => {
+              console.error("Error loading driver photo");
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-8xl font-bold text-primary">
