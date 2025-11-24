@@ -131,39 +131,36 @@ const ChauffeurProfile = () => {
     try {
       setLoading(true);
 
-      // Get driver data
+      // Get driver with profile - use JOIN to bypass RLS issues
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
-        .select("*")
+        .select(`
+          *,
+          profiles!drivers_user_id_fkey (
+            full_name,
+            email,
+            phone,
+            profile_photo_url
+          )
+        `)
         .eq("id", driverId)
         .eq("public_profile_enabled", true)
         .eq("status", "validated")
         .maybeSingle();
 
       if (driverError) {
-        console.error("Driver error:", driverError);
+        console.error("❌ Driver error:", driverError);
         throw driverError;
       }
       
       if (!driverData) {
-        console.error("No driver data found");
+        console.error("❌ No driver data found");
         throw new Error("Chauffeur non trouvé");
       }
 
-      // Get profile data separately to ensure we get the photo
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, email, phone, profile_photo_url")
-        .eq("id", driverData.user_id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile error:", profileError);
-      }
-
       console.log("✅ Driver data loaded:", driverData);
-      console.log("✅ Profile data loaded:", profileData);
-      console.log("📷 Profile photo URL:", profileData?.profile_photo_url);
+      console.log("✅ Profile nested data:", driverData.profiles);
+      console.log("📷 Profile photo URL:", driverData.profiles?.profile_photo_url);
 
       // Calculate real statistics from courses
       const { data: completedCourses, error: coursesError } = await supabase
@@ -187,10 +184,10 @@ const ChauffeurProfile = () => {
       // Flatten the profile data avec toutes les informations
       const flattenedDriver = {
         ...driverData,
-        full_name: profileData?.full_name || "Chauffeur",
-        email: profileData?.email || "",
-        phone: profileData?.phone || "",
-        profile_photo_url: profileData?.profile_photo_url || null,
+        full_name: driverData.profiles?.full_name || "Chauffeur",
+        email: driverData.profiles?.email || "",
+        phone: driverData.profiles?.phone || "",
+        profile_photo_url: driverData.profiles?.profile_photo_url || null,
         rating: averageRating,
         total_rides: totalRides,
       } as DriverProfile;
