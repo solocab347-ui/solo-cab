@@ -227,7 +227,7 @@ const ChauffeurProfile = () => {
                 {/* Large centered profile photo */}
                 <div className="relative">
                   <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20">
-                    {driver.profile_photo_url ? (
+                    {driver.profile_photo_url && driver.profile_photo_url.trim() !== '' ? (
                       <img
                         src={driver.profile_photo_url}
                         alt={driver.full_name}
@@ -280,17 +280,28 @@ const ChauffeurProfile = () => {
                     )}
                   </div>
                   
-                  {(driver.vehicle_brand || driver.vehicle_model) && (
-                    <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full inline-flex mx-auto">
-                      <Car className="w-6 h-6 text-primary" />
-                      <span className="font-semibold text-lg">
-                        {driver.vehicle_brand && `${driver.vehicle_brand} `}
-                        {driver.vehicle_model}
-                        {driver.vehicle_year && ` (${driver.vehicle_year})`}
-                        {driver.vehicle_color && ` · ${driver.vehicle_color}`}
-                      </span>
-                    </div>
-                  )}
+                  {(() => {
+                    const hasValidBrand = driver.vehicle_brand && 
+                      !driver.vehicle_brand.toLowerCase().includes('compléter');
+                    const hasValidModel = driver.vehicle_model && 
+                      !driver.vehicle_model.toLowerCase().includes('compléter');
+                    const hasValidColor = driver.vehicle_color && 
+                      !driver.vehicle_color.toLowerCase().includes('compléter');
+                    
+                    if (!hasValidBrand && !hasValidModel) return null;
+                    
+                    return (
+                      <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full inline-flex mx-auto">
+                        <Car className="w-6 h-6 text-primary" />
+                        <span className="font-semibold text-lg">
+                          {hasValidBrand && `${driver.vehicle_brand} `}
+                          {hasValidModel && driver.vehicle_model}
+                          {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                          {hasValidColor && ` · ${driver.vehicle_color}`}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
             </div>
 

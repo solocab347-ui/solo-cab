@@ -68,7 +68,7 @@ export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
         )}
 
       {/* Large Profile Photo */}
-        {driver.profile_photo_url ? (
+        {driver.profile_photo_url && driver.profile_photo_url.trim() !== '' ? (
           <img
             src={driver.profile_photo_url}
             alt={name}
@@ -117,18 +117,27 @@ export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
             </div>
           )}
 
-          {/* Vehicle Info - Only show if info exists and not placeholder */}
-          {(driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter") || 
-           (driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter") ? (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Car className="w-4 h-4" />
-              <span className="text-sm">
-                {driver.vehicle_brand && driver.vehicle_brand !== "À COMPLÉTER" && driver.vehicle_brand !== "à compléter" && `${driver.vehicle_brand} `}
-                {driver.vehicle_model && driver.vehicle_model !== "À COMPLÉTER" && driver.vehicle_model !== "à compléter" && driver.vehicle_model}
-                {driver.vehicle_year && ` (${driver.vehicle_year})`}
-              </span>
-            </div>
-          ) : null}
+          {/* Vehicle Info - Only show if valid info exists */}
+          {(() => {
+            const hasValidBrand = driver.vehicle_brand && 
+              !driver.vehicle_brand.toLowerCase().includes('compléter');
+            const hasValidModel = driver.vehicle_model && 
+              !driver.vehicle_model.toLowerCase().includes('compléter');
+            
+            if (!hasValidBrand && !hasValidModel) return null;
+            
+            return (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Car className="w-4 h-4" />
+                <span className="text-sm">
+                  {hasValidBrand && `${driver.vehicle_brand} `}
+                  {hasValidModel && driver.vehicle_model}
+                  {driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter') && ` · ${driver.vehicle_color}`}
+                  {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Working Sectors */}
           {driver.working_sectors && driver.working_sectors.length > 0 && (
