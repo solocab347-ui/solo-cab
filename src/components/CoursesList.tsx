@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
+import CourseReportDialog from "@/components/CourseReportDialog";
 import { cn } from "@/lib/utils";
 
 interface CoursesListProps {
@@ -48,6 +49,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [maxAmount, setMaxAmount] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // État pour le signalement
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [courseToReport, setCourseToReport] = useState<any>(null);
   
   // SYSTÈME DE FIGEMENT: Capture l'ordre initial des courses pour maintenir leur position
   const [confirmedCoursesOrder, setConfirmedCoursesOrder] = useState<Map<string, number>>(new Map());
@@ -1479,6 +1484,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Facebook
                     </Button>
                   </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToReport(course);
+                      setReportDialogOpen(true);
+                    }}
+                    className="w-full border-warning text-warning hover:bg-warning/10"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Signaler un problème
+                  </Button>
                 </div>
               </Card>
             ))
@@ -1625,6 +1643,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Facebook
                     </Button>
                   </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToReport(course);
+                      setReportDialogOpen(true);
+                    }}
+                    className="w-full border-warning text-warning hover:bg-warning/10"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Signaler un problème
+                  </Button>
                 </div>
               </Card>
             ))
@@ -1757,6 +1788,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Facebook
                     </Button>
                   </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToReport(course);
+                      setReportDialogOpen(true);
+                    }}
+                    className="w-full border-warning text-warning hover:bg-warning/10"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Signaler un problème
+                  </Button>
                 </div>
               </Card>
             ))
@@ -1865,6 +1909,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Facebook
                     </Button>
                   </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToReport(course);
+                      setReportDialogOpen(true);
+                    }}
+                    className="w-full border-warning text-warning hover:bg-warning/10"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Signaler un problème
+                  </Button>
                 </div>
               </Card>
             ))
@@ -1950,6 +2007,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Report Dialog */}
+      {courseToReport && (
+        <CourseReportDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          courseId={courseToReport.id}
+          reportedAgainstUserId={courseToReport.clients?.user_id}
+          isDriver={true}
+          currentUserId={user?.id || ""}
+        />
+      )}
     </div>
   );
 };

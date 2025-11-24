@@ -18,7 +18,8 @@ import {
   Download,
   Mail,
   Share2,
-  Phone
+  Phone,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import jsPDF from "jspdf";
 import { CourseRating } from "@/components/CourseRating";
+import CourseReportDialog from "@/components/CourseReportDialog";
 
 interface ClientCoursesListProps {
   clientId: string;
@@ -51,11 +53,24 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
+  
+  // État pour le signalement
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [courseToReport, setCourseToReport] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
     fetchCourses();
     setupRealtimeSubscription();
   }, [clientId]);
+  
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    getCurrentUser();
+  }, []);
 
   const fetchCourses = async () => {
     try {
@@ -646,6 +661,20 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           </div>
         )}
 
+        {/* Bouton de signalement */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setCourseToReport(course);
+            setReportDialogOpen(true);
+          }}
+          className="w-full mt-3 border-warning text-warning hover:bg-warning/10"
+        >
+          <AlertTriangle className="w-4 h-4 mr-2" />
+          Signaler un problème
+        </Button>
+
         {/* Afficher facture si disponible */}
         {facture && (
           <div className="p-3 bg-green-500/10 rounded-lg mb-4">
@@ -846,6 +875,18 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report Dialog */}
+      {courseToReport && (
+        <CourseReportDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          courseId={courseToReport.id}
+          reportedAgainstUserId={courseToReport.drivers?.user_id}
+          isDriver={false}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };
