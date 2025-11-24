@@ -27,9 +27,15 @@ class SubscriptionManager {
     },
     callback: (payload: any) => void
   ): () => void {
+    // Limite de sécurité: max 10 channels simultanés
+    if (this.channels.size >= 10) {
+      console.warn(`⚠️ Limite de channels atteinte (${this.channels.size}), nettoyage forcé`);
+      const oldestChannel = Array.from(this.channels.keys())[0];
+      this.unsubscribe(oldestChannel);
+    }
+
     // Réutiliser channel existant si possible
     if (this.channels.has(channelName) && this.isActive(channelName)) {
-      console.log(`♻️ Réutilisation du channel: ${channelName}`);
       return this.cleanupCallbacks.get(channelName)!;
     }
 
@@ -63,9 +69,8 @@ class SubscriptionManager {
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
           console.error(`❌ Erreur channel: ${channelName}`);
-          this.scheduleReconnect(channelName, config, callback);
-        } else if (status === 'SUBSCRIBED') {
-          console.log(`✅ Subscribed: ${channelName}`);
+          // Pas de reconnexion auto pour éviter boucles infinies
+          this.unsubscribe(channelName);
         }
       });
 
@@ -78,25 +83,6 @@ class SubscriptionManager {
     return cleanup;
   }
 
-  /**
-   * Reconnexion automatique en cas d'erreur
-   */
-  private scheduleReconnect(
-    channelName: string,
-    config: any,
-    callback: (payload: any) => void
-  ): void {
-    // Éviter reconnexions multiples
-    if (this.reconnectTimers.has(channelName)) return;
-
-    const timer = setTimeout(() => {
-      console.log(`🔄 Reconnexion tentée: ${channelName}`);
-      this.reconnectTimers.delete(channelName);
-      this.subscribe(channelName, config, callback);
-    }, 5000); // Attendre 5s avant reconnexion
-
-    this.reconnectTimers.set(channelName, timer);
-  }
 
   /**
    * Unsubscribe from a specific channel

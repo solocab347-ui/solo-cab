@@ -26,25 +26,37 @@ export function useOptimizedSubscription<T>(
   }, [callback]);
 
   useEffect(() => {
+    // Skip si pas de channelName ou table
+    if (!channelName || !config.table) {
+      return;
+    }
+
     // Cleanup previous subscription
     if (cleanupRef.current) {
       cleanupRef.current();
+      cleanupRef.current = null;
     }
 
-    // Create new subscription with debouncing (300ms par défaut)
+    // Create new subscription avec timeout de sécurité
+    let mounted = true;
     const cleanup = subscriptionManager.subscribe(
       channelName,
       {
         ...config,
-        debounceMs: config.debounceMs ?? 300 // Debounce automatique
+        debounceMs: config.debounceMs ?? 500 // Debounce plus long pour stabilité
       },
-      (payload) => callbackRef.current(payload)
+      (payload) => {
+        if (mounted) {
+          callbackRef.current(payload);
+        }
+      }
     );
 
     cleanupRef.current = cleanup;
 
     // Cleanup on unmount
     return () => {
+      mounted = false;
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
@@ -61,8 +73,11 @@ export function useDriverSubscription(
   driverId: string | undefined,
   table: string,
   callback: (payload: any) => void,
-  debounceMs: number = 500
+  debounceMs: number = 1000 // Debounce plus long pour stabilité
 ) {
+  // Skip si pas de driverId
+  if (!driverId) return;
+
   useOptimizedSubscription(
     `driver:${driverId}:${table}`,
     {
@@ -82,8 +97,11 @@ export function useClientSubscription(
   clientId: string | undefined,
   table: string,
   callback: (payload: any) => void,
-  debounceMs: number = 500
+  debounceMs: number = 1000 // Debounce plus long pour stabilité
 ) {
+  // Skip si pas de clientId
+  if (!clientId) return;
+
   useOptimizedSubscription(
     `client:${clientId}:${table}`,
     {
