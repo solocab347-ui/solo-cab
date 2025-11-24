@@ -9,6 +9,7 @@ import { DriverCard } from "@/components/DriverCard";
 import { Car, Search, MapPin, AlertTriangle, Navigation, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -161,90 +162,94 @@ const Chauffeurs = () => {
     };
   }, [user]);
 
-  // Écouter les mises à jour en temps réel des profils de chauffeurs (OPTIMISÉ)
+  // Écouter les mises à jour en temps réel OPTIMISÉ avec subscriptionManager
   useEffect(() => {
     if (!searchPerformed || drivers.length === 0) return;
 
+    let isMounted = true;
     let updateTimeout: NodeJS.Timeout;
     
-    const channel = supabase
-      .channel('driver-profile-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'drivers'
-        },
-        (payload) => {
-          // Débounce les mises à jour pour éviter trop de re-renders
-          clearTimeout(updateTimeout);
-          updateTimeout = setTimeout(() => {
-            console.log('🔄 Mise à jour chauffeur:', payload.new.id);
-            
-            setDrivers(prevDrivers => {
-              const updated = prevDrivers.map(driver => {
-                if (driver.id === payload.new.id) {
-                  return {
-                    ...driver,
-                    ...payload.new,
-                    full_name: driver.full_name,
-                    profile_photo_url: driver.profile_photo_url,
-                  };
-                }
-                return driver;
-              });
-              
-              // Mise à jour en lot dans sessionStorage
-              requestIdleCallback(() => {
-                setStoredData("searchResults", updated);
-              });
-              
-              return updated;
+    // Utiliser subscriptionManager pour éviter fuites
+    const cleanupDriver = subscriptionManager.subscribe(
+      'chauffeurs-drivers-updates',
+      {
+        table: 'drivers',
+        event: 'UPDATE',
+        debounceMs: 1000 // Debounce long pour stabilité
+      },
+      (payload) => {
+        if (!isMounted) return;
+        
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          setDrivers(prevDrivers => {
+            const updated = prevDrivers.map(driver => {
+              if (driver.id === payload.new.id) {
+                return {
+                  ...driver,
+                  ...payload.new,
+                  full_name: driver.full_name,
+                  profile_photo_url: driver.profile_photo_url,
+                };
+              }
+              return driver;
             });
-          }, 500);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles'
-        },
-        (payload) => {
-          clearTimeout(updateTimeout);
-          updateTimeout = setTimeout(() => {
-            console.log('🔄 Mise à jour profil:', payload.new.id);
             
-            setDrivers(prevDrivers => {
-              const updated = prevDrivers.map(driver => {
-                if (driver.user_id === payload.new.id) {
-                  return {
-                    ...driver,
-                    full_name: payload.new.full_name,
-                    profile_photo_url: payload.new.profile_photo_url,
-                  };
-                }
-                return driver;
-              });
-              
-              requestIdleCallback(() => {
+            requestIdleCallback(() => {
+              if (isMounted) {
                 setStoredData("searchResults", updated);
-              });
-              
-              return updated;
+              }
             });
-          }, 500);
-        }
-      )
-      .subscribe();
+            
+            return updated;
+          });
+        }, 300);
+      }
+    );
+
+    const cleanupProfile = subscriptionManager.subscribe(
+      'chauffeurs-profiles-updates',
+      {
+        table: 'profiles',
+        event: 'UPDATE',
+        debounceMs: 1000
+      },
+      (payload) => {
+        if (!isMounted) return;
+        
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          setDrivers(prevDrivers => {
+            const updated = prevDrivers.map(driver => {
+              if (driver.user_id === payload.new.id) {
+                return {
+                  ...driver,
+                  full_name: payload.new.full_name,
+                  profile_photo_url: payload.new.profile_photo_url,
+                };
+              }
+              return driver;
+            });
+            
+            requestIdleCallback(() => {
+              if (isMounted) {
+                setStoredData("searchResults", updated);
+              }
+            });
+            
+            return updated;
+          });
+        }, 300);
+      }
+    );
 
     return () => {
+      isMounted = false;
       clearTimeout(updateTimeout);
-      supabase.removeChannel(channel);
+      cleanupDriver();
+      cleanupProfile();
     };
-  }, [searchPerformed]);
+  }, [searchPerformed, drivers.length]);
 
   // Sauvegarder l'état de recherche dans sessionStorage avec timestamp (OPTIMISÉ)
   useEffect(() => {

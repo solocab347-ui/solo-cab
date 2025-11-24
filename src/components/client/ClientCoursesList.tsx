@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { 
   MapPin, 
@@ -119,23 +120,18 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   };
 
   const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel("client-courses-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "courses",
-          filter: `client_id=eq.${clientId}`,
-        },
-        () => fetchCourses()
-      )
-      .subscribe();
+    if (!clientId) return () => {};
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscriptionManager.subscribe(
+      `courses-client-${clientId}`,
+      {
+        table: "courses",
+        event: "*",
+        filter: `client_id=eq.${clientId}`,
+        debounceMs: 1000
+      },
+      () => fetchCourses()
+    );
   };
 
   const handleCancelConfirm = async () => {

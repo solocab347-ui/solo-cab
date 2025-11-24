@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle } from "lucide-react";
@@ -149,25 +150,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   };
 
   const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel("courses_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "courses",
-          filter: `driver_id=eq.${driverId}`,
-        },
-        () => {
-          fetchCourses();
-        }
-      )
-      .subscribe();
+    if (!driverId) return () => {};
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscriptionManager.subscribe(
+      `courses-driver-${driverId}`,
+      {
+        table: "courses",
+        event: "*",
+        filter: `driver_id=eq.${driverId}`,
+        debounceMs: 1000
+      },
+      () => {
+        fetchCourses();
+      }
+    );
   };
 
   const handleAcceptCourse = async (courseId: string) => {
