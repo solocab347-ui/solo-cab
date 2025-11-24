@@ -25,7 +25,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchUserRole = async (userId: string) => {
+  // Cache pour éviter les requêtes dupliquées
+  const roleCache = new Map<string, { roles: string[]; primaryRole: "admin" | "driver" | "client" | null; timestamp: number }>();
+  const CACHE_DURATION = 30000; // 30 secondes
+
+  const fetchUserRole = async (userId: string): Promise<"admin" | "driver" | "client" | null> => {
+    // Vérifier le cache d'abord
+    const cached = roleCache.get(userId);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setUserRoles(cached.roles);
+      setUserRole(cached.primaryRole);
+      return cached.primaryRole;
+    }
+
     try {
       const { data, error } = await supabase
         .from("user_roles")
@@ -37,14 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const roles = data?.map((r) => r.role) || [];
       
-      if (roles.length === 0) {
-        console.warn("⚠️ No roles found for user:", userId);
-      }
-      
-      setUserRoles(roles);
-      
       // Set primary role (priority: admin > driver > client)
-      const primaryRole = roles.includes("admin") 
+      const primaryRole: "admin" | "driver" | "client" | null = roles.includes("admin") 
         ? "admin" 
         : roles.includes("driver")
         ? "driver"
@@ -52,6 +58,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? "client"
         : null;
       
+      // Mettre en cache
+      roleCache.set(userId, { roles, primaryRole, timestamp: Date.now() });
+      
+      setUserRoles(roles);
       setUserRole(primaryRole);
       return primaryRole;
     } catch (error) {
@@ -64,19 +74,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let fetchingRole = false;
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
+        if (!isMounted || fetchingRole) return;
         
         console.log("Auth state change:", event);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch role immediately without setTimeout
+          fetchingRole = true;
           await fetchUserRole(session.user.id);
+          fetchingRole = false;
         } else {
           setUserRole(null);
           setUserRoles([]);
@@ -84,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
+    // Check for existing session - UNE SEULE FOIS
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
       
@@ -92,7 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        fetchingRole = true;
         await fetchUserRole(session.user.id);
+        fetchingRole = false;
       }
       
       setLoading(false);
@@ -178,7 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!data.user) throw new Error("Erreur de connexion");
 
       // Récupérer le rôle avec timeout de sécurité
-      let role: string | null = null;
+      let role: "admin" | "driver" | "client" | null = null;
       try {
         const rolePromise = fetchUserRole(data.user.id);
         const timeoutPromise = new Promise<null>((_, reject) => 
@@ -194,7 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", data.user.id)
           .limit(1)
           .single();
-        role = roleData?.role || null;
+        role = (roleData?.role as "admin" | "driver" | "client") || null;
       }
       
       toast.success("Connexion réussie !");
