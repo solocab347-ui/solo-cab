@@ -185,12 +185,37 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
   }
 
-  /* Assurer que les overlays ne bloquent jamais le scroll de manière permanente */
+  /* Optimisations de performance critiques */
+  * {
+    /* Hardware acceleration pour les animations */
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Optimisation des images */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  /* Prévention du flickering et pixelisation */
+  body, html {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+  }
+
+  /* Assurer que les overlays ne bloquent jamais le scroll */
   body[data-scroll-locked] {
     overflow: hidden !important;
   }
 
-  /* Hiérarchie z-index standardisée pour éviter les conflits */
+  /* Hiérarchie z-index standardisée */
   [data-radix-portal] {
     z-index: 9998 !important;
   }
@@ -204,9 +229,15 @@ All colors MUST be HSL.
     pointer-events: auto !important;
   }
 
-  /* Drop shadow glow effect pour améliorer la visibilité */
+  /* Drop shadow glow effect */
   .drop-shadow-glow {
     filter: drop-shadow(0 0 8px currentColor);
+  }
+
+  /* Forcer le rendu GPU pour les cartes et composants lourds */
+  .card, [role="dialog"], [data-radix-portal] {
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
   }
 }
 
