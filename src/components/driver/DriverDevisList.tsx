@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, MapPin, Calendar, Euro } from "lucide-react";
+import { FileText, Search, Download, MapPin, Calendar, Euro, Share2, MessageSquare, Mail, Send, Facebook } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
+import { generateDevisShareMessage } from "@/lib/courseMessageGenerator";
 
 interface DriverDevisListProps {
   driverId: string;
@@ -609,11 +611,11 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="text-xs text-white">
                   Créé le {format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
@@ -632,6 +634,86 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                     <Download className="w-4 h-4 mr-2" />
                     PDF Client
                   </Button>
+                  
+                  {/* Social Share Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                      >
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Partager
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const message = generateDevisShareMessage(
+                            devis,
+                            devis.courses,
+                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
+                            devis.clients,
+                            true // isDriver
+                          );
+                          window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
+                        }}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        SMS
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const message = generateDevisShareMessage(
+                            devis,
+                            devis.courses,
+                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
+                            devis.clients,
+                            true
+                          );
+                          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                        }}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Send className="w-4 h-4" />
+                        WhatsApp
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const message = generateDevisShareMessage(
+                            devis,
+                            devis.courses,
+                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
+                            devis.clients,
+                            true
+                          );
+                          window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodeURIComponent(message)}`, '_blank');
+                        }}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const message = generateDevisShareMessage(
+                            devis,
+                            devis.courses,
+                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
+                            devis.clients,
+                            true
+                          );
+                          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(message)}`, '_blank');
+                        }}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Facebook className="w-4 h-4" />
+                        Facebook
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </Card>
