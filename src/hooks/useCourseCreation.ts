@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { validateCourseData, sanitizeNotes, sanitizePromoCode } from "@/lib/courseValidation";
 import { calculateRoute } from "@/lib/geocoding";
 
-interface CourseCreationParams {
+export interface CourseCreationParams {
   userId: string;
   clientId?: string;
   driverId: string;
@@ -19,6 +19,7 @@ interface CourseCreationParams {
   promoCode?: string;
   courseType?: "classic" | "hourly";
   durationHours?: string;
+  paymentMethodPreference?: string;
 }
 
 /**
@@ -44,6 +45,7 @@ export function useCourseCreation() {
       promoCode,
       courseType = "classic",
       durationHours,
+      paymentMethodPreference,
     } = params;
 
     setLoading(true);
@@ -183,6 +185,7 @@ export function useCourseCreation() {
           promo_code: sanitizedPromoCode,
           status: "pending",
           created_by_user_id: userId,
+          payment_method_preference: paymentMethodPreference || "carte",
         })
         .select()
         .single();

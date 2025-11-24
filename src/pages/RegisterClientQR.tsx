@@ -251,7 +251,7 @@ const RegisterClientQR = () => {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Prix fixés d'avance et transparents</span>
+                <span>Prix fixés d'avance sans surprises</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
@@ -267,15 +267,7 @@ const RegisterClientQR = () => {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Priorité sur les réservations</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Historique complet de vos courses</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Paiement sécurisé en ligne</span>
+                <span>Suivi en temps réel de vos courses</span>
               </div>
             </div>
           </div>

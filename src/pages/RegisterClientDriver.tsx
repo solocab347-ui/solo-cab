@@ -260,11 +260,7 @@ const RegisterClientDriver = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700 dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Réservation facile en quelques clics</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Prix fixés d'avance et transparents</span>
+                <span>Prix fixés d'avance sans surprises</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
@@ -276,19 +272,15 @@ const RegisterClientDriver = () => {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Réservation facile en quelques clics</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
                 <span>Accès à plusieurs chauffeurs</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Historique complet de vos courses</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Vitrine publique pour découvrir</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Paiement sécurisé en ligne</span>
+                <span>Suivi en temps réel</span>
               </div>
             </div>
           </div>
