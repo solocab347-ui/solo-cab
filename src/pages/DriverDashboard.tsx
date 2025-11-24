@@ -172,13 +172,13 @@ const DriverDashboard = () => {
   };
 
   const handleTogglePublicProfile = async (enabled: boolean) => {
-    if (!driverProfile?.driver?.id) return;
+    if (!driverProfile?.driver?.id || !updateProfile) return;
     setPublicProfileEnabled(enabled);
     updateProfile({ public_profile_enabled: enabled });
   };
 
   const handleUpdateProfile = async () => {
-    if (!driverProfile?.driver?.id) return;
+    if (!driverProfile?.driver?.id || !updateProfile) return;
 
     setLoading(true);
     try {
