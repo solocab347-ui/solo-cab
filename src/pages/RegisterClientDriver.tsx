@@ -196,76 +196,88 @@ const RegisterClientDriver = () => {
   const driver = driverInfo;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card className="p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <Card className="p-8 shadow-2xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
           <div className="text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-2 mb-6">
-              <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-                <Car className="w-7 h-7 text-primary" />
+            <Link to="/" className="inline-flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
+              <div className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+                <Car className="w-8 h-8 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
+              <span className="text-3xl font-bold text-slate-900 dark:text-white">
                 SoloCab
               </span>
             </Link>
-            <h1 className="text-3xl font-bold mb-2">Créer mon compte</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-4xl font-bold mb-3 text-slate-900 dark:text-white">Créer mon compte</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
               Inscrivez-vous pour réserver avec ce chauffeur
             </p>
           </div>
 
-          <div className="bg-secondary rounded-lg p-6 mb-8">
-            <div className="flex flex-col items-center text-center gap-4 mb-4">
+          <div className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-850 rounded-2xl p-6 mb-8 border border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col items-center text-center gap-6">
               {driver.profiles?.profile_photo_url ? (
                 <img
                   src={driver.profiles.profile_photo_url}
                   alt={driver.profiles.full_name}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                  className="w-28 h-28 rounded-2xl object-cover shadow-lg border-4 border-white dark:border-slate-700"
                 />
               ) : (
-                <div className="w-24 h-24 bg-gradient-dark rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-                  <Car className="w-12 h-12 text-primary-foreground" />
+                <div className="w-28 h-28 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white dark:border-slate-700">
+                  <Car className="w-14 h-14 text-white" />
                 </div>
               )}
               <div>
-                <h3 className="text-2xl font-bold mb-1">{driver.profiles?.full_name}</h3>
+                <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">{driver.profiles?.full_name}</h3>
                 {driver.company_name && (
-                  <p className="text-sm text-muted-foreground mb-2">{driver.company_name}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{driver.company_name}</p>
+                )}
+                {(driver.vehicle_brand || driver.vehicle_model) && (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {driver.vehicle_brand && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_brand}</Badge>
+                    )}
+                    {driver.vehicle_model && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
+                    )}
+                    {driver.vehicle_color && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
+                    )}
+                    {driver.vehicle_year && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_year}</Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
-            {(driver.vehicle_brand || driver.vehicle_model) && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-muted-foreground">Véhicule</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {driver.vehicle_brand && (
-                    <Badge variant="outline">{driver.vehicle_brand}</Badge>
-                  )}
-                  {driver.vehicle_model && (
-                    <Badge variant="outline">{driver.vehicle_model}</Badge>
-                  )}
-                  {driver.vehicle_color && (
-                    <Badge variant="outline">{driver.vehicle_color}</Badge>
-                  )}
-                  {driver.vehicle_year && (
-                    <Badge variant="outline">{driver.vehicle_year}</Badge>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
-          <div className="bg-accent/50 rounded-lg p-6 mb-8 border border-border">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-premium" />
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-2xl p-6 mb-8 border border-blue-200 dark:border-blue-800">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+              <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               Client Libre - En vous inscrivant
             </h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>✓ Réservez facilement des courses avec ce chauffeur</li>
-              <li>✓ Vous pouvez aussi réserver avec d'autres chauffeurs</li>
-              <li>✓ Suivez l'historique de vos trajets</li>
-              <li>✓ Gérez vos devis et factures</li>
-              <li>✓ Accès à la vitrine publique pour découvrir plus de chauffeurs</li>
+            <ul className="space-y-3 text-slate-700 dark:text-slate-300">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Réservez facilement des courses avec ce chauffeur</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Vous pouvez aussi réserver avec d'autres chauffeurs</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Suivez l'historique de vos trajets</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Gérez vos devis et factures</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Accès à la vitrine publique pour découvrir plus de chauffeurs</span>
+              </li>
             </ul>
           </div>
 
@@ -279,7 +291,7 @@ const RegisterClientDriver = () => {
               <Button
                 onClick={handleRegister}
                 disabled={registering}
-                className="w-full bg-gradient-premium"
+                className="w-full bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-800 hover:to-slate-950 text-white shadow-lg"
                 size="lg"
               >
                 {registering ? (
@@ -372,7 +384,7 @@ const RegisterClientDriver = () => {
               <Button
                 type="submit"
                 disabled={registering}
-                className="w-full bg-gradient-premium"
+                className="w-full bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-800 hover:to-slate-950 text-white shadow-lg"
                 size="lg"
               >
                 {registering ? (
@@ -388,9 +400,9 @@ const RegisterClientDriver = () => {
           )}
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               Vous avez déjà un compte ?{" "}
-              <Link to="/login" className="text-premium hover:underline">
+              <Link to="/login" className="text-slate-900 dark:text-white font-semibold hover:underline">
                 Se connecter
               </Link>
             </p>

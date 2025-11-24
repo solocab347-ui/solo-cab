@@ -76,7 +76,8 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         .from("clients")
         .select(`
           id,
-          profiles:user_id (
+          user_id,
+          profiles!clients_user_id_fkey (
             full_name,
             email
           )
