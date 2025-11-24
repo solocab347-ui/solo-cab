@@ -11,6 +11,7 @@ import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { NavigationHeader } from "@/components/NavigationHeader";
 import { Car, MapPin, Calendar, Users, ArrowLeft, Tag } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
@@ -281,16 +282,13 @@ const CreateCourse = () => {
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour
-        </Button>
+        <NavigationHeader 
+          showBack={true}
+          showHome={true}
+          homeRoute="/client-dashboard"
+        />
 
-        <Card className="p-8 bg-card border-primary/10">
+        <Card className="p-8 bg-card border-primary/10 mt-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shadow-lg">
               <Car className="w-6 h-6 text-primary-foreground" />

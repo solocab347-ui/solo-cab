@@ -20,6 +20,7 @@ import {
   Menu
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import { NavigationHeader } from "@/components/NavigationHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -381,14 +382,25 @@ const ClientDashboard = () => {
         <header className="border-b border-border bg-card sticky top-0 z-10">
           <div className="px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-2">
             {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden flex-shrink-0"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden flex-shrink-0"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              {activeTab !== "accueil" && (
+                <NavigationHeader 
+                  showBack={false}
+                  showHome={true}
+                  homeRoute="/client-dashboard"
+                  onBack={() => handleTabChange("accueil")}
+                  className="hidden sm:flex"
+                />
+              )}
+            </div>
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2 truncate">
