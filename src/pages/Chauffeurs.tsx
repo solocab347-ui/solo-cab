@@ -122,6 +122,27 @@ const Chauffeurs = () => {
     }
   }, []);
 
+  // Relancer automatiquement la recherche quand on revient sur la page avec des paramètres enregistrés
+  useEffect(() => {
+    const autoRefreshSearch = async () => {
+      // Vérifier qu'on a des paramètres de recherche valides
+      const hasValidCitySearch = searchMode === "city" && citySearch && cityCoordinates;
+      const hasValidAddressSearch = searchMode === "address" && addressSearch && addressCoordinates;
+      
+      if (hasValidCitySearch || hasValidAddressSearch) {
+        console.log("🔄 Relance automatique de la recherche avec les paramètres enregistrés");
+        await handleSearch();
+      }
+    };
+
+    // Délai court pour éviter les appels multiples au montage initial
+    const timer = setTimeout(() => {
+      autoRefreshSearch();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []); // Se déclenche uniquement au montage du composant
+
   useEffect(() => {
     checkClientAccess();
   }, [user]);
