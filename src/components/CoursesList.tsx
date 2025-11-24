@@ -1398,20 +1398,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {pendingCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : (
-            pendingCourses.map((course, index) => {
-              const gradients = ['bg-gradient-success', 'bg-gradient-premium', 'bg-gradient-trust'];
-              const gradient = gradients[index % 3];
+            pendingCourses.map((course) => {
               return (
-              <Card key={course.id} className={`p-3 sm:p-4 backdrop-blur border-0 shadow-elegant hover:shadow-elegant/80 transition-all ${gradient}`}>
+              <Card key={course.id} className="p-3 sm:p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="space-y-1 w-full">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-sm sm:text-base text-white drop-shadow-md">{course.clients?.profiles?.full_name}</h3>
+                          <h3 className="font-semibold text-sm sm:text-base text-foreground">{course.clients?.profiles?.full_name}</h3>
                           {getStatusBadge(course.status)}
                         </div>
-                        <p className="text-xs sm:text-sm text-white/80 flex items-center gap-1">
-                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white/70" />
+                        <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                           <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                         </p>
                       </div>
@@ -1419,21 +1417,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
-                        <p className="font-medium text-white">Départ</p>
-                        <p className="text-white/80 break-words">{course.pickup_address}</p>
+                        <p className="font-medium text-foreground">Départ</p>
+                        <p className="text-muted-foreground break-words">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-xs sm:text-sm min-w-0 flex-1">
-                        <p className="font-medium text-white">Arrivée</p>
-                        <p className="text-white/80 break-words">{course.destination_address}</p>
+                        <p className="font-medium text-foreground">Arrivée</p>
+                        <p className="text-muted-foreground break-words">{course.destination_address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-white/80">
-                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white/70" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                       {course.passengers_count} passager(s)
                     </div>
                   </div>
@@ -1441,11 +1439,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   {course.devis && course.devis.length > 0 && (
                     <div className="p-3 sm:p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm font-medium text-white">Montant du devis</span>
-                        <span className="text-2xl sm:text-3xl font-bold text-white drop-shadow-glow">{course.devis[0].amount.toFixed(2)}€</span>
+                        <span className="text-xs sm:text-sm font-medium text-foreground">Montant du devis</span>
+                        <span className="text-2xl sm:text-3xl font-bold text-primary">{course.devis[0].amount.toFixed(2)}€</span>
                       </div>
                       {course.devis[0].quote_number && (
-                        <p className="text-xs text-white/70 mt-1">Réf: {course.devis[0].quote_number}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
                       )}
                     </div>
                   )}
@@ -1647,20 +1645,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {confirmedCoursesCombined.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
-            confirmedCoursesCombined.map((course, index) => {
-              const gradients = ['bg-gradient-trust', 'bg-gradient-premium', 'bg-gradient-success'];
-              const gradient = gradients[index % 3];
+            confirmedCoursesCombined.map((course) => {
               return (
-              <Card key={course.id} className={`p-4 backdrop-blur border-0 shadow-elegant hover:shadow-elegant/80 transition-all ${gradient}`}>
+              <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-white drop-shadow-md">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-sm text-white/80 flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-white/70" />
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
                     </div>
@@ -1668,21 +1664,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Départ</p>
-                        <p className="text-white/80">{course.pickup_address}</p>
+                        <p className="font-medium text-foreground">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Arrivée</p>
-                        <p className="text-white/80">{course.destination_address}</p>
+                        <p className="font-medium text-foreground">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-white/80">
-                      <Users className="w-4 h-4 text-white/70" />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4 text-muted-foreground/70" />
                       {course.passengers_count} passager(s)
                     </div>
                   </div>
@@ -1810,20 +1806,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {completedCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course terminée</p>
           ) : (
-            completedCourses.map((course, index) => {
-              const gradients = ['bg-gradient-premium', 'bg-gradient-success', 'bg-gradient-trust'];
-              const gradient = gradients[index % 3];
+            completedCourses.map((course) => {
               return (
-              <Card key={course.id} className={`p-4 backdrop-blur border-0 shadow-elegant hover:shadow-elegant/80 transition-all ${gradient}`}>
+              <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-white drop-shadow-md">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-sm text-white/80 flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-white/70" />
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
                     </div>
@@ -1831,17 +1825,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Départ</p>
-                        <p className="text-white/80">{course.pickup_address}</p>
+                        <p className="font-medium text-foreground">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Arrivée</p>
-                        <p className="text-white/80">{course.destination_address}</p>
+                        <p className="font-medium text-foreground">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
                       </div>
                     </div>
                   </div>
@@ -1855,9 +1849,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                     if (!amount) {
                       return (
-                        <div className="p-4 bg-red-500/20 backdrop-blur-sm rounded-lg border border-red-400/30">
-                          <p className="text-sm text-red-200 font-medium">⚠️ Prix non disponible</p>
-                          <p className="text-xs text-white/70 mt-1">
+                        <div className="p-4 bg-destructive/20 backdrop-blur-sm rounded-lg border border-destructive/30">
+                          <p className="text-sm text-destructive font-medium">⚠️ Prix non disponible</p>
+                          <p className="text-xs text-muted-foreground mt-1">
                             Aucun devis ou facture n'a été généré pour cette course.
                           </p>
                         </div>
@@ -1865,15 +1859,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     }
 
                     return (
-                      <div className="p-4 bg-emerald-500/20 backdrop-blur-sm rounded-lg border-2 border-emerald-400/40 shadow-lg shadow-emerald-500/20">
+                      <div className="p-4 bg-primary/10 backdrop-blur-sm rounded-lg border border-primary/20">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-white">
+                          <span className="text-sm font-medium text-foreground">
                             {facture ? "Montant de la facture" : "Montant du devis"}
                           </span>
-                          <span className="text-3xl font-black text-emerald-300 drop-shadow-glow">{amount.toFixed(2)}€</span>
+                          <span className="text-3xl font-bold text-primary">{amount.toFixed(2)}€</span>
                         </div>
                         {reference && (
-                          <p className="text-xs text-white/70 mt-1">Réf: {reference}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Réf: {reference}</p>
                         )}
                       </div>
                     );
@@ -1959,20 +1953,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {cancelledCourses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course refusée</p>
           ) : (
-            cancelledCourses.map((course, index) => {
-              const gradients = ['bg-gradient-warning', 'bg-gradient-trust', 'bg-gradient-premium'];
-              const gradient = gradients[index % 3];
+            cancelledCourses.map((course) => {
               return (
-              <Card key={course.id} className={`p-4 backdrop-blur border-0 shadow-elegant hover:shadow-elegant/80 transition-all ${gradient}`}>
+              <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-white drop-shadow-md">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
                       </div>
-                      <p className="text-sm text-white/80 flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-white/70" />
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
                     </div>
@@ -1980,17 +1972,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Départ</p>
-                        <p className="text-white/80">{course.pickup_address}</p>
+                        <p className="font-medium text-foreground">Départ</p>
+                        <p className="text-muted-foreground">{course.pickup_address}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-white/70 shrink-0 mt-1" />
+                      <MapPin className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />
                       <div className="text-sm">
-                        <p className="font-medium text-white">Arrivée</p>
-                        <p className="text-white/80">{course.destination_address}</p>
+                        <p className="font-medium text-foreground">Arrivée</p>
+                        <p className="text-muted-foreground">{course.destination_address}</p>
                       </div>
                     </div>
                   </div>

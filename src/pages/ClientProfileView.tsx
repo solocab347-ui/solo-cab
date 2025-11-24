@@ -20,7 +20,6 @@ const ClientProfileView = () => {
   const [stats, setStats] = useState({
     totalCourses: 0,
     completedCourses: 0,
-    totalSpent: 0,
   });
 
   useEffect(() => {
@@ -70,21 +69,10 @@ const ClientProfileView = () => {
       const totalCourses = coursesData?.length || 0;
       const completedCourses = coursesData?.filter(c => c.status === "completed").length || 0;
 
-      // Fetch total spent from factures
-      const { data: facturesData, error: facturesError } = await supabase
-        .from("factures")
-        .select("amount")
-        .eq("client_id", clientId)
-        .eq("payment_status", "paid");
-
-      if (facturesError) throw facturesError;
-
-      const totalSpent = facturesData?.reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
-
+      // Note: Financial information (total spent) is private and not displayed to drivers
       setStats({
         totalCourses,
         completedCourses,
-        totalSpent,
       });
     } catch (error: any) {
       console.error("Error fetching client stats:", error);
@@ -196,8 +184,8 @@ const ClientProfileView = () => {
           </div>
         </Card>
 
-        {/* Statistiques */}
-        <div className="grid md:grid-cols-3 gap-4">
+        {/* Statistiques - Informations financières masquées aux chauffeurs */}
+        <div className="grid md:grid-cols-2 gap-4">
           <Card className="p-6 bg-gradient-to-br from-blue-500 to-cyan-600 border-0">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -218,18 +206,6 @@ const ClientProfileView = () => {
               <div>
                 <p className="text-sm text-white/80">Courses terminées</p>
                 <p className="text-3xl font-bold text-white">{stats.completedCourses}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-gradient-to-br from-purple-500 to-pink-600 border-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-white/80">Total dépensé</p>
-                <p className="text-3xl font-bold text-white">{stats.totalSpent.toFixed(2)}€</p>
               </div>
             </div>
           </Card>
