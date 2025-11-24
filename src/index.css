@@ -178,4 +178,87 @@ All colors MUST be HSL.
   body {
     @apply bg-gradient-bg text-foreground;
   }
+
+  /* Prévention des problèmes de scroll et d'overlay */
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+
+  /* Assurer que les overlays ne bloquent jamais le scroll de manière permanente */
+  body[data-scroll-locked] {
+    overflow: hidden !important;
+  }
+
+  /* Hiérarchie z-index standardisée pour éviter les conflits */
+  [data-radix-portal] {
+    z-index: 9998 !important;
+  }
+
+  [role="dialog"] {
+    z-index: 50 !important;
+  }
+
+  /* Empêcher les éléments fixes de bloquer l'interface */
+  [data-state="open"] {
+    pointer-events: auto !important;
+  }
+
+  /* Drop shadow glow effect pour améliorer la visibilité */
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+}
+
+@layer utilities {
+  /* Classes utilitaires pour les gradients */
+  .bg-gradient-success {
+    background: var(--gradient-success);
+  }
+
+  .bg-gradient-premium {
+    background: var(--gradient-premium);
+  }
+
+  .bg-gradient-trust {
+    background: var(--gradient-trust);
+  }
+
+  .bg-gradient-warning {
+    background: var(--gradient-warning);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-premium {
+    box-shadow: var(--shadow-premium);
+  }
+
+  .shadow-success {
+    box-shadow: var(--shadow-success);
+  }
+
+  .shadow-trust {
+    box-shadow: var(--shadow-trust);
+  }
+
+  .shadow-warning {
+    box-shadow: var(--shadow-warning);
+  }
+
+  /* Animation pour les cas d'urgence */
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }

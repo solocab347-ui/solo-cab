@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { EmergencyReset } from "@/components/EmergencyReset";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Chauffeurs from "./pages/Chauffeurs";
@@ -34,6 +35,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <EmergencyReset />
       <BrowserRouter>
         <ErrorBoundary>
           <AuthProvider>
