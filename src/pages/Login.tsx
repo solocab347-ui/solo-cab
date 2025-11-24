@@ -12,21 +12,38 @@ const Login = () => {
   const { signIn, user, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [emergencyOverride, setEmergencyOverride] = useState(false);
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Redirection automatique si déjà connecté
+  // TIMEOUT D'URGENCE: forcer l'affichage après 3 secondes max
   useEffect(() => {
-    if (!authLoading && user && userRole) {
-      if (userRole === "admin") {
-        navigate("/admin-dashboard", { replace: true });
-      } else if (userRole === "driver") {
-        navigate("/driver-dashboard", { replace: true });
-      } else if (userRole === "client") {
-        navigate("/client-dashboard", { replace: true });
+    const emergencyTimeout = setTimeout(() => {
+      if (authLoading && !user) {
+        console.error("🚨 EMERGENCY OVERRIDE: forcing form display");
+        setEmergencyOverride(true);
       }
+    }, 3000);
+
+    return () => clearTimeout(emergencyTimeout);
+  }, [authLoading, user]);
+
+  // Redirection automatique si déjà connecté - SIMPLIFIÉ
+  useEffect(() => {
+    console.log("🔍 Login check:", { authLoading, user: !!user, userRole });
+    
+    if (!authLoading && user && userRole) {
+      console.log("➡️ Redirecting to dashboard:", userRole);
+      
+      const path = userRole === "admin" 
+        ? "/admin-dashboard" 
+        : userRole === "driver"
+        ? "/driver-dashboard"
+        : "/client-dashboard";
+        
+      navigate(path, { replace: true });
     }
   }, [user, userRole, authLoading, navigate]);
 
@@ -48,14 +65,20 @@ const Login = () => {
     }
   };
 
-  // Afficher un loader pendant la vérification d'authentification
-  if (authLoading) {
+  // Afficher un loader pendant la vérification d'authentification - AVEC OVERRIDE
+  if (authLoading && !emergencyOverride) {
+    console.log("⏳ Login: showing auth loader");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-premium" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-premium mx-auto" />
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </div>
       </div>
     );
   }
+  
+  console.log("✅ Login: showing form", { emergencyOverride });
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
