@@ -64,6 +64,7 @@ const ChauffeurProfile = () => {
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
+  const [photoKey, setPhotoKey] = useState(Date.now()); // Force image refresh
 
   useEffect(() => {
     if (id) {
@@ -71,14 +72,15 @@ const ChauffeurProfile = () => {
     }
   }, [id]);
 
-  // Supabase Realtime subscription for instant updates
+  // Supabase Realtime subscriptions for instant updates (driver AND profile)
   useEffect(() => {
     if (!id) return;
 
-    console.log("🔔 Setting up realtime subscription for driver:", id);
+    console.log("🔔 Setting up realtime subscriptions for driver:", id);
     
-    const channel = supabase
-      .channel(`driver-profile-${id}`)
+    // Subscription pour les changements de driver (infos générales)
+    const driverChannel = supabase
+      .channel(`driver-updates-${id}`)
       .on(
         'postgres_changes',
         {
@@ -88,18 +90,39 @@ const ChauffeurProfile = () => {
           filter: `id=eq.${id}`
         },
         (payload) => {
-          console.log("🔄 Driver profile updated in realtime:", payload);
-          // Refetch the complete profile to get all related data
+          console.log("🔄 Driver info updated in realtime:", payload);
           fetchDriverProfile(id);
         }
       )
       .subscribe((status) => {
-        console.log("📡 Realtime subscription status:", status);
+        console.log("📡 Driver channel status:", status);
+      });
+
+    // Subscription pour les changements de profil (photo de profil, etc.)
+    const profileChannel = supabase
+      .channel(`profile-updates-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log("🔄 Profile photo updated in realtime:", payload);
+          // Refetch complet pour obtenir la nouvelle photo
+          setPhotoKey(Date.now()); // Force image refresh
+          fetchDriverProfile(id);
+        }
+      )
+      .subscribe((status) => {
+        console.log("📡 Profile channel status:", status);
       });
 
     return () => {
-      console.log("🔌 Cleaning up realtime subscription");
-      supabase.removeChannel(channel);
+      console.log("🔌 Cleaning up realtime subscriptions");
+      supabase.removeChannel(driverChannel);
+      supabase.removeChannel(profileChannel);
     };
   }, [id]);
 
@@ -229,6 +252,7 @@ const ChauffeurProfile = () => {
                   <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20 overflow-hidden">
                     {driver.profile_photo_url ? (
                       <img
+                        key={photoKey}
                         src={driver.profile_photo_url}
                         alt={driver.full_name}
                         className="w-full h-full object-cover object-[center_20%]"
