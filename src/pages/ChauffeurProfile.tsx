@@ -71,6 +71,38 @@ const ChauffeurProfile = () => {
     }
   }, [id]);
 
+  // Supabase Realtime subscription for instant updates
+  useEffect(() => {
+    if (!id) return;
+
+    console.log("🔔 Setting up realtime subscription for driver:", id);
+    
+    const channel = supabase
+      .channel(`driver-profile-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drivers',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log("🔄 Driver profile updated in realtime:", payload);
+          // Refetch the complete profile to get all related data
+          fetchDriverProfile(id);
+        }
+      )
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status);
+      });
+
+    return () => {
+      console.log("🔌 Cleaning up realtime subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   const fetchDriverProfile = async (driverId: string) => {
     try {
       setLoading(true);
@@ -320,28 +352,61 @@ const ChauffeurProfile = () => {
             )}
           </Card>
 
-            {/* Photos Gallery */}
-            {(driver.vehicle_photos?.length > 0 || driver.gallery_photos?.length > 0) && (
+            {/* Vehicle Photos Section */}
+            {driver.vehicle_photos && driver.vehicle_photos.length > 0 && (
               <Card className="p-8 overflow-hidden shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Car className="w-5 h-5 text-primary" />
                   </div>
-                  Galerie Photos
+                  Photos du véhicule
                 </h2>
                 <Carousel className="w-full" opts={{ align: "start", loop: true }}>
                   <CarouselContent className="-ml-4">
-                    {[...(driver.vehicle_photos || []), ...(driver.gallery_photos || [])].map((photo, index) => (
-                      <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    {driver.vehicle_photos.map((photo, index) => (
+                      <CarouselItem key={`vehicle-${index}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
                         <div className="relative aspect-video rounded-xl overflow-hidden group shadow-lg">
                           <img 
                             src={photo} 
-                            alt={`Photo ${index + 1}`} 
+                            alt={`Véhicule ${index + 1}`} 
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className="text-white text-sm font-medium">{index + 1}/{[...(driver.vehicle_photos || []), ...(driver.gallery_photos || [])].length}</span>
+                            <span className="text-white text-sm font-medium">{index + 1}/{driver.vehicle_photos.length}</span>
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-2 h-12 w-12 bg-background/80 backdrop-blur-sm hover:bg-background" />
+                  <CarouselNext className="right-2 h-12 w-12 bg-background/80 backdrop-blur-sm hover:bg-background" />
+                </Carousel>
+              </Card>
+            )}
+
+            {/* Gallery Photos Section */}
+            {driver.gallery_photos && driver.gallery_photos.length > 0 && (
+              <Card className="p-8 overflow-hidden shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Car className="w-5 h-5 text-primary" />
+                  </div>
+                  Galerie photos
+                </h2>
+                <Carousel className="w-full" opts={{ align: "start", loop: true }}>
+                  <CarouselContent className="-ml-4">
+                    {driver.gallery_photos.map((photo, index) => (
+                      <CarouselItem key={`gallery-${index}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                        <div className="relative aspect-video rounded-xl overflow-hidden group shadow-lg">
+                          <img 
+                            src={photo} 
+                            alt={`Galerie ${index + 1}`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <span className="text-white text-sm font-medium">{index + 1}/{driver.gallery_photos.length}</span>
                           </div>
                         </div>
                       </CarouselItem>
