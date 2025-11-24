@@ -70,6 +70,13 @@ export type Database = {
             foreignKeyName: "assistant_requests_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -124,6 +131,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
             referencedColumns: ["driver_id"]
           },
           {
@@ -185,6 +199,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
             referencedColumns: ["driver_id"]
           },
           {
@@ -350,6 +371,13 @@ export type Database = {
             foreignKeyName: "courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -439,6 +467,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
             referencedColumns: ["driver_id"]
           },
           {
@@ -575,6 +610,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
             referencedColumns: ["driver_id"]
           },
           {
@@ -916,6 +958,13 @@ export type Database = {
             foreignKeyName: "factures_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -1135,6 +1184,13 @@ export type Database = {
             foreignKeyName: "promotions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
@@ -1177,6 +1233,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_statistics"
             referencedColumns: ["driver_id"]
           },
           {
@@ -1248,6 +1311,43 @@ export type Database = {
           total_factures: number | null
         }
         Relationships: []
+      }
+      driver_statistics: {
+        Row: {
+          accepted_quotes: number | null
+          cancelled_courses: number | null
+          completed_courses: number | null
+          confirmed_courses: number | null
+          courses_today: number | null
+          driver_id: string | null
+          exclusive_clients: number | null
+          free_clients: number | null
+          in_progress_courses: number | null
+          last_updated: string | null
+          paid_invoices: number | null
+          pending_courses: number | null
+          pending_invoices: number | null
+          pending_quotes: number | null
+          rejected_quotes: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_clients: number | null
+          total_courses: number | null
+          total_invoices: number | null
+          total_quotes: number | null
+          total_revenue: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -1340,6 +1440,7 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      refresh_driver_statistics: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
