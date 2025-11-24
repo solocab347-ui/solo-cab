@@ -19,6 +19,8 @@ import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
 import CourseReportDialog from "@/components/CourseReportDialog";
 import { cn } from "@/lib/utils";
+import { usePaginatedData } from "@/hooks/usePaginatedQuery";
+import Pagination from "@/components/Pagination";
 
 interface CoursesListProps {
   driverId: string;
