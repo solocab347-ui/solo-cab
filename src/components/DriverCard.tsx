@@ -35,6 +35,9 @@ interface DriverCardProps {
 }
 
 export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
+  // Forcer le rafraîchissement de l'image avec un key basé sur l'URL
+  const imageKey = driver.profile_photo_url ? `${driver.id}-${driver.profile_photo_url.substring(0, 50)}` : driver.id;
+  
   // Construire le nom d'affichage - toujours afficher le nom, jamais "chauffeur"
   const displayName = [];
   // Afficher le nom du chauffeur par défaut
@@ -70,6 +73,7 @@ export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
       {/* Large Profile Photo */}
         {driver.profile_photo_url ? (
           <img
+            key={imageKey}
             src={driver.profile_photo_url}
             alt={name}
             className="w-full h-full object-cover object-[center_20%]"
