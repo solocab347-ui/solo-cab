@@ -227,16 +227,36 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     toast.success("Facture téléchargée");
   };
 
-  const handleShareFacture = (facture: any, channel: 'whatsapp' | 'email') => {
-    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number}\nMontant: ${facture.amount}€\nDate: ${format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr })}`;
+  const handleShareFacture = (facture: any, channel: 'whatsapp' | 'email' | 'sms' | 'facebook') => {
+    // Génération de message contextuel avec formules de politesse
+    const { generateFactureShareMessage } = require("@/lib/courseMessageGenerator");
     
-    if (channel === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-    } else if (channel === 'email') {
-      window.location.href = `mailto:?subject=Facture ${facture.invoice_number_generated || facture.invoice_number}&body=${encodeURIComponent(message)}`;
+    const message = generateFactureShareMessage(
+      facture,
+      facture.courses,
+      facture.drivers,
+      facture.clients,
+      false // Client partage la facture
+    );
+    
+    const encodedMessage = encodeURIComponent(message);
+    
+    switch (channel) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+        break;
+      case 'sms':
+        window.open(`sms:?body=${encodedMessage}`, '_blank');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=Facture ${facture.invoice_number_generated || facture.invoice_number}&body=${encodedMessage}`;
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+        break;
     }
     
-    toast.success("Facture partagée");
+    toast.success("Message préparé pour partage");
   };
 
   const getStatusBadge = (status: string) => {
@@ -370,8 +390,14 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
                       <DropdownMenuItem onClick={() => handleShareFacture(facture, 'whatsapp')}>
                         WhatsApp
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShareFacture(facture, 'sms')}>
+                        SMS
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleShareFacture(facture, 'email')}>
                         Email
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShareFacture(facture, 'facebook')}>
+                        Facebook
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
