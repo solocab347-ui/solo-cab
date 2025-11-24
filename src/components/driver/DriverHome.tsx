@@ -33,86 +33,106 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (driverProfile?.driver?.id) {
-      fetchStats();
-    }
+    let mounted = true;
+    
+    const loadStats = async () => {
+      if (!driverProfile?.driver?.id) return;
+      
+      try {
+        setLoading(true);
+        const today = new Date();
+        const todayStart = startOfDay(today).toISOString();
+        const todayEnd = endOfDay(today).toISOString();
+        const monthStart = startOfMonth(today).toISOString();
+        const monthEnd = endOfMonth(today).toISOString();
+
+        const driverId = driverProfile.driver.id;
+
+        // CORRECTION: Courses qui ont des factures payées aujourd'hui
+        const { data: todayFactures } = await supabase
+          .from('factures')
+          .select('amount, course_id')
+          .eq('driver_id', driverId)
+          .eq('payment_status', 'paid')
+          .gte('paid_at', todayStart)
+          .lte('paid_at', todayEnd);
+
+        if (!mounted) return;
+
+        const todayCourseIds = new Set(todayFactures?.map(f => f.course_id) || []);
+        const todayCoursesCount = todayCourseIds.size;
+
+        // Clients du mois
+        const { data: monthClientsData } = await supabase
+          .from('clients')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .gte('created_at', monthStart)
+          .lte('created_at', monthEnd);
+
+        if (!mounted) return;
+
+        // Courses du mois
+        const { data: monthCoursesData } = await supabase
+          .from('courses')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .gte('created_at', monthStart)
+          .lte('created_at', monthEnd);
+
+        if (!mounted) return;
+
+        // Courses terminées du mois
+        const { data: monthCompletedData } = await supabase
+          .from('courses')
+          .select('id')
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .eq('status', 'completed')
+          .gte('updated_at', monthStart)
+          .lte('updated_at', monthEnd);
+
+        if (!mounted) return;
+
+        // CA total du mois
+        const { data: monthFactures } = await supabase
+          .from('factures')
+          .select('amount')
+          .eq('driver_id', driverId)
+          .eq('payment_status', 'paid')
+          .gte('paid_at', monthStart)
+          .lte('paid_at', monthEnd);
+
+        if (!mounted) return;
+
+        const todayRevenue = todayFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+        const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+
+        setStats({
+          todayCourses: todayCoursesCount,
+          todayRevenue: todayRevenue,
+          monthClients: monthClientsData?.length || 0,
+          monthCourses: monthCoursesData?.length || 0,
+          monthCompleted: monthCompletedData?.length || 0,
+          monthRevenue: monthRevenue,
+        });
+      } catch (error) {
+        if (mounted) {
+          console.error('Erreur lors du chargement des statistiques:', error);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      mounted = false;
+    };
   }, [driverProfile?.driver?.id]);
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const today = new Date();
-      const todayStart = startOfDay(today).toISOString();
-      const todayEnd = endOfDay(today).toISOString();
-      const monthStart = startOfMonth(today).toISOString();
-      const monthEnd = endOfMonth(today).toISOString();
-
-      const driverId = driverProfile?.driver?.id;
-      if (!driverId) return;
-
-      // CORRECTION: Courses qui ont des factures payées aujourd'hui (pas créées aujourd'hui)
-      const { data: todayFactures } = await supabase
-        .from('factures')
-        .select('amount, course_id')
-        .eq('driver_id', driverId)
-        .eq('payment_status', 'paid')
-        .gte('paid_at', todayStart)
-        .lte('paid_at', todayEnd);
-
-      const todayCourseIds = new Set(todayFactures?.map(f => f.course_id) || []);
-      const todayCoursesCount = todayCourseIds.size;
-
-      // Clients du mois
-      const { data: monthClientsData } = await supabase
-        .from('clients')
-        .select('id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .gte('created_at', monthStart)
-        .lte('created_at', monthEnd);
-
-      // Courses du mois
-      const { data: monthCoursesData } = await supabase
-        .from('courses')
-        .select('id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .gte('created_at', monthStart)
-        .lte('created_at', monthEnd);
-
-      // Courses terminées du mois
-      const { data: monthCompletedData } = await supabase
-        .from('courses')
-        .select('id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .eq('status', 'completed')
-        .gte('updated_at', monthStart)
-        .lte('updated_at', monthEnd);
-
-      // CA total du mois
-      const { data: monthFactures } = await supabase
-        .from('factures')
-        .select('amount')
-        .eq('driver_id', driverId)
-        .eq('payment_status', 'paid')
-        .gte('paid_at', monthStart)
-        .lte('paid_at', monthEnd);
-
-      const todayRevenue = todayFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-      const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
-
-      setStats({
-        todayCourses: todayCoursesCount,
-        todayRevenue: todayRevenue,
-        monthClients: monthClientsData?.length || 0,
-        monthCourses: monthCoursesData?.length || 0,
-        monthCompleted: monthCompletedData?.length || 0,
-        monthRevenue: monthRevenue,
-      });
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
