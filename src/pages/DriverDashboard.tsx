@@ -33,6 +33,7 @@ import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useDriverProfile } from "@/hooks/useDriverProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,7 +42,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
-  const [driverProfile, setDriverProfile] = useState<any>(null);
+  const { driverProfile, isLoading: profileLoading, updateProfile } = useDriverProfile(user?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
@@ -76,59 +77,10 @@ const DriverDashboard = () => {
   const [eveningSurcharge, setEveningSurcharge] = useState("0");
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
 
+  // Synchroniser l'état du formulaire avec les données du profil
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadProfile = async () => {
-      if (isMounted) {
-        await fetchDriverProfile();
-      }
-    };
-    
-    loadProfile();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
-  const fetchDriverProfile = async () => {
-    if (!user) return;
-
-    try {
-      // Récupérer le profil ET le driver en une seule requête pour garantir la cohérence
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
-        return;
-      }
-
-      const { data: driver, error: driverError } = await supabase
-        .from("drivers")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (driverError) {
-        console.error("Driver fetch error:", driverError);
-        return;
-      }
-
-      // Combiner profile et driver avec garantie du nom
-      const combinedProfile = {
-        ...profile,
-        driver,
-        full_name: profile.full_name || "Chauffeur" // Garantir qu'il y a toujours un nom
-      };
-
-      setDriverProfile(combinedProfile);
-      
-      // Populate form
+    if (driverProfile?.driver) {
+      const driver = driverProfile.driver;
       setPublicProfileEnabled(driver.public_profile_enabled || false);
       setShowPhone(driver.show_phone || false);
       setShowEmail(driver.show_email || false);
@@ -160,11 +112,9 @@ const DriverDashboard = () => {
       setVehicleYear(driver.vehicle_year?.toString() || "");
       setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
       setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
-      setProfilePhotoUrl(profile?.profile_photo_url || null);
-    } catch (error) {
-      console.error("Error fetching driver profile:", error);
+      setProfilePhotoUrl(driverProfile.profile_photo_url || null);
     }
-  };
+  }, [driverProfile]);
 
   useEffect(() => {
     if (driverProfile?.driver?.id) {
@@ -212,23 +162,8 @@ const DriverDashboard = () => {
 
   const handleTogglePublicProfile = async (enabled: boolean) => {
     if (!driverProfile?.driver?.id) return;
-
     setPublicProfileEnabled(enabled);
-
-    try {
-      const { error } = await supabase
-        .from("drivers")
-        .update({ public_profile_enabled: enabled })
-        .eq("id", driverProfile.driver.id);
-
-      if (error) throw error;
-      toast.success(enabled ? "Profil public activé" : "Profil public désactivé");
-    } catch (error: any) {
-      console.error("Error toggling public profile:", error);
-      toast.error("Erreur lors de la mise à jour");
-      // Revert on error
-      setPublicProfileEnabled(!enabled);
-    }
+    updateProfile({ public_profile_enabled: enabled });
   };
 
   const handleUpdateProfile = async () => {
@@ -236,45 +171,38 @@ const DriverDashboard = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("drivers")
-        .update({
-          public_profile_enabled: publicProfileEnabled,
-          show_phone: showPhone,
-          show_email: showEmail,
-          working_sectors: workingSectors,
-          service_description: serviceDescription,
-          home_address: homeAddress,
-          home_latitude: homeCoordinates?.latitude || null,
-          home_longitude: homeCoordinates?.longitude || null,
-          base_fare: baseFare ? parseFloat(baseFare) : null,
-          per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
-          hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-          vehicle_color: vehicleColor,
-          vehicle_plate: vehiclePlate,
-          vehicle_brand: vehicleBrand,
-          vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
-          company_name: companyName,
-          company_address: companyAddress,
-          siret: siret,
-          siren: siren,
-          max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
-          tva_included: tvaIncluded,
-          display_driver_name: displayDriverName,
-          display_company_name: displayCompanyName,
-          vehicle_equipment: vehicleEquipment,
-          services_offered: servicesOffered,
-          evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
-          weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
-        })
-        .eq("id", driverProfile.driver.id);
-
-      if (error) throw error;
-      toast.success("Profil mis à jour avec succès !");
-      fetchDriverProfile();
+      updateProfile({
+        public_profile_enabled: publicProfileEnabled,
+        show_phone: showPhone,
+        show_email: showEmail,
+        working_sectors: workingSectors,
+        service_description: serviceDescription,
+        home_address: homeAddress,
+        home_latitude: homeCoordinates?.latitude || null,
+        home_longitude: homeCoordinates?.longitude || null,
+        base_fare: baseFare ? parseFloat(baseFare) : null,
+        per_km_rate: perKmRate ? parseFloat(perKmRate) : null,
+        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+        vehicle_color: vehicleColor,
+        vehicle_plate: vehiclePlate,
+        vehicle_brand: vehicleBrand,
+        vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
+        company_name: companyName,
+        company_address: companyAddress,
+        siret: siret,
+        siren: siren,
+        max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
+        tva_included: tvaIncluded,
+        display_driver_name: displayDriverName,
+        display_company_name: displayCompanyName,
+        vehicle_equipment: vehicleEquipment,
+        services_offered: servicesOffered,
+        evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
+        weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
+      });
     } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast.error("Erreur lors de la mise à jour");
+      console.error("Error saving profile:", error);
+      toast.error("Erreur lors de la sauvegarde");
     } finally {
       setLoading(false);
     }
@@ -504,7 +432,7 @@ const DriverDashboard = () => {
               </div>
               <SubscriptionManager 
                 driverProfile={driverProfile} 
-                onSubscriptionUpdate={fetchDriverProfile}
+                onSubscriptionUpdate={() => {}}
               />
             </Card>
           </TabsContent>
