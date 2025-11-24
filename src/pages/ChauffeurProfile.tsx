@@ -68,14 +68,19 @@ const ChauffeurProfile = () => {
     }
   }, [id]);
 
-  // Supabase Realtime subscriptions pour mises à jour instantanées
+  // Supabase Realtime subscriptions optimisées pour éviter les bugs visuels
   useEffect(() => {
     if (!id) return;
 
-    console.log("🔔 Configuration des abonnements real-time pour le chauffeur:", id);
+    console.log("🔔 Configuration real-time optimisée pour:", id);
     
-    const driverChannel = supabase
-      .channel(`driver-profile-${id}`)
+    // Canal unique pour éviter les duplications
+    const channel = supabase
+      .channel(`driver-profile-updates-${id}`, {
+        config: {
+          broadcast: { self: false }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -84,9 +89,10 @@ const ChauffeurProfile = () => {
           table: 'drivers',
           filter: `id=eq.${id}`
         },
-        (payload) => {
-          console.log("🔄 Mise à jour chauffeur détectée:", payload);
-          fetchDriverProfile(id);
+        () => {
+          console.log("🔄 Mise à jour driver");
+          // Délai court pour éviter trop de re-renders
+          setTimeout(() => fetchDriverProfile(id), 300);
         }
       )
       .on(
@@ -96,18 +102,16 @@ const ChauffeurProfile = () => {
           schema: 'public',
           table: 'profiles'
         },
-        (payload) => {
-          console.log("🔄 Mise à jour profil détectée:", payload);
-          fetchDriverProfile(id);
+        () => {
+          console.log("🔄 Mise à jour profile");
+          setTimeout(() => fetchDriverProfile(id), 300);
         }
       )
-      .subscribe((status) => {
-        console.log("📡 Statut canal real-time:", status);
-      });
+      .subscribe();
 
     return () => {
-      console.log("🔌 Nettoyage des abonnements real-time");
-      supabase.removeChannel(driverChannel);
+      console.log("🔌 Nettoyage canal real-time");
+      supabase.removeChannel(channel);
     };
   }, [id]);
 
@@ -221,7 +225,6 @@ const ChauffeurProfile = () => {
           <NavigationHeader 
             showBack={true}
             showHome={true}
-            homeRoute="/chauffeurs"
           />
         </div>
       </header>
