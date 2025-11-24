@@ -48,6 +48,8 @@ interface DriverProfile {
   company_name: string;
   display_driver_name: boolean;
   display_company_name: boolean;
+  show_phone: boolean;
+  show_email: boolean;
   vehicle_equipment: string[];
   services_offered: string[];
   vehicle_photos: string[];
@@ -344,16 +346,16 @@ const ChauffeurProfile = () => {
           </Card>
 
           {/* Carte d'informations de contact */}
-          <Card className="p-8 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Phone className="w-5 h-5 text-primary" />
-              </div>
-              Contact
-            </h2>
-            {(driver.phone || driver.email) ? (
+          {((driver.show_phone && driver.phone) || (driver.show_email && driver.email)) && (
+            <Card className="p-8 shadow-lg bg-gradient-to-br from-card via-card to-muted/20">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-primary" />
+                </div>
+                Contact
+              </h2>
               <div className="space-y-4">
-                {driver.phone && (
+                {driver.show_phone && driver.phone && (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <Phone className="w-5 h-5 text-primary" />
                     <div>
@@ -364,7 +366,7 @@ const ChauffeurProfile = () => {
                     </div>
                   </div>
                 )}
-                {driver.email && (
+                {driver.show_email && driver.email && (
                   <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
                     <Mail className="w-5 h-5 text-primary" />
                     <div>
@@ -376,12 +378,8 @@ const ChauffeurProfile = () => {
                   </div>
                 )}
               </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-4">
-                Aucune information de contact publique
-              </p>
-            )}
-          </Card>
+            </Card>
+          )}
 
           {/* Photos du véhicule */}
           {driver.vehicle_photos && driver.vehicle_photos.length > 0 && (

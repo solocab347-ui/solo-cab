@@ -48,6 +48,8 @@ const DriverDashboard = () => {
 
   // Form states
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false); // Désactivé par défaut
+  const [showPhone, setShowPhone] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
   const [workingSectors, setWorkingSectors] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
@@ -113,6 +115,8 @@ const DriverDashboard = () => {
       
       // Populate form
       setPublicProfileEnabled(driver.public_profile_enabled || false);
+      setShowPhone(driver.show_phone || false);
+      setShowEmail(driver.show_email || false);
       setWorkingSectors(driver.working_sectors || []);
       setServiceDescription(driver.service_description || "");
       setHomeAddress(driver.home_address || "");
@@ -219,6 +223,8 @@ const DriverDashboard = () => {
         .from("drivers")
         .update({
           public_profile_enabled: publicProfileEnabled,
+          show_phone: showPhone,
+          show_email: showEmail,
           working_sectors: workingSectors,
           service_description: serviceDescription,
           home_address: homeAddress,
@@ -755,6 +761,39 @@ const DriverDashboard = () => {
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
                     Vous pouvez afficher votre nom, celui de votre entreprise, ou les deux
+                  </p>
+                </div>
+
+                <div className="border-t border-white/10 pt-6">
+                  <Label className="text-base mb-4 block text-white">Informations de contact visibles</Label>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base text-white">Afficher mon téléphone</Label>
+                        <p className="text-sm text-gray-400">
+                          {driverProfile?.phone || "Non renseigné"}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showPhone}
+                        onCheckedChange={setShowPhone}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base text-white">Afficher mon email</Label>
+                        <p className="text-sm text-gray-400">
+                          {driverProfile?.email || "Non renseigné"}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showEmail}
+                        onCheckedChange={setShowEmail}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Choisissez les informations de contact à afficher sur votre profil public
                   </p>
                 </div>
 

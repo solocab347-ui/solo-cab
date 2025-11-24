@@ -609,6 +609,8 @@ export type Database = {
           reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
+          show_email: boolean | null
+          show_phone: boolean | null
           siren: string | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
@@ -662,6 +664,8 @@ export type Database = {
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
@@ -715,6 +719,8 @@ export type Database = {
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
