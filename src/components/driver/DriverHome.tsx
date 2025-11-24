@@ -50,22 +50,17 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const driverId = driverProfile?.driver?.id;
       if (!driverId) return;
 
-      // Courses d'aujourd'hui
-      const { data: todayCoursesData } = await supabase
-        .from('courses')
-        .select('id')
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .gte('created_at', todayStart)
-        .lte('created_at', todayEnd);
-
-      // Revenue d'aujourd'hui
+      // CORRECTION: Courses qui ont des factures payées aujourd'hui (pas créées aujourd'hui)
       const { data: todayFactures } = await supabase
         .from('factures')
-        .select('amount')
+        .select('amount, course_id')
         .eq('driver_id', driverId)
         .eq('payment_status', 'paid')
         .gte('paid_at', todayStart)
         .lte('paid_at', todayEnd);
+
+      const todayCourseIds = new Set(todayFactures?.map(f => f.course_id) || []);
+      const todayCoursesCount = todayCourseIds.size;
 
       // Clients du mois
       const { data: monthClientsData } = await supabase
@@ -105,7 +100,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
       const monthRevenue = monthFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
       setStats({
-        todayCourses: todayCoursesData?.length || 0,
+        todayCourses: todayCoursesCount,
         todayRevenue: todayRevenue,
         monthClients: monthClientsData?.length || 0,
         monthCourses: monthCoursesData?.length || 0,

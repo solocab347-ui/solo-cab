@@ -1,8 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, Users, Car, MapPin, Clock, CheckCircle2, XCircle, Euro } from "lucide-react";
-import { startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { TrendingUp, Users, Car, MapPin, Clock, CheckCircle2, XCircle, Euro, Filter, Calendar } from "lucide-react";
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfWeek, endOfWeek, format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface DriverStatisticsProps {
   driverProfile: any;
@@ -56,12 +61,18 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
     pendingDevis: 0,
   });
   const [loading, setLoading] = useState(true);
+  
+  // États pour les filtres avancés
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     if (driverProfile?.driver?.id) {
       fetchStats();
     }
-  }, [driverProfile?.driver?.id]);
+  }, [driverProfile?.driver?.id, periodFilter, customStartDate, customEndDate]);
 
   const fetchStats = async () => {
     try {
@@ -70,26 +81,65 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
       if (!driverId) return;
 
       const today = new Date();
+      let filterStart: string | null = null;
+      let filterEnd: string | null = null;
+
+      // Déterminer la période de filtrage
+      switch (periodFilter) {
+        case "today":
+          filterStart = startOfWeek(today).toISOString();
+          filterEnd = endOfWeek(today).toISOString();
+          break;
+        case "week":
+          filterStart = startOfWeek(today).toISOString();
+          filterEnd = endOfWeek(today).toISOString();
+          break;
+        case "month":
+          filterStart = startOfMonth(today).toISOString();
+          filterEnd = endOfMonth(today).toISOString();
+          break;
+        case "year":
+          filterStart = startOfYear(today).toISOString();
+          filterEnd = endOfYear(today).toISOString();
+          break;
+        case "custom":
+          if (customStartDate && customEndDate) {
+            filterStart = new Date(customStartDate).toISOString();
+            filterEnd = new Date(customEndDate).toISOString();
+          }
+          break;
+      }
+
       const monthStart = startOfMonth(today).toISOString();
       const monthEnd = endOfMonth(today).toISOString();
       const yearStart = startOfYear(today).toISOString();
       const yearEnd = endOfYear(today).toISOString();
 
-      // Clients stats
-      const { data: allClients } = await supabase
+      // Clients stats - avec filtre de période si applicable
+      let clientsQuery = supabase
         .from('clients')
-        .select('is_exclusive')
+        .select('is_exclusive, created_at')
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
 
+      if (filterStart && filterEnd) {
+        clientsQuery = clientsQuery.gte('created_at', filterStart).lte('created_at', filterEnd);
+      }
+
+      const { data: allClients } = await clientsQuery;
       const exclusiveCount = allClients?.filter(c => c.is_exclusive).length || 0;
       const freeCount = allClients?.filter(c => !c.is_exclusive).length || 0;
 
-      // Courses stats
-      const { data: allCourses } = await supabase
+      // Courses stats - avec filtre de période si applicable
+      let coursesQuery = supabase
         .from('courses')
-        .select('status, distance_km, duration_minutes')
+        .select('status, distance_km, duration_minutes, created_at')
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
 
+      if (filterStart && filterEnd) {
+        coursesQuery = coursesQuery.gte('created_at', filterStart).lte('created_at', filterEnd);
+      }
+
+      const { data: allCourses } = await coursesQuery;
       const completedCount = allCourses?.filter(c => c.status === 'completed').length || 0;
       const cancelledCount = allCourses?.filter(c => c.status === 'cancelled').length || 0;
       const pendingCount = allCourses?.filter(c => c.status === 'pending').length || 0;
@@ -97,12 +147,18 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
       const totalDistance = allCourses?.reduce((sum, c) => sum + (Number(c.distance_km) || 0), 0) || 0;
       const totalDuration = allCourses?.reduce((sum, c) => sum + (Number(c.duration_minutes) || 0), 0) || 0;
 
-      // Revenue stats
-      const { data: allFactures } = await supabase
+      // Revenue stats - avec filtre de période si applicable
+      let facturesQuery = supabase
         .from('factures')
         .select('amount, paid_at')
         .eq('driver_id', driverId)
         .eq('payment_status', 'paid');
+
+      if (filterStart && filterEnd) {
+        facturesQuery = facturesQuery.gte('paid_at', filterStart).lte('paid_at', filterEnd);
+      }
+
+      const { data: allFactures } = await facturesQuery;
 
       const totalRevenue = allFactures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
@@ -153,12 +209,110 @@ export const DriverStatistics = ({ driverProfile }: DriverStatisticsProps) => {
     }
   };
 
+  const handleApplyFilters = () => {
+    if (periodFilter === 'custom' && (!customStartDate || !customEndDate)) {
+      return;
+    }
+    fetchStats();
+  };
+
+  const handleResetFilters = () => {
+    setPeriodFilter('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setShowAdvancedFilters(false);
+  };
+
   if (loading) {
     return <div className="p-6 text-center">Chargement des statistiques...</div>;
   }
 
   return (
     <div className="space-y-6 p-4">
+      {/* Filtres avancés */}
+      <Card className="p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-bold">Filtres de période</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          >
+            {showAdvancedFilters ? 'Masquer' : 'Afficher'}
+          </Button>
+        </div>
+
+        {showAdvancedFilters && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Période</Label>
+                <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tout</SelectItem>
+                    <SelectItem value="today">Aujourd'hui</SelectItem>
+                    <SelectItem value="week">Cette semaine</SelectItem>
+                    <SelectItem value="month">Ce mois</SelectItem>
+                    <SelectItem value="year">Cette année</SelectItem>
+                    <SelectItem value="custom">Personnalisée</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {periodFilter === 'custom' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Date de début</Label>
+                    <Input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date de fin</Label>
+                    <Input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleApplyFilters} size="sm" className="gap-2">
+                <Filter className="w-4 h-4" />
+                Appliquer
+              </Button>
+              <Button onClick={handleResetFilters} variant="outline" size="sm">
+                Réinitialiser
+              </Button>
+            </div>
+
+            {periodFilter !== 'all' && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <p className="text-sm text-primary">
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  {periodFilter === 'custom' && customStartDate && customEndDate
+                    ? `Du ${format(new Date(customStartDate), 'dd MMM yyyy', { locale: fr })} au ${format(new Date(customEndDate), 'dd MMM yyyy', { locale: fr })}`
+                    : periodFilter === 'today' ? "Aujourd'hui"
+                    : periodFilter === 'week' ? 'Cette semaine'
+                    : periodFilter === 'month' ? 'Ce mois'
+                    : 'Cette année'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
       {/* Clients */}
       <div>
         <h2 className="text-xl font-bold mb-4">📊 Clients</h2>
