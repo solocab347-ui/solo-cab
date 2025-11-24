@@ -138,7 +138,7 @@ export const AddressAutocomplete = ({
 
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
+        <div className="absolute z-[9999] mt-1 w-full rounded-md border border-border bg-popover shadow-lg">
           <div className="max-h-60 overflow-auto p-1">
             {suggestions.map((suggestion) => (
               <button
@@ -161,7 +161,7 @@ export const AddressAutocomplete = ({
 
       {/* No results message */}
       {showSuggestions && !isLoading && inputValue.length >= 3 && suggestions.length === 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-lg p-3">
+        <div className="absolute z-[9999] mt-1 w-full rounded-md border border-border bg-popover shadow-lg p-3">
           <p className="text-sm text-muted-foreground text-center">
             Aucune adresse trouvée
           </p>

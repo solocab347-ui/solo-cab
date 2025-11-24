@@ -77,7 +77,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         .select(`
           id,
           user_id,
-          profiles!clients_user_id_fkey (
+          profiles:user_id (
             full_name,
             email
           )
@@ -171,9 +171,9 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-base">
-              <MapPin className="w-4 h-4 text-success" />
-              Adresse de départ
+            <Label className="flex items-center gap-2 text-base font-medium">
+              <MapPin className="w-5 h-5 text-success" />
+              📍 Adresse de départ
             </Label>
             <AddressAutocomplete
               value={pickupAddress}
@@ -181,14 +181,17 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                 setPickupAddress(address);
                 if (coords) setPickupCoordinates(coords);
               }}
-              placeholder="15 Rue de la Paix, Paris"
+              placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
             />
+            <p className="text-xs text-muted-foreground">
+              Tapez l'adresse complète puis sélectionnez dans la liste
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-base">
-              <Navigation className="w-4 h-4 text-destructive" />
-              Adresse de destination
+            <Label className="flex items-center gap-2 text-base font-medium">
+              <Navigation className="w-5 h-5 text-destructive" />
+              🏁 Adresse de destination
             </Label>
             <AddressAutocomplete
               value={destinationAddress}
@@ -196,8 +199,11 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                 setDestinationAddress(address);
                 if (coords) setDestinationCoordinates(coords);
               }}
-              placeholder="Aéroport Charles de Gaulle"
+              placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
             />
+            <p className="text-xs text-muted-foreground">
+              Attendez les suggestions puis cliquez pour sélectionner
+            </p>
           </div>
 
           <Button
