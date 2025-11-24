@@ -126,7 +126,9 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             distance_price,
             time_price,
             discount_amount,
-            promo_code
+            promo_code,
+            evening_surcharge_amount,
+            weekend_surcharge_amount
           )
         `)
         .eq("driver_id", driverId)
@@ -266,7 +268,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     const tvaAmount = amount - subtotalHT;
 
     if (!forClient) {
-      // Driver version - with payment details
+      // Driver version - detailed breakdown
       doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
       doc.rect(20, yPos, 170, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -278,8 +280,66 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       yPos += 8;
       doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
-      doc.setFillColor(245, 245, 245);
+      
+      // Afficher les composantes de prix depuis le devis
+      const isMiseADisposition = facture.devis?.time_price && facture.devis.time_price > 0 && (!facture.devis?.distance_price || facture.devis.distance_price === 0);
+      
+      if (isMiseADisposition) {
+        // Mise à disposition - afficher durée et tarif horaire
+        const hours = facture.courses.duration_minutes / 60;
+        const hourlyRate = facture.devis.time_price / hours;
+        
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text(`Mise à disposition (${hours.toFixed(1)}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
+        doc.text(`${facture.devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      } else if (facture.devis) {
+        // Course classique - afficher base + distance
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text("Forfait de base", 25, yPos + 5);
+        doc.text(`${(facture.devis.base_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 7;
+        doc.text("Prix au kilomètre", 25, yPos + 5);
+        doc.text(`${(facture.devis.distance_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      } else {
+        // Fallback si pas de devis
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text("Sous-total HT", 25, yPos + 5);
+        doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 9;
+      }
+      
+      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      if (facture.devis?.evening_surcharge_amount && facture.devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${facture.devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (facture.devis?.weekend_surcharge_amount && facture.devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${facture.devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
+      doc.setFont(undefined, 'bold');
       doc.text("Sous-total HT", 25, yPos + 5);
       doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
@@ -292,6 +352,27 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         doc.setTextColor(46, 125, 50); // Vert pour la réduction
         doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
         doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      if (facture.devis?.evening_surcharge_amount && facture.devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${facture.devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (facture.devis?.weekend_surcharge_amount && facture.devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${facture.devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
         yPos += 7;
         doc.setTextColor(0, 0, 0);
       }
@@ -412,25 +493,25 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     <div className="space-y-6">
       {/* Stats - Horizontal on all screens */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <Card className="p-3 sm:p-4 bg-gradient-premium border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-primary/40 via-primary/25 to-primary/10 border border-primary/30 shadow-elegant hover:shadow-primary/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.total}</h3>
             <p className="text-xs sm:text-sm text-white/80">Factures totales</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-success border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-success/40 via-success/25 to-success/10 border border-success/30 shadow-elegant hover:shadow-success/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.paid}</h3>
             <p className="text-xs sm:text-sm text-white/80">Payées</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-trust border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-warning/40 via-warning/25 to-warning/10 border border-warning/30 shadow-elegant hover:shadow-warning/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.pending}</h3>
             <p className="text-xs sm:text-sm text-white/80">En attente</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-independence border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-destructive/40 via-destructive/25 to-destructive/10 border border-destructive/30 shadow-elegant hover:shadow-destructive/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.failed}</h3>
             <p className="text-xs sm:text-sm text-white/80">Échecs</p>
@@ -533,7 +614,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
               </div>
 
               {/* Course info */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 text-sm border border-white/20">
+              <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 text-sm border border-white/20">
                 <div>
                   <span className="font-medium text-white">Course :</span>
                   <span className="text-white/80 ml-2">
@@ -550,7 +631,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                 </div>
                 {facture.payment_method && (
                   <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-white" />
+                    <CreditCard className="w-4 h-4 text-purple-300" />
                     <span className="text-white/80">
                       Paiement : <span className="capitalize">{facture.payment_method}</span>
                     </span>
@@ -559,13 +640,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
               </div>
 
               {/* Price */}
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 mb-4">
+              <div className="bg-gradient-to-br from-success/30 to-success/10 backdrop-blur-sm border border-success/30 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Euro className="w-5 h-5 text-white" />
+                    <CheckCircle className="w-5 h-5 text-success" />
                     <span className="font-semibold text-white">Montant TTC</span>
                   </div>
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-success">
                     {parseFloat(facture.amount).toFixed(2)} €
                   </span>
                 </div>

@@ -284,6 +284,27 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         yPos += 9;
       }
       
+      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      if (devis.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220); // Couleur légèrement ambrée
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0); // Orange pour l'augmentation
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (devis.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220); // Couleur légèrement ambrée
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0); // Orange pour l'augmentation
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
       doc.setFont(undefined, 'bold');
@@ -433,25 +454,25 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     <div className="space-y-6">
       {/* Stats - Horizontal on all screens */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <Card className="p-3 sm:p-4 bg-gradient-premium border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-primary/40 via-primary/25 to-primary/10 border border-primary/30 shadow-elegant hover:shadow-primary/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.total}</h3>
             <p className="text-xs sm:text-sm text-white/80">Devis totaux</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-trust border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-trust/40 via-trust/25 to-trust/10 border border-trust/30 shadow-elegant hover:shadow-trust/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.pending}</h3>
             <p className="text-xs sm:text-sm text-white/80">En attente</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-success border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-success/40 via-success/25 to-success/10 border border-success/30 shadow-elegant hover:shadow-success/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.accepted}</h3>
             <p className="text-xs sm:text-sm text-white/80">Acceptés</p>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-independence border-0 shadow-elegant">
+        <Card className="p-3 sm:p-4 bg-gradient-to-br from-independence/40 via-independence/25 to-independence/10 border border-independence/30 shadow-elegant hover:shadow-independence/50 transition-all">
           <div className="text-center">
             <h3 className="text-xl sm:text-3xl font-bold text-white">{stats.rejected}</h3>
             <p className="text-xs sm:text-sm text-white/80">Refusés</p>
@@ -551,23 +572,23 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               </div>
 
               {/* Course Details */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 border border-white/20">
+              <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 border border-white/20">
                 <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-cyan-300 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-white">Départ</p>
                     <p className="text-white/80">{devis.courses.pickup_address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-pink-300 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-white">Arrivée</p>
                     <p className="text-white/80">{devis.courses.destination_address}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-white/80">
-                  <Calendar className="w-4 h-4 text-white" />
+                  <Calendar className="w-4 h-4 text-purple-300" />
                   {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
                     locale: fr,
                   })}
@@ -575,13 +596,13 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               </div>
 
               {/* Price */}
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-4 mb-4">
+              <div className="bg-gradient-to-br from-success/30 to-success/10 backdrop-blur-sm border border-success/30 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Euro className="w-5 h-5 text-white" />
+                    <Euro className="w-5 h-5 text-success" />
                     <span className="font-semibold text-white">Montant TTC</span>
                   </div>
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-bold text-success">
                     {parseFloat(devis.amount).toFixed(2)} €
                   </span>
                 </div>

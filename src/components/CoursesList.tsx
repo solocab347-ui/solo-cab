@@ -114,6 +114,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             base_price,
             distance_price,
             time_price,
+            evening_surcharge_amount,
+            weekend_surcharge_amount,
+            discount_amount,
+            promo_code,
             created_at
           ),
           factures:factures(
@@ -124,6 +128,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             payment_status,
             payment_method,
             paid_at,
+            discount_amount,
+            promo_code,
             created_at
           )
         `)
@@ -503,6 +509,27 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         yPos += 9;
       }
       
+      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      if (devis.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (devis.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
       doc.setFont(undefined, 'bold');
@@ -700,13 +727,82 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       yPos += 8;
       doc.setTextColor(0, 0, 0);
       doc.setFont(undefined, 'normal');
-      doc.setFillColor(245, 245, 245);
+      
+      // Afficher les composantes de prix depuis le devis (version détaillée chauffeur)
+      const isMiseADisposition = devis?.time_price && devis.time_price > 0 && (!devis?.distance_price || devis.distance_price === 0);
+      
+      if (isMiseADisposition && devis) {
+        // Mise à disposition - afficher durée et tarif horaire
+        const hours = course.duration_minutes / 60;
+        const hourlyRate = devis.time_price / hours;
+        
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text(`Mise à disposition (${hours.toFixed(1)}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
+        doc.text(`${devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      } else if (devis) {
+        // Course classique - afficher base + distance
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text("Forfait de base", 25, yPos + 5);
+        doc.text(`${(devis.base_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 7;
+        doc.text("Prix au kilomètre", 25, yPos + 5);
+        doc.text(`${(devis.distance_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        
+        yPos += 9;
+      } else {
+        // Fallback sans devis
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.text("Montant HT", 25, yPos + 5);
+        doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 9;
+      }
+      
+      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      if (devis?.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (devis?.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Afficher la réduction si code promo appliqué
+      if ((facture.promo_code || devis?.promo_code) && (facture.discount_amount > 0 || devis?.discount_amount > 0)) {
+        const discountAmount = facture.discount_amount || devis?.discount_amount || 0;
+        const promoCode = facture.promo_code || devis?.promo_code || '';
+        doc.setTextColor(46, 125, 50);
+        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
+        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
+      doc.setFont(undefined, 'bold');
       doc.text("Sous-total HT", 25, yPos + 5);
       doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
-      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      doc.setFont(undefined, 'normal');
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 9;
@@ -743,7 +839,47 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 7;
-      doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
+      
+      // Afficher la réduction si code promo appliqué
+      if ((facture.promo_code || devis?.promo_code) && (facture.discount_amount > 0 || devis?.discount_amount > 0)) {
+        const discountAmount = facture.discount_amount || devis?.discount_amount || 0;
+        const promoCode = facture.promo_code || devis?.promo_code || '';
+        doc.setTextColor(46, 125, 50);
+        doc.text(`Réduction (${promoCode})`, 25, yPos + 5);
+        doc.text(`-${discountAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Afficher les augmentations soir/weekend si présentes
+      if (devis?.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Soir", 25, yPos + 5);
+        doc.text(`+${devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      if (devis?.weekend_surcharge_amount && devis.weekend_surcharge_amount > 0) {
+        doc.setFillColor(255, 245, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Weekend", 25, yPos + 5);
+        doc.text(`+${devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.text("Sous-total HT", 25, yPos + 5);
+      doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      
+      yPos += 7;
+      doc.setFont(undefined, 'normal');
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       
       yPos += 9;

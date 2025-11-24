@@ -363,6 +363,7 @@ export type Database = {
           discount_amount: number
           distance_price: number
           driver_id: string
+          evening_surcharge_amount: number | null
           id: string
           notes: string | null
           promo_code: string | null
@@ -371,6 +372,7 @@ export type Database = {
           time_price: number | null
           updated_at: string
           valid_until: string
+          weekend_surcharge_amount: number | null
         }
         Insert: {
           accepted_at?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           discount_amount?: number
           distance_price: number
           driver_id: string
+          evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
           promo_code?: string | null
@@ -390,6 +393,7 @@ export type Database = {
           time_price?: number | null
           updated_at?: string
           valid_until: string
+          weekend_surcharge_amount?: number | null
         }
         Update: {
           accepted_at?: string | null
@@ -401,6 +405,7 @@ export type Database = {
           discount_amount?: number
           distance_price?: number
           driver_id?: string
+          evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
           promo_code?: string | null
@@ -409,6 +414,7 @@ export type Database = {
           time_price?: number | null
           updated_at?: string
           valid_until?: string
+          weekend_surcharge_amount?: number | null
         }
         Relationships: [
           {

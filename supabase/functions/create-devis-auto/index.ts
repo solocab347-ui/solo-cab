@@ -144,6 +144,8 @@ Deno.serve(async (req) => {
             amount: finalAmount,
             discount_amount: discountAmount,
             promo_code: promoCode,
+            evening_surcharge_amount: pricing.surcharge_evening || 0,
+            weekend_surcharge_amount: pricing.surcharge_weekend || 0,
             valid_until: validUntil.toISOString(),
             status: 'pending',
           })
