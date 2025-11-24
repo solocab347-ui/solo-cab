@@ -225,12 +225,16 @@ const RegisterClientQR = () => {
                 {driver.company_name && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{driver.company_name}</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
-                  {driver.vehicle_color && (
-                    <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
-                  )}
-                </div>
+                {(driver.vehicle_model || driver.vehicle_color) && (
+                  <div className="flex flex-wrap gap-2">
+                    {driver.vehicle_model && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
+                    )}
+                    {driver.vehicle_color && (
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -240,24 +244,40 @@ const RegisterClientQR = () => {
               <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               Avantages Client Exclusif
             </h3>
-            <ul className="space-y-3 text-slate-700 dark:text-slate-300">
-              <li className="flex items-start gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700 dark:text-slate-300">
+              <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                 <span>Service personnalisé avec votre chauffeur attitré</span>
-              </li>
-              <li className="flex items-start gap-2">
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Tarification préférentielle</span>
-              </li>
-              <li className="flex items-start gap-2">
+                <span>Prix fixés d'avance et transparents</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Devis automatiques instantanés</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Factures en ligne accessibles 24/7</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Réservation facile en quelques clics</span>
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                 <span>Priorité sur les réservations</span>
-              </li>
-              <li className="flex items-start gap-2">
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
-                <span>Facturation simplifiée</span>
-              </li>
-            </ul>
+                <span>Historique complet de vos courses</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Paiement sécurisé en ligne</span>
+              </div>
+            </div>
           </div>
 
           {/* Formulaire d'inscription complet */}
@@ -265,18 +285,19 @@ const RegisterClientQR = () => {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Nom complet *</Label>
+                  <Label htmlFor="fullName" className="text-slate-700 dark:text-slate-300">Nom complet *</Label>
                   <Input
                     id="fullName"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jean Dupont"
                     required
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -284,11 +305,12 @@ const RegisterClientQR = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="jean.dupont@example.com"
                     required
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Téléphone *</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -296,11 +318,12 @@ const RegisterClientQR = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+33 6 12 34 56 78"
                     required
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe *</Label>
+                  <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Mot de passe *</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -309,6 +332,7 @@ const RegisterClientQR = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
+                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                     />
                     <Button
                       type="button"
@@ -318,17 +342,17 @@ const RegisterClientQR = () => {
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        <EyeOff className="h-4 w-4 text-slate-500" />
                       ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <Eye className="h-4 w-4 text-slate-500" />
                       )}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Minimum 6 caractères</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                  <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirmer le mot de passe *</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -337,6 +361,7 @@ const RegisterClientQR = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       required
+                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                     />
                     <Button
                       type="button"
@@ -346,9 +371,9 @@ const RegisterClientQR = () => {
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        <EyeOff className="h-4 w-4 text-slate-500" />
                       ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
+                        <Eye className="h-4 w-4 text-slate-500" />
                       )}
                     </Button>
                   </div>

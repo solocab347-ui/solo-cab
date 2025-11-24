@@ -232,7 +232,7 @@ const RegisterClientDriver = () => {
                 {driver.company_name && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{driver.company_name}</p>
                 )}
-                {(driver.vehicle_brand || driver.vehicle_model) && (
+                {(driver.vehicle_brand || driver.vehicle_model || driver.vehicle_color || driver.vehicle_year) && (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {driver.vehicle_brand && (
                       <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_brand}</Badge>
@@ -255,30 +255,42 @@ const RegisterClientDriver = () => {
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-2xl p-6 mb-8 border border-blue-200 dark:border-blue-800">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
               <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              Client Libre - En vous inscrivant
+              Avantages Client Libre
             </h3>
-            <ul className="space-y-3 text-slate-700 dark:text-slate-300">
-              <li className="flex items-start gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700 dark:text-slate-300">
+              <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Réservez facilement des courses avec ce chauffeur</span>
-              </li>
-              <li className="flex items-start gap-2">
+                <span>Réservation facile en quelques clics</span>
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Vous pouvez aussi réserver avec d'autres chauffeurs</span>
-              </li>
-              <li className="flex items-start gap-2">
+                <span>Prix fixés d'avance et transparents</span>
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Suivez l'historique de vos trajets</span>
-              </li>
-              <li className="flex items-start gap-2">
+                <span>Devis automatiques instantanés</span>
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Gérez vos devis et factures</span>
-              </li>
-              <li className="flex items-start gap-2">
+                <span>Factures en ligne accessibles 24/7</span>
+              </div>
+              <div className="flex items-start gap-2">
                 <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
-                <span>Accès à la vitrine publique pour découvrir plus de chauffeurs</span>
-              </li>
-            </ul>
+                <span>Accès à plusieurs chauffeurs</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Historique complet de vos courses</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Vitrine publique pour découvrir</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">✓</span>
+                <span>Paiement sécurisé en ligne</span>
+              </div>
+            </div>
           </div>
 
           {user ? (
@@ -307,7 +319,7 @@ const RegisterClientDriver = () => {
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nom complet *</Label>
+                <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">Nom complet *</Label>
                 <Input
                   id="name"
                   type="text"
@@ -316,11 +328,12 @@ const RegisterClientDriver = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   disabled={registering}
                   required
+                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -329,11 +342,12 @@ const RegisterClientDriver = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={registering}
                   required
+                  className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe *</Label>
+                <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -343,23 +357,23 @@ const RegisterClientDriver = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={registering}
                     required
-                    className="pr-10"
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Minimum 6 caractères
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirmer le mot de passe *</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -369,12 +383,12 @@ const RegisterClientDriver = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={registering}
                     required
-                    className="pr-10"
+                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
