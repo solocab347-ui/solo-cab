@@ -683,7 +683,20 @@ const DriverDashboard = () => {
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
             <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
-              <h2 className="text-xl font-bold mb-6 text-white">Profil Public</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Profil Public</h2>
+                {driverProfile?.driver?.id && publicProfileEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`/chauffeur/${driverProfile.driver.id}`, '_blank')}
+                    className="gap-2 border-white/20 text-white hover:bg-white/10"
+                  >
+                    <Globe className="w-4 h-4" />
+                    Voir mon profil public
+                  </Button>
+                )}
+              </div>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
