@@ -452,35 +452,40 @@ const DevisList = ({ clientId }: DevisListProps) => {
     toast.success("Devis téléchargé");
   };
 
-  const handleShareDevis = (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
-    // Génération de message contextuel avec formules de politesse
-    const { generateDevisShareMessage } = require("@/lib/courseMessageGenerator");
-    
-    const message = generateDevisShareMessage(
-      devis,
-      devis.courses,
-      devis.drivers,
-      devis.clients,
-      false // Client partage le devis
-    );
+  const handleShareDevis = async (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
+    try {
+      // CORRECTION: Import dynamique sécurisé au lieu de require
+      const { generateDevisShareMessage } = await import("@/lib/courseMessageGenerator");
+      
+      const message = generateDevisShareMessage(
+        devis,
+        devis.courses,
+        devis.drivers,
+        devis.clients,
+        false // Client partage le devis
+      );
 
-    const encodedMessage = encodeURIComponent(message);
+      const encodedMessage = encodeURIComponent(message);
 
-    switch (method) {
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
-        break;
-      case 'sms':
-        window.open(`sms:?body=${encodedMessage}`, '_blank');
-        break;
-      case 'email':
-        window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
-        break;
+      switch (method) {
+        case 'whatsapp':
+          window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+          break;
+        case 'sms':
+          window.open(`sms:?body=${encodedMessage}`, '_blank');
+          break;
+        case 'email':
+          window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodedMessage}`, '_blank');
+          break;
+        case 'facebook':
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
+          break;
+      }
+      toast.success("Message préparé pour partage");
+    } catch (error) {
+      console.error("Error sharing devis:", error);
+      toast.error("Erreur lors de la préparation du partage");
     }
-    toast.success("Message préparé pour partage");
   };
 
   if (loading) {
