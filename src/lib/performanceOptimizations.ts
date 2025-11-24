@@ -3,27 +3,16 @@
  * Utilitaires pour éviter les gels d'interface et améliorer la réactivité
  */
 
-// Debounce function optimisé pour scalabilité (500ms standard)
+// Debounce function optimisé pour scalabilité (300ms pour réactivité max)
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number = 500 // Défaut 500ms pour recherches
+  wait: number = 300 // Réduit à 300ms pour plus de réactivité
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  let lastArgs: Parameters<T> | null = null;
   
   return function executedFunction(...args: Parameters<T>) {
-    lastArgs = args;
-    
-    const later = () => {
-      clearTimeout(timeout);
-      if (lastArgs) {
-        func(...lastArgs);
-        lastArgs = null;
-      }
-    };
-    
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
