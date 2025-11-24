@@ -226,15 +226,19 @@ const ChauffeurProfile = () => {
               <div className="flex flex-col items-center text-center gap-8">
                 {/* Large centered profile photo */}
                 <div className="relative">
-                  <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20">
-                    {driver.profile_photo_url && driver.profile_photo_url.trim() !== '' ? (
+                  <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20 overflow-hidden">
+                    {driver.profile_photo_url ? (
                       <img
                         src={driver.profile_photo_url}
                         alt={driver.full_name}
-                        className="w-full h-full rounded-full object-cover object-[center_20%]"
+                        className="w-full h-full object-cover object-[center_20%]"
+                        onError={(e) => {
+                          console.error("Error loading profile photo");
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     ) : (
-                      driver.full_name.charAt(0).toUpperCase()
+                      <span className="text-7xl">{driver.full_name.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                   {/* Badge de statut professionnel */}
