@@ -122,19 +122,24 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       {/* Welcome Header */}
-      <div className="text-center sm:text-left animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
-          Bonjour, {driverProfile?.full_name || 'Chauffeur'} ✨
-        </h1>
-        <div className="flex items-center gap-4 justify-center sm:justify-start">
-          <p className="text-gray-300">Voici un aperçu de votre activité</p>
+      <div className="text-left animate-fade-in">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+              Bienvenue, {driverProfile?.full_name || 'Chauffeur'}
+            </h1>
+            <p className="text-muted-foreground text-lg">Tableau de bord professionnel</p>
+          </div>
           {driverProfile?.driver?.rating && (
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-white font-semibold">
-                {Number(driverProfile.driver.rating).toFixed(1)}/5
-              </span>
-              <span className="text-xs text-gray-300">Note moyenne</span>
+            <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-premium">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 fill-warning text-warning" />
+                <span className="text-2xl font-bold text-foreground">
+                  {Number(driverProfile.driver.rating).toFixed(1)}
+                </span>
+              </div>
+              <div className="w-px h-8 bg-border"></div>
+              <span className="text-sm text-muted-foreground">Note moyenne</span>
             </div>
           )}
         </div>
@@ -142,50 +147,58 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
       {/* Accès Rapide */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Accès Rapide</h2>
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+          Accès Rapide
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-success hover:shadow-success hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-success group"
             onClick={() => navigate("/driver/create-course")}
           >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+            <div className="absolute inset-0 bg-gradient-success opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-success rounded-2xl flex items-center justify-center shadow-success group-hover:scale-110 transition-transform">
+                <Plus className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Nouvelle Course</h3>
-                <p className="text-sm text-white/80">Créer pour un client</p>
+                <h3 className="text-xl font-bold text-foreground mb-1">Nouvelle Course</h3>
+                <p className="text-sm text-muted-foreground">Créer pour un client</p>
               </div>
             </div>
           </Card>
 
           {/* Mon QR Code */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-independence hover:shadow-premium hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group"
             onClick={() => onTabChange("qrcode")}
           >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <QrCode className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+            <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-premium rounded-2xl flex items-center justify-center shadow-premium group-hover:scale-110 transition-transform">
+                <QrCode className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-white">Mon QR Code</h3>
+                <h3 className="text-xl font-bold text-foreground">Mon QR Code</h3>
+                <p className="text-sm text-muted-foreground">Partager avec clients</p>
               </div>
             </div>
           </Card>
 
           {/* Calculatrice */}
           <Card 
-            className="p-6 sm:p-8 bg-gradient-renewal hover:shadow-trust hover:scale-[1.02] transition-all cursor-pointer border-0 group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-trust group"
             onClick={() => onTabChange("calculator")}
           >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Calculator className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+            <div className="absolute inset-0 bg-gradient-trust opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-trust rounded-2xl flex items-center justify-center shadow-trust group-hover:scale-110 transition-transform">
+                <Calculator className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-white">Calculatrice</h3>
+                <h3 className="text-xl font-bold text-foreground">Calculatrice</h3>
+                <p className="text-sm text-muted-foreground">Estimer un prix</p>
               </div>
             </div>
           </Card>
@@ -194,100 +207,120 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
       {/* Aujourd'hui */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Aujourd'hui</h2>
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+          Aujourd'hui
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {/* Courses */}
-          <Card className="p-6 bg-gradient-trust hover:shadow-trust transition-all border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Car className="w-6 h-6 text-white" />
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-trust transition-all hover:shadow-trust/80">
+            <div className="absolute inset-0 bg-gradient-trust opacity-10"></div>
+            <div className="relative z-10 flex items-start gap-6">
+              <div className="w-16 h-16 bg-gradient-trust rounded-2xl flex items-center justify-center flex-shrink-0 shadow-trust">
+                <Car className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white/80 mb-1">Courses</p>
-                <h3 className="text-3xl sm:text-4xl font-bold text-white truncate">
+                <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">Courses</p>
+                <h3 className="text-5xl font-bold text-foreground mb-1">
                   {loading ? "..." : stats.todayCourses}
                 </h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="w-2 h-2 bg-trust rounded-full animate-pulse"></div>
+                  <span className="text-xs text-muted-foreground">En temps réel</span>
+                </div>
               </div>
             </div>
           </Card>
 
           {/* Revenue */}
-          <Card className="p-6 bg-gradient-premium hover:shadow-premium transition-all border-0">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-6 h-6 text-white" />
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-premium transition-all hover:shadow-premium/80">
+            <div className="absolute inset-0 bg-gradient-premium opacity-10"></div>
+            <div className="relative z-10 flex items-start gap-6">
+              <div className="w-16 h-16 bg-gradient-premium rounded-2xl flex items-center justify-center flex-shrink-0 shadow-premium">
+                <TrendingUp className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white/80 mb-1">Revenus</p>
-                <h3 className="text-3xl sm:text-4xl font-bold text-white truncate">
+                <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">Revenus</p>
+                <h3 className="text-5xl font-bold text-foreground mb-1">
                   {loading ? "..." : `${stats.todayRevenue.toFixed(0)}€`}
                 </h3>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="w-2 h-2 bg-premium rounded-full animate-pulse"></div>
+                  <span className="text-xs text-muted-foreground">Aujourd'hui</span>
+                </div>
               </div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Ce mois */}
+      {/* Ce mois - Statistiques */}
       <div className="animate-fade-in">
-        <h2 className="text-lg sm:text-xl font-bold mb-4 text-white">Ce mois</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+          Ce mois
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Clients */}
-          <Card className="p-4 sm:p-6 bg-gradient-freedom hover:shadow-success transition-all border-0">
-            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-success hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-success opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-success rounded-xl flex items-center justify-center shadow-success">
+                <Users className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white">
+                <h3 className="text-4xl font-bold text-foreground mb-1">
                   {loading ? "..." : stats.monthClients}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/80 mt-1">Clients</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Clients</p>
               </div>
             </div>
           </Card>
 
           {/* Courses */}
-          <Card className="p-4 sm:p-6 bg-gradient-independence hover:shadow-trust transition-all border-0">
-            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-trust hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-trust opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-trust rounded-xl flex items-center justify-center shadow-trust">
+                <Car className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white">
+                <h3 className="text-4xl font-bold text-foreground mb-1">
                   {loading ? "..." : stats.monthCourses}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/80 mt-1">Courses</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Courses</p>
               </div>
             </div>
           </Card>
 
           {/* Terminées */}
-          <Card className="p-4 sm:p-6 bg-gradient-renewal hover:shadow-premium transition-all border-0">
-            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-premium hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-premium opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-premium rounded-xl flex items-center justify-center shadow-premium">
+                <CheckCircle2 className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white">
+                <h3 className="text-4xl font-bold text-foreground mb-1">
                   {loading ? "..." : stats.monthCompleted}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/80 mt-1">Terminées</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">Terminées</p>
               </div>
             </div>
           </Card>
 
           {/* CA Total */}
-          <Card className="p-4 sm:p-6 bg-gradient-success hover:shadow-success transition-all border-0">
-            <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 shadow-warning hover:scale-[1.02] transition-all">
+            <div className="absolute inset-0 bg-gradient-warning opacity-5"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-gradient-warning rounded-xl flex items-center justify-center shadow-warning">
+                <TrendingUp className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white truncate w-full">
+                <h3 className="text-4xl font-bold text-foreground mb-1">
                   {loading ? "..." : `${stats.monthRevenue.toFixed(0)}€`}
                 </h3>
-                <p className="text-xs sm:text-sm text-white/80 mt-1">CA Total</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider">CA Total</p>
               </div>
             </div>
           </Card>

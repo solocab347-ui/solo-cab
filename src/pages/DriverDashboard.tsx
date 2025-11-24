@@ -262,16 +262,16 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
+    <div className="min-h-screen bg-gradient-bg">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black shadow-elegant sticky top-0 z-10 backdrop-blur-sm">
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-trust rounded-xl flex items-center justify-center shadow-trust">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
                 SoloCab
               </span>
             </div>
@@ -287,8 +287,17 @@ const DriverDashboard = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-medium text-white drop-shadow">{driverProfile?.full_name || "Chauffeur"}</span>
-              <Badge variant="outline" className="border-white/30 text-white text-xs bg-white/10 backdrop-blur-sm">
+              <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || "Chauffeur"}</span>
+              <Badge 
+                variant="outline" 
+                className={`text-xs border ${
+                  driverProfile?.driver?.free_access_granted 
+                    ? "border-success/50 text-success bg-success/10" 
+                    : driverProfile?.driver?.subscription_status === "active" 
+                      ? "border-primary/50 text-primary bg-primary/10"
+                      : "border-muted-foreground/50 text-muted-foreground bg-muted"
+                }`}
+              >
                 {driverProfile?.driver?.free_access_granted 
                   ? "Accès Gratuit" 
                   : driverProfile?.driver?.subscription_status === "active" 
@@ -297,11 +306,11 @@ const DriverDashboard = () => {
               </Badge>
             </div>
             <Link to="/rgpd-data">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10" title="Mes Données RGPD">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground hover:bg-muted" title="Mes Données RGPD">
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-white hover:bg-white/10">
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground hover:bg-muted">
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
@@ -309,12 +318,6 @@ const DriverDashboard = () => {
       </header>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
-            Bonjour, {driverProfile?.full_name?.split(" ")[0] || "Chauffeur"} ✨
-          </h1>
-          <p className="text-sm sm:text-base text-gray-400">Voici un aperçu de votre activité</p>
-        </div>
 
         {/* Subscription Alert */}
         {driverProfile?.driver?.subscription_status !== "active" && !driverProfile?.driver?.free_access_granted && (
