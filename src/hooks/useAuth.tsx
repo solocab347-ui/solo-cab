@@ -30,11 +30,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .throwOnError();
 
       if (error) throw error;
       
       const roles = data?.map((r) => r.role) || [];
+      
+      if (roles.length === 0) {
+        console.warn("⚠️ No roles found for user:", userId);
+      }
+      
       setUserRoles(roles);
       
       // Set primary role (priority: admin > driver > client)
@@ -49,7 +55,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(primaryRole);
       return primaryRole;
     } catch (error) {
-      console.error("Error fetching user role:", error);
+      console.error("❌ Error fetching user role:", error);
+      setUserRoles([]);
+      setUserRole(null);
       return null;
     }
   };
@@ -169,18 +177,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Erreur de connexion");
 
-      // Récupérer le rôle IMMÉDIATEMENT après connexion
-      const role = await fetchUserRole(data.user.id);
+      // Récupérer le rôle avec timeout de sécurité
+      let role: string | null = null;
+      try {
+        const rolePromise = fetchUserRole(data.user.id);
+        const timeoutPromise = new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), 5000)
+        );
+        role = await Promise.race([rolePromise, timeoutPromise]);
+      } catch (roleError) {
+        console.error("Error fetching role:", roleError);
+        // Fallback: essayer de récupérer depuis user_roles directement
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id)
+          .limit(1)
+          .single();
+        role = roleData?.role || null;
+      }
       
       toast.success("Connexion réussie !");
 
-      // Navigation IMMÉDIATE basée sur le rôle
-      if (role === "driver") {
-        navigate("/driver-dashboard");
+      // Navigation GARANTIE basée sur le rôle avec fallback
+      if (role === "admin") {
+        navigate("/admin-dashboard", { replace: true });
+      } else if (role === "driver") {
+        navigate("/driver-dashboard", { replace: true });
       } else if (role === "client") {
-        navigate("/client-dashboard");
-      } else if (role === "admin") {
-        navigate("/admin-dashboard");
+        navigate("/client-dashboard", { replace: true });
+      } else {
+        // Fallback: rediriger vers une page d'accueil si rôle inconnu
+        console.warn("Unknown role, redirecting to home");
+        navigate("/", { replace: true });
       }
     } catch (error: any) {
       console.error("Signin error:", error);

@@ -9,13 +9,26 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const Login = () => {
-  const { signIn, user } = useAuth();
+  const { signIn, user, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+
+  // Redirection automatique si déjà connecté
+  useEffect(() => {
+    if (!authLoading && user && userRole) {
+      if (userRole === "admin") {
+        navigate("/admin-dashboard", { replace: true });
+      } else if (userRole === "driver") {
+        navigate("/driver-dashboard", { replace: true });
+      } else if (userRole === "client") {
+        navigate("/client-dashboard", { replace: true });
+      }
+    }
+  }, [user, userRole, authLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +40,22 @@ const Login = () => {
     setLoading(true);
     try {
       await signIn(loginEmail, loginPassword);
+      // La navigation est gérée dans signIn() - pas besoin de setLoading(false)
+      // car le composant sera démonté lors de la navigation
     } catch (error) {
       // Error handled in useAuth
-    } finally {
       setLoading(false);
     }
   };
+
+  // Afficher un loader pendant la vérification d'authentification
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-premium" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -65,6 +88,7 @@ const Login = () => {
                 onChange={(e) => setLoginEmail(e.target.value)}
                 disabled={loading}
                 className="transition-all focus:shadow-sm"
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -77,6 +101,7 @@ const Login = () => {
                 onChange={(e) => setLoginPassword(e.target.value)}
                 disabled={loading}
                 className="transition-all focus:shadow-sm"
+                autoComplete="current-password"
               />
             </div>
             <div className="flex items-center justify-between text-sm">

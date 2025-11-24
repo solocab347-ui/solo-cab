@@ -96,11 +96,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Routes pour notifications - requireValidatedDriver pour drivers seulement */}
+            {/* Routes pour notifications - accessible à tous */}
             <Route
               path="/notifications"
               element={
-                <ProtectedRoute allowedRoles={["driver", "client", "admin"]} requireValidatedDriver>
+                <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
                   <Notifications />
                 </ProtectedRoute>
               }
@@ -113,11 +113,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            {/* Route RGPD - requireValidatedDriver pour drivers seulement */}
+            {/* Route RGPD - accessible à driver et client */}
             <Route
               path="/rgpd-data"
               element={
-                <ProtectedRoute allowedRoles={["driver", "client"]} requireValidatedDriver>
+                <ProtectedRoute allowedRoles={["driver", "client"]}>
                   <RGPDData />
                 </ProtectedRoute>
               }

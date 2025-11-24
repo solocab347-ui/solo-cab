@@ -87,7 +87,7 @@ class PerformanceMonitor {
           total: totalMB.toFixed(2) + 'MB',
           percentage: percentage.toFixed(1) + '%'
         });
-      } else if (percentage > 75) {
+      } else if (percentage > 85) {
         console.warn('⚠️ Mémoire élevée:', {
           used: usedMB.toFixed(2) + 'MB',
           percentage: percentage.toFixed(1) + '%'
