@@ -51,19 +51,33 @@ const ClientDashboard = () => {
   });
 
   useEffect(() => {
-    fetchClientProfile();
-    fetchStats();
+    let isMounted = true;
     
-    // Check for payment success
-    const paymentStatus = searchParams.get("payment");
-    if (paymentStatus === "success") {
-      toast.success("Paiement confirmé ! Votre course est réservée.");
-      setSearchParams({});
-    } else if (paymentStatus === "cancelled") {
-      toast.error("Paiement annulé");
-      setSearchParams({});
-    }
-  }, [user, searchParams]);
+    const loadData = async () => {
+      if (!isMounted) return;
+      
+      await Promise.all([
+        fetchClientProfile(),
+        fetchStats()
+      ]);
+      
+      // Check for payment success
+      const paymentStatus = searchParams.get("payment");
+      if (paymentStatus === "success") {
+        toast.success("Paiement confirmé ! Votre course est réservée.");
+        setSearchParams({});
+      } else if (paymentStatus === "cancelled") {
+        toast.error("Paiement annulé");
+        setSearchParams({});
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const fetchStats = async () => {
     if (!user) return;

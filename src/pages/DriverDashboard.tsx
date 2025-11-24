@@ -76,7 +76,19 @@ const DriverDashboard = () => {
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
 
   useEffect(() => {
-    fetchDriverProfile();
+    let isMounted = true;
+    
+    const loadProfile = async () => {
+      if (isMounted) {
+        await fetchDriverProfile();
+      }
+    };
+    
+    loadProfile();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const fetchDriverProfile = async () => {

@@ -122,35 +122,51 @@ const Chauffeurs = () => {
     }
   }, []);
 
-  // Relancer automatiquement la recherche quand on revient sur la page avec des paramètres enregistrés
+  // Relancer automatiquement la recherche (OPTIMISÉ)
   useEffect(() => {
+    let isMounted = true;
+    
     const autoRefreshSearch = async () => {
-      // Vérifier qu'on a des paramètres de recherche valides
+      if (!isMounted) return;
+      
       const hasValidCitySearch = searchMode === "city" && citySearch && cityCoordinates;
       const hasValidAddressSearch = searchMode === "address" && addressSearch && addressCoordinates;
       
       if (hasValidCitySearch || hasValidAddressSearch) {
-        console.log("🔄 Relance automatique de la recherche avec les paramètres enregistrés");
+        console.log("🔄 Relance automatique de la recherche");
         await handleSearch();
       }
     };
 
-    // Délai court pour éviter les appels multiples au montage initial
-    const timer = setTimeout(() => {
-      autoRefreshSearch();
-    }, 300);
+    const timer = setTimeout(autoRefreshSearch, 300);
 
-    return () => clearTimeout(timer);
-  }, []); // Se déclenche uniquement au montage du composant
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
-    checkClientAccess();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (!isMounted) return;
+      await checkClientAccess();
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
-  // Écouter les mises à jour en temps réel des profils de chauffeurs
+  // Écouter les mises à jour en temps réel des profils de chauffeurs (OPTIMISÉ)
   useEffect(() => {
     if (!searchPerformed || drivers.length === 0) return;
 
+    let updateTimeout: NodeJS.Timeout;
+    
     const channel = supabase
       .channel('driver-profile-updates')
       .on(
@@ -161,27 +177,32 @@ const Chauffeurs = () => {
           table: 'drivers'
         },
         (payload) => {
-          console.log('🔄 Mise à jour détectée pour un chauffeur:', payload);
-          
-          // Mettre à jour le chauffeur dans la liste
-          setDrivers(prevDrivers => {
-            const updatedDrivers = prevDrivers.map(driver => {
-              if (driver.id === payload.new.id) {
-                return {
-                  ...driver,
-                  ...payload.new,
-                  // Garder les données de profil
-                  full_name: driver.full_name,
-                  profile_photo_url: driver.profile_photo_url,
-                };
-              }
-              return driver;
-            });
+          // Débounce les mises à jour pour éviter trop de re-renders
+          clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(() => {
+            console.log('🔄 Mise à jour chauffeur:', payload.new.id);
             
-            // Mettre à jour le sessionStorage avec timestamp
-            setStoredData("searchResults", updatedDrivers);
-            return updatedDrivers;
-          });
+            setDrivers(prevDrivers => {
+              const updated = prevDrivers.map(driver => {
+                if (driver.id === payload.new.id) {
+                  return {
+                    ...driver,
+                    ...payload.new,
+                    full_name: driver.full_name,
+                    profile_photo_url: driver.profile_photo_url,
+                  };
+                }
+                return driver;
+              });
+              
+              // Mise à jour en lot dans sessionStorage
+              requestIdleCallback(() => {
+                setStoredData("searchResults", updated);
+              });
+              
+              return updated;
+            });
+          }, 500);
         }
       )
       .on(
@@ -192,70 +213,66 @@ const Chauffeurs = () => {
           table: 'profiles'
         },
         (payload) => {
-          console.log('🔄 Mise à jour détectée pour un profil:', payload);
-          
-          // Mettre à jour les informations de profil du chauffeur
-          setDrivers(prevDrivers => {
-            const updatedDrivers = prevDrivers.map(driver => {
-              if (driver.user_id === payload.new.id) {
-                return {
-                  ...driver,
-                  full_name: payload.new.full_name,
-                  profile_photo_url: payload.new.profile_photo_url,
-                };
-              }
-              return driver;
-            });
+          clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(() => {
+            console.log('🔄 Mise à jour profil:', payload.new.id);
             
-            // Mettre à jour le sessionStorage avec timestamp
-            setStoredData("searchResults", updatedDrivers);
-            return updatedDrivers;
-          });
+            setDrivers(prevDrivers => {
+              const updated = prevDrivers.map(driver => {
+                if (driver.user_id === payload.new.id) {
+                  return {
+                    ...driver,
+                    full_name: payload.new.full_name,
+                    profile_photo_url: payload.new.profile_photo_url,
+                  };
+                }
+                return driver;
+              });
+              
+              requestIdleCallback(() => {
+                setStoredData("searchResults", updated);
+              });
+              
+              return updated;
+            });
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(updateTimeout);
       supabase.removeChannel(channel);
     };
-  }, [searchPerformed, drivers.length]);
-
-  // Sauvegarder l'état de recherche dans sessionStorage avec timestamp
-  useEffect(() => {
-    setStoredData("searchMode", searchMode);
-  }, [searchMode]);
-
-  useEffect(() => {
-    setStoredData("citySearch", citySearch);
-  }, [citySearch]);
-
-  useEffect(() => {
-    if (cityCoordinates) {
-      setStoredData("cityCoordinates", cityCoordinates);
-    }
-  }, [cityCoordinates]);
-
-  useEffect(() => {
-    setStoredData("addressSearch", addressSearch);
-  }, [addressSearch]);
-
-  useEffect(() => {
-    if (addressCoordinates) {
-      setStoredData("addressCoordinates", addressCoordinates);
-    }
-  }, [addressCoordinates]);
-
-  useEffect(() => {
-    setStoredData("radiusCity", radiusCity[0]);
-  }, [radiusCity]);
-
-  useEffect(() => {
-    setStoredData("radiusAddress", radiusAddress[0]);
-  }, [radiusAddress]);
-
-  useEffect(() => {
-    setStoredData("searchPerformed", searchPerformed);
   }, [searchPerformed]);
+
+  // Sauvegarder l'état de recherche dans sessionStorage avec timestamp (OPTIMISÉ)
+  useEffect(() => {
+    // Batch toutes les écritures sessionStorage avec requestIdleCallback
+    const updates = [
+      () => setStoredData("searchMode", searchMode),
+      () => setStoredData("citySearch", citySearch),
+      () => cityCoordinates && setStoredData("cityCoordinates", cityCoordinates),
+      () => setStoredData("addressSearch", addressSearch),
+      () => addressCoordinates && setStoredData("addressCoordinates", addressCoordinates),
+      () => setStoredData("radiusCity", radiusCity[0]),
+      () => setStoredData("radiusAddress", radiusAddress[0]),
+      () => setStoredData("searchPerformed", searchPerformed)
+    ];
+
+    requestIdleCallback(() => {
+      updates.forEach(update => update());
+    });
+  }, [
+    searchMode,
+    citySearch,
+    cityCoordinates,
+    addressSearch,
+    addressCoordinates,
+    radiusCity,
+    radiusAddress,
+    searchPerformed
+  ]);
 
   const checkClientAccess = async () => {
     if (!user) {
