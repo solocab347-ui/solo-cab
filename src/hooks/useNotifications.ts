@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface Notification {
@@ -77,27 +78,37 @@ export const useNotifications = () => {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    if (!user) return;
 
-    // Subscribe to realtime notifications
-    const channel = supabase
-      .channel("notifications-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user?.id}`,
-        },
-        () => {
+    let isMounted = true;
+
+    const loadNotifications = async () => {
+      if (isMounted) {
+        await fetchNotifications();
+      }
+    };
+
+    loadNotifications();
+
+    // Subscribe to realtime notifications avec subscriptionManager
+    const cleanup = subscriptionManager.subscribe(
+      `notifications-${user.id}`,
+      {
+        table: "notifications",
+        event: "*",
+        filter: `user_id=eq.${user.id}`,
+        debounceMs: 1000
+      },
+      () => {
+        if (isMounted) {
           fetchNotifications();
         }
-      )
-      .subscribe();
+      }
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      cleanup();
     };
   }, [user]);
 

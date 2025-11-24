@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { FileText, CheckCircle, XCircle, Clock, Euro, Download, MessageCircle, Mail, Share2 } from "lucide-react";
 import { format } from "date-fns";
@@ -68,22 +69,18 @@ const DevisList = ({ clientId }: DevisListProps) => {
   };
 
   const setupRealtimeSubscription = () => {
-    const channel = supabase
-      .channel("devis-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "devis",
-        },
-        () => fetchDevis()
-      )
-      .subscribe();
+    if (!clientId) return () => {};
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return subscriptionManager.subscribe(
+      `devis-client-${clientId}`,
+      {
+        table: "devis",
+        event: "*",
+        filter: `client_id=eq.${clientId}`,
+        debounceMs: 1000
+      },
+      () => fetchDevis()
+    );
   };
 
   const handleAccept = async (devisId: string) => {

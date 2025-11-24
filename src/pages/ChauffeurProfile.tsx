@@ -21,6 +21,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
@@ -70,50 +71,45 @@ const ChauffeurProfile = () => {
     }
   }, [id]);
 
-  // Supabase Realtime subscriptions optimisées pour éviter les bugs visuels
+  // Supabase Realtime subscriptions OPTIMISÉES avec subscriptionManager
   useEffect(() => {
     if (!id) return;
 
-    console.log("🔔 Configuration real-time optimisée pour:", id);
+    let isMounted = true;
     
-    // Canal unique pour éviter les duplications
-    const channel = supabase
-      .channel(`driver-profile-updates-${id}`, {
-        config: {
-          broadcast: { self: false }
-        }
-      })
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'drivers',
-          filter: `id=eq.${id}`
-        },
-        () => {
-          console.log("🔄 Mise à jour driver");
-          // Délai court pour éviter trop de re-renders
+    const cleanupDriver = subscriptionManager.subscribe(
+      `driver-profile-${id}`,
+      {
+        table: 'drivers',
+        event: 'UPDATE',
+        filter: `id=eq.${id}`,
+        debounceMs: 1000
+      },
+      () => {
+        if (isMounted) {
           setTimeout(() => fetchDriverProfile(id), 300);
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles'
-        },
-        () => {
-          console.log("🔄 Mise à jour profile");
+      }
+    );
+
+    const cleanupProfile = subscriptionManager.subscribe(
+      `profile-updates-${id}`,
+      {
+        table: 'profiles',
+        event: 'UPDATE',
+        debounceMs: 1000
+      },
+      () => {
+        if (isMounted) {
           setTimeout(() => fetchDriverProfile(id), 300);
         }
-      )
-      .subscribe();
+      }
+    );
 
     return () => {
-      console.log("🔌 Nettoyage canal real-time");
-      supabase.removeChannel(channel);
+      isMounted = false;
+      cleanupDriver();
+      cleanupProfile();
     };
   }, [id]);
 

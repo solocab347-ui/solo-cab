@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
 import { toast } from "sonner";
 import { useAuth } from "./useAuth";
 
@@ -218,70 +219,76 @@ export const useMessaging = () => {
     }
   }, [user, fetchConversations]);
 
-  // Setup realtime subscriptions
+  // Setup realtime subscriptions OPTIMISÉES avec subscriptionManager
   useEffect(() => {
     if (!user) return;
 
-    fetchConversations();
+    let isMounted = true;
 
-    // Subscribe to new messages
-    const messagesChannel = supabase
-      .channel("messages-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          console.log("Message change:", payload);
-          if (payload.new && selectedConversation) {
-            const newMsg = payload.new as Message;
-            if (newMsg.conversation_id === selectedConversation) {
-              // Avoid duplicates (optimistic updates)
-              setMessages((prev) => {
-                const exists = prev.some((m) => m.id === newMsg.id);
-                if (exists) return prev;
-                // Remove temp message if exists
-                const filtered = prev.filter((m) => !m.id.startsWith("temp-"));
-                return [...filtered, newMsg];
-              });
-              // Mark as read if not from current user
-              if (newMsg.sender_id !== user.id) {
-                supabase
-                  .from("messages")
-                  .update({ is_read: true })
-                  .eq("id", newMsg.id)
-                  .then(() => fetchConversations());
-              }
-            } else {
-              fetchConversations();
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchConversations();
+      }
+    };
+
+    loadData();
+
+    // Subscribe to messages avec debouncing
+    const cleanupMessages = subscriptionManager.subscribe(
+      `messages-${user.id}`,
+      {
+        table: "messages",
+        event: "*",
+        debounceMs: 500
+      },
+      (payload) => {
+        if (!isMounted) return;
+        
+        if (payload.new && selectedConversation) {
+          const newMsg = payload.new as Message;
+          if (newMsg.conversation_id === selectedConversation) {
+            setMessages((prev) => {
+              const exists = prev.some((m) => m.id === newMsg.id);
+              if (exists) return prev;
+              const filtered = prev.filter((m) => !m.id.startsWith("temp-"));
+              return [...filtered, newMsg];
+            });
+            
+            if (newMsg.sender_id !== user.id) {
+              supabase
+                .from("messages")
+                .update({ is_read: true })
+                .eq("id", newMsg.id)
+                .then(() => {
+                  if (isMounted) fetchConversations();
+                });
             }
+          } else {
+            if (isMounted) fetchConversations();
           }
         }
-      )
-      .subscribe();
+      }
+    );
 
-    // Subscribe to conversation updates
-    const conversationsChannel = supabase
-      .channel("conversations-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversations",
-        },
-        () => {
+    // Subscribe to conversations avec debouncing
+    const cleanupConversations = subscriptionManager.subscribe(
+      `conversations-${user.id}`,
+      {
+        table: "conversations",
+        event: "*",
+        debounceMs: 1000
+      },
+      () => {
+        if (isMounted) {
           fetchConversations();
         }
-      )
-      .subscribe();
+      }
+    );
 
     return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(conversationsChannel);
+      isMounted = false;
+      cleanupMessages();
+      cleanupConversations();
     };
   }, [user, selectedConversation, fetchConversations]);
 
