@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
         _distance_km: course.distance_km || 0,
         _duration_minutes: course.duration_minutes || 0,
         _use_hourly_rate: use_hourly_rate,
+        _scheduled_date: course.scheduled_date, // Passer la date pour les augmentations soir/weekend
       });
 
     if (priceError || !priceData || priceData.length === 0) {
