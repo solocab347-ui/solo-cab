@@ -41,33 +41,63 @@ const Chauffeurs = () => {
   const { user } = useAuth();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Fonction pour vérifier et récupérer les données du sessionStorage avec expiration
+  const getStoredData = (key: string, expirationMinutes: number = 10) => {
+    const item = sessionStorage.getItem(key);
+    if (!item) return null;
+    
+    try {
+      const parsed = JSON.parse(item);
+      const now = new Date().getTime();
+      
+      // Si les données ont un timestamp et qu'elles sont expirées
+      if (parsed.timestamp && (now - parsed.timestamp) > expirationMinutes * 60 * 1000) {
+        console.log(`🕐 Données expirées pour ${key}, suppression...`);
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      
+      return parsed.value !== undefined ? parsed.value : parsed;
+    } catch (error) {
+      return item;
+    }
+  };
+  
+  // Fonction pour sauvegarder avec timestamp
+  const setStoredData = (key: string, value: any) => {
+    const data = {
+      value,
+      timestamp: new Date().getTime()
+    };
+    sessionStorage.setItem(key, JSON.stringify(data));
+  };
+  
   const [searchMode, setSearchMode] = useState<"city" | "address">(() => {
-    return (sessionStorage.getItem("searchMode") as "city" | "address") || "city";
+    return (getStoredData("searchMode") as "city" | "address") || "city";
   });
   const [citySearch, setCitySearch] = useState(() => {
-    return sessionStorage.getItem("citySearch") || "";
+    return getStoredData("citySearch") || "";
   });
   const [cityCoordinates, setCityCoordinates] = useState<{ latitude: number; longitude: number } | null>(() => {
-    const stored = sessionStorage.getItem("cityCoordinates");
-    return stored ? JSON.parse(stored) : null;
+    return getStoredData("cityCoordinates");
   });
   const [addressSearch, setAddressSearch] = useState(() => {
-    return sessionStorage.getItem("addressSearch") || "";
+    return getStoredData("addressSearch") || "";
   });
   const [addressCoordinates, setAddressCoordinates] = useState<{ latitude: number; longitude: number } | null>(() => {
-    const stored = sessionStorage.getItem("addressCoordinates");
-    return stored ? JSON.parse(stored) : null;
+    return getStoredData("addressCoordinates");
   });
   const [radiusCity, setRadiusCity] = useState<number[]>(() => {
-    const stored = sessionStorage.getItem("radiusCity");
-    return stored ? [parseInt(stored)] : [10];
+    const stored = getStoredData("radiusCity");
+    return stored ? [stored] : [10];
   });
   const [radiusAddress, setRadiusAddress] = useState<number[]>(() => {
-    const stored = sessionStorage.getItem("radiusAddress");
-    return stored ? [parseInt(stored)] : [10];
+    const stored = getStoredData("radiusAddress");
+    return stored ? [stored] : [10];
   });
   const [searchPerformed, setSearchPerformed] = useState(() => {
-    return sessionStorage.getItem("searchPerformed") === "true";
+    return getStoredData("searchPerformed") === true;
   });
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -75,13 +105,20 @@ const Chauffeurs = () => {
 
   // Restaurer les résultats de recherche au chargement si disponibles
   useEffect(() => {
-    const storedDrivers = sessionStorage.getItem("searchResults");
+    const storedDrivers = getStoredData("searchResults", 10);
     if (storedDrivers && searchPerformed) {
       try {
-        setDrivers(JSON.parse(storedDrivers));
+        setDrivers(storedDrivers);
+        console.log("✅ Résultats de recherche restaurés depuis le cache");
       } catch (error) {
         console.error("Error parsing stored drivers:", error);
+        sessionStorage.removeItem("searchResults");
       }
+    } else if (!storedDrivers && searchPerformed) {
+      // Les données ont expiré, réinitialiser l'état
+      console.log("🔄 Données de recherche expirées, réinitialisation...");
+      setSearchPerformed(false);
+      setDrivers([]);
     }
   }, []);
 
@@ -120,8 +157,8 @@ const Chauffeurs = () => {
               return driver;
             });
             
-            // Mettre à jour le sessionStorage
-            sessionStorage.setItem("searchResults", JSON.stringify(updatedDrivers));
+            // Mettre à jour le sessionStorage avec timestamp
+            setStoredData("searchResults", updatedDrivers);
             return updatedDrivers;
           });
         }
@@ -149,8 +186,8 @@ const Chauffeurs = () => {
               return driver;
             });
             
-            // Mettre à jour le sessionStorage
-            sessionStorage.setItem("searchResults", JSON.stringify(updatedDrivers));
+            // Mettre à jour le sessionStorage avec timestamp
+            setStoredData("searchResults", updatedDrivers);
             return updatedDrivers;
           });
         }
@@ -162,41 +199,41 @@ const Chauffeurs = () => {
     };
   }, [searchPerformed, drivers.length]);
 
-  // Sauvegarder l'état de recherche dans sessionStorage
+  // Sauvegarder l'état de recherche dans sessionStorage avec timestamp
   useEffect(() => {
-    sessionStorage.setItem("searchMode", searchMode);
+    setStoredData("searchMode", searchMode);
   }, [searchMode]);
 
   useEffect(() => {
-    sessionStorage.setItem("citySearch", citySearch);
+    setStoredData("citySearch", citySearch);
   }, [citySearch]);
 
   useEffect(() => {
     if (cityCoordinates) {
-      sessionStorage.setItem("cityCoordinates", JSON.stringify(cityCoordinates));
+      setStoredData("cityCoordinates", cityCoordinates);
     }
   }, [cityCoordinates]);
 
   useEffect(() => {
-    sessionStorage.setItem("addressSearch", addressSearch);
+    setStoredData("addressSearch", addressSearch);
   }, [addressSearch]);
 
   useEffect(() => {
     if (addressCoordinates) {
-      sessionStorage.setItem("addressCoordinates", JSON.stringify(addressCoordinates));
+      setStoredData("addressCoordinates", addressCoordinates);
     }
   }, [addressCoordinates]);
 
   useEffect(() => {
-    sessionStorage.setItem("radiusCity", radiusCity[0].toString());
+    setStoredData("radiusCity", radiusCity[0]);
   }, [radiusCity]);
 
   useEffect(() => {
-    sessionStorage.setItem("radiusAddress", radiusAddress[0].toString());
+    setStoredData("radiusAddress", radiusAddress[0]);
   }, [radiusAddress]);
 
   useEffect(() => {
-    sessionStorage.setItem("searchPerformed", searchPerformed.toString());
+    setStoredData("searchPerformed", searchPerformed);
   }, [searchPerformed]);
 
   const checkClientAccess = async () => {
@@ -286,8 +323,8 @@ const Chauffeurs = () => {
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
         
-        // Sauvegarder les résultats dans sessionStorage
-        sessionStorage.setItem("searchResults", JSON.stringify(sortedDrivers));
+        // Sauvegarder les résultats dans sessionStorage avec timestamp
+        setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
           toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusCity[0]} km`);
@@ -329,8 +366,8 @@ const Chauffeurs = () => {
         const sortedDrivers = sortDrivers(data || []);
         setDrivers(sortedDrivers);
         
-        // Sauvegarder les résultats dans sessionStorage
-        sessionStorage.setItem("searchResults", JSON.stringify(sortedDrivers));
+        // Sauvegarder les résultats dans sessionStorage avec timestamp
+        setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
           toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusAddress[0]} km`);
