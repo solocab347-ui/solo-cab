@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { memoryManager } from "./lib/memoryManager";
 import { performanceMonitor } from "./lib/performanceMonitor";
 
 // Démarrer le monitoring de performance

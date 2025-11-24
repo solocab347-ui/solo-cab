@@ -17,13 +17,12 @@ class PerformanceMonitor {
 
   /**
    * Démarre le monitoring de performance
+   * DÉSACTIVÉ temporairement pour stabilité
    */
   start() {
-    if (this.isMonitoring || typeof window === 'undefined') return;
-    
-    this.isMonitoring = true;
-    this.setupObservers();
-    this.monitorMemory();
+    // Monitoring désactivé pour éviter surcharge mémoire
+    console.log('ℹ️ Performance monitoring désactivé pour stabilité');
+    return;
   }
 
   /**
@@ -149,7 +148,7 @@ class PerformanceMonitor {
 // Singleton
 export const performanceMonitor = new PerformanceMonitor();
 
-// Démarrer automatiquement en dev
-if (import.meta.env.DEV) {
-  performanceMonitor.start();
-}
+// Monitoring désactivé temporairement pour stabilité
+// if (import.meta.env.DEV) {
+//   performanceMonitor.start();
+// }
