@@ -43,6 +43,61 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check for free access first
+    const { data: driver } = await supabaseClient
+      .from("drivers")
+      .select("id, free_access_granted, free_access_end_date, free_access_type")
+      .eq("user_id", user.id)
+      .single();
+
+    logStep("Driver data retrieved", { driverId: driver?.id, hasFreeAccess: driver?.free_access_granted });
+
+    // If driver has free access granted
+    if (driver?.free_access_granted) {
+      const now = new Date();
+      const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+      
+      // Check if free access is still valid (no end date = unlimited, or end date is in future)
+      const isFreeAccessValid = !endDate || endDate > now;
+      
+      if (isFreeAccessValid) {
+        logStep("Free access is valid, returning active status");
+        
+        // Update driver status to active in database
+        await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_status: "active",
+            subscription_end_date: driver.free_access_end_date,
+          })
+          .eq("id", driver.id);
+        
+        return new Response(JSON.stringify({
+          subscribed: true,
+          subscription_status: "active",
+          subscription_end: driver.free_access_end_date,
+          is_free_access: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        // Free access expired, remove it and set to inactive
+        logStep("Free access expired, removing it");
+        await supabaseClient
+          .from("drivers")
+          .update({
+            free_access_granted: false,
+            free_access_end_date: null,
+            free_access_start_date: null,
+            free_access_type: null,
+            subscription_status: "inactive",
+          })
+          .eq("id", driver.id);
+      }
+    }
+
+    // If no valid free access, check Stripe subscription
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
@@ -80,12 +135,6 @@ serve(async (req) => {
       logStep("Active subscription found", { subscriptionId, endDate: subscriptionEnd, status: subscriptionStatus });
 
       // Update driver subscription status in database
-      const { data: driver } = await supabaseClient
-        .from("drivers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
       if (driver) {
         await supabaseClient
           .from("drivers")
@@ -98,14 +147,24 @@ serve(async (req) => {
         logStep("Driver subscription status updated in database");
       }
     } else {
-      logStep("No active subscription found");
+      logStep("No active subscription found, updating status to inactive");
+      // Update driver to inactive if no Stripe subscription
+      if (driver) {
+        await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_status: "inactive",
+          })
+          .eq("id", driver.id);
+      }
     }
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscription_status: subscriptionStatus,
       subscription_id: subscriptionId,
-      subscription_end: subscriptionEnd
+      subscription_end: subscriptionEnd,
+      is_free_access: false
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
