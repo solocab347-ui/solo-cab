@@ -642,13 +642,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
               </div>
 
               {/* Price */}
-              <div className="bg-gradient-to-br from-success/30 to-success/10 backdrop-blur-sm border border-success/30 rounded-lg p-4 mb-4">
+              <div className="bg-gradient-to-br from-emerald-500/40 to-green-500/20 backdrop-blur-sm border-2 border-emerald-400/50 rounded-lg p-4 mb-4 shadow-lg shadow-emerald-500/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-success" />
-                    <span className="font-semibold text-white">Montant TTC</span>
+                    <CheckCircle className="w-6 h-6 text-emerald-300 drop-shadow-glow" />
+                    <span className="font-bold text-lg text-white drop-shadow-md">Montant TTC</span>
                   </div>
-                  <span className="text-2xl font-bold text-success">
+                  <span className="text-3xl font-black text-emerald-300 drop-shadow-glow">
                     {parseFloat(facture.amount).toFixed(2)} €
                   </span>
                 </div>
