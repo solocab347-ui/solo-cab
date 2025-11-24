@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavigationHeaderProps {
   showBack?: boolean;
@@ -18,6 +21,54 @@ export const NavigationHeader = ({
   className = "" 
 }: NavigationHeaderProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [autoHomeRoute, setAutoHomeRoute] = useState<string>("");
+
+  // Détection automatique du rôle utilisateur
+  useEffect(() => {
+    const detectUserRole = async () => {
+      if (!user) {
+        setAutoHomeRoute("/");
+        return;
+      }
+
+      try {
+        // Vérifier le rôle dans user_roles
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (roleData?.role) {
+          setUserRole(roleData.role);
+          
+          // Définir la route d'accueil selon le rôle
+          switch (roleData.role) {
+            case "driver":
+              setAutoHomeRoute("/driver-dashboard");
+              break;
+            case "client":
+              setAutoHomeRoute("/client-dashboard");
+              break;
+            case "admin":
+              setAutoHomeRoute("/admin-dashboard");
+              break;
+            default:
+              setAutoHomeRoute("/");
+          }
+        } else {
+          setAutoHomeRoute("/");
+        }
+      } catch (error) {
+        console.error("Erreur détection rôle:", error);
+        setAutoHomeRoute("/");
+      }
+    };
+
+    detectUserRole();
+  }, [user]);
 
   const handleBack = () => {
     if (onBack) {
@@ -28,8 +79,10 @@ export const NavigationHeader = ({
   };
 
   const handleHome = () => {
-    if (homeRoute) {
-      navigate(homeRoute);
+    // Utiliser homeRoute si fourni, sinon utiliser la route automatique
+    const targetRoute = homeRoute || autoHomeRoute;
+    if (targetRoute) {
+      navigate(targetRoute);
     }
   };
 
@@ -46,7 +99,7 @@ export const NavigationHeader = ({
           <ArrowLeft className="w-5 h-5" />
         </Button>
       )}
-      {showHome && homeRoute && (
+      {showHome && (
         <Button
           variant="ghost"
           size="sm"

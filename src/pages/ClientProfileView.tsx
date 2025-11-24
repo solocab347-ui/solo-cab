@@ -119,7 +119,6 @@ const ClientProfileView = () => {
         <NavigationHeader 
           showBack={true}
           showHome={true}
-          homeRoute="/chauffeurs"
           className="mb-4"
         />
         
