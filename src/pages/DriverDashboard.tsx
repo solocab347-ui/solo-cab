@@ -289,7 +289,11 @@ const DriverDashboard = () => {
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium text-white drop-shadow">{driverProfile?.full_name || "Chauffeur"}</span>
               <Badge variant="outline" className="border-white/30 text-white text-xs bg-white/10 backdrop-blur-sm">
-                {driverProfile?.driver?.subscription_status === "active" ? "Actif" : "Inactif"}
+                {driverProfile?.driver?.free_access_granted 
+                  ? "Accès Gratuit" 
+                  : driverProfile?.driver?.subscription_status === "active" 
+                    ? "Actif" 
+                    : "Inactif"}
               </Badge>
             </div>
             <Link to="/rgpd-data">
@@ -313,7 +317,7 @@ const DriverDashboard = () => {
         </div>
 
         {/* Subscription Alert */}
-        {driverProfile?.driver?.subscription_status !== "active" && (
+        {driverProfile?.driver?.subscription_status !== "active" && !driverProfile?.driver?.free_access_granted && (
           <Alert className="mb-6 bg-destructive/10 border-destructive">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertTitle className="text-destructive">Abonnement Inactif</AlertTitle>

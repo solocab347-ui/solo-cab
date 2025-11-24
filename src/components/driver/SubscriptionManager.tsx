@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, AlertCircle, Calendar } from "lucide-react";
+import { CreditCard, Check, AlertCircle, Calendar, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface SubscriptionManagerProps {
@@ -64,6 +64,22 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   const isActive = driverProfile?.driver?.subscription_status === "active";
   const isInactive = driverProfile?.driver?.subscription_status === "inactive";
   const isPastDue = driverProfile?.driver?.subscription_status === "past_due";
+  const hasFreeAccess = driverProfile?.driver?.free_access_granted;
+  const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
+  const freeAccessType = driverProfile?.driver?.free_access_type;
+  
+  const remainingDays = freeAccessEndDate ? differenceInDays(new Date(freeAccessEndDate), new Date()) : null;
+
+  const getDurationLabel = (type: string | null) => {
+    switch (type) {
+      case "1_month": return "1 mois";
+      case "2_months": return "2 mois";
+      case "3_months": return "3 mois";
+      case "unlimited": return "Illimité";
+      case "custom": return "Personnalisé";
+      default: return "Non défini";
+    }
+  };
 
   if (checkingSubscription) {
     return (
@@ -75,8 +91,48 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      {/* Free Access Alert */}
+      {hasFreeAccess && (
+        <Card className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/10 border-green-500">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
+            <div className="flex-1 w-full">
+              <h3 className="font-bold text-base sm:text-lg text-green-700 dark:text-green-500 mb-2">
+                🎁 Accès Gratuit Actif
+              </h3>
+              <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <p>
+                  <span className="font-medium">Durée :</span> {getDurationLabel(freeAccessType)}
+                </p>
+                {freeAccessEndDate && (
+                  <>
+                    <p>
+                      <span className="font-medium">Expire le :</span>{" "}
+                      {format(new Date(freeAccessEndDate), "d MMMM yyyy", { locale: fr })}
+                    </p>
+                    {remainingDays !== null && remainingDays > 0 && (
+                      <Badge className="bg-green-500 mt-2">
+                        {remainingDays} jour{remainingDays > 1 ? "s" : ""} restant{remainingDays > 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                  </>
+                )}
+                {!freeAccessEndDate && (
+                  <Badge className="bg-green-500 mt-2">
+                    Accès gratuit illimité
+                  </Badge>
+                )}
+                <p className="pt-2 text-green-700 dark:text-green-400">
+                  Vous bénéficiez d'un accès complet à toutes les fonctionnalités de la plateforme sans frais.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Status Alert */}
-      {isInactive && (
+      {isInactive && !hasFreeAccess && (
         <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
@@ -125,12 +181,17 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               Accès complet à la plateforme professionnelle
             </p>
           </div>
-          {isActive && (
+          {hasFreeAccess ? (
+            <Badge className="bg-green-500 self-start">
+              <Gift className="w-3 h-3 mr-1" />
+              Accès Gratuit
+            </Badge>
+          ) : isActive ? (
             <Badge className="bg-green-500 self-start">
               <Check className="w-3 h-3 mr-1" />
               Actif
             </Badge>
-          )}
+          ) : null}
         </div>
 
         <div className="space-y-3 sm:space-y-4">
@@ -150,7 +211,9 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           )}
 
           <div className="bg-white/5 rounded-lg p-3 sm:p-4 space-y-2 border border-white/10">
-            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">✓ Inclus dans l'abonnement :</h4>
+            <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">
+              {hasFreeAccess ? "✓ Vous avez accès à :" : "✓ Inclus dans l'abonnement :"}
+            </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
                 <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 flex-shrink-0" />
@@ -183,7 +246,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </ul>
           </div>
 
-          {isInactive && (
+          {isInactive && !hasFreeAccess && (
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
