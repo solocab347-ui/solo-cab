@@ -131,20 +131,10 @@ const ChauffeurProfile = () => {
     try {
       setLoading(true);
 
-      // Get driver with profile - utiliser maybeSingle au lieu de single pour éviter les erreurs
+      // Get driver data
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
-        .select(
-          `
-          *,
-          profiles!drivers_user_id_fkey (
-            full_name,
-            email,
-            phone,
-            profile_photo_url
-          )
-        `
-        )
+        .select("*")
         .eq("id", driverId)
         .eq("public_profile_enabled", true)
         .eq("status", "validated")
@@ -160,7 +150,20 @@ const ChauffeurProfile = () => {
         throw new Error("Chauffeur non trouvé");
       }
 
-      console.log("Driver data loaded:", driverData);
+      // Get profile data separately to ensure we get the photo
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, email, phone, profile_photo_url")
+        .eq("id", driverData.user_id)
+        .single();
+
+      if (profileError) {
+        console.error("Profile error:", profileError);
+      }
+
+      console.log("✅ Driver data loaded:", driverData);
+      console.log("✅ Profile data loaded:", profileData);
+      console.log("📷 Profile photo URL:", profileData?.profile_photo_url);
 
       // Calculate real statistics from courses
       const { data: completedCourses, error: coursesError } = await supabase
@@ -184,15 +187,15 @@ const ChauffeurProfile = () => {
       // Flatten the profile data avec toutes les informations
       const flattenedDriver = {
         ...driverData,
-        full_name: driverData.profiles?.full_name || "Chauffeur",
-        email: driverData.profiles?.email || "",
-        phone: driverData.profiles?.phone || "",
-        profile_photo_url: driverData.profiles?.profile_photo_url || null,
+        full_name: profileData?.full_name || "Chauffeur",
+        email: profileData?.email || "",
+        phone: profileData?.phone || "",
+        profile_photo_url: profileData?.profile_photo_url || null,
         rating: averageRating,
         total_rides: totalRides,
       } as DriverProfile;
 
-      console.log("Flattened driver:", flattenedDriver);
+      console.log("✅ Flattened driver with photo:", flattenedDriver.profile_photo_url);
       setDriver(flattenedDriver);
     } catch (error: any) {
       console.error("Error fetching driver profile:", error);
@@ -247,7 +250,7 @@ const ChauffeurProfile = () => {
             {/* Profile Header */}
             <Card className="p-8 shadow-elegant bg-gradient-to-br from-card via-card to-muted/20">
               <div className="flex flex-col items-center text-center gap-8">
-                {/* Large centered profile photo */}
+                 {/* Large centered profile photo */}
                 <div className="relative">
                   <div className="w-56 h-56 bg-gradient-dark rounded-full flex items-center justify-center text-primary-foreground text-7xl font-bold shadow-2xl ring-4 ring-primary/20 overflow-hidden">
                     {driver.profile_photo_url ? (
@@ -257,8 +260,19 @@ const ChauffeurProfile = () => {
                         alt={driver.full_name}
                         className="w-full h-full object-cover object-[center_20%]"
                         onError={(e) => {
-                          console.error("Error loading profile photo");
-                          e.currentTarget.style.display = 'none';
+                          console.error("❌ Erreur de chargement de la photo:", driver.profile_photo_url);
+                          // Afficher l'initiale si l'image ne charge pas
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            e.currentTarget.style.display = 'none';
+                            const initial = document.createElement('span');
+                            initial.className = 'text-7xl';
+                            initial.textContent = driver.full_name.charAt(0).toUpperCase();
+                            parent.appendChild(initial);
+                          }
+                        }}
+                        onLoad={() => {
+                          console.log("✅ Photo de profil chargée avec succès:", driver.profile_photo_url);
                         }}
                       />
                     ) : (
