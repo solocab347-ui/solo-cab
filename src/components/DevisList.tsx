@@ -453,10 +453,16 @@ const DevisList = ({ clientId }: DevisListProps) => {
   };
 
   const handleShareDevis = (devis: any, method: 'whatsapp' | 'sms' | 'email' | 'facebook') => {
-    const message = `Devis ${devis.quote_number}\n` +
-                   `Trajet: ${devis.courses.pickup_address} → ${devis.courses.destination_address}\n` +
-                   `Date: ${format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
-                   `Montant: ${devis.amount.toFixed(2)}€`;
+    // Génération de message contextuel avec formules de politesse
+    const { generateDevisShareMessage } = require("@/lib/courseMessageGenerator");
+    
+    const message = generateDevisShareMessage(
+      devis,
+      devis.courses,
+      devis.drivers,
+      devis.clients,
+      false // Client partage le devis
+    );
 
     const encodedMessage = encodeURIComponent(message);
 
@@ -474,7 +480,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodedMessage}`, '_blank');
         break;
     }
-    toast.success("Partage ouvert");
+    toast.success("Message préparé pour partage");
   };
 
   if (loading) {

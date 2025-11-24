@@ -1,117 +1,274 @@
-// Génère des messages contextuels pour les partages de courses selon le statut et le rôle
+import { Database } from "@/integrations/supabase/types";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Course {
   id: string;
   pickup_address: string;
   destination_address: string;
   scheduled_date: string;
-  status: string;
-  course_number?: string;
-  created_by_user_id?: string;
+  status: Database["public"]["Enums"]["course_status"];
+  distance_km?: number | null;
   passengers_count?: number;
 }
 
 interface Devis {
-  status: string;
+  quote_number: string | null;
   amount: number;
-  quote_number?: string;
+  status: Database["public"]["Enums"]["devis_status"];
+  valid_until?: string;
+  base_price?: number;
+  distance_price?: number;
+  time_price?: number | null;
+}
+
+interface Facture {
+  invoice_number_generated: string | null;
+  invoice_number: string;
+  amount: number;
+  payment_method?: string | null;
+  created_at: string;
 }
 
 interface Profile {
   full_name: string;
-  phone?: string;
+  phone?: string | null;
+  email?: string;
 }
 
-export function generateCourseShareMessage(
+interface Driver {
+  company_name?: string | null;
+  profiles: Profile;
+}
+
+interface Client {
+  profiles: Profile;
+}
+
+// ========== GÉNÉRATION DE MESSAGES POUR LES DEVIS ==========
+export const generateDevisShareMessage = (
+  devis: Devis,
+  course: Course,
+  driver: Driver,
+  client: Client,
+  isDriver: boolean
+): string => {
+  const formattedDate = format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+  const driverName = driver.profiles.full_name;
+  const clientName = client.profiles.full_name;
+  
+  if (isDriver) {
+    // Message du chauffeur vers le client
+    return `Bonjour ${clientName},
+
+Je vous ai envoyé un devis pour votre course :
+
+📍 Départ : ${course.pickup_address}
+📍 Arrivée : ${course.destination_address}
+📅 Date : ${formattedDate}
+${course.distance_km ? `📏 Distance : ${course.distance_km} km` : ''}
+${course.passengers_count ? `👥 Passagers : ${course.passengers_count}` : ''}
+
+💰 Montant : ${devis.amount.toFixed(2)}€
+📄 Référence : ${devis.quote_number}
+⏰ Valable jusqu'au ${devis.valid_until ? format(new Date(devis.valid_until), "dd/MM/yyyy", { locale: fr }) : '7 jours'}
+
+Merci de consulter votre espace client pour accepter le devis.
+
+Dans l'attente de votre retour.
+
+Cordialement,
+${driverName}
+${driver.company_name ? driver.company_name : ''}
+${driver.profiles.phone ? `📞 ${driver.profiles.phone}` : ''}`;
+  } else {
+    // Message du client vers le chauffeur
+    return `Bonjour ${driverName},
+
+J'ai bien reçu votre devis pour ma réservation :
+
+📍 Départ : ${course.pickup_address}
+📍 Arrivée : ${course.destination_address}
+📅 Date : ${formattedDate}
+
+💰 Montant : ${devis.amount.toFixed(2)}€
+📄 Référence : ${devis.quote_number}
+
+${devis.status === 'accepted' 
+  ? "J'ai accepté ce devis. Pouvez-vous confirmer la réservation ?" 
+  : "Je vais examiner votre proposition et vous donner une réponse rapidement."}
+
+Cordialement,
+${clientName}
+${client.profiles.phone ? `📞 ${client.profiles.phone}` : ''}`;
+  }
+};
+
+// ========== GÉNÉRATION DE MESSAGES POUR LES FACTURES ==========
+export const generateFactureShareMessage = (
+  facture: Facture,
+  course: Course,
+  driver: Driver,
+  client: Client,
+  isDriver: boolean
+): string => {
+  const formattedDate = format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+  const factureDate = format(new Date(facture.created_at), "dd/MM/yyyy", { locale: fr });
+  const driverName = driver.profiles.full_name;
+  const clientName = client.profiles.full_name;
+  const invoiceNumber = facture.invoice_number_generated || facture.invoice_number;
+  
+  if (isDriver) {
+    // Message du chauffeur vers le client
+    return `Bonjour ${clientName},
+
+Merci d'avoir fait appel à mes services.
+
+Veuillez trouver ci-joint la facture pour votre course :
+
+📄 Facture n° ${invoiceNumber}
+📅 Date de la facture : ${factureDate}
+📅 Date de la course : ${formattedDate}
+
+📍 Départ : ${course.pickup_address}
+📍 Arrivée : ${course.destination_address}
+${course.distance_km ? `📏 Distance parcourue : ${course.distance_km} km` : ''}
+
+💰 Montant total : ${facture.amount.toFixed(2)}€
+💳 Mode de paiement : ${facture.payment_method || 'Non précisé'}
+
+Au plaisir de vous revoir pour une prochaine course.
+
+Cordialement,
+${driverName}
+${driver.company_name ? driver.company_name : ''}
+${driver.profiles.phone ? `📞 ${driver.profiles.phone}` : ''}`;
+  } else {
+    // Message du client vers le chauffeur ou tiers
+    return `Bonjour,
+
+Veuillez trouver ma facture de transport :
+
+📄 Facture n° ${invoiceNumber}
+👤 Chauffeur : ${driverName}${driver.company_name ? ` (${driver.company_name})` : ''}
+📅 Date de la course : ${formattedDate}
+📅 Date de la facture : ${factureDate}
+
+📍 Trajet : ${course.pickup_address} → ${course.destination_address}
+${course.distance_km ? `📏 Distance : ${course.distance_km} km` : ''}
+
+💰 Montant : ${facture.amount.toFixed(2)}€
+💳 Payé par : ${facture.payment_method || 'Non précisé'}
+
+Cordialement,
+${clientName}`;
+  }
+};
+
+// ========== GÉNÉRATION DE MESSAGES POUR LES COURSES ==========
+export const generateCourseShareMessage = (
   course: Course,
   devis: Devis | null,
   senderProfile: Profile,
   isDriver: boolean,
   recipientName?: string
-): { title: string; message: string } {
-  const courseName = course.course_number || devis?.quote_number || 'Course';
-  const amount = devis?.amount ? `${devis.amount.toFixed(2)}€` : '';
-  const recipient = recipientName || (isDriver ? 'Madame, Monsieur' : 'Monsieur le Chauffeur');
-  const dateFormatted = new Date(course.scheduled_date).toLocaleDateString('fr-FR', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  const timeFormatted = new Date(course.scheduled_date).toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+): { title: string; message: string } => {
+  const formattedDate = format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+  const recipientGreeting = recipientName ? `Bonjour ${recipientName},\n\n` : "Bonjour,\n\n";
 
-  // Course en attente d'acceptation client (driver-created)
-  if (isDriver && devis?.status === 'pending' && course.status === 'pending') {
-    return {
-      title: `Devis ${devis.quote_number || courseName}`,
-      message: `Bonjour ${recipient},\n\nJe vous contacte concernant votre demande de réservation.\n\nJe vous ai préparé un devis (${devis.quote_number}) pour votre course prévue le ${dateFormatted} à ${timeFormatted}.\n\n📍 Détails du trajet :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n${course.passengers_count ? `Nombre de passagers : ${course.passengers_count}\n` : ''}\n💶 Montant : ${amount}\n\nPour confirmer cette réservation, veuillez accepter ce devis. Je reste à votre disposition pour toute question.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Course en attente de devis
+  if (!devis || devis.status === "pending") {
+    if (isDriver) {
+      return {
+        title: "Nouvelle course proposée",
+        message: `${recipientGreeting}Je vous propose une course :\n\n📍 Départ : ${course.pickup_address}\n📍 Arrivée : ${course.destination_address}\n📅 Date : ${formattedDate}\n${course.passengers_count ? `👥 Passagers : ${course.passengers_count}` : ''}\n\nVous recevrez un devis sous peu.\n\nCordialement,\n${senderProfile.full_name}`,
+      };
+    } else {
+      return {
+        title: "Demande de course",
+        message: `${recipientGreeting}Je souhaite réserver une course :\n\n📍 Départ : ${course.pickup_address}\n📍 Arrivée : ${course.destination_address}\n📅 Date : ${formattedDate}\n${course.passengers_count ? `👥 Passagers : ${course.passengers_count}` : ''}\n\nPouvez-vous me faire parvenir un devis ?\n\nMerci d'avance.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    }
   }
 
-  // Course en attente d'acceptation driver (client-created)
-  if (!isDriver && devis?.status === 'accepted' && course.status === 'pending') {
-    return {
-      title: `Demande de course ${courseName}`,
-      message: `Bonjour ${recipient},\n\nJ'ai effectué une demande de réservation pour le ${dateFormatted} à ${timeFormatted}.\n\n📍 Détails du trajet :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n${course.passengers_count ? `Nombre de passagers : ${course.passengers_count}\n` : ''}\n💶 Montant proposé : ${amount}\n\nJ'ai accepté le devis (${devis.quote_number}) et j'attends maintenant votre confirmation pour finaliser la réservation.\n\nMerci de me tenir informé dès que possible.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Devis accepté, course confirmée
+  if (devis.status === "accepted" && course.status === "accepted") {
+    if (isDriver) {
+      return {
+        title: "Course confirmée",
+        message: `${recipientGreeting}Votre réservation est confirmée !\n\n📄 Devis n° ${devis.quote_number}\n💰 Montant : ${devis.amount.toFixed(2)}€\n\n📍 Départ : ${course.pickup_address}\n📍 Arrivée : ${course.destination_address}\n📅 Date : ${formattedDate}\n${course.passengers_count ? `👥 Passagers : ${course.passengers_count}` : ''}\n\nJe serai ponctuel au rendez-vous.\n\nÀ très bientôt !\n\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    } else {
+      return {
+        title: "Confirmation de réservation",
+        message: `${recipientGreeting}J'ai bien accepté votre devis n° ${devis.quote_number} d'un montant de ${devis.amount.toFixed(2)}€.\n\n📍 Départ : ${course.pickup_address}\n📍 Arrivée : ${course.destination_address}\n📅 Date : ${formattedDate}\n\nPouvez-vous confirmer que vous êtes disponible ?\n\nMerci.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    }
   }
 
-  // Course confirmée (accepted)
-  if (course.status === 'accepted' && devis?.status === 'accepted') {
-    return {
-      title: `✅ Course confirmée ${courseName}`,
-      message: `Bonjour ${recipient},\n\nJe vous confirme que notre course est bien réservée pour le ${dateFormatted} à ${timeFormatted}.\n\n📍 Trajet confirmé :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n${course.passengers_count ? `Nombre de passagers : ${course.passengers_count}\n` : ''}\n💶 Montant : ${amount}\n📄 Référence : ${devis.quote_number}\n\n${isDriver ? 
-  `Je serai à l'heure au point de rendez-vous. N'hésitez pas à me contacter si vous avez besoin de modifier quoi que ce soit.` : 
-  `Je vous remercie pour votre réactivité. J'ai hâte de voyager avec vous.`}\n\nÀ très bientôt,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Course en cours
+  if (course.status === "in_progress") {
+    if (isDriver) {
+      return {
+        title: "Course en cours",
+        message: `${recipientGreeting}La course est en cours d'exécution.\n\n📄 Référence : ${devis.quote_number}\n📍 Direction : ${course.destination_address}\n\nÀ tout de suite !\n\n${senderProfile.full_name}`,
+      };
+    } else {
+      return {
+        title: "Course en cours",
+        message: `${recipientGreeting}Notre course est actuellement en cours.\n\n📄 Référence : ${devis.quote_number}\n\nMerci pour votre professionnalisme.\n\n${senderProfile.full_name}`,
+      };
+    }
   }
 
-  // Course en cours (in_progress)
-  if (course.status === 'in_progress') {
-    return {
-      title: `🚗 Course en cours ${courseName}`,
-      message: `Bonjour ${recipient},\n\nNotre course du ${dateFormatted} est actuellement en cours.\n\n📍 Trajet :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n💶 Montant : ${amount}\n\n${isDriver ? 
-  `Nous roulons vers votre destination. J'espère que le trajet se passe bien. Je vous tiendrai informé de notre progression.` : 
-  `Je vous remercie pour cette prestation. Le trajet se déroule dans de bonnes conditions.`}\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Course terminée
+  if (course.status === "completed") {
+    if (isDriver) {
+      return {
+        title: "Course terminée",
+        message: `${recipientGreeting}La course s'est terminée avec succès.\n\n📄 Référence : ${devis.quote_number}\n💰 Montant : ${devis.amount.toFixed(2)}€\n\nMerci infiniment pour votre confiance !\nJ'espère vous revoir très prochainement.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    } else {
+      return {
+        title: "Course terminée - Merci",
+        message: `${recipientGreeting}La course s'est parfaitement déroulée, merci beaucoup.\n\n📄 Référence : ${devis.quote_number}\n💰 Montant : ${devis.amount.toFixed(2)}€\n\nÀ une prochaine fois !\n\nCordialement,\n${senderProfile.full_name}`,
+      };
+    }
   }
 
-  // Course terminée (completed)
-  if (course.status === 'completed') {
-    return {
-      title: `✅ Course terminée ${courseName}`,
-      message: `Bonjour ${recipient},\n\nLa course du ${dateFormatted} est maintenant terminée.\n\n📍 Trajet effectué :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n💶 Montant : ${amount}\n📄 Référence : ${devis.quote_number}\n\n${isDriver ? 
-  `Merci pour votre confiance. Votre facture est maintenant disponible. Au plaisir de vous servir à nouveau !` : 
-  `Je vous remercie pour cette prestation de qualité. J'espère avoir l'occasion de voyager à nouveau avec vous.`}\n\n${isDriver ? 'N\'hésitez pas à me recommander à votre entourage.' : ''}\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Course annulée
+  if (course.status === "cancelled") {
+    if (isDriver) {
+      return {
+        title: "Course annulée",
+        message: `${recipientGreeting}La course a été annulée.\n\n📄 Référence : ${devis.quote_number}\n\nN'hésitez pas à me recontacter pour une future réservation.\nJe reste à votre disposition.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    } else {
+      return {
+        title: "Annulation de course",
+        message: `${recipientGreeting}Je me vois dans l'obligation d'annuler la course.\n\n📄 Référence : ${devis.quote_number}\n\nToutes mes excuses pour ce désagrément.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    }
   }
 
-  // Course annulée (cancelled)
-  if (course.status === 'cancelled') {
-    return {
-      title: `❌ Course annulée ${courseName}`,
-      message: `Bonjour ${recipient},\n\nJe vous informe que la course du ${dateFormatted} à ${timeFormatted} a été annulée.\n\n📍 Trajet concerné :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n\n${isDriver ? 
-  `Je suis désolé pour ce désagrément. Si vous souhaitez reprogrammer cette course, n'hésitez pas à me recontacter. Je reste à votre entière disposition.` : 
-  `Je vous prie d'accepter mes excuses pour cette annulation. Je reste disponible pour de futures réservations.`}\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
+  // Devis refusé
+  if (devis.status === "rejected") {
+    if (isDriver) {
+      return {
+        title: "Devis refusé",
+        message: `${recipientGreeting}Le devis n° ${devis.quote_number} a été refusé.\n\nN'hésitez pas à me recontacter si vous souhaitez discuter d'une nouvelle proposition.\nJe reste à votre écoute.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
+      };
+    } else {
+      return {
+        title: "Refus de devis",
+        message: `${recipientGreeting}Je suis au regret de devoir refuser le devis n° ${devis.quote_number}.\n\nMerci néanmoins pour votre proposition.\n\nCordialement,\n${senderProfile.full_name}`,
+      };
+    }
   }
 
-  // Course refusée (rejected)
-  if (devis?.status === 'rejected') {
-    return {
-      title: `❌ Devis refusé ${courseName}`,
-      message: `Bonjour ${recipient},\n\nConcernant la demande de course pour le ${dateFormatted} :\n\n📍 Trajet :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n💶 Montant : ${amount}\n\nLe devis (${devis.quote_number}) n'a malheureusement pas été accepté.\n\n${isDriver ? 
-  `Si vous changez d'avis ou souhaitez discuter d'une nouvelle proposition, n'hésitez pas à me recontacter. Je reste à votre disposition.` : 
-  `Je vous remercie d'avoir pris le temps d'étudier ma demande. Je reste ouvert à d'autres opportunités de collaboration.`}\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
-    };
-  }
-
-  // Cas par défaut - Information générale
+  // Fallback par défaut
   return {
-    title: `Course ${courseName}`,
-    message: `Bonjour ${recipient},\n\nConcernant la course du ${dateFormatted} à ${timeFormatted} :\n\n📍 Trajet :\nDépart : ${course.pickup_address}\nArrivée : ${course.destination_address}\n${course.passengers_count ? `Nombre de passagers : ${course.passengers_count}\n` : ''}${amount ? `💶 Montant : ${amount}\n` : ''}${devis?.quote_number ? `📄 Référence : ${devis.quote_number}\n` : ''}\n\nPour toute question, n'hésitez pas à me contacter.\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`
+    title: "Information sur la course",
+    message: `${recipientGreeting}Concernant la course :\n\n📄 Référence : ${devis.quote_number}\n📍 Départ : ${course.pickup_address}\n📍 Arrivée : ${course.destination_address}\n📅 Date : ${formattedDate}\n💰 Montant : ${devis.amount.toFixed(2)}€\n\nCordialement,\n${senderProfile.full_name}${senderProfile.phone ? `\n📞 ${senderProfile.phone}` : ''}`,
   };
 }
