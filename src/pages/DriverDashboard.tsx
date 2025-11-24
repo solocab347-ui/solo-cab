@@ -117,38 +117,49 @@ const DriverDashboard = () => {
   }, [driverProfile]);
 
   useEffect(() => {
-    if (driverProfile?.driver?.id) {
-      fetchQRCode();
-    }
+    let mounted = true;
+
+    const loadQR = async () => {
+      if (!driverProfile?.driver?.id) return;
+
+      setLoadingQR(true);
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/qr-code-manager?action=get&driver_id=${driverProfile.driver.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+          }
+        );
+
+        if (!mounted) return;
+
+        const data = await response.json();
+        if (response.ok && mounted) {
+          setQrCode(data);
+        }
+      } catch (error) {
+        if (mounted) {
+          console.error("QR fetch error:", error);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingQR(false);
+        }
+      }
+    };
+
+    loadQR();
+
+    return () => {
+      mounted = false;
+    };
   }, [driverProfile?.driver?.id]);
 
-  const fetchQRCode = async () => {
-    if (!driverProfile?.driver?.id) return;
-
-    setLoadingQR(true);
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/qr-code-manager?action=get&driver_id=${driverProfile.driver.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-      if (response.ok) {
-        setQrCode(data);
-      }
-    } catch (error) {
-      console.error("QR fetch error:", error);
-    } finally {
-      setLoadingQR(false);
-    }
-  };
 
   const downloadQRCode = () => {
     if (!qrCode?.qr_code_image) return;
