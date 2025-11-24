@@ -589,6 +589,7 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          evening_surcharge: number | null
           free_access_end_date: string | null
           free_access_granted: boolean | null
           free_access_start_date: string | null
@@ -631,6 +632,7 @@ export type Database = {
           vehicle_photos: string[] | null
           vehicle_plate: string | null
           vehicle_year: number | null
+          weekend_surcharge: number | null
           working_sectors: string[] | null
         }
         Insert: {
@@ -644,6 +646,7 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          evening_surcharge?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
@@ -686,6 +689,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Update: {
@@ -699,6 +703,7 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          evening_surcharge?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
@@ -741,6 +746,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
         Relationships: [
@@ -1240,22 +1246,42 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: undefined
       }
-      calculate_course_price: {
-        Args: {
-          _distance_km: number
-          _driver_id: string
-          _duration_minutes: number
-          _use_hourly_rate?: boolean
-        }
-        Returns: {
-          base_price: number
-          distance_price: number
-          subtotal: number
-          time_price: number
-          total_price: number
-          tva_amount: number
-        }[]
-      }
+      calculate_course_price:
+        | {
+            Args: {
+              _distance_km: number
+              _driver_id: string
+              _duration_minutes: number
+              _scheduled_date?: string
+              _use_hourly_rate?: boolean
+            }
+            Returns: {
+              base_price: number
+              distance_price: number
+              subtotal: number
+              surcharge_evening: number
+              surcharge_weekend: number
+              time_price: number
+              total_price: number
+              tva_amount: number
+            }[]
+          }
+        | {
+            Args: {
+              _distance_km: number
+              _driver_id: string
+              _duration_minutes: number
+              _use_hourly_rate?: boolean
+            }
+            Returns: {
+              base_price: number
+              distance_price: number
+              subtotal: number
+              time_price: number
+              total_price: number
+              tva_amount: number
+            }[]
+          }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string

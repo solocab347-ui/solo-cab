@@ -72,6 +72,8 @@ const DriverDashboard = () => {
   const [servicesOffered, setServicesOffered] = useState<string[]>([]);
   const [vehicleBrand, setVehicleBrand] = useState("");
   const [vehicleYear, setVehicleYear] = useState("");
+  const [eveningSurcharge, setEveningSurcharge] = useState("0");
+  const [weekendSurcharge, setWeekendSurcharge] = useState("0");
 
   useEffect(() => {
     fetchDriverProfile();
@@ -143,6 +145,8 @@ const DriverDashboard = () => {
       setServicesOffered(driver.services_offered || []);
       setVehicleBrand(driver.vehicle_brand || "");
       setVehicleYear(driver.vehicle_year?.toString() || "");
+      setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
+      setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
       setProfilePhotoUrl(profile?.profile_photo_url || null);
     } catch (error) {
       console.error("Error fetching driver profile:", error);
@@ -247,6 +251,8 @@ const DriverDashboard = () => {
           display_company_name: displayCompanyName,
           vehicle_equipment: vehicleEquipment,
           services_offered: servicesOffered,
+          evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
+          weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
         })
         .eq("id", driverProfile.driver.id);
 
@@ -599,6 +605,42 @@ const DriverDashboard = () => {
                   <p>• <span className="font-medium text-white">20% TVA</span> pour les mises à disposition (horaire)</p>
                   <p className="text-xs mt-2 italic text-white">La TVA est calculée automatiquement selon le type de course</p>
                 </div>
+
+                {/* Augmentations soir et weekend */}
+                <div className="grid md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="eveningSurcharge" className="text-white">Augmentation Soir (%)</Label>
+                    <Input
+                      id="eveningSurcharge"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={eveningSurcharge}
+                      onChange={(e) => setEveningSurcharge(e.target.value)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-white/70">Augmentation pour les courses du soir (20h-6h). <span className="font-semibold">Exemples : 10%, 15%, 20%</span></p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="weekendSurcharge" className="text-white">Augmentation Weekend (%)</Label>
+                    <Input
+                      id="weekendSurcharge"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={weekendSurcharge}
+                      onChange={(e) => setWeekendSurcharge(e.target.value)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
+                  </div>
+                </div>
+                <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10">
+                  💡 <span className="font-medium">Info :</span> Mettez 0 si vous ne souhaitez pas appliquer d'augmentation. Les pourcentages sont appliqués automatiquement lors du calcul des prix.
+                </p>
               </div>
             </Card>
 
