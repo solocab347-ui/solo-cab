@@ -194,57 +194,69 @@ const RegisterClientQR = () => {
   const driver = driverInfo.drivers;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card className="p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <Card className="p-8 shadow-2xl border-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-premium rounded-full flex items-center justify-center mx-auto mb-4">
-              <Car className="w-10 h-10 text-premium-foreground" />
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <Car className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Inscription Client</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-4xl font-bold mb-3 text-slate-900 dark:text-white">Inscription Client</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
               Créez votre compte pour réserver avec {driver.profiles?.full_name}
             </p>
           </div>
 
-          <div className="bg-secondary rounded-lg p-6 mb-8">
-            <div className="flex items-start gap-4">
+          <div className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-850 rounded-2xl p-6 mb-8 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-6">
               {driver.profiles?.profile_photo_url ? (
                 <img
                   src={driver.profiles.profile_photo_url}
                   alt={driver.profiles.full_name}
-                  className="w-16 h-16 rounded-full object-cover"
+                  className="w-20 h-20 rounded-2xl object-cover shadow-md border-2 border-white dark:border-slate-700"
                 />
               ) : (
-                <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
-                  <Car className="w-8 h-8 text-primary-foreground" />
+                <div className="w-20 h-20 bg-gradient-to-br from-slate-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-md">
+                  <Car className="w-10 h-10 text-white" />
                 </div>
               )}
               <div className="flex-1">
-                <h3 className="text-xl font-bold mb-1">{driver.profiles?.full_name}</h3>
+                <h3 className="text-2xl font-bold mb-1 text-slate-900 dark:text-white">{driver.profiles?.full_name}</h3>
                 {driver.company_name && (
-                  <p className="text-sm text-muted-foreground mb-2">{driver.company_name}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{driver.company_name}</p>
                 )}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge variant="outline">{driver.vehicle_model}</Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
                   {driver.vehicle_color && (
-                    <Badge variant="outline">{driver.vehicle_color}</Badge>
+                    <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-accent/50 rounded-lg p-6 mb-8 border border-border">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-premium" />
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-2xl p-6 mb-8 border border-emerald-200 dark:border-emerald-800">
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
+              <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               Avantages Client Exclusif
             </h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>✓ Service personnalisé avec votre chauffeur attitré</li>
-              <li>✓ Tarification préférentielle</li>
-              <li>✓ Priorité sur les réservations</li>
-              <li>✓ Facturation simplifiée</li>
+            <ul className="space-y-3 text-slate-700 dark:text-slate-300">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Service personnalisé avec votre chauffeur attitré</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Tarification préférentielle</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Priorité sur les réservations</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                <span>Facturation simplifiée</span>
+              </li>
             </ul>
           </div>
 
@@ -346,7 +358,7 @@ const RegisterClientQR = () => {
               <Button
                 onClick={handleRegister}
                 disabled={registering}
-                className="w-full bg-gradient-premium"
+                className="w-full bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-800 hover:to-slate-950 text-white shadow-lg"
                 size="lg"
               >
                 {registering ? (

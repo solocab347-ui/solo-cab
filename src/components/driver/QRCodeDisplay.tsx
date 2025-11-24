@@ -15,7 +15,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
   const [copied, setCopied] = useState(false);
   
   const registrationLink = qrCode?.code 
-    ? `${window.location.origin}/register-client-qr?qr=${qrCode.code}`
+    ? `https://solocab.fr/register-client-qr?qr=${qrCode.code}`
     : "";
 
   const handleCopyLink = () => {
