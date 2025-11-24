@@ -42,7 +42,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
-  const { driverProfile, isLoading: profileLoading, updateProfile } = useDriverProfile(user?.id);
+  const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useDriverProfile(user?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
