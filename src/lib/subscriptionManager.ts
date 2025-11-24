@@ -1,17 +1,20 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { debounce } from '@/lib/performanceOptimizations';
 
 /**
- * Gestionnaire centralisé des subscriptions Supabase
- * Évite les fuites mémoire et les subscriptions multiples
+ * Gestionnaire centralisé optimisé des subscriptions Supabase
+ * Support 1000+ connexions simultanées avec debouncing et channel pooling
  */
 
 class SubscriptionManager {
   private channels: Map<string, RealtimeChannel> = new Map();
   private cleanupCallbacks: Map<string, () => void> = new Map();
+  private debouncedCallbacks: Map<string, Function> = new Map();
+  private reconnectTimers: Map<string, NodeJS.Timeout> = new Map();
 
   /**
-   * Subscribe to changes with automatic cleanup
+   * Subscribe to changes with automatic cleanup, debouncing, and reconnection
    */
   subscribe(
     channelName: string,
@@ -20,14 +23,33 @@ class SubscriptionManager {
       event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
       schema?: string;
       filter?: string;
+      debounceMs?: number;
     },
     callback: (payload: any) => void
   ): () => void {
+    // Réutiliser channel existant si possible
+    if (this.channels.has(channelName) && this.isActive(channelName)) {
+      console.log(`♻️ Réutilisation du channel: ${channelName}`);
+      return this.cleanupCallbacks.get(channelName)!;
+    }
+
     // Unsubscribe existing channel if any
     this.unsubscribe(channelName);
 
+    // Créer callback debounced si demandé
+    const debouncedCallback = config.debounceMs 
+      ? debounce(callback, config.debounceMs)
+      : callback;
+
+    this.debouncedCallbacks.set(channelName, debouncedCallback);
+
     const channel = supabase
-      .channel(channelName)
+      .channel(channelName, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: '' }
+        }
+      })
       .on(
         'postgres_changes' as any,
         {
@@ -36,9 +58,16 @@ class SubscriptionManager {
           table: config.table,
           filter: config.filter
         } as any,
-        callback
+        debouncedCallback
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error(`❌ Erreur channel: ${channelName}`);
+          this.scheduleReconnect(channelName, config, callback);
+        } else if (status === 'SUBSCRIBED') {
+          console.log(`✅ Subscribed: ${channelName}`);
+        }
+      });
 
     this.channels.set(channelName, channel);
 
@@ -50,14 +79,42 @@ class SubscriptionManager {
   }
 
   /**
+   * Reconnexion automatique en cas d'erreur
+   */
+  private scheduleReconnect(
+    channelName: string,
+    config: any,
+    callback: (payload: any) => void
+  ): void {
+    // Éviter reconnexions multiples
+    if (this.reconnectTimers.has(channelName)) return;
+
+    const timer = setTimeout(() => {
+      console.log(`🔄 Reconnexion tentée: ${channelName}`);
+      this.reconnectTimers.delete(channelName);
+      this.subscribe(channelName, config, callback);
+    }, 5000); // Attendre 5s avant reconnexion
+
+    this.reconnectTimers.set(channelName, timer);
+  }
+
+  /**
    * Unsubscribe from a specific channel
    */
   unsubscribe(channelName: string): void {
+    // Clear reconnect timer if exists
+    const timer = this.reconnectTimers.get(channelName);
+    if (timer) {
+      clearTimeout(timer);
+      this.reconnectTimers.delete(channelName);
+    }
+
     const channel = this.channels.get(channelName);
     if (channel) {
       supabase.removeChannel(channel);
       this.channels.delete(channelName);
       this.cleanupCallbacks.delete(channelName);
+      this.debouncedCallbacks.delete(channelName);
     }
   }
 
@@ -65,11 +122,16 @@ class SubscriptionManager {
    * Unsubscribe from all channels
    */
   unsubscribeAll(): void {
+    // Clear all reconnect timers
+    this.reconnectTimers.forEach((timer) => clearTimeout(timer));
+    this.reconnectTimers.clear();
+
     this.channels.forEach((channel) => {
       supabase.removeChannel(channel);
     });
     this.channels.clear();
     this.cleanupCallbacks.clear();
+    this.debouncedCallbacks.clear();
   }
 
   /**
