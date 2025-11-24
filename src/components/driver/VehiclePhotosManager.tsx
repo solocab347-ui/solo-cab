@@ -10,10 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Camera, Loader2, X, Plus, Car } from "lucide-react";
+import { Camera, Loader2, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { VTC_VEHICLES, getCategoryLabel, getCategoryColor, VTCVehicle } from "@/lib/vtcVehicles";
 
 interface VehiclePhotosManagerProps {
   driverId: string;
@@ -31,41 +30,12 @@ export const VehiclePhotosManager = ({
   const [uploading, setUploading] = useState(false);
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>(currentVehiclePhotos || []);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>(currentGalleryPhotos || []);
-  const [showVehicleSelector, setShowVehicleSelector] = useState(false);
 
   useEffect(() => {
     setVehiclePhotos(currentVehiclePhotos || []);
     setGalleryPhotos(currentGalleryPhotos || []);
   }, [currentVehiclePhotos, currentGalleryPhotos]);
 
-  const handleVehicleSelection = async (vehicle: VTCVehicle) => {
-    if (!vehicle.localImage) {
-      toast.error("Cette image de véhicule n'est pas encore disponible");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const newVehiclePhotos = [...vehiclePhotos, vehicle.localImage];
-      
-      const { error } = await supabase
-        .from("drivers")
-        .update({ vehicle_photos: newVehiclePhotos })
-        .eq("id", driverId);
-
-      if (error) throw error;
-
-      setVehiclePhotos(newVehiclePhotos);
-      onPhotosUpdate(newVehiclePhotos, galleryPhotos);
-      toast.success("Photo de véhicule ajoutée !");
-      setShowVehicleSelector(false);
-    } catch (error: any) {
-      console.error("Error adding vehicle photo:", error);
-      toast.error("Erreur lors de l'ajout de la photo");
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'vehicle' | 'gallery') => {
     const file = e.target.files?.[0];
@@ -156,44 +126,14 @@ export const VehiclePhotosManager = ({
     <div className="space-y-8">
       {/* Vehicle Photos Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <Label className="text-lg font-semibold">Photos du véhicule</Label>
-          <div className="flex gap-2">
-            <Dialog open={showVehicleSelector} onOpenChange={setShowVehicleSelector}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm" disabled={uploading}>
-                  <Car className="w-4 h-4 mr-2" />
-                  Sélectionner modèle VTC
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Sélectionnez un modèle de véhicule VTC</DialogTitle>
-                </DialogHeader>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                  {VTC_VEHICLES.filter(v => v.localImage).map((vehicle) => (
-                    <Card
-                      key={vehicle.id}
-                      className="cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-                      onClick={() => handleVehicleSelection(vehicle)}
-                    >
-                      <img
-                        src={vehicle.localImage}
-                        alt={`${vehicle.brand} ${vehicle.model}`}
-                        className="w-full h-32 object-cover"
-                      />
-                      <div className="p-3">
-                        <p className="font-semibold text-sm">{vehicle.brand} {vehicle.model}</p>
-                        <Badge className={`${getCategoryColor(vehicle.category)} mt-2 text-xs`}>
-                          {getCategoryLabel(vehicle.category)}
-                        </Badge>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-            
+          <p className="text-sm text-muted-foreground mt-1">
+            Aperçu dans la vitrine publique et page de profil chauffeur
+          </p>
+        </div>
+        <div className="flex justify-end mb-4">
+          <div>
             <input
               type="file"
               id="vehicle-photo-upload"
@@ -214,7 +154,7 @@ export const VehiclePhotosManager = ({
               ) : (
                 <Camera className="w-4 h-4 mr-2" />
               )}
-              Ajouter moi-même l'image de mon véhicule
+              Ajouter une photo
             </Button>
           </div>
         </div>
@@ -245,8 +185,13 @@ export const VehiclePhotosManager = ({
 
       {/* Gallery Photos Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <Label className="text-lg font-semibold">Galerie photos</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Aperçu dans le carousel de la page de profil chauffeur
+          </p>
+        </div>
+        <div className="flex justify-end mb-4">
           <div>
             <input
               type="file"

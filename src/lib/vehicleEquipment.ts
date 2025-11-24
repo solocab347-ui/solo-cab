@@ -5,6 +5,7 @@ export const VEHICLE_EQUIPMENT = [
   { id: "seats", label: "Sièges confort cuir", icon: "💺" },
   { id: "climate", label: "Climatisation individuelle", icon: "❄️" },
   { id: "usb", label: "Chargeurs USB-C", icon: "🔌" },
+  { id: "iphone", label: "Chargeur iPhone", icon: "📱" },
   { id: "water", label: "Bouteilles d'eau offertes", icon: "💧" },
   { id: "press", label: "Presse du jour", icon: "📰" },
   { id: "decor", label: "Thématiques décor", icon: "🎨" },
