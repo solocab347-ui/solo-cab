@@ -59,25 +59,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutCleared = false;
 
-    // TIMEOUT DE SÉCURITÉ: garantir que loading devient false après 3 secondes MAX
+    // TIMEOUT DE SÉCURITÉ ABSOLU: garantir loading=false après 2 secondes MAX
     const safetyTimeout = setTimeout(() => {
-      console.warn("⚠️ Safety timeout: forcing loading to false");
-      setLoading(false);
-    }, 3000);
+      if (isMounted && !timeoutCleared) {
+        console.warn("⚠️ SAFETY TIMEOUT ACTIVATED - forcing loading to false");
+        setLoading(false);
+      }
+    }, 2000);
 
-    // Auth state listener - SIMPLE
+    // Auth state listener - ultra simple, pas de await
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
         
-        console.log("Auth state change:", event);
+        console.log("🔐 Auth event:", event);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Ne pas bloquer sur fetchUserRole
-          fetchUserRole(session.user.id).catch(console.error);
+          fetchUserRole(session.user.id).catch(err => {
+            console.error("Role fetch failed:", err);
+          });
         } else {
           setUserRole(null);
           setUserRoles([]);
@@ -85,31 +89,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check existing session - AVEC TRY/CATCH
+    // Init rapide - max 1.5 secondes
     const initAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (!isMounted) return;
         
-        if (error) {
-          console.error("Error getting session:", error);
-          setLoading(false);
-          return;
-        }
+        console.log("📱 Session init:", session ? "found" : "none");
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await fetchUserRole(session.user.id);
+          fetchUserRole(session.user.id).catch(console.error);
         }
       } catch (error) {
-        console.error("Init auth error:", error);
+        console.error("❌ Init error:", error);
       } finally {
         if (isMounted) {
-          setLoading(false);
+          timeoutCleared = true;
           clearTimeout(safetyTimeout);
+          setLoading(false);
+          console.log("✅ Auth init complete");
         }
       }
     };
@@ -118,6 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       isMounted = false;
+      timeoutCleared = true;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
