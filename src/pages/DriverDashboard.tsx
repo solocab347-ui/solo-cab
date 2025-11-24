@@ -29,6 +29,7 @@ import { ProfitabilityCalculator } from "@/components/driver/profitability/Profi
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
+import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -758,245 +759,46 @@ const DriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Profil Public</h2>
-                {driverProfile?.driver?.id && publicProfileEnabled && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`/chauffeur/${driverProfile.driver.id}`, '_blank')}
-                    className="gap-2 border-white/20 text-white hover:bg-white/10"
-                  >
-                    <Globe className="w-4 h-4" />
-                    Voir mon profil public
-                  </Button>
-                )}
-              </div>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base text-white">Activer le profil public</Label>
-                    <p className="text-sm text-gray-400">
-                      Apparaître sur /chauffeurs pour les clients libres
-                    </p>
-                  </div>
-                  <Switch
-                    checked={publicProfileEnabled}
-                    onCheckedChange={handleTogglePublicProfile}
-                  />
-                </div>
-
-                <ProfilePhotoUpload
-                  currentPhotoUrl={profilePhotoUrl}
-                  userId={user?.id || ""}
-                  driverName={driverProfile?.full_name || ""}
+            {driverProfile && user && activeTab === "profile" && (
+              <>
+                <DriverPublicProfile
+                  driverProfile={driverProfile}
+                  userId={user.id}
+                  publicProfileEnabled={publicProfileEnabled}
+                  showPhone={showPhone}
+                  showEmail={showEmail}
+                  workingSectors={workingSectors}
+                  serviceDescription={serviceDescription}
+                  homeAddress={homeAddress}
+                  displayDriverName={displayDriverName}
+                  displayCompanyName={displayCompanyName}
+                  companyName={companyName}
+                  profilePhotoUrl={profilePhotoUrl}
+                  vehicleEquipment={vehicleEquipment}
+                  servicesOffered={servicesOffered}
+                  onTogglePublicProfile={handleTogglePublicProfile}
                   onPhotoUpdate={setProfilePhotoUrl}
+                  onShowPhoneChange={setShowPhone}
+                  onShowEmailChange={setShowEmail}
+                  onWorkingSectorsChange={setWorkingSectors}
+                  onServiceDescriptionChange={setServiceDescription}
+                  onHomeAddressChange={(address, coords) => {
+                    setHomeAddress(address);
+                    if (coords) setHomeCoordinates(coords);
+                  }}
+                  onDisplayDriverNameChange={setDisplayDriverName}
+                  onDisplayCompanyNameChange={setDisplayCompanyName}
+                  onVehicleEquipmentChange={setVehicleEquipment}
+                  onServicesOfferedChange={setServicesOffered}
                 />
 
-                <div className="border-t border-white/10 pt-6">
-                  <Label className="text-base mb-4 block text-white">Affichage dans le profil public</Label>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="displayName"
-                        checked={displayDriverName}
-                        onCheckedChange={(checked) => setDisplayDriverName(checked as boolean)}
-                      />
-                      <Label htmlFor="displayName" className="font-normal cursor-pointer text-gray-300">
-                        Afficher mon nom ({driverProfile?.full_name || "Non défini"})
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="displayCompany"
-                        checked={displayCompanyName}
-                        onCheckedChange={(checked) => setDisplayCompanyName(checked as boolean)}
-                      />
-                      <Label htmlFor="displayCompany" className="font-normal cursor-pointer text-gray-300">
-                        Afficher le nom de mon entreprise ({companyName || "Non défini"})
-                      </Label>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Vous pouvez afficher votre nom, celui de votre entreprise, ou les deux
-                  </p>
+                <div className="flex justify-end">
+                  <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
+                    {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+                  </Button>
                 </div>
-
-                <div className="border-t border-white/10 pt-6">
-                  <Label className="text-base mb-4 block text-white">Informations de contact visibles</Label>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base text-white">Afficher mon téléphone</Label>
-                        <p className="text-sm text-gray-400">
-                          {driverProfile?.phone || "Non renseigné"}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={showPhone}
-                        onCheckedChange={setShowPhone}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base text-white">Afficher mon email</Label>
-                        <p className="text-sm text-gray-400">
-                          {driverProfile?.email || "Non renseigné"}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={showEmail}
-                        onCheckedChange={setShowEmail}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Choisissez les informations de contact à afficher sur votre profil public
-                  </p>
-                </div>
-
-                <SectorSelector
-                  selectedSectors={workingSectors}
-                  onChange={setWorkingSectors}
-                />
-
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-white">Description du service</Label>
-                  <Textarea
-                    id="description"
-                    value={serviceDescription}
-                    onChange={(e) => setServiceDescription(e.target.value)}
-                    placeholder="Décrivez votre service, vos spécialités..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="homeAddress" className="flex items-center gap-2 text-white">
-                    <MapPin className="w-4 h-4" />
-                    📍 Adresse de Localisation
-                  </Label>
-                  <AddressAutocomplete
-                    value={homeAddress}
-                    onChange={(address, coords) => {
-                      setHomeAddress(address);
-                      if (coords) setHomeCoordinates(coords);
-                    }}
-                    placeholder="Tapez votre adresse de départ habituelle..."
-                  />
-                  <div className="text-xs text-gray-300 space-y-1 bg-white/5 p-3 rounded-lg border border-white/10">
-                    <p className="font-medium text-white">Pourquoi cette adresse est importante ?</p>
-                    <p>
-                      Cette adresse servira à vous géolocaliser quand un client cherche des chauffeurs à proximité. 
-                      C'est dans votre intérêt de renseigner l'adresse de départ d'où vous décollez tous les jours.
-                    </p>
-                    <p className="pt-1">
-                      💡 <span className="font-medium">Conseil :</span> Cela peut être soit votre lieu d'habitation, 
-                      soit le lieu où vous récupérez votre véhicule chaque jour. Plus votre localisation est précise, 
-                      plus vous avez de chances de trouver des clients à proximité !
-                    </p>
-                    <div className="flex items-start gap-2 pt-2 border-t border-white/10">
-                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-cyan-400" />
-                      <p className="text-cyan-400">
-                        <span className="font-medium">Confidentialité :</span> Cette adresse n'est visible ni par les clients 
-                        ni par les autres chauffeurs. Elle sert uniquement au système de géolocalisation pour vous proposer 
-                        aux clients recherchant un chauffeur à proximité.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="brand" className="text-white">Marque</Label>
-                    <Input
-                      id="brand"
-                      value={vehicleBrand}
-                      onChange={(e) => setVehicleBrand(e.target.value)}
-                      placeholder="Tesla, Mercedes, BMW..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="year" className="text-white">Année</Label>
-                    <Input
-                      id="year"
-                      type="number"
-                      value={vehicleYear}
-                      onChange={(e) => setVehicleYear(e.target.value)}
-                      placeholder="2023"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="color" className="text-white">Couleur du véhicule</Label>
-                  <Input
-                    id="color"
-                    value={vehicleColor}
-                    onChange={(e) => setVehicleColor(e.target.value)}
-                    placeholder="Noir, Gris, Blanc, Bleu..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="plate" className="text-white">Plaque d'immatriculation</Label>
-                  <Input
-                    id="plate"
-                    value={vehiclePlate}
-                    onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
-                    placeholder="AB-123-CD"
-                    maxLength={12}
-                  />
-                  <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
-                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <p>
-                      <span className="font-medium">Information confidentielle :</span> Cette plaque n'est visible 
-                      que par vos clients inscrits dans leur espace client. Elle n'apparaît jamais sur votre profil 
-                      public pour protéger votre vie privée.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t border-white/10 pt-6">
-                  <EquipmentSelector
-                    selectedEquipment={vehicleEquipment}
-                    onChange={setVehicleEquipment}
-                  />
-                </div>
-
-                <div className="border-t border-white/10 pt-6">
-                  <ServicesSelector
-                    selectedServices={servicesOffered}
-                    onChange={setServicesOffered}
-                  />
-                </div>
-
-                <div className="border-t border-white/10 pt-6">
-                  <VehiclePhotosManager
-                    driverId={driverProfile?.driver?.id || ""}
-                    currentVehiclePhotos={driverProfile?.driver?.vehicle_photos || []}
-                    currentGalleryPhotos={driverProfile?.driver?.gallery_photos || []}
-                    onPhotosUpdate={(vehiclePhotos, galleryPhotos) => {
-                      setDriverProfile({
-                        ...driverProfile,
-                        driver: {
-                          ...driverProfile.driver,
-                          vehicle_photos: vehiclePhotos,
-                          gallery_photos: galleryPhotos
-                        }
-                      });
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
-                  {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-                </Button>
-              </div>
-            </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* Statistics Tab */}
