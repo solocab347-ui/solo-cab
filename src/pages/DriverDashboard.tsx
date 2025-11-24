@@ -16,7 +16,7 @@ import DriverDevisList from "@/components/driver/DriverDevisList";
 import DriverFacturesList from "@/components/driver/DriverFacturesList";
 import QRCodeDisplay from "@/components/driver/QRCodeDisplay";
 import SubscriptionManager from "@/components/driver/SubscriptionManager";
-import { DriverHome } from "@/components/driver/DriverHome";
+import { DriverHome } from "@/components/driver/DriverHomeMemoized";
 import { PriceCalculator } from "@/components/driver/PriceCalculator";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ProfilePhotoUpload } from "@/components/driver/ProfilePhotoUpload";
@@ -33,7 +33,7 @@ import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useDriverProfile } from "@/hooks/useDriverProfile";
+import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,7 +42,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
-  const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useDriverProfile(user?.id);
+  const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);

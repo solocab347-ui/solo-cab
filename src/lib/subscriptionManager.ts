@@ -68,11 +68,8 @@ class SubscriptionManager {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
-          console.warn(`⚠️ Channel error: ${channelName} - cleaning up`);
-          // Cleanup silencieux pour éviter spam console
+          // Cleanup silencieux
           this.unsubscribe(channelName);
-        } else if (status === 'SUBSCRIBED') {
-          console.log(`✅ Channel subscribed: ${channelName}`);
         }
       });
 
