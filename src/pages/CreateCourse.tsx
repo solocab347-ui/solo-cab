@@ -38,6 +38,7 @@ const CreateCourse = () => {
   const [clientAddress, setClientAddress] = useState("");
   const [useAddressPickup, setUseAddressPickup] = useState(false);
   const [useAddressDestination, setUseAddressDestination] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("carte");
 
   // Fetch client address on mount
   useEffect(() => {
@@ -256,6 +257,7 @@ const CreateCourse = () => {
         passengersCount,
         notes,
         promoCode,
+        paymentMethodPreference: paymentMethod,
       });
 
       if (course) {
@@ -461,6 +463,27 @@ const CreateCourse = () => {
                 )}
               </div>
             </ErrorBoundary>
+
+            {/* Payment Method Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="payment" className="flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                Mode de paiement préféré *
+              </Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez le mode de paiement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="carte">Carte bancaire</SelectItem>
+                  <SelectItem value="espece">Espèces</SelectItem>
+                  <SelectItem value="virement">Virement</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Vous payerez directement avec le chauffeur selon le mode choisi
+              </p>
+            </div>
 
             {/* Notes */}
             <div className="space-y-2">

@@ -270,6 +270,7 @@ export type Database = {
           id: string
           notes: string | null
           passengers_count: number
+          payment_method_preference: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
@@ -295,6 +296,7 @@ export type Database = {
           id?: string
           notes?: string | null
           passengers_count?: number
+          payment_method_preference?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -320,6 +322,7 @@ export type Database = {
           id?: string
           notes?: string | null
           passengers_count?: number
+          payment_method_preference?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
