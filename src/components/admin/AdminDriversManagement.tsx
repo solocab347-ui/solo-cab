@@ -99,15 +99,24 @@ const AdminDriversManagement = () => {
 
   const fetchDrivers = async () => {
     try {
+      // Optimisation: Sélectionner uniquement les colonnes nécessaires
       const { data, error } = await supabase
         .from("drivers")
         .select(
           `
-          *,
-          profiles:profiles!inner(full_name, email, phone, profile_photo_url)
+          id,
+          user_id,
+          status,
+          license_number,
+          vehicle_model,
+          company_name,
+          documents,
+          created_at,
+          profiles!inner(full_name, email, phone, profile_photo_url)
         `
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(1000); // Limite explicite pour performance
 
       if (error) throw error;
       setDrivers(data || []);
