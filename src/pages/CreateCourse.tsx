@@ -67,14 +67,22 @@ const CreateCourse = () => {
     fetchClientAddress();
   }, [user]);
 
-  // SYSTÈME RENFORCÉ: Utilisation du geocoding centralisé
+  // SYSTÈME RENFORCÉ: Utilisation du geocoding centralisé avec gestion d'erreurs
   useEffect(() => {
     const applyPickupAddress = async () => {
       if (useAddressPickup && clientAddress) {
         setPickupAddress(clientAddress);
-        const result = await geocodeAddress(clientAddress);
-        if (result.success && result.coordinates) {
-          setPickupCoordinates(result.coordinates);
+        try {
+          const result = await geocodeAddress(clientAddress);
+          if (result.success && result.coordinates) {
+            setPickupCoordinates(result.coordinates);
+          } else {
+            console.warn("⚠️ Geocoding failed for pickup address:", result.error);
+            toast.warning("Impossible de géolocaliser l'adresse de départ");
+          }
+        } catch (error) {
+          console.error("❌ Geocoding exception for pickup:", error);
+          toast.error("Erreur de géolocalisation");
         }
       } else if (!useAddressPickup) {
         setPickupAddress("");
@@ -89,9 +97,17 @@ const CreateCourse = () => {
     const applyDestinationAddress = async () => {
       if (useAddressDestination && clientAddress) {
         setDestinationAddress(clientAddress);
-        const result = await geocodeAddress(clientAddress);
-        if (result.success && result.coordinates) {
-          setDestinationCoordinates(result.coordinates);
+        try {
+          const result = await geocodeAddress(clientAddress);
+          if (result.success && result.coordinates) {
+            setDestinationCoordinates(result.coordinates);
+          } else {
+            console.warn("⚠️ Geocoding failed for destination address:", result.error);
+            toast.warning("Impossible de géolocaliser l'adresse d'arrivée");
+          }
+        } catch (error) {
+          console.error("❌ Geocoding exception for destination:", error);
+          toast.error("Erreur de géolocalisation");
         }
       } else if (!useAddressDestination) {
         setDestinationAddress("");

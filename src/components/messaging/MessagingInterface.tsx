@@ -208,9 +208,9 @@ export const MessagingInterface = () => {
                 )}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-background border-border">
+            <SelectContent className="bg-background border-border z-[100]">
               {contacts.map((contact) => (
-                <SelectItem key={contact.id} value={contact.id} className="cursor-pointer">
+                <SelectItem key={contact.id} value={contact.id} className="cursor-pointer hover:bg-muted">
                   <div className="flex items-center gap-2">
                     <Avatar className="w-6 h-6">
                       <AvatarImage src={contact.profile_photo_url || undefined} />

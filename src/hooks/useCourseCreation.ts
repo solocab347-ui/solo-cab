@@ -196,28 +196,41 @@ export function useCourseCreation() {
       console.log("✅ Course created successfully:", course.id);
 
       // GÉNÉRATION DEVIS: Appeler l'edge function pour créer le devis automatiquement
-      try {
-        const { data: devisData, error: devisError } = await supabase.functions.invoke(
-          "create-devis-auto",
-          {
-            body: {
-              course_id: course.id,
-              driver_id: driverId,
-              use_hourly_rate: courseType === "hourly",
-            },
-          }
-        );
+      // PROTECTION: Tentative avec retry en cas d'échec
+      let devisCreated = false;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const { data: devisData, error: devisError } = await supabase.functions.invoke(
+            "create-devis-auto",
+            {
+              body: {
+                course_id: course.id,
+                driver_id: driverId,
+                use_hourly_rate: courseType === "hourly",
+              },
+            }
+          );
 
-        if (devisError) {
-          console.error("❌ Devis generation error:", devisError);
-          toast.warning("Course créée mais erreur lors de la génération du devis");
-        } else {
-          console.log("✅ Devis generated successfully:", devisData);
-          toast.success("Course et devis créés avec succès !");
+          if (devisError) {
+            console.error(`❌ Devis generation error (attempt ${attempt}):`, devisError);
+            if (attempt === 2) {
+              toast.warning("Course créée mais erreur lors de la génération du devis");
+            }
+          } else {
+            console.log("✅ Devis generated successfully:", devisData);
+            toast.success("Course et devis créés avec succès !");
+            devisCreated = true;
+            break;
+          }
+        } catch (devisError) {
+          console.error(`❌ Devis generation exception (attempt ${attempt}):`, devisError);
+          if (attempt === 2) {
+            toast.warning("Course créée, le devis sera généré ultérieurement");
+          } else {
+            // Attendre 1 seconde avant de réessayer
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
-      } catch (devisError) {
-        console.error("❌ Devis generation exception:", devisError);
-        toast.warning("Course créée, le devis sera généré ultérieurement");
       }
 
       return course;
