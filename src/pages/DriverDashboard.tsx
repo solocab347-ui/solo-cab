@@ -373,7 +373,7 @@ const DriverDashboard = () => {
             </div>
             
             {/* Deuxième ligne */}
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 w-full">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white flex-col sm:flex-row">
@@ -420,6 +420,12 @@ const DriverDashboard = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               
+              <TabsTrigger value="feedback" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
+                <Lightbulb className="w-4 h-4" />
+                <span className="hidden sm:inline">Feedback</span>
+                <span className="sm:hidden">Retour</span>
+              </TabsTrigger>
+              
               <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
                 <TrendingUp className="w-4 h-4" />
                 <span className="hidden sm:inline">Abonnement</span>
@@ -434,14 +440,6 @@ const DriverDashboard = () => {
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Paramètres</span>
                 <span className="sm:hidden">Params</span>
-              </TabsTrigger>
-            </div>
-
-            {/* Troisième ligne - Feedback */}
-            <div className="grid grid-cols-1 gap-1 w-full">
-              <TabsTrigger value="feedback" className="gap-1 text-xs sm:text-sm flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                <Lightbulb className="w-4 h-4" />
-                <span>Amélioration & Feedback</span>
               </TabsTrigger>
             </div>
           </TabsList>
