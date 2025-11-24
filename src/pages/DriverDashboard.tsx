@@ -29,6 +29,7 @@ import { ProfitabilityCalculator } from "@/components/driver/profitability/Profi
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
+import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -259,13 +260,23 @@ const DriverDashboard = () => {
       {/* Header */}
       <header className="border-b border-white/10 bg-black shadow-elegant sticky top-0 z-10 backdrop-blur-sm">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
-              <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-lg">
+                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              </div>
+              <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
+                SoloCab
+              </span>
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
-              SoloCab
-            </span>
+            {activeTab !== "home" && (
+              <NavigationHeader 
+                showBack={false}
+                showHome={true}
+                homeRoute="/driver-dashboard"
+                onBack={() => setActiveTab("home")}
+              />
+            )}
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />

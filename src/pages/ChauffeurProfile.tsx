@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -232,12 +233,11 @@ const ChauffeurProfile = () => {
               SoloCab
             </span>
           </Link>
-          <Link to="/chauffeurs">
-            <Button variant="ghost">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour aux chauffeurs
-            </Button>
-          </Link>
+          <NavigationHeader 
+            showBack={true}
+            showHome={true}
+            homeRoute="/chauffeurs"
+          />
         </div>
       </header>
 

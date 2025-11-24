@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { NavigationHeader } from "@/components/NavigationHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,19 +115,14 @@ const ClientProfileView = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header avec bouton retour */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-white">Profil du client</h1>
-        </div>
-
+        {/* Header avec navigation */}
+        <NavigationHeader 
+          showBack={true}
+          showHome={true}
+          homeRoute="/chauffeurs"
+          className="mb-4"
+        />
+        
         {/* Profil principal */}
         <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
