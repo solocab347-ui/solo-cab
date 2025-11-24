@@ -165,7 +165,12 @@ const ClientDashboard = () => {
     { id: "devis-factures", label: "Devis & Factures", icon: FileText },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
-    { id: "chauffeurs", label: "Mes Chauffeurs", icon: Users, hideForExclusive: false },
+    { 
+      id: "chauffeurs", 
+      label: clientProfile?.client?.is_exclusive ? "Mon Chauffeur" : "Mes Chauffeurs", 
+      icon: Users, 
+      hideForExclusive: false 
+    },
     { id: "scanner", label: "Scanner QR", icon: QrCode, hideForExclusive: true }, // Only for free clients
     { id: "vitrine", label: "Vitrine Publique", icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true }, // Only for free clients
     { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User, hideForExclusive: false },
