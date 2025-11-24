@@ -59,6 +59,7 @@ const DriverCreateCourse = () => {
   const [calculating, setCalculating] = useState(false);
 
   const [driverProfile, setDriverProfile] = useState<any>(null);
+  const [maxPassengers, setMaxPassengers] = useState(4);
 
   const fetchDriverProfile = async () => {
     if (!user) return;
@@ -78,6 +79,7 @@ const DriverCreateCourse = () => {
 
       if (driver) {
         setDriverProfile(driver);
+        setMaxPassengers(driver.max_passengers || 4);
       }
     } catch (err) {
       console.error("❌ Exception fetching driver profile:", err);
@@ -372,34 +374,45 @@ const DriverCreateCourse = () => {
 
             {/* Adresses */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pickup" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  Adresse de départ *
-                </Label>
-                <AddressAutocomplete
-                  value={pickupAddress}
-                  onChange={(address, coords) => {
-                    setPickupAddress(address);
-                    if (coords) setPickupCoordinates(coords);
-                  }}
-                  placeholder="Commencez à taper l'adresse..."
-                />
-              </div>
+              <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+                <h3 className="font-semibold flex items-center gap-2 text-base">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  Itinéraire de la course
+                </h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="pickup" className="text-sm font-medium">
+                    📍 Point de départ *
+                  </Label>
+                  <AddressAutocomplete
+                    value={pickupAddress}
+                    onChange={(address, coords) => {
+                      setPickupAddress(address);
+                      if (coords) setPickupCoordinates(coords);
+                    }}
+                    placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tapez l'adresse complète avec ville et code postal
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="destination" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-foreground" />
-                  Adresse d'arrivée *
-                </Label>
-                <AddressAutocomplete
-                  value={destinationAddress}
-                  onChange={(address, coords) => {
-                    setDestinationAddress(address);
-                    if (coords) setDestinationCoordinates(coords);
-                  }}
-                  placeholder="Commencez à taper l'adresse..."
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="destination" className="text-sm font-medium">
+                    🏁 Point d'arrivée *
+                  </Label>
+                  <AddressAutocomplete
+                    value={destinationAddress}
+                    onChange={(address, coords) => {
+                      setDestinationAddress(address);
+                      if (coords) setDestinationCoordinates(coords);
+                    }}
+                    placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Sélectionnez l'adresse dans la liste déroulante
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -458,35 +471,48 @@ const DriverCreateCourse = () => {
             )}
 
             {/* Date et passagers */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Date et heure de départ *
-                </Label>
-                <Input
-                  id="date"
-                  type="datetime-local"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+              <h3 className="font-semibold flex items-center gap-2 text-base">
+                <Calendar className="w-5 h-5 text-accent" />
+                Détails de la réservation
+              </h3>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="text-sm font-medium">
+                    📅 Date et heure du départ *
+                  </Label>
+                  <Input
+                    id="date"
+                    type="datetime-local"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Date et heure exacte du rendez-vous
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="passengers" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Nombre de passagers *
-                </Label>
-                <Input
-                  id="passengers"
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={passengersCount}
-                  onChange={(e) => setPassengersCount(e.target.value)}
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="passengers" className="text-sm font-medium">
+                    👥 Nombre de passagers *
+                  </Label>
+                  <Input
+                    id="passengers"
+                    type="number"
+                    min="1"
+                    max={maxPassengers}
+                    value={passengersCount}
+                    onChange={(e) => setPassengersCount(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Maximum {maxPassengers} personnes
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -27,6 +27,7 @@ import RegistrationSuccess from "./pages/RegistrationSuccess";
 import Notifications from "./pages/Notifications";
 import ClientProfileView from "./pages/ClientProfileView";
 import RGPDData from "./pages/RGPDData";
+import InstallPWA from "./pages/InstallPWA";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -122,6 +123,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/install" element={<InstallPWA />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -320,96 +320,119 @@ const CreateCourse = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Adresses */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pickup" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-premium" />
-                  Adresse de départ *
-                </Label>
-                {clientAddress && (
-                  <div className="flex items-center gap-2 mb-2 p-3 bg-muted/50 rounded-lg">
-                    <Checkbox
-                      id="use-address-pickup"
-                      checked={useAddressPickup}
-                      onCheckedChange={(checked) => setUseAddressPickup(checked as boolean)}
-                    />
-                    <label htmlFor="use-address-pickup" className="text-sm cursor-pointer font-medium">
-                      À partir de mon adresse
-                    </label>
-                  </div>
-                )}
-                <AddressAutocomplete
-                  value={pickupAddress}
-                  onChange={(address, coords) => {
-                    setPickupAddress(address);
-                    if (coords) setPickupCoordinates(coords);
-                    setUseAddressPickup(false);
-                  }}
-                  placeholder="Commencez à taper : 123 Rue de la Paix, Paris..."
-                  disabled={useAddressPickup}
-                />
-              </div>
+              <div className="bg-primary/5 p-6 rounded-lg border border-primary/20 space-y-4">
+                <h3 className="font-semibold flex items-center gap-2 text-lg">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  Trajet de votre course
+                </h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="pickup" className="text-base font-medium">
+                    📍 Adresse de départ *
+                  </Label>
+                  {clientAddress && (
+                    <div className="flex items-center gap-2 mb-2 p-3 bg-success/10 rounded-lg border border-success/30">
+                      <Checkbox
+                        id="use-address-pickup"
+                        checked={useAddressPickup}
+                        onCheckedChange={(checked) => setUseAddressPickup(checked as boolean)}
+                      />
+                      <label htmlFor="use-address-pickup" className="text-sm cursor-pointer font-medium">
+                        🏠 Partir de mon adresse enregistrée
+                      </label>
+                    </div>
+                  )}
+                  <AddressAutocomplete
+                    value={pickupAddress}
+                    onChange={(address, coords) => {
+                      setPickupAddress(address);
+                      if (coords) setPickupCoordinates(coords);
+                      setUseAddressPickup(false);
+                    }}
+                    placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
+                    disabled={useAddressPickup}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    ℹ️ Commencez à taper puis sélectionnez dans la liste
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="destination" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-destructive" />
-                  Adresse d'arrivée *
-                </Label>
-                {clientAddress && (
-                  <div className="flex items-center gap-2 mb-2 p-3 bg-muted/50 rounded-lg">
-                    <Checkbox
-                      id="use-address-destination"
-                      checked={useAddressDestination}
-                      onCheckedChange={(checked) => setUseAddressDestination(checked as boolean)}
-                    />
-                    <label htmlFor="use-address-destination" className="text-sm cursor-pointer font-medium">
-                      Rentrer à mon adresse
-                    </label>
-                  </div>
-                )}
-                <AddressAutocomplete
-                  value={destinationAddress}
-                  onChange={(address, coords) => {
-                    setDestinationAddress(address);
-                    if (coords) setDestinationCoordinates(coords);
-                    setUseAddressDestination(false);
-                  }}
-                  placeholder="Commencez à taper : 456 Avenue des Champs, Paris..."
-                  disabled={useAddressDestination}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="destination" className="text-base font-medium">
+                    🏁 Adresse d'arrivée *
+                  </Label>
+                  {clientAddress && (
+                    <div className="flex items-center gap-2 mb-2 p-3 bg-success/10 rounded-lg border border-success/30">
+                      <Checkbox
+                        id="use-address-destination"
+                        checked={useAddressDestination}
+                        onCheckedChange={(checked) => setUseAddressDestination(checked as boolean)}
+                      />
+                      <label htmlFor="use-address-destination" className="text-sm cursor-pointer font-medium">
+                        🏠 Retourner à mon adresse enregistrée
+                      </label>
+                    </div>
+                  )}
+                  <AddressAutocomplete
+                    value={destinationAddress}
+                    onChange={(address, coords) => {
+                      setDestinationAddress(address);
+                      if (coords) setDestinationCoordinates(coords);
+                      setUseAddressDestination(false);
+                    }}
+                    placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
+                    disabled={useAddressDestination}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    ℹ️ Attendez les suggestions puis cliquez pour sélectionner
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Date et passagers */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Date et heure *
-                </Label>
-                <Input
-                  id="date"
-                  type="datetime-local"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="bg-accent/5 p-6 rounded-lg border border-accent/20 space-y-4">
+              <h3 className="font-semibold flex items-center gap-2 text-lg">
+                <Calendar className="w-5 h-5 text-accent" />
+                Horaires et passagers
+              </h3>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="text-base font-medium">
+                    📅 Date et heure du départ *
+                  </Label>
+                  <Input
+                    id="date"
+                    type="datetime-local"
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Heure précise du rendez-vous
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="passengers" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Nombre de passagers *
-                </Label>
-                <Input
-                  id="passengers"
-                  type="number"
-                  min="1"
-                  max={maxPassengers}
-                  value={passengersCount}
-                  onChange={(e) => setPassengersCount(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">Maximum {maxPassengers} passagers</p>
+                <div className="space-y-2">
+                  <Label htmlFor="passengers" className="text-base font-medium">
+                    👥 Nombre de passagers *
+                  </Label>
+                  <Input
+                    id="passengers"
+                    type="number"
+                    min="1"
+                    max={maxPassengers}
+                    value={passengersCount}
+                    onChange={(e) => setPassengersCount(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Capacité max: {maxPassengers} personnes
+                  </p>
+                </div>
               </div>
             </div>
 

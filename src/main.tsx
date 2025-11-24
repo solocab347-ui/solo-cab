@@ -4,6 +4,11 @@ import "./index.css";
 import { memoryManager } from "./lib/memoryManager";
 import { performanceMonitor } from "./lib/performanceMonitor";
 
+// Register PWA service worker
+if ('serviceWorker' in navigator) {
+  import('./registerSW.ts');
+}
+
 // Démarrer le monitoring de performance - DÉSACTIVÉ pour stabilité
 // Cause des problèmes de performance et blocages
 // if (import.meta.env.DEV) {
