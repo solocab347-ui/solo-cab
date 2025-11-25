@@ -392,6 +392,7 @@ const DriverCreateCourse = () => {
                       if (coords) setPickupCoordinates(coords);
                     }}
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
+                    className="scroll-mt-24"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Tapez l'adresse complète avec ville et code postal
@@ -410,6 +411,7 @@ const DriverCreateCourse = () => {
                       if (coords) setDestinationCoordinates(coords);
                     }}
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
+                    className="scroll-mt-24"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Sélectionnez l'adresse dans la liste déroulante
@@ -527,10 +529,10 @@ const DriverCreateCourse = () => {
                 Mode de paiement préféré *
               </Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="bg-background">
+                <SelectTrigger className="bg-background scroll-mt-24">
                   <SelectValue placeholder="Sélectionnez le mode de paiement" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
+                <SelectContent className="bg-background border border-border z-[100000]" position="popper" sideOffset={5}>
                   <SelectItem value="carte">Carte bancaire</SelectItem>
                   <SelectItem value="espece">Espèces</SelectItem>
                   <SelectItem value="virement">Virement</SelectItem>

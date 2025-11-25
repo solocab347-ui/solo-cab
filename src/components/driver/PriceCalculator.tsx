@@ -170,41 +170,43 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-base font-medium">
-              <MapPin className="w-5 h-5 text-success" />
-              📍 Adresse de départ
-            </Label>
-            <AddressAutocomplete
-              value={pickupAddress}
-              onChange={(address, coords) => {
-                setPickupAddress(address);
-                if (coords) setPickupCoordinates(coords);
-              }}
-              placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
-            />
-            <p className="text-xs text-muted-foreground">
-              Tapez l'adresse complète puis sélectionnez dans la liste
-            </p>
-          </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-base font-medium">
+                <MapPin className="w-5 h-5 text-success" />
+                📍 Adresse de départ
+              </Label>
+              <AddressAutocomplete
+                value={pickupAddress}
+                onChange={(address, coords) => {
+                  setPickupAddress(address);
+                  if (coords) setPickupCoordinates(coords);
+                }}
+                placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
+                className="scroll-mt-24"
+              />
+              <p className="text-xs text-muted-foreground">
+                Tapez l'adresse complète puis sélectionnez dans la liste
+              </p>
+            </div>
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-base font-medium">
-              <Navigation className="w-5 h-5 text-destructive" />
-              🏁 Adresse de destination
-            </Label>
-            <AddressAutocomplete
-              value={destinationAddress}
-              onChange={(address, coords) => {
-                setDestinationAddress(address);
-                if (coords) setDestinationCoordinates(coords);
-              }}
-              placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
-            />
-            <p className="text-xs text-muted-foreground">
-              Attendez les suggestions puis cliquez pour sélectionner
-            </p>
-          </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-base font-medium">
+                <Navigation className="w-5 h-5 text-destructive" />
+                🏁 Adresse de destination
+              </Label>
+              <AddressAutocomplete
+                value={destinationAddress}
+                onChange={(address, coords) => {
+                  setDestinationAddress(address);
+                  if (coords) setDestinationCoordinates(coords);
+                }}
+                placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
+                className="scroll-mt-24"
+              />
+              <p className="text-xs text-muted-foreground">
+                Attendez les suggestions puis cliquez pour sélectionner
+              </p>
+            </div>
 
           <Button
             onClick={handleCalculate}
@@ -267,14 +269,14 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           <div className="space-y-4 pt-6 border-t border-premium-foreground/20">
             <h5 className="font-semibold text-premium-foreground">Créer une course avec ce calcul</h5>
             <div className="space-y-2">
-              <Label className="text-premium-foreground/80">Sélectionner un client</Label>
+              <Label className="text-sm font-medium">Sélectionner un client</Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground">
+                <SelectTrigger className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground scroll-mt-24">
                   <SelectValue placeholder="Choisir un client" />
                 </SelectTrigger>
-                <SelectContent className="bg-card border-border z-50">
+                <SelectContent className="bg-card border-border z-[100000] max-h-80">
                   {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
+                    <SelectItem key={client.id} value={client.id} className="scroll-mt-2">
                       {client.profiles.full_name} ({client.profiles.email})
                     </SelectItem>
                   ))}

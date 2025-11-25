@@ -20,6 +20,7 @@ import { DriverHome } from "@/components/driver/DriverHomeMemoized";
 import { PriceCalculator } from "@/components/driver/PriceCalculator";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ProfilePhotoUpload } from "@/components/driver/ProfilePhotoUpload";
+import { DualProfilePhotoUpload } from "@/components/driver/DualProfilePhotoUpload";
 import { SectorSelector } from "@/components/driver/SectorSelector";
 import { EquipmentSelector } from "@/components/driver/EquipmentSelector";
 import { ServicesSelector } from "@/components/driver/ServicesSelector";
@@ -72,6 +73,7 @@ const DriverDashboard = () => {
   const [displayDriverName, setDisplayDriverName] = useState(true);
   const [displayCompanyName, setDisplayCompanyName] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [cardPhotoUrl, setCardPhotoUrl] = useState<string | null>(null);
   const [vehicleEquipment, setVehicleEquipment] = useState<string[]>([]);
   const [servicesOffered, setServicesOffered] = useState<string[]>([]);
   const [vehicleBrand, setVehicleBrand] = useState("");
@@ -115,6 +117,7 @@ const DriverDashboard = () => {
       setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
       setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
       setProfilePhotoUrl(driverProfile.profile_photo_url || null);
+      setCardPhotoUrl(driver.card_photo_url || null);
     }
   }, [driverProfile]);
 
@@ -184,7 +187,8 @@ const DriverDashboard = () => {
 
     setLoading(true);
     try {
-      updateProfile({
+      // Sauvegarder le profil avec TOUTES les données y compris les photos
+      await updateProfile({
         public_profile_enabled: publicProfileEnabled,
         show_phone: showPhone,
         show_email: showEmail,
@@ -213,6 +217,16 @@ const DriverDashboard = () => {
         evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
       });
+
+      // Sauvegarder aussi les photos dans la table profiles
+      if (user?.id && profilePhotoUrl) {
+        await supabase
+          .from('profiles')
+          .update({ profile_photo_url: profilePhotoUrl })
+          .eq('id', user.id);
+      }
+
+      toast.success("Profil enregistré avec succès !");
     } catch (error: any) {
       console.error("Error saving profile:", error);
       toast.error("Erreur lors de la sauvegarde");
@@ -718,10 +732,12 @@ const DriverDashboard = () => {
                   displayCompanyName={displayCompanyName}
                   companyName={companyName}
                   profilePhotoUrl={profilePhotoUrl}
+                  cardPhotoUrl={cardPhotoUrl}
                   vehicleEquipment={vehicleEquipment}
                   servicesOffered={servicesOffered}
                   onTogglePublicProfile={handleTogglePublicProfile}
                   onPhotoUpdate={setProfilePhotoUrl}
+                  onCardPhotoUpdate={setCardPhotoUrl}
                   onShowPhoneChange={setShowPhone}
                   onShowEmailChange={setShowEmail}
                   onWorkingSectorsChange={setWorkingSectors}
