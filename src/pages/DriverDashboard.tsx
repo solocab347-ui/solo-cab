@@ -756,7 +756,7 @@ const DriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            {driverProfile && user && activeTab === "profile" && (
+            {driverProfile && user ? (
               <>
                 <DriverPublicProfile
                   driverProfile={driverProfile}
@@ -808,6 +808,10 @@ const DriverDashboard = () => {
                   </Button>
                 </div>
               </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Chargement du profil...</p>
+              </div>
             )}
           </TabsContent>
 
