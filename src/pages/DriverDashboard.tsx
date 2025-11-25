@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -32,6 +32,7 @@ import { DriverAssistant } from "@/components/driver/DriverAssistant";
 import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
+import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -398,6 +399,10 @@ const DriverDashboard = () => {
                   <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
                     <PieChart className="w-4 h-4" />
                     Calcul de rentabilité
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("prospection")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-600 hover:text-white">
+                    <Sparkles className="w-4 h-4" />
+                    Prospection
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -793,6 +798,14 @@ const DriverDashboard = () => {
           {/* Feedback Tab */}
           <TabsContent value="feedback" className="space-y-6">
             <DriverFeedback />
+          </TabsContent>
+
+          {/* Prospection Tab */}
+          <TabsContent value="prospection" className="space-y-6">
+            <DriverProspectionFlyer 
+              qrCode={qrCode} 
+              driverProfile={driverProfile} 
+            />
           </TabsContent>
 
         </Tabs>
