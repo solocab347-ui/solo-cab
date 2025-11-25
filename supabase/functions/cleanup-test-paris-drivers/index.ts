@@ -54,83 +54,84 @@ Deno.serve(async (req) => {
       try {
         console.log(`🗑️ Suppression de ${email}...`);
 
-        // 1. Récupérer l'user_id depuis auth.users via admin
-        const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+        // 1. Récupérer l'user_id depuis la table profiles (plus fiable que auth.admin.listUsers)
+        const { data: profile, error: findProfileError } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
         
-        if (authError) {
-          console.error(`❌ Erreur listUsers pour ${email}:`, authError);
-          errors.push({ email, error: authError.message });
+        if (findProfileError) {
+          console.error(`❌ Erreur recherche profile pour ${email}:`, findProfileError);
+          errors.push({ email, error: findProfileError.message });
           continue;
         }
 
-        const user = authUsers.users.find(u => u.email === email);
-        
-        if (!user) {
-          console.log(`ℹ️ Utilisateur ${email} n'existe pas`);
+        if (!profile) {
+          console.log(`ℹ️ Profile ${email} n'existe pas`);
           continue;
         }
 
-        const userId = user.id;
+        const userId = profile.id;
         console.log(`📍 User ID trouvé: ${userId}`);
 
         // 2. Supprimer toutes les données associées dans les tables publiques
         // (l'ordre est important à cause des contraintes de clés étrangères)
         
-        // Supprimer les courses
-        const { error: coursesError } = await supabaseAdmin
-          .from('courses')
-          .delete()
-          .or(`created_by_user_id.eq.${userId},driver_id.in.(select id from drivers where user_id='${userId}')`);
+        // Récupérer le driver_id
+        const { data: driver } = await supabaseAdmin
+          .from('drivers')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
         
-        if (coursesError) console.log(`⚠️ Erreur suppression courses: ${coursesError.message}`);
+        const driverId = driver?.id;
 
-        // Supprimer les devis
-        const { error: devisError } = await supabaseAdmin
-          .from('devis')
-          .delete()
-          .in('driver_id', [userId]);
-        
-        if (devisError) console.log(`⚠️ Erreur suppression devis: ${devisError.message}`);
+        if (driverId) {
+          // Supprimer les courses
+          await supabaseAdmin
+            .from('courses')
+            .delete()
+            .eq('driver_id', driverId);
 
-        // Supprimer les factures
-        const { error: facturesError } = await supabaseAdmin
-          .from('factures')
-          .delete()
-          .in('driver_id', [userId]);
-        
-        if (facturesError) console.log(`⚠️ Erreur suppression factures: ${facturesError.message}`);
+          // Supprimer les devis
+          await supabaseAdmin
+            .from('devis')
+            .delete()
+            .eq('driver_id', driverId);
 
-        // Supprimer les QR codes
-        const { error: qrError } = await supabaseAdmin
-          .from('qr_codes')
-          .delete()
-          .in('driver_id', [userId]);
-        
-        if (qrError) console.log(`⚠️ Erreur suppression qr_codes: ${qrError.message}`);
+          // Supprimer les factures
+          await supabaseAdmin
+            .from('factures')
+            .delete()
+            .eq('driver_id', driverId);
+
+          // Supprimer les QR codes
+          await supabaseAdmin
+            .from('qr_codes')
+            .delete()
+            .eq('driver_id', driverId);
+        }
 
         // Supprimer les user_roles
-        const { error: rolesError } = await supabaseAdmin
+        await supabaseAdmin
           .from('user_roles')
           .delete()
           .eq('user_id', userId);
-        
-        if (rolesError) console.log(`⚠️ Erreur suppression user_roles: ${rolesError.message}`);
 
         // Supprimer le driver
-        const { error: driverError } = await supabaseAdmin
-          .from('drivers')
-          .delete()
-          .eq('user_id', userId);
-        
-        if (driverError) console.log(`⚠️ Erreur suppression driver: ${driverError.message}`);
+        if (driverId) {
+          await supabaseAdmin
+            .from('drivers')
+            .delete()
+            .eq('user_id', userId);
+        }
 
         // Supprimer le profil
-        const { error: profileError } = await supabaseAdmin
+        await supabaseAdmin
           .from('profiles')
           .delete()
           .eq('id', userId);
-        
-        if (profileError) console.log(`⚠️ Erreur suppression profile: ${profileError.message}`);
 
         // 3. Supprimer l'utilisateur de auth.users via admin API
         const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
