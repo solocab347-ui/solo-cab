@@ -277,19 +277,19 @@ const RegisterClientQR = () => {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-slate-700 dark:text-slate-300">Nom complet *</Label>
+                  <Label htmlFor="fullName" className="text-foreground font-medium">Nom complet *</Label>
                   <Input
                     id="fullName"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Jean Dupont"
                     required
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                    className="h-12 bg-input border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email *</Label>
+                  <Label htmlFor="email" className="text-foreground font-medium">Email *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -297,12 +297,12 @@ const RegisterClientQR = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="jean.dupont@example.com"
                     required
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                    className="h-12 bg-input border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">Téléphone *</Label>
+                  <Label htmlFor="phone" className="text-foreground font-medium">Téléphone *</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -310,12 +310,12 @@ const RegisterClientQR = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+33 6 12 34 56 78"
                     required
-                    className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                    className="h-12 bg-input border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Mot de passe *</Label>
+                  <Label htmlFor="password" className="text-foreground font-medium">Mot de passe *</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -324,7 +324,7 @@ const RegisterClientQR = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      className="h-12 bg-input border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all pr-12"
                     />
                     <Button
                       type="button"
@@ -344,7 +344,7 @@ const RegisterClientQR = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-slate-300">Confirmer le mot de passe *</Label>
+                  <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirmer le mot de passe *</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -353,7 +353,7 @@ const RegisterClientQR = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600"
+                      className="h-12 bg-input border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all pr-12"
                     />
                     <Button
                       type="button"
