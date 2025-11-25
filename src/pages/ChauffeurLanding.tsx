@@ -652,8 +652,8 @@ const ChauffeurLanding = () => {
               </p>
               <div className="space-y-2 mb-6">
                 <div>
-                  <p className="text-sm text-gray-400">Coût mensuel (Test symbolique)</p>
-                  <p className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">1€</p>
+                  <p className="text-sm text-gray-400">Coût mensuel</p>
+                  <p className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">49,99€</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-400 mt-4">Coût annuel</p>
