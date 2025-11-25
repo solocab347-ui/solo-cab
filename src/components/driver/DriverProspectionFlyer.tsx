@@ -235,14 +235,14 @@ Scannez le QR code pour réserver`
 
           {/* Indicateur de scroll pour l'aperçu */}
           {showPreview && (
-            <div className="mt-4 p-3 bg-[#1e3a5f]/10 rounded-lg border border-[#1e3a5f]/20 flex items-center justify-center gap-2 animate-bounce">
-              <svg className="w-5 h-5 text-[#1e3a5f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mt-4 p-4 bg-orange-500 rounded-lg border-2 border-orange-600 flex items-center justify-center gap-2 animate-bounce shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
-              <span className="text-sm font-medium text-[#1e3a5f]">
+              <span className="text-base font-bold text-white">
                 Faites défiler vers le bas pour voir l'aperçu complet
               </span>
-              <svg className="w-5 h-5 text-[#1e3a5f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </div>
