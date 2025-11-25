@@ -14,6 +14,7 @@ interface DriverProfile {
   id: string;
   company_name: string | null;
   vehicle_model: string;
+  vehicle_plate: string | null;
   vehicle_color: string | null;
   vehicle_brand: string | null;
   vehicle_year: number | null;
@@ -63,6 +64,7 @@ const ClientDriverProfile = () => {
           id,
           company_name,
           vehicle_model,
+          vehicle_plate,
           vehicle_color,
           vehicle_brand,
           vehicle_year,
@@ -176,6 +178,12 @@ const ClientDriverProfile = () => {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Marque</p>
               <p className="font-semibold">{driver.vehicle_brand}</p>
+            </div>
+          )}
+          {driver.vehicle_plate && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Immatriculation</p>
+              <p className="font-semibold">{driver.vehicle_plate}</p>
             </div>
           )}
           {driver.vehicle_color && (
