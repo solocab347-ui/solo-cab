@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +31,10 @@ interface DriverPublicProfileProps {
   cardPhotoUrl: string | null;
   vehicleEquipment: string[];
   servicesOffered: string[];
+  vehicleBrand: string;
+  vehicleColor: string;
+  vehiclePlate: string;
+  vehicleYear: string;
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
   onCardPhotoUpdate: (url: string) => void;
@@ -42,6 +47,10 @@ interface DriverPublicProfileProps {
   onDisplayCompanyNameChange: (checked: boolean) => void;
   onVehicleEquipmentChange: (equipment: string[]) => void;
   onServicesOfferedChange: (services: string[]) => void;
+  onVehicleBrandChange: (brand: string) => void;
+  onVehicleColorChange: (color: string) => void;
+  onVehiclePlateChange: (plate: string) => void;
+  onVehicleYearChange: (year: string) => void;
 }
 
 export const DriverPublicProfile = memo(({
@@ -60,6 +69,10 @@ export const DriverPublicProfile = memo(({
   cardPhotoUrl,
   vehicleEquipment,
   servicesOffered,
+  vehicleBrand,
+  vehicleColor,
+  vehiclePlate,
+  vehicleYear,
   onTogglePublicProfile,
   onPhotoUpdate,
   onCardPhotoUpdate,
@@ -72,6 +85,10 @@ export const DriverPublicProfile = memo(({
   onDisplayCompanyNameChange,
   onVehicleEquipmentChange,
   onServicesOfferedChange,
+  onVehicleBrandChange,
+  onVehicleColorChange,
+  onVehiclePlateChange,
+  onVehicleYearChange,
 }: DriverPublicProfileProps) => {
   return (
     <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
@@ -230,6 +247,61 @@ export const DriverPublicProfile = memo(({
           selectedEquipment={vehicleEquipment}
           onChange={onVehicleEquipmentChange}
         />
+
+        <div className="border-t border-white/10 pt-6">
+          <Label className="text-base mb-4 block text-white">Informations du Véhicule</Label>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="vehicleBrand" className="text-white">Marque du véhicule</Label>
+              <Input
+                id="vehicleBrand"
+                value={vehicleBrand}
+                onChange={(e) => onVehicleBrandChange(e.target.value)}
+                placeholder="Mercedes, BMW, Tesla..."
+                className="bg-input border-2 border-border text-foreground"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vehicleColor" className="text-white">Couleur du véhicule</Label>
+              <Input
+                id="vehicleColor"
+                value={vehicleColor}
+                onChange={(e) => onVehicleColorChange(e.target.value)}
+                placeholder="Noir, Blanc, Gris..."
+                className="bg-input border-2 border-border text-foreground"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vehiclePlate" className="text-white">Plaque d'immatriculation</Label>
+              <Input
+                id="vehiclePlate"
+                value={vehiclePlate}
+                onChange={(e) => onVehiclePlateChange(e.target.value)}
+                placeholder="AB-123-CD"
+                className="bg-input border-2 border-border text-foreground"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vehicleYear" className="text-white">Année du véhicule</Label>
+              <Input
+                id="vehicleYear"
+                type="number"
+                value={vehicleYear}
+                onChange={(e) => onVehicleYearChange(e.target.value)}
+                placeholder="2023"
+                min="1990"
+                max="2030"
+                className="bg-input border-2 border-border text-foreground"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Ces informations seront visibles sur votre profil public et dans vos documents
+          </p>
+        </div>
       </div>
     </Card>
   );

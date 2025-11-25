@@ -754,6 +754,10 @@ const DriverDashboard = () => {
                   cardPhotoUrl={cardPhotoUrl}
                   vehicleEquipment={vehicleEquipment}
                   servicesOffered={servicesOffered}
+                  vehicleBrand={vehicleBrand}
+                  vehicleColor={vehicleColor}
+                  vehiclePlate={vehiclePlate}
+                  vehicleYear={vehicleYear}
                   onTogglePublicProfile={handleTogglePublicProfile}
                   onPhotoUpdate={setProfilePhotoUrl}
                   onCardPhotoUpdate={setCardPhotoUrl}
@@ -769,6 +773,10 @@ const DriverDashboard = () => {
                   onDisplayCompanyNameChange={setDisplayCompanyName}
                   onVehicleEquipmentChange={setVehicleEquipment}
                   onServicesOfferedChange={setServicesOffered}
+                  onVehicleBrandChange={setVehicleBrand}
+                  onVehicleColorChange={setVehicleColor}
+                  onVehiclePlateChange={setVehiclePlate}
+                  onVehicleYearChange={setVehicleYear}
                 />
 
                 <div className="flex justify-end">
