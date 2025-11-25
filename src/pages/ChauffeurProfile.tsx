@@ -34,10 +34,10 @@ interface DriverProfile {
   phone: string;
   profile_photo_url: string | null;
   vehicle_model: string;
-  vehicle_brand: string;
-  vehicle_year: number;
-  vehicle_plate: string;
-  vehicle_color: string;
+  vehicle_brand?: string | null;
+  vehicle_year?: number | null;
+  vehicle_plate?: string | null;
+  vehicle_color?: string | null;
   bio: string;
   rating: number;
   total_rides: number;
@@ -135,6 +135,10 @@ const ChauffeurProfile = () => {
           profile_photo_url: driverData.profiles?.profile_photo_url || null,
           rating: averageRating,
           total_rides: totalRides,
+          vehicle_brand: driverData.vehicle_brand || null,
+          vehicle_year: driverData.vehicle_year || null,
+          vehicle_plate: driverData.vehicle_plate || null,
+          vehicle_color: driverData.vehicle_color || null,
         };
 
         console.log("✅ Profile complete");
