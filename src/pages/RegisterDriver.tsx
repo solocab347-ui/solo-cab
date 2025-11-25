@@ -107,45 +107,52 @@ const RegisterDriver = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("🚀 Soumission formulaire étape 1");
-    console.log("📋 Données du formulaire:", {
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      passwordLength: formData.password?.length || 0,
-      confirmPasswordLength: formData.confirmPassword?.length || 0
-    });
+    console.log("🚀 [INSCRIPTION] Démarrage étape 1");
     
-    // Validation avec Zod
+    // 1. VALIDATION ZOD
     const validation = driverRegistrationSchema.safeParse(formData);
     
     if (!validation.success) {
-      console.error("❌ Erreur de validation Zod:", validation.error.errors);
-      // Afficher toutes les erreurs de validation
-      validation.error.errors.forEach((err) => {
-        const field = err.path[0];
-        toast.error(`${field}: ${err.message}`, {
-          duration: 5000
-        });
+      console.error("❌ [VALIDATION] Erreurs:", validation.error.errors);
+      const firstError = validation.error.errors[0];
+      toast.error("Formulaire incomplet", {
+        description: `${firstError.path[0]}: ${firstError.message}`,
+        duration: 5000
       });
       return;
     }
     
-    console.log("✅ Validation réussie, démarrage inscription...");
+    console.log("✅ [VALIDATION] Données valides");
 
     setLoading(true);
+    
     try {
-      console.log("📝 Étape 1: Création du compte...");
+      // 2. VÉRIFIER SI EMAIL EXISTE DÉJÀ
+      console.log("🔍 [CHECK] Vérification email...");
+      const { data: existingProfiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", formData.email.trim().toLowerCase())
+        .limit(1);
       
-      // Créer le compte utilisateur avec emailRedirectTo OBLIGATOIRE
-      const redirectUrl = `${window.location.origin}/`;
-      console.log("🔗 Redirect URL:", redirectUrl);
+      if (existingProfiles && existingProfiles.length > 0) {
+        console.warn("⚠️ [CHECK] Email déjà utilisé");
+        toast.error("Email déjà utilisé", {
+          description: "Un compte existe déjà avec cet email. Veuillez vous connecter.",
+          duration: 6000
+        });
+        return;
+      }
       
+      console.log("✅ [CHECK] Email disponible");
+      
+      // 3. CRÉATION COMPTE SUPABASE AUTH
+      console.log("📝 [AUTH] Création compte Supabase...");
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: formData.fullName.trim(),
             phone: formData.phone.trim(),
@@ -154,24 +161,55 @@ const RegisterDriver = () => {
       });
 
       if (signUpError) {
-        console.error("❌ Erreur signup:", signUpError);
-        throw signUpError;
+        console.error("❌ [AUTH] Erreur signup:", signUpError);
+        
+        if (signUpError.message.includes("already")) {
+          toast.error("Email déjà utilisé", {
+            description: "Un compte existe déjà avec cet email.",
+            duration: 6000
+          });
+        } else {
+          toast.error("Erreur de création", {
+            description: signUpError.message,
+            duration: 6000
+          });
+        }
+        return;
       }
+      
       if (!authData.user) {
-        console.error("❌ Pas d'utilisateur créé");
-        throw new Error("Erreur lors de la création du compte");
+        console.error("❌ [AUTH] Aucun utilisateur créé");
+        toast.error("Erreur technique", {
+          description: "Impossible de créer le compte. Réessayez.",
+          duration: 6000
+        });
+        return;
       }
 
-      console.log("✅ Compte créé:", authData.user.id);
       const createdUserId = authData.user.id;
+      console.log("✅ [AUTH] Compte créé:", createdUserId);
       setUserId(createdUserId);
 
-      // Attendre que le profil soit créé
-      console.log("⏳ Attente création profil...");
+      // 4. ATTENDRE TRIGGER PROFILE
+      console.log("⏳ [PROFILE] Attente trigger...");
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Ajouter le rôle driver
-      console.log("👤 Ajout rôle driver...");
+      // 5. VÉRIFIER PROFILE CRÉÉ
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", createdUserId)
+        .single();
+      
+      if (!profile) {
+        console.error("❌ [PROFILE] Profile non créé");
+        throw new Error("Le profil n'a pas été créé automatiquement");
+      }
+      
+      console.log("✅ [PROFILE] Profile existe");
+
+      // 6. AJOUTER RÔLE DRIVER
+      console.log("👤 [ROLE] Ajout rôle driver...");
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
@@ -179,17 +217,15 @@ const RegisterDriver = () => {
           role: "driver",
         });
 
-      if (roleError) {
-        console.error("❌ Erreur ajout rôle:", roleError);
-        if (!roleError.message.includes("duplicate")) {
-          throw new Error("Impossible d'ajouter le rôle driver");
-        }
+      if (roleError && !roleError.message.includes("duplicate")) {
+        console.error("❌ [ROLE] Erreur:", roleError);
+        throw new Error("Impossible d'ajouter le rôle driver");
       }
 
-      console.log("✅ Rôle driver ajouté");
+      console.log("✅ [ROLE] Rôle driver ajouté");
 
-      // Créer le profil chauffeur
-      console.log("🚗 Création profil chauffeur...");
+      // 7. CRÉER PROFIL DRIVER
+      console.log("🚗 [DRIVER] Création profil chauffeur...");
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
@@ -205,22 +241,26 @@ const RegisterDriver = () => {
           hourly_rate: 0,
           subscription_paid: false,
           public_profile_enabled: false,
+          quote_counter: 0,
+          invoice_counter: 0,
+          course_counter: 0,
+          reservation_counter: 0,
         })
         .select()
         .single();
 
       if (driverError) {
-        console.error("❌ Erreur création driver:", driverError);
+        console.error("❌ [DRIVER] Erreur:", driverError);
         throw new Error("Impossible de créer le profil chauffeur");
       }
 
-      console.log("✅ Profil chauffeur créé:", driverData.id);
       const createdDriverId = driverData.id;
+      console.log("✅ [DRIVER] Profil créé:", createdDriverId);
       setDriverId(createdDriverId);
 
-      // Si inscription avec token test, accorder accès gratuit illimité
+      // 8. ACCÈS GRATUIT SI TOKEN TEST
       if (invitationToken && isTokenValid) {
-        console.log("🎁 Octroi accès gratuit illimité pour test...");
+        console.log("🎁 [FREE] Octroi accès gratuit...");
         const { error: freeAccessError } = await supabase
           .from("drivers")
           .update({
@@ -231,52 +271,37 @@ const RegisterDriver = () => {
           })
           .eq("id", createdDriverId);
 
-        if (freeAccessError) {
-          console.error("❌ Erreur octroi accès gratuit:", freeAccessError);
-        } else {
-          console.log("✅ Accès gratuit illimité accordé");
-        }
-
-        // Marquer le token comme utilisé
-        const { error: tokenError } = await supabase
-          .from("invitation_tokens")
-          .update({
-            used: true,
-            used_by_driver_id: createdDriverId,
-            used_at: new Date().toISOString(),
-          })
-          .eq("token", invitationToken);
-
-        if (tokenError) {
-          console.error("❌ Erreur marquage token:", tokenError);
-        } else {
-          console.log("✅ Token marqué comme utilisé");
+        if (!freeAccessError) {
+          console.log("✅ [FREE] Accès gratuit accordé");
+          
+          // Marquer token utilisé
+          await supabase
+            .from("invitation_tokens")
+            .update({
+              used: true,
+              used_by_driver_id: createdDriverId,
+              used_at: new Date().toISOString(),
+            })
+            .eq("token", invitationToken);
         }
       }
 
+      // 9. SUCCÈS - PASSAGE ÉTAPE 2
+      console.log("🎉 [SUCCESS] Inscription réussie!");
       toast.success("Compte créé avec succès !", {
-        description: "Vous pouvez maintenant télécharger vos documents."
+        description: "Passez à l'étape suivante pour télécharger vos documents.",
+        duration: 4000
       });
-      console.log("🎯 Passage à l'étape 2");
-      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setCurrentStep(2);
 
     } catch (error: any) {
-      console.error("❌ Erreur complète étape 1:", error);
-      
-      let errorMessage = "Une erreur est survenue lors de l'inscription";
-      
-      if (error.message?.includes("already registered")) {
-        errorMessage = "Cette adresse email est déjà utilisée";
-      } else if (error.message?.includes("duplicate")) {
-        errorMessage = "Un compte existe déjà avec ces informations";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      console.error("💥 [ERROR] Erreur globale:", error);
       
       toast.error("Erreur d'inscription", {
-        description: errorMessage,
-        duration: 5000
+        description: error.message || "Une erreur est survenue. Veuillez réessayer.",
+        duration: 6000
       });
     } finally {
       setLoading(false);
