@@ -320,25 +320,26 @@ const CreateCourse = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Adresses */}
             <div className="space-y-4">
-              <div className="bg-primary/5 p-6 rounded-lg border border-primary/20 space-y-4">
-                <h3 className="font-semibold flex items-center gap-2 text-lg">
+              <div className="bg-card/50 p-6 rounded-lg border border-border space-y-4">
+                <h3 className="font-semibold flex items-center gap-2 text-lg text-foreground">
                   <MapPin className="w-5 h-5 text-primary" />
-                  Trajet de votre course
+                  Itinéraire de la course
                 </h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="pickup" className="text-base font-medium">
-                    📍 Adresse de départ *
+                  <Label htmlFor="pickup" className="text-base font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Point de départ *
                   </Label>
                   {clientAddress && (
-                    <div className="flex items-center gap-2 mb-2 p-3 bg-success/10 rounded-lg border border-success/30">
+                    <div className="flex items-center gap-2 mb-2 p-3 bg-card rounded-lg border border-border">
                       <Checkbox
                         id="use-address-pickup"
                         checked={useAddressPickup}
                         onCheckedChange={(checked) => setUseAddressPickup(checked as boolean)}
                       />
                       <label htmlFor="use-address-pickup" className="text-sm cursor-pointer font-medium">
-                        🏠 Partir de mon adresse enregistrée
+                        Partir de mon adresse enregistrée
                       </label>
                     </div>
                   )}
@@ -352,24 +353,25 @@ const CreateCourse = () => {
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
                     disabled={useAddressPickup}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    ℹ️ Commencez à taper puis sélectionnez dans la liste
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tapez l'adresse complète avec ville et code postal
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="destination" className="text-base font-medium">
-                    🏁 Adresse d'arrivée *
+                  <Label htmlFor="destination" className="text-base font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-destructive" />
+                    Point d'arrivée *
                   </Label>
                   {clientAddress && (
-                    <div className="flex items-center gap-2 mb-2 p-3 bg-success/10 rounded-lg border border-success/30">
+                    <div className="flex items-center gap-2 mb-2 p-3 bg-card rounded-lg border border-border">
                       <Checkbox
                         id="use-address-destination"
                         checked={useAddressDestination}
                         onCheckedChange={(checked) => setUseAddressDestination(checked as boolean)}
                       />
                       <label htmlFor="use-address-destination" className="text-sm cursor-pointer font-medium">
-                        🏠 Retourner à mon adresse enregistrée
+                        Retourner à mon adresse enregistrée
                       </label>
                     </div>
                   )}
@@ -383,24 +385,25 @@ const CreateCourse = () => {
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
                     disabled={useAddressDestination}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    ℹ️ Attendez les suggestions puis cliquez pour sélectionner
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sélectionnez l'adresse dans la liste déroulante
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Date et passagers */}
-            <div className="bg-accent/5 p-6 rounded-lg border border-accent/20 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-accent" />
-                Horaires et passagers
+            <div className="bg-card/50 p-6 rounded-lg border border-border space-y-4">
+              <h3 className="font-semibold flex items-center gap-2 text-lg text-foreground">
+                <Calendar className="w-5 h-5 text-primary" />
+                Détails de la réservation
               </h3>
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date" className="text-base font-medium">
-                    📅 Date et heure du départ *
+                  <Label htmlFor="date" className="text-base font-medium flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Date et heure du départ *
                   </Label>
                   <Input
                     id="date"
@@ -410,14 +413,15 @@ const CreateCourse = () => {
                     required
                     className="bg-background"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Heure précise du rendez-vous
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Date et heure exacte du rendez-vous
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="passengers" className="text-base font-medium">
-                    👥 Nombre de passagers *
+                  <Label htmlFor="passengers" className="text-base font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Nombre de passagers *
                   </Label>
                   <Input
                     id="passengers"
@@ -429,8 +433,8 @@ const CreateCourse = () => {
                     required
                     className="bg-background"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Capacité max: {maxPassengers} personnes
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Capacité maximale : {maxPassengers} personnes
                   </p>
                 </div>
               </div>
@@ -489,8 +493,8 @@ const CreateCourse = () => {
 
             {/* Payment Method Selection */}
             <div className="space-y-2">
-              <Label htmlFor="payment" className="flex items-center gap-2">
-                <Tag className="w-4 h-4" />
+              <Label htmlFor="payment" className="text-base font-medium flex items-center gap-2">
+                <Car className="w-4 h-4 text-primary" />
                 Mode de paiement préféré *
               </Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -503,14 +507,14 @@ const CreateCourse = () => {
                   <SelectItem value="virement">Virement</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Vous payerez directement avec le chauffeur selon le mode choisi
               </p>
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes complémentaires</Label>
+              <Label htmlFor="notes" className="text-base font-medium">Notes complémentaires</Label>
               <Textarea
                 id="notes"
                 value={notes}
@@ -540,9 +544,9 @@ const CreateCourse = () => {
             </div>
             
             {/* Message d'information */}
-            <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <div className="p-4 bg-card border border-border rounded-lg">
               <p className="text-sm text-center text-muted-foreground">
-                ℹ️ Une fois que vous aurez réservé, vous recevrez instantanément un devis.
+                Une fois votre réservation confirmée, vous recevrez instantanément un devis détaillé.
               </p>
             </div>
           </form>

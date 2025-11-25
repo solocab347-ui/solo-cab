@@ -374,15 +374,16 @@ const DriverCreateCourse = () => {
 
             {/* Adresses */}
             <div className="space-y-4">
-              <div className="bg-muted/30 p-4 rounded-lg space-y-4">
-                <h3 className="font-semibold flex items-center gap-2 text-base">
+              <div className="bg-card/50 p-6 rounded-lg border border-border space-y-4">
+                <h3 className="font-semibold flex items-center gap-2 text-lg text-foreground">
                   <MapPin className="w-5 h-5 text-primary" />
                   Itinéraire de la course
                 </h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="pickup" className="text-sm font-medium">
-                    📍 Point de départ *
+                  <Label htmlFor="pickup" className="text-base font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    Point de départ *
                   </Label>
                   <AddressAutocomplete
                     value={pickupAddress}
@@ -392,14 +393,15 @@ const DriverCreateCourse = () => {
                     }}
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Tapez l'adresse complète avec ville et code postal
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="destination" className="text-sm font-medium">
-                    🏁 Point d'arrivée *
+                  <Label htmlFor="destination" className="text-base font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-destructive" />
+                    Point d'arrivée *
                   </Label>
                   <AddressAutocomplete
                     value={destinationAddress}
@@ -409,7 +411,7 @@ const DriverCreateCourse = () => {
                     }}
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Sélectionnez l'adresse dans la liste déroulante
                   </p>
                 </div>
@@ -418,15 +420,15 @@ const DriverCreateCourse = () => {
 
             {/* Calculs automatiques */}
             {courseType === "classic" && distanceKm !== null && (
-              <Card className="p-4 bg-primary/5 border border-primary/20">
+              <Card className="p-4 bg-card border border-border">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Distance calculée</p>
-                    <p className="text-2xl font-bold text-primary">{distanceKm} km</p>
+                    <p className="text-2xl font-bold text-foreground">{distanceKm} km</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Durée estimée</p>
-                    <p className="text-2xl font-bold text-primary">{durationMinutes} min</p>
+                    <p className="text-2xl font-bold text-foreground">{durationMinutes} min</p>
                   </div>
                 </div>
               </Card>
@@ -457,7 +459,7 @@ const DriverCreateCourse = () => {
 
             {/* Prix estimé */}
             {calculatedPrice !== null && (
-              <Card className="p-4 bg-primary/10 border border-primary/20">
+              <Card className="p-4 bg-card border border-border">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-foreground font-medium">Prix estimé TTC</p>
@@ -465,22 +467,23 @@ const DriverCreateCourse = () => {
                       {courseType === "classic" ? "TVA 10% incluse" : "TVA 20% incluse"}
                     </p>
                   </div>
-                  <p className="text-3xl font-bold text-primary">{calculatedPrice}€</p>
+                  <p className="text-3xl font-bold text-foreground">{calculatedPrice}€</p>
                 </div>
               </Card>
             )}
 
             {/* Date et passagers */}
-            <div className="bg-muted/30 p-4 rounded-lg space-y-4">
-              <h3 className="font-semibold flex items-center gap-2 text-base">
-                <Calendar className="w-5 h-5 text-accent" />
+            <div className="bg-card/50 p-6 rounded-lg border border-border space-y-4">
+              <h3 className="font-semibold flex items-center gap-2 text-lg text-foreground">
+                <Calendar className="w-5 h-5 text-primary" />
                 Détails de la réservation
               </h3>
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date" className="text-sm font-medium">
-                    📅 Date et heure du départ *
+                  <Label htmlFor="date" className="text-base font-medium flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Date et heure du départ *
                   </Label>
                   <Input
                     id="date"
@@ -490,14 +493,15 @@ const DriverCreateCourse = () => {
                     required
                     className="bg-background"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Date et heure exacte du rendez-vous
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="passengers" className="text-sm font-medium">
-                    👥 Nombre de passagers *
+                  <Label htmlFor="passengers" className="text-base font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    Nombre de passagers *
                   </Label>
                   <Input
                     id="passengers"
@@ -509,8 +513,8 @@ const DriverCreateCourse = () => {
                     required
                     className="bg-background"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Maximum {maxPassengers} personnes
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Capacité maximale : {maxPassengers} personnes
                   </p>
                 </div>
               </div>
@@ -518,9 +522,9 @@ const DriverCreateCourse = () => {
 
             {/* Payment Method Selection */}
             <div className="space-y-2">
-              <Label htmlFor="payment" className="flex items-center gap-2">
-                <Calculator className="w-4 h-4" />
-                Mode de paiement préféré du client *
+              <Label htmlFor="payment" className="text-base font-medium flex items-center gap-2">
+                <Car className="w-4 h-4 text-primary" />
+                Mode de paiement préféré *
               </Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger className="bg-background">
@@ -532,14 +536,14 @@ const DriverCreateCourse = () => {
                   <SelectItem value="virement">Virement</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Mode de paiement que le client utilisera pour cette course
               </p>
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes complémentaires</Label>
+              <Label htmlFor="notes" className="text-base font-medium">Notes complémentaires</Label>
               <Textarea
                 id="notes"
                 value={notes}
