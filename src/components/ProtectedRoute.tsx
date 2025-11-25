@@ -34,11 +34,19 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status")
+        .select("status, subscription_paid, free_access_granted")
         .eq("user_id", user.id)
         .single();
 
       if (error) throw error;
+
+      // SÉCURITÉ CRITIQUE : Vérifier paiement ou accès gratuit
+      if (!driver.subscription_paid && !driver.free_access_granted) {
+        console.error("⛔ Accès refusé : paiement requis");
+        setDriverStatus("payment_required");
+        return;
+      }
+
       setDriverStatus(driver.status);
     } catch (error) {
       console.error("Error checking driver status:", error);
@@ -60,6 +68,15 @@ export const ProtectedRoute = ({
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Bloquer accès si paiement manquant
+  if (
+    requireValidatedDriver &&
+    userRole === "driver" &&
+    driverStatus === "payment_required"
+  ) {
     return <Navigate to="/login" replace />;
   }
 
