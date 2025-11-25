@@ -31,9 +31,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       console.log("Subscription check result:", data);
       setSubscriptionStatus(data);
-      if (data?.subscribed) {
+      
+      // Attendre que la mise à jour DB soit propagée, puis recharger le profil
+      setTimeout(() => {
         onSubscriptionUpdate();
-      }
+      }, 500);
     } catch (error: any) {
       console.error("Error checking subscription:", error);
     } finally {

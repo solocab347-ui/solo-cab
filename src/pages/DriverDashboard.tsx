@@ -39,9 +39,11 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DriverDashboard = () => {
   const { signOut, user } = useAuth();
+  const queryClient = useQueryClient();
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
@@ -443,7 +445,10 @@ const DriverDashboard = () => {
               </div>
               <SubscriptionManager 
                 driverProfile={driverProfile} 
-                onSubscriptionUpdate={() => {}}
+                onSubscriptionUpdate={() => {
+                  // Force le rechargement du profil driver depuis la base de données
+                  queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user?.id] });
+                }}
               />
             </Card>
           </TabsContent>
