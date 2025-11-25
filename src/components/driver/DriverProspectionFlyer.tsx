@@ -51,14 +51,6 @@ Scannez le QR code pour réserver`
         flyerWidth = 210;
         flyerHeight = 297;
         positions = [{ x: 0, y: 0 }];
-      } else if (flyersPerPage === 2) {
-        // 2 flyers = format A5 (A4 coupé en 2 horizontalement)
-        flyerWidth = 210;
-        flyerHeight = 148.5;
-        positions = [
-          { x: 0, y: 0 },
-          { x: 0, y: 148.5 }
-        ];
       } else {
         // 4 flyers = format A6 (A4 coupé en 4)
         flyerWidth = 105;
@@ -80,19 +72,19 @@ Scannez le QR code pour réserver`
         pdf.rect(pos.x + 3, pos.y + 3, flyerWidth - 6, flyerHeight - 6);
 
         // Ajuster les tailles selon le format
-        const scale = flyersPerPage === 1 ? 2 : flyersPerPage === 2 ? 1.5 : 1;
+        const scale = flyersPerPage === 1 ? 2 : 1;
         let currentY = pos.y + (15 * scale);
 
-        // Logo SoloCab - proportions ajustées
-        const logoWidth = flyersPerPage === 1 ? 50 : 35 * scale;
-        const logoHeight = flyersPerPage === 1 ? 17 : 12 * scale;
+        // Logo SoloCab - proportions harmonieuses
+        const logoWidth = flyersPerPage === 1 ? 50 : 40;
+        const logoHeight = flyersPerPage === 1 ? 17 : 13.5;
         const logoX = centerX - (logoWidth / 2);
         pdf.addImage(logo, "PNG", logoX, currentY, logoWidth, logoHeight);
         currentY += logoHeight + (6 * scale);
 
         // Nom de l'entreprise
         if (companyName.trim()) {
-          pdf.setFontSize(flyersPerPage === 1 ? 16 : 12 * scale);
+          pdf.setFontSize(flyersPerPage === 1 ? 16 : 13);
           pdf.setFont("helvetica", "bold");
           pdf.setTextColor(0, 0, 0);
           pdf.text(companyName, centerX, currentY, { 
@@ -103,20 +95,20 @@ Scannez le QR code pour réserver`
         }
 
         // Titre
-        pdf.setFontSize(flyersPerPage === 1 ? 13 : 11 * scale);
+        pdf.setFontSize(flyersPerPage === 1 ? 13 : 11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         pdf.text("Votre chauffeur VTC de proximité", centerX, currentY, { align: "center" });
         currentY += (12 * scale);
 
         // QR Code
-        const qrSize = flyersPerPage === 1 ? 70 : 55 * scale;
+        const qrSize = flyersPerPage === 1 ? 70 : 58;
         const qrX = centerX - (qrSize / 2);
         pdf.addImage(qrCode.qr_code_image, "PNG", qrX, currentY, qrSize, qrSize);
         currentY += qrSize + (10 * scale);
 
         // Texte de présentation
-        pdf.setFontSize(flyersPerPage === 1 ? 11 : 8 * scale);
+        pdf.setFontSize(flyersPerPage === 1 ? 11 : 9);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         
@@ -133,7 +125,7 @@ Scannez le QR code pour réserver`
         });
       });
 
-      const fileName = `Flyers-SoloCab-${flyersPerPage}x-${companyName.replace(/\s+/g, '-') || 'VTC'}.pdf`;
+      const fileName = `Flyers-SoloCab-${flyersPerPage === 1 ? '1x-A4' : '4x-A6'}-${companyName.replace(/\s+/g, '-') || 'VTC'}.pdf`;
       pdf.save(fileName);
       toast.success("PDF généré avec succès !");
     } catch (error) {
@@ -169,7 +161,7 @@ Scannez le QR code pour réserver`
             <Label className="text-sm font-semibold">
               Nombre de flyers par page
             </Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 type="button"
                 variant={flyersPerPage === 1 ? "default" : "outline"}
@@ -178,15 +170,6 @@ Scannez le QR code pour réserver`
               >
                 1 flyer
                 <span className="text-xs ml-1">(A4)</span>
-              </Button>
-              <Button
-                type="button"
-                variant={flyersPerPage === 2 ? "default" : "outline"}
-                onClick={() => setFlyersPerPage(2)}
-                className={flyersPerPage === 2 ? "bg-[#1e3a5f] text-white" : "border-[#1e3a5f]/20"}
-              >
-                2 flyers
-                <span className="text-xs ml-1">(A5)</span>
               </Button>
               <Button
                 type="button"
@@ -278,7 +261,7 @@ Scannez le QR code pour réserver`
       {showPreview && (
         <Card className="p-6 bg-background border-[#1e3a5f]/20">
           <h3 className="font-bold mb-4 text-lg text-[#1e3a5f]">
-            Aperçu du document ({flyersPerPage === 1 ? "1 flyer A4" : flyersPerPage === 2 ? "2 flyers A5" : "4 flyers A6"})
+            Aperçu du document ({flyersPerPage === 1 ? "1 flyer A4" : "4 flyers A6"})
           </h3>
           <div 
             className="bg-white border-2 border-[#1e3a5f]/20 rounded-lg shadow-lg mx-auto"
@@ -293,8 +276,8 @@ Scannez le QR code pour réserver`
               className="w-full h-full"
               style={{
                 display: "grid",
-                gridTemplateColumns: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr" : "1fr 1fr",
-                gridTemplateRows: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr 1fr" : "1fr 1fr",
+                gridTemplateColumns: flyersPerPage === 1 ? "1fr" : "1fr 1fr",
+                gridTemplateRows: flyersPerPage === 1 ? "1fr" : "1fr 1fr",
                 gap: 0
               }}
             >
@@ -303,7 +286,7 @@ Scannez le QR code pour réserver`
                   key={index}
                   className="border border-[#1e3a5f]/20 flex flex-col items-center justify-center bg-white"
                   style={{
-                    padding: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "4%" : "3%",
+                    padding: flyersPerPage === 1 ? "3%" : "3%",
                     overflow: "hidden"
                   }}
                 >
@@ -315,7 +298,7 @@ Scannez le QR code pour réserver`
                         alt="SoloCab" 
                         className="object-contain"
                         style={{
-                          maxWidth: flyersPerPage === 1 ? "30%" : flyersPerPage === 2 ? "25%" : "35%",
+                          maxWidth: flyersPerPage === 1 ? "25%" : "40%",
                           height: "auto"
                         }}
                       />
@@ -326,7 +309,7 @@ Scannez le QR code pour réserver`
                       <div 
                         className="text-center font-bold text-gray-900 flex-shrink-0"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 2vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.5vw, 0.8rem)" : "clamp(0.4rem, 1vw, 0.6rem)",
+                          fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 2vw, 1.1rem)" : "clamp(0.5rem, 1.3vw, 0.7rem)",
                           marginTop: flyersPerPage === 1 ? "2%" : "1%",
                           lineHeight: "1.2"
                         }}
@@ -339,7 +322,7 @@ Scannez le QR code pour réserver`
                     <div 
                       className="text-center text-gray-600 flex-shrink-0"
                       style={{
-                        fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1.2vw, 0.7rem)" : "clamp(0.35rem, 0.8vw, 0.5rem)",
+                        fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : "clamp(0.5rem, 1.2vw, 0.7rem)",
                         marginTop: flyersPerPage === 1 ? "1%" : "0.5%",
                         lineHeight: "1.3"
                       }}
@@ -351,8 +334,8 @@ Scannez le QR code pour réserver`
                     <div 
                       className="flex-shrink-0"
                       style={{
-                        marginTop: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "2%" : "1.5%",
-                        marginBottom: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "2%" : "1.5%"
+                        marginTop: flyersPerPage === 1 ? "3%" : "2%",
+                        marginBottom: flyersPerPage === 1 ? "3%" : "2%"
                       }}
                     >
                       <img 
@@ -360,8 +343,8 @@ Scannez le QR code pour réserver`
                         alt="QR Code"
                         className="object-contain"
                         style={{
-                          width: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : flyersPerPage === 2 ? "clamp(60px, 15vw, 120px)" : "clamp(45px, 10vw, 80px)",
-                          height: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : flyersPerPage === 2 ? "clamp(60px, 15vw, 120px)" : "clamp(45px, 10vw, 80px)"
+                          width: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : "clamp(70px, 15vw, 110px)",
+                          height: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : "clamp(70px, 15vw, 110px)"
                         }}
                       />
                     </div>
@@ -370,10 +353,10 @@ Scannez le QR code pour réserver`
                     <div 
                       className="text-center text-gray-700 flex-shrink-0"
                       style={{
-                        fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.3vw, 0.85rem)" : flyersPerPage === 2 ? "clamp(0.4rem, 1vw, 0.65rem)" : "clamp(0.32rem, 0.7vw, 0.48rem)",
-                        lineHeight: flyersPerPage === 1 ? "1.5" : flyersPerPage === 2 ? "1.4" : "1.3",
+                        fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.3vw, 0.85rem)" : "clamp(0.45rem, 1.1vw, 0.7rem)",
+                        lineHeight: flyersPerPage === 1 ? "1.5" : "1.4",
                         whiteSpace: "pre-wrap",
-                        maxHeight: flyersPerPage === 1 ? "30%" : flyersPerPage === 2 ? "35%" : "30%",
+                        maxHeight: flyersPerPage === 1 ? "30%" : "32%",
                         overflow: "hidden"
                       }}
                     >
@@ -388,9 +371,7 @@ Scannez le QR code pour réserver`
             <p className="text-sm text-muted-foreground text-center">
               💡 <strong>Astuce d'impression :</strong> {flyersPerPage === 1 
                 ? "Imprimez ce document en A4 pour obtenir un flyer grand format" 
-                : flyersPerPage === 2
-                  ? "Imprimez ce document en A4, puis découpez en 2 pour obtenir 2 flyers A5"
-                  : "Imprimez ce document en A4, puis découpez en 4 pour obtenir 4 flyers A6"}
+                : "Imprimez ce document en A4, puis découpez en 4 pour obtenir 4 flyers A6"}
             </p>
           </div>
         </Card>
