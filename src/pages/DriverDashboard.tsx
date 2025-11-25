@@ -180,6 +180,16 @@ const DriverDashboard = () => {
     if (!driverProfile?.driver?.id || !updateProfile) return;
     setPublicProfileEnabled(enabled);
     updateProfile({ public_profile_enabled: enabled });
+    
+    if (enabled) {
+      toast.success("✅ Profil public activé avec succès !", {
+        description: "Votre profil est maintenant visible dans la vitrine publique"
+      });
+    } else {
+      toast.info("Profil public désactivé", {
+        description: "Votre profil n'est plus visible dans la vitrine publique"
+      });
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -226,7 +236,15 @@ const DriverDashboard = () => {
           .eq('id', user.id);
       }
 
-      toast.success("Profil enregistré avec succès !");
+      // Invalider le cache pour forcer le rafraîchissement
+      queryClient.invalidateQueries({ queryKey: ['driver-profile', user?.id] });
+      
+      toast.success("✅ Modifications enregistrées avec succès !", {
+        description: activeTab === "profile" 
+          ? "Votre profil public a été mis à jour" 
+          : "Vos paramètres ont été sauvegardés",
+        duration: 6000
+      });
     } catch (error: any) {
       console.error("Error saving profile:", error);
       toast.error("Erreur lors de la sauvegarde");

@@ -249,9 +249,15 @@ const Chauffeurs = () => {
         setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
-          toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusCity[0]} km`);
+          toast.success(`✅ Recherche terminée !`, {
+            description: `${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusCity[0]} km autour de ${citySearch}`,
+            duration: 6000
+          });
         } else {
-          toast.info(`Aucun chauffeur trouvé dans un rayon de ${radiusCity[0]} km. Essayez d'augmenter le rayon.`);
+          toast.info(`Aucun résultat`, {
+            description: `Aucun chauffeur trouvé dans un rayon de ${radiusCity[0]} km. Essayez d'augmenter le rayon de recherche.`,
+            duration: 6000
+          });
         }
       } else if (searchMode === "address" && addressSearch.trim()) {
         // Validate address coordinates
@@ -293,9 +299,15 @@ const Chauffeurs = () => {
         setStoredData("searchResults", sortedDrivers);
         
         if (sortedDrivers.length > 0) {
-          toast.success(`${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusAddress[0]} km`);
+          toast.success(`✅ Recherche terminée !`, {
+            description: `${sortedDrivers.length} chauffeur(s) trouvé(s) dans un rayon de ${radiusAddress[0]} km`,
+            duration: 6000
+          });
         } else {
-          toast.info(`Aucun chauffeur trouvé dans un rayon de ${radiusAddress[0]} km. Essayez d'augmenter le rayon.`);
+          toast.info(`Aucun résultat`, {
+            description: `Aucun chauffeur trouvé dans un rayon de ${radiusAddress[0]} km. Essayez d'augmenter le rayon de recherche.`,
+            duration: 6000
+          });
         }
       } else {
         toast.error("Veuillez saisir et sélectionner une ville ou une adresse");
