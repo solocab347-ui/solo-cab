@@ -118,11 +118,11 @@ const RegisterDriver = () => {
       }
 
       // Check existing email
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", formData.email.trim().toLowerCase())
-        .single();
+        .maybeSingle();
 
       if (existing) {
         toast.error("Email déjà utilisé");
