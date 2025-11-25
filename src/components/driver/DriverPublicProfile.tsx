@@ -35,6 +35,8 @@ interface DriverPublicProfileProps {
   vehicleColor: string;
   vehiclePlate: string;
   vehicleYear: string;
+  vehiclePhotos: string[];
+  galleryPhotos: string[];
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
   onCardPhotoUpdate: (url: string) => void;
@@ -51,6 +53,7 @@ interface DriverPublicProfileProps {
   onVehicleColorChange: (color: string) => void;
   onVehiclePlateChange: (plate: string) => void;
   onVehicleYearChange: (year: string) => void;
+  onVehiclePhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
 }
 
 export const DriverPublicProfile = memo(({
@@ -73,6 +76,8 @@ export const DriverPublicProfile = memo(({
   vehicleColor,
   vehiclePlate,
   vehicleYear,
+  vehiclePhotos,
+  galleryPhotos,
   onTogglePublicProfile,
   onPhotoUpdate,
   onCardPhotoUpdate,
@@ -89,6 +94,7 @@ export const DriverPublicProfile = memo(({
   onVehicleColorChange,
   onVehiclePlateChange,
   onVehicleYearChange,
+  onVehiclePhotosUpdate,
 }: DriverPublicProfileProps) => {
   return (
     <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
@@ -255,10 +261,9 @@ export const DriverPublicProfile = memo(({
               <Label htmlFor="vehicleBrand" className="text-white">Marque du véhicule</Label>
               <Input
                 id="vehicleBrand"
-                value={vehicleBrand}
+                value={vehicleBrand || ""}
                 onChange={(e) => onVehicleBrandChange(e.target.value)}
                 placeholder="Mercedes, BMW, Tesla..."
-                className="bg-input border-2 border-border text-foreground"
               />
             </div>
 
@@ -266,10 +271,9 @@ export const DriverPublicProfile = memo(({
               <Label htmlFor="vehicleColor" className="text-white">Couleur du véhicule</Label>
               <Input
                 id="vehicleColor"
-                value={vehicleColor}
+                value={vehicleColor || ""}
                 onChange={(e) => onVehicleColorChange(e.target.value)}
                 placeholder="Noir, Blanc, Gris..."
-                className="bg-input border-2 border-border text-foreground"
               />
             </div>
 
@@ -277,10 +281,9 @@ export const DriverPublicProfile = memo(({
               <Label htmlFor="vehiclePlate" className="text-white">Plaque d'immatriculation</Label>
               <Input
                 id="vehiclePlate"
-                value={vehiclePlate}
+                value={vehiclePlate || ""}
                 onChange={(e) => onVehiclePlateChange(e.target.value)}
                 placeholder="AB-123-CD"
-                className="bg-input border-2 border-border text-foreground"
               />
             </div>
 
@@ -289,12 +292,11 @@ export const DriverPublicProfile = memo(({
               <Input
                 id="vehicleYear"
                 type="number"
-                value={vehicleYear}
+                value={vehicleYear || ""}
                 onChange={(e) => onVehicleYearChange(e.target.value)}
                 placeholder="2023"
                 min="1990"
                 max="2030"
-                className="bg-input border-2 border-border text-foreground"
               />
             </div>
           </div>
@@ -302,6 +304,13 @@ export const DriverPublicProfile = memo(({
             Ces informations seront visibles sur votre profil public et dans vos documents
           </p>
         </div>
+
+        <VehiclePhotosManager 
+          driverId={driverProfile?.driver?.id}
+          currentVehiclePhotos={vehiclePhotos || []}
+          currentGalleryPhotos={galleryPhotos || []}
+          onPhotosUpdate={onVehiclePhotosUpdate}
+        />
       </div>
     </Card>
   );
