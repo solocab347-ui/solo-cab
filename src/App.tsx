@@ -58,11 +58,13 @@ const App = () => (
               <Route path="/register-driver" element={<RegisterDriver />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
               <Route path="/create-course" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <ErrorBoundary>
-                    <CreateCourse />
-                  </ErrorBoundary>
-                </Suspense>
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ErrorBoundary>
+                      <CreateCourse />
+                    </ErrorBoundary>
+                  </Suspense>
+                </ProtectedRoute>
               } />
               <Route path="/create-test-accounts" element={
                 <Suspense fallback={<LoadingFallback />}>

@@ -64,6 +64,11 @@ const ChauffeurProfile = () => {
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
 
+  // Scroll en haut de la page au chargement
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   // Chargement simple UNE SEULE FOIS au montage
   useEffect(() => {
     if (!id) {
