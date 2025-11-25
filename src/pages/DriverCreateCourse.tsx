@@ -52,7 +52,6 @@ const DriverCreateCourse = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [passengersCount, setPassengersCount] = useState("1");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("carte");
   
   // Pour mise à disposition
   const [durationHours, setDurationHours] = useState("");
@@ -272,7 +271,6 @@ const DriverCreateCourse = () => {
         promoCode: undefined, // Les drivers ne gèrent pas les promos lors de la création
         courseType,
         durationHours,
-        paymentMethodPreference: paymentMethod,
       });
 
       if (course) {
@@ -523,30 +521,6 @@ const DriverCreateCourse = () => {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Payment Method Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="payment" className="text-base font-medium flex items-center gap-2">
-                <Car className="w-4 h-4 text-primary" />
-                Mode de paiement préféré *
-              </Label>
-              <Select 
-                value={paymentMethod} 
-                onValueChange={setPaymentMethod}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Sélectionnez le mode de paiement" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-[100000]">
-                  <SelectItem value="carte">Carte bancaire</SelectItem>
-                  <SelectItem value="espece">Espèces</SelectItem>
-                  <SelectItem value="virement">Virement</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Mode de paiement que le client utilisera pour cette course
-              </p>
             </div>
 
             {/* Notes */}
