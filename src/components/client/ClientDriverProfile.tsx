@@ -137,7 +137,8 @@ const ClientDriverProfile = () => {
 
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-3xl font-bold mb-2">{driver.profiles?.full_name}</h1>
-            {driver.company_name && (
+            {driver.company_name && driver.company_name.trim() && 
+             !driver.company_name.toLowerCase().includes('compléter') && (
               <p className="text-lg text-muted-foreground mb-4">{driver.company_name}</p>
             )}
             
@@ -156,7 +157,8 @@ const ClientDriverProfile = () => {
               )}
             </div>
 
-            {driver.bio && (
+            {driver.bio && driver.bio.trim() && 
+             !driver.bio.toLowerCase().includes('compléter') && (
               <p className="mt-4 text-muted-foreground">{driver.bio}</p>
             )}
           </div>
@@ -174,25 +176,25 @@ const ClientDriverProfile = () => {
             <p className="text-sm text-muted-foreground mb-1">Modèle</p>
             <p className="font-semibold">{driver.vehicle_model}</p>
           </div>
-          {driver.vehicle_brand && (
+          {driver.vehicle_brand && !driver.vehicle_brand.toLowerCase().includes('compléter') && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Marque</p>
               <p className="font-semibold">{driver.vehicle_brand}</p>
             </div>
           )}
-          {driver.vehicle_plate && (
+          {driver.vehicle_plate && !driver.vehicle_plate.toLowerCase().includes('compléter') && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Immatriculation</p>
               <p className="font-semibold">{driver.vehicle_plate}</p>
             </div>
           )}
-          {driver.vehicle_color && (
+          {driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter') && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Couleur</p>
               <p className="font-semibold">{driver.vehicle_color}</p>
             </div>
           )}
-          {driver.vehicle_year && (
+          {driver.vehicle_year && driver.vehicle_year > 1900 && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Année</p>
               <p className="font-semibold">{driver.vehicle_year}</p>
@@ -266,7 +268,8 @@ const ClientDriverProfile = () => {
         </Card>
       )}
 
-      {driver.service_description && (
+      {driver.service_description && driver.service_description.trim() && 
+       !driver.service_description.toLowerCase().includes('compléter') && (
         <Card className="p-6">
           <h2 className="text-xl font-bold mb-4">Description des services</h2>
           <p className="text-muted-foreground whitespace-pre-wrap">

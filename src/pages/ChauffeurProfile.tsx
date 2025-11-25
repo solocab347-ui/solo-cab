@@ -262,17 +262,26 @@ const ChauffeurProfile = () => {
                 )}
                 
                 {/* Véhicule */}
-                {(driver.vehicle_brand || driver.vehicle_model) && (
-                  <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full">
-                    <Car className="w-6 h-6 text-primary" />
-                    <span className="font-semibold text-lg">
-                      {driver.vehicle_brand && `${driver.vehicle_brand} `}
-                      {driver.vehicle_model}
-                      {driver.vehicle_year && ` (${driver.vehicle_year})`}
-                      {driver.vehicle_color && ` · ${driver.vehicle_color}`}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const hasValidBrand = driver.vehicle_brand && !driver.vehicle_brand.toLowerCase().includes('compléter');
+                  const hasValidModel = driver.vehicle_model && !driver.vehicle_model.toLowerCase().includes('compléter');
+                  const hasValidColor = driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter');
+                  const hasValidYear = driver.vehicle_year && driver.vehicle_year > 1900;
+                  
+                  if (!hasValidBrand && !hasValidModel) return null;
+                  
+                  return (
+                    <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full">
+                      <Car className="w-6 h-6 text-primary" />
+                      <span className="font-semibold text-lg">
+                        {hasValidBrand && `${driver.vehicle_brand} `}
+                        {hasValidModel && driver.vehicle_model}
+                        {hasValidYear && ` (${driver.vehicle_year})`}
+                        {hasValidColor && ` · ${driver.vehicle_color}`}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -295,7 +304,8 @@ const ChauffeurProfile = () => {
           </Card>
 
           {/* Description */}
-          {driver.service_description && (
+          {driver.service_description && driver.service_description.trim() && 
+           !driver.service_description.toLowerCase().includes('compléter') && (
             <Card className="p-8 shadow-lg">
               <h2 className="text-2xl font-bold mb-4">À propos</h2>
               <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
