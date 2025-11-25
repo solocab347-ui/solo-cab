@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import logo from "@/assets/logo-solocab.png";
 import {
   Clock,
   CheckCircle,
@@ -113,11 +114,8 @@ const DriverPendingValidation = () => {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-primary" />
-            </div>
-            <span className="text-xl font-bold">SoloCab</span>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </div>
           <Button variant="ghost" onClick={signOut}>
             <LogOut className="w-4 h-4 mr-2" />

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo-solocab.png";
 import {
   Car,
   Users,
@@ -158,13 +159,8 @@ const Index = () => {
       {/* Navigation with black background */}
       <header className="border-b border-white/10 bg-black backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-              <Car className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">
-              SoloCab
-            </span>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">

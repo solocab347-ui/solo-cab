@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import logo from "@/assets/logo-solocab.png";
 import { 
   Car, 
   LogOut, 
@@ -368,11 +369,8 @@ const ClientDashboard = () => {
       {/* Desktop Sidebar Navigation */}
       <aside className="hidden md:flex w-64 border-r border-border bg-card/50 p-4 flex-col">
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-premium-foreground" />
-            </div>
-            <span className="text-xl font-bold">SoloCab</span>
+          <div className="flex items-center gap-3 mb-2">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </div>
           <p className="text-sm text-muted-foreground">Navigation</p>
         </div>
@@ -383,11 +381,8 @@ const ClientDashboard = () => {
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="w-64 p-4">
           <div className="mb-8">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-                <Car className="w-6 h-6 text-premium-foreground" />
-              </div>
-              <span className="text-xl font-bold">SoloCab</span>
+            <div className="flex items-center gap-3 mb-2">
+              <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
             </div>
             <p className="text-sm text-muted-foreground">Navigation</p>
           </div>

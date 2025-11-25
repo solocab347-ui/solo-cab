@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
 import DriverClientsList from "@/components/driver/DriverClientsList";
 import DriverDevisList from "@/components/driver/DriverDevisList";
@@ -259,13 +260,8 @@ const DriverDashboard = () => {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-trust rounded-xl flex items-center justify-center shadow-trust">
-                <Car className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
-              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                SoloCab
-              </span>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
             </div>
             {activeTab !== "home" && (
               <NavigationHeader 

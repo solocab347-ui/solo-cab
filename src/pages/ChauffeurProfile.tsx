@@ -4,6 +4,7 @@ import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import logo from "@/assets/logo-solocab.png";
 import {
   Car,
   Star,
@@ -190,13 +191,8 @@ const ChauffeurProfile = () => {
       {/* En-tête */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-dark bg-clip-text text-transparent">
-              SoloCab
-            </span>
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </Link>
           <NavigationHeader showBack={true} showHome={true} />
         </div>
