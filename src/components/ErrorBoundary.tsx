@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { captureError } from '@/lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -62,6 +63,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Envoyer à Sentry avec le contexte complet
+    captureError(error, {
+      componentStack: errorInfo.componentStack,
+      errorCount: this.state.errorCount,
+      errorBoundary: true,
+    }, 'fatal');
     
     // Auto-reset après trop d'erreurs consécutives
     if (this.state.errorCount > 3) {
