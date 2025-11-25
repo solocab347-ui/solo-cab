@@ -14,7 +14,7 @@ import { z } from "zod";
 const driverRegistrationSchema = z.object({
   fullName: z.string().trim().min(2, "Le nom complet doit contenir au moins 2 caractères").max(100),
   email: z.string().trim().email("Email invalide").max(255),
-  phone: z.string().trim().min(10, "Numéro de téléphone invalide").max(20),
+  phone: z.string().trim().min(10, "Le numéro de téléphone doit contenir au moins 10 caractères").max(30, "Le numéro de téléphone est trop long"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -106,15 +106,23 @@ const RegisterDriver = () => {
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("🚀 Soumission formulaire étape 1");
+    console.log("📋 Données:", formData);
+    
     // Validation avec Zod
-    try {
-      driverRegistrationSchema.parse(formData);
-    } catch (error: any) {
-      if (error.errors && error.errors[0]) {
-        toast.error(error.errors[0].message);
-      }
+    const validation = driverRegistrationSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      console.error("❌ Erreur validation:", validation.error.errors);
+      // Afficher toutes les erreurs
+      validation.error.errors.forEach((err) => {
+        const field = err.path[0];
+        toast.error(`${field}: ${err.message}`);
+      });
       return;
     }
+    
+    console.log("✅ Validation réussie");
 
     setLoading(true);
     try {
