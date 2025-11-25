@@ -41,7 +41,7 @@ const ChauffeurLanding = () => {
     const bolt = { rate: 0.23, monthly: monthlyRevenue * 0.23, annual: monthlyRevenue * 0.23 * 12 };
     const heetch = { rate: 0.18, monthly: monthlyRevenue * 0.18, annual: monthlyRevenue * 0.18 * 12 };
     const lecab = { rate: 0.15, monthly: monthlyRevenue * 0.15, annual: monthlyRevenue * 0.15 * 12 };
-    const solocab = { monthly: 1, annual: 599.88 };
+    const solocab = { monthly: 49.99, annual: 599.88 };
 
     return {
       uber: {
@@ -140,7 +140,7 @@ const ChauffeurLanding = () => {
               </Button>
             </Link>
             <p className="text-sm text-gray-500 mt-4">
-              1€/mois (Test) • Sans commission
+              49,99€/mois • Sans commission
             </p>
           </div>
         </div>
@@ -703,7 +703,7 @@ const ChauffeurLanding = () => {
               <p className="text-gray-400 mb-2">
                 Rejoignez les chauffeurs qui ont repris le contrôle de leur activité.
               </p>
-              <p className="text-gray-400 mb-6">Abonnement test à 1€/mois.</p>
+              <p className="text-gray-400 mb-6">Abonnement à 49,99€/mois.</p>
               <Link to="/register-driver">
                 <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl">
                   S'inscrire maintenant
@@ -719,7 +719,7 @@ const ChauffeurLanding = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-emerald-400" />
-                <span>1€/mois (Test)</span>
+                <span>49,99€/mois</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-emerald-400" />
