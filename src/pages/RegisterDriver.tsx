@@ -117,7 +117,7 @@ const RegisterDriver = () => {
       // Afficher toutes les erreurs
       validation.error.errors.forEach((err) => {
         const field = err.path[0];
-        toast.error(`${field}: ${err.message}`);
+        toast.error(`Erreur ${field}: ${err.message}`);
       });
       return;
     }
@@ -128,11 +128,15 @@ const RegisterDriver = () => {
     try {
       console.log("📝 Étape 1: Création du compte...");
       
-      // Créer le compte utilisateur
+      // Créer le compte utilisateur avec emailRedirectTo OBLIGATOIRE
+      const redirectUrl = `${window.location.origin}/`;
+      console.log("🔗 Redirect URL:", redirectUrl);
+      
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: formData.fullName.trim(),
             phone: formData.phone.trim(),
@@ -531,6 +535,10 @@ const RegisterDriver = () => {
               type="submit"
               disabled={loading}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-lg"
+              onClick={(e) => {
+                console.log("🖱️ Clic sur bouton Continuer");
+                // Le bouton type="submit" déclenchera handleStep1Submit via le form onSubmit
+              }}
             >
               {loading ? (
                 <>
