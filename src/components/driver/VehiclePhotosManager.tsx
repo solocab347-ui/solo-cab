@@ -1,18 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Camera, Loader2, X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Camera, Loader2, X, Plus } from "lucide-react";
 
 interface VehiclePhotosManagerProps {
   driverId: string;
@@ -21,23 +12,20 @@ interface VehiclePhotosManagerProps {
   onPhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
 }
 
-export const VehiclePhotosManager = ({
+const VehiclePhotosManagerComponent = ({
   driverId,
   currentVehiclePhotos,
   currentGalleryPhotos,
   onPhotosUpdate,
 }: VehiclePhotosManagerProps) => {
   const [uploading, setUploading] = useState(false);
-  const [vehiclePhotos, setVehiclePhotos] = useState<string[]>(currentVehiclePhotos || []);
-  const [galleryPhotos, setGalleryPhotos] = useState<string[]>(currentGalleryPhotos || []);
 
-  useEffect(() => {
-    setVehiclePhotos(currentVehiclePhotos || []);
-    setGalleryPhotos(currentGalleryPhotos || []);
-  }, [currentVehiclePhotos, currentGalleryPhotos]);
+  // Utiliser directement les props au lieu de créer des états locaux
+  const vehiclePhotos = currentVehiclePhotos || [];
+  const galleryPhotos = currentGalleryPhotos || [];
 
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'vehicle' | 'gallery') => {
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, type: 'vehicle' | 'gallery') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -70,15 +58,14 @@ export const VehiclePhotosManager = ({
 
         if (error) throw error;
 
+        // Notifier le parent immédiatement
         if (type === 'vehicle') {
-          setVehiclePhotos(newPhotos);
           onPhotosUpdate(newPhotos, galleryPhotos);
         } else {
-          setGalleryPhotos(newPhotos);
           onPhotosUpdate(vehiclePhotos, newPhotos);
         }
 
-        toast.success("Photo ajoutée avec succès !");
+        toast.success("Photo ajoutée !");
       };
 
       reader.readAsDataURL(file);
@@ -88,9 +75,9 @@ export const VehiclePhotosManager = ({
     } finally {
       setUploading(false);
     }
-  };
+  }, [driverId, vehiclePhotos, galleryPhotos, onPhotosUpdate]);
 
-  const handleRemovePhoto = async (photoUrl: string, type: 'vehicle' | 'gallery') => {
+  const handleRemovePhoto = useCallback(async (photoUrl: string, type: 'vehicle' | 'gallery') => {
     setUploading(true);
     try {
       const photos = type === 'vehicle' ? vehiclePhotos : galleryPhotos;
@@ -105,11 +92,10 @@ export const VehiclePhotosManager = ({
 
       if (error) throw error;
 
+      // Notifier le parent immédiatement
       if (type === 'vehicle') {
-        setVehiclePhotos(newPhotos);
         onPhotosUpdate(newPhotos, galleryPhotos);
       } else {
-        setGalleryPhotos(newPhotos);
         onPhotosUpdate(vehiclePhotos, newPhotos);
       }
 
@@ -120,7 +106,7 @@ export const VehiclePhotosManager = ({
     } finally {
       setUploading(false);
     }
-  };
+  }, [driverId, vehiclePhotos, galleryPhotos, onPhotosUpdate]);
 
   return (
     <div className="space-y-8">
@@ -161,8 +147,13 @@ export const VehiclePhotosManager = ({
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {vehiclePhotos.map((photo, index) => (
-            <div key={index} className="relative aspect-video rounded-lg overflow-hidden group">
-              <img src={photo} alt={`Véhicule ${index + 1}`} className="w-full h-full object-cover" />
+            <div key={`vehicle-${index}`} className="relative aspect-video rounded-lg overflow-hidden group">
+              <img 
+                src={photo} 
+                alt={`Véhicule ${index + 1}`} 
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
               <Button
                 type="button"
                 size="icon"
@@ -220,8 +211,13 @@ export const VehiclePhotosManager = ({
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {galleryPhotos.map((photo, index) => (
-            <div key={index} className="relative aspect-square rounded-lg overflow-hidden group">
-              <img src={photo} alt={`Galerie ${index + 1}`} className="w-full h-full object-cover" />
+            <div key={`gallery-${index}`} className="relative aspect-square rounded-lg overflow-hidden group">
+              <img 
+                src={photo} 
+                alt={`Galerie ${index + 1}`} 
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
               <Button
                 type="button"
                 size="icon"
@@ -247,3 +243,6 @@ export const VehiclePhotosManager = ({
     </div>
   );
 };
+
+// Mémoriser le composant pour éviter les re-renders
+export const VehiclePhotosManager = memo(VehiclePhotosManagerComponent);
