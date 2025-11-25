@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Globe, MapPin, AlertCircle } from "lucide-react";
 import { ProfilePhotoUpload } from "./ProfilePhotoUpload";
+import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
@@ -26,10 +27,12 @@ interface DriverPublicProfileProps {
   displayCompanyName: boolean;
   companyName: string;
   profilePhotoUrl: string | null;
+  cardPhotoUrl: string | null;
   vehicleEquipment: string[];
   servicesOffered: string[];
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
+  onCardPhotoUpdate: (url: string) => void;
   onShowPhoneChange: (checked: boolean) => void;
   onShowEmailChange: (checked: boolean) => void;
   onWorkingSectorsChange: (sectors: string[]) => void;
@@ -54,10 +57,12 @@ export const DriverPublicProfile = memo(({
   displayCompanyName,
   companyName,
   profilePhotoUrl,
+  cardPhotoUrl,
   vehicleEquipment,
   servicesOffered,
   onTogglePublicProfile,
   onPhotoUpdate,
+  onCardPhotoUpdate,
   onShowPhoneChange,
   onShowEmailChange,
   onWorkingSectorsChange,
@@ -98,11 +103,13 @@ export const DriverPublicProfile = memo(({
           />
         </div>
 
-        <ProfilePhotoUpload
-          currentPhotoUrl={profilePhotoUrl}
+        <DualProfilePhotoUpload
+          currentProfilePhotoUrl={profilePhotoUrl}
+          currentCardPhotoUrl={cardPhotoUrl}
           userId={userId}
           driverName={driverProfile?.full_name || ""}
-          onPhotoUpdate={onPhotoUpdate}
+          onProfilePhotoUpdate={onPhotoUpdate}
+          onCardPhotoUpdate={onCardPhotoUpdate}
         />
 
         <div className="border-t border-white/10 pt-6">
