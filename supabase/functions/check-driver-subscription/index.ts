@@ -82,18 +82,44 @@ serve(async (req) => {
           status: 200,
         });
       } else {
-        // Free access expired, remove it and set to inactive
-        logStep("Free access expired, removing it");
-        await supabaseClient
-          .from("drivers")
-          .update({
-            free_access_granted: false,
-            free_access_end_date: null,
-            free_access_start_date: null,
-            free_access_type: null,
-            subscription_status: "inactive",
-          })
-          .eq("id", driver.id);
+        // Free access expired
+        logStep("Free access expired");
+        
+        // PROTECTION: Ne jamais retirer free_access_granted si type = "unlimited"
+        // Les 50 premiers chauffeurs du test ont un accès illimité PERMANENT
+        if (driver.free_access_type !== "unlimited") {
+          // Seulement pour les accès temporaires (1/2/3 mois), on peut retirer
+          await supabaseClient
+            .from("drivers")
+            .update({
+              free_access_granted: false,
+              free_access_end_date: null,
+              free_access_start_date: null,
+              free_access_type: null,
+              subscription_status: "inactive",
+            })
+            .eq("id", driver.id);
+        } else {
+          // Pour "unlimited", on garde free_access_granted à true même si end_date passée
+          logStep("Unlimited free access - keeping it active permanently");
+          await supabaseClient
+            .from("drivers")
+            .update({
+              subscription_status: "active",
+            })
+            .eq("id", driver.id);
+            
+          return new Response(JSON.stringify({
+            subscribed: true,
+            subscription_status: "active",
+            subscription_end: null,
+            is_free_access: true,
+            is_permanent: true
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
       }
     }
 

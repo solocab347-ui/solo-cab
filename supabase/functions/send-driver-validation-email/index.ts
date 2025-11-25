@@ -101,7 +101,7 @@ serve(async (req) => {
     }
 
     await resend.emails.send({
-      from: "SoloCab <onboarding@resend.dev>",
+      from: "SoloCab <noreply@solocab.fr>",
       to: [driver.profiles.email],
       subject: subject,
       html: html,
