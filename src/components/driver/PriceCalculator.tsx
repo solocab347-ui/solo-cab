@@ -185,7 +185,6 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                   if (coords) setPickupCoordinates(coords);
                 }}
                 placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
-                className="scroll-mt-24"
               />
               <p className="text-xs text-muted-foreground">
                 Tapez l'adresse complète puis sélectionnez dans la liste
@@ -204,7 +203,6 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                   if (coords) setDestinationCoordinates(coords);
                 }}
                 placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
-                className="scroll-mt-24"
               />
               <p className="text-xs text-muted-foreground">
                 Attendez les suggestions puis cliquez pour sélectionner
@@ -274,12 +272,12 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
             <div className="space-y-2">
               <Label className="text-sm font-medium">Sélectionner un client</Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground scroll-mt-24">
+                <SelectTrigger className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground">
                   <SelectValue placeholder="Choisir un client" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border z-[100000] max-h-80">
                   {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id} className="scroll-mt-2">
+                    <SelectItem key={client.id} value={client.id}>
                       {client.profiles.full_name} ({client.profiles.email})
                     </SelectItem>
                   ))}
