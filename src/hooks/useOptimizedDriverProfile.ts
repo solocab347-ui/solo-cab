@@ -38,7 +38,7 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
     refetchOnMount: false,
   });
 
-  // Mutation optimisée avec callback stable
+  // Mutation optimisée avec callback stable - SANS toast pour éviter les doublons
   const updateProfile = useMutation({
     mutationFn: async (updates: any) => {
       if (!driverProfile?.driver?.id) throw new Error('Driver ID missing');
@@ -53,11 +53,11 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', userId] });
-      toast.success('Profil mis à jour !');
+      // Pas de toast ici pour éviter les doublons - le toast est géré par handleUpdateProfile
     },
     onError: (error: any) => {
       console.error('Update error:', error);
-      toast.error('Erreur lors de la mise à jour');
+      throw error; // Propager l'erreur pour que handleUpdateProfile la gère
     },
   });
 
