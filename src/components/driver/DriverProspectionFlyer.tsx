@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Download, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import logo from "@/assets/logo-solocab.png";
 
 interface DriverProspectionFlyerProps {
   qrCode: any;
@@ -61,14 +62,14 @@ Scannez le QR code pour réserver`
         pdf.setLineWidth(0.5);
         pdf.rect(pos.x + 3, pos.y + 3, a6Width - 6, a6Height - 6);
 
-        let currentY = pos.y + 15;
+        let currentY = pos.y + 12;
 
-        // Logo SoloCab
-        pdf.setFontSize(24);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(30, 58, 95);
-        pdf.text("SoloCab", centerX, currentY, { align: "center" });
-        currentY += 10;
+        // Logo SoloCab (image)
+        const logoWidth = 35;
+        const logoHeight = 12;
+        const logoX = centerX - (logoWidth / 2);
+        pdf.addImage(logo, "PNG", logoX, currentY, logoWidth, logoHeight);
+        currentY += logoHeight + 6;
 
         // Nom de l'entreprise (si renseigné)
         if (companyName.trim()) {
@@ -222,8 +223,12 @@ Scannez le QR code pour réserver`
                 >
                   <div className="flex flex-col items-center justify-start w-full h-full space-y-2 pt-2">
                     {/* Logo SoloCab */}
-                    <div className="text-center">
-                      <div className="text-lg md:text-2xl font-bold text-[#1e3a5f]">SoloCab</div>
+                    <div className="flex justify-center">
+                      <img 
+                        src={logo} 
+                        alt="SoloCab" 
+                        className="h-6 md:h-8 w-auto object-contain"
+                      />
                     </div>
 
                     {/* Nom de l'entreprise si renseigné */}
