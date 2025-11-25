@@ -82,11 +82,11 @@ Scannez le QR code pour réserver`
           currentY += 8;
         }
 
-        // Titre "Chauffeur VTC de proximité"
+        // Titre "Votre chauffeur VTC de proximité"
         pdf.setFontSize(11);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
-        pdf.text("Chauffeur VTC de proximité", centerX, currentY, { align: "center" });
+        pdf.text("Votre chauffeur VTC de proximité", centerX, currentY, { align: "center" });
         currentY += 12;
 
         // QR Code centré
@@ -238,7 +238,7 @@ Scannez le QR code pour réserver`
                     {/* Titre */}
                     <div className="text-center">
                       <div className="text-[10px] md:text-xs text-gray-600">
-                        Chauffeur VTC de proximité
+                        Votre chauffeur VTC de proximité
                       </div>
                     </div>
 
