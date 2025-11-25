@@ -36,6 +36,8 @@ const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
 const RGPDData = lazy(() => import("./pages/RGPDData"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const CreateTestAccounts = lazy(() => import("./pages/CreateTestAccounts"));
+const CreateParisDrivers = lazy(() => import("./pages/CreateParisDrivers"));
+const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -69,6 +71,16 @@ const App = () => (
               <Route path="/create-test-accounts" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <CreateTestAccounts />
+                </Suspense>
+              } />
+              <Route path="/create-paris-drivers" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CreateParisDrivers />
+                </Suspense>
+              } />
+              <Route path="/upload-driver-photos" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <UploadDriverPhotos />
                 </Suspense>
               } />
               <Route

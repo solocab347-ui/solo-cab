@@ -51,6 +51,16 @@ export default function CreateParisDrivers() {
           tous les paramètres configurés et profils publics activés.
         </p>
 
+        <div className="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">
+            📋 Processus en 2 étapes
+          </h3>
+          <ol className="text-sm text-blue-700 dark:text-blue-400 space-y-2 list-decimal list-inside">
+            <li>D'abord, allez sur <a href="/upload-driver-photos" className="underline font-semibold">/upload-driver-photos</a> pour uploader les 20 photos dans le storage</li>
+            <li>Ensuite, revenez ici et cliquez sur le bouton ci-dessous pour créer les chauffeurs</li>
+          </ol>
+        </div>
+
         <Button 
           onClick={handleCreateDrivers} 
           disabled={loading}
