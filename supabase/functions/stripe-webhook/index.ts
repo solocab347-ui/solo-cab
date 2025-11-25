@@ -95,13 +95,45 @@ serve(async (req) => {
       });
     }
 
-    // Handle successful payment for courses
+    // Handle successful payment for courses AND driver registration
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       console.log("[STRIPE-WEBHOOK] Processing payment:", session.id);
 
       const metadata = session.metadata;
+      
+      // CAS 1: Paiement d'inscription driver (driver_id sans devis_id)
+      if (metadata?.driver_id && !metadata?.devis_id) {
+        const driverId = metadata.driver_id;
+        console.log("[STRIPE-WEBHOOK] 💳 Driver registration payment:", driverId);
+
+        // Mettre à jour le statut de paiement du driver
+        const { error: driverError } = await supabaseClient
+          .from("drivers")
+          .update({
+            subscription_paid: true,
+            subscription_status: "active",
+            registration_step: null,
+            registration_data: null
+          })
+          .eq("id", driverId);
+
+        if (driverError) {
+          console.error("[STRIPE-WEBHOOK] Error updating driver payment:", driverError);
+          throw driverError;
+        }
+
+        console.log("[STRIPE-WEBHOOK] ✅ Driver registration payment validated");
+
+        return new Response(JSON.stringify({ received: true, type: "driver_registration" }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // CAS 2: Paiement de course (devis_id + course_id)
       if (!metadata?.devis_id || !metadata?.course_id) {
+        console.error("[STRIPE-WEBHOOK] Unknown payment type - no driver_id or devis_id");
         throw new Error("Missing metadata in session");
       }
 
