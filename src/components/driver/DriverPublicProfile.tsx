@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import React, { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Globe, MapPin, AlertCircle } from "lucide-react";
+import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package } from "lucide-react";
 import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
@@ -43,7 +43,7 @@ interface DriverPublicProfileProps {
   onShowEmailChange: (checked: boolean) => void;
   onWorkingSectorsChange: (sectors: string[]) => void;
   onServiceDescriptionChange: (description: string) => void;
-  onHomeAddressChange: (address: string, coords: { latitude: number; longitude: number } | null) => void;
+  onHomeAddressChange: (address: string, coords?: { latitude: number; longitude: number }) => void;
   onDisplayDriverNameChange: (checked: boolean) => void;
   onDisplayCompanyNameChange: (checked: boolean) => void;
   onVehicleEquipmentChange: (equipment: string[]) => void;
@@ -95,28 +95,52 @@ export const DriverPublicProfile = memo(({
   onVehicleYearChange,
   onVehiclePhotosUpdate,
 }: DriverPublicProfileProps) => {
+  // Guard contre les données manquantes
+  if (!driverProfile || !userId) {
+    return (
+      <Card className="p-6">
+        <p className="text-center text-muted-foreground">Chargement du profil...</p>
+      </Card>
+    );
+  }
+
+  const driverName = driverProfile?.full_name || "Chauffeur";
+  const driverId = driverProfile?.driver?.id;
+
   return (
-    <Card className="p-6 bg-white/5 backdrop-blur border border-white/10">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Profil Public</h2>
-        {driverProfile?.driver?.id && publicProfileEnabled && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(`/chauffeur/${driverProfile.driver.id}`, '_blank')}
-            className="gap-2 border-white/20 text-white hover:bg-white/10"
-          >
-            <Globe className="w-4 h-4" />
-            Voir mon profil public
-          </Button>
-        )}
-      </div>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* En-tête et activation */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Globe className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Profil Public</h2>
+              <p className="text-sm text-muted-foreground">
+                Gérez votre visibilité sur la vitrine publique
+              </p>
+            </div>
+          </div>
+          {driverId && publicProfileEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(`/chauffeur/${driverId}`, '_blank')}
+              className="gap-2"
+            >
+              <Globe className="w-4 h-4" />
+              Voir mon profil
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
           <div>
-            <Label className="text-base text-white">Activer le profil public</Label>
-            <p className="text-sm text-gray-400">
-              Apparaître sur /chauffeurs pour les clients libres
+            <Label className="text-base font-medium">Activer le profil public</Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Apparaître dans la vitrine pour les clients libres
             </p>
           </div>
           <Switch
@@ -125,193 +149,242 @@ export const DriverPublicProfile = memo(({
           />
         </div>
 
-        <DualProfilePhotoUpload
-          currentProfilePhotoUrl={profilePhotoUrl}
-          currentCardPhotoUrl={cardPhotoUrl}
-          userId={userId}
-          driverName={driverProfile?.full_name || ""}
-          onProfilePhotoUpdate={onPhotoUpdate}
-          onCardPhotoUpdate={onCardPhotoUpdate}
-        />
+        {publicProfileEnabled && (
+          <div className="mt-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
+            <p className="text-sm text-primary font-medium">
+              ✓ Votre profil est visible dans la vitrine publique
+            </p>
+          </div>
+        )}
+      </Card>
 
-        <div className="border-t border-white/10 pt-6">
-          <Label className="text-base mb-4 block text-white">Affichage dans le profil public</Label>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="displayName"
-                checked={displayDriverName}
-                onCheckedChange={(checked) => onDisplayDriverNameChange(checked as boolean)}
-              />
-              <Label htmlFor="displayName" className="font-normal cursor-pointer text-gray-300">
-                Afficher mon nom ({driverProfile?.full_name || "Non défini"})
+      {/* Photos */}
+      <DualProfilePhotoUpload
+        currentProfilePhotoUrl={profilePhotoUrl}
+        currentCardPhotoUrl={cardPhotoUrl}
+        userId={userId}
+        driverName={driverName}
+        onProfilePhotoUpdate={onPhotoUpdate}
+        onCardPhotoUpdate={onCardPhotoUpdate}
+      />
+
+      {/* Affichage nom/entreprise */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Affichage dans le profil</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+            <Checkbox
+              id="displayName"
+              checked={displayDriverName}
+              onCheckedChange={(checked) => onDisplayDriverNameChange(checked as boolean)}
+            />
+            <div className="flex-1">
+              <Label htmlFor="displayName" className="font-medium cursor-pointer flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Afficher mon nom
               </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="displayCompany"
-                checked={displayCompanyName}
-                onCheckedChange={(checked) => onDisplayCompanyNameChange(checked as boolean)}
-              />
-              <Label htmlFor="displayCompany" className="font-normal cursor-pointer text-gray-300">
-                Afficher le nom de mon entreprise ({companyName || "Non défini"})
-              </Label>
+              <p className="text-sm text-muted-foreground">
+                {driverName}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Vous pouvez afficher votre nom, celui de votre entreprise, ou les deux
-          </p>
-        </div>
 
-        <div className="border-t border-white/10 pt-6">
-          <Label className="text-base mb-4 block text-white">Informations de contact visibles</Label>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base text-white">Afficher mon téléphone</Label>
-                <p className="text-sm text-gray-400">
-                  {driverProfile?.phone || "Non renseigné"}
-                </p>
-              </div>
-              <Switch
-                checked={showPhone}
-                onCheckedChange={onShowPhoneChange}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base text-white">Afficher mon email</Label>
-                <p className="text-sm text-gray-400">
-                  {driverProfile?.email || "Non renseigné"}
-                </p>
-              </div>
-              <Switch
-                checked={showEmail}
-                onCheckedChange={onShowEmailChange}
-              />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Choisissez les informations de contact à afficher sur votre profil public
-          </p>
-        </div>
-
-        <SectorSelector
-          selectedSectors={workingSectors}
-          onChange={onWorkingSectorsChange}
-        />
-
-        <div className="space-y-2">
-          <Label htmlFor="description" className="text-white">Description du service</Label>
-          <Textarea
-            id="description"
-            value={serviceDescription}
-            onChange={(e) => onServiceDescriptionChange(e.target.value)}
-            placeholder="Décrivez votre service, vos spécialités..."
-            rows={4}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="homeAddress" className="flex items-center gap-2 text-white">
-            <MapPin className="w-4 h-4" />
-            📍 Adresse de Localisation
-          </Label>
-          <AddressAutocomplete
-            value={homeAddress}
-            onChange={onHomeAddressChange}
-            placeholder="Tapez votre adresse de départ habituelle..."
-          />
-          <div className="text-xs text-gray-300 space-y-1 bg-white/5 p-3 rounded-lg border border-white/10">
-            <p className="font-medium text-white">Pourquoi cette adresse est importante ?</p>
-            <p>
-              Cette adresse servira à vous géolocaliser quand un client cherche des chauffeurs à proximité. 
-              C'est dans votre intérêt de renseigner l'adresse de départ d'où vous décollez tous les jours.
-            </p>
-            <p className="pt-1">
-              💡 <span className="font-medium">Conseil :</span> Cela peut être soit votre lieu d'habitation, 
-              soit le lieu où vous récupérez votre véhicule chaque jour. Plus votre localisation est précise, 
-              plus vous avez de chances de trouver des clients à proximité !
-            </p>
-            <div className="flex items-start gap-2 pt-2 border-t border-white/10">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-cyan-400" />
-              <p className="text-cyan-400">
-                <span className="font-medium">Important :</span> Cette adresse est uniquement utilisée pour le système de recherche 
-                de proximité. Elle ne sera jamais affichée publiquement aux clients.
+          <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+            <Checkbox
+              id="displayCompany"
+              checked={displayCompanyName}
+              onCheckedChange={(checked) => onDisplayCompanyNameChange(checked as boolean)}
+            />
+            <div className="flex-1">
+              <Label htmlFor="displayCompany" className="font-medium cursor-pointer flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Afficher le nom de l'entreprise
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {companyName || "Non défini"}
               </p>
             </div>
           </div>
         </div>
+      </Card>
 
+      {/* Coordonnées */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Phone className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Informations de contact</h3>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+            <div className="flex-1">
+              <Label className="font-medium">Afficher mon téléphone</Label>
+              <p className="text-sm text-muted-foreground">
+                {driverProfile?.phone || "Non renseigné"}
+              </p>
+            </div>
+            <Switch
+              checked={showPhone}
+              onCheckedChange={onShowPhoneChange}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+            <div className="flex-1">
+              <Label className="font-medium">Afficher mon email</Label>
+              <p className="text-sm text-muted-foreground">
+                {driverProfile?.email || "Non renseigné"}
+              </p>
+            </div>
+            <Switch
+              checked={showEmail}
+              onCheckedChange={onShowEmailChange}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Secteurs */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <SectorSelector
+          selectedSectors={workingSectors || []}
+          onChange={onWorkingSectorsChange}
+        />
+      </Card>
+
+      {/* Services */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <ServicesSelector
-          selectedServices={servicesOffered}
+          selectedServices={servicesOffered || []}
           onChange={onServicesOfferedChange}
         />
+      </Card>
 
+      {/* Équipements */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <EquipmentSelector
-          selectedEquipment={vehicleEquipment}
+          selectedEquipment={vehicleEquipment || []}
           onChange={onVehicleEquipmentChange}
         />
+      </Card>
 
-        <div className="border-t border-white/10 pt-6">
-          <Label className="text-base mb-4 block text-white">Informations du Véhicule</Label>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehicleBrand" className="text-white">Marque du véhicule</Label>
-              <Input
-                id="vehicleBrand"
-                value={vehicleBrand || ""}
-                onChange={(e) => onVehicleBrandChange(e.target.value)}
-                placeholder="Mercedes, BMW, Tesla..."
-              />
-            </div>
+      {/* Description */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <h3 className="text-lg font-semibold mb-4">Description du service</h3>
+        <Textarea
+          value={serviceDescription || ""}
+          onChange={(e) => onServiceDescriptionChange(e.target.value)}
+          placeholder="Décrivez votre service, vos spécialités, votre expérience..."
+          rows={5}
+          className="resize-none"
+        />
+      </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="vehicleColor" className="text-white">Couleur du véhicule</Label>
-              <Input
-                id="vehicleColor"
-                value={vehicleColor || ""}
-                onChange={(e) => onVehicleColorChange(e.target.value)}
-                placeholder="Noir, Blanc, Gris..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vehiclePlate" className="text-white">Plaque d'immatriculation</Label>
-              <Input
-                id="vehiclePlate"
-                value={vehiclePlate || ""}
-                onChange={(e) => onVehiclePlateChange(e.target.value)}
-                placeholder="AB-123-CD"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vehicleYear" className="text-white">Année du véhicule</Label>
-              <Input
-                id="vehicleYear"
-                type="number"
-                value={vehicleYear || ""}
-                onChange={(e) => onVehicleYearChange(e.target.value)}
-                placeholder="2023"
-                min="1990"
-                max="2030"
-              />
+      {/* Adresse */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <MapPin className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Adresse de localisation</h3>
+        </div>
+        <AddressAutocomplete
+          value={homeAddress || ""}
+          onChange={(address, coords) => {
+            if (coords) {
+              onHomeAddressChange(address, coords);
+            } else {
+              onHomeAddressChange(address);
+            }
+          }}
+          placeholder="Votre adresse de départ habituelle"
+        />
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary" />
+            <div className="space-y-2 text-sm">
+              <p className="font-medium">Pourquoi cette adresse est importante ?</p>
+              <p className="text-muted-foreground">
+                Cette adresse permet de vous géolocaliser quand un client cherche des chauffeurs à proximité.
+                Renseignez l'adresse de départ d'où vous décollez quotidiennement.
+              </p>
+              <p className="text-muted-foreground">
+                💡 <span className="font-medium">Important :</span> Cette adresse est uniquement pour la recherche 
+                de proximité et ne sera jamais affichée publiquement.
+              </p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            Ces informations seront visibles sur votre profil public et dans vos documents
-          </p>
         </div>
+      </Card>
 
-        <VehiclePhotosManager 
-          driverId={driverProfile?.driver?.id}
-          currentVehiclePhotos={vehiclePhotos}
-          currentGalleryPhotos={galleryPhotos}
-          onPhotosUpdate={onVehiclePhotosUpdate}
-        />
-      </div>
-    </Card>
+      {/* Véhicule */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Car className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Informations du véhicule</h3>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="vehicleBrand">Marque</Label>
+            <Input
+              id="vehicleBrand"
+              value={vehicleBrand || ""}
+              onChange={(e) => onVehicleBrandChange(e.target.value)}
+              placeholder="Mercedes, BMW, Tesla..."
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehicleColor">Couleur</Label>
+            <Input
+              id="vehicleColor"
+              value={vehicleColor || ""}
+              onChange={(e) => onVehicleColorChange(e.target.value)}
+              placeholder="Noir, Blanc, Gris..."
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehiclePlate">Immatriculation</Label>
+            <Input
+              id="vehiclePlate"
+              value={vehiclePlate || ""}
+              onChange={(e) => onVehiclePlateChange(e.target.value)}
+              placeholder="AB-123-CD"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehicleYear">Année</Label>
+            <Input
+              id="vehicleYear"
+              type="number"
+              value={vehicleYear || ""}
+              onChange={(e) => onVehicleYearChange(e.target.value)}
+              placeholder="2023"
+              min="1990"
+              max="2030"
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Photos véhicule */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Package className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Photos du véhicule</h3>
+        </div>
+        {driverId && (
+          <VehiclePhotosManager
+            driverId={driverId}
+            currentVehiclePhotos={vehiclePhotos || []}
+            currentGalleryPhotos={galleryPhotos || []}
+            onPhotosUpdate={onVehiclePhotosUpdate}
+          />
+        )}
+      </Card>
+    </div>
   );
 });
 
