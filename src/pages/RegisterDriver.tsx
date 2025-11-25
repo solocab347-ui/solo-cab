@@ -451,35 +451,75 @@ const RegisterDriver = () => {
 
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    // Sauvegarder la progression (étape 3 - en attente paiement)
-    await supabase
-      .from("drivers")
-      .update({
-        registration_step: 3
-      })
-      .eq("id", driverId);
-
-    // If free access via token, skip payment
-    if (invitationToken && isTokenValid) {
-      // Inscription complète - supprimer la progression
+    try {
+      // Sauvegarder la progression (étape 3 - en attente paiement)
       await supabase
         .from("drivers")
         .update({
-          registration_step: null,
-          registration_data: null
+          registration_step: 3
         })
         .eq("id", driverId);
-      
-      navigate("/registration-success");
-      return;
-    }
 
-    // Otherwise redirect to Stripe
-    toast.info("Redirection vers le paiement...");
-    // TODO: Implement Stripe checkout
-    // Après paiement, mettre registration_step à null
-    navigate("/registration-success");
+      // If free access via token, skip payment
+      if (invitationToken && isTokenValid) {
+        // Marquer le token comme utilisé
+        await supabase
+          .from("invitation_tokens")
+          .update({
+            used: true,
+            used_at: new Date().toISOString(),
+            used_by_driver_id: driverId
+          })
+          .eq("token", invitationToken);
+
+        // Accorder l'accès gratuit illimité
+        await supabase
+          .from("drivers")
+          .update({
+            subscription_paid: false,
+            free_access_granted: true,
+            free_access_type: "unlimited",
+            free_access_start_date: new Date().toISOString(),
+            free_access_end_date: null,
+            registration_step: null,
+            registration_data: null
+          })
+          .eq("id", driverId);
+        
+        toast.success("Inscription complétée avec accès gratuit !");
+        navigate(`/registration-success?driver_id=${driverId}&token=true`);
+        return;
+      }
+
+      // PAIEMENT OBLIGATOIRE - Appeler l'edge function Stripe
+      const { data, error } = await supabase.functions.invoke(
+        "create-driver-subscription",
+        {
+          body: { driver_id: driverId }
+        }
+      );
+
+      if (error) {
+        console.error("Erreur création session Stripe:", error);
+        toast.error("Erreur lors de la création de la session de paiement");
+        return;
+      }
+
+      if (!data?.url) {
+        toast.error("URL de paiement non reçue");
+        return;
+      }
+
+      // Rediriger vers Stripe pour paiement
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error("Erreur step 3:", error);
+      toast.error("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Afficher un loader pendant la vérification de reprise
