@@ -34,6 +34,11 @@ const DriverCreateCourse = () => {
   const { createCourse, loading: courseLoading } = useCourseCreation();
   const preSelectedClientId = searchParams.get("client_id");
 
+  // Scroll automatique en haut de la page au chargement
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -526,16 +531,28 @@ const DriverCreateCourse = () => {
                 <Car className="w-4 h-4 text-primary" />
                 Mode de paiement préféré *
               </Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Sélectionnez le mode de paiement" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-[100000]" position="popper" sideOffset={5}>
-                  <SelectItem value="carte">Carte bancaire</SelectItem>
-                  <SelectItem value="espece">Espèces</SelectItem>
-                  <SelectItem value="virement">Virement</SelectItem>
-                </SelectContent>
-              </Select>
+              <div onFocus={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                <Select 
+                  value={paymentMethod} 
+                  onValueChange={(value) => {
+                    setPaymentMethod(value);
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Sélectionnez le mode de paiement" />
+                  </SelectTrigger>
+                  <SelectContent 
+                    className="bg-background border border-border z-[100000]" 
+                    position="popper" 
+                    sideOffset={5}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <SelectItem value="carte">Carte bancaire</SelectItem>
+                    <SelectItem value="espece">Espèces</SelectItem>
+                    <SelectItem value="virement">Virement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Mode de paiement que le client utilisera pour cette course
               </p>
