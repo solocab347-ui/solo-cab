@@ -51,8 +51,25 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
       if (error) throw error;
       return updates;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', userId] });
+    onSuccess: async (updates) => {
+      // Mise à jour optimiste du cache
+      queryClient.setQueryData(['driver-profile-optimized', userId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          driver: {
+            ...old.driver,
+            ...updates
+          }
+        };
+      });
+      
+      // Forcer un refetch immédiat pour synchroniser avec la base
+      await queryClient.refetchQueries({ 
+        queryKey: ['driver-profile-optimized', userId],
+        type: 'active'
+      });
+      
       // Pas de toast ici pour éviter les doublons - le toast est géré par handleUpdateProfile
     },
     onError: (error: any) => {

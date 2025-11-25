@@ -229,25 +229,35 @@ const RegisterClientDriver = () => {
               )}
               <div>
                 <h3 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">{driver.profiles?.full_name}</h3>
-                {driver.company_name && (
+                {driver.company_name && driver.company_name.trim() && 
+                 !driver.company_name.toLowerCase().includes('compléter') && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{driver.company_name}</p>
                 )}
-                {(driver.vehicle_brand || driver.vehicle_model || driver.vehicle_color || driver.vehicle_year) && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {driver.vehicle_brand && (
-                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_brand}</Badge>
-                    )}
-                    {driver.vehicle_model && (
-                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
-                    )}
-                    {driver.vehicle_color && (
-                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
-                    )}
-                    {driver.vehicle_year && (
-                      <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_year}</Badge>
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  const hasValidBrand = driver.vehicle_brand && !driver.vehicle_brand.toLowerCase().includes('compléter');
+                  const hasValidModel = driver.vehicle_model && !driver.vehicle_model.toLowerCase().includes('compléter');
+                  const hasValidColor = driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter');
+                  const hasValidYear = driver.vehicle_year && driver.vehicle_year > 1900;
+                  
+                  if (!hasValidBrand && !hasValidModel && !hasValidColor && !hasValidYear) return null;
+                  
+                  return (
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {hasValidBrand && (
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_brand}</Badge>
+                      )}
+                      {hasValidModel && (
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_model}</Badge>
+                      )}
+                      {hasValidColor && (
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_color}</Badge>
+                      )}
+                      {hasValidYear && (
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">{driver.vehicle_year}</Badge>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
