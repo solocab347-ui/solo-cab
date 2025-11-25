@@ -983,6 +983,7 @@ export type Database = {
           email: string | null
           expires_at: string | null
           id: string
+          skip_documents: boolean
           token: string
           used: boolean
           used_at: string | null
@@ -994,6 +995,7 @@ export type Database = {
           email?: string | null
           expires_at?: string | null
           id?: string
+          skip_documents?: boolean
           token: string
           used?: boolean
           used_at?: string | null
@@ -1005,6 +1007,7 @@ export type Database = {
           email?: string | null
           expires_at?: string | null
           id?: string
+          skip_documents?: boolean
           token?: string
           used?: boolean
           used_at?: string | null

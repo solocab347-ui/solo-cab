@@ -55,6 +55,7 @@ const RegisterDriver = () => {
   const [driverId, setDriverId] = useState<string>("");
   const [invitationToken, setInvitationToken] = useState<string>("");
   const [isTokenValid, setIsTokenValid] = useState<boolean>(false);
+  const [skipDocuments, setSkipDocuments] = useState<boolean>(false);
   const [isPassport, setIsPassport] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
   
@@ -157,7 +158,13 @@ const RegisterDriver = () => {
       }
 
       setIsTokenValid(true);
-      toast.success("Accès gratuit activé");
+      setSkipDocuments(data.skip_documents || false);
+      
+      if (data.skip_documents) {
+        toast.success("Accès gratuit activé - Inscription simplifiée");
+      } else {
+        toast.success("Accès gratuit activé - Documents requis");
+      }
     } catch (err) {
       setIsTokenValid(false);
     }
@@ -312,6 +319,40 @@ const RegisterDriver = () => {
       // Grant free access if token valid
       if (invitationToken && isTokenValid) {
         console.log("🎁 Attribution accès gratuit...");
+        
+        // Si skip_documents est activé, finaliser l'inscription immédiatement
+        if (skipDocuments) {
+          console.log("⚡ Skip documents activé - Finalisation immédiate");
+          
+          await supabase
+            .from("drivers")
+            .update({
+              free_access_granted: true,
+              free_access_type: "unlimited",
+              free_access_start_date: new Date().toISOString(),
+              subscription_status: "active",
+              subscription_paid: false,
+              registration_step: null,
+              registration_data: null
+            })
+            .eq("id", driverData.id);
+
+          await supabase
+            .from("invitation_tokens")
+            .update({
+              used: true,
+              used_by_driver_id: driverData.id,
+              used_at: new Date().toISOString()
+            })
+            .eq("token", invitationToken);
+          
+          console.log("✅ Inscription complétée (sans documents ni paiement)");
+          toast.success("Inscription complétée avec accès gratuit !");
+          navigate(`/registration-success?driver_id=${driverData.id}&token=true`);
+          return;
+        }
+        
+        // Sinon, juste marquer l'accès gratuit et continuer vers les documents
         await supabase
           .from("drivers")
           .update({
@@ -321,16 +362,7 @@ const RegisterDriver = () => {
             subscription_status: "active"
           })
           .eq("id", driverData.id);
-
-        await supabase
-          .from("invitation_tokens")
-          .update({
-            used: true,
-            used_by_driver_id: driverData.id,
-            used_at: new Date().toISOString()
-          })
-          .eq("token", invitationToken);
-        console.log("✅ Accès gratuit accordé");
+        console.log("✅ Accès gratuit accordé - Documents requis");
       }
 
       console.log("🎉 INSCRIPTION REUSSIE - Passage étape 2");
@@ -438,6 +470,34 @@ const RegisterDriver = () => {
       }
 
       toast.success("Documents téléchargés avec succès !");
+      
+      // Si token gratuit avec documents, finaliser directement
+      if (invitationToken && isTokenValid && !skipDocuments) {
+        console.log("🎁 Finalisation avec token gratuit après documents");
+        
+        await supabase
+          .from("invitation_tokens")
+          .update({
+            used: true,
+            used_at: new Date().toISOString(),
+            used_by_driver_id: driverId
+          })
+          .eq("token", invitationToken);
+
+        await supabase
+          .from("drivers")
+          .update({
+            subscription_paid: false,
+            registration_step: null,
+            registration_data: null
+          })
+          .eq("id", driverId);
+        
+        toast.success("Inscription complétée avec accès gratuit !");
+        navigate(`/registration-success?driver_id=${driverId}&token=true`);
+        return;
+      }
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       setCurrentStep(3);
 
