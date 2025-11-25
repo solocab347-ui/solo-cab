@@ -106,31 +106,46 @@ const RegisterDriver = () => {
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("🚀 DEBUT inscription étape 1");
 
     try {
       // Validation
+      console.log("📋 Validation des données...");
       const result = registrationSchema.safeParse(formData);
       if (!result.success) {
         const error = result.error.errors[0];
+        console.error("❌ Validation échouée:", error);
         toast.error(error.message);
         setLoading(false);
         return;
       }
+      console.log("✅ Validation réussie");
 
       // Check existing email
+      console.log("🔍 Vérification email existant...");
       const { data: existing, error: checkError } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", formData.email.trim().toLowerCase())
         .maybeSingle();
 
-      if (existing) {
-        toast.error("Email déjà utilisé");
+      if (checkError) {
+        console.error("❌ Erreur vérification email:", checkError);
+        toast.error("Erreur vérification email");
         setLoading(false);
         return;
       }
 
+      if (existing) {
+        console.warn("⚠️ Email déjà utilisé");
+        toast.error("Email déjà utilisé");
+        setLoading(false);
+        return;
+      }
+      console.log("✅ Email disponible");
+
       // Create auth account
+      console.log("👤 Création compte Auth...");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -143,33 +158,49 @@ const RegisterDriver = () => {
       });
 
       if (authError) {
+        console.error("❌ Erreur Auth:", authError);
         toast.error(authError.message);
         setLoading(false);
         return;
       }
 
       if (!authData.user) {
+        console.error("❌ Pas d'utilisateur créé");
         toast.error("Erreur de création de compte");
         setLoading(false);
         return;
       }
 
       const newUserId = authData.user.id;
+      console.log("✅ Compte Auth créé:", newUserId);
       setUserId(newUserId);
 
       // Wait for profile trigger
+      console.log("⏳ Attente trigger profile...");
       await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log("✅ Attente terminée");
 
       // Add driver role
+      console.log("🎭 Ajout rôle driver...");
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({ user_id: newUserId, role: "driver" });
 
-      if (roleError && !roleError.message.includes("duplicate")) {
-        console.error("Role error:", roleError);
+      if (roleError) {
+        if (roleError.message.includes("duplicate")) {
+          console.log("⚠️ Rôle déjà existant (ignoré)");
+        } else {
+          console.error("❌ Erreur ajout rôle:", roleError);
+          toast.error("Erreur ajout rôle: " + roleError.message);
+          setLoading(false);
+          return;
+        }
+      } else {
+        console.log("✅ Rôle driver ajouté");
       }
 
       // Create driver profile
+      console.log("🚗 Création profil driver...");
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
@@ -194,15 +225,18 @@ const RegisterDriver = () => {
         .single();
 
       if (driverError) {
-        toast.error("Erreur création profil chauffeur");
+        console.error("❌ Erreur création driver:", driverError);
+        toast.error("Erreur création profil: " + driverError.message);
         setLoading(false);
         return;
       }
 
+      console.log("✅ Profil driver créé:", driverData.id);
       setDriverId(driverData.id);
 
       // Grant free access if token valid
       if (invitationToken && isTokenValid) {
+        console.log("🎁 Attribution accès gratuit...");
         await supabase
           .from("drivers")
           .update({
@@ -221,16 +255,21 @@ const RegisterDriver = () => {
             used_at: new Date().toISOString()
           })
           .eq("token", invitationToken);
+        console.log("✅ Accès gratuit accordé");
       }
 
+      console.log("🎉 INSCRIPTION REUSSIE - Passage étape 2");
       toast.success("Compte créé avec succès !");
       await new Promise(resolve => setTimeout(resolve, 500));
       setCurrentStep(2);
+      console.log("✅ Étape 2 activée");
 
     } catch (error: any) {
-      console.error("Error step 1:", error);
-      toast.error(error.message || "Erreur lors de l'inscription");
+      console.error("💥 ERREUR GLOBALE:", error);
+      console.error("Stack:", error.stack);
+      toast.error("Erreur: " + (error.message || "Erreur inconnue"));
     } finally {
+      console.log("🔚 Fin handleStep1, setLoading(false)");
       setLoading(false);
     }
   };
