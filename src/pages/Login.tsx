@@ -7,6 +7,7 @@ import { Car, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import logo from "@/assets/logo-solocab.png";
 
 const Login = () => {
   const { signIn, user, userRole, loading: authLoading } = useAuth();
@@ -85,13 +86,8 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-8">
-            <div className="w-12 h-12 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Car className="w-7 h-7 text-primary" />
-            </div>
-            <span className="text-3xl font-bold bg-gradient-dark bg-clip-text text-transparent">
-              SoloCab
-            </span>
+          <Link to="/" className="inline-flex items-center gap-3 mb-8">
+            <img src={logo} alt="SoloCab" className="w-16 h-16 object-contain" />
           </Link>
           <h1 className="text-2xl font-bold mt-4">Connexion</h1>
           <p className="text-muted-foreground mt-2">

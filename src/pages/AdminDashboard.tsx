@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import logo from "@/assets/logo-solocab.png";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminSubscriptionStats from "@/components/admin/AdminSubscriptionStats";
 import AdminDriversManagement from "@/components/admin/AdminDriversManagement";
@@ -125,11 +126,8 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border min-h-screen">
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-premium rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-primary" />
-            </div>
-            <span className="text-xl font-bold">SoloCab</span>
+          <div className="flex items-center gap-3 mb-4">
+            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">

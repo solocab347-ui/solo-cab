@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import logo from "@/assets/logo-solocab.png";
 import {
   Car,
   Check,
@@ -74,13 +75,8 @@ const ChauffeurLanding = () => {
       {/* Header with black background */}
       <header className="border-b border-border/20 sticky top-0 bg-black backdrop-blur-sm z-50">
         <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Car className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
-            <span className="text-xl sm:text-2xl font-bold text-white">
-              SoloCab
-            </span>
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/login">
