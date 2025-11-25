@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,17 @@ export const DualProfilePhotoUpload = ({
 }: DualProfilePhotoUploadProps) => {
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingCard, setUploadingCard] = useState(false);
-  const [useSamePhoto, setUseSamePhoto] = useState(false);
+  
+  // Initialiser useSamePhoto en fonction des URLs actuelles
+  const [useSamePhoto, setUseSamePhoto] = useState(() => {
+    return currentProfilePhotoUrl === currentCardPhotoUrl && currentProfilePhotoUrl !== null;
+  });
+
+  // Synchroniser useSamePhoto quand les URLs changent
+  useEffect(() => {
+    const shouldSync = currentProfilePhotoUrl === currentCardPhotoUrl && currentProfilePhotoUrl !== null;
+    setUseSamePhoto(shouldSync);
+  }, [currentProfilePhotoUrl, currentCardPhotoUrl]);
 
   const handlePhotoUpload = async (
     file: File,
@@ -100,18 +110,27 @@ export const DualProfilePhotoUpload = ({
     input.click();
   };
 
-  const toggleUseSamePhoto = () => {
+  const toggleUseSamePhoto = async () => {
     const newValue = !useSamePhoto;
     setUseSamePhoto(newValue);
     
     if (newValue && currentProfilePhotoUrl) {
       // Synchroniser immédiatement la photo de carte avec la photo de profil
       onCardPhotoUpdate(currentProfilePhotoUrl);
-      supabase
-        .from('drivers')
-        .update({ card_photo_url: currentProfilePhotoUrl })
-        .eq('user_id', userId);
-      toast.success("Les deux photos sont maintenant synchronisées");
+      
+      try {
+        const { error } = await supabase
+          .from('drivers')
+          .update({ card_photo_url: currentProfilePhotoUrl })
+          .eq('user_id', userId);
+        
+        if (error) throw error;
+        toast.success("✅ Les deux photos sont maintenant synchronisées");
+      } catch (error) {
+        console.error("Erreur synchronisation photos:", error);
+        toast.error("Erreur lors de la synchronisation");
+        setUseSamePhoto(false); // Revenir à l'état précédent en cas d'erreur
+      }
     }
   };
 

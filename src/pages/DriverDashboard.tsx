@@ -250,12 +250,42 @@ const DriverDashboard = () => {
         gallery_photos: galleryPhotos,
       });
 
-      // Sauvegarder aussi les photos dans la table profiles
-      if (user?.id && profilePhotoUrl) {
-        await supabase
-          .from('profiles')
-          .update({ profile_photo_url: profilePhotoUrl })
-          .eq('id', user.id);
+      // Sauvegarder aussi les photos dans les tables profiles et drivers
+      if (user?.id) {
+        const profileUpdates: any = {};
+        const driverUpdates: any = {};
+        
+        if (profilePhotoUrl) {
+          profileUpdates.profile_photo_url = profilePhotoUrl;
+        }
+        
+        if (cardPhotoUrl) {
+          driverUpdates.card_photo_url = cardPhotoUrl;
+        }
+        
+        // Mettre à jour les photos dans profiles
+        if (Object.keys(profileUpdates).length > 0) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update(profileUpdates)
+            .eq('id', user.id);
+          
+          if (profileError) {
+            console.error("Erreur sauvegarde photo profil:", profileError);
+          }
+        }
+        
+        // Mettre à jour la photo de carte dans drivers
+        if (Object.keys(driverUpdates).length > 0) {
+          const { error: driverError } = await supabase
+            .from('drivers')
+            .update(driverUpdates)
+            .eq('user_id', user.id);
+          
+          if (driverError) {
+            console.error("Erreur sauvegarde photo carte:", driverError);
+          }
+        }
       }
 
       // Invalider le cache pour forcer le rafraîchissement
