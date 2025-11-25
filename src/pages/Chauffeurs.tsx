@@ -211,8 +211,11 @@ const Chauffeurs = () => {
     try {
       if (searchMode === "city" && citySearch.trim()) {
         // Validate city coordinates
-        if (!cityCoordinates) {
-          toast.error("Veuillez sélectionner une ville dans les suggestions");
+        if (!cityCoordinates || !cityCoordinates.latitude || !cityCoordinates.longitude) {
+          toast.error("⚠️ Coordonnées manquantes", {
+            description: "Veuillez sélectionner une ville dans la liste des suggestions qui apparaît quand vous tapez",
+            duration: 6000
+          });
           setLoading(false);
           return;
         }
@@ -261,8 +264,11 @@ const Chauffeurs = () => {
         }
       } else if (searchMode === "address" && addressSearch.trim()) {
         // Validate address coordinates
-        if (!addressCoordinates) {
-          toast.error("Veuillez sélectionner une adresse dans les suggestions");
+        if (!addressCoordinates || !addressCoordinates.latitude || !addressCoordinates.longitude) {
+          toast.error("⚠️ Coordonnées manquantes", {
+            description: "Veuillez sélectionner une adresse dans la liste des suggestions qui apparaît quand vous tapez",
+            duration: 6000
+          });
           setLoading(false);
           return;
         }
@@ -426,11 +432,21 @@ const Chauffeurs = () => {
                   <CityAutocomplete
                     value={citySearch}
                     onChange={(city, coords) => {
+                      console.log("🔄 City onChange appelé:", { city, coords });
                       setCitySearch(city);
                       setCityCoordinates(coords || null);
+                      if (coords) {
+                        console.log("✅ Coordonnées ville définies:", coords);
+                      }
                     }}
-                    placeholder="Commencez à taper : Paris, Lyon, Marseille..."
+                    placeholder="Tapez et SÉLECTIONNEZ une ville dans la liste"
                   />
+                  {citySearch && !cityCoordinates && (
+                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Sélectionnez une ville dans la liste qui apparaît
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -478,11 +494,21 @@ const Chauffeurs = () => {
                   <AddressAutocomplete
                     value={addressSearch}
                     onChange={(address, coords) => {
+                      console.log("🔄 Address onChange appelé:", { address, coords });
                       setAddressSearch(address);
                       setAddressCoordinates(coords || null);
+                      if (coords) {
+                        console.log("✅ Coordonnées adresse définies:", coords);
+                      }
                     }}
-                    placeholder="Tapez votre adresse : 12 Rue de la Paix, Paris..."
+                    placeholder="Tapez et SÉLECTIONNEZ une adresse dans la liste"
                   />
+                  {addressSearch && !addressCoordinates && (
+                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Sélectionnez une adresse dans la liste qui apparaît
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

@@ -115,6 +115,12 @@ export const CityAutocomplete = ({
       longitude: suggestion.center[0],
     };
 
+    console.log("✅ Ville sélectionnée:", {
+      city: suggestion.text,
+      coordinates,
+      fullName: suggestion.place_name
+    });
+
     setInputValue(suggestion.text);
     onChange(suggestion.text, coordinates);
     setSuggestions([]);
