@@ -12,6 +12,7 @@ export const AdminInvitationTokens = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [tokenCount, setTokenCount] = useState(50);
+  const [skipDocuments, setSkipDocuments] = useState(false);
   const [deletingTokens, setDeletingTokens] = useState<Set<string>>(new Set());
 
   const { data: tokens, refetch } = useQuery({
@@ -45,6 +46,7 @@ export const AdminInvitationTokens = () => {
           token,
           used: false,
           expires_at: null, // Aucune expiration - accès illimité
+          skip_documents: skipDocuments,
           created_by_admin_id: adminId,
         });
       }
@@ -141,36 +143,54 @@ export const AdminInvitationTokens = () => {
           </p>
         </div>
 
-        <div className="flex items-end gap-4">
-          <div className="flex-1 max-w-xs">
-            <Label htmlFor="tokenCount">Nombre de tokens à générer</Label>
-            <Input
-              id="tokenCount"
-              type="number"
-              min="1"
-              max="500"
-              value={tokenCount}
-              onChange={(e) => setTokenCount(parseInt(e.target.value) || 1)}
-              placeholder="Ex: 50"
-              className="mt-1"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Entre 1 et 500 tokens</p>
+        <div className="space-y-4">
+          <div className="flex items-end gap-4">
+            <div className="flex-1 max-w-xs">
+              <Label htmlFor="tokenCount">Nombre de tokens à générer</Label>
+              <Input
+                id="tokenCount"
+                type="number"
+                min="1"
+                max="500"
+                value={tokenCount}
+                onChange={(e) => setTokenCount(parseInt(e.target.value) || 1)}
+                placeholder="Ex: 50"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Entre 1 et 500 tokens</p>
+            </div>
+            <Button
+              onClick={handleGenerateTokens}
+              disabled={isGenerating}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                `🎯 Générer ${tokenCount} token${tokenCount > 1 ? 's' : ''}`
+              )}
+            </Button>
           </div>
-          <Button
-            onClick={handleGenerateTokens}
-            disabled={isGenerating}
-            size="lg"
-            className="bg-green-600 hover:bg-green-700"
-          >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Génération...
-              </>
-            ) : (
-              `🎯 Générer ${tokenCount} token${tokenCount > 1 ? 's' : ''}`
-            )}
-          </Button>
+          
+          <div className="flex items-center space-x-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <input
+              type="checkbox"
+              id="skipDocuments"
+              checked={skipDocuments}
+              onChange={(e) => setSkipDocuments(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <Label htmlFor="skipDocuments" className="text-sm font-medium cursor-pointer">
+              Sauter l'étape des documents
+            </Label>
+            <p className="text-xs text-amber-700">
+              (Si coché: ni documents ni paiement • Si décoché: documents requis mais pas de paiement)
+            </p>
+          </div>
         </div>
       </div>
 
