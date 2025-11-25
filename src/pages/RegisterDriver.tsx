@@ -43,11 +43,18 @@ const RegisterDriver = () => {
     confirmPassword: "",
   });
 
-  // Documents - Étape 2 (uniquement VTC)
+  // Documents - Étape 2
   const [documents, setDocuments] = useState({
     vtc_recto: null as File | null,
     vtc_verso: null as File | null,
+    identity_recto: null as File | null,
+    identity_verso: null as File | null,
+    driving_license_recto: null as File | null,
+    driving_license_verso: null as File | null,
+    kbis: null as File | null,
+    vehicle_insurance: null as File | null,
   });
+  const [isPassport, setIsPassport] = useState(false);
 
   // Vérifier le token d'invitation au chargement
   useEffect(() => {
@@ -260,28 +267,60 @@ const RegisterDriver = () => {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation des documents obligatoires (uniquement VTC)
-    if (!documents.vtc_recto) {
-      toast.error("La carte VTC recto est obligatoire");
+    // Validation des documents obligatoires
+    if (!documents.vtc_recto || !documents.vtc_verso) {
+      toast.error("La carte VTC recto et verso est obligatoire");
       return;
     }
-    if (!documents.vtc_verso) {
-      toast.error("La carte VTC verso est obligatoire");
+    if (!documents.identity_recto || (!isPassport && !documents.identity_verso)) {
+      toast.error(isPassport ? "Le passeport est obligatoire" : "La carte d'identité recto et verso est obligatoire");
+      return;
+    }
+    if (!documents.driving_license_recto || !documents.driving_license_verso) {
+      toast.error("Le permis de conduire recto et verso est obligatoire");
+      return;
+    }
+    if (!documents.kbis) {
+      toast.error("Le Kbis est obligatoire");
+      return;
+    }
+    if (!documents.vehicle_insurance) {
+      toast.error("L'assurance du véhicule est obligatoire");
       return;
     }
 
     setLoading(true);
     try {
-      console.log("📄 Étape 2: Upload des documents VTC...");
+      console.log("📄 Étape 2: Upload des documents...");
 
-      const documentUrls: any = {};
+      const documentUrls: any = {
+        identity_type: isPassport ? 'passport' : 'id_card'
+      };
 
-      // Upload uniquement des documents VTC
+      // Upload de tous les documents
       if (documents.vtc_recto) {
         documentUrls.vtc_recto = await uploadDocument(documents.vtc_recto, 'vtc_recto');
       }
       if (documents.vtc_verso) {
         documentUrls.vtc_verso = await uploadDocument(documents.vtc_verso, 'vtc_verso');
+      }
+      if (documents.identity_recto) {
+        documentUrls.identity_recto = await uploadDocument(documents.identity_recto, 'identity_recto');
+      }
+      if (documents.identity_verso) {
+        documentUrls.identity_verso = await uploadDocument(documents.identity_verso, 'identity_verso');
+      }
+      if (documents.driving_license_recto) {
+        documentUrls.driving_license_recto = await uploadDocument(documents.driving_license_recto, 'driving_license_recto');
+      }
+      if (documents.driving_license_verso) {
+        documentUrls.driving_license_verso = await uploadDocument(documents.driving_license_verso, 'driving_license_verso');
+      }
+      if (documents.kbis) {
+        documentUrls.kbis = await uploadDocument(documents.kbis, 'kbis');
+      }
+      if (documents.vehicle_insurance) {
+        documentUrls.vehicle_insurance = await uploadDocument(documents.vehicle_insurance, 'vehicle_insurance');
       }
 
       const { error: updateError } = await supabase
@@ -504,21 +543,179 @@ const RegisterDriver = () => {
         {currentStep === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
             <div className="space-y-6">
-              <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-                <p className="text-sm text-blue-300">
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  Seuls les documents VTC sont requis pour l'inscription
-                </p>
+              {/* Carte VTC */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Carte VTC *
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white font-medium mb-2 block">Recto *</Label>
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                        <span className="text-sm text-white block">
+                          {documents.vtc_recto ? documents.vtc_recto.name : "Choisir un fichier"}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("vtc_recto", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <Label className="text-white font-medium mb-2 block">Verso *</Label>
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                        <span className="text-sm text-white block">
+                          {documents.vtc_verso ? documents.vtc_verso.name : "Choisir un fichier"}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("vtc_verso", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Pièce d'identité */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Pièce d'identité *
+                </h3>
+                <div className="flex items-center space-x-4 mb-4">
+                  <Label className="flex items-center space-x-2 cursor-pointer text-white">
+                    <input
+                      type="radio"
+                      checked={!isPassport}
+                      onChange={() => setIsPassport(false)}
+                      className="w-4 h-4"
+                    />
+                    <span>Carte d'identité</span>
+                  </Label>
+                  <Label className="flex items-center space-x-2 cursor-pointer text-white">
+                    <input
+                      type="radio"
+                      checked={isPassport}
+                      onChange={() => setIsPassport(true)}
+                      className="w-4 h-4"
+                    />
+                    <span>Passeport</span>
+                  </Label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white font-medium mb-2 block">{isPassport ? 'Passeport' : 'Recto'} *</Label>
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                        <span className="text-sm text-white block">
+                          {documents.identity_recto ? documents.identity_recto.name : "Choisir un fichier"}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("identity_recto", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                  {!isPassport && (
+                    <div>
+                      <Label className="text-white font-medium mb-2 block">Verso *</Label>
+                      <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                        <div className="text-center">
+                          <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                          <span className="text-sm text-white block">
+                            {documents.identity_verso ? documents.identity_verso.name : "Choisir un fichier"}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                        </div>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*,.pdf"
+                          onChange={(e) => handleFileChange("identity_verso", e.target.files?.[0] || null)}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Permis de conduire */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Permis de conduire *
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white font-medium mb-2 block">Recto *</Label>
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                        <span className="text-sm text-white block">
+                          {documents.driving_license_recto ? documents.driving_license_recto.name : "Choisir un fichier"}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("driving_license_recto", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <Label className="text-white font-medium mb-2 block">Verso *</Label>
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <div className="text-center">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
+                        <span className="text-sm text-white block">
+                          {documents.driving_license_verso ? documents.driving_license_verso.name : "Choisir un fichier"}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("driving_license_verso", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Kbis */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Kbis *
+                </h3>
                 <div>
-                  <Label className="text-white font-medium text-base mb-3 block">Carte VTC recto *</Label>
+                  <Label className="text-white font-medium mb-2 block">Document Kbis *</Label>
                   <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
                     <div className="text-center">
                       <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
                       <span className="text-sm text-white block">
-                        {documents.vtc_recto ? documents.vtc_recto.name : "Choisir un fichier"}
+                        {documents.kbis ? documents.kbis.name : "Choisir un fichier"}
                       </span>
                       <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
                     </div>
@@ -526,18 +723,25 @@ const RegisterDriver = () => {
                       type="file"
                       className="hidden"
                       accept="image/*,.pdf"
-                      onChange={(e) => handleFileChange("vtc_recto", e.target.files?.[0] || null)}
+                      onChange={(e) => handleFileChange("kbis", e.target.files?.[0] || null)}
                     />
                   </label>
                 </div>
+              </div>
 
+              {/* Assurance véhicule */}
+              <div className="space-y-4">
+                <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Assurance du véhicule *
+                </h3>
                 <div>
-                  <Label className="text-white font-medium text-base mb-3 block">Carte VTC verso *</Label>
+                  <Label className="text-white font-medium mb-2 block">Attestation d'assurance *</Label>
                   <label className="cursor-pointer flex items-center justify-center px-4 py-8 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
                     <div className="text-center">
                       <Upload className="w-8 h-8 mx-auto mb-2 text-white" />
                       <span className="text-sm text-white block">
-                        {documents.vtc_verso ? documents.vtc_verso.name : "Choisir un fichier"}
+                        {documents.vehicle_insurance ? documents.vehicle_insurance.name : "Choisir un fichier"}
                       </span>
                       <span className="text-xs text-gray-400 mt-1 block">PNG, JPG ou PDF</span>
                     </div>
@@ -545,7 +749,7 @@ const RegisterDriver = () => {
                       type="file"
                       className="hidden"
                       accept="image/*,.pdf"
-                      onChange={(e) => handleFileChange("vtc_verso", e.target.files?.[0] || null)}
+                      onChange={(e) => handleFileChange("vehicle_insurance", e.target.files?.[0] || null)}
                     />
                   </label>
                 </div>
