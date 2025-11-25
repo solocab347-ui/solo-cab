@@ -394,8 +394,9 @@ serve(async (req) => {
 
         const userId = authData.user.id;
 
-        // 2. Créer le profil avec photo
-        const photoUrl = `https://iyothopplhbwcfrpxryc.supabase.co/storage/v1/object/public/profile-photos/driver-${driver.photoNumber}.jpg`;
+        // 2. Créer le profil avec référence à la photo dans le storage
+        const photoFileName = `paris-driver-${driver.photoNumber}.jpg`;
+        const photoUrl = `${supabaseUrl}/storage/v1/object/public/profile-photos/${photoFileName}`;
         
         const { error: profileError } = await supabaseAdmin
           .from('profiles')

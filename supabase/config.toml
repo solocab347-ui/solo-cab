@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.recreate-test-clients]
 verify_jwt = false
 
+[functions.create-paris-drivers]
+verify_jwt = false
+
 [functions.qr-code-manager]
 verify_jwt = false
 
