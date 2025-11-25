@@ -497,16 +497,28 @@ const CreateCourse = () => {
                 <Car className="w-4 h-4 text-primary" />
                 Mode de paiement préféré *
               </Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez le mode de paiement" />
-                </SelectTrigger>
-                <SelectContent className="z-[100000]" position="popper" sideOffset={5}>
-                  <SelectItem value="carte">Carte bancaire</SelectItem>
-                  <SelectItem value="espece">Espèces</SelectItem>
-                  <SelectItem value="virement">Virement</SelectItem>
-                </SelectContent>
-              </Select>
+              <div onFocus={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                <Select 
+                  value={paymentMethod} 
+                  onValueChange={(value) => {
+                    setPaymentMethod(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez le mode de paiement" />
+                  </SelectTrigger>
+                  <SelectContent 
+                    className="z-[100000]" 
+                    position="popper" 
+                    sideOffset={5}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <SelectItem value="carte">Carte bancaire</SelectItem>
+                    <SelectItem value="espece">Espèces</SelectItem>
+                    <SelectItem value="virement">Virement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Vous payerez directement avec le chauffeur selon le mode choisi
               </p>
