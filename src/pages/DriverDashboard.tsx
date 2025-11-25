@@ -82,6 +82,8 @@ const DriverDashboard = () => {
   const [vehicleYear, setVehicleYear] = useState("");
   const [eveningSurcharge, setEveningSurcharge] = useState("0");
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
+  const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
 
   // Synchroniser l'état du formulaire avec les données du profil
   useEffect(() => {
@@ -120,6 +122,8 @@ const DriverDashboard = () => {
       setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
       setProfilePhotoUrl(driverProfile.profile_photo_url || null);
       setCardPhotoUrl(driver.card_photo_url || null);
+      setVehiclePhotos(driver.vehicle_photos || []);
+      setGalleryPhotos(driver.gallery_photos || []);
     }
   }, [driverProfile]);
 
@@ -228,6 +232,8 @@ const DriverDashboard = () => {
         services_offered: servicesOffered,
         evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
+        vehicle_photos: vehiclePhotos,
+        gallery_photos: galleryPhotos,
       });
 
       // Sauvegarder aussi les photos dans la table profiles
@@ -777,6 +783,12 @@ const DriverDashboard = () => {
                   onVehicleColorChange={setVehicleColor}
                   onVehiclePlateChange={setVehiclePlate}
                   onVehicleYearChange={setVehicleYear}
+                  vehiclePhotos={vehiclePhotos}
+                  galleryPhotos={galleryPhotos}
+                  onVehiclePhotosUpdate={(vPhotos, gPhotos) => {
+                    setVehiclePhotos(vPhotos);
+                    setGalleryPhotos(gPhotos);
+                  }}
                 />
 
                 <div className="flex justify-end">
