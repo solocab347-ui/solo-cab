@@ -3,12 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, Check, RefreshCw } from "lucide-react";
+import { Copy, Check, RefreshCw, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useQuery } from "@tanstack/react-query";
 
 export const AdminInvitationTokens = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [tokenCount, setTokenCount] = useState(50);
+  const [deletingTokens, setDeletingTokens] = useState<Set<string>>(new Set());
 
   const { data: tokens, refetch } = useQuery({
     queryKey: ["invitation-tokens"],
@@ -24,13 +28,17 @@ export const AdminInvitationTokens = () => {
   });
 
   const handleGenerateTokens = async () => {
+    if (tokenCount < 1 || tokenCount > 500) {
+      toast.error("Le nombre de tokens doit être entre 1 et 500");
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const tokensToGenerate = 50;
       const adminId = (await supabase.auth.getUser()).data.user?.id;
       const newTokens = [];
 
-      for (let i = 0; i < tokensToGenerate; i++) {
+      for (let i = 0; i < tokenCount; i++) {
         // Générer un token unique sécurisé
         const token = `UNLIMITED-${Math.random().toString(36).substring(2, 15)}-${Date.now()}-${i}`;
         newTokens.push({
@@ -47,11 +55,63 @@ export const AdminInvitationTokens = () => {
 
       if (error) throw error;
 
-      toast.success(`✅ ${tokensToGenerate} tokens d'accès illimité générés avec succès`);
+      toast.success(`✅ ${tokenCount} tokens d'accès illimité générés avec succès`);
       refetch();
     } catch (error: any) {
       console.error("Erreur génération tokens:", error);
       toast.error("Erreur lors de la génération des tokens");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDeleteToken = async (tokenId: string, tokenValue: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce token ?\n${tokenValue}`)) {
+      return;
+    }
+
+    setDeletingTokens(prev => new Set(prev).add(tokenId));
+    try {
+      const { error } = await supabase
+        .from("invitation_tokens")
+        .delete()
+        .eq("id", tokenId);
+
+      if (error) throw error;
+
+      toast.success("Token supprimé avec succès");
+      refetch();
+    } catch (error: any) {
+      console.error("Erreur suppression token:", error);
+      toast.error("Erreur lors de la suppression du token");
+    } finally {
+      setDeletingTokens(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tokenId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDeleteAllUnused = async () => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer TOUS les ${unusedTokens.length} tokens non utilisés ?`)) {
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { error } = await supabase
+        .from("invitation_tokens")
+        .delete()
+        .eq("used", false);
+
+      if (error) throw error;
+
+      toast.success(`${unusedTokens.length} tokens supprimés avec succès`);
+      refetch();
+    } catch (error: any) {
+      console.error("Erreur suppression tokens:", error);
+      toast.error("Erreur lors de la suppression des tokens");
     } finally {
       setIsGenerating(false);
     }
@@ -70,31 +130,48 @@ export const AdminInvitationTokens = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">🎁 Campagne Test - 50 Chauffeurs</h2>
+          <h2 className="text-2xl font-bold">🎁 Gestion des Tokens d'Accès Gratuit Illimité</h2>
           <p className="text-muted-foreground">
-            Générez 50 liens d'inscription uniques donnant accès <strong className="text-green-600">GRATUIT et ILLIMITÉ</strong> à la plateforme
+            Générez des liens d'inscription uniques donnant accès <strong className="text-green-600">GRATUIT et ILLIMITÉ</strong> à la plateforme
           </p>
           <p className="text-sm text-amber-600 mt-2">
             ⚠️ Ces tokens ne peuvent JAMAIS être révoqués - l'accès reste permanent
           </p>
         </div>
-        <Button
-          onClick={handleGenerateTokens}
-          disabled={isGenerating || (unusedTokens.length + usedTokens.length >= 50)}
-          size="lg"
-          className="bg-green-600 hover:bg-green-700"
-        >
-          {isGenerating ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Génération...
-            </>
-          ) : (
-            "🎯 Générer 50 tokens illimités"
-          )}
-        </Button>
+
+        <div className="flex items-end gap-4">
+          <div className="flex-1 max-w-xs">
+            <Label htmlFor="tokenCount">Nombre de tokens à générer</Label>
+            <Input
+              id="tokenCount"
+              type="number"
+              min="1"
+              max="500"
+              value={tokenCount}
+              onChange={(e) => setTokenCount(parseInt(e.target.value) || 1)}
+              placeholder="Ex: 50"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Entre 1 et 500 tokens</p>
+          </div>
+          <Button
+            onClick={handleGenerateTokens}
+            disabled={isGenerating}
+            size="lg"
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {isGenerating ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Génération...
+              </>
+            ) : (
+              `🎯 Générer ${tokenCount} token${tokenCount > 1 ? 's' : ''}`
+            )}
+          </Button>
+        </div>
       </div>
 
       {(unusedTokens.length + usedTokens.length > 0) && (
@@ -102,15 +179,15 @@ export const AdminInvitationTokens = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-green-900">
-                📊 Progression de la campagne
+                📊 Statistiques des tokens
               </p>
               <p className="text-sm text-green-700">
-                {usedTokens.length} / 50 chauffeurs inscrits
+                {usedTokens.length} utilisés • {unusedTokens.length} disponibles • {unusedTokens.length + usedTokens.length} total
               </p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-green-600">{usedTokens.length}</p>
-              <p className="text-xs text-muted-foreground">inscrits</p>
+              <p className="text-xs text-muted-foreground">chauffeurs inscrits</p>
             </div>
           </div>
         </Card>
@@ -119,13 +196,26 @@ export const AdminInvitationTokens = () => {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Tokens non utilisés */}
         <Card className="p-6 border-green-200">
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-lg font-semibold">
-              ✨ Tokens disponibles ({unusedTokens.length})
-            </h3>
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-              Accès illimité
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                ✨ Tokens disponibles ({unusedTokens.length})
+              </h3>
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                Accès illimité
+              </span>
+            </div>
+            {unusedTokens.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteAllUnused}
+                disabled={isGenerating}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Supprimer tous
+              </Button>
+            )}
           </div>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {unusedTokens.map((token) => (
@@ -136,18 +226,29 @@ export const AdminInvitationTokens = () => {
                 <code className="text-sm font-mono truncate flex-1 text-green-900">
                   {token.token}
                 </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyInvitationLink(token.token)}
-                  className="hover:bg-green-100"
-                >
-                  {copiedToken === token.token ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-green-700" />
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyInvitationLink(token.token)}
+                    className="hover:bg-green-100"
+                  >
+                    {copiedToken === token.token ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-green-700" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteToken(token.id, token.token)}
+                    disabled={deletingTokens.has(token.id)}
+                    className="hover:bg-red-100"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                </div>
               </div>
             ))}
             {unusedTokens.length === 0 && (
