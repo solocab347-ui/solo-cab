@@ -75,13 +75,6 @@ Scannez le QR code pour réserver`
         const scale = flyersPerPage === 1 ? 2 : 1;
         let currentY = pos.y + (15 * scale);
 
-        // Logo SoloCab - proportions harmonieuses
-        const logoWidth = flyersPerPage === 1 ? 50 : 40;
-        const logoHeight = flyersPerPage === 1 ? 17 : 13.5;
-        const logoX = centerX - (logoWidth / 2);
-        pdf.addImage(logo, "PNG", logoX, currentY, logoWidth, logoHeight);
-        currentY += logoHeight + (6 * scale);
-
         // Nom de l'entreprise
         if (companyName.trim()) {
           pdf.setFontSize(flyersPerPage === 1 ? 16 : 13);
@@ -291,19 +284,6 @@ Scannez le QR code pour réserver`
                   }}
                 >
                   <div className="flex flex-col items-center justify-center w-full h-full gap-1">
-                    {/* Logo SoloCab */}
-                    <div className="flex justify-center flex-shrink-0">
-                      <img 
-                        src={logo} 
-                        alt="SoloCab" 
-                        className="object-contain"
-                        style={{
-                          maxWidth: flyersPerPage === 1 ? "25%" : "40%",
-                          height: "auto"
-                        }}
-                      />
-                    </div>
-
                     {/* Nom de l'entreprise */}
                     {companyName.trim() && (
                       <div 
