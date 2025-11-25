@@ -60,6 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isMounted = true;
     let timeoutCleared = false;
+    let refreshRetryCount = 0;
+    const MAX_REFRESH_RETRIES = 3;
 
     // TIMEOUT DE SÉCURITÉ ABSOLU: garantir loading=false après 2 secondes MAX
     const safetyTimeout = setTimeout(() => {
@@ -69,12 +71,75 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }, 2000);
 
-    // Auth state listener - ultra simple, pas de await
+    // Fonction pour gérer l'échec du refresh token avec retry
+    const handleRefreshFailure = async () => {
+      refreshRetryCount++;
+      
+      if (refreshRetryCount <= MAX_REFRESH_RETRIES) {
+        const backoffDelay = Math.min(1000 * Math.pow(2, refreshRetryCount - 1), 5000);
+        console.log(`⚠️ Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES} in ${backoffDelay}ms`);
+        
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (!error && data.session) {
+            console.log("✅ Session refreshed successfully on retry");
+            refreshRetryCount = 0; // Reset counter on success
+            return true;
+          }
+        } catch (retryError) {
+          console.error("❌ Retry failed:", retryError);
+        }
+        
+        return await handleRefreshFailure();
+      } else {
+        console.error("❌ Max refresh retries reached, clearing session");
+        
+        // Nettoyage de la session locale
+        setUser(null);
+        setSession(null);
+        setUserRole(null);
+        setUserRoles([]);
+        
+        // Clear local storage to force fresh login
+        localStorage.removeItem('sb-iyothopplhbwcfrpxryc-auth-token');
+        
+        toast.error("Session expirée, veuillez vous reconnecter");
+        navigate("/login");
+        return false;
+      }
+    };
+
+    // Auth state listener avec gestion robuste des erreurs de refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!isMounted) return;
         
         console.log("🔐 Auth event:", event);
+        
+        // Gestion spécifique de l'erreur de refresh token
+        if (event === "TOKEN_REFRESHED" && !session) {
+          console.warn("⚠️ Token refresh failed, attempting recovery");
+          await handleRefreshFailure();
+          return;
+        }
+        
+        // Gestion de l'expiration de session
+        if (event === "SIGNED_OUT" && session === null) {
+          console.log("🔓 User signed out");
+          setUser(null);
+          setSession(null);
+          setUserRole(null);
+          setUserRoles([]);
+          return;
+        }
+        
+        // Reset retry counter on successful auth events
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          refreshRetryCount = 0;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
