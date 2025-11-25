@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Input } from "@/components/ui/input";
 import { MapPin, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,8 +32,10 @@ export const AddressAutocomplete = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const debounceTimer = useRef<NodeJS.Timeout>();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch Mapbox token on mount
   useEffect(() => {
@@ -65,6 +68,30 @@ export const AddressAutocomplete = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Update dropdown position
+  useEffect(() => {
+    const updatePosition = () => {
+      if (inputRef.current && showSuggestions) {
+        const rect = inputRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      }
+    };
+
+    if (showSuggestions) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [showSuggestions]);
 
   const fetchSuggestions = async (query: string) => {
     if (!query || query.length < 3 || !mapboxToken) {
@@ -119,11 +146,68 @@ export const AddressAutocomplete = ({
     setShowSuggestions(false);
   };
 
+  const renderDropdown = () => {
+    if (!showSuggestions || (!suggestions.length && !isLoading && inputValue.length < 3)) {
+      return null;
+    }
+
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`,
+          width: `${dropdownPosition.width}px`,
+          zIndex: 999999,
+        }}
+        className="bg-card border-2 border-border rounded-lg shadow-2xl"
+      >
+        <div className="max-h-80 overflow-auto p-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Recherche en cours...</span>
+            </div>
+          ) : suggestions.length > 0 ? (
+            suggestions.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSelectSuggestion(suggestion);
+                }}
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 group"
+              >
+                <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary group-hover:text-accent-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate text-foreground group-hover:text-accent-foreground">
+                    {suggestion.text}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate group-hover:text-accent-foreground/80">
+                    {suggestion.place_name}
+                  </p>
+                </div>
+              </button>
+            ))
+          ) : inputValue.length >= 3 ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-sm text-muted-foreground">Aucune adresse trouvée</p>
+              <p className="text-xs text-muted-foreground mt-1">Essayez de modifier votre recherche</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div ref={wrapperRef} className="relative w-full">
       <div className="relative">
         <MapPin className="absolute left-3 top-3 h-5 w-5 text-primary pointer-events-none z-10" />
         <Input
+          ref={inputRef}
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => {
@@ -142,45 +226,9 @@ export const AddressAutocomplete = ({
         )}
       </div>
 
-      {showSuggestions && (suggestions.length > 0 || isLoading || inputValue.length >= 3) && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-card border-2 border-border rounded-lg shadow-2xl z-[100000] max-h-80 overflow-auto">
-          <div className="p-2">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Recherche en cours...</span>
-              </div>
-            ) : suggestions.length > 0 ? (
-              suggestions.map((suggestion) => (
-                <button
-                  key={suggestion.id}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSelectSuggestion(suggestion);
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 group"
-                >
-                  <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary group-hover:text-accent-foreground" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate text-foreground group-hover:text-accent-foreground">
-                      {suggestion.text}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate group-hover:text-accent-foreground/80">
-                      {suggestion.place_name}
-                    </p>
-                  </div>
-                </button>
-              ))
-            ) : inputValue.length >= 3 ? (
-              <div className="px-4 py-4 text-center">
-                <p className="text-sm text-muted-foreground">Aucune adresse trouvée</p>
-                <p className="text-xs text-muted-foreground mt-1">Essayez de modifier votre recherche</p>
-              </div>
-            ) : null}
-          </div>
-        </div>
+      {typeof document !== 'undefined' && createPortal(
+        renderDropdown(),
+        document.body
       )}
     </div>
   );
