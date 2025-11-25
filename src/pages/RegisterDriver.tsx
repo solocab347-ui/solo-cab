@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ const driverRegistrationSchema = z.object({
 
 const RegisterDriver = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +33,8 @@ const RegisterDriver = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
   const [isPassport, setIsPassport] = useState(false);
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   
   // Form states - Étape 1
   const [formData, setFormData] = useState({
@@ -51,6 +54,45 @@ const RegisterDriver = () => {
     carte_grise: null as File | null,
     assurance: null as File | null,
   });
+
+  // Vérifier le token d'invitation au chargement
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      console.log("🎟️ Token détecté:", token);
+      setInvitationToken(token);
+      verifyToken(token);
+    }
+  }, [searchParams]);
+
+  const verifyToken = async (token: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("invitation_tokens")
+        .select("*")
+        .eq("token", token)
+        .eq("used", false)
+        .single();
+
+      if (error || !data) {
+        console.error("❌ Token invalide:", error);
+        setIsTokenValid(false);
+        toast.error("Token invalide", {
+          description: "Ce lien d'inscription n'est pas valide ou a déjà été utilisé.",
+        });
+        return;
+      }
+
+      console.log("✅ Token valide:", data);
+      setIsTokenValid(true);
+      toast.success("Inscription test validée", {
+        description: "Vous bénéficiez de l'accès gratuit illimité à la plateforme.",
+      });
+    } catch (error) {
+      console.error("Erreur vérification token:", error);
+      setIsTokenValid(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -117,7 +159,6 @@ const RegisterDriver = () => {
 
       if (roleError) {
         console.error("❌ Erreur ajout rôle:", roleError);
-        // Si le rôle existe déjà, ce n'est pas grave
         if (!roleError.message.includes("duplicate")) {
           throw new Error("Impossible d'ajouter le rôle driver");
         }
@@ -125,7 +166,7 @@ const RegisterDriver = () => {
 
       console.log("✅ Rôle driver ajouté");
 
-      // Créer le profil chauffeur avec tous les champs obligatoires
+      // Créer le profil chauffeur
       console.log("🚗 Création profil chauffeur...");
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
@@ -155,12 +196,44 @@ const RegisterDriver = () => {
       const createdDriverId = driverData.id;
       setDriverId(createdDriverId);
 
+      // Si inscription avec token test, accorder accès gratuit illimité
+      if (invitationToken && isTokenValid) {
+        console.log("🎁 Octroi accès gratuit illimité pour test...");
+        const { error: freeAccessError } = await supabase
+          .from("drivers")
+          .update({
+            free_access_granted: true,
+            free_access_type: "unlimited",
+            free_access_start_date: new Date().toISOString(),
+            subscription_status: "active",
+          })
+          .eq("id", createdDriverId);
+
+        if (freeAccessError) {
+          console.error("❌ Erreur octroi accès gratuit:", freeAccessError);
+        } else {
+          console.log("✅ Accès gratuit illimité accordé");
+        }
+
+        // Marquer le token comme utilisé
+        const { error: tokenError } = await supabase
+          .from("invitation_tokens")
+          .update({
+            used: true,
+            used_by_driver_id: createdDriverId,
+            used_at: new Date().toISOString(),
+          })
+          .eq("token", invitationToken);
+
+        if (tokenError) {
+          console.error("❌ Erreur marquage token:", tokenError);
+        } else {
+          console.log("✅ Token marqué comme utilisé");
+        }
+      }
+
       toast.success("Compte créé avec succès !");
-      
-      // Attendre un peu avant de passer à l'étape 2
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log("✅ Passage à l'étape 2");
       setCurrentStep(2);
 
     } catch (error: any) {
@@ -221,7 +294,6 @@ const RegisterDriver = () => {
 
       const documentUrls: any = {};
 
-      // Upload chaque document
       if (documents.id_recto) {
         documentUrls.id_recto = await uploadDocument(documents.id_recto, 'id_recto');
       }
@@ -241,7 +313,6 @@ const RegisterDriver = () => {
         documentUrls.assurance = await uploadDocument(documents.assurance, 'assurance');
       }
 
-      // Mettre à jour le profil driver avec les URLs des documents
       const { error: updateError } = await supabase
         .from("drivers")
         .update({ documents: documentUrls })
@@ -262,11 +333,18 @@ const RegisterDriver = () => {
   };
 
   const handleStep3Submit = async () => {
+    // Si inscription avec token test, passer directement à la validation
+    if (invitationToken && isTokenValid) {
+      console.log("✅ Inscription test complétée, redirection...");
+      toast.success("Inscription complétée ! Votre dossier sera validé sous 24-48h.");
+      navigate("/driver-pending-validation");
+      return;
+    }
+
     setLoading(true);
     try {
       console.log("💳 Étape 3: Redirection vers paiement Stripe...");
 
-      // Créer une session de paiement Stripe
       const { data, error } = await supabase.functions.invoke("create-driver-subscription", {
         body: { driver_id: driverId },
       });
@@ -274,7 +352,6 @@ const RegisterDriver = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      // Rediriger vers Stripe Checkout
       window.location.href = data.url;
 
     } catch (error: any) {
@@ -332,11 +409,20 @@ const RegisterDriver = () => {
               </p>
             </div>
           </div>
+          
+          {invitationToken && isTokenValid && (
+            <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <p className="text-sm text-green-600 font-medium">
+                Inscription test - Accès gratuit illimité validé
+              </p>
+            </div>
+          )}
         </div>
 
         {renderStepIndicator()}
 
-        {/* Étape 1: Informations */}
+        {/* Étape 1 */}
         {currentStep === 1 && (
           <form onSubmit={handleStep1Submit} className="space-y-6">
             <div className="space-y-4">
@@ -430,193 +516,268 @@ const RegisterDriver = () => {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Création du compte...
                 </>
               ) : (
                 <>
                   Continuer
-                  <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                  <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
                 </>
               )}
             </Button>
           </form>
         )}
 
-        {/* Étape 2: Documents */}
+        {/* Étape 2 */}
         {currentStep === 2 && (
           <form onSubmit={handleStep2Submit} className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center space-x-2 mb-4">
                 <Checkbox
-                  id="passport"
+                  id="isPassport"
                   checked={isPassport}
                   onCheckedChange={(checked) => setIsPassport(checked as boolean)}
                 />
-                <label
-                  htmlFor="passport"
-                  className="text-sm font-medium text-white leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  J'ai un passeport (le verso n'est pas requis)
-                </label>
-              </div>
-
-              <div>
-                <Label className="text-white font-medium">Pièce d'identité - Recto *</Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("id_recto", e.target.files?.[0] || null)}
-                  required
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
-              </div>
-
-              <div>
-                <Label className="text-white font-medium">
-                  Pièce d'identité - Verso {isPassport && "(Optionnel)"}
-                  {!isPassport && " *"}
+                <Label htmlFor="isPassport" className="text-white">
+                  J'utilise un passeport au lieu d'une carte d'identité
                 </Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("id_verso", e.target.files?.[0] || null)}
-                  required={!isPassport}
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
               </div>
 
-              <div>
-                <Label className="text-white font-medium">Carte VTC - Recto *</Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("vtc_recto", e.target.files?.[0] || null)}
-                  required
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white font-medium">
+                    {isPassport ? "Passeport *" : "Carte d'identité recto *"}
+                  </Label>
+                  <div className="mt-2">
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <Upload className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-sm text-white">
+                        {documents.id_recto ? documents.id_recto.name : "Choisir un fichier"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("id_recto", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
 
-              <div>
-                <Label className="text-white font-medium">Carte VTC - Verso *</Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("vtc_verso", e.target.files?.[0] || null)}
-                  required
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
-              </div>
+                {!isPassport && (
+                  <div>
+                    <Label className="text-white font-medium">Carte d'identité verso *</Label>
+                    <div className="mt-2">
+                      <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                        <Upload className="w-5 h-5 mr-2 text-white" />
+                        <span className="text-sm text-white">
+                          {documents.id_verso ? documents.id_verso.name : "Choisir un fichier"}
+                        </span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*,.pdf"
+                          onChange={(e) => handleFileChange("id_verso", e.target.files?.[0] || null)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
 
-              <div>
-                <Label className="text-white font-medium">Carte grise du véhicule *</Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("carte_grise", e.target.files?.[0] || null)}
-                  required
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
-              </div>
+                <div>
+                  <Label className="text-white font-medium">Carte VTC recto *</Label>
+                  <div className="mt-2">
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <Upload className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-sm text-white">
+                        {documents.vtc_recto ? documents.vtc_recto.name : "Choisir un fichier"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("vtc_recto", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
 
-              <div>
-                <Label className="text-white font-medium">Attestation d'assurance *</Label>
-                <Input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => handleFileChange("assurance", e.target.files?.[0] || null)}
-                  required
-                  className="bg-white/10 border-white/20 text-white file:text-white"
-                />
+                <div>
+                  <Label className="text-white font-medium">Carte VTC verso *</Label>
+                  <div className="mt-2">
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <Upload className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-sm text-white">
+                        {documents.vtc_verso ? documents.vtc_verso.name : "Choisir un fichier"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("vtc_verso", e.target.files?.[0] || null)}
+                        />
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-white font-medium">Carte grise *</Label>
+                  <div className="mt-2">
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <Upload className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-sm text-white">
+                        {documents.carte_grise ? documents.carte_grise.name : "Choisir un fichier"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("carte_grise", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-white font-medium">Attestation d'assurance *</Label>
+                  <div className="mt-2">
+                    <label className="cursor-pointer flex items-center justify-center px-4 py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-primary/50 transition-colors bg-white/5">
+                      <Upload className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-sm text-white">
+                        {documents.assurance ? documents.assurance.name : "Choisir un fichier"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileChange("assurance", e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="flex gap-4">
               <Button
                 type="button"
-                onClick={() => setCurrentStep(1)}
                 variant="outline"
+                onClick={() => setCurrentStep(1)}
                 className="flex-1"
               >
-                <ArrowLeft className="w-5 h-5 mr-2" />
                 Retour
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Upload...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi...
                   </>
                 ) : (
-                  <>
-                    Continuer
-                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                  </>
+                  "Continuer"
                 )}
               </Button>
             </div>
           </form>
         )}
 
-        {/* Étape 3: Paiement */}
+        {/* Étape 3 */}
         {currentStep === 3 && (
           <div className="space-y-6">
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 text-center">
-              <CreditCard className="w-16 h-16 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Abonnement SoloCab</h2>
-              <p className="text-4xl font-bold text-primary mb-4">49,99 €</p>
-              <p className="text-muted-foreground mb-6">
-                Paiement unique pour l'inscription et l'accès à la plateforme
-              </p>
-              <ul className="text-left text-sm text-muted-foreground space-y-2 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Accès complet à la plateforme
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Gestion de vos clients et courses
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Génération automatique de devis et factures
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Support prioritaire
-                </li>
-              </ul>
+            <div className="text-center space-y-4">
+              {invitationToken && isTokenValid ? (
+                <>
+                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-12 h-12 text-green-500" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Inscription Test Validée</h2>
+                  <div className="bg-green-500/10 p-6 rounded-lg border border-green-500/20">
+                    <p className="text-xl font-bold text-green-400 mb-2">Accès Gratuit Illimité</p>
+                    <p className="text-muted-foreground">
+                      Vous faites partie des 50 chauffeurs test
+                    </p>
+                  </div>
+                  <ul className="text-left space-y-2 text-sm text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      Accès complet gratuit à la plateforme
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      Gestion de vos clients
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      Création de devis et factures
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      Sans commission sur vos courses
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      Validation sous 24-48h
+                    </li>
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CreditCard className="w-12 h-12 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Abonnement SoloCab</h2>
+                  <div className="bg-primary/10 p-6 rounded-lg border border-primary/20">
+                    <p className="text-4xl font-bold text-white mb-2">49,99€</p>
+                    <p className="text-muted-foreground">par mois</p>
+                  </div>
+                  <ul className="text-left space-y-2 text-sm text-gray-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      Accès complet à la plateforme
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      Gestion de vos clients
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      Création de devis et factures
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      Sans commission sur vos courses
+                    </li>
+                  </ul>
+                </>
+              )}
             </div>
 
             <div className="flex gap-4">
               <Button
                 type="button"
-                onClick={() => setCurrentStep(2)}
                 variant="outline"
+                onClick={() => setCurrentStep(2)}
                 className="flex-1"
               >
-                <ArrowLeft className="w-5 h-5 mr-2" />
                 Retour
               </Button>
               <Button
                 onClick={handleStep3Submit}
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-lg"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Redirection...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {invitationToken && isTokenValid ? "Finalisation..." : "Redirection..."}
                   </>
                 ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Procéder au paiement
-                  </>
+                  invitationToken && isTokenValid ? "Terminer l'inscription" : "Procéder au paiement"
                 )}
               </Button>
             </div>

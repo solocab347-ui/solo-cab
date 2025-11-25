@@ -19,6 +19,7 @@ import AdminDisputes from "@/components/admin/AdminDisputes";
 import AdminFeedback from "@/components/admin/AdminFeedback";
 import { AdminDataIntegrity } from "@/components/admin/AdminDataIntegrity";
 import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
+import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -81,6 +82,7 @@ const AdminDashboard = () => {
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
+    { id: "test-campaign", label: "Campagne Test", icon: Users },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
@@ -102,6 +104,8 @@ const AdminDashboard = () => {
         return <AdminSubscriptions />;
       case "free-access":
         return <AdminFreeAccess />;
+      case "test-campaign":
+        return <AdminInvitationTokens />;
       case "emails":
         return <AdminEmails />;
       case "assistant":

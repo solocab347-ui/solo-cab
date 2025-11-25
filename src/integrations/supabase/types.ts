@@ -970,6 +970,71 @@ export type Database = {
           },
         ]
       }
+      invitation_tokens: {
+        Row: {
+          created_at: string
+          created_by_admin_id: string | null
+          email: string | null
+          expires_at: string | null
+          id: string
+          token: string
+          used: boolean
+          used_at: string | null
+          used_by_driver_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_admin_id?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          token: string
+          used?: boolean
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_admin_id?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          token?: string
+          used?: boolean
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_tokens_created_by_admin_id_fkey"
+            columns: ["created_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
