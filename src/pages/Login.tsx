@@ -15,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
+  const [isResumeMode, setIsResumeMode] = useState(false);
 
   // Form states for login
   const [loginEmail, setLoginEmail] = useState("");
@@ -74,10 +75,24 @@ const Login = () => {
         .eq("user_id", data.user.id)
         .maybeSingle();
 
-      // Si inscription en cours, rediriger vers RegisterDriver
+      // MODE REPRISE: Si on est en mode reprise d'inscription
+      if (isResumeMode) {
+        if (driver && driver.registration_step) {
+          toast.success("Reprise de votre inscription");
+          navigate("/register-driver", { replace: true });
+          return;
+        } else {
+          toast.error("Aucune inscription en cours trouvée pour ce compte");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // MODE CONNEXION NORMALE: Si inscription en cours, proposer de reprendre
       if (driver && driver.registration_step) {
-        toast.success("Reprise de votre inscription");
-        navigate("/register-driver", { replace: true });
+        toast.info("Vous avez une inscription en cours. Utilisez 'Reprendre mon inscription'");
+        setLoading(false);
+        setIsResumeMode(true);
         return;
       }
 
@@ -114,13 +129,44 @@ const Login = () => {
           <Link to="/" className="inline-flex items-center gap-3 mb-8">
             <img src={logo} alt="SoloCab" className="w-16 h-16 object-contain" />
           </Link>
-          <h1 className="text-2xl font-bold mt-4">Connexion</h1>
+          <h1 className="text-2xl font-bold mt-4">
+            {isResumeMode ? "Reprendre mon inscription" : "Connexion"}
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Accédez à votre espace SoloCab
+            {isResumeMode 
+              ? "Connectez-vous pour continuer votre inscription chauffeur" 
+              : "Accédez à votre espace SoloCab"
+            }
           </p>
+          {isResumeMode && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setIsResumeMode(false);
+                setLoginEmail("");
+                setLoginPassword("");
+              }}
+              className="mt-3 text-sm"
+            >
+              ← Retour à la connexion normale
+            </Button>
+          )}
         </div>
 
-        <Card className="p-6 shadow-elegant">
+        <Card className={`p-6 shadow-elegant ${isResumeMode ? 'border-2 border-orange-500' : ''}`}>
+          {isResumeMode && (
+            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-900 font-medium flex items-center gap-2">
+                <span className="text-lg">🔄</span>
+                Mode reprise d'inscription activé
+              </p>
+              <p className="text-xs text-orange-700 mt-1">
+                Entrez vos identifiants pour reprendre votre inscription là où vous l'avez laissée
+              </p>
+            </div>
+          )}
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -160,48 +206,65 @@ const Login = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-premium hover:opacity-90 transition-opacity"
+              className={`w-full transition-opacity ${
+                isResumeMode 
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:opacity-90' 
+                  : 'bg-gradient-premium hover:opacity-90'
+              }`}
             >
               {loading ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connexion...</>
+              ) : isResumeMode ? (
+                "Reprendre mon inscription →"
               ) : (
                 "Se connecter"
               )}
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+          {!isResumeMode && (
+            <div className="mt-6 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Pas encore inscrit ?
+                  </span>
+                </div>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Pas encore inscrit ?
-                </span>
-              </div>
-            </div>
 
-            <div className="space-y-3">
-              <Link to="/register-driver" className="block">
+              <div className="space-y-3">
+                <Link to="/register-driver" className="block">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-blue-500/30 hover:bg-blue-500/10"
+                  >
+                    <Car className="w-4 h-4 mr-2" />
+                    S'inscrire comme chauffeur
+                  </Button>
+                </Link>
+
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-blue-500/30 hover:bg-blue-500/10"
+                  onClick={() => setIsResumeMode(true)}
+                  className="w-full border-orange-500/30 hover:bg-orange-500/10 text-orange-600 hover:text-orange-700"
                 >
-                  <Car className="w-4 h-4 mr-2" />
-                  S'inscrire comme chauffeur
+                  🔄 Reprendre mon inscription chauffeur
                 </Button>
-              </Link>
 
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <p className="text-xs text-muted-foreground text-center">
-                  <strong>Clients :</strong> Inscrivez-vous via le QR code de votre chauffeur ou 
-                  depuis la <Link to="/chauffeurs" className="text-primary hover:underline">vitrine publique</Link>
-                </p>
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground text-center">
+                    <strong>Clients :</strong> Inscrivez-vous via le QR code de votre chauffeur ou 
+                    depuis la <Link to="/chauffeurs" className="text-primary hover:underline">vitrine publique</Link>
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
