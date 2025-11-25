@@ -36,6 +36,27 @@ export const optimizeAnimations = () => {
   }
 };
 
+// Cleanup memory
+export const cleanupMemory = () => {
+  if (typeof (window as any).gc === 'function') {
+    (window as any).gc();
+  }
+};
+
+// Monitor memory usage
+export const monitorMemory = () => {
+  if ((performance as any).memory) {
+    const used = Math.round((performance as any).memory.usedJSHeapSize / 1048576);
+    const total = Math.round((performance as any).memory.totalJSHeapSize / 1048576);
+    const limit = Math.round((performance as any).memory.jsHeapSizeLimit / 1048576);
+    
+    if (used > limit * 0.9) {
+      console.warn(`⚠️ Mémoire critique: ${used}MB/${limit}MB`);
+      cleanupMemory();
+    }
+  }
+};
+
 // Initialiser les optimisations
 export const initPerformanceBoost = () => {
   optimizeScroll();

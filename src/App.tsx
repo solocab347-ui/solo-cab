@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,27 +9,32 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
+import { LoadingFallback } from "@/components/LoadingFallback";
+
+// Eager load public pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Chauffeurs from "./pages/Chauffeurs";
 import ChauffeurLanding from "./pages/ChauffeurLanding";
 import ChauffeurProfile from "./pages/ChauffeurProfile";
-import DriverDashboard from "./pages/DriverDashboard";
-import DriverCreateCourse from "./pages/DriverCreateCourse";
-import DriverPendingValidation from "./pages/DriverPendingValidation";
-import ClientDashboard from "./pages/ClientDashboard";
 import RegisterClientQR from "./pages/RegisterClientQR";
 import RegisterClientDriver from "./pages/RegisterClientDriver";
-import AdminDashboard from "./pages/AdminDashboard";
-import CreateCourse from "./pages/CreateCourse";
-import CreateTestAccounts from "./pages/CreateTestAccounts";
 import RegisterDriver from "./pages/RegisterDriver";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
-import Notifications from "./pages/Notifications";
-import ClientProfileView from "./pages/ClientProfileView";
-import RGPDData from "./pages/RGPDData";
-import InstallPWA from "./pages/InstallPWA";
 import NotFound from "./pages/NotFound";
+
+// Lazy load heavy dashboards and authenticated pages
+const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
+const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
+const DriverPendingValidation = lazy(() => import("./pages/DriverPendingValidation"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const CreateCourse = lazy(() => import("./pages/CreateCourse"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
+const RGPDData = lazy(() => import("./pages/RGPDData"));
+const InstallPWA = lazy(() => import("./pages/InstallPWA"));
+const CreateTestAccounts = lazy(() => import("./pages/CreateTestAccounts"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -50,18 +56,26 @@ const App = () => (
               <Route path="/register-driver" element={<RegisterDriver />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
               <Route path="/create-course" element={
-                <ErrorBoundary>
-                  <CreateCourse />
-                </ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ErrorBoundary>
+                    <CreateCourse />
+                  </ErrorBoundary>
+                </Suspense>
               } />
-              <Route path="/create-test-accounts" element={<CreateTestAccounts />} />
+              <Route path="/create-test-accounts" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CreateTestAccounts />
+                </Suspense>
+              } />
               <Route
                 path="/driver/create-course"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                    <ErrorBoundary>
-                      <DriverCreateCourse />
-                    </ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <DriverCreateCourse />
+                      </ErrorBoundary>
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -69,7 +83,9 @@ const App = () => (
                 path="/driver-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                    <DriverDashboard />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DriverDashboard />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -77,7 +93,9 @@ const App = () => (
                 path="/driver-pending-validation"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]}>
-                    <DriverPendingValidation />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DriverPendingValidation />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -85,7 +103,9 @@ const App = () => (
                 path="/client-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["client"]}>
-                    <ClientDashboard />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ClientDashboard />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -93,7 +113,9 @@ const App = () => (
                 path="/admin-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <AdminDashboard />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AdminDashboard />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -102,7 +124,9 @@ const App = () => (
                 path="/notifications"
                 element={
                   <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
-                    <Notifications />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Notifications />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -110,7 +134,9 @@ const App = () => (
                 path="/client-profile/:clientId"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
-                    <ClientProfileView />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ClientProfileView />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -119,11 +145,17 @@ const App = () => (
                 path="/rgpd-data"
                 element={
                   <ProtectedRoute allowedRoles={["driver", "client"]}>
-                    <RGPDData />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <RGPDData />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
-              <Route path="/install" element={<InstallPWA />} />
+              <Route path="/install" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <InstallPWA />
+                </Suspense>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
