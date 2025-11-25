@@ -256,6 +256,21 @@ Scannez le QR code pour réserver`
               Télécharger le PDF
             </Button>
           </div>
+
+          {/* Indicateur de scroll pour l'aperçu */}
+          {showPreview && (
+            <div className="mt-4 p-3 bg-[#1e3a5f]/10 rounded-lg border border-[#1e3a5f]/20 flex items-center justify-center gap-2 animate-bounce">
+              <svg className="w-5 h-5 text-[#1e3a5f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              <span className="text-sm font-medium text-[#1e3a5f]">
+                Faites défiler vers le bas pour voir l'aperçu complet
+              </span>
+              <svg className="w-5 h-5 text-[#1e3a5f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          )}
         </div>
       </Card>
 
