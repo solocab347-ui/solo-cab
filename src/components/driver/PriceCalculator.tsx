@@ -87,7 +87,10 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       if (clientsError) throw clientsError;
       setClients(clientsData || []);
 
-      toast.success("Prix calculé avec succès !");
+      toast.success("✅ Prix calculé avec succès !", {
+        description: `Distance: ${distanceKm} km • Durée: ${durationMinutes} min • Prix TTC: ${calculatedPrice.total_price.toFixed(2)}€`,
+        duration: 6000
+      });
     } catch (error: any) {
       console.error("Erreur calcul:", error);
       toast.error("Erreur lors du calcul du prix");
