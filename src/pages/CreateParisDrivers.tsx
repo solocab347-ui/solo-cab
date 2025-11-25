@@ -7,7 +7,40 @@ import { Loader2 } from "lucide-react";
 
 export default function CreateParisDrivers() {
   const [loading, setLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const handleCleanup = async () => {
+    setCleanupLoading(true);
+    setResult(null);
+
+    try {
+      console.log("🧹 Nettoyage des chauffeurs de test...");
+      
+      const { data, error } = await supabase.functions.invoke('cleanup-test-paris-drivers', {
+        body: {}
+      });
+
+      if (error) {
+        console.error("❌ Erreur:", error);
+        toast.error(`Erreur de nettoyage: ${error.message}`);
+        return;
+      }
+
+      console.log("✅ Nettoyage terminé:", data);
+      
+      if (data.success) {
+        toast.success(`${data.deleted} comptes de test supprimés !`);
+      } else {
+        toast.error("Erreur lors du nettoyage");
+      }
+    } catch (error: any) {
+      console.error("❌ Erreur:", error);
+      toast.error(error.message);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
 
   const handleCreateDrivers = async () => {
     setLoading(true);
@@ -61,21 +94,40 @@ export default function CreateParisDrivers() {
           </ol>
         </div>
 
-        <Button 
-          onClick={handleCreateDrivers} 
-          disabled={loading}
-          size="lg"
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Création en cours...
-            </>
-          ) : (
-            'Créer les 20 chauffeurs'
-          )}
-        </Button>
+        <div className="space-y-4">
+          <Button 
+            onClick={handleCleanup} 
+            disabled={cleanupLoading || loading}
+            size="lg"
+            variant="destructive"
+            className="w-full"
+          >
+            {cleanupLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Nettoyage en cours...
+              </>
+            ) : (
+              '🧹 Nettoyer les comptes de test existants'
+            )}
+          </Button>
+
+          <Button 
+            onClick={handleCreateDrivers} 
+            disabled={loading || cleanupLoading}
+            size="lg"
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Création en cours...
+              </>
+            ) : (
+              'Créer les 20 chauffeurs'
+            )}
+          </Button>
+        </div>
 
         {result && (
           <div className="mt-8 space-y-4">
