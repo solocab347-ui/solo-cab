@@ -4,6 +4,7 @@
  */
 
 import { toast } from "sonner";
+import { captureError } from "./sentry";
 
 export type ErrorType = "validation" | "network" | "auth" | "database" | "unknown";
 
@@ -89,6 +90,19 @@ export function handleError(error: any, context?: string): ErrorDetails {
 
   // Afficher le toast approprié
   toast.error(errorDetails.message);
+
+  // Envoyer à Sentry pour monitoring (sauf erreurs de validation)
+  if (errorDetails.type !== "validation" && errorDetails.originalError) {
+    captureError(
+      errorDetails.originalError,
+      {
+        type: errorDetails.type,
+        context: errorDetails.context,
+        message: errorDetails.message,
+      },
+      errorDetails.type === "auth" ? "warning" : "error"
+    );
+  }
 
   return errorDetails;
 }

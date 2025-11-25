@@ -1432,12 +1432,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <Users className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                       {course.passengers_count} passager(s)
                     </div>
-                    {course.payment_method_preference && (
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                        <span className="font-medium">Paiement préféré:</span>
-                        <Badge variant="outline" className="capitalize">{course.payment_method_preference}</Badge>
-                      </div>
-                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
