@@ -558,7 +558,7 @@ const RegisterDriver = () => {
             />
 
             <DocumentUpload
-              label="Kbis"
+              label="Kbis, SIREN et documents équivalents"
               file={documents.kbis}
               onChange={(file) => setDocuments({...documents, kbis: file})}
               required
@@ -612,13 +612,53 @@ const RegisterDriver = () => {
                   </p>
                 </div>
               ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <p className="text-lg font-semibold mb-2">
-                    Abonnement mensuel : 49,99 €
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Accès complet à toutes les fonctionnalités
-                  </p>
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-primary rounded-xl p-8 space-y-6">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold text-primary mb-2">
+                      49,99 €<span className="text-lg font-normal text-muted-foreground">/mois</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Abonnement mensuel sans engagement
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-6 text-left space-y-3">
+                    <p className="font-semibold text-lg mb-4">Accès complet incluant :</p>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Gestion illimitée de vos clients et courses</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Génération automatique de devis et factures</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Code QR personnalisé pour inscription clients</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Profil public sur la plateforme SoloCab</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Paiement en ligne sécurisé via Stripe</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Statistiques et suivi de votre activité</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Système de promotions pour vos clients</span>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">Support client dédié</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
