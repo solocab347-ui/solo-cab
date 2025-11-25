@@ -105,24 +105,33 @@ const RegisterDriver = () => {
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     console.log("🚀 Soumission formulaire étape 1");
-    console.log("📋 Données:", formData);
+    console.log("📋 Données du formulaire:", {
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      passwordLength: formData.password?.length || 0,
+      confirmPasswordLength: formData.confirmPassword?.length || 0
+    });
     
     // Validation avec Zod
     const validation = driverRegistrationSchema.safeParse(formData);
     
     if (!validation.success) {
-      console.error("❌ Erreur validation:", validation.error.errors);
-      // Afficher toutes les erreurs
+      console.error("❌ Erreur de validation Zod:", validation.error.errors);
+      // Afficher toutes les erreurs de validation
       validation.error.errors.forEach((err) => {
         const field = err.path[0];
-        toast.error(`Erreur ${field}: ${err.message}`);
+        toast.error(`${field}: ${err.message}`, {
+          duration: 5000
+        });
       });
       return;
     }
     
-    console.log("✅ Validation réussie");
+    console.log("✅ Validation réussie, démarrage inscription...");
 
     setLoading(true);
     try {
@@ -245,13 +254,30 @@ const RegisterDriver = () => {
         }
       }
 
-      toast.success("Compte créé avec succès !");
+      toast.success("Compte créé avec succès !", {
+        description: "Vous pouvez maintenant télécharger vos documents."
+      });
+      console.log("🎯 Passage à l'étape 2");
       await new Promise(resolve => setTimeout(resolve, 500));
       setCurrentStep(2);
 
     } catch (error: any) {
-      console.error("❌ Erreur étape 1:", error);
-      toast.error(error.message || "Erreur lors de la création du compte");
+      console.error("❌ Erreur complète étape 1:", error);
+      
+      let errorMessage = "Une erreur est survenue lors de l'inscription";
+      
+      if (error.message?.includes("already registered")) {
+        errorMessage = "Cette adresse email est déjà utilisée";
+      } else if (error.message?.includes("duplicate")) {
+        errorMessage = "Un compte existe déjà avec ces informations";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error("Erreur d'inscription", {
+        description: errorMessage,
+        duration: 5000
+      });
     } finally {
       setLoading(false);
     }
@@ -535,10 +561,6 @@ const RegisterDriver = () => {
               type="submit"
               disabled={loading}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-lg"
-              onClick={(e) => {
-                console.log("🖱️ Clic sur bouton Continuer");
-                // Le bouton type="submit" déclenchera handleStep1Submit via le form onSubmit
-              }}
             >
               {loading ? (
                 <>
