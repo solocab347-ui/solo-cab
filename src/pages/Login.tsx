@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const { signIn, user, userRole, loading: authLoading } = useAuth();
@@ -57,11 +58,35 @@ const Login = () => {
 
     setLoading(true);
     try {
+      // Se connecter
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error("Erreur de connexion");
+
+      // Vérifier s'il y a une inscription chauffeur en cours
+      const { data: driver } = await supabase
+        .from("drivers")
+        .select("id, registration_step")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      // Si inscription en cours, rediriger vers RegisterDriver
+      if (driver && driver.registration_step) {
+        toast.success("Reprise de votre inscription");
+        navigate("/register-driver", { replace: true });
+        return;
+      }
+
+      // Sinon continuer avec la connexion normale
       await signIn(loginEmail, loginPassword);
-      // La navigation est gérée dans signIn() - pas besoin de setLoading(false)
-      // car le composant sera démonté lors de la navigation
-    } catch (error) {
-      // Error handled in useAuth
+      // La navigation est gérée dans signIn()
+    } catch (error: any) {
+      console.error("Signin error:", error);
+      toast.error(error.message || "Email ou mot de passe incorrect");
       setLoading(false);
     }
   };
