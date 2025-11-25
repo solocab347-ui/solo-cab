@@ -89,38 +89,48 @@ const RegisterDriver = () => {
         },
       });
 
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+      if (signUpError) {
+        console.error("❌ Erreur signup:", signUpError);
+        throw signUpError;
+      }
+      if (!authData.user) {
+        console.error("❌ Pas d'utilisateur créé");
+        throw new Error("Erreur lors de la création du compte");
+      }
 
       console.log("✅ Compte créé:", authData.user.id);
-      setUserId(authData.user.id);
+      const createdUserId = authData.user.id;
+      setUserId(createdUserId);
 
       // Attendre que le profil soit créé
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("⏳ Attente création profil...");
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Attendre que les triggers de base se finalisent
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Ajouter le rôle driver AVANT de créer le profil driver
+      // Ajouter le rôle driver
+      console.log("👤 Ajout rôle driver...");
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
-          user_id: authData.user.id,
+          user_id: createdUserId,
           role: "driver",
         });
 
       if (roleError) {
         console.error("❌ Erreur ajout rôle:", roleError);
-        throw new Error("Impossible d'ajouter le rôle driver");
+        // Si le rôle existe déjà, ce n'est pas grave
+        if (!roleError.message.includes("duplicate")) {
+          throw new Error("Impossible d'ajouter le rôle driver");
+        }
       }
 
       console.log("✅ Rôle driver ajouté");
 
       // Créer le profil chauffeur avec tous les champs obligatoires
+      console.log("🚗 Création profil chauffeur...");
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
-          user_id: authData.user.id,
+          user_id: createdUserId,
           license_number: "PENDING",
           vehicle_model: "PENDING",
           status: "pending",
@@ -142,9 +152,15 @@ const RegisterDriver = () => {
       }
 
       console.log("✅ Profil chauffeur créé:", driverData.id);
-      setDriverId(driverData.id);
+      const createdDriverId = driverData.id;
+      setDriverId(createdDriverId);
 
       toast.success("Compte créé avec succès !");
+      
+      // Attendre un peu avant de passer à l'étape 2
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log("✅ Passage à l'étape 2");
       setCurrentStep(2);
 
     } catch (error: any) {
