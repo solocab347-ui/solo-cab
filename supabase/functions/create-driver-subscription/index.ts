@@ -61,23 +61,58 @@ serve(async (req) => {
       console.log("[CREATE-DRIVER-SUBSCRIPTION] Created new customer:", customerId);
     }
 
-    // Create checkout session for one-time payment of 49.99€
+    // Create Stripe recurring subscription product and price
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] Creating/fetching recurring price");
+    
+    // Check if product already exists
+    const products = await stripe.products.list({ limit: 1 });
+    let productId: string;
+    
+    if (products.data.length > 0 && products.data[0].name === "Abonnement SoloCab - Chauffeur VTC") {
+      productId = products.data[0].id;
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] Using existing product:", productId);
+    } else {
+      // Create product
+      const product = await stripe.products.create({
+        name: "Abonnement SoloCab - Chauffeur VTC",
+        description: "Abonnement mensuel à la plateforme SoloCab pour chauffeurs VTC",
+      });
+      productId = product.id;
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] Created new product:", productId);
+    }
+    
+    // Check if recurring price exists for this product
+    const prices = await stripe.prices.list({ product: productId, limit: 10 });
+    let priceId: string | undefined = prices.data.find(
+      (p: any) => p.recurring?.interval === "month" && p.unit_amount === 4999
+    )?.id;
+    
+    if (!priceId) {
+      // Create recurring monthly price
+      const price = await stripe.prices.create({
+        product: productId,
+        unit_amount: 4999, // 49.99€
+        currency: "eur",
+        recurring: {
+          interval: "month",
+        },
+      });
+      priceId = price.id;
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] Created new recurring price:", priceId);
+    } else {
+      console.log("[CREATE-DRIVER-SUBSCRIPTION] Using existing recurring price:", priceId);
+    }
+
+    // Create checkout session for SUBSCRIPTION (not one-time payment)
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
         {
-          price_data: {
-            currency: "eur",
-            unit_amount: 4999, // 49.99€
-            product_data: {
-              name: "Abonnement SoloCab - Chauffeur VTC",
-              description: "Inscription et abonnement mensuel à la plateforme SoloCab",
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
-      mode: "payment",
+      mode: "subscription",
       success_url: `${req.headers.get("origin")}/registration-success?driver_id=${driver_id}`,
       cancel_url: `${req.headers.get("origin")}/register-driver`,
       metadata: {

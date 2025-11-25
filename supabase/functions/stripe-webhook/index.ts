@@ -125,6 +125,17 @@ serve(async (req) => {
 
         console.log("[STRIPE-WEBHOOK] ✅ Driver registration payment validated");
 
+        // Envoyer l'email "dossier reçu en attente de validation"
+        try {
+          await supabaseClient.functions.invoke("send-driver-registration-email", {
+            body: { driver_id: driverId }
+          });
+          console.log("[STRIPE-WEBHOOK] Registration email sent");
+        } catch (emailError) {
+          console.error("[STRIPE-WEBHOOK] Error sending registration email:", emailError);
+          // Ne pas bloquer le webhook si l'email échoue
+        }
+
         return new Response(JSON.stringify({ received: true, type: "driver_registration" }), {
           headers: { "Content-Type": "application/json" },
           status: 200,
