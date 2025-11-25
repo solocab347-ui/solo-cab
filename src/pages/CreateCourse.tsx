@@ -352,7 +352,6 @@ const CreateCourse = () => {
                     }}
                     placeholder="Ex: 15 Rue de la Paix, 75002 Paris"
                     disabled={useAddressPickup}
-                    className="scroll-mt-24"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Tapez l'adresse complète avec ville et code postal
@@ -385,7 +384,6 @@ const CreateCourse = () => {
                     }}
                     placeholder="Ex: Aéroport Charles de Gaulle, 95700 Roissy"
                     disabled={useAddressDestination}
-                    className="scroll-mt-24"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Sélectionnez l'adresse dans la liste déroulante
@@ -500,7 +498,7 @@ const CreateCourse = () => {
                 Mode de paiement préféré *
               </Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="scroll-mt-24">
+                <SelectTrigger>
                   <SelectValue placeholder="Sélectionnez le mode de paiement" />
                 </SelectTrigger>
                 <SelectContent className="z-[100000]" position="popper" sideOffset={5}>
