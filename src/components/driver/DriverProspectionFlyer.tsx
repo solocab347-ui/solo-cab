@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Download, Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Download, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
@@ -13,18 +14,18 @@ interface DriverProspectionFlyerProps {
 }
 
 const DriverProspectionFlyer = ({ qrCode, driverProfile }: DriverProspectionFlyerProps) => {
+  const [companyName, setCompanyName] = useState(driverProfile?.driver?.company_name || "");
   const [presentation, setPresentation] = useState(
-    `🚗 ${driverProfile?.full_name || 'Chauffeur VTC Professionnel'}
+    `Service VTC de qualité professionnelle
 
-📞 Réservez dès maintenant !
-✨ Service de qualité
-🎯 Ponctualité garantie
-💼 Véhicule premium
+• Ponctualité garantie
+• Véhicule premium
+• Chauffeur expérimenté
+• Disponible 24/7
 
-Scannez le QR code pour réserver facilement !`
+Scannez le QR code pour réserver`
   );
   const [showPreview, setShowPreview] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = () => {
     if (!qrCode?.qr_code_image) {
@@ -52,51 +53,68 @@ Scannez le QR code pour réserver facilement !`
         { x: a6Width, y: a6Height } // Bas droite
       ];
 
-      positions.forEach((pos, index) => {
-        // Bordure de la carte
-        pdf.setDrawColor(200, 200, 200);
-        pdf.rect(pos.x + 2, pos.y + 2, a6Width - 4, a6Height - 4);
+      positions.forEach((pos) => {
+        const centerX = pos.x + a6Width / 2;
+        
+        // Bordure élégante
+        pdf.setDrawColor(30, 58, 95);
+        pdf.setLineWidth(0.5);
+        pdf.rect(pos.x + 3, pos.y + 3, a6Width - 6, a6Height - 6);
 
-        // Logo SoloCab (si disponible)
-        pdf.setFontSize(20);
-        pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(30, 58, 95); // Couleur SoloCab
-        pdf.text("SoloCab", pos.x + a6Width / 2, pos.y + 15, { align: "center" });
+        let currentY = pos.y + 15;
 
-        // Nom du chauffeur
-        pdf.setFontSize(14);
+        // Logo SoloCab
+        pdf.setFontSize(24);
         pdf.setFont("helvetica", "bold");
-        pdf.setTextColor(0, 0, 0);
-        const driverName = driverProfile?.full_name || "Chauffeur VTC";
-        pdf.text(driverName, pos.x + a6Width / 2, pos.y + 25, { align: "center" });
+        pdf.setTextColor(30, 58, 95);
+        pdf.text("SoloCab", centerX, currentY, { align: "center" });
+        currentY += 10;
+
+        // Nom de l'entreprise (si renseigné)
+        if (companyName.trim()) {
+          pdf.setFontSize(12);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(companyName, centerX, currentY, { 
+            align: "center",
+            maxWidth: a6Width - 10
+          });
+          currentY += 8;
+        }
+
+        // Titre "Chauffeur VTC de proximité"
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(60, 60, 60);
+        pdf.text("Chauffeur VTC de proximité", centerX, currentY, { align: "center" });
+        currentY += 12;
 
         // QR Code centré
-        const qrSize = 60;
-        const qrX = pos.x + (a6Width - qrSize) / 2;
-        const qrY = pos.y + 35;
-        pdf.addImage(qrCode.qr_code_image, "PNG", qrX, qrY, qrSize, qrSize);
+        const qrSize = 55;
+        const qrX = centerX - (qrSize / 2);
+        pdf.addImage(qrCode.qr_code_image, "PNG", qrX, currentY, qrSize, qrSize);
+        currentY += qrSize + 10;
 
         // Texte de présentation
-        pdf.setFontSize(9);
+        pdf.setFontSize(8);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         
         const lines = presentation.split('\n').filter(line => line.trim());
-        let textY = qrY + qrSize + 8;
         
         lines.forEach(line => {
-          if (textY < pos.y + a6Height - 5) {
-            pdf.text(line, pos.x + a6Width / 2, textY, { 
+          if (currentY < pos.y + a6Height - 8) {
+            pdf.text(line, centerX, currentY, { 
               align: "center",
-              maxWidth: a6Width - 10
+              maxWidth: a6Width - 12
             });
-            textY += 5;
+            currentY += 4.5;
           }
         });
       });
 
       // Télécharger le PDF
-      const fileName = `Flyers-SoloCab-${driverProfile?.full_name?.replace(/\s+/g, '-') || 'Driver'}.pdf`;
+      const fileName = `Flyers-SoloCab-${companyName.replace(/\s+/g, '-') || 'VTC'}.pdf`;
       pdf.save(fileName);
       toast.success("PDF généré avec succès !");
     } catch (error) {
@@ -118,40 +136,63 @@ Scannez le QR code pour réserver facilement !`
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10">
-        <h2 className="text-2xl font-bold mb-2">Générateur de Flyers de Prospection</h2>
-        <p className="text-muted-foreground mb-6">
-          Créez un document A4 avec 4 flyers A6 identiques pour promouvoir vos services
-        </p>
+      <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/5 to-[#1e3a5f]/10 border-[#1e3a5f]/20">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2 text-[#1e3a5f]">Générateur de Flyers Professionnels</h2>
+          <p className="text-muted-foreground">
+            Créez un document A4 avec 4 flyers A6 identiques pour promouvoir vos services VTC
+          </p>
+        </div>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="presentation">Texte de présentation</Label>
+        <div className="space-y-6">
+          {/* Nom de l'entreprise */}
+          <div className="space-y-2">
+            <Label htmlFor="companyName" className="text-sm font-semibold">
+              Nom de l'entreprise (optionnel)
+            </Label>
+            <Input
+              id="companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Ex: VTC Premium Paris"
+              className="bg-background"
+            />
+            <p className="text-xs text-muted-foreground">
+              Si renseigné, le nom de votre entreprise apparaîtra sur le flyer
+            </p>
+          </div>
+
+          {/* Texte de présentation */}
+          <div className="space-y-2">
+            <Label htmlFor="presentation" className="text-sm font-semibold">
+              Texte de présentation
+            </Label>
             <Textarea
               id="presentation"
               value={presentation}
               onChange={(e) => setPresentation(e.target.value)}
-              rows={8}
+              rows={7}
               placeholder="Personnalisez votre message..."
-              className="font-mono text-sm"
+              className="bg-background font-sans text-sm"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Conseil: Restez concis, 4-5 lignes maximum pour un meilleur rendu
+            <p className="text-xs text-muted-foreground">
+              💡 Conseil: Restez concis, 5-6 lignes maximum pour un rendu optimal
             </p>
           </div>
 
-          <div className="flex gap-3">
+          {/* Boutons d'action */}
+          <div className="flex gap-3 pt-2">
             <Button
               onClick={() => setShowPreview(!showPreview)}
               variant="outline"
-              className="flex-1"
+              className="flex-1 border-[#1e3a5f]/20 hover:bg-[#1e3a5f]/5"
             >
-              <Eye className="w-4 h-4 mr-2" />
-              {showPreview ? "Masquer" : "Voir"} l'aperçu
+              {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+              {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
             </Button>
             <Button
               onClick={generatePDF}
-              className="flex-1 bg-primary hover:bg-primary/90"
+              className="flex-1 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
             >
               <Download className="w-4 h-4 mr-2" />
               Télécharger le PDF
@@ -160,57 +201,72 @@ Scannez le QR code pour réserver facilement !`
         </div>
       </Card>
 
-      {/* Aperçu */}
+      {/* Aperçu professionnel */}
       {showPreview && (
-        <Card className="p-6 bg-background">
-          <h3 className="font-bold mb-4 text-lg">Aperçu du flyer (Format A4 avec 4 × A6)</h3>
+        <Card className="p-6 bg-background border-[#1e3a5f]/20">
+          <h3 className="font-bold mb-4 text-lg text-[#1e3a5f]">Aperçu du document (Format A4 avec 4 × A6)</h3>
           <div 
-            ref={previewRef}
-            className="bg-white border-2 border-dashed border-border rounded-lg"
+            className="bg-white border-2 border-[#1e3a5f]/20 rounded-lg shadow-lg mx-auto"
             style={{
               width: "100%",
-              maxWidth: "794px", // A4 width in pixels at 96 DPI
-              aspectRatio: "210/297",
-              margin: "0 auto"
+              maxWidth: "210mm",
+              aspectRatio: "210/297"
             }}
           >
             <div className="grid grid-cols-2 gap-0 h-full">
               {[0, 1, 2, 3].map((index) => (
                 <div 
                   key={index}
-                  className="border border-gray-300 p-4 flex flex-col items-center justify-between"
+                  className="border border-[#1e3a5f]/30 p-3 flex flex-col items-center justify-start"
                   style={{ aspectRatio: "105/148.5" }}
                 >
-                  {/* Header */}
-                  <div className="text-center space-y-2">
-                    <div className="text-xl font-bold text-[#1e3a5f]">SoloCab</div>
-                    <div className="text-sm font-semibold">
-                      {driverProfile?.full_name || "Chauffeur VTC"}
+                  <div className="flex flex-col items-center justify-start w-full h-full space-y-2 pt-2">
+                    {/* Logo SoloCab */}
+                    <div className="text-center">
+                      <div className="text-lg md:text-2xl font-bold text-[#1e3a5f]">SoloCab</div>
                     </div>
-                  </div>
 
-                  {/* QR Code */}
-                  <div className="flex-shrink-0 bg-white p-2 rounded-lg shadow-sm">
-                    <img 
-                      src={qrCode.qr_code_image} 
-                      alt="QR Code" 
-                      className="w-24 h-24 md:w-32 md:h-32"
-                    />
-                  </div>
+                    {/* Nom de l'entreprise si renseigné */}
+                    {companyName.trim() && (
+                      <div className="text-center px-2">
+                        <div className="text-xs md:text-sm font-bold text-gray-900 line-clamp-2">
+                          {companyName}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Présentation */}
-                  <div className="text-center">
-                    <pre className="text-[8px] md:text-xs whitespace-pre-wrap font-sans text-gray-700 leading-tight">
-                      {presentation}
-                    </pre>
+                    {/* Titre */}
+                    <div className="text-center">
+                      <div className="text-[10px] md:text-xs text-gray-600">
+                        Chauffeur VTC de proximité
+                      </div>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="flex-shrink-0 my-2">
+                      <img 
+                        src={qrCode.qr_code_image} 
+                        alt="QR Code" 
+                        className="w-20 h-20 md:w-24 md:h-24"
+                      />
+                    </div>
+
+                    {/* Texte de présentation */}
+                    <div className="text-center px-2 flex-1">
+                      <div className="text-[8px] md:text-[10px] whitespace-pre-wrap text-gray-700 leading-snug">
+                        {presentation}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            💡 Imprimez ce document et découpez les 4 flyers pour les distribuer à vos clients
-          </p>
+          <div className="mt-4 p-4 bg-[#1e3a5f]/5 rounded-lg">
+            <p className="text-sm text-muted-foreground text-center">
+              💡 <strong>Astuce d'impression :</strong> Imprimez ce document en A4, puis découpez les 4 flyers pour les distribuer à vos clients potentiels
+            </p>
+          </div>
         </Card>
       )}
     </div>
