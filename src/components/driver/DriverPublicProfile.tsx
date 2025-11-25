@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Globe, MapPin, AlertCircle } from "lucide-react";
-import { ProfilePhotoUpload } from "./ProfilePhotoUpload";
 import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
@@ -307,8 +306,8 @@ export const DriverPublicProfile = memo(({
 
         <VehiclePhotosManager 
           driverId={driverProfile?.driver?.id}
-          currentVehiclePhotos={vehiclePhotos || []}
-          currentGalleryPhotos={galleryPhotos || []}
+          currentVehiclePhotos={vehiclePhotos}
+          currentGalleryPhotos={galleryPhotos}
           onPhotosUpdate={onVehiclePhotosUpdate}
         />
       </div>
