@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Car, CheckCircle, Loader2, Eye, EyeOff, ArrowLeft, Upload, FileText, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
 
 // Validation schema
 const registrationSchema = z.object({
@@ -44,8 +45,10 @@ type Documents = {
 const RegisterDriver = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingResume, setLoadingResume] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userId, setUserId] = useState<string>("");
@@ -53,6 +56,7 @@ const RegisterDriver = () => {
   const [invitationToken, setInvitationToken] = useState<string>("");
   const [isTokenValid, setIsTokenValid] = useState<boolean>(false);
   const [isPassport, setIsPassport] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -73,13 +77,69 @@ const RegisterDriver = () => {
     vehicle_insurance: null
   });
 
+  // Vérifier la reprise d'inscription au chargement
   useEffect(() => {
-    const token = searchParams.get("token");
-    if (token) {
-      setInvitationToken(token);
-      checkToken(token);
-    }
-  }, [searchParams]);
+    const checkResumeRegistration = async () => {
+      try {
+        // Vérifier token invitation
+        const token = searchParams.get("token");
+        if (token) {
+          setInvitationToken(token);
+          await checkToken(token);
+        }
+
+        // Si user connecté, vérifier inscription en cours
+        if (user) {
+          console.log("🔄 Vérification inscription en cours pour:", user.id);
+          
+          const { data: driver, error } = await supabase
+            .from("drivers")
+            .select("id, registration_step, registration_data")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (error) {
+            console.error("Erreur vérification driver:", error);
+            setLoadingResume(false);
+            return;
+          }
+
+          // Si pas de driver ou inscription complète, pas de reprise
+          if (!driver || !driver.registration_step) {
+            console.log("✅ Pas d'inscription en cours");
+            setLoadingResume(false);
+            return;
+          }
+
+          // Reprendre l'inscription
+          console.log("📥 Reprise inscription étape:", driver.registration_step);
+          setIsResuming(true);
+          setUserId(user.id);
+          setDriverId(driver.id);
+          
+          // Charger les données sauvegardées
+          if (driver.registration_data) {
+            const data = driver.registration_data as any;
+            if (data.formData) {
+              setFormData(data.formData);
+            }
+            if (data.isPassport !== undefined) {
+              setIsPassport(data.isPassport);
+            }
+          }
+
+          setCurrentStep(driver.registration_step);
+          toast.success("Reprise de votre inscription");
+        }
+      } catch (error) {
+        console.error("Erreur reprise:", error);
+      } finally {
+        setLoadingResume(false);
+      }
+    };
+
+    checkResumeRegistration();
+  }, [user, searchParams]);
 
   const checkToken = async (token: string) => {
     try {
@@ -234,6 +294,21 @@ const RegisterDriver = () => {
       console.log("✅ Profil driver créé:", driverData.id);
       setDriverId(driverData.id);
 
+      // Sauvegarder la progression (étape 1 complète)
+      await supabase
+        .from("drivers")
+        .update({
+          registration_step: 1,
+          registration_data: {
+            formData: {
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone
+            }
+          }
+        })
+        .eq("id", driverData.id);
+
       // Grant free access if token valid
       if (invitationToken && isTokenValid) {
         console.log("🎁 Attribution accès gratuit...");
@@ -338,11 +413,21 @@ const RegisterDriver = () => {
         }
       }
 
-      // Update driver with documents
+      // Update driver with documents et progression
       const { error: updateError } = await supabase
         .from("drivers")
         .update({
-          documents: urls
+          documents: urls,
+          registration_step: 2,
+          registration_data: {
+            formData: {
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone
+            },
+            isPassport,
+            documentsUploaded: true
+          }
         })
         .eq("id", driverId);
 
@@ -367,8 +452,25 @@ const RegisterDriver = () => {
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Sauvegarder la progression (étape 3 - en attente paiement)
+    await supabase
+      .from("drivers")
+      .update({
+        registration_step: 3
+      })
+      .eq("id", driverId);
+
     // If free access via token, skip payment
     if (invitationToken && isTokenValid) {
+      // Inscription complète - supprimer la progression
+      await supabase
+        .from("drivers")
+        .update({
+          registration_step: null,
+          registration_data: null
+        })
+        .eq("id", driverId);
+      
       navigate("/registration-success");
       return;
     }
@@ -376,12 +478,35 @@ const RegisterDriver = () => {
     // Otherwise redirect to Stripe
     toast.info("Redirection vers le paiement...");
     // TODO: Implement Stripe checkout
+    // Après paiement, mettre registration_step à null
     navigate("/registration-success");
   };
+
+  // Afficher un loader pendant la vérification de reprise
+  if (loadingResume) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Vérification de votre inscription...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl p-8">
+        {isResuming && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900 font-medium">
+              ✅ Reprise de votre inscription en cours
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Vous pouvez continuer là où vous vous êtes arrêté
+            </p>
+          </div>
+        )}
         <div className="flex items-center justify-center mb-8">
           <Car className="h-12 w-12 text-primary mr-3" />
           <h1 className="text-3xl font-bold">Inscription Chauffeur</h1>

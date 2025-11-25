@@ -656,6 +656,8 @@ export type Database = {
           public_profile_enabled: boolean | null
           quote_counter: number | null
           rating: number | null
+          registration_data: Json | null
+          registration_step: number | null
           reservation_counter: number | null
           service_description: string | null
           services_offered: string[] | null
@@ -714,6 +716,8 @@ export type Database = {
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
           rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
@@ -772,6 +776,8 @@ export type Database = {
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
           rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
           reservation_counter?: number | null
           service_description?: string | null
           services_offered?: string[] | null
