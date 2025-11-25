@@ -213,12 +213,18 @@ const DriverDashboard = () => {
   };
 
   const handleUpdateProfile = async () => {
-    if (!driverProfile?.driver?.id || !updateProfile) return;
+    if (!driverProfile?.driver?.id || !updateProfile) {
+      toast.error("Impossible d'enregistrer : profil non chargé");
+      return;
+    }
 
     setLoading(true);
+    
     try {
-      // Sauvegarder le profil avec TOUTES les données y compris les photos
-      await updateProfile({
+      console.log("🔄 Début de la sauvegarde du profil...");
+      
+      // 1. Sauvegarder les données du driver
+      const driverUpdates = {
         public_profile_enabled: publicProfileEnabled,
         show_phone: showPhone,
         show_email: showEmail,
@@ -248,58 +254,45 @@ const DriverDashboard = () => {
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
-      });
+        card_photo_url: cardPhotoUrl, // Ajouter la photo de carte ici aussi
+      };
 
-      // Sauvegarder aussi les photos dans les tables profiles et drivers
-      if (user?.id) {
-        const profileUpdates: any = {};
-        const driverUpdates: any = {};
+      console.log("📝 Mise à jour de la table drivers...");
+      await updateProfile(driverUpdates);
+
+      // 2. Sauvegarder la photo de profil dans profiles (si elle existe)
+      if (user?.id && profilePhotoUrl) {
+        console.log("📝 Mise à jour de la photo de profil...");
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ profile_photo_url: profilePhotoUrl })
+          .eq('id', user.id);
         
-        if (profilePhotoUrl) {
-          profileUpdates.profile_photo_url = profilePhotoUrl;
-        }
-        
-        if (cardPhotoUrl) {
-          driverUpdates.card_photo_url = cardPhotoUrl;
-        }
-        
-        // Mettre à jour les photos dans profiles
-        if (Object.keys(profileUpdates).length > 0) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update(profileUpdates)
-            .eq('id', user.id);
-          
-          if (profileError) {
-            console.error("Erreur sauvegarde photo profil:", profileError);
-          }
-        }
-        
-        // Mettre à jour la photo de carte dans drivers
-        if (Object.keys(driverUpdates).length > 0) {
-          const { error: driverError } = await supabase
-            .from('drivers')
-            .update(driverUpdates)
-            .eq('user_id', user.id);
-          
-          if (driverError) {
-            console.error("Erreur sauvegarde photo carte:", driverError);
-          }
+        if (profileError) {
+          console.error("❌ Erreur sauvegarde photo profil:", profileError);
+          throw profileError;
         }
       }
 
-      // Invalider le cache pour forcer le rafraîchissement
-      queryClient.invalidateQueries({ queryKey: ['driver-profile', user?.id] });
+      // 3. Invalider tous les caches pour forcer le rafraîchissement
+      console.log("🔄 Invalidation des caches...");
+      await queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ['driver-profile', user?.id] });
       
-      toast.success("✅ Modifications enregistrées avec succès !", {
-        description: activeTab === "profile" 
-          ? "Votre profil public a été mis à jour" 
-          : "Vos paramètres ont été sauvegardés",
-        duration: 6000
+      console.log("✅ Profil sauvegardé avec succès !");
+      
+      // 4. Afficher le toast de confirmation
+      toast.success("✅ Profil enregistré avec succès !", {
+        description: "Toutes vos modifications ont été sauvegardées",
+        duration: 5000,
       });
+      
     } catch (error: any) {
-      console.error("Error saving profile:", error);
-      toast.error("Erreur lors de la sauvegarde");
+      console.error("❌ Erreur lors de la sauvegarde:", error);
+      toast.error("❌ Erreur lors de l'enregistrement", {
+        description: error.message || "Veuillez réessayer",
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
