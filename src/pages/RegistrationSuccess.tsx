@@ -16,64 +16,101 @@ const RegistrationSuccess = () => {
     const updateDriverPaymentStatus = async () => {
       if (!driverId) {
         toast.error("Driver ID manquant");
-        setLoading(false);
+        navigate("/login");
         return;
       }
 
+      // Si c'est un accès gratuit via token, pas besoin de vérifier Stripe
+      const isTokenAccess = searchParams.get("token") === "true";
+
       try {
-        // Mettre à jour le statut de paiement du driver
-        const { error } = await supabase
+        // Vérifier que le driver existe et a les bons accès
+        const { data: driver, error: driverCheckError } = await supabase
           .from("drivers")
-          .update({ subscription_paid: true })
-          .eq("id", driverId);
-
-        if (error) throw error;
-
-        console.log("✅ Paiement validé pour le driver:", driverId);
-        
-        // Récupérer les infos du driver pour l'email
-        const { data: driverData, error: driverError } = await supabase
-          .from("drivers")
-          .select(`
-            id,
-            profiles:profiles!inner(full_name, email)
-          `)
+          .select("id, subscription_paid, free_access_granted, user_id")
           .eq("id", driverId)
           .single();
 
-        if (driverError) {
-          console.error("❌ Erreur récupération driver:", driverError);
+        if (driverCheckError || !driver) {
+          toast.error("Driver introuvable");
+          navigate("/login");
+          return;
         }
 
-        // Envoyer l'email de bienvenue au chauffeur
-        if (driverData?.profiles?.email) {
-          try {
+        // Si accès gratuit via token, tout est déjà configuré
+        if (isTokenAccess && driver.free_access_granted) {
+          console.log("✅ Accès gratuit validé pour le driver:", driverId);
+          // Récupérer infos pour email
+          const { data: driverData } = await supabase
+            .from("drivers")
+            .select(`profiles:profiles!inner(full_name, email)`)
+            .eq("id", driverId)
+            .single();
+
+          if (driverData?.profiles?.email) {
             await supabase.functions.invoke("send-email", {
               body: {
                 to: driverData.profiles.email,
                 type: "driver_welcome",
-                data: {
-                  driverName: driverData.profiles.full_name,
-                },
-              },
-            });
-            console.log("✅ Email de bienvenue envoyé au chauffeur");
-          } catch (emailErr) {
-            console.error("⚠️ Erreur envoi email chauffeur (non bloquant):", emailErr);
+                data: { driverName: driverData.profiles.full_name }
+              }
+            }).catch(console.error);
           }
+
+          toast.success("Inscription complétée avec accès gratuit !");
+          setLoading(false);
+          return;
+        }
+
+        // SINON : Vérifier que c'est bien un retour Stripe valide
+        // Note: Le webhook Stripe a déjà mis à jour subscription_paid=true
+        // On vérifie juste que c'est le cas
+        if (!driver.subscription_paid) {
+          toast.error("Paiement non confirmé. Veuillez contacter le support.");
+          navigate("/login");
+          return;
+        }
+
+        console.log("✅ Paiement Stripe validé pour le driver:", driverId);
+        
+        // Nettoyer la progression d'inscription
+        await supabase
+          .from("drivers")
+          .update({
+            registration_step: null,
+            registration_data: null
+          })
+          .eq("id", driverId);
+
+        // Récupérer infos pour email
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select(`profiles:profiles!inner(full_name, email)`)
+          .eq("id", driverId)
+          .single();
+
+        if (driverData?.profiles?.email) {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: driverData.profiles.email,
+              type: "driver_welcome",
+              data: { driverName: driverData.profiles.full_name }
+            }
+          }).catch(console.error);
         }
 
         toast.success("Inscription terminée avec succès !");
       } catch (error: any) {
-        console.error("❌ Erreur mise à jour paiement:", error);
-        toast.error("Erreur lors de la validation du paiement");
+        console.error("❌ Erreur validation:", error);
+        toast.error("Erreur lors de la validation");
+        navigate("/login");
       } finally {
         setLoading(false);
       }
     };
 
     updateDriverPaymentStatus();
-  }, [driverId]);
+  }, [driverId, searchParams, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0f1e35] to-[#1a2942] flex items-center justify-center p-4">
