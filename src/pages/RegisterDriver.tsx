@@ -141,6 +141,7 @@ const RegisterDriver = () => {
           description: "Un compte existe déjà avec cet email. Veuillez vous connecter.",
           duration: 6000
         });
+        setLoading(false);
         return;
       }
       
@@ -174,6 +175,7 @@ const RegisterDriver = () => {
             duration: 6000
           });
         }
+        setLoading(false);
         return;
       }
       
@@ -183,6 +185,7 @@ const RegisterDriver = () => {
           description: "Impossible de créer le compte. Réessayez.",
           duration: 6000
         });
+        setLoading(false);
         return;
       }
 
