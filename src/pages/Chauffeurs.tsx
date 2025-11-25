@@ -44,6 +44,11 @@ const Chauffeurs = () => {
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Scroll en haut au chargement de la page
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+  
   // Pagination avec 20 chauffeurs par page
   const {
     paginatedData: paginatedDrivers,
