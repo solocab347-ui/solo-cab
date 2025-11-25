@@ -17,6 +17,7 @@ import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequest
 import AdminDisputes from "@/components/admin/AdminDisputes";
 import AdminFeedback from "@/components/admin/AdminFeedback";
 import { AdminDataIntegrity } from "@/components/admin/AdminDataIntegrity";
+import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -84,6 +85,7 @@ const AdminDashboard = () => {
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
     { id: "feedback", label: "Feedbacks Chauffeurs", icon: Lightbulb },
     { id: "data-integrity", label: "Intégrité des Données", icon: Database },
+    { id: "rls-audit", label: "Audit Sécurité RLS", icon: Shield },
     { id: "rgpd", label: "RGPD", icon: Shield },
   ];
 
@@ -109,6 +111,8 @@ const AdminDashboard = () => {
         return <AdminFeedback />;
       case "data-integrity":
         return <AdminDataIntegrity />;
+      case "rls-audit":
+        return <AdminRLSAudit />;
       case "rgpd":
         return <AdminRGPD />;
       default:
