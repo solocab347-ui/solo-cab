@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -85,22 +85,34 @@ const DriverDashboard = () => {
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
 
-  // Synchroniser l'état du formulaire avec les données du profil
+  // Callback stable pour les mises à jour de photos
+  const handleVehiclePhotosUpdate = useCallback((newVehiclePhotos: string[], newGalleryPhotos: string[]) => {
+    setVehiclePhotos(newVehiclePhotos);
+    setGalleryPhotos(newGalleryPhotos);
+  }, []);
+
+  // Synchroniser l'état du formulaire avec les données du profil - OPTIMISÉ
   useEffect(() => {
-    if (driverProfile?.driver) {
-      const driver = driverProfile.driver;
+    if (!driverProfile?.driver) return;
+    
+    const driver = driverProfile.driver;
+    
+    // Batch les mises à jour pour éviter les re-renders multiples
+    const updates = () => {
       setPublicProfileEnabled(driver.public_profile_enabled || false);
       setShowPhone(driver.show_phone || false);
       setShowEmail(driver.show_email || false);
       setWorkingSectors(driver.working_sectors || []);
       setServiceDescription(driver.service_description || "");
       setHomeAddress(driver.home_address || "");
+      
       if (driver.home_latitude && driver.home_longitude) {
         setHomeCoordinates({
           latitude: driver.home_latitude,
           longitude: driver.home_longitude,
         });
       }
+      
       setBaseFare(driver.base_fare?.toString() || "");
       setPerKmRate(driver.per_km_rate?.toString() || "");
       setHourlyRate(driver.hourly_rate?.toString() || "");
@@ -124,8 +136,10 @@ const DriverDashboard = () => {
       setCardPhotoUrl(driver.card_photo_url || null);
       setVehiclePhotos(driver.vehicle_photos || []);
       setGalleryPhotos(driver.gallery_photos || []);
-    }
-  }, [driverProfile]);
+    };
+    
+    updates();
+  }, [driverProfile?.driver?.id]); // Ne se déclenche que si l'ID du driver change
 
   useEffect(() => {
     let mounted = true;
@@ -785,10 +799,7 @@ const DriverDashboard = () => {
                   onVehicleYearChange={setVehicleYear}
                   vehiclePhotos={vehiclePhotos}
                   galleryPhotos={galleryPhotos}
-                  onVehiclePhotosUpdate={(vPhotos, gPhotos) => {
-                    setVehiclePhotos(vPhotos);
-                    setGalleryPhotos(gPhotos);
-                  }}
+                  onVehiclePhotosUpdate={handleVehiclePhotosUpdate}
                 />
 
                 <div className="flex justify-end">
