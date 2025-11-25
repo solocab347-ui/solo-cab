@@ -29,6 +29,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
       if (error) throw error;
 
+      console.log("Subscription check result:", data);
       setSubscriptionStatus(data);
       if (data?.subscribed) {
         onSubscriptionUpdate();
@@ -61,9 +62,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     }
   };
 
-  const isActive = driverProfile?.driver?.subscription_status === "active";
-  const isInactive = driverProfile?.driver?.subscription_status === "inactive";
-  const isPastDue = driverProfile?.driver?.subscription_status === "past_due";
+  // Use subscription status from API call which checks free access + Stripe
+  const effectiveStatus = subscriptionStatus?.subscription_status || driverProfile?.driver?.subscription_status || "inactive";
+  const isActive = effectiveStatus === "active" || subscriptionStatus?.is_free_access;
+  const isInactive = effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access;
+  const isPastDue = effectiveStatus === "past_due";
   const hasFreeAccess = driverProfile?.driver?.free_access_granted;
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
