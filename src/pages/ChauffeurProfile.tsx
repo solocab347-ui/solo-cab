@@ -36,7 +36,6 @@ interface DriverProfile {
   vehicle_model: string;
   vehicle_brand?: string | null;
   vehicle_year?: number | null;
-  vehicle_plate?: string | null;
   vehicle_color?: string | null;
   bio: string;
   rating: number;
@@ -142,7 +141,6 @@ const ChauffeurProfile = () => {
           total_rides: totalRides,
           vehicle_brand: driverData.vehicle_brand || null,
           vehicle_year: driverData.vehicle_year || null,
-          vehicle_plate: driverData.vehicle_plate || null,
           vehicle_color: driverData.vehicle_color || null,
         };
 
