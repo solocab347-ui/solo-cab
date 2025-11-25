@@ -281,103 +281,103 @@ Scannez le QR code pour réserver`
             Aperçu du document ({flyersPerPage === 1 ? "1 flyer A4" : flyersPerPage === 2 ? "2 flyers A5" : "4 flyers A6"})
           </h3>
           <div 
-            className="bg-white border-2 border-[#1e3a5f]/20 rounded-lg shadow-lg mx-auto overflow-hidden"
+            className="bg-white border-2 border-[#1e3a5f]/20 rounded-lg shadow-lg mx-auto"
             style={{
               width: "100%",
-              maxWidth: "210mm",
-              aspectRatio: "210/297"
+              maxWidth: "600px",
+              aspectRatio: "210/297",
+              overflow: "hidden"
             }}
           >
             <div 
-              className="h-full"
+              className="w-full h-full"
               style={{
                 display: "grid",
                 gridTemplateColumns: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr" : "1fr 1fr",
-                gridTemplateRows: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr 1fr" : "1fr 1fr"
+                gridTemplateRows: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr 1fr" : "1fr 1fr",
+                gap: 0
               }}
             >
               {Array.from({ length: flyersPerPage }).map((_, index) => (
                 <div 
                   key={index}
-                  className="border border-[#1e3a5f]/30 flex flex-col items-center justify-start"
+                  className="border border-[#1e3a5f]/20 flex flex-col items-center justify-center bg-white"
                   style={{
-                    padding: flyersPerPage === 1 ? "2.5rem 1.5rem" : flyersPerPage === 2 ? "1.75rem 1rem" : "0.85rem 0.5rem"
+                    padding: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "4%" : "3%",
+                    overflow: "hidden"
                   }}
                 >
-                  <div className="flex flex-col items-center justify-start w-full h-full">
-                    {/* Logo SoloCab - ajusté pour correspondre au PDF */}
-                    <div className="flex justify-center flex-shrink-0" style={{
-                      marginTop: flyersPerPage === 1 ? "1.5rem" : flyersPerPage === 2 ? "1rem" : "0.5rem",
-                      marginBottom: flyersPerPage === 1 ? "0.75rem" : flyersPerPage === 2 ? "0.5rem" : "0.25rem"
-                    }}>
+                  <div className="flex flex-col items-center justify-center w-full h-full gap-1">
+                    {/* Logo SoloCab */}
+                    <div className="flex justify-center flex-shrink-0">
                       <img 
                         src={logo} 
                         alt="SoloCab" 
+                        className="object-contain"
                         style={{
-                          width: flyersPerPage === 1 ? "8rem" : flyersPerPage === 2 ? "5rem" : "3.5rem",
-                          height: "auto",
-                          objectFit: "contain"
+                          maxWidth: flyersPerPage === 1 ? "30%" : flyersPerPage === 2 ? "25%" : "35%",
+                          height: "auto"
                         }}
                       />
                     </div>
 
                     {/* Nom de l'entreprise */}
                     {companyName.trim() && (
-                      <div className="text-center px-2 flex-shrink-0" style={{
-                        marginBottom: flyersPerPage === 1 ? "0.75rem" : flyersPerPage === 2 ? "0.5rem" : "0.25rem"
-                      }}>
-                        <div 
-                          className="font-bold text-gray-900"
-                          style={{
-                            fontSize: flyersPerPage === 1 ? "1.25rem" : flyersPerPage === 2 ? "1rem" : "0.75rem",
-                            lineHeight: "1.2"
-                          }}
-                        >
-                          {companyName}
-                        </div>
+                      <div 
+                        className="text-center font-bold text-gray-900 flex-shrink-0"
+                        style={{
+                          fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 2vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.5vw, 0.8rem)" : "clamp(0.4rem, 1vw, 0.6rem)",
+                          marginTop: flyersPerPage === 1 ? "2%" : "1%",
+                          lineHeight: "1.2"
+                        }}
+                      >
+                        {companyName}
                       </div>
                     )}
 
                     {/* Titre */}
-                    <div className="text-center flex-shrink-0" style={{
-                      marginBottom: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.75rem" : "0.5rem"
-                    }}>
-                      <div 
-                        className="text-gray-600"
-                        style={{
-                          fontSize: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.8rem" : "0.625rem",
-                          lineHeight: "1.3"
-                        }}
-                      >
-                        Votre chauffeur VTC de proximité
-                      </div>
+                    <div 
+                      className="text-center text-gray-600 flex-shrink-0"
+                      style={{
+                        fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1.2vw, 0.7rem)" : "clamp(0.35rem, 0.8vw, 0.5rem)",
+                        marginTop: flyersPerPage === 1 ? "1%" : "0.5%",
+                        lineHeight: "1.3"
+                      }}
+                    >
+                      Votre chauffeur VTC de proximité
                     </div>
 
                     {/* QR Code */}
-                    <div className="flex-shrink-0" style={{
-                      marginBottom: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.75rem" : "0.5rem"
-                    }}>
+                    <div 
+                      className="flex-shrink-0"
+                      style={{
+                        marginTop: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "2%" : "1.5%",
+                        marginBottom: flyersPerPage === 1 ? "3%" : flyersPerPage === 2 ? "2%" : "1.5%"
+                      }}
+                    >
                       <img 
                         src={qrCode.qr_code_image} 
                         alt="QR Code"
+                        className="object-contain"
                         style={{
-                          width: flyersPerPage === 1 ? "10rem" : flyersPerPage === 2 ? "7rem" : "5rem",
-                          height: flyersPerPage === 1 ? "10rem" : flyersPerPage === 2 ? "7rem" : "5rem"
+                          width: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : flyersPerPage === 2 ? "clamp(60px, 15vw, 120px)" : "clamp(45px, 10vw, 80px)",
+                          height: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : flyersPerPage === 2 ? "clamp(60px, 15vw, 120px)" : "clamp(45px, 10vw, 80px)"
                         }}
                       />
                     </div>
 
                     {/* Texte de présentation */}
-                    <div className="text-center px-4 flex-shrink-0">
-                      <div 
-                        className="whitespace-pre-wrap text-gray-700"
-                        style={{
-                          fontSize: flyersPerPage === 1 ? "0.95rem" : flyersPerPage === 2 ? "0.75rem" : "0.6rem",
-                          lineHeight: flyersPerPage === 1 ? "1.6" : flyersPerPage === 2 ? "1.4" : "1.3"
-                        }}
-                      >
-                        {presentation}
-                      </div>
+                    <div 
+                      className="text-center text-gray-700 flex-shrink-0"
+                      style={{
+                        fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.3vw, 0.85rem)" : flyersPerPage === 2 ? "clamp(0.4rem, 1vw, 0.65rem)" : "clamp(0.32rem, 0.7vw, 0.48rem)",
+                        lineHeight: flyersPerPage === 1 ? "1.5" : flyersPerPage === 2 ? "1.4" : "1.3",
+                        whiteSpace: "pre-wrap",
+                        maxHeight: flyersPerPage === 1 ? "30%" : flyersPerPage === 2 ? "35%" : "30%",
+                        overflow: "hidden"
+                      }}
+                    >
+                      {presentation}
                     </div>
                   </div>
                 </div>
