@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
 import { LoadingFallback } from "@/components/LoadingFallback";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 // Eager load public pages
 import Index from "./pages/Index";
@@ -43,6 +44,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <PWAInstallBanner />
           <EmergencyReset />
           <ErrorBoundary>
             <Routes>
