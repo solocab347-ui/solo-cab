@@ -83,16 +83,16 @@ Scannez le QR code pour réserver`
         const scale = flyersPerPage === 1 ? 2 : flyersPerPage === 2 ? 1.5 : 1;
         let currentY = pos.y + (15 * scale);
 
-        // Logo SoloCab
-        const logoWidth = 35 * scale;
-        const logoHeight = 12 * scale;
+        // Logo SoloCab - proportions ajustées
+        const logoWidth = flyersPerPage === 1 ? 50 : 35 * scale;
+        const logoHeight = flyersPerPage === 1 ? 17 : 12 * scale;
         const logoX = centerX - (logoWidth / 2);
         pdf.addImage(logo, "PNG", logoX, currentY, logoWidth, logoHeight);
         currentY += logoHeight + (6 * scale);
 
         // Nom de l'entreprise
         if (companyName.trim()) {
-          pdf.setFontSize(12 * scale);
+          pdf.setFontSize(flyersPerPage === 1 ? 16 : 12 * scale);
           pdf.setFont("helvetica", "bold");
           pdf.setTextColor(0, 0, 0);
           pdf.text(companyName, centerX, currentY, { 
@@ -103,20 +103,20 @@ Scannez le QR code pour réserver`
         }
 
         // Titre
-        pdf.setFontSize(11 * scale);
+        pdf.setFontSize(flyersPerPage === 1 ? 13 : 11 * scale);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         pdf.text("Votre chauffeur VTC de proximité", centerX, currentY, { align: "center" });
         currentY += (12 * scale);
 
         // QR Code
-        const qrSize = 55 * scale;
+        const qrSize = flyersPerPage === 1 ? 70 : 55 * scale;
         const qrX = centerX - (qrSize / 2);
         pdf.addImage(qrCode.qr_code_image, "PNG", qrX, currentY, qrSize, qrSize);
         currentY += qrSize + (10 * scale);
 
         // Texte de présentation
-        pdf.setFontSize(8 * scale);
+        pdf.setFontSize(flyersPerPage === 1 ? 11 : 8 * scale);
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         
@@ -299,20 +299,23 @@ Scannez le QR code pour réserver`
               {Array.from({ length: flyersPerPage }).map((_, index) => (
                 <div 
                   key={index}
-                  className="border border-[#1e3a5f]/30 flex flex-col items-center justify-start overflow-hidden"
+                  className="border border-[#1e3a5f]/30 flex flex-col items-center justify-start"
                   style={{
-                    padding: flyersPerPage === 1 ? "2rem" : flyersPerPage === 2 ? "1.5rem" : "0.75rem"
+                    padding: flyersPerPage === 1 ? "2.5rem 1.5rem" : flyersPerPage === 2 ? "1.75rem 1rem" : "0.85rem 0.5rem"
                   }}
                 >
-                  <div className="flex flex-col items-center justify-start w-full h-full space-y-1">
-                    {/* Logo SoloCab */}
-                    <div className="flex justify-center flex-shrink-0">
+                  <div className="flex flex-col items-center justify-start w-full h-full">
+                    {/* Logo SoloCab - ajusté pour correspondre au PDF */}
+                    <div className="flex justify-center flex-shrink-0" style={{
+                      marginTop: flyersPerPage === 1 ? "1.5rem" : flyersPerPage === 2 ? "1rem" : "0.5rem",
+                      marginBottom: flyersPerPage === 1 ? "0.75rem" : flyersPerPage === 2 ? "0.5rem" : "0.25rem"
+                    }}>
                       <img 
                         src={logo} 
                         alt="SoloCab" 
                         style={{
-                          height: flyersPerPage === 1 ? "3rem" : flyersPerPage === 2 ? "2rem" : "1.5rem",
-                          width: "auto",
+                          width: flyersPerPage === 1 ? "8rem" : flyersPerPage === 2 ? "5rem" : "3.5rem",
+                          height: "auto",
                           objectFit: "contain"
                         }}
                       />
@@ -320,11 +323,14 @@ Scannez le QR code pour réserver`
 
                     {/* Nom de l'entreprise */}
                     {companyName.trim() && (
-                      <div className="text-center px-2 flex-shrink-0">
+                      <div className="text-center px-2 flex-shrink-0" style={{
+                        marginBottom: flyersPerPage === 1 ? "0.75rem" : flyersPerPage === 2 ? "0.5rem" : "0.25rem"
+                      }}>
                         <div 
-                          className="font-bold text-gray-900 line-clamp-2"
+                          className="font-bold text-gray-900"
                           style={{
-                            fontSize: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.875rem" : "0.75rem"
+                            fontSize: flyersPerPage === 1 ? "1.25rem" : flyersPerPage === 2 ? "1rem" : "0.75rem",
+                            lineHeight: "1.2"
                           }}
                         >
                           {companyName}
@@ -333,11 +339,14 @@ Scannez le QR code pour réserver`
                     )}
 
                     {/* Titre */}
-                    <div className="text-center flex-shrink-0">
+                    <div className="text-center flex-shrink-0" style={{
+                      marginBottom: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.75rem" : "0.5rem"
+                    }}>
                       <div 
                         className="text-gray-600"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "0.875rem" : flyersPerPage === 2 ? "0.75rem" : "0.625rem"
+                          fontSize: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.8rem" : "0.625rem",
+                          lineHeight: "1.3"
                         }}
                       >
                         Votre chauffeur VTC de proximité
@@ -345,23 +354,26 @@ Scannez le QR code pour réserver`
                     </div>
 
                     {/* QR Code */}
-                    <div className="flex-shrink-0 my-2">
+                    <div className="flex-shrink-0" style={{
+                      marginBottom: flyersPerPage === 1 ? "1rem" : flyersPerPage === 2 ? "0.75rem" : "0.5rem"
+                    }}>
                       <img 
                         src={qrCode.qr_code_image} 
                         alt="QR Code"
                         style={{
-                          width: flyersPerPage === 1 ? "8rem" : flyersPerPage === 2 ? "6rem" : "5rem",
-                          height: flyersPerPage === 1 ? "8rem" : flyersPerPage === 2 ? "6rem" : "5rem"
+                          width: flyersPerPage === 1 ? "10rem" : flyersPerPage === 2 ? "7rem" : "5rem",
+                          height: flyersPerPage === 1 ? "10rem" : flyersPerPage === 2 ? "7rem" : "5rem"
                         }}
                       />
                     </div>
 
                     {/* Texte de présentation */}
-                    <div className="text-center px-2 flex-1 overflow-hidden">
+                    <div className="text-center px-4 flex-shrink-0">
                       <div 
-                        className="whitespace-pre-wrap text-gray-700 leading-tight"
+                        className="whitespace-pre-wrap text-gray-700"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "0.875rem" : flyersPerPage === 2 ? "0.75rem" : "0.625rem"
+                          fontSize: flyersPerPage === 1 ? "0.95rem" : flyersPerPage === 2 ? "0.75rem" : "0.6rem",
+                          lineHeight: flyersPerPage === 1 ? "1.6" : flyersPerPage === 2 ? "1.4" : "1.3"
                         }}
                       >
                         {presentation}
