@@ -119,6 +119,9 @@ const RegisterDriver = () => {
           setUserId(user.id);
           setDriverId(driver.id);
           
+          // Bloquer le retour en arrière lors de la reprise
+          setCanGoBack(false);
+          
           // Charger les données sauvegardées
           if (driver.registration_data) {
             const data = driver.registration_data as any;
@@ -130,8 +133,20 @@ const RegisterDriver = () => {
             }
           }
 
-          setCurrentStep(driver.registration_step);
-          toast.success("Reprise de votre inscription");
+          // Si l'utilisateur a un compte (user.id existe), il ne peut PAS revenir à l'étape 1
+          // registration_step représente la PROCHAINE étape à faire
+          let nextStep = driver.registration_step || 2;
+          
+          // Sécurité : minimum étape 2 car étape 1 est déjà complétée (compte créé)
+          if (nextStep < 2) {
+            console.log("⚠️ Étape invalide, correction vers étape 2");
+            nextStep = 2;
+          }
+          
+          setCurrentStep(nextStep);
+          toast.success("Reprise de votre inscription", {
+            description: nextStep === 2 ? "Documents à télécharger" : "Paiement en attente"
+          });
         }
       } catch (error) {
         console.error("Erreur reprise:", error);
@@ -302,11 +317,11 @@ const RegisterDriver = () => {
       console.log("✅ Profil driver créé:", driverData.id);
       setDriverId(driverData.id);
 
-      // Sauvegarder la progression (étape 1 complète)
+      // Sauvegarder la progression (étape 1 complète, prochaine étape = 2)
       await supabase
         .from("drivers")
         .update({
-          registration_step: 1,
+          registration_step: 2,
           registration_data: {
             formData: {
               fullName: formData.fullName,
@@ -464,12 +479,12 @@ const RegisterDriver = () => {
 
       console.log("✅ Tous les documents uploadés");
 
-      // Update driver with documents et progression
+      // Update driver with documents et progression (prochaine étape = 3)
       const { error: updateError } = await supabase
         .from("drivers")
         .update({
           documents: urls,
-          registration_step: 2,
+          registration_step: 3,
           registration_data: {
             formData: {
               fullName: formData.fullName,
@@ -539,13 +554,8 @@ const RegisterDriver = () => {
     setLoading(true);
 
     try {
-      // Sauvegarder la progression (étape 3 - en attente paiement)
-      await supabase
-        .from("drivers")
-        .update({
-          registration_step: 3
-        })
-        .eq("id", driverId);
+      // Pas besoin de sauvegarder registration_step 3 car on y est déjà
+      // (sauvegardé à l'étape 2)
 
       // If free access via token, skip payment
       if (invitationToken && isTokenValid) {
@@ -643,7 +653,7 @@ const RegisterDriver = () => {
           <StepIndicator step={3} current={currentStep} label="Paiement" />
         </div>
 
-        {currentStep === 1 && (
+        {currentStep === 1 && !isResuming && (
           <form onSubmit={handleStep1} className="space-y-6">
             <div>
               <Label htmlFor="fullName">Nom complet</Label>
