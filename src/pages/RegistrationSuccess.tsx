@@ -17,15 +17,26 @@ const RegistrationSuccess = () => {
     const updateDriverPaymentStatus = async () => {
       console.log("🔍 VERIFICATION PAIEMENT - Driver ID:", driverId);
       
+      // ===== VALIDATION DRIVER ID =====
       if (!driverId) {
-        console.error("❌ Driver ID manquant");
+        console.error("❌ Driver ID manquant dans URL");
         setError("Identifiant chauffeur manquant");
         setLoading(false);
-        setTimeout(() => navigate("/login"), 3000);
+        setTimeout(() => navigate("/login"), 4000);
         return;
       }
 
-      // Si c'est un accès gratuit via token, pas besoin de vérifier Stripe
+      // Validation format UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(driverId)) {
+        console.error("❌ Driver ID invalide:", driverId);
+        setError("Identifiant chauffeur invalide");
+        setLoading(false);
+        setTimeout(() => navigate("/login"), 4000);
+        return;
+      }
+
+      // Identifier le type d'accès
       const isTokenAccess = searchParams.get("token") === "true";
       console.log("📋 Type d'accès:", isTokenAccess ? "Token gratuit" : "Paiement Stripe");
 

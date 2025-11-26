@@ -192,42 +192,48 @@ const RegisterDriver = () => {
     console.log("🚀 DEBUT inscription étape 1");
 
     try {
-      // Validation
+      // ===== VALIDATION RENFORCÉE =====
       console.log("📋 Validation des données...");
       const result = registrationSchema.safeParse(formData);
       if (!result.success) {
         const error = result.error.errors[0];
         console.error("❌ Validation échouée:", error);
         toast.error(error.message);
-        setLoading(false);
         return;
       }
       console.log("✅ Validation réussie");
 
-      // Check existing email
+      // ===== VÉRIFICATION EMAIL AVEC TIMEOUT =====
       console.log("🔍 Vérification email existant...");
-      const { data: existing, error: checkError } = await supabase
+      const emailCheckPromise = supabase
         .from("profiles")
         .select("id")
         .eq("email", formData.email.trim().toLowerCase())
         .maybeSingle();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout vérification email")), 10000)
+      );
+
+      const { data: existing, error: checkError } = await Promise.race([
+        emailCheckPromise,
+        timeoutPromise
+      ]) as any;
 
       if (checkError) {
         console.error("❌ Erreur vérification email:", checkError);
-        toast.error("Erreur vérification email");
-        setLoading(false);
+        toast.error("Erreur lors de la vérification de l'email");
         return;
       }
 
       if (existing) {
         console.warn("⚠️ Email déjà utilisé");
-        toast.error("Email déjà utilisé");
-        setLoading(false);
+        toast.error("Cet email est déjà utilisé. Utilisez un autre email ou connectez-vous.");
         return;
       }
       console.log("✅ Email disponible");
 
-      // Create auth account
+      // ===== CRÉATION COMPTE AUTH AVEC VALIDATION =====
       console.log("👤 Création compte Auth...");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
@@ -242,15 +248,13 @@ const RegisterDriver = () => {
 
       if (authError) {
         console.error("❌ Erreur Auth:", authError);
-        toast.error(authError.message);
-        setLoading(false);
+        toast.error(`Erreur de création de compte: ${authError.message}`);
         return;
       }
 
       if (!authData.user) {
         console.error("❌ Pas d'utilisateur créé");
-        toast.error("Erreur de création de compte");
-        setLoading(false);
+        toast.error("Erreur: Impossible de créer le compte");
         return;
       }
 
@@ -258,31 +262,43 @@ const RegisterDriver = () => {
       console.log("✅ Compte Auth créé:", newUserId);
       setUserId(newUserId);
 
-      // Wait for profile trigger
+      // ===== ATTENTE TRIGGER PROFILE AVEC VÉRIFICATION =====
       console.log("⏳ Attente trigger profile...");
       await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log("✅ Attente terminée");
+      
+      // Vérifier que le profile a bien été créé
+      const { data: profileCheck } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", newUserId)
+        .maybeSingle();
+      
+      if (!profileCheck) {
+        console.error("❌ Profile non créé après trigger");
+        toast.error("Erreur: Profile non créé. Veuillez réessayer.");
+        return;
+      }
+      console.log("✅ Profile confirmé");
 
-      // Add driver role
+      // ===== AJOUT RÔLE DRIVER AVEC GESTION DUPLICATE =====
       console.log("🎭 Ajout rôle driver...");
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({ user_id: newUserId, role: "driver" });
 
       if (roleError) {
-        if (roleError.message.includes("duplicate")) {
+        if (roleError.message.includes("duplicate") || roleError.code === "23505") {
           console.log("⚠️ Rôle déjà existant (ignoré)");
         } else {
           console.error("❌ Erreur ajout rôle:", roleError);
-          toast.error("Erreur ajout rôle: " + roleError.message);
-          setLoading(false);
+          toast.error(`Erreur d'attribution du rôle: ${roleError.message}`);
           return;
         }
       } else {
         console.log("✅ Rôle driver ajouté");
       }
 
-      // Create driver profile
+      // ===== CRÉATION PROFIL DRIVER SÉCURISÉ =====
       console.log("🚗 Création profil driver...");
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
@@ -290,7 +306,7 @@ const RegisterDriver = () => {
           user_id: newUserId,
           license_number: "PENDING",
           vehicle_model: "PENDING",
-          status: "on_hold", // ⚠️ SÉCURITÉ: on_hold jusqu'au paiement
+          status: "on_hold", // ⚠️ SÉCURITÉ: on_hold jusqu'au paiement/documents
           max_passengers: 4,
           tva_included: false,
           tva_rate: 20.0,
@@ -298,6 +314,7 @@ const RegisterDriver = () => {
           per_km_rate: 0,
           hourly_rate: 0,
           subscription_paid: false,
+          subscription_status: "inactive",
           public_profile_enabled: false,
           quote_counter: 0,
           invoice_counter: 0,
@@ -309,16 +326,22 @@ const RegisterDriver = () => {
 
       if (driverError) {
         console.error("❌ Erreur création driver:", driverError);
-        toast.error("Erreur création profil: " + driverError.message);
-        setLoading(false);
+        toast.error(`Erreur de création du profil: ${driverError.message}`);
+        return;
+      }
+
+      if (!driverData?.id) {
+        console.error("❌ Driver créé mais sans ID");
+        toast.error("Erreur: Profil créé mais ID manquant");
         return;
       }
 
       console.log("✅ Profil driver créé:", driverData.id);
       setDriverId(driverData.id);
 
-      // Sauvegarder la progression (étape 1 complète, prochaine étape = 2)
-      await supabase
+      // ===== SAUVEGARDE PROGRESSION AVEC VÉRIFICATION =====
+      console.log("💾 Sauvegarde progression...");
+      const { error: updateError } = await supabase
         .from("drivers")
         .update({
           registration_step: 2,
@@ -327,77 +350,127 @@ const RegisterDriver = () => {
               fullName: formData.fullName,
               email: formData.email,
               phone: formData.phone
-            }
+            },
+            timestamp: new Date().toISOString()
           }
         })
         .eq("id", driverData.id);
+      
+      if (updateError) {
+        console.error("⚠️ Erreur sauvegarde progression:", updateError);
+        // Non bloquant, on continue
+      } else {
+        console.log("✅ Progression sauvegardée");
+      }
 
-      // Grant free access if token valid
+      // ===== GESTION TOKEN ACCÈS GRATUIT AVEC SÉCURITÉ =====
       if (invitationToken && isTokenValid) {
         console.log("🎁 Attribution accès gratuit...");
         
-        // Si skip_documents est activé, finaliser l'inscription immédiatement
-        if (skipDocuments) {
-          console.log("⚡ Skip documents activé - Finalisation immédiate");
+        // Vérifier le token une dernière fois avant utilisation
+        const { data: tokenData, error: tokenError } = await supabase
+          .from("invitation_tokens")
+          .select("*")
+          .eq("token", invitationToken)
+          .eq("used", false)
+          .maybeSingle();
+        
+        if (tokenError || !tokenData) {
+          console.error("❌ Token invalide lors de l'utilisation");
+          toast.error("Token d'accès gratuit invalide ou déjà utilisé");
+          // Continuer sans accès gratuit
+        } else {
+          // Si skip_documents est activé, finaliser l'inscription immédiatement
+          if (skipDocuments) {
+            console.log("⚡ Skip documents activé - Finalisation immédiate");
+            
+            const { error: updateDriverError } = await supabase
+              .from("drivers")
+              .update({
+                status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
+                free_access_granted: true,
+                free_access_type: "unlimited",
+                free_access_start_date: new Date().toISOString(),
+                subscription_status: "active",
+                subscription_paid: false,
+                registration_step: null,
+                registration_data: null
+              })
+              .eq("id", driverData.id);
+
+            if (updateDriverError) {
+              console.error("❌ Erreur mise à jour driver avec accès gratuit:", updateDriverError);
+              toast.error("Erreur lors de l'attribution de l'accès gratuit");
+              return;
+            }
+
+            const { error: updateTokenError } = await supabase
+              .from("invitation_tokens")
+              .update({
+                used: true,
+                used_by_driver_id: driverData.id,
+                used_at: new Date().toISOString()
+              })
+              .eq("token", invitationToken);
+            
+            if (updateTokenError) {
+              console.error("⚠️ Erreur mise à jour token (non bloquant):", updateTokenError);
+            }
+            
+            console.log("✅ Inscription complétée (sans documents ni paiement)");
+            toast.success("Inscription complétée avec accès gratuit !");
+            await new Promise(resolve => setTimeout(resolve, 500));
+            navigate(`/registration-success?driver_id=${driverData.id}&token=true`);
+            return;
+          }
           
-          await supabase
+          // Sinon, juste marquer l'accès gratuit et continuer vers les documents
+          const { error: freeAccessError } = await supabase
             .from("drivers")
             .update({
-              status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
               free_access_granted: true,
               free_access_type: "unlimited",
               free_access_start_date: new Date().toISOString(),
-              subscription_status: "active",
-              subscription_paid: false,
-              registration_step: null,
-              registration_data: null
+              subscription_status: "active"
             })
             .eq("id", driverData.id);
-
-          await supabase
-            .from("invitation_tokens")
-            .update({
-              used: true,
-              used_by_driver_id: driverData.id,
-              used_at: new Date().toISOString()
-            })
-            .eq("token", invitationToken);
           
-          console.log("✅ Inscription complétée (sans documents ni paiement)");
-          toast.success("Inscription complétée avec accès gratuit !");
-          navigate(`/registration-success?driver_id=${driverData.id}&token=true`);
-          return;
+          if (freeAccessError) {
+            console.error("⚠️ Erreur accès gratuit (non bloquant):", freeAccessError);
+          } else {
+            console.log("✅ Accès gratuit accordé - Documents requis");
+          }
         }
-        
-        // Sinon, juste marquer l'accès gratuit et continuer vers les documents
-        await supabase
-          .from("drivers")
-          .update({
-            free_access_granted: true,
-            free_access_type: "unlimited",
-            free_access_start_date: new Date().toISOString(),
-            subscription_status: "active"
-          })
-          .eq("id", driverData.id);
-        console.log("✅ Accès gratuit accordé - Documents requis");
       }
 
-      console.log("🎉 INSCRIPTION REUSSIE - Passage étape 2");
+      console.log("🎉 INSCRIPTION ÉTAPE 1 RÉUSSIE");
       toast.success("Compte créé avec succès !");
       
       // Bloquer le retour en arrière après validation étape 1
       setCanGoBack(false);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Petit délai pour que l'utilisateur voit le message de succès
+      await new Promise(resolve => setTimeout(resolve, 800));
       setCurrentStep(2);
-      console.log("✅ Étape 2 activée");
+      console.log("✅ Passage à l'étape 2");
 
     } catch (error: any) {
-      console.error("💥 ERREUR GLOBALE:", error);
-      console.error("Stack:", error.stack);
-      toast.error("Erreur: " + (error.message || "Erreur inconnue"));
+      console.error("💥 ERREUR CRITIQUE ÉTAPE 1:", error);
+      console.error("Stack trace:", error.stack);
+      
+      // Message d'erreur user-friendly
+      const errorMessage = error.message?.includes("timeout") 
+        ? "La connexion a pris trop de temps. Veuillez réessayer."
+        : error.message?.includes("network")
+        ? "Problème de connexion. Vérifiez votre internet."
+        : `Erreur d'inscription: ${error.message || "Erreur inconnue"}`;
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        description: "Si le problème persiste, contactez le support."
+      });
     } finally {
-      console.log("🔚 Fin handleStep1, setLoading(false)");
+      console.log("🔚 Fin handleStep1");
       setLoading(false);
     }
   };
@@ -427,60 +500,91 @@ const RegisterDriver = () => {
     console.log("📄 DEBUT étape 2 - Upload documents");
 
     try {
-      // Validate required documents
+      // ===== VALIDATION RENFORCÉE DOCUMENTS =====
+      console.log("📋 Validation documents...");
+      
+      if (!userId || !driverId) {
+        console.error("❌ IDs manquants");
+        toast.error("Erreur: Identifiants manquants. Veuillez recommencer l'inscription.");
+        navigate("/register-driver");
+        return;
+      }
+
       if (!documents.vtc_recto || !documents.vtc_verso) {
-        toast.error("Carte VTC recto/verso requise");
-        setLoading(false);
+        toast.error("Carte VTC recto et verso obligatoires");
         return;
       }
 
       if (!documents.identity_recto || (!isPassport && !documents.identity_verso)) {
-        toast.error("Pièce d'identité requise");
-        setLoading(false);
+        toast.error(isPassport ? "Passeport obligatoire" : "Pièce d'identité recto et verso obligatoires");
         return;
       }
 
       if (!documents.driving_license_recto || !documents.driving_license_verso) {
-        toast.error("Permis de conduire recto/verso requis");
-        setLoading(false);
+        toast.error("Permis de conduire recto et verso obligatoires");
         return;
       }
 
       if (!documents.kbis) {
-        toast.error("Kbis requis");
-        setLoading(false);
+        toast.error("Kbis ou document équivalent obligatoire");
         return;
       }
 
       if (!documents.vehicle_insurance) {
-        toast.error("Assurance véhicule requise");
-        setLoading(false);
+        toast.error("Assurance véhicule obligatoire");
         return;
       }
 
       console.log("✅ Validation documents réussie");
 
-      // Upload all documents avec gestion d'erreur améliorée
+      // ===== UPLOAD DOCUMENTS AVEC PROGRESS ET RETRY =====
       const urls: Record<string, string> = {};
       const docEntries = Object.entries(documents).filter(([_, file]) => file);
+      const totalDocs = docEntries.length;
+      
+      toast.info(`Upload de ${totalDocs} documents en cours...`, { duration: 3000 });
       
       for (let i = 0; i < docEntries.length; i++) {
         const [key, file] = docEntries[i];
+        const docNumber = i + 1;
+        
+        console.log(`📤 Upload ${key} (${docNumber}/${totalDocs})`);
+        
         try {
-          console.log(`📤 Upload ${key} (${i+1}/${docEntries.length})`);
-          urls[key] = await uploadFile(file as File, key);
-          console.log(`✅ ${key} uploadé`);
+          // Timeout par upload: 30 secondes max
+          const uploadPromise = uploadFile(file as File, key);
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error(`Timeout upload ${key}`)), 30000)
+          );
+          
+          urls[key] = await Promise.race([uploadPromise, timeoutPromise]);
+          console.log(`✅ ${key} uploadé (${docNumber}/${totalDocs})`);
+          
+          // Feedback visuel pour l'utilisateur
+          if (docNumber < totalDocs) {
+            toast.info(`Document ${docNumber}/${totalDocs} uploadé`, { duration: 1000 });
+          }
+          
         } catch (uploadError: any) {
           console.error(`❌ Erreur upload ${key}:`, uploadError);
-          toast.error(`Erreur lors de l'upload de ${key}: ${uploadError.message}`);
-          setLoading(false);
+          
+          const errorMsg = uploadError.message?.includes("timeout")
+            ? `L'upload de ${key} a pris trop de temps`
+            : `Erreur lors de l'upload de ${key}`;
+          
+          toast.error(errorMsg, {
+            description: "Vérifiez votre connexion et réessayez.",
+            duration: 5000
+          });
           return;
         }
       }
 
-      console.log("✅ Tous les documents uploadés");
+      console.log("✅ Tous les documents uploadés avec succès");
+      toast.success("Tous les documents ont été uploadés !");
 
-      // Update driver with documents et progression (prochaine étape = 3)
+      // ===== MISE À JOUR DRIVER AVEC VÉRIFICATION =====
+      console.log("💾 Mise à jour profil avec documents...");
       const { error: updateError } = await supabase
         .from("drivers")
         .update({
@@ -493,7 +597,8 @@ const RegisterDriver = () => {
               phone: formData.phone
             },
             isPassport,
-            documentsUploaded: true
+            documentsUploaded: true,
+            timestamp: new Date().toISOString()
           }
         })
         .eq("id", driverId);
@@ -544,22 +649,66 @@ const RegisterDriver = () => {
       console.log("✅ Passage étape 3");
 
     } catch (error: any) {
-      console.error("💥 ERREUR étape 2:", error);
-      toast.error(error.message || "Erreur téléchargement documents");
+      console.error("💥 ERREUR CRITIQUE ÉTAPE 2:", error);
+      console.error("Stack trace:", error.stack);
+      
+      const errorMessage = error.message?.includes("timeout")
+        ? "L'upload a pris trop de temps. Vérifiez votre connexion."
+        : error.message?.includes("storage")
+        ? "Erreur de stockage des documents. Réessayez."
+        : `Erreur: ${error.message || "Erreur inconnue"}`;
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        description: "Si le problème persiste, contactez le support."
+      });
     } finally {
+      console.log("🔚 Fin handleStep2");
       setLoading(false);
     }
   };
 
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ===== VALIDATION INITIALE RENFORCÉE =====
+    if (!driverId) {
+      console.error("❌ Driver ID manquant pour paiement");
+      toast.error("Erreur: Identifiant chauffeur manquant", {
+        description: "Veuillez recommencer l'inscription"
+      });
+      navigate("/register-driver");
+      return;
+    }
+
+    if (!userId) {
+      console.error("❌ User ID manquant pour paiement");
+      toast.error("Erreur: Identifiant utilisateur manquant");
+      return;
+    }
+
     setLoading(true);
-    console.log("💳 DEBUT étape 3 - Paiement");
+    console.log("💳 DEBUT étape 3 - Paiement Stripe");
+    console.log("🔑 Driver ID:", driverId);
+    console.log("🔑 User ID:", userId);
 
     try {
-      // If free access via token, skip payment
+      // ===== GESTION ACCÈS GRATUIT SI TOKEN =====
       if (invitationToken && isTokenValid) {
         console.log("🎁 Accès gratuit via token - Skip paiement");
+        
+        // Vérifier que le token est toujours valide
+        const { data: tokenCheck } = await supabase
+          .from("invitation_tokens")
+          .select("used, id")
+          .eq("token", invitationToken)
+          .maybeSingle();
+        
+        if (!tokenCheck || tokenCheck.used) {
+          console.error("❌ Token déjà utilisé ou invalide");
+          toast.error("Token d'accès gratuit invalide ou déjà utilisé");
+          return;
+        }
         
         // Marquer le token comme utilisé
         const { error: tokenError } = await supabase
@@ -574,7 +723,6 @@ const RegisterDriver = () => {
         if (tokenError) {
           console.error("❌ Erreur marquage token:", tokenError);
           toast.error("Erreur lors du marquage du token");
-          setLoading(false);
           return;
         }
 
@@ -597,116 +745,162 @@ const RegisterDriver = () => {
         if (driverError) {
           console.error("❌ Erreur mise à jour driver:", driverError);
           toast.error("Erreur lors de l'octroi de l'accès gratuit");
-          setLoading(false);
           return;
         }
         
         console.log("✅ Accès gratuit accordé - Redirection...");
         toast.success("Inscription complétée avec accès gratuit !");
         
-        // Attendre un peu avant redirection
         await new Promise(resolve => setTimeout(resolve, 1000));
         navigate(`/registration-success?driver_id=${driverId}&token=true`);
         return;
       }
 
-      // PAIEMENT OBLIGATOIRE - Sécurisation complète
-      console.log("💰 Paiement requis - Appel Stripe");
+      // ===== VÉRIFICATION DRIVER AVANT PAIEMENT =====
+      console.log("🔍 Vérification driver avant paiement...");
+      const { data: driverCheck, error: checkError } = await supabase
+        .from("drivers")
+        .select("id, user_id, subscription_paid, free_access_granted")
+        .eq("id", driverId)
+        .maybeSingle();
       
-      // Validation sécurité: vérifier que driverId existe
-      if (!driverId) {
-        console.error("❌ Driver ID manquant");
+      if (checkError || !driverCheck) {
+        console.error("❌ Driver non trouvé:", checkError);
         toast.error("Erreur: Profil chauffeur introuvable");
-        setLoading(false);
         return;
       }
-
-      // Appeler l'edge function Stripe avec timeout de sécurité
-      console.log("📞 Appel create-driver-subscription...");
       
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Timeout: La création de la session a pris trop de temps")), 30000)
-      );
+      if (driverCheck.user_id !== userId) {
+        console.error("❌ User ID ne correspond pas au driver");
+        toast.error("Erreur de sécurité: Utilisateur incorrect");
+        return;
+      }
+      
+      if (driverCheck.subscription_paid || driverCheck.free_access_granted) {
+        console.log("✅ Paiement déjà effectué ou accès gratuit");
+        toast.success("Paiement déjà validé !");
+        navigate(`/registration-success?driver_id=${driverId}`);
+        return;
+      }
+      
+      console.log("✅ Vérification driver OK - Procédure de paiement");
 
-      const invokePromise = supabase.functions.invoke(
-        "create-driver-subscription",
-        {
-          body: { driver_id: driverId }
-        }
+      // ===== APPEL EDGE FUNCTION AVEC TIMEOUT =====
+      console.log("📞 Appel create-driver-subscription...");
+      toast.info("Préparation du paiement sécurisé...", { duration: 2000 });
+      
+      const invokePromise = supabase.functions.invoke("create-driver-subscription", {
+        body: { driver_id: driverId }
+      });
+      
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("TIMEOUT_ERROR")), 30000)
       );
 
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
 
+      // ===== GESTION ERREURS APPEL FUNCTION =====
       if (error) {
-        console.error("❌ Erreur création session Stripe:", error);
-        toast.error("Erreur lors de la création de la session de paiement. Veuillez réessayer.");
-        setLoading(false);
-        return;
+        console.error("❌ Erreur function:", error);
+        throw new Error(error.message || "Erreur création session paiement");
       }
 
-      console.log("📦 Réponse reçue:", data);
-
-      // Validation rigoureuse de la réponse
       if (!data) {
-        console.error("❌ Aucune données reçue");
-        toast.error("Erreur: Aucune réponse du serveur de paiement");
-        setLoading(false);
-        return;
+        console.error("❌ Pas de réponse de la function");
+        throw new Error("Pas de réponse du serveur de paiement");
+      }
+
+      console.log("📦 Réponse function reçue");
+
+      // ===== VALIDATION RÉPONSE STRIPE =====
+      if (data.error) {
+        console.error("❌ Erreur dans réponse:", data.error);
+        throw new Error(data.error);
       }
 
       if (!data.url || typeof data.url !== "string") {
-        console.error("❌ URL invalide:", data);
-        toast.error("Erreur: URL de paiement invalide");
-        setLoading(false);
-        return;
+        console.error("❌ URL Stripe invalide:", data);
+        throw new Error("URL de paiement invalide");
       }
 
-      // Vérifier que l'URL est bien une URL Stripe
       if (!data.url.startsWith("https://checkout.stripe.com")) {
-        console.error("❌ URL Stripe invalide:", data.url);
-        toast.error("Erreur: URL de paiement non sécurisée");
-        setLoading(false);
-        return;
+        console.error("❌ URL Stripe suspecte:", data.url);
+        throw new Error("URL de paiement non sécurisée");
       }
 
       console.log("✅ URL Stripe valide:", data.url.substring(0, 50) + "...");
-      
-      // Afficher un message clair avant redirection
-      toast.success("Redirection vers la page de paiement sécurisé...", {
-        duration: 2000
-      });
 
-      // Attendre que le toast soit visible
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Redirection SÉCURISÉE vers Stripe
-      // Utiliser window.open en fallback si location.href échoue
-      console.log("🚀 Redirection vers Stripe...");
+      // ===== REDIRECTION VERS STRIPE AVEC MULTI-MÉTHODE =====
+      console.log("🔄 Redirection vers Stripe Checkout...");
+      toast.success("Redirection vers le paiement sécurisé...", { duration: 2000 });
       
-      try {
-        // Tenter redirection directe
-        window.location.href = data.url;
+      // Attente pour que l'utilisateur voit le message
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Méthode 1: Redirection principale dans le même onglet
+      console.log("🔗 Méthode 1: window.location.href");
+      window.location.href = data.url;
+      
+      // Méthode 2: Fallback après 2 secondes si la redirection ne fonctionne pas
+      const fallbackTimer = setTimeout(() => {
+        console.log("⚠️ Fallback: Ouverture nouvel onglet");
+        const stripeWindow = window.open(data.url, "_blank");
         
-        // Fallback: si la redirection ne se fait pas après 2 secondes, ouvrir dans nouvel onglet
-        setTimeout(() => {
-          if (document.hasFocus()) {
-            console.log("⚠️ Fallback: ouverture nouvel onglet");
-            window.open(data.url, "_blank");
-            toast.info("Page de paiement ouverte dans un nouvel onglet");
-          }
-        }, 2000);
-      } catch (redirectError) {
-        console.error("❌ Erreur redirection:", redirectError);
-        // Fallback absolu: ouvrir dans nouvel onglet
-        window.open(data.url, "_blank");
-        toast.info("Page de paiement ouverte dans un nouvel onglet");
-      }
+        if (!stripeWindow || stripeWindow.closed || typeof stripeWindow.closed === "undefined") {
+          console.error("❌ Pop-up bloqué");
+          toast.error("Impossible d'ouvrir la page de paiement", {
+            duration: 10000,
+            description: "Veuillez autoriser les pop-ups et réessayer",
+            action: {
+              label: "Réessayer",
+              onClick: () => window.open(data.url, "_blank")
+            }
+          });
+          setLoading(false);
+        } else {
+          console.log("✅ Stripe ouvert dans nouvel onglet");
+          toast.info("Page de paiement ouverte dans un nouvel onglet", {
+            duration: 5000
+          });
+        }
+      }, 2000);
+      
+      // Cleanup timer si la redirection fonctionne
+      window.addEventListener("beforeunload", () => clearTimeout(fallbackTimer));
 
     } catch (error: any) {
-      console.error("💥 ERREUR GLOBALE étape 3:", error);
-      console.error("Stack:", error.stack);
-      toast.error("Une erreur est survenue: " + (error.message || "Erreur inconnue"));
-      setLoading(false);
+      console.error("💥 ERREUR CRITIQUE PAIEMENT:", error);
+      console.error("Stack trace:", error.stack);
+      
+      // Messages d'erreur user-friendly
+      let errorMessage = "Erreur lors de la préparation du paiement";
+      let errorDescription = "Veuillez réessayer";
+      
+      if (error.message === "TIMEOUT_ERROR") {
+        errorMessage = "La connexion a pris trop de temps";
+        errorDescription = "Vérifiez votre connexion internet et réessayez";
+      } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+        errorMessage = "Problème de connexion";
+        errorDescription = "Vérifiez votre connexion internet";
+      } else if (error.message?.includes("unauthorized") || error.message?.includes("permission")) {
+        errorMessage = "Erreur d'autorisation";
+        errorDescription = "Reconnectez-vous et réessayez";
+      } else {
+        errorDescription = error.message || errorDescription;
+      }
+      
+      toast.error(errorMessage, {
+        duration: 8000,
+        description: errorDescription,
+        action: {
+          label: "Contacter le support",
+          onClick: () => window.open("mailto:support@solocab.fr", "_blank")
+        }
+      });
+      
+    } finally {
+      console.log("🔚 Fin handleStep3");
+      // Ne pas setLoading(false) si on redirige vers Stripe
     }
   };
 
