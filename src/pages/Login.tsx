@@ -59,7 +59,10 @@ const Login = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error("Champs manquants", {
+        description: "Veuillez remplir votre email et mot de passe",
+        duration: 3000,
+      });
       return;
     }
 
@@ -84,11 +87,17 @@ const Login = () => {
       // MODE REPRISE: Si on est en mode reprise d'inscription
       if (isResumeMode) {
         if (driver && driver.registration_step) {
-          toast.success("Reprise de votre inscription");
+          toast.success("Inscription retrouvée", {
+            description: "Reprise de votre inscription chauffeur en cours...",
+            duration: 3000,
+          });
           navigate("/register-driver", { replace: true });
           return;
         } else {
-          toast.error("Aucune inscription en cours trouvée pour ce compte");
+          toast.error("Aucune inscription en cours", {
+            description: "Aucune inscription chauffeur trouvée pour ce compte",
+            duration: 4000,
+          });
           setLoading(false);
           return;
         }
@@ -96,7 +105,10 @@ const Login = () => {
 
       // MODE CONNEXION NORMALE: Si inscription en cours, proposer de reprendre
       if (driver && driver.registration_step) {
-        toast.info("Vous avez une inscription en cours. Utilisez 'Reprendre mon inscription'");
+        toast.info("Inscription en cours détectée", {
+          description: "Utilisez 'Reprendre mon inscription' pour continuer",
+          duration: 5000,
+        });
         setLoading(false);
         setIsResumeMode(true);
         return;
@@ -107,7 +119,10 @@ const Login = () => {
       // La navigation est gérée dans signIn()
     } catch (error: any) {
       console.error("Signin error:", error);
-      toast.error(error.message || "Email ou mot de passe incorrect");
+      toast.error("Erreur de connexion", {
+        description: error.message || "Vérifiez vos identifiants et réessayez",
+        duration: 4000,
+      });
       setLoading(false);
     }
   };
