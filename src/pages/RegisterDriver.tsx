@@ -290,7 +290,7 @@ const RegisterDriver = () => {
           user_id: newUserId,
           license_number: "PENDING",
           vehicle_model: "PENDING",
-          status: "pending",
+          status: "on_hold", // ⚠️ SÉCURITÉ: on_hold jusqu'au paiement
           max_passengers: 4,
           tva_included: false,
           tva_rate: 20.0,
@@ -343,6 +343,7 @@ const RegisterDriver = () => {
           await supabase
             .from("drivers")
             .update({
+              status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
               free_access_granted: true,
               free_access_type: "unlimited",
               free_access_start_date: new Date().toISOString(),
@@ -526,6 +527,7 @@ const RegisterDriver = () => {
         await supabase
           .from("drivers")
           .update({
+            status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
             subscription_paid: false,
             registration_step: null,
             registration_data: null
@@ -573,6 +575,7 @@ const RegisterDriver = () => {
         await supabase
           .from("drivers")
           .update({
+            status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
             subscription_paid: false,
             free_access_granted: true,
             free_access_type: "unlimited",
