@@ -43,11 +43,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { useInfiniteLoopDetector } from "@/lib/performanceStabilizer";
 
 const DriverDashboard = () => {
-  // Détecter les boucles infinies
-  useInfiniteLoopDetector("DriverDashboard", 30);
   
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
