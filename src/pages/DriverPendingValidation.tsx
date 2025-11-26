@@ -27,8 +27,8 @@ const DriverPendingValidation = () => {
   useEffect(() => {
     checkDriverStatus();
     
-    // Vérifier le statut toutes les 30 secondes
-    const interval = setInterval(checkDriverStatus, 30000);
+    // Vérifier le statut toutes les 2 minutes pour éviter les re-renders excessifs
+    const interval = setInterval(checkDriverStatus, 120000);
     return () => clearInterval(interval);
   }, [user]);
 

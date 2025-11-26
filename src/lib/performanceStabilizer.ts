@@ -19,17 +19,17 @@ export const useStableCallback = <T extends (...args: any[]) => any>(callback: T
 };
 
 /**
- * Hook pour détecter et prévenir les boucles infinies
+ * Hook pour détecter et prévenir les boucles infinies (mode log uniquement)
  */
-export const useInfiniteLoopDetector = (componentName: string, maxRenders: number = 50) => {
+export const useInfiniteLoopDetector = (componentName: string, maxRenders: number = 100) => {
   const renderCountRef = useRef(0);
   const lastResetRef = useRef(Date.now());
   
   useEffect(() => {
     const now = Date.now();
     
-    // Reset le compteur toutes les 5 secondes
-    if (now - lastResetRef.current > 5000) {
+    // Reset le compteur toutes les 10 secondes (augmenté)
+    if (now - lastResetRef.current > 10000) {
       renderCountRef.current = 0;
       lastResetRef.current = now;
       return;
@@ -38,13 +38,8 @@ export const useInfiniteLoopDetector = (componentName: string, maxRenders: numbe
     renderCountRef.current++;
     
     if (renderCountRef.current > maxRenders) {
-      console.error(`🚨 BOUCLE INFINIE DÉTECTÉE dans ${componentName} - ${renderCountRef.current} renders en 5s`);
-      
-      // Forcer un rafraîchissement de la page après 2 secondes
-      setTimeout(() => {
-        console.warn(`🔄 Rafraîchissement automatique pour résoudre la boucle infinie`);
-        window.location.reload();
-      }, 2000);
+      // Juste logger sans forcer le reload (trop agressif)
+      console.warn(`⚠️ Renders excessifs dans ${componentName} - ${renderCountRef.current} renders en 10s`);
     }
   });
 };

@@ -11,24 +11,12 @@ class WhiteScreenGuard {
   private isRecovering = false;
 
   /**
-   * Démarre la surveillance
+   * Démarre la surveillance (DÉSACTIVÉ - causait instabilité)
    */
   start() {
-    if (typeof window === 'undefined') return;
-
-    // Vérifier régulièrement qu'il y a du contenu visible
-    this.checkInterval = setInterval(() => {
-      this.checkScreenContent();
-    }, 2000);
-
-    // Vérifier immédiatement après le chargement
-    if (document.readyState === 'complete') {
-      setTimeout(() => this.checkScreenContent(), 3000);
-    } else {
-      window.addEventListener('load', () => {
-        setTimeout(() => this.checkScreenContent(), 3000);
-      });
-    }
+    // Surveillance désactivée car elle créait plus de problèmes qu'elle n'en résolvait
+    console.log('WhiteScreenGuard désactivé pour stabilité');
+    return;
   }
 
   /**
