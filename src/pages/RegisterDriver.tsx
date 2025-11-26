@@ -1054,6 +1054,7 @@ const RegisterDriver = () => {
                 <Button
                   type="button"
                   variant={!isPassport ? "default" : "outline"}
+                  className={!isPassport ? "" : "bg-background hover:bg-muted border-2 text-foreground font-medium"}
                   onClick={() => setIsPassport(false)}
                 >
                   Carte d'identité
@@ -1061,6 +1062,7 @@ const RegisterDriver = () => {
                 <Button
                   type="button"
                   variant={isPassport ? "default" : "outline"}
+                  className={isPassport ? "" : "bg-background hover:bg-muted border-2 text-foreground font-medium"}
                   onClick={() => setIsPassport(true)}
                 >
                   Passeport
