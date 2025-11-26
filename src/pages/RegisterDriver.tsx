@@ -476,7 +476,15 @@ const RegisterDriver = () => {
   };
 
   const uploadFile = async (file: File, docType: string): Promise<string> => {
-    if (!userId) throw new Error("User ID manquant");
+    if (!file) {
+      throw new Error(`Fichier ${docType} manquant`);
+    }
+
+    if (!userId) {
+      throw new Error("User ID manquant pour l'upload");
+    }
+
+    console.log(`📤 Upload ${docType}: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/${docType}.${fileExt}`;
@@ -485,12 +493,20 @@ const RegisterDriver = () => {
       .from("driver-documents")
       .upload(fileName, file, { upsert: true });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error(`❌ Erreur Supabase Storage pour ${docType}:`, uploadError);
+      throw new Error(`Upload échoué: ${uploadError.message}`);
+    }
 
     const { data: urlData } = supabase.storage
       .from("driver-documents")
       .getPublicUrl(fileName);
 
+    if (!urlData?.publicUrl) {
+      throw new Error(`URL publique non générée pour ${docType}`);
+    }
+
+    console.log(`✅ URL générée pour ${docType}: ${urlData.publicUrl.substring(0, 80)}...`);
     return urlData.publicUrl;
   };
 
@@ -551,31 +567,81 @@ const RegisterDriver = () => {
         console.log(`📤 Upload ${key} (${docNumber}/${totalDocs})`);
         
         try {
+          // Validation supplémentaire avant upload
+          if (!file || !(file instanceof File)) {
+            throw new Error(`Fichier ${key} invalide`);
+          }
+          
           // Timeout par upload: 30 secondes max
           const uploadPromise = uploadFile(file as File, key);
           const timeoutPromise = new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error(`Timeout upload ${key}`)), 30000)
           );
           
-          urls[key] = await Promise.race([uploadPromise, timeoutPromise]);
-          console.log(`✅ ${key} uploadé (${docNumber}/${totalDocs})`);
+          const uploadedUrl = await Promise.race([uploadPromise, timeoutPromise]);
+          
+          // Vérification critique: URL valide
+          if (!uploadedUrl || typeof uploadedUrl !== 'string' || !uploadedUrl.startsWith('http')) {
+            throw new Error(`URL invalide retournée pour ${key}: ${uploadedUrl}`);
+          }
+          
+          urls[key] = uploadedUrl;
+          console.log(`✅ ${key} uploadé et vérifié (${docNumber}/${totalDocs})`);
+          console.log(`   URL: ${uploadedUrl.substring(0, 80)}...`);
           
         } catch (uploadError: any) {
           console.error(`❌ Erreur upload ${key}:`, uploadError);
+          console.error(`   Détails erreur:`, {
+            message: uploadError.message,
+            code: uploadError.code,
+            name: uploadError.name
+          });
           
           const errorMsg = uploadError.message?.includes("timeout")
-            ? `L'upload de ${key} a pris trop de temps`
-            : `Erreur lors de l'upload de ${key}`;
+            ? `L'upload de ${key} a pris trop de temps (>30s)`
+            : `Erreur lors de l'upload de ${key}: ${uploadError.message}`;
           
           toast.error(errorMsg, {
             description: "Vérifiez votre connexion et réessayez.",
-            duration: 5000
+            duration: 8000
           });
+          setLoading(false);
           return;
         }
       }
 
       console.log("✅ Tous les documents uploadés avec succès");
+
+      // ===== VÉRIFICATION CRITIQUE: TOUS LES DOCUMENTS OBLIGATOIRES PRÉSENTS =====
+      console.log("🔍 Vérification exhaustive des documents uploadés...");
+      const requiredDocs = [
+        'vtc_recto',
+        'vtc_verso',
+        'identity_recto',
+        isPassport ? null : 'identity_verso', // Verso optionnel si passeport
+        'driving_license_recto',
+        'driving_license_verso',
+        'kbis',
+        'vehicle_insurance'
+      ].filter(Boolean); // Retirer les null
+      
+      const missingDocs = requiredDocs.filter(doc => !urls[doc as string]);
+      
+      if (missingDocs.length > 0) {
+        console.error("❌ Documents manquants après upload:", missingDocs);
+        toast.error(
+          `Documents non sauvegardés: ${missingDocs.join(', ')}`,
+          {
+            description: "Veuillez réessayer l'upload de ces documents",
+            duration: 8000
+          }
+        );
+        setLoading(false);
+        return;
+      }
+      
+      console.log("✅ Vérification complète: tous les documents obligatoires sont présents");
+      console.log("📋 Documents à sauvegarder:", Object.keys(urls));
 
       // ===== MISE À JOUR DRIVER AVEC VÉRIFICATION =====
       console.log("💾 Mise à jour profil avec documents...");
@@ -592,6 +658,7 @@ const RegisterDriver = () => {
             },
             isPassport,
             documentsUploaded: true,
+            documentsCount: Object.keys(urls).length,
             timestamp: new Date().toISOString()
           }
         })
@@ -599,13 +666,39 @@ const RegisterDriver = () => {
 
       if (updateError) {
         console.error("❌ Erreur sauvegarde:", updateError);
-        toast.error("Erreur sauvegarde documents");
+        toast.error("Erreur sauvegarde documents", {
+          description: updateError.message,
+          duration: 5000
+        });
         setLoading(false);
         return;
       }
 
-      console.log("✅ Documents sauvegardés en base");
-      toast.success("Documents enregistrés avec succès !");
+      // ===== VÉRIFICATION POST-SAUVEGARDE =====
+      console.log("🔄 Vérification post-sauvegarde...");
+      const { data: verifyDriver, error: verifyError } = await supabase
+        .from("drivers")
+        .select("documents, registration_step")
+        .eq("id", driverId)
+        .single();
+      
+      if (verifyError || !verifyDriver) {
+        console.error("❌ Impossible de vérifier la sauvegarde:", verifyError);
+        toast.error("Erreur de vérification. Veuillez vérifier vos documents dans l'admin.");
+      } else {
+        const savedDocsCount = Object.keys(verifyDriver.documents || {}).length;
+        console.log(`✅ Vérification OK: ${savedDocsCount} documents sauvegardés`);
+        
+        if (savedDocsCount !== Object.keys(urls).length) {
+          console.error(`⚠️ ALERTE: ${Object.keys(urls).length} uploadés mais ${savedDocsCount} sauvegardés`);
+          toast.error("Certains documents n'ont pas été sauvegardés. Contactez le support.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log("✅ Documents sauvegardés et vérifiés en base");
+      toast.success(`${Object.keys(urls).length} documents enregistrés avec succès !`);
       
       // Bloquer le retour en arrière après validation étape 2
       setCanGoBack(false);
