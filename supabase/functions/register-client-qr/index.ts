@@ -93,6 +93,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Envoyer l'email de bienvenue au client
+    try {
+      const { data: profileData } = await supabaseClient
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData) {
+        await supabaseClient.functions.invoke('send-email', {
+          body: {
+            to: profileData.email,
+            type: 'client_welcome',
+            data: {
+              clientName: profileData.full_name
+            }
+          }
+        });
+        console.log('Welcome email sent to client:', profileData.email);
+      }
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // Ne pas bloquer l'inscription si l'email échoue
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       client: newClient,

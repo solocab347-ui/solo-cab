@@ -542,7 +542,7 @@ const RegisterDriver = () => {
       const docEntries = Object.entries(documents).filter(([_, file]) => file);
       const totalDocs = docEntries.length;
       
-      toast.info(`Upload de ${totalDocs} documents en cours...`, { duration: 3000 });
+      console.log(`📤 Upload de ${totalDocs} documents en cours...`);
       
       for (let i = 0; i < docEntries.length; i++) {
         const [key, file] = docEntries[i];
@@ -560,11 +560,6 @@ const RegisterDriver = () => {
           urls[key] = await Promise.race([uploadPromise, timeoutPromise]);
           console.log(`✅ ${key} uploadé (${docNumber}/${totalDocs})`);
           
-          // Feedback visuel pour l'utilisateur
-          if (docNumber < totalDocs) {
-            toast.info(`Document ${docNumber}/${totalDocs} uploadé`, { duration: 1000 });
-          }
-          
         } catch (uploadError: any) {
           console.error(`❌ Erreur upload ${key}:`, uploadError);
           
@@ -581,7 +576,6 @@ const RegisterDriver = () => {
       }
 
       console.log("✅ Tous les documents uploadés avec succès");
-      toast.success("Tous les documents ont été uploadés !");
 
       // ===== MISE À JOUR DRIVER AVEC VÉRIFICATION =====
       console.log("💾 Mise à jour profil avec documents...");
@@ -611,7 +605,7 @@ const RegisterDriver = () => {
       }
 
       console.log("✅ Documents sauvegardés en base");
-      toast.success("Documents téléchargés avec succès !");
+      toast.success("Documents enregistrés avec succès !");
       
       // Bloquer le retour en arrière après validation étape 2
       setCanGoBack(false);
