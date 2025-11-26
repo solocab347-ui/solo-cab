@@ -185,15 +185,10 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
   }
 
-  /* Optimisations de performance ULTRA critiques */
-  * {
-    /* Hardware acceleration pour les animations */
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
+  /* Optimisations de performance critiques mais sans forcer hardware acceleration partout */
+  body, html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    will-change: auto;
   }
 
   /* Désactiver animations pendant scroll pour fluidité MAX */
@@ -207,12 +202,12 @@ All colors MUST be HSL.
     max-width: 100%;
     height: auto;
     display: block;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    /* Suppression image-rendering pour éviter pixelisation */
+    image-rendering: auto;
   }
 
-  /* Prévention du flickering et pixelisation */
-  body, html {
+  /* Prévention du flickering pour les éléments animés uniquement */
+  .animate-in, .animate-out, [data-state="open"] {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     -webkit-perspective: 1000;
@@ -243,8 +238,8 @@ All colors MUST be HSL.
     filter: drop-shadow(0 0 8px currentColor);
   }
 
-  /* Forcer le rendu GPU pour les cartes et composants lourds */
-  .card, [role="dialog"], [data-radix-portal] {
+  /* Forcer le rendu GPU pour les composants lourds uniquement */
+  [role="dialog"], [data-radix-portal] {
     will-change: transform;
     transform: translate3d(0, 0, 0);
   }
