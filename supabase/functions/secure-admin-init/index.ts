@@ -11,7 +11,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Creating admin account...');
+    // Require a secret admin token from environment
+    const ADMIN_INIT_SECRET = Deno.env.get('ADMIN_INIT_SECRET');
+    
+    if (!ADMIN_INIT_SECRET) {
+      throw new Error('ADMIN_INIT_SECRET not configured');
+    }
+
+    const { secret_token } = await req.json();
+
+    if (secret_token !== ADMIN_INIT_SECRET) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401
+        }
+      );
+    }
+
+    console.log('Creating admin account with secure token validation...');
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -25,7 +44,8 @@ Deno.serve(async (req) => {
     );
 
     const adminEmail = 'admin@solocab.fr';
-    const adminPassword = 'Admin2024!';
+    // Generate a strong random password
+    const adminPassword = crypto.randomUUID() + '-' + crypto.randomUUID();
 
     // Check if admin already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
@@ -34,8 +54,13 @@ Deno.serve(async (req) => {
     let userId: string;
 
     if (adminExists) {
-      console.log('Admin user already exists, using existing ID');
+      console.log('Admin user already exists, updating password...');
       userId = adminExists.id;
+      
+      // Update password
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: adminPassword
+      });
     } else {
       // Create new admin user
       console.log('Creating new admin user...');
@@ -54,7 +79,6 @@ Deno.serve(async (req) => {
       }
 
       userId = newUser.user!.id;
-      console.log('Admin user created successfully');
     }
 
     // Upsert profile
@@ -90,12 +114,12 @@ Deno.serve(async (req) => {
       throw roleError;
     }
 
-    console.log('Admin account created successfully!');
+    console.log('Admin account created/updated successfully!');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Compte admin créé avec succès',
+        message: 'Admin account secured',
         credentials: {
           email: adminEmail,
           password: adminPassword
@@ -108,7 +132,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error in create-admin-account function:', error);
+    console.error('Error in secure-admin-init function:', error);
     return new Response(
       JSON.stringify({
         success: false,
