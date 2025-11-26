@@ -21,14 +21,14 @@ const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // TIMEOUT D'URGENCE: forcer l'affichage après 3 secondes max
+  // TIMEOUT D'URGENCE: forcer l'affichage après 8 secondes max
   useEffect(() => {
     const emergencyTimeout = setTimeout(() => {
       if (authLoading && !user) {
         console.error("🚨 EMERGENCY OVERRIDE: forcing form display");
         setEmergencyOverride(true);
       }
-    }, 3000);
+    }, 8000);
 
     return () => clearTimeout(emergencyTimeout);
   }, [authLoading, user]);
