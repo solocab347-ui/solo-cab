@@ -267,7 +267,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Récupérer le rôle - SIMPLE et RAPIDE
       const role = await fetchUserRole(data.user.id);
       
-      toast.success("Connexion réussie !");
+      // Toast de succès avec description claire
+      const roleLabel = role === "admin" ? "Administrateur" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
+      toast.success("Connexion réussie !", {
+        description: `Bienvenue ${roleLabel} ! Redirection vers votre espace...`,
+        duration: 3000,
+      });
 
       // Navigation basée sur le rôle
       if (role === "admin") {
@@ -282,7 +287,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       console.error("Signin error:", error);
-      toast.error(error.message || "Email ou mot de passe incorrect");
+      toast.error("Connexion échouée", {
+        description: error.message || "Vérifiez votre email et mot de passe",
+        duration: 4000,
+      });
       throw error;
     }
   };
@@ -303,7 +311,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(null);
       setUserRoles([]);
       navigate("/login");
-      toast.success("Déconnexion réussie");
+      toast.success("Déconnexion réussie", {
+        description: "À bientôt sur SoloCab !",
+        duration: 3000,
+      });
     } catch (error: any) {
       console.error("❌ Signout error:", error);
       
@@ -314,7 +325,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRoles([]);
       navigate("/login");
       
-      toast.error("Déconnexion effectuée avec avertissement");
+      toast.info("Déconnexion effectuée", {
+        description: "Votre session a été fermée",
+        duration: 3000,
+      });
     }
   };
 
