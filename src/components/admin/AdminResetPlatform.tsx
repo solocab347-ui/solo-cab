@@ -27,7 +27,7 @@ export const AdminResetPlatform = () => {
 
       if (data.success) {
         toast.success("Plateforme réinitialisée avec succès", {
-          description: `${data.deleted.drivers} chauffeurs et ${data.deleted.clients} clients supprimés. Admin préservé.`,
+          description: `${data.stats?.drivers_deleted || 0} chauffeurs et ${data.stats?.clients_deleted || 0} clients supprimés. Admin préservé.`,
           duration: 10000
         });
         
