@@ -468,8 +468,7 @@ const DriverDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Paramètres</span>
-                <span className="sm:hidden">Params</span>
+                <span>Paramètres</span>
               </TabsTrigger>
             </div>
           </TabsList>
