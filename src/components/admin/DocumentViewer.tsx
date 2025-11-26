@@ -2,6 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { X, Download, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface DocumentViewerProps {
   open: boolean;
@@ -21,23 +24,99 @@ const REQUIRED_DOCUMENTS = [
 ];
 
 const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => {
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState(false);
+
   if (!driver) return null;
 
   const documents = driver.documents || {};
 
-  const downloadDocument = (url: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Générer des signed URLs pour tous les documents au chargement
+  useEffect(() => {
+    const generateSignedUrls = async () => {
+      if (!open || !driver.id) return;
+      
+      setLoadingUrls(true);
+      const urls: Record<string, string> = {};
+
+      try {
+        for (const [key, storagePath] of Object.entries(documents)) {
+          if (typeof storagePath === 'string' && storagePath) {
+            // Extraire le chemin du fichier depuis l'URL complète
+            let filePath = storagePath;
+            
+            // Si c'est une URL complète, extraire uniquement le chemin
+            if (storagePath.includes('/storage/v1/object/')) {
+              const parts = storagePath.split('/storage/v1/object/');
+              if (parts[1]) {
+                // Enlever "public/" ou "sign/" du début
+                filePath = parts[1].replace(/^(public|sign)\//, '');
+                // Enlever le nom du bucket
+                filePath = filePath.replace(/^[^/]+\//, '');
+              }
+            }
+
+            // Générer une signed URL valide 1 heure
+            const { data, error } = await supabase.storage
+              .from('driver-documents')
+              .createSignedUrl(filePath, 3600);
+
+            if (data?.signedUrl) {
+              urls[key] = data.signedUrl;
+            } else if (error) {
+              console.error(`Erreur génération URL pour ${key}:`, error);
+            }
+          }
+        }
+
+        setSignedUrls(urls);
+      } catch (error) {
+        console.error('Erreur génération signed URLs:', error);
+        toast.error('Erreur lors du chargement des documents');
+      } finally {
+        setLoadingUrls(false);
+      }
+    };
+
+    generateSignedUrls();
+  }, [open, driver.id, documents]);
+
+  const downloadDocument = async (key: string, name: string) => {
+    const signedUrl = signedUrls[key];
+    
+    if (!signedUrl) {
+      toast.error('Document non disponible');
+      return;
+    }
+
+    try {
+      // Télécharger le fichier via fetch pour tous les types
+      const response = await fetch(signedUrl);
+      if (!response.ok) throw new Error('Erreur téléchargement');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyage
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Document téléchargé');
+    } catch (error) {
+      console.error('Erreur téléchargement:', error);
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   const getDocumentUrl = (key: string): string | null => {
     if (typeof documents !== 'object') return null;
-    return documents[key] || null;
+    return signedUrls[key] || null;
   };
 
   const isImage = (url: string) => {
@@ -46,8 +125,13 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
       url.includes('.jpeg') || 
       url.includes('.png') || 
       url.includes('.webp') ||
-      url.includes('.gif')
+      url.includes('.gif') ||
+      url.toLowerCase().includes('image')
     );
+  };
+
+  const isPDF = (url: string) => {
+    return url && (url.includes('.pdf') || url.toLowerCase().includes('pdf'));
   };
 
   return (
@@ -97,26 +181,51 @@ const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => 
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => downloadDocument(url, `${doc.label}`)}
+                      onClick={() => downloadDocument(doc.key, `${doc.label}`)}
+                      disabled={loadingUrls}
                     >
                       <Download className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
 
-                {hasDocument && url ? (
+                {loadingUrls ? (
+                  <div className="bg-muted rounded-lg p-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Chargement...
+                    </p>
+                  </div>
+                ) : hasDocument && url ? (
                   isImage(url) ? (
                     <img
                       src={url}
                       alt={doc.label}
                       className="w-full h-64 object-contain rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => window.open(url, "_blank")}
+                      onError={(e) => {
+                        console.error('Erreur chargement image:', doc.key);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
+                  ) : isPDF(url) ? (
+                    <div className="bg-muted rounded-lg p-6 text-center">
+                      <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Document PDF - Cliquez pour ouvrir
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(url, '_blank')}
+                      >
+                        Ouvrir le PDF
+                      </Button>
+                    </div>
                   ) : (
                     <div className="bg-muted rounded-lg p-6 text-center">
                       <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-sm text-muted-foreground mb-3">
-                        Prévisualisation PDF non disponible
+                        Document disponible
                       </p>
                       <Button
                         variant="outline"
