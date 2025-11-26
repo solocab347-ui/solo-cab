@@ -1,8 +1,10 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +19,7 @@ export const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { user, userRole, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
   const [checkingDriver, setCheckingDriver] = useState(requireValidatedDriver);
   const hasChecked = useRef(false); // Éviter les vérifications multiples
@@ -93,13 +96,32 @@ export const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Bloquer accès si paiement manquant
+  // Rediriger les chauffeurs sans paiement vers une page d'erreur claire (pas de boucle)
   if (
     requireValidatedDriver &&
     userRole === "driver" &&
     driverStatus === "payment_required"
   ) {
-    return <Navigate to="/login" replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="p-8 max-w-md text-center space-y-4">
+          <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
+          <h2 className="text-2xl font-bold">Paiement Requis</h2>
+          <p className="text-muted-foreground">
+            Votre inscription est incomplète. Veuillez compléter le paiement pour accéder à votre espace chauffeur.
+          </p>
+          <Button onClick={() => navigate("/register-driver")} className="w-full">
+            Compléter l'inscription
+          </Button>
+          <Button variant="outline" onClick={() => {
+            supabase.auth.signOut();
+            navigate("/login");
+          }} className="w-full">
+            Se déconnecter
+          </Button>
+        </Card>
+      </div>
+    );
   }
 
   // Rediriger les chauffeurs non validés vers la page d'attente
