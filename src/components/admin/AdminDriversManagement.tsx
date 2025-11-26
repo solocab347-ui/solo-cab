@@ -223,24 +223,17 @@ const AdminDriversManagement = () => {
         // Envoyer l'email approprié selon l'action
         if (actionDialog.action === "validate" || actionDialog.action === "reject") {
           try {
-            const emailResponse = await supabase.functions.invoke("send-email", {
+            const emailResponse = await supabase.functions.invoke("send-driver-validation-email", {
               body: {
-                to: actionDialog.driver.profiles.email,
-                type: "driver_validation",
-                data: {
-                  driverName: actionDialog.driver.profiles.full_name,
-                  validationStatus: actionDialog.action === "validate" ? "approved" : "rejected",
-                  rejectionReason: actionDialog.action === "reject" ? "Documents incomplets ou non conformes" : undefined,
-                },
+                driver_id: actionDialog.driver.id,
+                action: actionDialog.action === "validate" ? "validated" : "rejected"
               },
             });
             
             if (emailResponse.error) {
               console.error("⚠️ Erreur envoi email:", emailResponse.error);
-              toast.warning(`Email non envoyé: ${emailResponse.error.message}`);
             } else {
               console.log("✅ Email de validation envoyé au chauffeur");
-              toast.success("Email de notification envoyé au chauffeur");
             }
           } catch (emailErr: any) {
             console.error("⚠️ Erreur envoi email:", emailErr);
