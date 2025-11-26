@@ -149,34 +149,29 @@ const AdminSubscriptionStats = () => {
   };
 
   const generateRevenueTimeSeries = (drivers: any[], range: string) => {
-    // Simplification : générer des données basées sur la période
-    const data = [];
-    const count = range === "day" ? 24 : range === "week" ? 7 : range === "month" ? 30 : 12;
+    // Utiliser les vraies données des chauffeurs avec abonnements actifs
+    const activeDrivers = drivers.filter(d => d.subscription_status === 'active' && !d.free_access_granted);
+    const count = activeDrivers.length;
     
-    for (let i = 0; i < count; i++) {
-      const periodDrivers = drivers.filter(d => d.subscription_status === 'active').length;
-      data.push({
-        period: range === "day" ? `${i}h` : range === "week" ? `Jour ${i + 1}` : range === "month" ? `${i + 1}` : `Mois ${i + 1}`,
-        revenue: periodDrivers * 49.99 * (0.8 + Math.random() * 0.4), // Variation
-        subscriptions: Math.floor(periodDrivers * (0.8 + Math.random() * 0.4)),
-      });
-    }
-    return data;
+    return [{
+      period: "Période actuelle",
+      revenue: count * 49.99,
+      subscriptions: count,
+    }];
   };
 
   const generateSubscriptionTimeSeries = (drivers: any[], range: string) => {
-    const data = [];
-    const count = range === "day" ? 24 : range === "week" ? 7 : range === "month" ? 30 : 12;
+    // Calculer les vraies statistiques
+    const activeDrivers = drivers.filter(d => d.subscription_status === 'active' && !d.free_access_granted);
+    const newDrivers = drivers.filter(d => d.subscription_status === 'active');
+    const inactiveDrivers = drivers.filter(d => d.subscription_status !== 'active' && !d.free_access_granted);
     
-    for (let i = 0; i < count; i++) {
-      data.push({
-        period: range === "day" ? `${i}h` : range === "week" ? `Jour ${i + 1}` : range === "month" ? `${i + 1}` : `Mois ${i + 1}`,
-        nouveaux: Math.floor(Math.random() * 5),
-        résiliés: Math.floor(Math.random() * 2),
-        actifs: 50 + Math.floor(Math.random() * 20),
-      });
-    }
-    return data;
+    return [{
+      period: "Période actuelle",
+      nouveaux: newDrivers.length,
+      résiliés: inactiveDrivers.length,
+      actifs: activeDrivers.length,
+    }];
   };
 
   if (loading) {
