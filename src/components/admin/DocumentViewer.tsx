@@ -10,16 +10,14 @@ interface DocumentViewerProps {
 }
 
 const REQUIRED_DOCUMENTS = [
-  { key: "kbis", label: "Kbis" },
-  { key: "vehicle_registration", label: "Carte grise" },
-  { key: "vehicle_insurance", label: "Assurance" },
   { key: "vtc_recto", label: "Carte VTC recto" },
   { key: "vtc_verso", label: "Carte VTC verso" },
-  { key: "urssaf_certificate", label: "Attestation URSSAF" },
-  { key: "identity_recto", label: "Carte identité recto" },
-  { key: "identity_verso", label: "Carte identité verso / Passeport" },
+  { key: "identity_recto", label: "Pièce d'identité recto / Passeport" },
+  { key: "identity_verso", label: "Pièce d'identité verso" },
   { key: "driving_license_recto", label: "Permis de conduire recto" },
   { key: "driving_license_verso", label: "Permis de conduire verso" },
+  { key: "kbis", label: "Kbis" },
+  { key: "vehicle_insurance", label: "Assurance véhicule" },
 ];
 
 const DocumentViewer = ({ open, onOpenChange, driver }: DocumentViewerProps) => {
