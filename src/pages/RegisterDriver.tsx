@@ -58,6 +58,7 @@ const RegisterDriver = () => {
   const [skipDocuments, setSkipDocuments] = useState<boolean>(false);
   const [isPassport, setIsPassport] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(true);
   
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -367,6 +368,10 @@ const RegisterDriver = () => {
 
       console.log("🎉 INSCRIPTION REUSSIE - Passage étape 2");
       toast.success("Compte créé avec succès !");
+      
+      // Bloquer le retour en arrière après validation étape 1
+      setCanGoBack(false);
+      
       await new Promise(resolve => setTimeout(resolve, 500));
       setCurrentStep(2);
       console.log("✅ Étape 2 activée");
@@ -403,6 +408,7 @@ const RegisterDriver = () => {
   const handleStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("📄 DEBUT étape 2 - Upload documents");
 
     try {
       // Validate required documents
@@ -436,14 +442,27 @@ const RegisterDriver = () => {
         return;
       }
 
-      // Upload all documents
+      console.log("✅ Validation documents réussie");
+
+      // Upload all documents avec gestion d'erreur améliorée
       const urls: Record<string, string> = {};
+      const docEntries = Object.entries(documents).filter(([_, file]) => file);
       
-      for (const [key, file] of Object.entries(documents)) {
-        if (file) {
-          urls[key] = await uploadFile(file, key);
+      for (let i = 0; i < docEntries.length; i++) {
+        const [key, file] = docEntries[i];
+        try {
+          console.log(`📤 Upload ${key} (${i+1}/${docEntries.length})`);
+          urls[key] = await uploadFile(file as File, key);
+          console.log(`✅ ${key} uploadé`);
+        } catch (uploadError: any) {
+          console.error(`❌ Erreur upload ${key}:`, uploadError);
+          toast.error(`Erreur lors de l'upload de ${key}: ${uploadError.message}`);
+          setLoading(false);
+          return;
         }
       }
+
+      console.log("✅ Tous les documents uploadés");
 
       // Update driver with documents et progression
       const { error: updateError } = await supabase
@@ -464,12 +483,17 @@ const RegisterDriver = () => {
         .eq("id", driverId);
 
       if (updateError) {
+        console.error("❌ Erreur sauvegarde:", updateError);
         toast.error("Erreur sauvegarde documents");
         setLoading(false);
         return;
       }
 
+      console.log("✅ Documents sauvegardés en base");
       toast.success("Documents téléchargés avec succès !");
+      
+      // Bloquer le retour en arrière après validation étape 2
+      setCanGoBack(false);
       
       // Si token gratuit avec documents, finaliser directement
       if (invitationToken && isTokenValid && !skipDocuments) {
@@ -500,9 +524,10 @@ const RegisterDriver = () => {
       
       await new Promise(resolve => setTimeout(resolve, 500));
       setCurrentStep(3);
+      console.log("✅ Passage étape 3");
 
     } catch (error: any) {
-      console.error("Error step 2:", error);
+      console.error("💥 ERREUR étape 2:", error);
       toast.error(error.message || "Erreur téléchargement documents");
     } finally {
       setLoading(false);
@@ -797,15 +822,23 @@ const RegisterDriver = () => {
             />
 
             <div className="flex gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep(1)}
-                disabled={loading}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour
-              </Button>
+              {canGoBack && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (canGoBack) {
+                      setCurrentStep(1);
+                    } else {
+                      toast.warning("Impossible de revenir en arrière après validation");
+                    }
+                  }}
+                  disabled={loading || !canGoBack}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour
+                </Button>
+              )}
               <Button type="submit" className="flex-1" disabled={loading}>
                 {loading ? (
                   <>
@@ -889,14 +922,23 @@ const RegisterDriver = () => {
             </div>
 
             <div className="flex gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep(2)}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour
-              </Button>
+              {canGoBack && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (canGoBack) {
+                      setCurrentStep(2);
+                    } else {
+                      toast.warning("Impossible de revenir en arrière après validation");
+                    }
+                  }}
+                  disabled={!canGoBack}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour
+                </Button>
+              )}
               <Button type="submit" className="flex-1">
                 {invitationToken && isTokenValid ? "Finaliser" : "Payer et finaliser"}
               </Button>
@@ -931,38 +973,67 @@ const DocumentUpload = ({
   file: File | null;
   onChange: (file: File | null) => void;
   required?: boolean;
-}) => (
-  <div>
-    <Label>
-      {label} {required && <span className="text-red-500">*</span>}
-    </Label>
-    <div className="mt-2">
-      <input
-        type="file"
-        accept="image/*,.pdf"
-        onChange={(e) => onChange(e.target.files?.[0] || null)}
-        className="hidden"
-        id={`file-${label}`}
-      />
-      <label
-        htmlFor={`file-${label}`}
-        className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50"
-      >
-        {file ? (
-          <div className="text-center">
-            <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
-            <p className="text-sm font-medium">{file.name}</p>
-            <p className="text-xs text-muted-foreground">Cliquer pour changer</p>
-          </div>
-        ) : (
-          <div className="text-center">
-            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Cliquer pour télécharger</p>
-          </div>
-        )}
-      </label>
+}) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    
+    if (selectedFile) {
+      // Validation taille fichier (max 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        toast.error("Fichier trop volumineux (max 10MB)");
+        return;
+      }
+      
+      // Validation type fichier
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!validTypes.includes(selectedFile.type)) {
+        toast.error("Format invalide (JPG, PNG, WEBP ou PDF uniquement)");
+        return;
+      }
+      
+      console.log(`✅ Fichier sélectionné: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)}KB)`);
+    }
+    
+    onChange(selectedFile);
+  };
+
+  return (
+    <div>
+      <Label>
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
+      <div className="mt-2">
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          onChange={handleFileChange}
+          className="hidden"
+          id={`file-${label}`}
+        />
+        <label
+          htmlFor={`file-${label}`}
+          className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          {file ? (
+            <div className="text-center p-4">
+              <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
+              <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {(file.size / 1024).toFixed(1)} KB
+              </p>
+              <p className="text-xs text-primary mt-2">Cliquer pour changer</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Cliquer pour télécharger</p>
+              <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP ou PDF (max 10MB)</p>
+            </div>
+          )}
+        </label>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default RegisterDriver;
