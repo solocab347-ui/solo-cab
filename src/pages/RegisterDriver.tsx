@@ -943,8 +943,9 @@ const RegisterDriver = () => {
         {currentStep === 1 && !isResuming && (
           <form onSubmit={handleStep1} className="space-y-6">
             <div>
-              <Label htmlFor="fullName">Nom complet</Label>
+              <Label htmlFor="fullName" className="text-gray-700 font-medium">Nom complet</Label>
               <Input
+                variant="light"
                 id="fullName"
                 value={formData.fullName}
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
@@ -954,8 +955,9 @@ const RegisterDriver = () => {
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
               <Input
+                variant="light"
                 id="email"
                 type="email"
                 value={formData.email}
@@ -966,8 +968,9 @@ const RegisterDriver = () => {
             </div>
 
             <div>
-              <Label htmlFor="phone">Téléphone</Label>
+              <Label htmlFor="phone" className="text-gray-700 font-medium">Téléphone</Label>
               <Input
+                variant="light"
                 id="phone"
                 type="tel"
                 value={formData.phone}
@@ -978,9 +981,10 @@ const RegisterDriver = () => {
             </div>
 
             <div>
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password" className="text-gray-700 font-medium">Mot de passe</Label>
               <div className="relative">
                 <Input
+                  variant="light"
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
@@ -991,18 +995,19 @@ const RegisterDriver = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-gray-100"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4 text-gray-600" /> : <Eye className="h-4 w-4 text-gray-600" />}
                 </Button>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">Confirmer mot de passe</Label>
+              <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">Confirmer mot de passe</Label>
               <div className="relative">
                 <Input
+                  variant="light"
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
@@ -1013,10 +1018,10 @@ const RegisterDriver = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-gray-100"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4 text-gray-600" /> : <Eye className="h-4 w-4 text-gray-600" />}
                 </Button>
               </div>
             </div>
