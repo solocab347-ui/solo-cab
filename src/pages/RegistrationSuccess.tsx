@@ -73,10 +73,11 @@ const RegistrationSuccess = () => {
 
         console.log("✅ Paiement Stripe validé pour le driver:", driverId);
         
-        // Nettoyer la progression d'inscription
+        // ⚠️ SÉCURITÉ CRITIQUE: Changer status à "pending" SEULEMENT après paiement
         await supabase
           .from("drivers")
           .update({
+            status: "pending",
             registration_step: null,
             registration_data: null
           })
