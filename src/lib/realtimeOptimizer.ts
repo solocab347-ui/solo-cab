@@ -18,7 +18,7 @@ interface ChannelConfig {
 class RealtimeOptimizer {
   private channels: Map<string, RealtimeChannel> = new Map();
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
-  private readonly MAX_CHANNELS = 5; // Limite stricte
+  private readonly MAX_CHANNELS = 10; // Augmenté pour éviter les blocages
 
   /**
    * Créer ou récupérer un canal existant
