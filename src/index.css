@@ -191,27 +191,11 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Désactiver animations pendant scroll pour fluidité MAX */
-  .is-scrolling * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-
   /* Optimisation des images */
   img {
     max-width: 100%;
     height: auto;
     display: block;
-    /* Suppression image-rendering pour éviter pixelisation */
-    image-rendering: auto;
-  }
-
-  /* Prévention du flickering pour les éléments animés uniquement */
-  .animate-in, .animate-out, [data-state="open"] {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-perspective: 1000;
-    perspective: 1000;
   }
 
   /* Assurer que les overlays ne bloquent jamais le scroll */
@@ -228,20 +212,9 @@ All colors MUST be HSL.
     z-index: 50 !important;
   }
 
-  /* Empêcher les éléments fixes de bloquer l'interface */
-  [data-state="open"] {
-    pointer-events: auto !important;
-  }
-
   /* Drop shadow glow effect */
   .drop-shadow-glow {
     filter: drop-shadow(0 0 8px currentColor);
-  }
-
-  /* Forcer le rendu GPU pour les composants lourds uniquement */
-  [role="dialog"], [data-radix-portal] {
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
   }
 }
 
