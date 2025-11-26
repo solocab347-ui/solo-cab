@@ -633,8 +633,8 @@ const RegisterDriver = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4 text-gray-900">
+      <Card className="w-full max-w-2xl p-8 bg-white text-gray-900">
         {isResuming && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-900 font-medium">
@@ -647,7 +647,7 @@ const RegisterDriver = () => {
         )}
         <div className="flex items-center justify-center mb-8">
           <Car className="h-12 w-12 text-primary mr-3" />
-          <h1 className="text-3xl font-bold">Inscription Chauffeur</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Inscription Chauffeur</h1>
         </div>
 
         <div className="flex justify-between mb-8">
@@ -748,9 +748,9 @@ const RegisterDriver = () => {
               )}
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-gray-600">
               Déjà inscrit ?{" "}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/login" className="text-primary hover:underline font-semibold">
                 Se connecter
               </Link>
             </p>
@@ -870,7 +870,7 @@ const RegisterDriver = () => {
           <form onSubmit={handleStep3} className="space-y-6">
             <div className="text-center space-y-4">
               <CreditCard className="h-16 w-16 text-primary mx-auto" />
-              <h2 className="text-2xl font-bold">Paiement</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Paiement</h2>
               
               {invitationToken && isTokenValid ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-6">
@@ -886,47 +886,47 @@ const RegisterDriver = () => {
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-primary rounded-xl p-8 space-y-6">
                   <div className="text-center">
                     <p className="text-4xl font-bold text-primary mb-2">
-                      49,99 €<span className="text-lg font-normal text-muted-foreground">/mois</span>
+                      49,99 €<span className="text-lg font-normal text-gray-600">/mois</span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-600">
                       Abonnement mensuel sans engagement
                     </p>
                   </div>
                   
                   <div className="bg-white rounded-lg p-6 text-left space-y-3">
-                    <p className="font-semibold text-lg mb-4">Accès complet incluant :</p>
+                    <p className="font-semibold text-lg mb-4 text-gray-900">Accès complet incluant :</p>
                     <div className="space-y-3">
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Gestion illimitée de vos clients et courses</span>
+                        <span className="text-sm text-gray-800">Gestion illimitée de vos clients et courses</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Génération automatique de devis et factures</span>
+                        <span className="text-sm text-gray-800">Génération automatique de devis et factures</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Code QR personnalisé pour inscription clients</span>
+                        <span className="text-sm text-gray-800">Code QR personnalisé pour inscription clients</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Profil public sur la plateforme SoloCab</span>
+                        <span className="text-sm text-gray-800">Profil public sur la plateforme SoloCab</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Paiement en ligne sécurisé via Stripe</span>
+                        <span className="text-sm text-gray-800">Paiement en ligne sécurisé via Stripe</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Statistiques et suivi de votre activité</span>
+                        <span className="text-sm text-gray-800">Statistiques et suivi de votre activité</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Système de promotions pour vos clients</span>
+                        <span className="text-sm text-gray-800">Système de promotions pour vos clients</span>
                       </div>
                       <div className="flex items-start gap-3">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">Support client dédié</span>
+                        <span className="text-sm text-gray-800">Support client dédié</span>
                       </div>
                     </div>
                   </div>
@@ -967,12 +967,12 @@ const StepIndicator = ({ step, current, label }: { step: number; current: number
   <div className="flex flex-col items-center">
     <div
       className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-        current >= step ? "bg-primary text-primary-foreground" : "bg-gray-200 text-gray-500"
+        current >= step ? "bg-primary text-primary-foreground" : "bg-gray-200 text-gray-600"
       }`}
     >
       {current > step ? <CheckCircle className="h-6 w-6" /> : step}
     </div>
-    <span className="text-xs mt-1">{label}</span>
+    <span className="text-xs mt-1 text-gray-700">{label}</span>
   </div>
 );
 
@@ -1012,7 +1012,7 @@ const DocumentUpload = ({
 
   return (
     <div>
-      <Label>
+      <Label className="text-gray-900">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       <div className="mt-2">
@@ -1025,13 +1025,13 @@ const DocumentUpload = ({
         />
         <label
           htmlFor={`file-${label}`}
-          className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors bg-white"
         >
           {file ? (
             <div className="text-center p-4">
               <FileText className="h-8 w-8 text-primary mx-auto mb-2" />
-              <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{file.name}</p>
+              <p className="text-xs text-gray-600 mt-1">
                 {(file.size / 1024).toFixed(1)} KB
               </p>
               <p className="text-xs text-primary mt-2">Cliquer pour changer</p>
@@ -1040,7 +1040,7 @@ const DocumentUpload = ({
             <div className="text-center">
               <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm text-gray-600">Cliquer pour télécharger</p>
-              <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP ou PDF (max 10MB)</p>
+              <p className="text-xs text-gray-500 mt-1">JPG, PNG, WEBP ou PDF (max 10MB)</p>
             </div>
           )}
         </label>
