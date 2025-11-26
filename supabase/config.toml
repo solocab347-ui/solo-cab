@@ -1,22 +1,10 @@
 project_id = "iyothopplhbwcfrpxryc"
 
-[functions.create-admin-account]
-verify_jwt = false
-
-[functions.reset-platform]
-verify_jwt = false
-
-[functions.cleanup-test-paris-drivers]
-verify_jwt = false
-
-[functions.recreate-test-clients]
-verify_jwt = false
-
-[functions.create-paris-drivers]
+[functions.secure-admin-init]
 verify_jwt = false
 
 [functions.qr-code-manager]
-verify_jwt = false
+verify_jwt = true
 
 [functions.register-client-qr]
 verify_jwt = false
@@ -38,9 +26,6 @@ verify_jwt = false
 
 [functions.driver-assistant]
 verify_jwt = true
-
-[functions.create-production-test-accounts]
-verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false

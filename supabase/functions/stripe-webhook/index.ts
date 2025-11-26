@@ -23,17 +23,19 @@ serve(async (req) => {
   try {
     const body = await req.text();
     
-    // For testing, you might not have a webhook secret yet
-    // In production, you should verify the signature
+    // SECURITY: Always verify webhook signature
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    let event: Stripe.Event;
     
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } else {
-      event = JSON.parse(body);
-      console.log("[STRIPE-WEBHOOK] ⚠️ Warning: Running without webhook signature verification");
+    if (!webhookSecret) {
+      console.error("[STRIPE-WEBHOOK] STRIPE_WEBHOOK_SECRET not configured");
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }), 
+        { status: 500 }
+      );
     }
+    
+    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    console.log("[STRIPE-WEBHOOK] ✓ Signature verified");
 
     console.log("[STRIPE-WEBHOOK] Event received:", event.type);
 
