@@ -650,6 +650,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           invoice_counter: number | null
+          is_demo_account: boolean | null
           license_number: string
           max_passengers: number
           per_km_rate: number | null
@@ -710,6 +711,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           invoice_counter?: number | null
+          is_demo_account?: boolean | null
           license_number: string
           max_passengers?: number
           per_km_rate?: number | null
@@ -770,6 +772,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           invoice_counter?: number | null
+          is_demo_account?: boolean | null
           license_number?: string
           max_passengers?: number
           per_km_rate?: number | null
