@@ -200,10 +200,13 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </div>
 
         <div className="space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
-            <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel</span>
-            <span className="font-bold text-sm sm:text-base text-white">49,99€ / mois</span>
-          </div>
+          {/* Masquer le prix pour les accès gratuits illimités */}
+          {!hasFreeAccess && (
+            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
+              <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel</span>
+              <span className="font-bold text-sm sm:text-base text-white">49,99€ / mois</span>
+            </div>
+          )}
 
           {isActive && driverProfile?.driver?.subscription_end_date && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
@@ -265,7 +268,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       </Card>
 
       {/* Comparison */}
-      {isInactive && (
+      {isInactive && !hasFreeAccess && (
         <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
           <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
             💰 Économisez jusqu'à 15 000€/an
