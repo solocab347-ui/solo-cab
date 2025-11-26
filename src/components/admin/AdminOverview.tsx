@@ -53,31 +53,35 @@ const AdminOverview = () => {
         d.status === 'pending' || d.status === 'on_hold'
       ).length || 0;
 
-      // Calculer les abonnements payants actifs (subscription_paid = true OU subscription_status = 'active')
+      // CRITIQUE: Calculer les abonnements payants actifs
+      // UNIQUEMENT les drivers validés qui ont payé
       const activeSubscriptions = driversData?.filter(d => 
+        d.status === 'validated' && // DOIT être validé
         (d.subscription_paid === true || d.subscription_status === 'active') && 
-        !d.free_access_granted
+        !d.free_access_granted // Exclure accès gratuits
       ).length || 0;
 
-      // Compter les accès gratuits actifs
+      // Compter les accès gratuits actifs (tous statuts confondus)
       const freeAccessCount = driversData?.filter(d => 
         d.free_access_granted === true
       ).length || 0;
 
-      // Compter les abonnements inactifs (pas payé ET pas d'accès gratuit)
+      // Compter les abonnements inactifs (validés mais pas payé ET pas d'accès gratuit)
       const inactiveSubscriptions = driversData?.filter(d => 
+        d.status === 'validated' && // Seulement les validés
         d.subscription_paid !== true && 
         d.subscription_status !== 'active' && 
         !d.free_access_granted
       ).length || 0;
 
-      // Revenus mensuels (49.99€ par abonnement actif)
+      // Revenus mensuels (49.99€ par abonnement actif PAYANT et VALIDÉ uniquement)
       const monthlyRevenue = activeSubscriptions * 49.99;
 
-      // Nouveaux abonnements ce mois
+      // Nouveaux abonnements ce mois (validés ET payants uniquement)
       const startOfCurrentMonth = startOfMonth(new Date());
       const newSubscriptionsMonth = driversData?.filter(d => 
         new Date(d.created_at) >= startOfCurrentMonth && 
+        d.status === 'validated' && // DOIT être validé
         (d.subscription_paid === true || d.subscription_status === 'active')
       ).length || 0;
 
