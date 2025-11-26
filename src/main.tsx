@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost, monitorMemory } from "./lib/performanceBoost";
 import { initSentry } from "./lib/sentry";
+import "./lib/whiteScreenGuard";
 
 // Initialiser Sentry avant tout le reste
 initSentry();

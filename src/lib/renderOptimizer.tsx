@@ -73,6 +73,26 @@ export function useRenderCount(componentName: string, threshold: number = 10) {
 }
 
 /**
+ * Détecteur d'écran blanc et récupération automatique
+ */
+export function useWhiteScreenDetector() {
+  React.useEffect(() => {
+    const detector = setTimeout(() => {
+      // Si aucun contenu n'est visible après 5 secondes
+      const hasContent = document.body.textContent && document.body.textContent.trim().length > 0;
+      const hasElements = document.body.children.length > 1;
+      
+      if (!hasContent || !hasElements) {
+        console.error('🚨 Écran blanc détecté - rechargement automatique');
+        window.location.reload();
+      }
+    }, 5000);
+
+    return () => clearTimeout(detector);
+  }, []);
+}
+
+/**
  * Batch state updates pour React 18+
  */
 export function batchStateUpdates(updates: (() => void)[]) {
