@@ -96,29 +96,36 @@ export const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Rediriger les chauffeurs sans paiement vers une page d'erreur claire (pas de boucle)
+  // Rediriger les chauffeurs sans paiement vers une page d'erreur claire
   if (
     requireValidatedDriver &&
     userRole === "driver" &&
     driverStatus === "payment_required"
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="p-8 max-w-md text-center space-y-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <Card className="p-8 max-w-md text-center space-y-4 bg-white">
           <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-          <h2 className="text-2xl font-bold">Paiement Requis</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-bold text-gray-900">Paiement Requis</h2>
+          <p className="text-gray-700">
             Votre inscription est incomplète. Veuillez compléter le paiement pour accéder à votre espace chauffeur.
           </p>
-          <Button onClick={() => navigate("/register-driver")} className="w-full">
-            Compléter l'inscription
-          </Button>
-          <Button variant="outline" onClick={() => {
-            supabase.auth.signOut();
-            navigate("/login");
-          }} className="w-full">
-            Se déconnecter
-          </Button>
+          <div className="space-y-2">
+            <Button onClick={() => navigate("/register-driver")} className="w-full">
+              Compléter l'inscription
+            </Button>
+            <Button variant="outline" onClick={async () => {
+              try {
+                await supabase.auth.signOut();
+                navigate("/login");
+              } catch (error) {
+                console.error("Erreur déconnexion:", error);
+                navigate("/login");
+              }
+            }} className="w-full">
+              Se déconnecter
+            </Button>
+          </div>
         </Card>
       </div>
     );

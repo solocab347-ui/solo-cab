@@ -10,51 +10,71 @@ const RegistrationSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const driverId = searchParams.get("driver_id");
 
   useEffect(() => {
     const updateDriverPaymentStatus = async () => {
+      console.log("🔍 VERIFICATION PAIEMENT - Driver ID:", driverId);
+      
       if (!driverId) {
-        toast.error("Driver ID manquant");
-        navigate("/login");
+        console.error("❌ Driver ID manquant");
+        setError("Identifiant chauffeur manquant");
+        setLoading(false);
+        setTimeout(() => navigate("/login"), 3000);
         return;
       }
 
       // Si c'est un accès gratuit via token, pas besoin de vérifier Stripe
       const isTokenAccess = searchParams.get("token") === "true";
+      console.log("📋 Type d'accès:", isTokenAccess ? "Token gratuit" : "Paiement Stripe");
 
       try {
         // Vérifier que le driver existe et a les bons accès
+        console.log("🔎 Vérification driver dans DB...");
         const { data: driver, error: driverCheckError } = await supabase
           .from("drivers")
-          .select("id, subscription_paid, free_access_granted, user_id")
+          .select("id, subscription_paid, free_access_granted, user_id, status")
           .eq("id", driverId)
           .single();
 
         if (driverCheckError || !driver) {
-          toast.error("Driver introuvable");
-          navigate("/login");
+          console.error("❌ Driver introuvable:", driverCheckError);
+          setError("Profil chauffeur introuvable");
+          setLoading(false);
+          setTimeout(() => navigate("/login"), 3000);
           return;
         }
 
+        console.log("✅ Driver trouvé:", {
+          status: driver.status,
+          subscription_paid: driver.subscription_paid,
+          free_access_granted: driver.free_access_granted
+        });
+
         // Si accès gratuit via token, tout est déjà configuré
         if (isTokenAccess && driver.free_access_granted) {
-          console.log("✅ Accès gratuit validé pour le driver:", driverId);
-          // Récupérer infos pour email
+          console.log("✅ Accès gratuit validé");
+          
           const { data: driverData } = await supabase
             .from("drivers")
-            .select(`profiles:profiles!inner(full_name, email)`)
+            .select(`
+              id,
+              user_id,
+              profiles:user_id(full_name, email)
+            `)
             .eq("id", driverId)
             .single();
 
           if (driverData?.profiles?.email) {
+            console.log("📧 Envoi email bienvenue...");
             await supabase.functions.invoke("send-email", {
               body: {
                 to: driverData.profiles.email,
                 type: "driver_welcome",
                 data: { driverName: driverData.profiles.full_name }
               }
-            }).catch(console.error);
+            }).catch(err => console.error("⚠️ Erreur email:", err));
           }
 
           toast.success("Inscription complétée avec accès gratuit !");
@@ -63,18 +83,43 @@ const RegistrationSuccess = () => {
         }
 
         // SINON : Vérifier que c'est bien un retour Stripe valide
-        // Note: Le webhook Stripe a déjà mis à jour subscription_paid=true
-        // On vérifie juste que c'est le cas
-        if (!driver.subscription_paid) {
-          toast.error("Paiement non confirmé. Veuillez contacter le support.");
-          navigate("/login");
+        // Le webhook Stripe doit avoir mis à jour subscription_paid=true
+        console.log("💳 Vérification paiement Stripe...");
+        
+        // Attendre jusqu'à 10 secondes que le webhook mette à jour le statut
+        let attempts = 0;
+        let paymentConfirmed = driver.subscription_paid;
+        
+        while (!paymentConfirmed && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+          
+          console.log(`⏳ Tentative ${attempts}/10 de vérification paiement...`);
+          
+          const { data: updatedDriver } = await supabase
+            .from("drivers")
+            .select("subscription_paid")
+            .eq("id", driverId)
+            .single();
+          
+          if (updatedDriver?.subscription_paid) {
+            paymentConfirmed = true;
+            console.log("✅ Paiement confirmé après", attempts, "secondes");
+          }
+        }
+
+        if (!paymentConfirmed) {
+          console.error("❌ Paiement non confirmé après 10 secondes");
+          setError("Le paiement n'a pas encore été confirmé. Veuillez réessayer dans quelques instants ou contacter le support.");
+          setLoading(false);
           return;
         }
 
-        console.log("✅ Paiement Stripe validé pour le driver:", driverId);
+        console.log("✅ Paiement Stripe validé");
         
         // ⚠️ SÉCURITÉ CRITIQUE: Changer status à "pending" SEULEMENT après paiement
-        await supabase
+        console.log("🔄 Mise à jour statut vers 'pending'...");
+        const { error: updateError } = await supabase
           .from("drivers")
           .update({
             status: "pending",
@@ -83,10 +128,21 @@ const RegistrationSuccess = () => {
           })
           .eq("id", driverId);
 
+        if (updateError) {
+          console.error("❌ Erreur mise à jour statut:", updateError);
+        } else {
+          console.log("✅ Statut mis à jour");
+        }
+
         // Récupérer infos pour email
+        console.log("📧 Envoi email bienvenue...");
         const { data: driverData } = await supabase
           .from("drivers")
-          .select(`profiles:profiles!inner(full_name, email)`)
+          .select(`
+            id,
+            user_id,
+            profiles:user_id(full_name, email)
+          `)
           .eq("id", driverId)
           .single();
 
@@ -97,14 +153,17 @@ const RegistrationSuccess = () => {
               type: "driver_welcome",
               data: { driverName: driverData.profiles.full_name }
             }
-          }).catch(console.error);
+          }).catch(err => console.error("⚠️ Erreur email:", err));
+          console.log("✅ Email envoyé");
         }
 
         toast.success("Inscription terminée avec succès !");
+        console.log("🎉 INSCRIPTION COMPLETE");
+        
       } catch (error: any) {
-        console.error("❌ Erreur validation:", error);
-        toast.error("Erreur lors de la validation");
-        navigate("/login");
+        console.error("💥 ERREUR VALIDATION:", error);
+        console.error("Stack:", error.stack);
+        setError("Une erreur est survenue lors de la validation: " + (error.message || "Erreur inconnue"));
       } finally {
         setLoading(false);
       }
@@ -114,38 +173,56 @@ const RegistrationSuccess = () => {
   }, [driverId, searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0f1e35] to-[#1a2942] flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8 bg-[#1a2332]/95 border-primary/20 backdrop-blur-sm text-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl p-8 bg-white text-gray-900">
         {loading ? (
           <>
             <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
-            <h1 className="text-2xl font-bold text-white mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Validation du paiement...
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-600">
               Veuillez patienter quelques instants
             </p>
+          </>
+        ) : error ? (
+          <>
+            <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-red-500" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Erreur de validation
+            </h1>
+            <p className="text-lg text-gray-700 mb-6">
+              {error}
+            </p>
+            <Button
+              onClick={() => navigate("/login")}
+              className="w-full h-12 text-lg"
+            >
+              Retour à la page de connexion
+            </Button>
           </>
         ) : (
           <>
             <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
               Inscription réussie !
             </h1>
-            <p className="text-lg text-muted-foreground mb-6">
+            <p className="text-lg text-gray-700 mb-6">
               Votre paiement a été validé avec succès.
             </p>
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 mb-6">
-              <h2 className="text-xl font-bold text-white mb-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
                 Prochaines étapes
               </h2>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-gray-700 mb-4">
                 Votre dossier est maintenant en cours de validation par notre équipe administrative.
                 Vous recevrez un email de confirmation une fois votre compte validé (généralement sous 24-48h).
               </p>
-              <ul className="text-left text-sm text-muted-foreground space-y-2">
+              <ul className="text-left text-sm text-gray-700 space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
                   <span>Vérification de vos documents</span>
@@ -162,7 +239,7 @@ const RegistrationSuccess = () => {
             </div>
             <Button
               onClick={() => navigate("/login")}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-lg"
+              className="w-full h-12 text-lg"
             >
               Aller à la page de connexion
             </Button>

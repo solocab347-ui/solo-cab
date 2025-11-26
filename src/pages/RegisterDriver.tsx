@@ -554,15 +554,15 @@ const RegisterDriver = () => {
   const handleStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("💳 DEBUT étape 3 - Paiement");
 
     try {
-      // Pas besoin de sauvegarder registration_step 3 car on y est déjà
-      // (sauvegardé à l'étape 2)
-
       // If free access via token, skip payment
       if (invitationToken && isTokenValid) {
+        console.log("🎁 Accès gratuit via token - Skip paiement");
+        
         // Marquer le token comme utilisé
-        await supabase
+        const { error: tokenError } = await supabase
           .from("invitation_tokens")
           .update({
             used: true,
@@ -571,8 +571,15 @@ const RegisterDriver = () => {
           })
           .eq("token", invitationToken);
 
+        if (tokenError) {
+          console.error("❌ Erreur marquage token:", tokenError);
+          toast.error("Erreur lors du marquage du token");
+          setLoading(false);
+          return;
+        }
+
         // Accorder l'accès gratuit illimité
-        await supabase
+        const { error: driverError } = await supabase
           .from("drivers")
           .update({
             status: "pending", // ✅ SÉCURITÉ: statut pending car accès gratuit validé
@@ -581,41 +588,124 @@ const RegisterDriver = () => {
             free_access_type: "unlimited",
             free_access_start_date: new Date().toISOString(),
             free_access_end_date: null,
+            subscription_status: "active",
             registration_step: null,
             registration_data: null
           })
           .eq("id", driverId);
+
+        if (driverError) {
+          console.error("❌ Erreur mise à jour driver:", driverError);
+          toast.error("Erreur lors de l'octroi de l'accès gratuit");
+          setLoading(false);
+          return;
+        }
         
+        console.log("✅ Accès gratuit accordé - Redirection...");
         toast.success("Inscription complétée avec accès gratuit !");
+        
+        // Attendre un peu avant redirection
+        await new Promise(resolve => setTimeout(resolve, 1000));
         navigate(`/registration-success?driver_id=${driverId}&token=true`);
         return;
       }
 
-      // PAIEMENT OBLIGATOIRE - Appeler l'edge function Stripe
-      const { data, error } = await supabase.functions.invoke(
+      // PAIEMENT OBLIGATOIRE - Sécurisation complète
+      console.log("💰 Paiement requis - Appel Stripe");
+      
+      // Validation sécurité: vérifier que driverId existe
+      if (!driverId) {
+        console.error("❌ Driver ID manquant");
+        toast.error("Erreur: Profil chauffeur introuvable");
+        setLoading(false);
+        return;
+      }
+
+      // Appeler l'edge function Stripe avec timeout de sécurité
+      console.log("📞 Appel create-driver-subscription...");
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout: La création de la session a pris trop de temps")), 30000)
+      );
+
+      const invokePromise = supabase.functions.invoke(
         "create-driver-subscription",
         {
           body: { driver_id: driverId }
         }
       );
 
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+
       if (error) {
-        console.error("Erreur création session Stripe:", error);
-        toast.error("Erreur lors de la création de la session de paiement");
+        console.error("❌ Erreur création session Stripe:", error);
+        toast.error("Erreur lors de la création de la session de paiement. Veuillez réessayer.");
+        setLoading(false);
         return;
       }
 
-      if (!data?.url) {
-        toast.error("URL de paiement non reçue");
+      console.log("📦 Réponse reçue:", data);
+
+      // Validation rigoureuse de la réponse
+      if (!data) {
+        console.error("❌ Aucune données reçue");
+        toast.error("Erreur: Aucune réponse du serveur de paiement");
+        setLoading(false);
         return;
       }
 
-      // Rediriger vers Stripe pour paiement
-      window.location.href = data.url;
+      if (!data.url || typeof data.url !== "string") {
+        console.error("❌ URL invalide:", data);
+        toast.error("Erreur: URL de paiement invalide");
+        setLoading(false);
+        return;
+      }
+
+      // Vérifier que l'URL est bien une URL Stripe
+      if (!data.url.startsWith("https://checkout.stripe.com")) {
+        console.error("❌ URL Stripe invalide:", data.url);
+        toast.error("Erreur: URL de paiement non sécurisée");
+        setLoading(false);
+        return;
+      }
+
+      console.log("✅ URL Stripe valide:", data.url.substring(0, 50) + "...");
+      
+      // Afficher un message clair avant redirection
+      toast.success("Redirection vers la page de paiement sécurisé...", {
+        duration: 2000
+      });
+
+      // Attendre que le toast soit visible
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Redirection SÉCURISÉE vers Stripe
+      // Utiliser window.open en fallback si location.href échoue
+      console.log("🚀 Redirection vers Stripe...");
+      
+      try {
+        // Tenter redirection directe
+        window.location.href = data.url;
+        
+        // Fallback: si la redirection ne se fait pas après 2 secondes, ouvrir dans nouvel onglet
+        setTimeout(() => {
+          if (document.hasFocus()) {
+            console.log("⚠️ Fallback: ouverture nouvel onglet");
+            window.open(data.url, "_blank");
+            toast.info("Page de paiement ouverte dans un nouvel onglet");
+          }
+        }, 2000);
+      } catch (redirectError) {
+        console.error("❌ Erreur redirection:", redirectError);
+        // Fallback absolu: ouvrir dans nouvel onglet
+        window.open(data.url, "_blank");
+        toast.info("Page de paiement ouverte dans un nouvel onglet");
+      }
+
     } catch (error: any) {
-      console.error("Erreur step 3:", error);
-      toast.error("Une erreur est survenue");
-    } finally {
+      console.error("💥 ERREUR GLOBALE étape 3:", error);
+      console.error("Stack:", error.stack);
+      toast.error("Une erreur est survenue: " + (error.message || "Erreur inconnue"));
       setLoading(false);
     }
   };
@@ -930,12 +1020,23 @@ const RegisterDriver = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Message de sécurité */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-900 font-medium">
+                      🔒 Paiement 100% sécurisé par Stripe
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Vous serez redirigé vers notre page de paiement sécurisée. 
+                      Si la page ne s'ouvre pas automatiquement, cliquez sur "Réessayer".
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
 
             <div className="flex gap-4">
-              {canGoBack && (
+              {canGoBack && !loading && (
                 <Button
                   type="button"
                   variant="outline"
@@ -952,8 +1053,20 @@ const RegisterDriver = () => {
                   Retour
                 </Button>
               )}
-              <Button type="submit" className="flex-1">
-                {invitationToken && isTokenValid ? "Finaliser" : "Payer et finaliser"}
+              <Button type="submit" className="flex-1" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Redirection en cours...
+                  </>
+                ) : invitationToken && isTokenValid ? (
+                  "Finaliser"
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Procéder au paiement
+                  </>
+                )}
               </Button>
             </div>
           </form>
