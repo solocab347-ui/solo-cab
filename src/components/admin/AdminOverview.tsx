@@ -27,9 +27,11 @@ const AdminOverview = () => {
   const fetchStats = async () => {
     try {
       // Statistiques d'abonnements et chauffeurs
+      // EXCLUSION: Comptes de démonstration non inclus dans les statistiques
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("subscription_paid, subscription_status, free_access_granted, created_at, status");
+        .select("subscription_paid, subscription_status, free_access_granted, created_at, status")
+        .eq("is_demo_account", false);
       
       if (driversError) throw driversError;
 
