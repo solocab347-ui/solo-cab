@@ -15,7 +15,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       closeButton
       richColors
       expand
-      visibleToasts={5}
+      visibleToasts={2}
       toastOptions={{
         classNames: {
           toast:
