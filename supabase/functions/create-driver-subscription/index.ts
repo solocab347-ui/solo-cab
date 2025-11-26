@@ -12,9 +12,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Utiliser SERVICE_ROLE_KEY pour bypasser RLS lors de la vérification de sécurité
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
   try {
@@ -28,7 +30,14 @@ serve(async (req) => {
     }
     
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    // Créer un client temporaire avec anon key pour vérifier le token
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+    
+    const { data: userData, error: userError } = await authClient.auth.getUser(token);
     
     if (userError) {
       console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ Auth error:", userError.message);
@@ -52,19 +61,31 @@ serve(async (req) => {
     }
     console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Driver ID:", driver_id);
 
-    // SÉCURITÉ: Vérifier que le driver appartient bien à l'utilisateur
+    // SÉCURITÉ CRITIQUE: Vérifier que le driver appartient bien à l'utilisateur
+    // Utilisation du service role key pour bypasser RLS et garantir la vérification
     const { data: driverCheck, error: driverCheckError } = await supabaseClient
       .from("drivers")
       .select("id, user_id, status")
       .eq("id", driver_id)
-      .eq("user_id", user.id)
       .single();
 
-    if (driverCheckError || !driverCheck) {
-      console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ Driver not found or unauthorized");
-      throw new Error("Driver not found or you don't have permission");
+    if (driverCheckError) {
+      console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ Database error:", driverCheckError.message);
+      throw new Error("Database error verifying driver");
     }
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Driver ownership verified");
+
+    if (!driverCheck) {
+      console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ Driver not found:", driver_id);
+      throw new Error("Driver not found");
+    }
+
+    // Vérification de sécurité: le driver doit appartenir à l'utilisateur authentifié
+    if (driverCheck.user_id !== user.id) {
+      console.error("[CREATE-DRIVER-SUBSCRIPTION] ❌ Unauthorized: driver belongs to different user");
+      throw new Error("You don't have permission to access this driver");
+    }
+
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Driver ownership verified, status:", driverCheck.status);
 
     // Initialize Stripe avec validation
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
