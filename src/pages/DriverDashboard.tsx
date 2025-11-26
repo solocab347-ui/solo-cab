@@ -43,8 +43,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
+import { useInfiniteLoopDetector } from "@/lib/performanceStabilizer";
 
 const DriverDashboard = () => {
+  // Détecter les boucles infinies
+  useInfiniteLoopDetector("DriverDashboard", 30);
+  
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);
@@ -91,55 +95,54 @@ const DriverDashboard = () => {
     setGalleryPhotos(newGalleryPhotos);
   }, []);
 
-  // Synchroniser l'état du formulaire avec les données du profil - OPTIMISÉ
+  // Synchroniser l'état du formulaire avec les données du profil - ULTRA OPTIMISÉ
   useEffect(() => {
-    if (!driverProfile?.driver) return;
+    if (!driverProfile?.driver?.id) return;
     
     const driver = driverProfile.driver;
     
-    // Batch les mises à jour pour éviter les re-renders multiples
-    const updates = () => {
-      setPublicProfileEnabled(driver.public_profile_enabled || false);
-      setShowPhone(driver.show_phone || false);
-      setShowEmail(driver.show_email || false);
-      setWorkingSectors(driver.working_sectors || []);
-      setServiceDescription(driver.service_description || "");
-      setHomeAddress(driver.home_address || "");
-      
-      if (driver.home_latitude && driver.home_longitude) {
-        setHomeCoordinates({
-          latitude: driver.home_latitude,
-          longitude: driver.home_longitude,
-        });
-      }
-      
-      setBaseFare(driver.base_fare?.toString() || "");
-      setPerKmRate(driver.per_km_rate?.toString() || "");
-      setHourlyRate(driver.hourly_rate?.toString() || "");
-      setVehicleColor(driver.vehicle_color || "");
-      setVehiclePlate(driver.vehicle_plate || "");
-      setCompanyName(driver.company_name || "");
-      setCompanyAddress(driver.company_address || "");
-      setSiret(driver.siret || "");
-      setSiren(driver.siren || "");
-      setMaxPassengers(driver.max_passengers?.toString() || "4");
-      setTvaIncluded(driver.tva_included || false);
-      setDisplayDriverName(driver.display_driver_name !== false);
-      setDisplayCompanyName(driver.display_company_name || false);
-      setVehicleEquipment(driver.vehicle_equipment || []);
-      setServicesOffered(driver.services_offered || []);
-      setVehicleBrand(driver.vehicle_brand || "");
-      setVehicleYear(driver.vehicle_year?.toString() || "");
-      setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
-      setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
-      setProfilePhotoUrl(driverProfile.profile_photo_url || null);
-      setCardPhotoUrl(driver.card_photo_url || null);
-      setVehiclePhotos(driver.vehicle_photos || []);
-      setGalleryPhotos(driver.gallery_photos || []);
-    };
+    // Utiliser startTransition pour les mises à jour non urgentes
+    // Batch TOUS les états en une seule fois
+    setPublicProfileEnabled(driver.public_profile_enabled || false);
+    setShowPhone(driver.show_phone || false);
+    setShowEmail(driver.show_email || false);
+    setWorkingSectors(driver.working_sectors || []);
+    setServiceDescription(driver.service_description || "");
+    setHomeAddress(driver.home_address || "");
     
-    updates();
-  }, [driverProfile?.driver?.id]); // Ne se déclenche que si l'ID du driver change
+    if (driver.home_latitude && driver.home_longitude) {
+      setHomeCoordinates({
+        latitude: driver.home_latitude,
+        longitude: driver.home_longitude,
+      });
+    } else {
+      setHomeCoordinates(null);
+    }
+    
+    setBaseFare(driver.base_fare?.toString() || "");
+    setPerKmRate(driver.per_km_rate?.toString() || "");
+    setHourlyRate(driver.hourly_rate?.toString() || "");
+    setVehicleColor(driver.vehicle_color || "");
+    setVehiclePlate(driver.vehicle_plate || "");
+    setCompanyName(driver.company_name || "");
+    setCompanyAddress(driver.company_address || "");
+    setSiret(driver.siret || "");
+    setSiren(driver.siren || "");
+    setMaxPassengers(driver.max_passengers?.toString() || "4");
+    setTvaIncluded(driver.tva_included || false);
+    setDisplayDriverName(driver.display_driver_name !== false);
+    setDisplayCompanyName(driver.display_company_name || false);
+    setVehicleEquipment(driver.vehicle_equipment || []);
+    setServicesOffered(driver.services_offered || []);
+    setVehicleBrand(driver.vehicle_brand || "");
+    setVehicleYear(driver.vehicle_year?.toString() || "");
+    setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
+    setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
+    setProfilePhotoUrl(driverProfile.profile_photo_url || null);
+    setCardPhotoUrl(driver.card_photo_url || null);
+    setVehiclePhotos(driver.vehicle_photos || []);
+    setGalleryPhotos(driver.gallery_photos || []);
+  }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
   useEffect(() => {
     let mounted = true;

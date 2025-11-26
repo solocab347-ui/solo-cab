@@ -27,9 +27,16 @@ export const OptimizedImage = ({
   const [imageSrc, setImageSrc] = useState<string | null>(null);
 
   useEffect(() => {
+    // Ne rien faire si src est undefined/null ou identique
     if (!src) {
       setIsLoading(false);
+      setHasError(false);
       setImageSrc(null);
+      return;
+    }
+
+    // Si l'image est déjà chargée avec le même src, ne pas recharger
+    if (imageSrc === src && !isLoading && !hasError) {
       return;
     }
 
@@ -37,27 +44,32 @@ export const OptimizedImage = ({
     setHasError(false);
 
     const img = new Image();
+    let mounted = true;
     
     img.onload = () => {
-      setImageSrc(src);
-      setIsLoading(false);
-      onLoad?.();
+      if (mounted) {
+        setImageSrc(src);
+        setIsLoading(false);
+        onLoad?.();
+      }
     };
 
     img.onerror = () => {
-      setHasError(true);
-      setIsLoading(false);
-      onError?.();
+      if (mounted) {
+        setHasError(true);
+        setIsLoading(false);
+        onError?.();
+      }
     };
 
     img.src = src;
 
     return () => {
-      // Cleanup
+      mounted = false;
       img.onload = null;
       img.onerror = null;
     };
-  }, [src, onLoad, onError]);
+  }, [src]); // Enlever onLoad et onError des dépendances pour éviter les re-renders
 
   if (isLoading) {
     return (

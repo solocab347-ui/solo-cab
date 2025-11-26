@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProtectedRouteProps {
@@ -19,37 +19,55 @@ export const ProtectedRoute = ({
   const location = useLocation();
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
   const [checkingDriver, setCheckingDriver] = useState(requireValidatedDriver);
+  const hasChecked = useRef(false); // Éviter les vérifications multiples
 
   useEffect(() => {
-    if (requireValidatedDriver && user && userRole === "driver") {
+    // Ne vérifier qu'une seule fois
+    if (requireValidatedDriver && user && userRole === "driver" && !hasChecked.current) {
+      hasChecked.current = true;
       checkDriverStatus();
-    } else {
+    } else if (!requireValidatedDriver || !user || userRole !== "driver") {
       setCheckingDriver(false);
+      hasChecked.current = false;
     }
-  }, [user, userRole, requireValidatedDriver]);
+  }, [user?.id, userRole, requireValidatedDriver]); // Ne re-vérifier que si user.id change
 
   const checkDriverStatus = async () => {
-    if (!user) return;
+    if (!user) {
+      setCheckingDriver(false);
+      return;
+    }
 
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
         .select("status, subscription_paid, free_access_granted")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle(); // Utiliser maybeSingle au lieu de single
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error checking driver status:", error);
+        setCheckingDriver(false);
+        return;
+      }
+
+      if (!driver) {
+        console.error("⛔ Aucun profil chauffeur trouvé");
+        setDriverStatus("no_profile");
+        setCheckingDriver(false);
+        return;
+      }
 
       // SÉCURITÉ CRITIQUE : Vérifier paiement ou accès gratuit
       if (!driver.subscription_paid && !driver.free_access_granted) {
         console.error("⛔ Accès refusé : paiement requis");
         setDriverStatus("payment_required");
-        return;
+      } else {
+        setDriverStatus(driver.status);
       }
-
-      setDriverStatus(driver.status);
     } catch (error) {
-      console.error("Error checking driver status:", error);
+      console.error("Erreur vérification driver:", error);
+      setDriverStatus("error");
     } finally {
       setCheckingDriver(false);
     }
