@@ -1157,12 +1157,12 @@ const RegisterDriver = () => {
               <h2 className="text-2xl font-bold text-gray-900">Paiement</h2>
               
               {invitationToken && isTokenValid ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                  <p className="text-lg font-semibold text-green-900">
+                <div className="bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-green-700 rounded-lg p-6 shadow-lg">
+                  <CheckCircle className="h-12 w-12 text-white mx-auto mb-4" />
+                  <p className="text-xl font-bold text-white">
                     Accès gratuit illimité activé !
                   </p>
-                  <p className="text-sm text-green-700 mt-2">
+                  <p className="text-base text-white/95 mt-2">
                     Votre inscription test vous donne un accès gratuit à la plateforme.
                   </p>
                 </div>
@@ -1216,11 +1216,11 @@ const RegisterDriver = () => {
                   </div>
                   
                   {/* Message de sécurité */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-900 font-medium">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 border-2 border-blue-700 rounded-lg p-4 shadow-lg">
+                    <p className="text-base text-white font-bold">
                       🔒 Paiement 100% sécurisé par Stripe
                     </p>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-sm text-white/95 mt-1">
                       Vous serez redirigé vers notre page de paiement sécurisée. 
                       Si la page ne s'ouvre pas automatiquement, cliquez sur "Réessayer".
                     </p>
