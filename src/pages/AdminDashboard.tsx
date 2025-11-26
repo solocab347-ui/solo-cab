@@ -20,7 +20,7 @@ import AdminFeedback from "@/components/admin/AdminFeedback";
 import { AdminDataIntegrity } from "@/components/admin/AdminDataIntegrity";
 import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
 import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens";
-import { AdminResetPlatform } from "@/components/admin/AdminResetPlatform";
+
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -122,8 +122,6 @@ const AdminDashboard = () => {
         return <AdminRLSAudit />;
       case "rgpd":
         return <AdminRGPD />;
-      case "reset":
-        return <AdminResetPlatform />;
       default:
         return <AdminOverview />;
     }
