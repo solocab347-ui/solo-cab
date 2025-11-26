@@ -33,11 +33,12 @@ const Login = () => {
     return () => clearTimeout(emergencyTimeout);
   }, [authLoading, user]);
 
-  // Redirection automatique si déjà connecté - SIMPLIFIÉ
+  // Redirection automatique si déjà connecté - AVEC PROTECTION BOUCLE
   useEffect(() => {
     console.log("🔍 Login check:", { authLoading, user: !!user, userRole });
     
-    if (!authLoading && user && userRole) {
+    // NE PAS rediriger si on vient déjà d'une tentative de redirection (évite boucle)
+    if (!authLoading && user && userRole && !loading) {
       console.log("➡️ Redirecting to dashboard:", userRole);
       
       const path = userRole === "admin" 
@@ -45,10 +46,15 @@ const Login = () => {
         : userRole === "driver"
         ? "/driver-dashboard"
         : "/client-dashboard";
-        
-      navigate(path, { replace: true });
+      
+      // Timeout pour éviter boucle de redirection immédiate
+      const redirectTimer = setTimeout(() => {
+        navigate(path, { replace: true });
+      }, 100);
+      
+      return () => clearTimeout(redirectTimer);
     }
-  }, [user, userRole, authLoading, navigate]);
+  }, [user, userRole, authLoading, navigate, loading]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
