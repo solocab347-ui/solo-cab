@@ -26,28 +26,49 @@ const AdminOverview = () => {
 
   const fetchStats = async () => {
     try {
-      // Statistiques générales
-      const { data: platformData, error: platformError } = await supabase.rpc("get_platform_stats");
-      if (platformError) throw platformError;
-
-      // Statistiques d'abonnements
+      // Statistiques d'abonnements et chauffeurs
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("subscription_status, free_access_granted, created_at");
+        .select("subscription_paid, subscription_status, free_access_granted, created_at, status");
       
       if (driversError) throw driversError;
 
-      // Calculer les statistiques d'abonnements
-      const activeSubscriptions = driversData?.filter(d => 
-        d.subscription_status === 'active' && !d.free_access_granted
+      // Compter les utilisateurs totaux (profiles)
+      const { count: totalUsers } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
+
+      // Compter les clients
+      const { count: totalClients } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true });
+
+      const totalDrivers = driversData?.length || 0;
+
+      // Compter les chauffeurs validés
+      const validatedDrivers = driversData?.filter(d => d.status === 'validated').length || 0;
+
+      // Compter les chauffeurs en attente (pending + on_hold)
+      const pendingDrivers = driversData?.filter(d => 
+        d.status === 'pending' || d.status === 'on_hold'
       ).length || 0;
 
+      // Calculer les abonnements payants actifs (subscription_paid = true OU subscription_status = 'active')
+      const activeSubscriptions = driversData?.filter(d => 
+        (d.subscription_paid === true || d.subscription_status === 'active') && 
+        !d.free_access_granted
+      ).length || 0;
+
+      // Compter les accès gratuits actifs
       const freeAccessCount = driversData?.filter(d => 
         d.free_access_granted === true
       ).length || 0;
 
+      // Compter les abonnements inactifs (pas payé ET pas d'accès gratuit)
       const inactiveSubscriptions = driversData?.filter(d => 
-        d.subscription_status !== 'active' && !d.free_access_granted
+        d.subscription_paid !== true && 
+        d.subscription_status !== 'active' && 
+        !d.free_access_granted
       ).length || 0;
 
       // Revenus mensuels (49.99€ par abonnement actif)
@@ -57,30 +78,22 @@ const AdminOverview = () => {
       const startOfCurrentMonth = startOfMonth(new Date());
       const newSubscriptionsMonth = driversData?.filter(d => 
         new Date(d.created_at) >= startOfCurrentMonth && 
-        d.subscription_status === 'active'
+        (d.subscription_paid === true || d.subscription_status === 'active')
       ).length || 0;
-
-      // Résiliations ce mois (approximation basée sur les inactifs)
-      const churned = driversData?.filter(d => 
-        d.subscription_status !== 'active' && 
-        !d.free_access_granted
-      ).length || 0;
-
-      const platformStats = platformData as any;
 
       setStats({
-        total_users: platformStats?.total_users || 0,
-        total_drivers: platformStats?.total_drivers || 0,
-        validated_drivers: platformStats?.validated_drivers || 0,
-        pending_drivers: platformStats?.pending_drivers || 0,
-        total_clients: platformStats?.total_clients || 0,
+        total_users: totalUsers || 0,
+        total_drivers: totalDrivers,
+        validated_drivers: validatedDrivers,
+        pending_drivers: pendingDrivers,
+        total_clients: totalClients || 0,
         active_subscriptions: activeSubscriptions,
         free_access_count: freeAccessCount,
         inactive_subscriptions: inactiveSubscriptions,
         monthly_revenue: monthlyRevenue,
         total_revenue: monthlyRevenue, // Simplification
         new_subscriptions_month: newSubscriptionsMonth,
-        churned_subscriptions_month: churned,
+        churned_subscriptions_month: 0,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -211,8 +224,8 @@ const AdminOverview = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats.total_drivers > 0 
-                  ? ((stats.active_subscriptions / stats.total_drivers) * 100).toFixed(1)
+                {stats.validated_drivers > 0 
+                  ? ((stats.active_subscriptions / stats.validated_drivers) * 100).toFixed(1)
                   : 0}%
               </div>
               <p className="text-xs text-muted-foreground">
