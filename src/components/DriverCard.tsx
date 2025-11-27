@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Car, Award, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
-import { Link } from "react-router-dom";
 import {
   Carousel,
   CarouselContent,
@@ -32,9 +31,10 @@ interface DriverCardProps {
     distance_km?: number;
   };
   cardIndex?: number;
+  onViewProfile?: (driverId: string) => void;
 }
 
-export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
+export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardProps) => {
   // Forcer le rafraîchissement de l'image avec un key basé sur l'URL
   const imageKey = driver.profile_photo_url ? `${driver.id}-${driver.profile_photo_url.substring(0, 50)}` : driver.id;
   
@@ -175,12 +175,13 @@ export const DriverCard = ({ driver, cardIndex = 0 }: DriverCardProps) => {
         </div>
 
         {/* CTA Button - toujours en bas */}
-        <Link to={`/chauffeur/${driver.id}`} className="mt-4">
-          <Button className="w-full bg-gradient-premium hover:opacity-90">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Voir le profil
-          </Button>
-        </Link>
+        <Button 
+          onClick={() => onViewProfile?.(driver.id)}
+          className="w-full bg-gradient-premium hover:opacity-90 mt-4"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Voir le profil
+        </Button>
       </div>
     </Card>
   );

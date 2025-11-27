@@ -13,6 +13,7 @@ import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 
 interface PublicDriver {
   id: string;
@@ -117,6 +118,8 @@ const Chauffeurs = () => {
   });
   const [isExclusiveClient, setIsExclusiveClient] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   // Restaurer les résultats UNIQUEMENT (pas de recherche auto)
@@ -593,7 +596,15 @@ const Chauffeurs = () => {
                 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedDrivers.map((driver, index) => (
-                    <DriverCard key={driver.id} driver={driver} cardIndex={index} />
+                    <DriverCard
+                      key={driver.id}
+                      driver={driver}
+                      cardIndex={index}
+                      onViewProfile={(driverId) => {
+                        setSelectedDriverId(driverId);
+                        setDialogOpen(true);
+                      }}
+                    />
                   ))}
                 </div>
                 
@@ -642,6 +653,13 @@ const Chauffeurs = () => {
           </div>
         </div>
       </div>
+
+      {/* Dialog pour afficher le profil du chauffeur */}
+      <DriverProfileDialog
+        driverId={selectedDriverId}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
