@@ -32,6 +32,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import SocialLinks from "@/components/SocialLinks";
 
 const ChauffeurLanding = () => {
   const [revenue, setRevenue] = useState([5000]);
@@ -78,7 +79,8 @@ const ChauffeurLanding = () => {
           <Link to="/" className="flex items-center gap-3">
             <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <SocialLinks variant="compact" iconSize={18} className="hidden sm:flex" />
             <Link to="/login">
               <Button variant="ghost" className="text-white hover:bg-white/10 text-sm sm:text-base px-3 sm:px-4 h-9 sm:h-10">
                 Connexion
@@ -828,14 +830,17 @@ const ChauffeurLanding = () => {
 
       {/* Footer */}
       <footer className="py-8 bg-black border-t border-border/20">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Car className="w-6 h-6 text-blue-500" />
-            <span className="text-xl font-bold text-white">SoloCab</span>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Car className="w-6 h-6 text-blue-500" />
+              <span className="text-xl font-bold text-white">SoloCab</span>
+            </div>
+            <SocialLinks variant="compact" />
+            <p className="text-gray-500 text-sm">
+              © 2024 SoloCab. Tous droits réservés.
+            </p>
           </div>
-          <p className="text-gray-500 text-sm">
-            © 2024 SoloCab. Tous droits réservés.
-          </p>
         </div>
       </footer>
     </div>
