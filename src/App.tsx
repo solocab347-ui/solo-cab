@@ -22,6 +22,7 @@ import RegisterClientQR from "./pages/RegisterClientQR";
 import RegisterClientDriver from "./pages/RegisterClientDriver";
 import RegisterDriver from "./pages/RegisterDriver";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
+import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
 
 // Lazy load heavy dashboards and authenticated pages
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/register-client-driver" element={<RegisterClientDriver />} />
               <Route path="/register-driver" element={<RegisterDriver />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
+              <Route path="/pioneer-test" element={<PioneerTest />} />
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
                   <Suspense fallback={<LoadingFallback />}>
