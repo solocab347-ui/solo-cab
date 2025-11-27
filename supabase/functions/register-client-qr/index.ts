@@ -98,11 +98,14 @@ Deno.serve(async (req) => {
 
     if (existingClient) {
       console.log('Client already exists:', existingClient.id);
+      // Return success for existing clients to prevent duplicate notifications
       return new Response(JSON.stringify({ 
-        error: 'Vous êtes déjà enregistré comme client',
-        client: existingClient 
+        success: true,
+        alreadyRegistered: true,
+        client: existingClient,
+        message: 'Vous êtes déjà inscrit' 
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
