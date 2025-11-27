@@ -145,7 +145,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
             </h1>
             <p className="text-muted-foreground text-lg">Tableau de bord professionnel</p>
           </div>
-          {driverProfile?.driver?.rating && (
+          {driverProfile?.driver?.rating && driverProfile.driver.rating > 0 && (
             <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-premium">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 fill-warning text-warning" />
