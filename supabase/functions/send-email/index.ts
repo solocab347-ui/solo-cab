@@ -412,6 +412,49 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ⚠️ SÉCURITÉ: Vérifier l'authentification
+    // Option 1: JWT token (pour appels depuis le frontend)
+    // Option 2: Secret partagé (pour appels internes entre edge functions)
+    const authHeader = req.headers.get('Authorization');
+    const internalSecret = req.headers.get('X-Internal-Secret');
+    
+    // Vérifier qu'au moins une méthode d'auth est présente
+    if (!authHeader && !internalSecret) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: Missing authorization' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Si secret interne fourni, le vérifier (pour appels inter-edge-functions)
+    if (internalSecret) {
+      const expectedSecret = Deno.env.get('LOVABLE_API_KEY');
+      if (internalSecret !== expectedSecret) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Unauthorized: Invalid internal secret' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      // Secret valide, continuer
+    } else if (authHeader) {
+      // Vérifier le JWT pour les appels externes
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+      const supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      );
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+      
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Unauthorized: Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const { to, type, data = {} }: EmailRequest = await req.json();
 
     console.log(`📧 Envoi d'email de type: ${type} à ${to}`);

@@ -187,16 +187,13 @@ serve(async (req) => {
 
     console.log("✅ Price calculation validated:", calculation);
 
+    // ⚠️ SÉCURITÉ: Ne pas exposer les paramètres du chauffeur
+    // Retourner seulement le calcul final pour éviter la divulgation d'informations sensibles
     return new Response(
       JSON.stringify({
         success: true,
         calculation,
-        driver_parameters: {
-          tva_included: driver.tva_included,
-          tva_rate: use_hourly_rate ? 20 : 10,
-          evening_surcharge: driver.evening_surcharge,
-          weekend_surcharge: driver.weekend_surcharge,
-        },
+        // Les paramètres du driver sont supprimés pour protéger les informations commerciales sensibles
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
