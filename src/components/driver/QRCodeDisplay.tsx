@@ -99,7 +99,7 @@ const QRCodeDisplay = ({ qrCode, loadingQR, driverProfile }: QRCodeDisplayProps)
               Votre QR Code Personnel
             </h3>
             <p className="text-premium-foreground/80 mb-4">
-              Partagez ce QR code pour recruter vos clients exclusifs en 30 secondes !
+              Partagez ce QR code pour l'inscription de vos clients exclusifs en 30 secondes !
             </p>
             <div className="flex items-center gap-2 mb-6">
               <Badge className="bg-premium-foreground text-premium">
