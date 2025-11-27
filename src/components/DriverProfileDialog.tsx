@@ -55,6 +55,7 @@ interface DriverProfile {
   services_offered: string[];
   vehicle_photos: string[];
   gallery_photos: string[];
+  // Note: vehicle_plate is deliberately excluded from public profile for security
 }
 
 interface DriverProfileDialogProps {
@@ -273,13 +274,19 @@ export const DriverProfileDialog = ({
                 {(() => {
                   const hasValidBrand =
                     driver.vehicle_brand &&
-                    !driver.vehicle_brand.toLowerCase().includes("compléter");
+                    driver.vehicle_brand.trim() &&
+                    !driver.vehicle_brand.toLowerCase().includes("compléter") &&
+                    !driver.vehicle_brand.toLowerCase().includes("attente");
                   const hasValidModel =
                     driver.vehicle_model &&
-                    !driver.vehicle_model.toLowerCase().includes("compléter");
+                    driver.vehicle_model.trim() &&
+                    !driver.vehicle_model.toLowerCase().includes("compléter") &&
+                    !driver.vehicle_model.toLowerCase().includes("attente");
                   const hasValidColor =
                     driver.vehicle_color &&
-                    !driver.vehicle_color.toLowerCase().includes("compléter");
+                    driver.vehicle_color.trim() &&
+                    !driver.vehicle_color.toLowerCase().includes("compléter") &&
+                    !driver.vehicle_color.toLowerCase().includes("attente");
                   const hasValidYear =
                     driver.vehicle_year && driver.vehicle_year > 1900;
 
@@ -322,9 +329,8 @@ export const DriverProfileDialog = ({
             {/* Description */}
             {driver.service_description &&
               driver.service_description.trim() &&
-              !driver.service_description
-                .toLowerCase()
-                .includes("compléter") && (
+              !driver.service_description.toLowerCase().includes("compléter") &&
+              !driver.service_description.toLowerCase().includes("attente") && (
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold">À propos</h3>
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
