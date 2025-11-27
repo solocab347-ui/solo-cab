@@ -38,7 +38,7 @@ const DriverPendingValidation = () => {
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status")
+        .select("status, subscription_paid, free_access_granted")
         .eq("user_id", user.id)
         .single();
 
@@ -46,8 +46,11 @@ const DriverPendingValidation = () => {
 
       setDriverStatus(driver.status);
 
-      // Rediriger si validé
-      if (driver.status === "validated") {
+      // Rediriger si validé ET (payé OU accès gratuit)
+      if (
+        driver.status === "validated" && 
+        (driver.subscription_paid === true || driver.free_access_granted === true)
+      ) {
         navigate("/driver-dashboard");
       }
     } catch (error) {
