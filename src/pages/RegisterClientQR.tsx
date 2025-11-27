@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Star, Car, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 
 const RegisterClientQR = () => {
   const navigate = useNavigate();
@@ -366,11 +367,10 @@ const RegisterClientQR = () => {
               </div>
               <div>
                 <Label htmlFor="address">Adresse de mon domicile</Label>
-                <Input
-                  id="address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="123 Rue de Paris, 75001 Paris"
+                  onChange={(address) => setFormData({ ...formData, address })}
+                  placeholder="Commencez à taper votre adresse..."
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Cette adresse facilitera la réservation de vos courses
