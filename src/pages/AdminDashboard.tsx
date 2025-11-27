@@ -20,6 +20,7 @@ import AdminFeedback from "@/components/admin/AdminFeedback";
 import { AdminDataIntegrity } from "@/components/admin/AdminDataIntegrity";
 import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
 import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens";
+import AdminSettings from "@/components/admin/AdminSettings";
 
 
 const AdminDashboard = () => {
@@ -91,6 +92,7 @@ const AdminDashboard = () => {
     { id: "data-integrity", label: "Intégrité des Données", icon: Database },
     { id: "rls-audit", label: "Audit Sécurité RLS", icon: Shield },
     { id: "rgpd", label: "RGPD", icon: Shield },
+    { id: "settings", label: "Paramètres Admin", icon: Shield },
     { id: "reset", label: "⚠️ Réinitialiser", icon: AlertTriangle },
   ];
 
@@ -122,6 +124,8 @@ const AdminDashboard = () => {
         return <AdminRLSAudit />;
       case "rgpd":
         return <AdminRGPD />;
+      case "settings":
+        return <AdminSettings />;
       default:
         return <AdminOverview />;
     }
