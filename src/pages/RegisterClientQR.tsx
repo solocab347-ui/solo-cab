@@ -50,9 +50,11 @@ const RegisterClientQR = () => {
             user_id,
             company_name,
             bio,
+            service_description,
             vehicle_model,
             vehicle_brand,
             vehicle_color,
+            vehicle_year,
             rating,
             total_rides,
             status,
@@ -222,23 +224,24 @@ const RegisterClientQR = () => {
               </div>
 
               {/* Véhicule */}
-              {driverInfo.vehicle_model && (
+              {(driverInfo.vehicle_model || driverInfo.vehicle_brand) && (
                 <div className="bg-premium-foreground/10 rounded-lg p-4 text-center">
                   <p className="text-sm text-premium-foreground/70 mb-1">Véhicule</p>
                   <p className="text-lg font-semibold text-premium-foreground">
                     {driverInfo.vehicle_brand && `${driverInfo.vehicle_brand} `}
                     {driverInfo.vehicle_model}
                     {driverInfo.vehicle_color && ` • ${driverInfo.vehicle_color}`}
+                    {driverInfo.vehicle_year && ` • ${driverInfo.vehicle_year}`}
                   </p>
                 </div>
               )}
 
               {/* Présentation */}
-              {driverInfo.bio && (
+              {(driverInfo.service_description || driverInfo.bio) && (
                 <div className="space-y-2">
                   <h3 className="font-semibold text-premium-foreground">Présentation</h3>
                   <p className="text-premium-foreground/80 leading-relaxed">
-                    {driverInfo.bio}
+                    {driverInfo.service_description || driverInfo.bio}
                   </p>
                 </div>
               )}
