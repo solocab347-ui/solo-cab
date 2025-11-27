@@ -128,9 +128,17 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
           {/* Vehicle Info - Only show if valid info exists */}
           {(() => {
             const hasValidBrand = driver.vehicle_brand && 
-              !driver.vehicle_brand.toLowerCase().includes('compléter');
+              driver.vehicle_brand.trim() &&
+              !driver.vehicle_brand.toLowerCase().includes('compléter') &&
+              !driver.vehicle_brand.toLowerCase().includes('attente');
             const hasValidModel = driver.vehicle_model && 
-              !driver.vehicle_model.toLowerCase().includes('compléter');
+              driver.vehicle_model.trim() &&
+              !driver.vehicle_model.toLowerCase().includes('compléter') &&
+              !driver.vehicle_model.toLowerCase().includes('attente');
+            const hasValidColor = driver.vehicle_color && 
+              driver.vehicle_color.trim() &&
+              !driver.vehicle_color.toLowerCase().includes('compléter') &&
+              !driver.vehicle_color.toLowerCase().includes('attente');
             
             if (!hasValidBrand && !hasValidModel) return null;
             
@@ -140,8 +148,8 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
                 <span className="text-sm">
                   {hasValidBrand && `${driver.vehicle_brand} `}
                   {hasValidModel && driver.vehicle_model}
-                  {driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter') && ` · ${driver.vehicle_color}`}
-                  {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                  {hasValidColor && ` · ${driver.vehicle_color}`}
+                  {driver.vehicle_year && driver.vehicle_year > 1900 && ` (${driver.vehicle_year})`}
                 </span>
               </div>
             );
