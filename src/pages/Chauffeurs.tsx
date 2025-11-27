@@ -14,6 +14,7 @@ import Pagination from "@/components/Pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
+import SocialLinks from "@/components/SocialLinks";
 
 interface PublicDriver {
   id: string;
@@ -367,6 +368,9 @@ const Chauffeurs = () => {
       {/* Hero Section with Gradient */}
       <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-500 text-white">
         <div className="container mx-auto px-4 py-16 text-center">
+          <div className="flex justify-center mb-6">
+            <SocialLinks variant="compact" className="text-white" />
+          </div>
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             Trouvez Votre Chauffeur VTC
           </h1>
@@ -641,15 +645,18 @@ const Chauffeurs = () => {
 
       {/* Footer with Links */}
       <div className="border-t border-border mt-12 py-8">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <Link to="/login" className="hover:text-foreground transition-colors">
-              Connexion Chauffeur
-            </Link>
-            <span>•</span>
-            <Link to="/login" className="hover:text-foreground transition-colors">
-              Devenir Chauffeur
-            </Link>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center gap-4">
+            <SocialLinks variant="compact" />
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <Link to="/login" className="hover:text-foreground transition-colors">
+                Connexion Chauffeur
+              </Link>
+              <span>•</span>
+              <Link to="/login" className="hover:text-foreground transition-colors">
+                Devenir Chauffeur
+              </Link>
+            </div>
           </div>
         </div>
       </div>

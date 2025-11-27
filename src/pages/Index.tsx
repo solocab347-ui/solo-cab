@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo-solocab.png";
+import SocialLinks from "@/components/SocialLinks";
 import {
   Car,
   Users,
@@ -170,11 +171,14 @@ const Index = () => {
               Devenir chauffeur
             </Link>
           </nav>
-          <Link to="/login">
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
-              Se Connecter
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <SocialLinks variant="compact" iconSize={20} />
+            <Link to="/login">
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
+                Se Connecter
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -541,8 +545,9 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/10 text-center text-sm text-gray-400">
-            <p>&copy; {new Date().getFullYear()} SoloCab. Tous droits réservés.</p>
+          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} SoloCab. Tous droits réservés.</p>
+            <SocialLinks variant="compact" />
           </div>
         </div>
       </footer>
