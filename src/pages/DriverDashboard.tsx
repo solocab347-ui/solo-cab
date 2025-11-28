@@ -200,16 +200,6 @@ const DriverDashboard = () => {
     if (!driverProfile?.driver?.id || !updateProfile) return;
     setPublicProfileEnabled(enabled);
     updateProfile({ public_profile_enabled: enabled });
-    
-    if (enabled) {
-      toast.success("✅ Profil public activé avec succès !", {
-        description: "Votre profil est maintenant visible dans la vitrine publique"
-      });
-    } else {
-      toast.info("Profil public désactivé", {
-        description: "Votre profil n'est plus visible dans la vitrine publique"
-      });
-    }
   };
 
   const handleUpdateProfile = async () => {
@@ -281,18 +271,11 @@ const DriverDashboard = () => {
       
       console.log("✅ Profil sauvegardé avec succès !");
       
-      // 4. Afficher le toast de confirmation
-      toast.success("✅ Profil enregistré avec succès !", {
-        description: "Toutes vos modifications ont été sauvegardées",
-        duration: 5000,
-      });
+      // Toast géré automatiquement par le hook useOptimizedDriverProfile
       
     } catch (error: any) {
       console.error("❌ Erreur lors de la sauvegarde:", error);
-      toast.error("❌ Erreur lors de l'enregistrement", {
-        description: error.message || "Veuillez réessayer",
-        duration: 5000,
-      });
+      // Toast d'erreur géré automatiquement par le hook
     } finally {
       setLoading(false);
     }

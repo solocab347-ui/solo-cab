@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 export function useOptimizedDriverProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
 
-  // Query avec cache agressif
+  // Query avec cache modéré pour permettre les mises à jour rapides
   const { data: driverProfile, isLoading, error } = useQuery({
     queryKey: ['driver-profile-optimized', userId],
     queryFn: async () => {
@@ -32,17 +32,19 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
       };
     },
     enabled: !!userId,
-    staleTime: 15 * 60 * 1000, // 15 minutes - très agressif
-    gcTime: 30 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 minutes - permet rafraîchissement rapide
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
 
-  // Mutation optimisée avec callback stable - SANS toast pour éviter les doublons
+  // Mutation optimisée avec confirmation instantanée
   const updateProfile = useMutation({
     mutationFn: async (updates: any) => {
       if (!driverProfile?.driver?.id) throw new Error('Driver ID missing');
 
+      console.log('🔄 Mise à jour du profil...', updates);
+      
       const { error } = await supabase
         .from('drivers')
         .update(updates)
@@ -51,8 +53,14 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
       if (error) throw error;
       return updates;
     },
-    onSuccess: async (updates) => {
-      // Mise à jour optimiste du cache
+    onMutate: async (updates) => {
+      // Annuler les refetch en cours
+      await queryClient.cancelQueries({ queryKey: ['driver-profile-optimized', userId] });
+
+      // Sauvegarder l'état précédent
+      const previousProfile = queryClient.getQueryData(['driver-profile-optimized', userId]);
+
+      // Mise à jour optimiste immédiate
       queryClient.setQueryData(['driver-profile-optimized', userId], (old: any) => {
         if (!old) return old;
         return {
@@ -63,18 +71,32 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
           }
         };
       });
+
+      return { previousProfile };
+    },
+    onSuccess: async (updates) => {
+      console.log('✅ Profil mis à jour avec succès');
       
-      // Forcer un refetch immédiat pour synchroniser avec la base
-      await queryClient.refetchQueries({ 
-        queryKey: ['driver-profile-optimized', userId],
-        type: 'active'
+      // Invalider et refetch immédiat pour synchroniser
+      await queryClient.invalidateQueries({ 
+        queryKey: ['driver-profile-optimized', userId]
       });
       
-      // Pas de toast ici pour éviter les doublons - le toast est géré par handleUpdateProfile
+      toast.success('Profil mis à jour avec succès !', {
+        description: 'Vos modifications ont été enregistrées'
+      });
     },
-    onError: (error: any) => {
-      console.error('Update error:', error);
-      throw error; // Propager l'erreur pour que handleUpdateProfile la gère
+    onError: (error: any, _variables, context) => {
+      console.error('❌ Erreur mise à jour:', error);
+      
+      // Restaurer l'état précédent en cas d'erreur
+      if (context?.previousProfile) {
+        queryClient.setQueryData(['driver-profile-optimized', userId], context.previousProfile);
+      }
+      
+      toast.error('Erreur lors de la mise à jour', {
+        description: error.message || 'Impossible d\'enregistrer vos modifications'
+      });
     },
   });
 
