@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { logger } from "@/lib/productionLogger";
 
 interface AuthContextType {
   user: User | null;
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRole(primaryRole);
       return primaryRole;
     } catch (error) {
-      console.error("❌ Error fetching user role:", error);
+      logger.error("Error fetching user role", { error });
       setUserRoles([]);
       setUserRole(null);
       return null;
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // TIMEOUT DE SÉCURITÉ: garantir loading=false après 5 secondes MAX
     const safetyTimeout = setTimeout(() => {
       if (isMounted && !timeoutCleared) {
-        console.warn("⚠️ SAFETY TIMEOUT - forcing loading to false");
+        logger.warn("SAFETY TIMEOUT - forcing loading to false");
         setLoading(false);
       }
     }, 5000);
@@ -77,24 +78,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (refreshRetryCount <= MAX_REFRESH_RETRIES) {
         const backoffDelay = Math.min(1000 * Math.pow(2, refreshRetryCount - 1), 5000);
-        console.log(`⚠️ Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES} in ${backoffDelay}ms`);
+        logger.warn(`Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES}`, { backoffDelay });
         
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
         
         try {
           const { data, error } = await supabase.auth.refreshSession();
           if (!error && data.session) {
-            console.log("✅ Session refreshed successfully on retry");
+            logger.info("Session refreshed successfully on retry");
             refreshRetryCount = 0; // Reset counter on success
             return true;
           }
         } catch (retryError) {
-          console.error("❌ Retry failed:", retryError);
+          logger.error("Retry failed", { retryError });
         }
         
         return await handleRefreshFailure();
       } else {
-        console.error("❌ Max refresh retries reached, clearing session");
+        logger.error("Max refresh retries reached, clearing session");
         
         // Nettoyage de la session locale
         setUser(null);
@@ -116,18 +117,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         if (!isMounted) return;
         
-        console.log("🔐 Auth event:", event);
+        logger.info("Auth event", { event });
         
         // Gestion spécifique de l'erreur de refresh token
         if (event === "TOKEN_REFRESHED" && !session) {
-          console.warn("⚠️ Token refresh failed, attempting recovery");
+          logger.warn("Token refresh failed, attempting recovery");
           await handleRefreshFailure();
           return;
         }
         
         // Gestion de l'expiration de session
         if (event === "SIGNED_OUT" && session === null) {
-          console.log("🔓 User signed out");
+          logger.info("User signed out");
           setUser(null);
           setSession(null);
           setUserRole(null);
@@ -145,7 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (session?.user) {
           fetchUserRole(session.user.id).catch(err => {
-            console.error("Role fetch failed:", err);
+            logger.error("Role fetch failed", { err });
           });
         } else {
           setUserRole(null);
@@ -161,22 +162,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (!isMounted) return;
         
-        console.log("📱 Session init:", session ? "found" : "none");
+        logger.info("Session init", { found: !!session });
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchUserRole(session.user.id).catch(console.error);
+          fetchUserRole(session.user.id).catch((error) => logger.error("Fetch role error", { error }));
         }
       } catch (error) {
-        console.error("❌ Init error:", error);
+        logger.error("Init error", { error });
       } finally {
         if (isMounted) {
           timeoutCleared = true;
           clearTimeout(safetyTimeout);
           setLoading(false);
-          console.log("✅ Auth init complete");
+          logger.info("Auth init complete");
         }
       }
     };
@@ -244,7 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success("Compte créé avec succès !");
     } catch (error: any) {
-      console.error("Signup error:", error);
+      logger.error("Signup error", { error });
       if (error.message.includes("already registered")) {
         toast.error("Cet email est déjà utilisé");
       } else {
@@ -282,11 +283,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (role === "client") {
         navigate("/client-dashboard", { replace: true });
       } else {
-        console.warn("Unknown role, redirecting to home");
+        logger.warn("Unknown role, redirecting to home");
         navigate("/", { replace: true });
       }
     } catch (error: any) {
-      console.error("Signin error:", error);
+      logger.error("Signin error", { error });
       toast.error("Connexion échouée", {
         description: error.message || "Vérifiez votre email et mot de passe",
         duration: 4000,
@@ -316,7 +317,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         duration: 3000,
       });
     } catch (error: any) {
-      console.error("❌ Signout error:", error);
+      logger.error("Signout error", { error });
       
       // Même en cas d'erreur, on nettoie l'état local pour éviter l'UI bloqué
       setUser(null);

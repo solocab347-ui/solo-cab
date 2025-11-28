@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/productionLogger";
 
 const Login = () => {
   const { signIn, user, userRole, loading: authLoading } = useAuth();
@@ -25,7 +26,7 @@ const Login = () => {
   useEffect(() => {
     const emergencyTimeout = setTimeout(() => {
       if (authLoading && !user) {
-        console.error("🚨 EMERGENCY OVERRIDE: forcing form display");
+        logger.error("EMERGENCY OVERRIDE: forcing form display");
         setEmergencyOverride(true);
       }
     }, 8000);
@@ -35,11 +36,11 @@ const Login = () => {
 
   // Redirection automatique si déjà connecté - AVEC PROTECTION BOUCLE
   useEffect(() => {
-    console.log("🔍 Login check:", { authLoading, user: !!user, userRole });
+    logger.debug("Login check", { authLoading, hasUser: !!user, userRole });
     
     // NE PAS rediriger si on vient déjà d'une tentative de redirection (évite boucle)
     if (!authLoading && user && userRole && !loading) {
-      console.log("➡️ Redirecting to dashboard:", userRole);
+      logger.info("Redirecting to dashboard", { userRole });
       
       const path = userRole === "admin" 
         ? "/admin-dashboard" 
@@ -119,7 +120,7 @@ const Login = () => {
       await signIn(loginEmail, loginPassword);
       // La navigation est gérée dans signIn()
     } catch (error: any) {
-      console.error("Signin error:", error);
+      logger.error("Signin error", { error });
       toast.error("Erreur de connexion", {
         description: error.message || "Vérifiez vos identifiants et réessayez",
         duration: 4000,
@@ -130,7 +131,7 @@ const Login = () => {
 
   // Afficher un loader pendant la vérification d'authentification - AVEC OVERRIDE
   if (authLoading && !emergencyOverride) {
-    console.log("⏳ Login: showing auth loader");
+    logger.debug("Login: showing auth loader");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -141,7 +142,7 @@ const Login = () => {
     );
   }
   
-  console.log("✅ Login: showing form", { emergencyOverride });
+  logger.debug("Login: showing form", { emergencyOverride });
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
