@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -7,6 +7,7 @@ import { Camera, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { compressImage, validateImageType, validateImageSize } from "@/lib/imageCompression";
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl: string | null;
@@ -42,7 +43,27 @@ export const ProfilePhotoUpload = ({
 
     setUploading(true);
     try {
-      // Convertir l'image en base64
+      // Valider le type et la taille
+      if (!validateImageType(file)) {
+        toast.error("Format non supporté. Utilisez JPG, PNG ou WebP");
+        setUploading(false);
+        return;
+      }
+
+      if (!validateImageSize(file, 5)) {
+        toast.error("L'image ne doit pas dépasser 5MB");
+        setUploading(false);
+        return;
+      }
+
+      // Compresser l'image avant upload
+      const compressedBlob = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.85,
+      });
+
+      // Convertir le blob compressé en base64
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64String = event.target?.result as string;
@@ -66,7 +87,7 @@ export const ProfilePhotoUpload = ({
         toast.success("Photo de profil mise à jour !");
       };
 
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedBlob);
     } catch (error: any) {
       console.error("Error uploading photo:", error);
       toast.error("Erreur lors du téléchargement de la photo");

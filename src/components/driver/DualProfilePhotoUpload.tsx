@@ -7,6 +7,7 @@ import { Upload, User, CreditCard, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { compressImage, validateImageType, validateImageSize } from "@/lib/imageCompression";
 
 interface DualProfilePhotoUploadProps {
   currentProfilePhotoUrl: string | null;
@@ -48,13 +49,33 @@ export const DualProfilePhotoUpload = ({
       const setUploading = type === 'profile' ? setUploadingProfile : setUploadingCard;
       setUploading(true);
 
+      // Valider le type et la taille
+      if (!validateImageType(file)) {
+        toast.error("Format non supporté. Utilisez JPG, PNG ou WebP");
+        setUploading(false);
+        return;
+      }
+
+      if (!validateImageSize(file, 5)) {
+        toast.error("L'image ne doit pas dépasser 5MB");
+        setUploading(false);
+        return;
+      }
+
+      // Compresser l'image avant upload
+      const compressedBlob = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.85,
+      });
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${type}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-photos')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, compressedBlob, { upsert: true });
 
       if (uploadError) throw uploadError;
 
