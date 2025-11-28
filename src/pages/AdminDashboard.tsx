@@ -22,6 +22,7 @@ import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
 import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens";
 import AdminSettings from "@/components/admin/AdminSettings";
 import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
+import AdminUserCleanup from "@/components/admin/AdminUserCleanup";
 
 
 const AdminDashboard = () => {
@@ -87,6 +88,7 @@ const AdminDashboard = () => {
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
     { id: "test-campaign", label: "Campagne Test", icon: Users },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
+    { id: "user-cleanup", label: "Nettoyage Comptes", icon: AlertTriangle },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
     { id: "feedback", label: "Feedbacks Chauffeurs", icon: Lightbulb },
@@ -114,6 +116,8 @@ const AdminDashboard = () => {
         return <AdminInvitationTokens />;
       case "emails":
         return <AdminEmails />;
+      case "user-cleanup":
+        return <AdminUserCleanup />;
       case "assistant":
         return <AdminAssistantRequests />;
       case "disputes":
