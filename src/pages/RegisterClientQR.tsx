@@ -45,10 +45,15 @@ const RegisterClientQR = () => {
       setLoadingDriver(true);
       
       // Récupérer les informations du QR code et du chauffeur
+      // SÉCURITÉ: SELECT explicite excluant scans_count (données sensibles)
       const { data: qrData, error: qrError } = await supabase
         .from("qr_codes")
         .select(`
-          *,
+          id,
+          driver_id,
+          code,
+          is_active,
+          qr_code_image,
           drivers:driver_id (
             id,
             user_id,

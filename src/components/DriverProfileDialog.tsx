@@ -87,10 +87,34 @@ export const DriverProfileDialog = ({
       try {
         console.log("🔍 Loading driver profile:", driverId);
 
+        // SÉCURITÉ: SELECT explicite excluant les colonnes sensibles
+        // Colonnes publiques uniquement (pas de GPS, permis, SIRET, tarifs, etc.)
         const { data: driverData, error: driverError } = await supabase
           .from("drivers")
           .select(`
-            *,
+            id,
+            user_id,
+            bio,
+            rating,
+            total_rides,
+            vehicle_model,
+            vehicle_brand,
+            vehicle_color,
+            vehicle_year,
+            max_passengers,
+            working_sectors,
+            service_description,
+            services_offered,
+            vehicle_equipment,
+            gallery_photos,
+            vehicle_photos,
+            display_driver_name,
+            display_company_name,
+            company_name,
+            show_phone,
+            show_email,
+            created_at,
+            updated_at,
             profiles!drivers_user_id_fkey (
               full_name,
               email,

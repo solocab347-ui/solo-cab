@@ -1533,6 +1533,42 @@ export type Database = {
         Returns: string
       }
       get_platform_stats: { Args: never; Returns: Json }
+      get_public_driver_profile: {
+        Args: { driver_id_param: string }
+        Returns: {
+          bio: string
+          company_name: string
+          created_at: string
+          display_company_name: boolean
+          display_driver_name: boolean
+          gallery_photos: string[]
+          id: string
+          max_passengers: number
+          rating: number
+          service_description: string
+          services_offered: string[]
+          total_rides: number
+          updated_at: string
+          user_id: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_equipment: string[]
+          vehicle_model: string
+          vehicle_photos: string[]
+          vehicle_year: number
+          working_sectors: string[]
+        }[]
+      }
+      get_public_profile_info: {
+        Args: { user_id_param: string }
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          phone: string
+          profile_photo_url: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
