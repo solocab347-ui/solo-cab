@@ -1621,11 +1621,9 @@ export type Database = {
       search_public_drivers: {
         Args: { _search_term?: string; _sector?: string }
         Returns: {
-          base_rate: number
           bio: string
           full_name: string
           id: string
-          per_km_rate: number
           profile_photo_url: string
           rating: number
           service_description: string
