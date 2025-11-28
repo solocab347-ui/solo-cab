@@ -54,27 +54,7 @@ const RegisterClientQR = () => {
           driver_id,
           code,
           is_active,
-          qr_code_image,
-          drivers:driver_id (
-            id,
-            user_id,
-            company_name,
-            bio,
-            service_description,
-            vehicle_model,
-            vehicle_brand,
-            vehicle_color,
-            vehicle_year,
-            rating,
-            total_rides,
-            status,
-            display_driver_name,
-            display_company_name,
-            profiles:user_id (
-              full_name,
-              profile_photo_url
-            )
-          )
+          qr_code_image
         `)
         .eq("id", qrCodeId)
         .eq("is_active", true)
@@ -86,13 +66,64 @@ const RegisterClientQR = () => {
         return;
       }
 
-      if (qrData.drivers?.status !== "validated") {
+      // Récupérer les infos complètes du driver avec le profile
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .select(`
+          id,
+          user_id,
+          company_name,
+          bio,
+          service_description,
+          vehicle_model,
+          vehicle_brand,
+          vehicle_color,
+          vehicle_year,
+          rating,
+          total_rides,
+          status,
+          display_driver_name,
+          display_company_name
+        `)
+        .eq("id", qrData.driver_id)
+        .single();
+
+      if (driverError || !driverData) {
+        toast.error("Chauffeur introuvable");
+        navigate("/");
+        return;
+      }
+
+      // Récupérer le profil du chauffeur
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("full_name, profile_photo_url")
+        .eq("id", driverData.user_id)
+        .single();
+
+      if (profileError) {
+        console.error("Erreur profil:", profileError);
+      }
+
+      // Combiner les données
+      const completeDriverInfo = {
+        ...driverData,
+        profile: profileData || {}
+      };
+
+      if (qrError || !qrData) {
+        toast.error("QR code invalide ou expiré");
+        navigate("/");
+        return;
+      }
+
+      if (completeDriverInfo.status !== "validated") {
         toast.error("Ce chauffeur n'est pas encore validé");
         navigate("/");
         return;
       }
 
-      setDriverInfo(qrData.drivers);
+      setDriverInfo(completeDriverInfo);
     } catch (error) {
       console.error("Erreur chargement chauffeur:", error);
       toast.error("Erreur lors du chargement des informations");
@@ -205,12 +236,12 @@ const RegisterClientQR = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-2xl" />
                   <Avatar className="relative w-40 h-40 border-4 border-background shadow-2xl ring-2 ring-primary/20">
                     <AvatarImage 
-                      src={driverInfo.profiles?.profile_photo_url} 
-                      alt={driverInfo.profiles?.full_name}
+                      src={driverInfo.profile?.profile_photo_url} 
+                      alt={driverInfo.profile?.full_name}
                       className="object-cover object-center"
                     />
                     <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                      {driverInfo.profiles?.full_name?.charAt(0) || "C"}
+                      {driverInfo.profile?.full_name?.charAt(0) || "C"}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -218,9 +249,9 @@ const RegisterClientQR = () => {
                 {/* Nom et badges - Alignés proprement */}
                 <div className="space-y-4 w-full">
                   <div className="space-y-2">
-                    {driverInfo.display_driver_name && (
+                    {driverInfo.display_driver_name && driverInfo.profile?.full_name && (
                       <h2 className="text-3xl font-bold text-foreground tracking-tight">
-                        {driverInfo.profiles?.full_name}
+                        {driverInfo.profile.full_name}
                       </h2>
                     )}
                     {driverInfo.display_company_name && driverInfo.company_name && (
