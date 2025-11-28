@@ -1597,7 +1597,6 @@ export type Database = {
           _max_radius_km?: number
         }
         Returns: {
-          base_rate: number
           bio: string
           company_name: string
           display_company_name: boolean
@@ -1605,9 +1604,7 @@ export type Database = {
           distance_km: number
           full_name: string
           gallery_photos: string[]
-          home_address: string
           id: string
-          per_km_rate: number
           profile_photo_url: string
           rating: number
           service_description: string
