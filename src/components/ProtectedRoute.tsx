@@ -69,6 +69,10 @@ export const ProtectedRoute = ({
         // ⚠️ SÉCURITÉ: Bloquer les drivers "on_hold" sans paiement ni accès gratuit
         console.error("⛔ Accès refusé : inscription incomplète");
         setDriverStatus("payment_required");
+      } else if (driver.free_access_granted) {
+        // ✅ Accès gratuit = validation automatique
+        console.log("✅ Accès gratuit accordé : validation automatique");
+        setDriverStatus("validated");
       } else {
         setDriverStatus(driver.status);
       }
