@@ -17,6 +17,7 @@ import { calculateRoute } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
 
 interface Client {
   id: string;
@@ -278,18 +279,24 @@ const DriverCreateCourse = () => {
         return;
       }
 
+      // SÉCURITÉ: Sanitize inputs avant envoi
+      const sanitizedPickup = sanitizeAddress(pickupAddress);
+      const sanitizedDestination = sanitizeAddress(destinationAddress);
+      const sanitizedNotes = sanitizeString(notes);
+      const sanitizedPassengers = sanitizeInteger(passengersCount, 1, maxPassengers).toString();
+
       // Utiliser le hook sécurisé pour créer la course
       const course = await createCourse({
         userId: user.id,
         clientId: selectedClientId,
         driverId: driverData.id,
-        pickupAddress,
+        pickupAddress: sanitizedPickup,
         pickupCoordinates,
-        destinationAddress,
+        destinationAddress: sanitizedDestination,
         destinationCoordinates,
         scheduledDate,
-        passengersCount,
-        notes,
+        passengersCount: sanitizedPassengers,
+        notes: sanitizedNotes,
         promoCode: undefined, // Les drivers ne gèrent pas les promos lors de la création
         courseType,
         durationHours,

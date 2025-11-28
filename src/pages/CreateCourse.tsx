@@ -17,6 +17,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -243,19 +244,26 @@ const CreateCourse = () => {
         return;
       }
 
+      // SÉCURITÉ: Sanitize inputs avant envoi
+      const sanitizedPickup = sanitizeAddress(pickupAddress);
+      const sanitizedDestination = sanitizeAddress(destinationAddress);
+      const sanitizedNotes = sanitizeString(notes);
+      const sanitizedPassengers = sanitizeInteger(passengersCount, 1, maxPassengers).toString();
+      const sanitizedPromoCode = promoCode !== "none" ? sanitizeString(promoCode) : undefined;
+
       // Utiliser le hook sécurisé pour créer la course
       const course = await createCourse({
         userId: user.id,
         clientId: clientData.id,
         driverId: assignedDriverId,
-        pickupAddress,
+        pickupAddress: sanitizedPickup,
         pickupCoordinates,
-        destinationAddress,
+        destinationAddress: sanitizedDestination,
         destinationCoordinates,
         scheduledDate,
-        passengersCount,
-        notes,
-        promoCode,
+        passengersCount: sanitizedPassengers,
+        notes: sanitizedNotes,
+        promoCode: sanitizedPromoCode,
       });
 
       if (course) {
