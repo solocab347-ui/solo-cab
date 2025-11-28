@@ -66,6 +66,9 @@ const RegisterClientDriver = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("Erreur lors de la création du compte");
 
+      // CRITIQUE: Attendre que le profil soit créé par le trigger handle_new_user
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Appeler l'edge function pour créer le client
       const { data, error } = await supabase.functions.invoke("register-client-driver", {
         body: { driver_id: driverId },
