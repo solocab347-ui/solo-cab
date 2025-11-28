@@ -31,10 +31,8 @@ interface PublicDriver {
   total_rides: number;
   working_sectors: string[];
   service_description: string;
-  base_rate: number;
-  per_km_rate: number;
+  // SÉCURITÉ: tarifs et adresse domicile retirés de l'interface publique
   profile_photo_url: string;
-  home_address: string;
   distance_km: number | null;
   company_name?: string;
   display_driver_name?: boolean;
@@ -250,7 +248,7 @@ const Chauffeurs = () => {
         
         // Log des distances pour déboguer
         data?.forEach((driver: PublicDriver) => {
-          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km - Adresse: ${driver.home_address}`);
+          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km`);
         });
         
         const sortedDrivers = sortDrivers(data || []);
@@ -303,7 +301,7 @@ const Chauffeurs = () => {
         
         // Log des distances pour déboguer
         data?.forEach((driver: PublicDriver) => {
-          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km - Adresse: ${driver.home_address}`);
+          console.log(`🚗 ${driver.full_name}: ${driver.distance_km?.toFixed(2) || 'N/A'} km`);
         });
         
         const sortedDrivers = sortDrivers(data || []);
