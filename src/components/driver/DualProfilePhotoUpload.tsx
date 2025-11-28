@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, User, CreditCard, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface DualProfilePhotoUploadProps {
   currentProfilePhotoUrl: string | null;
@@ -26,6 +27,7 @@ export const DualProfilePhotoUpload = ({
 }: DualProfilePhotoUploadProps) => {
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingCard, setUploadingCard] = useState(false);
+  const queryClient = useQueryClient();
   
   // Initialiser useSamePhoto en fonction des URLs actuelles
   const [useSamePhoto, setUseSamePhoto] = useState(() => {
@@ -86,6 +88,10 @@ export const DualProfilePhotoUpload = ({
           .update({ card_photo_url: publicUrl })
           .eq('user_id', userId);
       }
+
+      // Invalider tous les caches liés aux profiles et drivers pour mise à jour instantanée
+      await queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+      await queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized'] });
 
       toast.success(`Photo ${type === 'profile' ? 'de profil' : 'de carte'} mise à jour !`);
     } catch (error: any) {

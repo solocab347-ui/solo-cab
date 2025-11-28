@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Camera, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl: string | null;
@@ -21,6 +22,7 @@ export const ProfilePhotoUpload = ({
   onPhotoUpdate,
 }: ProfilePhotoUploadProps) => {
   const [uploading, setUploading] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,6 +58,11 @@ export const ProfilePhotoUpload = ({
         if (error) throw error;
 
         onPhotoUpdate(base64String);
+        
+        // Invalider tous les caches liés aux profiles et drivers pour mise à jour instantanée
+        await queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+        await queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized'] });
+        
         toast.success("Photo de profil mise à jour !");
       };
 
