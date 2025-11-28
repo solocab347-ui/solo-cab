@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { calculateRoute } from "@/lib/geocoding";
+import { logger } from "@/lib/productionLogger";
 
 interface PriceCalculatorProps {
   driverProfile: any;
@@ -40,24 +41,27 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
 
     // Validation de la structure du profil chauffeur
     if (!driverProfile?.driver?.id) {
-      console.error("❌ CALCULATOR: Structure driverProfile invalide", driverProfile);
+      logger.error("Structure driverProfile invalide", { driverProfile });
       toast.error("Erreur: Profil chauffeur non disponible");
       return;
     }
 
     setCalculating(true);
-    console.log("🧮 CALCULATOR: Début du calcul de prix");
-    console.log("   Driver ID:", driverProfile.driver.id);
-    console.log("   Départ:", pickupAddress);
-    console.log("   Arrivée:", destinationAddress);
+    logger.info("Début du calcul de prix", {
+      driverId: driverProfile.driver.id,
+      pickup: pickupAddress,
+      destination: destinationAddress
+    });
 
     try {
-      // Étape 1: Calcul de l'itinéraire avec le système renforcé
-      console.log("🗺️ CALCULATOR: Calcul de l'itinéraire...");
-      const routeResult = await calculateRoute(pickupCoordinates, destinationCoordinates);
+      // Étape 1: Calcul de l'itinéraire
+      const routeResult = await logger.measure(
+        () => calculateRoute(pickupCoordinates, destinationCoordinates),
+        "Calcul itinéraire Mapbox"
+      );
 
       if (!routeResult.success || !routeResult.distance_km || !routeResult.duration_minutes) {
-        console.error("❌ CALCULATOR: Échec calcul itinéraire", routeResult);
+        logger.error("Échec calcul itinéraire", { result: routeResult });
         toast.error(routeResult.error || "Impossible de calculer l'itinéraire");
         setCalculating(false);
         return;
@@ -66,37 +70,37 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       const distanceKm = routeResult.distance_km;
       const durationMinutes = routeResult.duration_minutes;
 
-      console.log(`✅ CALCULATOR: Itinéraire calculé - ${distanceKm} km, ${durationMinutes} min`);
+      logger.info("Itinéraire calculé", { distanceKm, durationMinutes });
 
-      // Étape 2: Calcul du prix avec les paramètres du chauffeur
-      console.log("💰 CALCULATOR: Calcul du prix...");
+      // Étape 2: Calcul du prix
+      const startPrice = performance.now();
       const { data: priceData, error: priceError } = await supabase.rpc("calculate_course_price", {
         _driver_id: driverProfile.driver.id,
         _distance_km: distanceKm,
         _duration_minutes: durationMinutes,
         _use_hourly_rate: false,
       });
+      logger.performance("Calcul prix RPC", performance.now() - startPrice);
 
       if (priceError) {
-        console.error("❌ CALCULATOR: Erreur RPC calculate_course_price", priceError);
+        logger.error("Erreur RPC calculate_course_price", { error: priceError });
         toast.error("Erreur lors du calcul du prix. Vérifiez vos paramètres tarifaires.");
         setCalculating(false);
         return;
       }
 
       if (!priceData || priceData.length === 0) {
-        console.error("❌ CALCULATOR: Aucune donnée de prix retournée");
+        logger.error("Aucune donnée de prix retournée");
         toast.error("Erreur: Calcul de prix échoué");
         setCalculating(false);
         return;
       }
 
       const calculatedPrice = priceData[0];
-      console.log("✅ CALCULATOR: Prix calculé", calculatedPrice);
 
-      // Validation du résultat du prix
+      // Validation du résultat
       if (!calculatedPrice.total_price || calculatedPrice.total_price <= 0) {
-        console.error("❌ CALCULATOR: Prix invalide", calculatedPrice);
+        logger.error("Prix invalide", { price: calculatedPrice });
         toast.error("Erreur: Prix calculé invalide. Vérifiez vos paramètres tarifaires.");
         setCalculating(false);
         return;
@@ -108,8 +112,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         price: calculatedPrice,
       });
 
-      // Étape 3: Charger les clients pour la création de course
-      console.log("👥 CALCULATOR: Chargement des clients...");
+      // Étape 3: Charger les clients
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -123,12 +126,10 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`);
 
       if (clientsError) {
-        console.warn("⚠️ CALCULATOR: Erreur chargement clients", clientsError);
-        // Ne pas bloquer si les clients ne se chargent pas
+        logger.warn("Erreur chargement clients", { error: clientsError });
         setClients([]);
       } else {
         setClients(clientsData || []);
-        console.log(`✅ CALCULATOR: ${clientsData?.length || 0} clients chargés`);
       }
 
       toast.success("✅ Prix calculé avec succès !", {
@@ -136,9 +137,9 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         duration: 6000
       });
 
-      console.log("✅ CALCULATOR: Calcul terminé avec succès");
+      logger.info("Calcul terminé avec succès");
     } catch (error: any) {
-      console.error("❌ CALCULATOR: Exception durant le calcul", error);
+      logger.exception(error, { context: "PriceCalculator.handleCalculate" });
       toast.error("Erreur lors du calcul du prix. Veuillez réessayer.");
     } finally {
       setCalculating(false);
@@ -152,6 +153,11 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     }
 
     setCreatingCourse(true);
+    logger.info("Création de course depuis calculatrice", {
+      clientId: selectedClientId,
+      driverId: driverProfile.driver.id
+    });
+
     try {
       // Créer la course
       const { data: courseData, error: courseError } = await supabase
@@ -174,7 +180,10 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         .select()
         .single();
 
-      if (courseError) throw courseError;
+      if (courseError) {
+        logger.error("Erreur création course", { error: courseError });
+        throw courseError;
+      }
 
       // Créer le devis automatique
       await supabase.functions.invoke("create-devis-auto", {
@@ -186,6 +195,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       });
 
       toast.success("Course créée avec succès !");
+      logger.info("Course créée avec succès", { courseId: courseData.id });
       
       // Réinitialiser le formulaire
       setPickupAddress("");
@@ -198,7 +208,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       // Rediriger vers Mes Courses
       navigate("/driver-dashboard");
     } catch (error: any) {
-      console.error("Erreur création course:", error);
+      logger.exception(error, { context: "PriceCalculator.handleCreateCourse" });
       toast.error("Erreur lors de la création de la course");
     } finally {
       setCreatingCourse(false);
