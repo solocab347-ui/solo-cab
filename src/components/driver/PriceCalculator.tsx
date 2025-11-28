@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { calculateRoute } from "@/lib/geocoding";
 
 interface PriceCalculatorProps {
   driverProfile: any;
@@ -26,52 +27,89 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
   const [creatingCourse, setCreatingCourse] = useState(false);
 
   const handleCalculate = async () => {
-    if (!pickupAddress || !destinationAddress || !pickupCoordinates || !destinationCoordinates) {
+    // Validation stricte des entrées
+    if (!pickupAddress || !destinationAddress) {
       toast.error("Veuillez renseigner les deux adresses");
       return;
     }
 
-    setCalculating(true);
-    try {
-      // Obtenir le token Mapbox depuis l'Edge Function
-      const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-mapbox-token");
-      
-      if (tokenError) throw new Error("Impossible de récupérer le token Mapbox");
-      const mapboxToken = tokenData.token;
-      
-      // Obtenir la distance et durée via Mapbox Directions API
-      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickupCoordinates.longitude},${pickupCoordinates.latitude};${destinationCoordinates.longitude},${destinationCoordinates.latitude}?access_token=${mapboxToken}&geometries=geojson`;
-      
-      const directionsResponse = await fetch(directionsUrl);
-      const directionsData = await directionsResponse.json();
+    if (!pickupCoordinates || !destinationCoordinates) {
+      toast.error("Veuillez sélectionner les adresses dans la liste de suggestions");
+      return;
+    }
 
-      if (!directionsData.routes || directionsData.routes.length === 0) {
-        throw new Error("Impossible de calculer l'itinéraire");
+    // Validation de la structure du profil chauffeur
+    if (!driverProfile?.driver?.id) {
+      console.error("❌ CALCULATOR: Structure driverProfile invalide", driverProfile);
+      toast.error("Erreur: Profil chauffeur non disponible");
+      return;
+    }
+
+    setCalculating(true);
+    console.log("🧮 CALCULATOR: Début du calcul de prix");
+    console.log("   Driver ID:", driverProfile.driver.id);
+    console.log("   Départ:", pickupAddress);
+    console.log("   Arrivée:", destinationAddress);
+
+    try {
+      // Étape 1: Calcul de l'itinéraire avec le système renforcé
+      console.log("🗺️ CALCULATOR: Calcul de l'itinéraire...");
+      const routeResult = await calculateRoute(pickupCoordinates, destinationCoordinates);
+
+      if (!routeResult.success || !routeResult.distance_km || !routeResult.duration_minutes) {
+        console.error("❌ CALCULATOR: Échec calcul itinéraire", routeResult);
+        toast.error(routeResult.error || "Impossible de calculer l'itinéraire");
+        setCalculating(false);
+        return;
       }
 
-      const route = directionsData.routes[0];
-      const distanceKm = (route.distance / 1000).toFixed(2);
-      const durationMinutes = Math.round(route.duration / 60);
+      const distanceKm = routeResult.distance_km;
+      const durationMinutes = routeResult.duration_minutes;
 
-      // Calculer le prix avec les paramètres du chauffeur
+      console.log(`✅ CALCULATOR: Itinéraire calculé - ${distanceKm} km, ${durationMinutes} min`);
+
+      // Étape 2: Calcul du prix avec les paramètres du chauffeur
+      console.log("💰 CALCULATOR: Calcul du prix...");
       const { data: priceData, error: priceError } = await supabase.rpc("calculate_course_price", {
         _driver_id: driverProfile.driver.id,
-        _distance_km: parseFloat(distanceKm),
+        _distance_km: distanceKm,
         _duration_minutes: durationMinutes,
-        _use_hourly_rate: false, // Par défaut au kilomètre
+        _use_hourly_rate: false,
       });
 
-      if (priceError) throw priceError;
+      if (priceError) {
+        console.error("❌ CALCULATOR: Erreur RPC calculate_course_price", priceError);
+        toast.error("Erreur lors du calcul du prix. Vérifiez vos paramètres tarifaires.");
+        setCalculating(false);
+        return;
+      }
+
+      if (!priceData || priceData.length === 0) {
+        console.error("❌ CALCULATOR: Aucune donnée de prix retournée");
+        toast.error("Erreur: Calcul de prix échoué");
+        setCalculating(false);
+        return;
+      }
 
       const calculatedPrice = priceData[0];
+      console.log("✅ CALCULATOR: Prix calculé", calculatedPrice);
+
+      // Validation du résultat du prix
+      if (!calculatedPrice.total_price || calculatedPrice.total_price <= 0) {
+        console.error("❌ CALCULATOR: Prix invalide", calculatedPrice);
+        toast.error("Erreur: Prix calculé invalide. Vérifiez vos paramètres tarifaires.");
+        setCalculating(false);
+        return;
+      }
 
       setResult({
-        distance: distanceKm,
+        distance: distanceKm.toFixed(2),
         duration: durationMinutes,
         price: calculatedPrice,
       });
 
-      // Charger les clients pour la création de course
+      // Étape 3: Charger les clients pour la création de course
+      console.log("👥 CALCULATOR: Chargement des clients...");
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select(`
@@ -84,16 +122,24 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         `)
         .or(`driver_id.eq.${driverProfile.driver.id},driver_ids.cs.{${driverProfile.driver.id}}`);
 
-      if (clientsError) throw clientsError;
-      setClients(clientsData || []);
+      if (clientsError) {
+        console.warn("⚠️ CALCULATOR: Erreur chargement clients", clientsError);
+        // Ne pas bloquer si les clients ne se chargent pas
+        setClients([]);
+      } else {
+        setClients(clientsData || []);
+        console.log(`✅ CALCULATOR: ${clientsData?.length || 0} clients chargés`);
+      }
 
       toast.success("✅ Prix calculé avec succès !", {
-        description: `Distance: ${distanceKm} km • Durée: ${durationMinutes} min • Prix TTC: ${calculatedPrice.total_price.toFixed(2)}€`,
+        description: `Distance: ${distanceKm.toFixed(2)} km • Durée: ${durationMinutes} min • Prix TTC: ${calculatedPrice.total_price.toFixed(2)}€`,
         duration: 6000
       });
+
+      console.log("✅ CALCULATOR: Calcul terminé avec succès");
     } catch (error: any) {
-      console.error("Erreur calcul:", error);
-      toast.error("Erreur lors du calcul du prix");
+      console.error("❌ CALCULATOR: Exception durant le calcul", error);
+      toast.error("Erreur lors du calcul du prix. Veuillez réessayer.");
     } finally {
       setCalculating(false);
     }
