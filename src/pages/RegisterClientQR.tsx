@@ -185,65 +185,77 @@ const RegisterClientQR = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-6">
+    <div className="min-h-screen bg-gradient-to-b from-background via-muted/10 to-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl p-8 shadow-xl border-2">
         {!showRegistrationForm ? (
           // Affichage du profil du chauffeur
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Rejoignez votre chauffeur VTC</h1>
-              <p className="text-muted-foreground">Découvrez le profil de votre chauffeur</p>
+          <div className="space-y-8">
+            {/* En-tête élégant */}
+            <div className="text-center space-y-2 pb-6 border-b">
+              <h1 className="text-3xl font-bold text-foreground">Rejoignez votre chauffeur VTC</h1>
+              <p className="text-muted-foreground text-base">Découvrez le profil de votre chauffeur</p>
             </div>
 
-            {/* Carte profil chauffeur */}
-            <div className="bg-gradient-premium rounded-lg p-6 space-y-6">
-              {/* Photo et nom */}
-              <div className="flex flex-col items-center text-center space-y-4">
-                <Avatar className="w-32 h-32 border-4 border-white shadow-elegant">
-                  <AvatarImage 
-                    src={driverInfo.profiles?.profile_photo_url} 
-                    alt={driverInfo.profiles?.full_name}
-                  />
-                  <AvatarFallback className="text-3xl">
-                    {driverInfo.profiles?.full_name?.charAt(0) || "C"}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="space-y-2">
-                  {driverInfo.display_driver_name && (
-                    <h2 className="text-2xl font-bold text-premium-foreground">
-                      {driverInfo.profiles?.full_name}
-                    </h2>
-                  )}
-                  {driverInfo.display_company_name && driverInfo.company_name && (
-                    <p className="text-lg font-semibold text-premium-foreground/90">
-                      {driverInfo.company_name}
-                    </p>
-                  )}
+            {/* Carte profil chauffeur - Design sobre et professionnel */}
+            <div className="bg-gradient-to-br from-card via-background to-card border-2 border-border rounded-2xl p-8 shadow-lg">
+              {/* Photo et nom - Bien centré */}
+              <div className="flex flex-col items-center text-center space-y-6">
+                {/* Photo avec cadrage parfait */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-2xl" />
+                  <Avatar className="relative w-40 h-40 border-4 border-background shadow-2xl ring-2 ring-primary/20">
+                    <AvatarImage 
+                      src={driverInfo.profiles?.profile_photo_url} 
+                      alt={driverInfo.profiles?.full_name}
+                      className="object-cover object-center"
+                    />
+                    <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                      {driverInfo.profiles?.full_name?.charAt(0) || "C"}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <Badge className="bg-premium-foreground text-premium flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-current" />
-                    {driverInfo.rating?.toFixed(1) || "5.0"}
-                  </Badge>
-                  <Badge variant="outline" className="bg-premium-foreground/10 text-premium-foreground border-premium-foreground/20">
-                    <Car className="w-3 h-3 mr-1" />
-                    {driverInfo.total_rides || 0} courses
-                  </Badge>
-                  <Badge variant="outline" className="bg-green-500/20 text-green-700 border-green-500/30">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Chauffeur vérifié
-                  </Badge>
+                {/* Nom et badges - Alignés proprement */}
+                <div className="space-y-4 w-full">
+                  <div className="space-y-2">
+                    {driverInfo.display_driver_name && (
+                      <h2 className="text-3xl font-bold text-foreground tracking-tight">
+                        {driverInfo.profiles?.full_name}
+                      </h2>
+                    )}
+                    {driverInfo.display_company_name && driverInfo.company_name && (
+                      <p className="text-lg font-medium text-muted-foreground">
+                        {driverInfo.company_name}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Badges harmonieux */}
+                  <div className="flex flex-wrap gap-3 justify-center items-center">
+                    <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors px-4 py-1.5 flex items-center gap-1.5">
+                      <Star className="w-4 h-4 fill-primary" />
+                      <span className="font-semibold">{driverInfo.rating?.toFixed(1) || "5.0"}</span>
+                    </Badge>
+                    <Badge className="bg-muted/50 text-foreground border border-border hover:bg-muted transition-colors px-4 py-1.5 flex items-center gap-1.5">
+                      <Car className="w-4 h-4" />
+                      <span className="font-semibold">{driverInfo.total_rides || 0} course{(driverInfo.total_rides || 0) > 1 ? "s" : ""}</span>
+                    </Badge>
+                    <Badge className="bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-colors px-4 py-1.5 flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="font-semibold">Vérifié</span>
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
-              {/* Véhicule */}
+              {/* Séparateur élégant */}
+              <div className="my-8 border-t border-border" />
+
+              {/* Véhicule - Design sobre */}
               {(driverInfo.vehicle_model || driverInfo.vehicle_brand) && (
-                <div className="bg-premium-foreground/10 rounded-lg p-4 text-center">
-                  <p className="text-sm text-premium-foreground/70 mb-1">Véhicule</p>
-                  <p className="text-lg font-semibold text-premium-foreground">
+                <div className="bg-muted/30 rounded-xl p-6 text-center space-y-2 border border-border/50">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Véhicule</p>
+                  <p className="text-xl font-semibold text-foreground">
                     {driverInfo.vehicle_brand && `${driverInfo.vehicle_brand} `}
                     {driverInfo.vehicle_model}
                     {driverInfo.vehicle_color && ` • ${driverInfo.vehicle_color}`}
@@ -252,27 +264,27 @@ const RegisterClientQR = () => {
                 </div>
               )}
 
-              {/* Présentation */}
+              {/* Présentation - Texte bien aligné */}
               {(driverInfo.service_description || driverInfo.bio) && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-premium-foreground">Présentation</h3>
-                  <p className="text-premium-foreground/80 leading-relaxed">
+                <div className="mt-6 space-y-3 text-center">
+                  <h3 className="text-lg font-semibold text-foreground">Présentation</h3>
+                  <p className="text-muted-foreground leading-relaxed text-base">
                     {driverInfo.service_description || driverInfo.bio}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Bouton d'inscription */}
+            {/* Bouton d'inscription - Sobre et efficace */}
             <Button 
               onClick={() => setShowRegistrationForm(true)}
-              className="w-full h-12 text-lg bg-premium hover:bg-premium/90"
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary via-primary to-primary/90 hover:opacity-90 shadow-lg hover:shadow-xl transition-all"
               size="lg"
             >
               S'inscrire avec ce chauffeur
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground leading-relaxed">
               En vous inscrivant, vous deviendrez client exclusif de ce chauffeur
             </p>
           </div>
