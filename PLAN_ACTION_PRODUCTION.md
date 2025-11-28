@@ -26,12 +26,13 @@ Stabiliser l'application pour la mise en production en améliorant:
 - 🔄 **EN COURS**: Remplacement dans 90+ fichiers restants
 
 ### 1.2 Sanitization des Inputs
-- ✅ **FAIT**: Créé `inputSanitizer.ts`
+- ✅ **FAIT**: Créé `inputSanitizer.ts` (frontend + edge functions)
 - ✅ **FAIT**: Protection XSS/SQL injection
 - ✅ **FAIT**: Intégration dans formulaires critiques
   - CreateCourse.tsx ✅
   - DriverCreateCourse.tsx ✅
-- 🔄 **EN COURS**: Formulaires d'inscription et profils restants
+  - register-client-driver edge function ✅
+- 🔄 **EN COURS**: RegisterClientQR et autres formulaires
 
 ### 1.3 Rate Limiting
 - ✅ **FAIT**: Créé `rateLimiter.ts` et middleware edge functions
@@ -134,5 +135,14 @@ Stabiliser l'application pour la mise en production en améliorant:
 4. ✅ Intégrer InputSanitizer formulaires courses (CreateCourse, DriverCreateCourse)
 5. ✅ LoadingFallback et lazy loading activés
 
-**Phase 1 Progression**: 85% complétée
+**Phase 1 Progression**: 90% complétée
 **Objectif**: Application production-ready pour stabilité et sécurité
+
+---
+
+## 🐛 CORRECTIFS APPLIQUÉS
+
+### Bug: Photo de profil QR code non mise à jour instantanément
+- ✅ **RÉSOLU**: Ajout invalidation cache React Query dans ProfilePhotoUpload
+- ✅ **RÉSOLU**: Ajout invalidation cache React Query dans DualProfilePhotoUpload
+- **Impact**: Photo de profil du chauffeur maintenant actualisée instantanément dans le lien QR code après modification
