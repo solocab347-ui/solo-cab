@@ -33,9 +33,10 @@ Deno.serve(async (req) => {
       console.log('Getting QR code for driver:', driverId);
 
       // Check if QR code already exists
+      // SÉCURITÉ: SELECT explicite excluant scans_count (données sensibles)
       let { data: existingQR } = await supabaseClient
         .from('qr_codes')
-        .select('*')
+        .select('id, driver_id, code, is_active, qr_code_image, created_at, updated_at')
         .eq('driver_id', driverId)
         .eq('is_active', true)
         .maybeSingle();
@@ -125,10 +126,15 @@ Deno.serve(async (req) => {
         });
       }
 
+      // SÉCURITÉ: SELECT explicite excluant scans_count (données sensibles)
       const { data: qrCode, error } = await supabaseClient
         .from('qr_codes')
         .select(`
-          *,
+          id,
+          driver_id,
+          code,
+          is_active,
+          qr_code_image,
           drivers:driver_id (
             id,
             vehicle_model,
@@ -152,9 +158,16 @@ Deno.serve(async (req) => {
       }
 
       // Increment scan counter
+      // Faire un SELECT séparé avec SERVICE_ROLE_KEY pour récupérer scans_count
+      const { data: qrForUpdate } = await supabaseClient
+        .from('qr_codes')
+        .select('scans_count')
+        .eq('id', qrId)
+        .single();
+      
       await supabaseClient
         .from('qr_codes')
-        .update({ scans_count: (qrCode.scans_count || 0) + 1 })
+        .update({ scans_count: (qrForUpdate?.scans_count || 0) + 1 })
         .eq('id', qrId);
 
       return new Response(JSON.stringify(qrCode), {
