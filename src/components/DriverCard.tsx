@@ -127,20 +127,26 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
 
           {/* Vehicle Info - Only show if valid info exists */}
           {(() => {
+            const invalidTerms = ['compléter', 'attente', 'pending', 'en attente', 'à compléter'];
+            
             const hasValidBrand = driver.vehicle_brand && 
               driver.vehicle_brand.trim() &&
-              !driver.vehicle_brand.toLowerCase().includes('compléter') &&
-              !driver.vehicle_brand.toLowerCase().includes('attente');
+              !invalidTerms.some(term => driver.vehicle_brand?.toLowerCase().includes(term));
+            
             const hasValidModel = driver.vehicle_model && 
               driver.vehicle_model.trim() &&
-              !driver.vehicle_model.toLowerCase().includes('compléter') &&
-              !driver.vehicle_model.toLowerCase().includes('attente');
+              !invalidTerms.some(term => driver.vehicle_model?.toLowerCase().includes(term));
+            
             const hasValidColor = driver.vehicle_color && 
               driver.vehicle_color.trim() &&
-              !driver.vehicle_color.toLowerCase().includes('compléter') &&
-              !driver.vehicle_color.toLowerCase().includes('attente');
+              !invalidTerms.some(term => driver.vehicle_color?.toLowerCase().includes(term));
             
-            if (!hasValidBrand && !hasValidModel) return null;
+            const hasValidYear = driver.vehicle_year && 
+              driver.vehicle_year > 1900 && 
+              driver.vehicle_year <= new Date().getFullYear() + 1;
+            
+            // Ne rien afficher si aucune information valide
+            if (!hasValidBrand && !hasValidModel && !hasValidColor && !hasValidYear) return null;
             
             return (
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
@@ -149,7 +155,7 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
                   {hasValidBrand && `${driver.vehicle_brand} `}
                   {hasValidModel && driver.vehicle_model}
                   {hasValidColor && ` · ${driver.vehicle_color}`}
-                  {driver.vehicle_year && driver.vehicle_year > 1900 && ` (${driver.vehicle_year})`}
+                  {hasValidYear && ` (${driver.vehicle_year})`}
                 </span>
               </div>
             );
