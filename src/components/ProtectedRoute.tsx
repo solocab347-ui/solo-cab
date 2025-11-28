@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/productionLogger";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -49,13 +50,13 @@ export const ProtectedRoute = ({
         .maybeSingle(); // Utiliser maybeSingle au lieu de single
 
       if (error) {
-        console.error("Error checking driver status:", error);
+        logger.error("Error checking driver status", { error });
         setCheckingDriver(false);
         return;
       }
 
       if (!driver) {
-        console.error("⛔ Aucun profil chauffeur trouvé");
+        logger.error("Aucun profil chauffeur trouvé");
         setDriverStatus("no_profile");
         setCheckingDriver(false);
         return;
@@ -63,21 +64,21 @@ export const ProtectedRoute = ({
 
       // SÉCURITÉ CRITIQUE : Vérifier paiement ou accès gratuit
       if (!driver.subscription_paid && !driver.free_access_granted) {
-        console.error("⛔ Accès refusé : paiement requis");
+        logger.error("Accès refusé : paiement requis");
         setDriverStatus("payment_required");
       } else if (driver.status === "on_hold" && !driver.free_access_granted) {
         // ⚠️ SÉCURITÉ: Bloquer les drivers "on_hold" sans paiement ni accès gratuit
-        console.error("⛔ Accès refusé : inscription incomplète");
+        logger.error("Accès refusé : inscription incomplète");
         setDriverStatus("payment_required");
       } else if (driver.free_access_granted) {
         // ✅ Accès gratuit = validation automatique
-        console.log("✅ Accès gratuit accordé : validation automatique");
+        logger.info("Accès gratuit accordé : validation automatique");
         setDriverStatus("validated");
       } else {
         setDriverStatus(driver.status);
       }
     } catch (error) {
-      console.error("Erreur vérification driver:", error);
+      logger.error("Erreur vérification driver", { error });
       setDriverStatus("error");
     } finally {
       setCheckingDriver(false);
@@ -123,7 +124,7 @@ export const ProtectedRoute = ({
                 await supabase.auth.signOut();
                 navigate("/login");
               } catch (error) {
-                console.error("Erreur déconnexion:", error);
+                logger.error("Erreur déconnexion", { error });
                 navigate("/login");
               }
             }} className="w-full">

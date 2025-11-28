@@ -43,6 +43,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/productionLogger";
 
 const DriverDashboard = () => {
   
@@ -169,7 +170,7 @@ const DriverDashboard = () => {
         }
       } catch (error) {
         if (mounted) {
-          console.error("QR fetch error:", error);
+          logger.error("QR fetch error", { error });
         }
       } finally {
         if (mounted) {
@@ -211,7 +212,7 @@ const DriverDashboard = () => {
     setLoading(true);
     
     try {
-      console.log("🔄 Début de la sauvegarde du profil...");
+      logger.info("Début de la sauvegarde du profil");
       
       // 1. Sauvegarder les données du driver
       const driverUpdates = {
@@ -247,34 +248,34 @@ const DriverDashboard = () => {
         card_photo_url: cardPhotoUrl, // Ajouter la photo de carte ici aussi
       };
 
-      console.log("📝 Mise à jour de la table drivers...");
+      logger.info("Mise à jour de la table drivers");
       await updateProfile(driverUpdates);
 
       // 2. Sauvegarder la photo de profil dans profiles (si elle existe)
       if (user?.id && profilePhotoUrl) {
-        console.log("📝 Mise à jour de la photo de profil...");
+        logger.info("Mise à jour de la photo de profil");
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ profile_photo_url: profilePhotoUrl })
           .eq('id', user.id);
         
         if (profileError) {
-          console.error("❌ Erreur sauvegarde photo profil:", profileError);
+          logger.error("Erreur sauvegarde photo profil", { profileError });
           throw profileError;
         }
       }
 
       // 3. Invalider tous les caches pour forcer le rafraîchissement
-      console.log("🔄 Invalidation des caches...");
+      logger.info("Invalidation des caches");
       await queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized', user?.id] });
       await queryClient.invalidateQueries({ queryKey: ['driver-profile', user?.id] });
       
-      console.log("✅ Profil sauvegardé avec succès !");
+      logger.info("Profil sauvegardé avec succès");
       
       // Toast géré automatiquement par le hook useOptimizedDriverProfile
       
     } catch (error: any) {
-      console.error("❌ Erreur lors de la sauvegarde:", error);
+      logger.error("Erreur lors de la sauvegarde", { error });
       // Toast d'erreur géré automatiquement par le hook
     } finally {
       setLoading(false);
