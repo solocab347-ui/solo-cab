@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
+import { applyRateLimit } from '../_shared/rateLimitMiddleware.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,12 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SÉCURITÉ: Rate limiting - 30 requêtes par minute
+  const rateLimitResult = applyRateLimit(req, { maxRequests: 30, windowMs: 60000 });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
   }
 
   try {
@@ -33,7 +40,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (courseError || !course) {
-      console.error('Course fetch error:', courseError);
       return new Response(
         JSON.stringify({ error: 'Course introuvable' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -51,7 +57,6 @@ Deno.serve(async (req) => {
       });
 
     if (priceError || !priceData || priceData.length === 0) {
-      console.error('Price calculation error:', priceError);
       return new Response(
         JSON.stringify({ error: 'Erreur calcul du prix' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -100,10 +105,6 @@ Deno.serve(async (req) => {
             .from('promotions')
             .update({ current_uses: (promo.current_uses || 0) + 1 })
             .eq('id', promo.id);
-          
-          console.log(`Promo ${promo.code} applied: -${discountAmount}€`);
-        } else {
-          console.warn('Promo validation failed:', { isExpired, hasReachedMaxUses, meetsMinAmount });
         }
       }
     }
@@ -124,11 +125,8 @@ Deno.serve(async (req) => {
           .rpc('generate_reservation_number', { _driver_id: driver_id });
 
         if (reservationError) {
-          console.error('Reservation number generation error:', reservationError);
           throw new Error('Erreur génération numéro réservation');
         }
-
-        console.log(`Attempt ${attempt + 1}: Trying to create devis with number ${reservationNumber}`);
 
         // Try to create devis with unified reservation number and promo
         const { data: createdDevis, error: devisError } = await supabaseClient
@@ -155,7 +153,6 @@ Deno.serve(async (req) => {
         if (devisError) {
           // Check if it's a duplicate key error
           if (devisError.code === '23505' && devisError.message?.includes('quote_number')) {
-            console.warn(`Reservation number ${reservationNumber} already exists, retrying...`);
             lastError = devisError;
             continue; // Retry with a new number
           }
@@ -165,7 +162,6 @@ Deno.serve(async (req) => {
 
         // Success!
         devis = createdDevis;
-        console.log('Devis created successfully with reservation number:', reservationNumber);
         
         // COHÉRENCE: Mettre à jour la course avec le même numéro de réservation
         await supabaseClient
@@ -173,7 +169,6 @@ Deno.serve(async (req) => {
           .update({ course_number: reservationNumber })
           .eq('id', course_id);
         
-        console.log('Course updated with reservation number:', reservationNumber);
         break;
 
       } catch (error: any) {
@@ -187,7 +182,6 @@ Deno.serve(async (req) => {
 
     // If we exhausted all retries
     if (!devis) {
-      console.error('Failed to create devis after all retries:', lastError);
       return new Response(
         JSON.stringify({ error: 'Erreur création devis après plusieurs tentatives' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -204,7 +198,6 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Create Devis Auto Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
