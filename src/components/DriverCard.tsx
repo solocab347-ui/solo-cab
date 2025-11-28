@@ -51,18 +51,18 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
   // Garantir qu'il y a toujours au moins le nom du chauffeur
   const name = displayName.length > 0 ? displayName.join(" - ") : driver.full_name;
 
-  // Couleurs alternées pour les cartes (3 variantes)
+  // Couleurs vibrantes et attractives pour les cartes (3 variantes)
   const cardColors = [
-    "bg-gradient-to-br from-blue-50/50 to-blue-100/30 dark:from-blue-950/20 dark:to-blue-900/10",
-    "bg-gradient-to-br from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10",
-    "bg-gradient-to-br from-amber-50/50 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-900/10",
+    "bg-gradient-to-br from-primary/5 via-background to-primary/10 border-primary/20",
+    "bg-gradient-to-br from-purple-500/5 via-background to-purple-500/10 border-purple-500/20",
+    "bg-gradient-to-br from-blue-500/5 via-background to-blue-500/10 border-blue-500/20",
   ];
   const cardColor = cardColors[cardIndex % 3];
 
   return (
-    <Card className={`group overflow-hidden hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 flex flex-col ${cardColor}`}>
+    <Card className={`group overflow-hidden hover:shadow-elegant hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col border-2 ${cardColor}`}>
       {/* Large Profile Photo Section */}
-      <div className="relative h-80 overflow-hidden bg-gradient-to-br from-primary/5 to-primary/10">
+      <div className="relative h-80 overflow-hidden bg-gradient-to-br from-foreground/5 via-background to-primary/10">
         {/* Distance Badge */}
         {driver.distance_km !== undefined && (
           <Badge className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm z-10">
@@ -90,12 +90,12 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
       </div>
 
       {/* Content Section */}
-      <div className="p-6 flex flex-col flex-1">
+      <div className="p-6 flex flex-col flex-1 bg-gradient-to-b from-background via-background to-primary/5">
         {/* Content flexbox avec flex-1 pour pousser le bouton en bas */}
         <div className="flex-1 space-y-4">
           {/* Driver Name */}
           <div className="text-center">
-            <h3 className="text-xl font-bold text-foreground mb-1">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">
               {name}
             </h3>
             
@@ -191,7 +191,7 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
         {/* CTA Button - toujours en bas */}
         <Button 
           onClick={() => onViewProfile?.(driver.id)}
-          className="w-full bg-gradient-premium hover:opacity-90 mt-4"
+          className="w-full bg-gradient-to-r from-primary via-primary to-primary/80 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300 text-primary-foreground font-semibold mt-4"
         >
           <UserPlus className="w-4 h-4 mr-2" />
           Voir le profil
