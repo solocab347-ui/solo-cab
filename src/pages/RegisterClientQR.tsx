@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Star, Car, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeAddress } from "@/lib/inputSanitizer";
 
 const RegisterClientQR = () => {
   const navigate = useNavigate();
@@ -118,56 +119,50 @@ const RegisterClientQR = () => {
     setLoading(true);
 
     try {
-      console.log("Starting registration with QR code:", qrCodeId);
+      // Sanitize les inputs avant envoi
+      const cleanFullName = sanitizeString(formData.fullName);
+      const cleanEmail = sanitizeEmail(formData.email);
+      const cleanPhone = sanitizePhone(formData.phone);
+      const cleanAddress = sanitizeAddress(formData.address);
       
       // Créer le compte utilisateur
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: cleanEmail,
         password: formData.password,
         options: {
           data: {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            address: formData.address,
+            full_name: cleanFullName,
+            phone: cleanPhone,
+            address: cleanAddress,
           },
         },
       });
 
       if (authError) {
-        console.error("Auth error:", authError);
         throw authError;
       }
       if (!authData.user) {
-        console.error("No user returned from signUp");
         throw new Error("Erreur lors de la création du compte");
       }
-
-      console.log("User created:", authData.user.id);
 
       // Attendre un peu pour s'assurer que le profil est créé
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Appeler l'edge function pour créer le client
-      console.log("Calling register-client-qr edge function");
       const { data, error } = await supabase.functions.invoke("register-client-qr", {
         body: { qr_code_id: qrCodeId },
       });
 
-      console.log("Edge function response:", data, error);
-
       if (error) {
-        console.error("Edge function error:", error);
         throw new Error("Erreur lors de l'inscription: " + error.message);
       }
       if (data?.error) {
-        console.error("Edge function returned error:", data.error);
         throw new Error(data.error);
       }
 
       toast.success("Inscription réussie ! Bienvenue chez SoloCab");
       navigate("/client-dashboard");
     } catch (error: any) {
-      console.error("Erreur inscription:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
     } finally {
       setLoading(false);
