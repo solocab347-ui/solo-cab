@@ -80,7 +80,7 @@ const Login = () => {
       // Vérifier s'il y a une inscription chauffeur en cours
       const { data: driver } = await supabase
         .from("drivers")
-        .select("id, registration_step")
+        .select("id, registration_step, status, free_access_granted")
         .eq("user_id", data.user.id)
         .maybeSingle();
 
@@ -104,7 +104,8 @@ const Login = () => {
       }
 
       // MODE CONNEXION NORMALE: Si inscription en cours, proposer de reprendre
-      if (driver && driver.registration_step) {
+      // MAIS PAS pour les drivers validés avec accès gratuit
+      if (driver && driver.registration_step && driver.status !== 'validated' && !driver.free_access_granted) {
         toast.info("Inscription en cours détectée", {
           description: "Utilisez 'Reprendre mon inscription' pour continuer",
           duration: 5000,
