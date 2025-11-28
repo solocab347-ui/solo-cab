@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Users, Car, FileText, Euro, TrendingUp, CheckCircle } from "lucide-react";
+import { logger } from "@/lib/productionLogger";
 
 const AdminStats = () => {
   const [stats, setStats] = useState<any>(null);
@@ -18,7 +19,7 @@ const AdminStats = () => {
       if (error) throw error;
       setStats(data);
     } catch (error: any) {
-      console.error("Error fetching stats:", error);
+      logger.error("Error fetching admin stats", { error });
       toast.error("Erreur lors du chargement des statistiques");
     } finally {
       setLoading(false);

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logger } from "@/lib/productionLogger";
 
 interface Contact {
   id: string;
@@ -49,13 +50,13 @@ export const MessagingInterface = () => {
           .maybeSingle();
 
         if (driverError) {
-          console.error("❌ Error fetching driver:", driverError);
+          logger.error("Error fetching driver", { error: driverError });
           toast.error("Erreur lors du chargement du chauffeur");
           return;
         }
 
         if (!driverData) {
-          console.warn("⚠️ No driver data found");
+          logger.warn("No driver data found for messaging");
           return;
         }
 
@@ -72,7 +73,7 @@ export const MessagingInterface = () => {
           .or(`driver_id.eq.${driverData.id},driver_ids.cs.{${driverData.id}}`);
 
         if (clientsError) {
-          console.error("❌ Error fetching clients:", clientsError);
+          logger.error("Error fetching clients for messaging", { error: clientsError });
           toast.error("Erreur lors du chargement des clients");
           return;
         }
@@ -92,7 +93,7 @@ export const MessagingInterface = () => {
           .maybeSingle();
 
         if (clientError) {
-          console.error("❌ Error fetching client data:", clientError);
+          logger.error("Error fetching client data for messaging", { error: clientError });
           toast.error("Erreur lors du chargement du client");
           return;
         }
