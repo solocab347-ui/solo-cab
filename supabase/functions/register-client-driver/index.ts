@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { applyRateLimit } from '../_shared/rateLimitMiddleware.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,12 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // SÉCURITÉ: Rate limiting - 15 inscriptions par minute par IP
+  const rateLimitResult = applyRateLimit(req, { maxRequests: 15, windowMs: 60000 });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResult.response!;
   }
 
   try {
@@ -156,10 +163,8 @@ serve(async (req) => {
             }
           }
         });
-        console.log("Welcome email sent to client:", profileData.email);
       }
     } catch (emailError) {
-      console.error("Error sending welcome email:", emailError);
       // Ne pas bloquer l'inscription si l'email échoue
     }
 
@@ -173,7 +178,6 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Erreur serveur" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
