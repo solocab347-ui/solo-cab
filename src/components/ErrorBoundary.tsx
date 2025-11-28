@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { captureError } from '@/lib/sentry';
+import { logger } from '@/lib/productionLogger';
 
 interface Props {
   children: ReactNode;
@@ -40,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleGlobalError = (event: ErrorEvent) => {
-    console.error('Global error:', event.error);
+    logger.critical('Global error intercepted', { error: event.error?.message });
     this.setState(prevState => ({
       hasError: true,
       error: event.error,
@@ -49,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handlePromiseRejection = (event: PromiseRejectionEvent) => {
-    console.error('Unhandled promise rejection:', event.reason);
+    logger.critical('Unhandled promise rejection', { reason: event.reason });
     this.setState(prevState => ({
       hasError: true,
       error: new Error(event.reason?.message || 'Promise rejection'),
@@ -62,7 +63,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.critical('ErrorBoundary caught error', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+      componentStack: errorInfo.componentStack?.substring(0, 500)
+    });
     
     // Envoyer à Sentry avec le contexte complet
     captureError(error, {
@@ -73,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
     
     // Auto-reset après trop d'erreurs consécutives
     if (this.state.errorCount > 3) {
-      console.warn('Too many errors, forcing reload...');
+      logger.warn('Too many errors detected, forcing reload', { errorCount: this.state.errorCount });
       this.resetTimer = setTimeout(() => {
         window.location.reload();
       }, 5000);

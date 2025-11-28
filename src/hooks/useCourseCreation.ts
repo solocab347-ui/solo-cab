@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateCourseData, sanitizeNotes, sanitizePromoCode } from "@/lib/courseValidation";
 import { calculateRoute } from "@/lib/geocoding";
+import { logger } from "@/lib/productionLogger";
 
 export interface CourseCreationParams {
   userId: string;
@@ -117,7 +118,7 @@ export function useCourseCreation() {
         .maybeSingle();
 
       if (driverError) {
-        console.error("❌ Driver verification error:", driverError);
+        logger.error("Driver verification failed", { error: driverError, driverId });
         toast.error("Erreur lors de la vérification du chauffeur");
         return null;
       }
@@ -148,7 +149,7 @@ export function useCourseCreation() {
           .maybeSingle();
 
         if (clientError || !clientData) {
-          console.error("❌ Client verification error:", clientError);
+          logger.error("Client verification failed", { error: clientError, clientId });
           toast.error("Client introuvable");
           return null;
         }
@@ -190,12 +191,12 @@ export function useCourseCreation() {
         .single();
 
       if (courseError) {
-        console.error("❌ Course creation error:", courseError);
+        logger.error("Course creation failed", { error: courseError, clientId, driverId });
         toast.error("Erreur lors de la création de la course");
         return null;
       }
 
-      console.log("✅ Course created successfully:", course.id);
+      logger.info("Course created successfully", { courseId: course.id });
 
       // GÉNÉRATION DEVIS: Appeler l'edge function pour créer le devis automatiquement
       // PROTECTION: Tentative avec retry en cas d'échec
@@ -214,18 +215,18 @@ export function useCourseCreation() {
           );
 
           if (devisError) {
-            console.error(`❌ Devis generation error (attempt ${attempt}):`, devisError);
+            logger.error(`Devis generation failed (attempt ${attempt})`, { error: devisError, courseId: course.id });
             if (attempt === 2) {
               toast.warning("Course créée mais erreur lors de la génération du devis");
             }
           } else {
-            console.log("✅ Devis generated successfully:", devisData);
+            logger.info("Devis generated successfully", { courseId: course.id, devisData });
             toast.success("Course et devis créés avec succès !");
             devisCreated = true;
             break;
           }
         } catch (devisError) {
-          console.error(`❌ Devis generation exception (attempt ${attempt}):`, devisError);
+          logger.exception(devisError as Error, { attempt, courseId: course.id });
           if (attempt === 2) {
             toast.warning("Course créée, le devis sera généré ultérieurement");
           } else {
@@ -237,7 +238,7 @@ export function useCourseCreation() {
 
       return course;
     } catch (error: any) {
-      console.error("❌ Unexpected error in course creation:", error);
+      logger.exception(error, { context: "useCourseCreation.createCourse" });
       toast.error("Une erreur inattendue est survenue");
       return null;
     } finally {
