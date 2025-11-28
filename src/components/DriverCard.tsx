@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Car, Award, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   Carousel,
   CarouselContent,
@@ -72,15 +73,11 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
 
       {/* Large Profile Photo */}
         {driver.profile_photo_url ? (
-          <img
+          <OptimizedImage
             key={imageKey}
             src={driver.profile_photo_url}
             alt={name}
-            className="w-full h-full object-cover object-[center_20%]"
-            onError={(e) => {
-              console.error("Error loading driver photo");
-              e.currentTarget.style.display = 'none';
-            }}
+            className="w-full h-full"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-8xl font-bold text-primary">

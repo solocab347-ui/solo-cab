@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Camera, Loader2, X, Plus } from "lucide-react";
+import { compressImage, validateImageType, validateImageSize } from "@/lib/imageCompression";
+import { logger } from "@/lib/productionLogger";
 
 interface VehiclePhotosManagerProps {
   driverId: string;
@@ -29,18 +31,26 @@ const VehiclePhotosManagerComponent = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Veuillez sélectionner une image");
+    // Valider le type et la taille
+    if (!validateImageType(file)) {
+      toast.error("Format non supporté. Utilisez JPG, PNG ou WebP");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (!validateImageSize(file, 5)) {
       toast.error("L'image ne doit pas dépasser 5MB");
       return;
     }
 
     setUploading(true);
     try {
+      // Compresser l'image avant upload
+      const compressedBlob = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.85,
+      });
+
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64String = event.target?.result as string;
@@ -68,9 +78,9 @@ const VehiclePhotosManagerComponent = ({
         toast.success("Photo ajoutée !");
       };
 
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressedBlob);
     } catch (error: any) {
-      console.error("Error uploading photo:", error);
+      logger.error("Error uploading photo", { error });
       toast.error("Erreur lors du téléchargement");
     } finally {
       setUploading(false);
