@@ -140,7 +140,8 @@ Deno.serve(async (req) => {
         .single();
 
       if (profileData) {
-        await serviceClient.functions.invoke('send-email', {
+        console.log('📧 Envoi email bienvenue client QR à:', profileData.email);
+        const emailResponse = await serviceClient.functions.invoke('send-email', {
           body: {
             to: profileData.email,
             type: 'client_welcome',
@@ -149,8 +150,15 @@ Deno.serve(async (req) => {
             }
           }
         });
+        
+        if (emailResponse.error) {
+          console.error('❌ ERREUR envoi email client QR:', emailResponse.error);
+        } else {
+          console.log('✅ Email bienvenue client QR envoyé avec succès');
+        }
       }
     } catch (emailError) {
+      console.error('❌ EXCEPTION lors envoi email client QR:', emailError);
       // Don't block registration if email fails
     }
     return new Response(JSON.stringify({ 
