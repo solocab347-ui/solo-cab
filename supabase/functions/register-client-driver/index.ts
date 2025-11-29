@@ -154,7 +154,8 @@ serve(async (req) => {
         .single();
 
       if (profileData) {
-        await supabase.functions.invoke("send-email", {
+        console.log('📧 Envoi email bienvenue client vitrine à:', profileData.email);
+        const emailResponse = await supabase.functions.invoke("send-email", {
           body: {
             to: profileData.email,
             type: "client_welcome",
@@ -163,8 +164,15 @@ serve(async (req) => {
             }
           }
         });
+        
+        if (emailResponse.error) {
+          console.error('❌ ERREUR envoi email client vitrine:', emailResponse.error);
+        } else {
+          console.log('✅ Email bienvenue client vitrine envoyé avec succès');
+        }
       }
     } catch (emailError) {
+      console.error('❌ EXCEPTION lors envoi email client vitrine:', emailError);
       // Ne pas bloquer l'inscription si l'email échoue
     }
 

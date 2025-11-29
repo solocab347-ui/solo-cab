@@ -465,19 +465,35 @@ const handler = async (req: Request): Promise<Response> => {
 
     const template = getEmailTemplate(type, data);
 
-    const emailResponse = await resend.emails.send({
+    console.log('📄 Template généré - Sujet:', template.subject);
+
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SoloCab <noreply@solocab.fr>",
       to: [to],
       subject: template.subject,
       html: template.html,
     });
 
-    console.log("✅ Email envoyé avec succès:", emailResponse);
+    if (emailError) {
+      console.error("❌ ERREUR Resend API:", emailError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: emailError.message || 'Erreur Resend inconnue'
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log("✅ Email envoyé avec succès - ID:", emailData?.id);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: emailResponse 
+        data: emailData 
       }),
       {
         status: 200,
