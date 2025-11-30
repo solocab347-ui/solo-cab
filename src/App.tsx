@@ -11,6 +11,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EmergencyReset } from "@/components/EmergencyReset";
 import { LoadingFallback } from "@/components/LoadingFallback";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { PushNotificationListener } from "@/components/PushNotificationListener";
+import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 
 // Eager load public pages
 import Index from "./pages/Index";
@@ -49,6 +51,8 @@ const App = () => (
           <Toaster />
           <Sonner />
           <PWAInstallBanner />
+          <PushNotificationListener />
+          <NotificationPermissionPrompt />
           <EmergencyReset />
           <ErrorBoundary>
             <Routes>

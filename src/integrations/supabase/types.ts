@@ -1092,6 +1092,48 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_enabled: boolean | null
+          id: string
+          notify_course_accepted: boolean | null
+          notify_new_course: boolean | null
+          notify_new_devis: boolean | null
+          notify_new_facture: boolean | null
+          notify_new_message: boolean | null
+          push_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notify_course_accepted?: boolean | null
+          notify_new_course?: boolean | null
+          notify_new_devis?: boolean | null
+          notify_new_facture?: boolean | null
+          notify_new_message?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_enabled?: boolean | null
+          id?: string
+          notify_course_accepted?: boolean | null
+          notify_new_course?: boolean | null
+          notify_new_devis?: boolean | null
+          notify_new_facture?: boolean | null
+          notify_new_message?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
