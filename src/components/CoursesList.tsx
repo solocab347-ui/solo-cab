@@ -137,7 +137,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           )
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .order("scheduled_date", { ascending: false });
+        .order("scheduled_date", { ascending: true });
 
       if (error) throw error;
       setCourses(coursesData || []);
