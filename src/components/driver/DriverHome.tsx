@@ -203,16 +203,16 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
           {/* Planning */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-info group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-accent group"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onTabChange("planning");
             }}
           >
-            <div className="absolute inset-0 bg-gradient-info opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="absolute inset-0 bg-gradient-accent opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 bg-gradient-info rounded-2xl flex items-center justify-center shadow-info group-hover:scale-110 transition-transform">
+              <div className="w-20 h-20 bg-gradient-accent rounded-2xl flex items-center justify-center shadow-accent group-hover:scale-110 transition-transform">
                 <Calendar className="w-10 h-10 text-white" />
               </div>
               <div>
