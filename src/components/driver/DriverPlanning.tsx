@@ -77,6 +77,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           )
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+        .in('status', ['accepted', 'in_progress', 'completed'])
         .order("scheduled_date", { ascending: true });
 
       if (error) {
