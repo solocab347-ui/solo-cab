@@ -145,6 +145,27 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
+    // CRITIQUE: Créer le rôle 'client' dans user_roles pour éviter les problèmes de redirection
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    
+    const { error: roleError } = await supabaseService
+      .from("user_roles")
+      .insert({
+        user_id: user.id,
+        role: "client"
+      });
+
+    if (roleError) {
+      console.error('❌ Erreur création rôle client:', roleError);
+      // Ne pas bloquer l'inscription si le rôle existe déjà
+      if (roleError.code !== '23505') { // Duplicate key error
+        throw new Error('Erreur lors de la création du rôle: ' + roleError.message);
+      }
+    }
+
     // Envoyer l'email de bienvenue au client
     try {
       const { data: profileData } = await supabase
