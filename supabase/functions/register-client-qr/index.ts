@@ -125,6 +125,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // CRITIQUE: Créer le rôle 'client' dans user_roles pour éviter les problèmes de redirection
+    const { error: roleError } = await serviceClient
+      .from('user_roles')
+      .insert({
+        user_id: user.id,
+        role: 'client'
+      });
+
+    if (roleError) {
+      console.error('❌ Erreur création rôle client:', roleError);
+      // Ne pas bloquer l'inscription si le rôle existe déjà
+      if (roleError.code !== '23505') { // Duplicate key error
+        return new Response(JSON.stringify({ error: 'Erreur lors de la création du rôle: ' + roleError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Increment QR scan counter using service role
     await serviceClient
       .from('qr_codes')
