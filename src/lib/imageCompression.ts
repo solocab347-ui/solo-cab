@@ -22,7 +22,7 @@ export const compressImage = async (
     maxWidth = 1920,
     maxHeight = 1920,
     quality = 0.85,
-    maxSizeMB = 5,
+    maxSizeMB = 20,
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -121,7 +121,7 @@ export const validateImageType = (file: File): boolean => {
 /**
  * Valide la taille d'une image
  */
-export const validateImageSize = (file: File, maxSizeMB: number = 5): boolean => {
+export const validateImageSize = (file: File, maxSizeMB: number = 20): boolean => {
   const fileSizeMB = file.size / (1024 * 1024);
   return fileSizeMB <= maxSizeMB;
 };
