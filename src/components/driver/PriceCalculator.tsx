@@ -46,6 +46,39 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       return;
     }
 
+    // Validation des paramètres tarifaires OBLIGATOIRES
+    const driver = driverProfile.driver;
+    const missingParams: string[] = [];
+    
+    if (!driver.base_fare || driver.base_fare <= 0) {
+      missingParams.push("Forfait de base");
+    }
+    
+    if (!driver.per_km_rate || driver.per_km_rate <= 0) {
+      missingParams.push("Tarif au kilomètre");
+    }
+
+    if (missingParams.length > 0) {
+      logger.error("Paramètres tarifaires manquants", { 
+        driverId: driver.id, 
+        missing: missingParams,
+        current: { base_fare: driver.base_fare, per_km_rate: driver.per_km_rate }
+      });
+      
+      toast.error(
+        `Paramètres tarifaires non configurés: ${missingParams.join(", ")}`,
+        {
+          description: "Veuillez configurer vos tarifs dans la section Paramètres",
+          duration: 8000,
+          action: {
+            label: "Aller aux Paramètres",
+            onClick: () => navigate("/driver-dashboard?tab=settings")
+          }
+        }
+      );
+      return;
+    }
+
     setCalculating(true);
     logger.info("Début du calcul de prix", {
       driverId: driverProfile.driver.id,
