@@ -43,10 +43,10 @@ const ChauffeurLanding = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Check if promo is active (jusqu'au 31 décembre 2024)
+  // Check if promo is active (jusqu'au 31 décembre 2025)
   const isPromoActive = () => {
     const now = new Date();
-    const endDate = new Date('2024-12-31T23:59:59');
+    const endDate = new Date('2025-12-31T23:59:59');
     return now <= endDate;
   };
 
@@ -155,7 +155,7 @@ const ChauffeurLanding = () => {
                   <div className="absolute inset-0 bg-gradient-premium opacity-10 blur-xl"></div>
                   <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium relative z-10">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    OFFRE DÉCEMBRE 2024 - Valable du 1er au 31 décembre
+                    OFFRE DÉCEMBRE 2025 - Valable tout le mois
                   </Badge>
                   <div className="relative z-10">
                     <div className="flex items-center justify-center gap-4 mb-3">
