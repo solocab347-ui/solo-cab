@@ -589,9 +589,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           </div>
 
           {course.notes && (
-            <div className="text-sm bg-secondary p-3 rounded-lg">
-              <p className="font-medium mb-1">Notes :</p>
-              <p className="text-muted-foreground">{course.notes}</p>
+            <div className="text-sm bg-destructive/10 border border-destructive/20 p-3 rounded-lg">
+              <p className="font-semibold text-destructive mb-1">Motif d'annulation :</p>
+              <p className="text-foreground">{course.notes}</p>
             </div>
           )}
         </div>
