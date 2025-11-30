@@ -38,6 +38,8 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
 
   const fetchCourses = async () => {
     try {
+      console.log('Planning - Fetching courses for driver:', driverId);
+      
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -47,7 +49,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
           ),
-          devis:devis(
+          devis(
             id,
             amount,
             status,
@@ -57,10 +59,15 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
         .order("scheduled_date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Planning - Error fetching courses:", error);
+        throw error;
+      }
+      
+      console.log('Planning - Fetched courses:', data?.length || 0, 'courses');
       setCourses(data || []);
     } catch (error: any) {
-      console.error("Error fetching courses:", error);
+      console.error("Planning - Error:", error);
       toast.error("Erreur lors du chargement du planning");
     } finally {
       setLoading(false);
@@ -68,18 +75,39 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
   };
 
   const setupRealtimeSubscription = () => {
-    return subscriptionManager.subscribe(
-      `planning-driver-${driverId}`,
-      {
-        table: "courses",
-        event: "*",
-        filter: `driver_id=eq.${driverId}`,
-        debounceMs: 1000
-      },
-      () => {
-        fetchCourses();
-      }
-    );
+    // Subscribe to courses changes - listen to ALL events for this driver
+    const channel = supabase
+      .channel(`planning-driver-${driverId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'courses'
+        },
+        (payload) => {
+          console.log('Planning - Course change detected:', payload);
+          
+          // Check if this course concerns this driver
+          const course = payload.new as any || payload.old as any;
+          if (course) {
+            const concernsDriver = 
+              course.driver_id === driverId || 
+              (course.driver_ids && Array.isArray(course.driver_ids) && course.driver_ids.includes(driverId));
+            
+            if (concernsDriver) {
+              console.log('Planning - Refreshing courses for driver:', driverId);
+              fetchCourses();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Planning - Unsubscribing from realtime');
+      supabase.removeChannel(channel);
+    };
   };
 
   const getDateRange = () => {
