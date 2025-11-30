@@ -161,34 +161,34 @@ Scannez le QR code pour réserver`
         pdf.text("SCANNEZ POUR RÉSERVER", centerX, currentY + (2 * scale), { align: "center" });
         currentY += (12 * scale);
 
-        // Texte de présentation sur fond blanc - TAILLE AUGMENTÉE
-        pdf.setFontSize(Math.round(10 * scale));
-        pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(60, 60, 60);
-        
+        // Texte de présentation sur fond blanc - SERVICES CENTRÉS ET AGRANDIS
         const lines = presentation.split('\n').filter(line => line.trim());
         
         lines.forEach(line => {
           if (currentY < pos.y + flyerHeight - (15 * scale)) {
-            // Ajouter puce simple pour les lignes avec •
             if (line.includes('•')) {
-              pdf.setTextColor(16, 185, 129);
-              pdf.setFontSize(Math.round(10 * scale));
-              // Utiliser un simple tiret au lieu de caractères UTF-8
-              pdf.text('-', pos.x + 12, currentY);
-              pdf.setTextColor(60, 60, 60);
+              // Services avec taille augmentée et centrage
+              pdf.setFontSize(Math.round(13 * scale));
+              pdf.setFont("helvetica", "bold");
+              pdf.setTextColor(16, 185, 129); // Emerald
               const textWithoutBullet = line.replace('•', '').trim();
-              pdf.text(textWithoutBullet, pos.x + 16, currentY, {
-                maxWidth: flyerWidth - 24
+              const serviceText = `- ${textWithoutBullet}`;
+              pdf.text(serviceText, centerX, currentY, { 
+                align: "center",
+                maxWidth: flyerWidth - 16
               });
+              currentY += (8 * scale);
             } else {
-              // Centrer tous les autres textes
+              // Autres textes centrés
+              pdf.setFontSize(Math.round(11 * scale));
+              pdf.setFont("helvetica", "bold");
+              pdf.setTextColor(60, 60, 60);
               pdf.text(line, centerX, currentY, { 
                 align: "center",
                 maxWidth: flyerWidth - 16
               });
+              currentY += (7 * scale);
             }
-            currentY += (6 * scale);
           }
         });
 
@@ -501,22 +501,29 @@ Scannez le QR code pour réserver`
                         SCANNEZ POUR RESERVER
                       </div>
 
-                      {/* Texte de présentation - TAILLE AUGMENTÉE */}
-                      <div 
-                        className="text-left text-foreground mt-2 px-2"
-                        style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.2vw, 0.75rem)" : "clamp(0.45rem, 1vw, 0.65rem)",
-                          lineHeight: "1.5"
-                        }}
-                      >
+                      {/* Texte de présentation - SERVICES CENTRÉS ET AGRANDIS */}
+                      <div className="text-center text-foreground mt-2 px-2 space-y-1">
                         {presentation.split('\n').filter(line => line.trim()).map((line, i) => (
-                          <div key={i} className="flex items-start gap-1 mb-1">
-                            {line.includes('•') && (
-                              <span className="text-success font-bold flex-shrink-0">-</span>
+                          <div key={i} className="flex items-center justify-center">
+                            {line.includes('•') ? (
+                              <div 
+                                className="text-success font-bold"
+                                style={{
+                                  fontSize: flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.55rem, 1.2vw, 0.75rem)"
+                                }}
+                              >
+                                - {line.replace('•', '').trim()}
+                              </div>
+                            ) : (
+                              <div 
+                                className="font-bold"
+                                style={{
+                                  fontSize: flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)"
+                                }}
+                              >
+                                {line.trim()}
+                              </div>
                             )}
-                            <span className={line.includes('•') ? '' : 'text-center w-full'}>
-                              {line.replace('•', '').trim()}
-                            </span>
                           </div>
                         ))}
                       </div>
