@@ -206,6 +206,23 @@ const ChauffeurProfile = () => {
       </header>
 
       <div className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Boutons de navigation */}
+        <div className="flex gap-3 mb-6">
+          <Button
+            onClick={() => navigate("/login")}
+            variant="outline"
+            className="flex-1"
+          >
+            Retour à la connexion
+          </Button>
+          <Button
+            onClick={() => navigate("/client-dashboard")}
+            className="flex-1 bg-gradient-premium"
+          >
+            Espace Client
+          </Button>
+        </div>
+
         <div className="space-y-6">
           {/* Profil principal */}
           <Card className="p-8 shadow-lg">
