@@ -36,6 +36,26 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     return () => unsubscribe();
   }, [driverId]);
 
+  // Auto-naviguer vers la première course à venir
+  useEffect(() => {
+    if (courses.length > 0) {
+      const now = new Date();
+      const upcomingCourses = courses
+        .filter(c => parseISO(c.scheduled_date) >= now)
+        .sort((a, b) => parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime());
+      
+      if (upcomingCourses.length > 0) {
+        setCurrentDate(parseISO(upcomingCourses[0].scheduled_date));
+      } else if (courses.length > 0) {
+        // Si pas de courses à venir, naviguer vers la plus récente
+        const sorted = [...courses].sort((a, b) => 
+          parseISO(b.scheduled_date).getTime() - parseISO(a.scheduled_date).getTime()
+        );
+        setCurrentDate(parseISO(sorted[0].scheduled_date));
+      }
+    }
+  }, [courses.length]);
+
   const fetchCourses = async () => {
     try {
       console.log('Planning - Fetching courses for driver:', driverId);
