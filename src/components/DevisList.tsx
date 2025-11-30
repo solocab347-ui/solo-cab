@@ -378,18 +378,23 @@ const DevisList = ({ clientId }: DevisListProps) => {
       doc.text(`${devis.courses.distance_km} km`, 45, yPos);
     }
     
-    // Tarification - VERSION SIMPLIFIÉE POUR CLIENT (sans détails des calculs)
+    // Tarification - VERSION SIMPLIFIÉE POUR CLIENT (affichage clair avec majorations)
     yPos = 155;
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text("TARIFICATION", 20, yPos);
     
-    // CORRECTION CRITIQUE: Inclure TOUTES les composantes du prix incluant les majorations
-    const totalHT = parseFloat(devis.base_price) + 
-                    parseFloat(devis.distance_price) + 
-                    parseFloat(devis.time_price || 0) +
-                    parseFloat(devis.evening_surcharge_amount || 0) +
-                    parseFloat(devis.weekend_surcharge_amount || 0);
+    // Calcul du HT de base (avant majorations)
+    const baseHT = parseFloat(devis.base_price) + 
+                   parseFloat(devis.distance_price) + 
+                   parseFloat(devis.time_price || 0);
+    
+    const eveningSurcharge = parseFloat(devis.evening_surcharge_amount || 0);
+    const weekendSurcharge = parseFloat(devis.weekend_surcharge_amount || 0);
+    
+    // Total HT incluant toutes les majorations
+    const totalHT = baseHT + eveningSurcharge + weekendSurcharge;
+    
     const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
     const tvaAmount = totalHT * (tvaRate / 100);
     const totalTTC = totalHT + tvaAmount;
@@ -398,9 +403,35 @@ const DevisList = ({ clientId }: DevisListProps) => {
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     
-    // Total HT
-    doc.text("Montant HT", 20, yPos);
-    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    // Sous-total HT (base)
+    doc.text("Sous-total HT", 20, yPos);
+    doc.text(`${baseHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    
+    // Majorations (si présentes)
+    if (eveningSurcharge > 0) {
+      yPos += 6;
+      doc.setTextColor(255, 140, 0);
+      doc.text("Majoration soirée", 20, yPos);
+      doc.text(`+ ${eveningSurcharge.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    if (weekendSurcharge > 0) {
+      yPos += 6;
+      doc.setTextColor(255, 140, 0);
+      doc.text("Majoration week-end", 20, yPos);
+      doc.text(`+ ${weekendSurcharge.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    // Total HT après majorations
+    if (eveningSurcharge > 0 || weekendSurcharge > 0) {
+      yPos += 6;
+      doc.setFont(undefined, 'bold');
+      doc.text("Total HT", 20, yPos);
+      doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+      doc.setFont(undefined, 'normal');
+    }
     
     // TVA
     yPos += 6;

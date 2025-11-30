@@ -109,15 +109,27 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
 
       // Étape 2: Calcul du prix
       const startPrice = performance.now();
+      
+      console.log("🔢 Appel RPC calculate_course_price avec:", {
+        _driver_id: driverProfile.driver.id,
+        _distance_km: distanceKm,
+        _duration_minutes: durationMinutes,
+        _use_hourly_rate: false,
+      });
+      
       const { data: priceData, error: priceError } = await supabase.rpc("calculate_course_price", {
         _driver_id: driverProfile.driver.id,
         _distance_km: distanceKm,
         _duration_minutes: durationMinutes,
         _use_hourly_rate: false,
       });
+      
+      console.log("📊 Réponse RPC:", { priceData, priceError });
+      
       logger.performance("Calcul prix RPC", performance.now() - startPrice);
 
       if (priceError) {
+        console.error("❌ Erreur RPC:", priceError);
         logger.error("Erreur RPC calculate_course_price", { error: priceError });
         toast.error("Erreur lors du calcul du prix. Vérifiez vos paramètres tarifaires.");
         setCalculating(false);
@@ -125,6 +137,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       }
 
       if (!priceData || priceData.length === 0) {
+        console.error("❌ Pas de données de prix");
         logger.error("Aucune donnée de prix retournée");
         toast.error("Erreur: Calcul de prix échoué");
         setCalculating(false);
@@ -132,9 +145,11 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
       }
 
       const calculatedPrice = priceData[0];
+      console.log("💰 Prix calculé:", calculatedPrice);
 
       // Validation du résultat
       if (!calculatedPrice.total_price || calculatedPrice.total_price <= 0) {
+        console.error("❌ Prix invalide:", calculatedPrice);
         logger.error("Prix invalide", { price: calculatedPrice });
         toast.error("Erreur: Prix calculé invalide. Vérifiez vos paramètres tarifaires.");
         setCalculating(false);
