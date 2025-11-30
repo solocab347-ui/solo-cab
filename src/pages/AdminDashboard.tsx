@@ -23,6 +23,7 @@ import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens"
 import AdminSettings from "@/components/admin/AdminSettings";
 import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
 import AdminUserCleanup from "@/components/admin/AdminUserCleanup";
+import { AdminTestData } from "@/components/admin/AdminTestData";
 
 
 const AdminDashboard = () => {
@@ -87,6 +88,7 @@ const AdminDashboard = () => {
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
     { id: "test-campaign", label: "Campagne Test", icon: Users },
+    { id: "test-data", label: "Données Test Alexandre", icon: Database },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "user-cleanup", label: "Nettoyage Comptes", icon: AlertTriangle },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
@@ -114,6 +116,8 @@ const AdminDashboard = () => {
         return <AdminFreeAccess />;
       case "test-campaign":
         return <AdminInvitationTokens />;
+      case "test-data":
+        return <AdminTestData />;
       case "emails":
         return <AdminEmails />;
       case "user-cleanup":
