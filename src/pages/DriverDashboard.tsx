@@ -356,13 +356,6 @@ const DriverDashboard = () => {
               <Home className="w-5 h-5" />
               <span className="font-medium">Accueil</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="planning" 
-              className="w-full justify-start gap-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-white/5 transition-all px-4 py-3 rounded-lg"
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="font-medium">Planning</span>
-            </TabsTrigger>
             {/* Première ligne */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
@@ -409,6 +402,10 @@ const DriverDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 bg-[#1a2942] border border-white/10 z-50">
+                  <DropdownMenuItem onClick={() => setActiveTab("planning")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
+                    <Calendar className="w-4 h-4" />
+                    Planning
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white">
                     <Calculator className="w-4 h-4" />
                     Calculatrice
