@@ -50,10 +50,12 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     const driver = driverProfile.driver;
     const missingParams: string[] = [];
     
-    if (!driver.base_fare || driver.base_fare <= 0) {
+    // Le forfait de base PEUT être 0€ (tarification uniquement au km)
+    if (driver.base_fare === null || driver.base_fare === undefined) {
       missingParams.push("Forfait de base");
     }
     
+    // Le tarif au km est OBLIGATOIRE et doit être > 0
     if (!driver.per_km_rate || driver.per_km_rate <= 0) {
       missingParams.push("Tarif au kilomètre");
     }
