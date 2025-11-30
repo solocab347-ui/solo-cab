@@ -5,7 +5,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
@@ -116,7 +116,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-success group" onClick={() => navigate("/driver/create-course")}>
             <div className="absolute inset-0 bg-gradient-success opacity-10 group-hover:opacity-20 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
@@ -139,6 +139,19 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
               <div>
                 <h3 className="text-xl font-bold text-foreground">Mon QR Code</h3>
                 <p className="text-sm text-muted-foreground">Partager avec clients</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-info group" onClick={() => onTabChange("outils")}>
+            <div className="absolute inset-0 bg-gradient-info opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-info rounded-2xl flex items-center justify-center shadow-info group-hover:scale-110 transition-transform">
+                <Calendar className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Planning</h3>
+                <p className="text-sm text-muted-foreground">Voir mes courses</p>
               </div>
             </div>
           </Card>
