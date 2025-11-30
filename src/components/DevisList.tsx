@@ -384,8 +384,12 @@ const DevisList = ({ clientId }: DevisListProps) => {
     doc.setFont(undefined, 'bold');
     doc.text("TARIFICATION", 20, yPos);
     
-    // Calcul TVA
-    const totalHT = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
+    // CORRECTION CRITIQUE: Inclure TOUTES les composantes du prix incluant les majorations
+    const totalHT = parseFloat(devis.base_price) + 
+                    parseFloat(devis.distance_price) + 
+                    parseFloat(devis.time_price || 0) +
+                    parseFloat(devis.evening_surcharge_amount || 0) +
+                    parseFloat(devis.weekend_surcharge_amount || 0);
     const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
     const tvaAmount = totalHT * (tvaRate / 100);
     const totalTTC = totalHT + tvaAmount;
@@ -529,25 +533,25 @@ const DevisList = ({ clientId }: DevisListProps) => {
           </div>
         </div>
 
-        <div className="bg-secondary rounded-lg p-4 mb-4 space-y-2 text-sm">
-          <div>
-            <span className="font-medium">Départ :</span>
-            <span className="text-muted-foreground ml-2">{devis.courses.pickup_address}</span>
+        <div className="bg-muted/30 border border-border rounded-lg p-4 mb-4 space-y-3 text-sm">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-foreground min-w-[80px]">Départ :</span>
+            <span className="text-foreground/80">{devis.courses.pickup_address}</span>
           </div>
-          <div>
-            <span className="font-medium">Arrivée :</span>
-            <span className="text-muted-foreground ml-2">{devis.courses.destination_address}</span>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-foreground min-w-[80px]">Arrivée :</span>
+            <span className="text-foreground/80">{devis.courses.destination_address}</span>
           </div>
-          <div>
-            <span className="font-medium">Date :</span>
-            <span className="text-muted-foreground ml-2">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold text-foreground min-w-[80px]">Date :</span>
+            <span className="text-foreground/80">
               {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
             </span>
           </div>
           {devis.courses.distance_km && (
-            <div>
-              <span className="font-medium">Distance :</span>
-              <span className="text-muted-foreground ml-2">{devis.courses.distance_km} km</span>
+            <div className="flex items-start gap-2">
+              <span className="font-semibold text-foreground min-w-[80px]">Distance :</span>
+              <span className="text-foreground/80">{devis.courses.distance_km} km</span>
             </div>
           )}
         </div>
