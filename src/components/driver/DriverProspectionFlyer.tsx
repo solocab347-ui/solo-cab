@@ -125,16 +125,16 @@ Scannez le QR code pour réserver`
           currentY += (10 * scale);
         }
 
-        // Titre (en blanc sur fond bleu)
+        // Titre (en blanc sur fond bleu) - SANS EMOJI
         pdf.setFontSize(Math.round(14 * scale));
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(255, 255, 255);
-        pdf.text("🚗 VOTRE CHAUFFEUR VTC", centerX, currentY, { align: "center" });
+        pdf.text("VOTRE CHAUFFEUR VTC", centerX, currentY, { align: "center" });
         currentY += (8 * scale);
         
         pdf.setFontSize(Math.round(11 * scale));
         pdf.setFont("helvetica", "normal");
-        pdf.text("DE PROXIMITÉ", centerX, currentY, { align: "center" });
+        pdf.text("DE PROXIMITE", centerX, currentY, { align: "center" });
         currentY += (20 * scale);
 
         // Zone blanche - QR Code avec fond vert clair
@@ -161,8 +161,8 @@ Scannez le QR code pour réserver`
         pdf.text("SCANNEZ POUR RÉSERVER", centerX, currentY + (2 * scale), { align: "center" });
         currentY += (12 * scale);
 
-        // Texte de présentation sur fond blanc
-        pdf.setFontSize(Math.round(9 * scale));
+        // Texte de présentation sur fond blanc - TAILLE AUGMENTÉE
+        pdf.setFontSize(Math.round(10 * scale));
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         
@@ -170,42 +170,45 @@ Scannez le QR code pour réserver`
         
         lines.forEach(line => {
           if (currentY < pos.y + flyerHeight - (15 * scale)) {
-            // Ajouter puce verte pour les lignes avec •
+            // Ajouter puce simple pour les lignes avec •
             if (line.includes('•')) {
               pdf.setTextColor(16, 185, 129);
-              pdf.text('●', pos.x + 12, currentY);
+              pdf.setFontSize(Math.round(10 * scale));
+              // Utiliser un simple tiret au lieu de caractères UTF-8
+              pdf.text('-', pos.x + 12, currentY);
               pdf.setTextColor(60, 60, 60);
               const textWithoutBullet = line.replace('•', '').trim();
-              pdf.text(textWithoutBullet, pos.x + 18, currentY, {
-                maxWidth: flyerWidth - 26
+              pdf.text(textWithoutBullet, pos.x + 16, currentY, {
+                maxWidth: flyerWidth - 24
               });
             } else {
+              // Centrer tous les autres textes
               pdf.text(line, centerX, currentY, { 
                 align: "center",
                 maxWidth: flyerWidth - 16
               });
             }
-            currentY += (5 * scale);
+            currentY += (6 * scale);
           }
         });
 
-        // Section contact en bas avec fond bleu clair
+        // Section contact en bas avec fond bleu clair - SANS EMOJIS
         if (phone || email) {
           const contactY = pos.y + flyerHeight - (20 * scale);
           pdf.setFillColor(219, 234, 254);
           pdf.rect(pos.x + 8, contactY - 2, flyerWidth - 16, (16 * scale), 'F');
           
-          pdf.setFontSize(Math.round(8 * scale));
-          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(Math.round(9 * scale));
+          pdf.setFont("helvetica", "normal");
           pdf.setTextColor(30, 58, 95);
           let contactY2 = contactY + (3 * scale);
           
           if (phone) {
-            pdf.text(`📞 ${phone}`, centerX, contactY2, { align: "center" });
-            contactY2 += (5 * scale);
+            pdf.text(phone, centerX, contactY2, { align: "center" });
+            contactY2 += (6 * scale);
           }
           if (email) {
-            pdf.text(`✉️ ${email}`, centerX, contactY2, { align: "center" });
+            pdf.text(email, centerX, contactY2, { align: "center" });
           }
         }
       });
@@ -435,7 +438,7 @@ Scannez le QR code pour réserver`
                   </div>
 
                   <div className="relative z-10 flex flex-col h-full">
-                    {/* Nom de l'entreprise et titre sur fond bleu */}
+                    {/* Nom de l'entreprise et titre sur fond bleu - SANS EMOJIS */}
                     <div className="flex flex-col items-center justify-center text-center"
                       style={{ 
                         height: flyersPerPage === 1 ? "23%" : flyersPerPage === 2 ? "22%" : "20%",
@@ -458,7 +461,7 @@ Scannez le QR code pour réserver`
                           fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.45rem, 1vw, 0.65rem)"
                         }}
                       >
-                        🚗 VOTRE CHAUFFEUR VTC
+                        VOTRE CHAUFFEUR VTC
                       </div>
                       <div 
                         className="text-white/95"
@@ -466,7 +469,7 @@ Scannez le QR code pour réserver`
                           fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
                         }}
                       >
-                        DE PROXIMITÉ
+                        DE PROXIMITE
                       </div>
                     </div>
 
@@ -495,21 +498,21 @@ Scannez le QR code pour réserver`
                           fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
                         }}
                       >
-                        SCANNEZ POUR RÉSERVER
+                        SCANNEZ POUR RESERVER
                       </div>
 
-                      {/* Texte de présentation */}
+                      {/* Texte de présentation - TAILLE AUGMENTÉE */}
                       <div 
                         className="text-left text-foreground mt-2 px-2"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.2vw, 0.8rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1vw, 0.65rem)" : "clamp(0.4rem, 0.85vw, 0.55rem)",
-                          lineHeight: "1.4"
+                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.2vw, 0.75rem)" : "clamp(0.45rem, 1vw, 0.65rem)",
+                          lineHeight: "1.5"
                         }}
                       >
                         {presentation.split('\n').filter(line => line.trim()).map((line, i) => (
-                          <div key={i} className="flex items-start gap-1">
+                          <div key={i} className="flex items-start gap-1 mb-1">
                             {line.includes('•') && (
-                              <span className="text-success font-bold flex-shrink-0">●</span>
+                              <span className="text-success font-bold flex-shrink-0">-</span>
                             )}
                             <span className={line.includes('•') ? '' : 'text-center w-full'}>
                               {line.replace('•', '').trim()}
@@ -519,16 +522,16 @@ Scannez le QR code pour réserver`
                       </div>
                     </div>
 
-                    {/* Section contact en bas */}
+                    {/* Section contact en bas - SANS EMOJIS */}
                     {(phone || email) && (
                       <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-lg p-1.5 mt-2 border border-primary/20 text-center"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.5rem, 1.1vw, 0.75rem)" : flyersPerPage === 2 ? "clamp(0.4rem, 0.9vw, 0.6rem)" : "clamp(0.35rem, 0.8vw, 0.5rem)"
+                          fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.2vw, 0.8rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1vw, 0.65rem)" : "clamp(0.4rem, 0.9vw, 0.55rem)"
                         }}
                       >
-                        <div className="font-bold text-primary">
-                          {phone && <div>📞 {phone}</div>}
-                          {email && <div>✉️ {email}</div>}
+                        <div className="text-primary">
+                          {phone && <div>{phone}</div>}
+                          {email && <div>{email}</div>}
                         </div>
                       </div>
                     )}
