@@ -43,12 +43,11 @@ const ChauffeurLanding = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Check if promo is active (December 2024)
+  // Check if promo is active (jusqu'au 31 décembre 2024)
   const isPromoActive = () => {
     const now = new Date();
-    const startDate = new Date('2024-12-01T00:00:00');
     const endDate = new Date('2024-12-31T23:59:59');
-    return now >= startDate && now <= endDate;
+    return now <= endDate;
   };
 
   const calculateCosts = (monthlyRevenue: number) => {
