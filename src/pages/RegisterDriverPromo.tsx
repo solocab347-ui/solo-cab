@@ -159,7 +159,7 @@ const RegisterDriverPromo = () => {
             <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6">
               <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium">
                 <Sparkles className="w-3 h-3 mr-1" />
-                OFFRE DÉCEMBRE 2024 - Valable tout le mois
+                OFFRE DÉCEMBRE 2025 - Valable tout le mois
               </Badge>
               <div className="flex items-center justify-center gap-4 mb-2">
                 <span className="text-3xl font-bold text-muted-foreground line-through">49,99€</span>
