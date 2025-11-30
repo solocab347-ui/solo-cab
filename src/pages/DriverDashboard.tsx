@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -33,6 +33,7 @@ import DriverFeedback from "@/components/driver/DriverFeedback";
 import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
+import DriverPlanning from "@/components/driver/DriverPlanning";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -348,6 +349,20 @@ const DriverDashboard = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
+            <TabsTrigger 
+              value="home" 
+              className="w-full justify-start gap-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-white/5 transition-all px-4 py-3 rounded-lg"
+            >
+              <Home className="w-5 h-5" />
+              <span className="font-medium">Accueil</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="planning" 
+              className="w-full justify-start gap-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-white/5 transition-all px-4 py-3 rounded-lg"
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">Planning</span>
+            </TabsTrigger>
             {/* Première ligne */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
@@ -460,6 +475,24 @@ const DriverDashboard = () => {
           {/* Home Tab */}
           <TabsContent value="home">
             <DriverHome driverProfile={driverProfile} onTabChange={setActiveTab} />
+          </TabsContent>
+
+          {/* Planning Tab */}
+          <TabsContent value="planning">
+            {driverProfile?.driver?.id && (
+              <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Planning des Courses</h2>
+                    <p className="text-sm text-muted-foreground">Visualisez et gérez votre planning</p>
+                  </div>
+                </div>
+                <DriverPlanning driverId={driverProfile.driver.id} />
+              </Card>
+            )}
           </TabsContent>
 
           {/* Messages Tab */}
