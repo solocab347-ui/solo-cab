@@ -28,6 +28,8 @@ const DriverProspectionFlyer = ({ qrCode, driverProfile }: DriverProspectionFlye
 Scannez le QR code pour réserver`
   );
   const [showPreview, setShowPreview] = useState(false);
+  const [phone, setPhone] = useState(driverProfile?.phone || "");
+  const [email, setEmail] = useState(driverProfile?.email || "");
 
   const generatePDF = () => {
     if (!qrCode?.qr_code_image) {
@@ -36,23 +38,40 @@ Scannez le QR code pour réserver`
     }
 
     try {
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-      });
-
-      // Calcul des dimensions selon le nombre de flyers
+      let pdf: jsPDF;
       let flyerWidth: number, flyerHeight: number;
       let positions: { x: number; y: number }[];
 
       if (flyersPerPage === 1) {
-        // 1 flyer = format A4 complet
+        // 1 flyer = format A4 complet (portrait)
+        pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4"
+        });
         flyerWidth = 210;
         flyerHeight = 297;
         positions = [{ x: 0, y: 0 }];
+      } else if (flyersPerPage === 2) {
+        // 2 flyers A5 verticaux sur une page A4 en paysage
+        pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "mm",
+          format: "a4"
+        });
+        flyerWidth = 148.5;
+        flyerHeight = 210;
+        positions = [
+          { x: 0, y: 0 },
+          { x: 148.5, y: 0 }
+        ];
       } else {
         // 4 flyers = format A6 (A4 coupé en 4)
+        pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4"
+        });
         flyerWidth = 105;
         flyerHeight = 148.5;
         positions = [
@@ -65,60 +84,134 @@ Scannez le QR code pour réserver`
 
       positions.forEach((pos) => {
         const centerX = pos.x + flyerWidth / 2;
+        const padding = 4;
         
-        // Bordure élégante
+        // Fond dégradé (simulé avec rectangles superposés)
+        // Bleu marine en haut
+        pdf.setFillColor(30, 58, 95);
+        pdf.rect(pos.x, pos.y, flyerWidth, flyerHeight * 0.25, 'F');
+        
+        // Orange/Corail au milieu
+        pdf.setFillColor(255, 107, 53);
+        pdf.rect(pos.x, pos.y + flyerHeight * 0.25, flyerWidth, flyerHeight * 0.02, 'F');
+        
+        // Blanc pour le reste
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(pos.x, pos.y + flyerHeight * 0.27, flyerWidth, flyerHeight * 0.73, 'F');
+        
+        // Bordure élégante dorée
+        pdf.setDrawColor(251, 191, 36);
+        pdf.setLineWidth(1);
+        pdf.rect(pos.x + padding, pos.y + padding, flyerWidth - (padding * 2), flyerHeight - (padding * 2));
+        
+        // Bordure intérieure bleu marine
         pdf.setDrawColor(30, 58, 95);
-        pdf.setLineWidth(0.5);
-        pdf.rect(pos.x + 3, pos.y + 3, flyerWidth - 6, flyerHeight - 6);
+        pdf.setLineWidth(0.3);
+        pdf.rect(pos.x + padding + 1, pos.y + padding + 1, flyerWidth - (padding * 2) - 2, flyerHeight - (padding * 2) - 2);
 
         // Ajuster les tailles selon le format
-        const scale = flyersPerPage === 1 ? 2 : 1;
-        let currentY = pos.y + (15 * scale);
+        const scale = flyersPerPage === 1 ? 1 : flyersPerPage === 2 ? 0.7 : 0.5;
+        let currentY = pos.y + (18 * scale);
 
-        // Nom de l'entreprise
+        // Nom de l'entreprise (en blanc sur fond bleu)
         if (companyName.trim()) {
-          pdf.setFontSize(flyersPerPage === 1 ? 16 : 13);
+          pdf.setFontSize(Math.round(20 * scale));
           pdf.setFont("helvetica", "bold");
-          pdf.setTextColor(0, 0, 0);
+          pdf.setTextColor(255, 255, 255);
           pdf.text(companyName, centerX, currentY, { 
             align: "center",
-            maxWidth: flyerWidth - 10
+            maxWidth: flyerWidth - 16
           });
-          currentY += (8 * scale);
+          currentY += (10 * scale);
         }
 
-        // Titre
-        pdf.setFontSize(flyersPerPage === 1 ? 13 : 11);
+        // Titre (en blanc sur fond bleu)
+        pdf.setFontSize(Math.round(14 * scale));
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("🚗 VOTRE CHAUFFEUR VTC", centerX, currentY, { align: "center" });
+        currentY += (8 * scale);
+        
+        pdf.setFontSize(Math.round(11 * scale));
         pdf.setFont("helvetica", "normal");
-        pdf.setTextColor(60, 60, 60);
-        pdf.text("Votre chauffeur VTC de proximité", centerX, currentY, { align: "center" });
+        pdf.text("DE PROXIMITÉ", centerX, currentY, { align: "center" });
+        currentY += (20 * scale);
+
+        // Zone blanche - QR Code avec fond vert clair
+        const qrSize = Math.round(flyersPerPage === 1 ? 65 : flyersPerPage === 2 ? 50 : 45);
+        const qrX = centerX - (qrSize / 2);
+        const qrY = currentY;
+        
+        // Fond vert émeraude clair pour le QR
+        pdf.setFillColor(209, 250, 229);
+        const qrPadding = 4;
+        pdf.roundedRect(qrX - qrPadding, qrY - qrPadding, qrSize + (qrPadding * 2), qrSize + (qrPadding * 2), 3, 3, 'F');
+        
+        pdf.addImage(qrCode.qr_code_image, "PNG", qrX, qrY, qrSize, qrSize);
+        currentY += qrSize + (15 * scale);
+
+        // Call to action en orange
+        pdf.setFillColor(255, 107, 53);
+        const ctaHeight = 8 * scale;
+        pdf.roundedRect(pos.x + 10, currentY - (ctaHeight / 2), flyerWidth - 20, ctaHeight, 2, 2, 'F');
+        
+        pdf.setFontSize(Math.round(11 * scale));
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 255, 255);
+        pdf.text("SCANNEZ POUR RÉSERVER", centerX, currentY + (2 * scale), { align: "center" });
         currentY += (12 * scale);
 
-        // QR Code
-        const qrSize = flyersPerPage === 1 ? 70 : 58;
-        const qrX = centerX - (qrSize / 2);
-        pdf.addImage(qrCode.qr_code_image, "PNG", qrX, currentY, qrSize, qrSize);
-        currentY += qrSize + (10 * scale);
-
-        // Texte de présentation
-        pdf.setFontSize(flyersPerPage === 1 ? 11 : 9);
+        // Texte de présentation sur fond blanc
+        pdf.setFontSize(Math.round(9 * scale));
         pdf.setFont("helvetica", "normal");
         pdf.setTextColor(60, 60, 60);
         
         const lines = presentation.split('\n').filter(line => line.trim());
         
         lines.forEach(line => {
-          if (currentY < pos.y + flyerHeight - (8 * scale)) {
-            pdf.text(line, centerX, currentY, { 
-              align: "center",
-              maxWidth: flyerWidth - 12
-            });
-            currentY += (4.5 * scale);
+          if (currentY < pos.y + flyerHeight - (15 * scale)) {
+            // Ajouter puce verte pour les lignes avec •
+            if (line.includes('•')) {
+              pdf.setTextColor(16, 185, 129);
+              pdf.text('●', pos.x + 12, currentY);
+              pdf.setTextColor(60, 60, 60);
+              const textWithoutBullet = line.replace('•', '').trim();
+              pdf.text(textWithoutBullet, pos.x + 18, currentY, {
+                maxWidth: flyerWidth - 26
+              });
+            } else {
+              pdf.text(line, centerX, currentY, { 
+                align: "center",
+                maxWidth: flyerWidth - 16
+              });
+            }
+            currentY += (5 * scale);
           }
         });
+
+        // Section contact en bas avec fond bleu clair
+        if (phone || email) {
+          const contactY = pos.y + flyerHeight - (20 * scale);
+          pdf.setFillColor(219, 234, 254);
+          pdf.rect(pos.x + 8, contactY - 2, flyerWidth - 16, (16 * scale), 'F');
+          
+          pdf.setFontSize(Math.round(8 * scale));
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(30, 58, 95);
+          let contactY2 = contactY + (3 * scale);
+          
+          if (phone) {
+            pdf.text(`📞 ${phone}`, centerX, contactY2, { align: "center" });
+            contactY2 += (5 * scale);
+          }
+          if (email) {
+            pdf.text(`✉️ ${email}`, centerX, contactY2, { align: "center" });
+          }
+        }
       });
 
-      const fileName = `Flyers-SoloCab-${flyersPerPage === 1 ? '1x-A4' : '4x-A6'}-${companyName.replace(/\s+/g, '-') || 'VTC'}.pdf`;
+      const formatName = flyersPerPage === 1 ? 'A4' : flyersPerPage === 2 ? '2x-A5' : '4x-A6';
+      const fileName = `Flyers-SoloCab-${formatName}-${companyName.replace(/\s+/g, '-') || 'VTC'}.pdf`;
       pdf.save(fileName);
       toast.success("PDF généré avec succès !");
     } catch (error) {
@@ -140,11 +233,13 @@ Scannez le QR code pour réserver`
 
   return (
     <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/5 to-[#1e3a5f]/10 border-[#1e3a5f]/20">
+      <Card className="p-6 bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 border-primary/20">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2 text-[#1e3a5f]">Générateur de Flyers Professionnels</h2>
+          <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+            Générateur de Flyers Professionnels
+          </h2>
           <p className="text-muted-foreground">
-            Créez un document A4 avec 4 flyers A6 identiques pour promouvoir vos services VTC
+            Créez des flyers attractifs et colorés pour promouvoir vos services VTC
           </p>
         </div>
 
@@ -152,30 +247,47 @@ Scannez le QR code pour réserver`
           {/* Nombre de flyers par page */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
-              Nombre de flyers par page
+              Format de flyer
             </Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 type="button"
                 variant={flyersPerPage === 1 ? "default" : "outline"}
                 onClick={() => setFlyersPerPage(1)}
-                className={flyersPerPage === 1 ? "bg-[#1e3a5f] text-white" : "border-[#1e3a5f]/20"}
+                className={flyersPerPage === 1 ? "bg-gradient-to-r from-primary to-accent text-white" : "border-primary/20 hover:bg-primary/5"}
               >
-                1 flyer
-                <span className="text-xs ml-1">(A4)</span>
+                <span className="flex flex-col items-center">
+                  <span>1 flyer</span>
+                  <span className="text-xs opacity-80">(A4)</span>
+                </span>
+              </Button>
+              <Button
+                type="button"
+                variant={flyersPerPage === 2 ? "default" : "outline"}
+                onClick={() => setFlyersPerPage(2)}
+                className={flyersPerPage === 2 ? "bg-gradient-to-r from-accent to-secondary text-white" : "border-accent/20 hover:bg-accent/5"}
+              >
+                <span className="flex flex-col items-center">
+                  <span>2 flyers</span>
+                  <span className="text-xs opacity-80">(A5 vertical)</span>
+                </span>
               </Button>
               <Button
                 type="button"
                 variant={flyersPerPage === 4 ? "default" : "outline"}
                 onClick={() => setFlyersPerPage(4)}
-                className={flyersPerPage === 4 ? "bg-[#1e3a5f] text-white" : "border-[#1e3a5f]/20"}
+                className={flyersPerPage === 4 ? "bg-gradient-to-r from-secondary to-primary text-white" : "border-secondary/20 hover:bg-secondary/5"}
               >
-                4 flyers
-                <span className="text-xs ml-1">(A6)</span>
+                <span className="flex flex-col items-center">
+                  <span>4 flyers</span>
+                  <span className="text-xs opacity-80">(A6)</span>
+                </span>
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Choisissez le nombre de flyers à imprimer sur une page A4
+              {flyersPerPage === 1 && "Format A4 complet - Idéal pour affichage"}
+              {flyersPerPage === 2 && "2 flyers A5 verticaux à découper - Parfait pour distribution"}
+              {flyersPerPage === 4 && "4 petits flyers A6 à découper - Économique"}
             </p>
           </div>
 
@@ -210,8 +322,36 @@ Scannez le QR code pour réserver`
               className="bg-background font-sans text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              💡 Conseil: Restez concis, 5-6 lignes maximum pour un rendu optimal
+              💡 Conseil: Utilisez des puces • pour les listes. Restez concis pour un rendu optimal
             </p>
+          </div>
+
+          {/* Coordonnées */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm font-semibold">
+                Téléphone (optionnel)
+              </Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="06 12 34 56 78"
+                className="bg-background"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-semibold">
+                Email (optionnel)
+              </Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="contact@votrevtc.fr"
+                className="bg-background"
+              />
+            </div>
           </div>
 
           {/* Boutons d'action */}
@@ -219,14 +359,14 @@ Scannez le QR code pour réserver`
             <Button
               onClick={() => setShowPreview(!showPreview)}
               variant="outline"
-              className="flex-1 border-[#1e3a5f]/20 hover:bg-[#1e3a5f]/5"
+              className="flex-1 border-primary/20 hover:bg-primary/5"
             >
               {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
             </Button>
             <Button
               onClick={generatePDF}
-              className="flex-1 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
+              className="flex-1 bg-gradient-to-r from-primary via-accent to-secondary hover:opacity-90 text-white"
             >
               <Download className="w-4 h-4 mr-2" />
               Télécharger le PDF
@@ -250,18 +390,18 @@ Scannez le QR code pour réserver`
         </div>
       </Card>
 
-      {/* Aperçu professionnel */}
+      {/* Aperçu professionnel avec couleurs */}
       {showPreview && (
-        <Card className="p-6 bg-background border-[#1e3a5f]/20">
-          <h3 className="font-bold mb-4 text-lg text-[#1e3a5f]">
-            Aperçu du document ({flyersPerPage === 1 ? "1 flyer A4" : "4 flyers A6"})
+        <Card className="p-6 bg-background border-primary/20">
+          <h3 className="font-bold mb-4 text-lg bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+            Aperçu du document - {flyersPerPage === 1 ? "1 flyer A4" : flyersPerPage === 2 ? "2 flyers A5 verticaux" : "4 flyers A6"}
           </h3>
           <div 
-            className="bg-white border-2 border-[#1e3a5f]/20 rounded-lg shadow-lg mx-auto"
+            className="bg-white border-2 border-primary/30 rounded-lg shadow-xl mx-auto"
             style={{
               width: "100%",
-              maxWidth: "600px",
-              aspectRatio: "210/297",
+              maxWidth: flyersPerPage === 2 ? "800px" : "600px",
+              aspectRatio: flyersPerPage === 2 ? "297/210" : "210/297",
               overflow: "hidden"
             }}
           >
@@ -269,89 +409,143 @@ Scannez le QR code pour réserver`
               className="w-full h-full"
               style={{
                 display: "grid",
-                gridTemplateColumns: flyersPerPage === 1 ? "1fr" : "1fr 1fr",
-                gridTemplateRows: flyersPerPage === 1 ? "1fr" : "1fr 1fr",
+                gridTemplateColumns: flyersPerPage === 1 ? "1fr" : flyersPerPage === 2 ? "1fr 1fr" : "1fr 1fr",
+                gridTemplateRows: flyersPerPage === 4 ? "1fr 1fr" : "1fr",
                 gap: 0
               }}
             >
               {Array.from({ length: flyersPerPage }).map((_, index) => (
                 <div 
                   key={index}
-                  className="border border-[#1e3a5f]/20 flex flex-col items-center justify-center bg-white"
+                  className="border-2 border-warning/40 flex flex-col bg-white relative overflow-hidden"
                   style={{
-                    padding: flyersPerPage === 1 ? "3%" : "3%",
-                    overflow: "hidden"
+                    padding: "2%"
                   }}
                 >
-                  <div className="flex flex-col items-center justify-center w-full h-full gap-1">
-                    {/* Nom de l'entreprise */}
-                    {companyName.trim() && (
+                  {/* Header bleu marine */}
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-br from-primary via-primary/90 to-accent" 
+                    style={{ 
+                      height: flyersPerPage === 1 ? "25%" : flyersPerPage === 2 ? "24%" : "22%"
+                    }}
+                  >
+                    {/* Bande orange */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-accent via-warning to-secondary" 
+                      style={{ height: "8%" }}
+                    />
+                  </div>
+
+                  <div className="relative z-10 flex flex-col h-full">
+                    {/* Nom de l'entreprise et titre sur fond bleu */}
+                    <div className="flex flex-col items-center justify-center text-center"
+                      style={{ 
+                        height: flyersPerPage === 1 ? "23%" : flyersPerPage === 2 ? "22%" : "20%",
+                        paddingTop: flyersPerPage === 1 ? "3%" : "2%"
+                      }}
+                    >
+                      {companyName.trim() && (
+                        <div 
+                          className="font-bold text-white mb-1"
+                          style={{
+                            fontSize: flyersPerPage === 1 ? "clamp(0.8rem, 2.2vw, 1.3rem)" : flyersPerPage === 2 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : "clamp(0.5rem, 1.2vw, 0.7rem)"
+                          }}
+                        >
+                          {companyName}
+                        </div>
+                      )}
                       <div 
-                        className="text-center font-bold text-gray-900 flex-shrink-0"
+                        className="font-bold text-white"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 2vw, 1.1rem)" : "clamp(0.5rem, 1.3vw, 0.7rem)",
-                          marginTop: flyersPerPage === 1 ? "2%" : "1%",
-                          lineHeight: "1.2"
+                          fontSize: flyersPerPage === 1 ? "clamp(0.7rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.45rem, 1vw, 0.65rem)"
                         }}
                       >
-                        {companyName}
+                        🚗 VOTRE CHAUFFEUR VTC
+                      </div>
+                      <div 
+                        className="text-white/95"
+                        style={{
+                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
+                        }}
+                      >
+                        DE PROXIMITÉ
+                      </div>
+                    </div>
+
+                    {/* Zone centrale - QR Code */}
+                    <div className="flex-1 flex flex-col items-center justify-center py-2">
+                      <div 
+                        className="bg-gradient-to-br from-success/10 via-success/5 to-success/10 p-2 rounded-xl shadow-md border-2 border-success/30"
+                        style={{
+                          marginBottom: flyersPerPage === 1 ? "3%" : "2%"
+                        }}
+                      >
+                        <img 
+                          src={qrCode.qr_code_image} 
+                          alt="QR Code"
+                          className="object-contain"
+                          style={{
+                            width: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(60px, 13vw, 95px)",
+                            height: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(60px, 13vw, 95px)"
+                          }}
+                        />
+                      </div>
+
+                      {/* Call to action en orange */}
+                      <div className="bg-gradient-to-r from-warning via-accent to-warning text-white font-bold px-3 py-1 rounded-full shadow-lg"
+                        style={{
+                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
+                        }}
+                      >
+                        SCANNEZ POUR RÉSERVER
+                      </div>
+
+                      {/* Texte de présentation */}
+                      <div 
+                        className="text-left text-foreground mt-2 px-2"
+                        style={{
+                          fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.2vw, 0.8rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1vw, 0.65rem)" : "clamp(0.4rem, 0.85vw, 0.55rem)",
+                          lineHeight: "1.4"
+                        }}
+                      >
+                        {presentation.split('\n').filter(line => line.trim()).map((line, i) => (
+                          <div key={i} className="flex items-start gap-1">
+                            {line.includes('•') && (
+                              <span className="text-success font-bold flex-shrink-0">●</span>
+                            )}
+                            <span className={line.includes('•') ? '' : 'text-center w-full'}>
+                              {line.replace('•', '').trim()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Section contact en bas */}
+                    {(phone || email) && (
+                      <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-lg p-1.5 mt-2 border border-primary/20 text-center"
+                        style={{
+                          fontSize: flyersPerPage === 1 ? "clamp(0.5rem, 1.1vw, 0.75rem)" : flyersPerPage === 2 ? "clamp(0.4rem, 0.9vw, 0.6rem)" : "clamp(0.35rem, 0.8vw, 0.5rem)"
+                        }}
+                      >
+                        <div className="font-bold text-primary">
+                          {phone && <div>📞 {phone}</div>}
+                          {email && <div>✉️ {email}</div>}
+                        </div>
                       </div>
                     )}
-
-                    {/* Titre */}
-                    <div 
-                      className="text-center text-gray-600 flex-shrink-0"
-                      style={{
-                        fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.5vw, 0.9rem)" : "clamp(0.5rem, 1.2vw, 0.7rem)",
-                        marginTop: flyersPerPage === 1 ? "1%" : "0.5%",
-                        lineHeight: "1.3"
-                      }}
-                    >
-                      Votre chauffeur VTC de proximité
-                    </div>
-
-                    {/* QR Code */}
-                    <div 
-                      className="flex-shrink-0"
-                      style={{
-                        marginTop: flyersPerPage === 1 ? "3%" : "2%",
-                        marginBottom: flyersPerPage === 1 ? "3%" : "2%"
-                      }}
-                    >
-                      <img 
-                        src={qrCode.qr_code_image} 
-                        alt="QR Code"
-                        className="object-contain"
-                        style={{
-                          width: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : "clamp(70px, 15vw, 110px)",
-                          height: flyersPerPage === 1 ? "clamp(100px, 25vw, 180px)" : "clamp(70px, 15vw, 110px)"
-                        }}
-                      />
-                    </div>
-
-                    {/* Texte de présentation */}
-                    <div 
-                      className="text-center text-gray-700 flex-shrink-0"
-                      style={{
-                        fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.3vw, 0.85rem)" : "clamp(0.45rem, 1.1vw, 0.7rem)",
-                        lineHeight: flyersPerPage === 1 ? "1.5" : "1.4",
-                        whiteSpace: "pre-wrap",
-                        maxHeight: flyersPerPage === 1 ? "30%" : "32%",
-                        overflow: "hidden"
-                      }}
-                    >
-                      {presentation}
-                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="mt-4 p-4 bg-[#1e3a5f]/5 rounded-lg">
+          <div className="mt-4 p-4 bg-gradient-to-r from-success/5 via-primary/5 to-accent/5 rounded-lg border border-primary/20">
             <p className="text-sm text-muted-foreground text-center">
-              💡 <strong>Astuce d'impression :</strong> {flyersPerPage === 1 
-                ? "Imprimez ce document en A4 pour obtenir un flyer grand format" 
-                : "Imprimez ce document en A4, puis découpez en 4 pour obtenir 4 flyers A6"}
+              💡 <strong>Astuce d'impression :</strong> {
+                flyersPerPage === 1 
+                  ? "Imprimez ce document en A4 pour obtenir un flyer grand format" 
+                  : flyersPerPage === 2 
+                    ? "Imprimez ce document en A4 paysage, puis découpez en 2 pour obtenir 2 flyers A5 verticaux"
+                    : "Imprimez ce document en A4, puis découpez en 4 pour obtenir 4 flyers A6"
+              }
             </p>
           </div>
         </Card>
