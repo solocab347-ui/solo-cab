@@ -688,6 +688,10 @@ const DevisList = ({ clientId }: DevisListProps) => {
                 <Label htmlFor="price" className="cursor-pointer">Prix trop élevé</Label>
               </div>
               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Distance trop importante" id="distance" />
+                <Label htmlFor="distance" className="cursor-pointer">Distance trop importante</Label>
+              </div>
+              <div className="flex items-center space-x-2">
                 <RadioGroupItem value="L'horaire ne me convient pas" id="time" />
                 <Label htmlFor="time" className="cursor-pointer">L'horaire ne me convient pas</Label>
               </div>
