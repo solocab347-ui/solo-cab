@@ -502,30 +502,25 @@ Scannez le QR code pour réserver`
                       </div>
 
                       {/* Texte de présentation - SERVICES CENTRÉS ET AGRANDIS */}
-                      <div className="text-center text-foreground mt-2 px-2 space-y-1">
-                        {presentation.split('\n').filter(line => line.trim()).map((line, i) => (
-                          <div key={i} className="flex items-center justify-center">
-                            {line.includes('•') ? (
-                              <div 
-                                className="text-success font-bold"
-                                style={{
-                                  fontSize: flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.55rem, 1.2vw, 0.75rem)"
-                                }}
-                              >
-                                - {line.replace('•', '').trim()}
-                              </div>
-                            ) : (
-                              <div 
-                                className="font-bold"
-                                style={{
-                                  fontSize: flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)"
-                                }}
-                              >
-                                {line.trim()}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                      <div className="text-center space-y-2 mt-3 px-2">
+                        {presentation.split('\n').filter(line => line.trim()).map((line, i) => {
+                          const isService = line.includes('•');
+                          const text = line.replace('•', '').trim();
+                          
+                          return (
+                            <div 
+                              key={i} 
+                              className={isService ? "text-success font-bold" : "text-foreground font-bold"}
+                              style={{
+                                fontSize: isService 
+                                  ? (flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.55rem, 1.2vw, 0.75rem)")
+                                  : (flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)")
+                              }}
+                            >
+                              {isService && '- '}{text}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
