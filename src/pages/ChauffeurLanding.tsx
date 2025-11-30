@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   DollarSign,
   Percent,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -36,6 +37,19 @@ import SocialLinks from "@/components/SocialLinks";
 
 const ChauffeurLanding = () => {
   const [revenue, setRevenue] = useState([5000]);
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  // Check if promo is active (December 2024)
+  const isPromoActive = () => {
+    const now = new Date();
+    const startDate = new Date('2024-12-01T00:00:00');
+    const endDate = new Date('2024-12-31T23:59:59');
+    return now >= startDate && now <= endDate;
+  };
 
   const calculateCosts = (monthlyRevenue: number) => {
     const uber = { rate: 0.25, monthly: monthlyRevenue * 0.25, annual: monthlyRevenue * 0.25 * 12 };
@@ -135,15 +149,75 @@ const ChauffeurLanding = () => {
               </Card>
             </div>
 
+            {/* Pricing with promo */}
+            {isPromoActive() ? (
+              <div className="mb-8">
+                <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6 max-w-2xl mx-auto">
+                  <div className="absolute inset-0 bg-gradient-premium opacity-10 blur-xl"></div>
+                  <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium relative z-10">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    OFFRE DÉCEMBRE 2024 - Valable du 1er au 31 décembre
+                  </Badge>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-center gap-4 mb-3">
+                      <span className="text-3xl font-bold text-muted-foreground line-through">49,99€</span>
+                      <ArrowRight className="w-6 h-6 text-premium" />
+                      <span className="text-5xl font-bold text-premium">9,99€</span>
+                    </div>
+                    <p className="text-lg text-center mb-2">
+                      pour le premier mois, puis <span className="font-semibold">49,99€/mois</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      Profitez de 40€ de réduction sur votre premier mois d'abonnement
+                    </p>
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                      <p className="text-sm flex items-center gap-2">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>Abonnement mensuel sans engagement</span>
+                      </p>
+                      <p className="text-sm flex items-center gap-2">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>Résiliable à tout moment depuis votre dashboard</span>
+                      </p>
+                      <p className="text-sm flex items-center gap-2">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>0% de commission sur vos courses</span>
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              <div className="mb-8">
+                <Card className="p-6 max-w-2xl mx-auto bg-[#1a2332]/50 border-blue-500/30">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold text-white mb-2">49,99€/mois</p>
+                    <p className="text-lg text-gray-400 mb-4">Tout compris • 0% de commission</p>
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                      <p className="text-sm flex items-center gap-2 justify-center">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>Abonnement mensuel sans engagement</span>
+                      </p>
+                      <p className="text-sm flex items-center gap-2 justify-center">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>Résiliable à tout moment depuis votre dashboard</span>
+                      </p>
+                      <p className="text-sm flex items-center gap-2 justify-center">
+                        <Check className="w-4 h-4 text-success" />
+                        <span>Gardez 100% de vos revenus</span>
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+
             <Link to="/register-driver-promo">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl">
                 Je reprends le contrôle
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <p className="text-sm text-gray-500 mt-4">
-              49,99€/mois • Sans commission
-            </p>
           </div>
         </div>
       </section>
