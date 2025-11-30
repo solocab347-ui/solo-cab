@@ -21,6 +21,7 @@ import ChauffeurProfile from "./pages/ChauffeurProfile";
 import RegisterClientQR from "./pages/RegisterClientQR";
 import RegisterClientDriver from "./pages/RegisterClientDriver";
 import RegisterDriver from "./pages/RegisterDriver";
+import RegisterDriverPromo from "./pages/RegisterDriverPromo";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/register-client-qr" element={<RegisterClientQR />} />
               <Route path="/register-client-driver" element={<RegisterClientDriver />} />
               <Route path="/register-driver" element={<RegisterDriver />} />
+              <Route path="/register-driver-promo" element={<RegisterDriverPromo />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
               <Route path="/pioneer-test" element={<PioneerTest />} />
               <Route path="/create-course" element={

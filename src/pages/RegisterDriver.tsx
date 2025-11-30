@@ -9,14 +9,13 @@ const RegisterDriver = () => {
   const token = searchParams.get("token");
 
   useEffect(() => {
-    // Si pas de token, rediriger vers la page test pionniers
+    // Si pas de token, rediriger vers la page d'inscription publique avec promotion
     if (!token) {
-      navigate("/pioneer-test", { replace: true });
+      navigate("/register-driver-promo", { replace: true });
       return;
     }
 
-    // Si token présent, TODO: implémenter le formulaire d'inscription complet
-    // Pour l'instant, afficher un message
+    // Si token présent, TODO: implémenter le formulaire d'inscription avec token
     console.log("Token d'invitation détecté:", token);
   }, [token, navigate]);
 
