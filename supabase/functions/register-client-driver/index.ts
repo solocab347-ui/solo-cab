@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { applyRateLimit } from '../_shared/rateLimitMiddleware.ts';
+import { sendEmailWithRetry, sendAdminAlert } from '../_shared/emailRetry.ts';
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -166,7 +168,7 @@ serve(async (req) => {
       }
     }
 
-    // Envoyer l'email de bienvenue au client
+    // Envoyer l'email de bienvenue au client AVEC RETRY
     try {
       const { data: profileData } = await supabase
         .from("profiles")
@@ -175,25 +177,63 @@ serve(async (req) => {
         .single();
 
       if (profileData) {
-        console.log('📧 [CLIENT-VITRINE] Tentative envoi email à:', profileData.email);
-        const emailResponse = await supabase.functions.invoke("send-email", {
-          body: {
-            to: profileData.email,
-            type: "client_welcome",
-            data: {
-              clientName: profileData.full_name
-            }
-          }
-        });
+        console.log('📧 [CLIENT-VITRINE] Envoi email bienvenue avec retry à:', profileData.email);
         
-        if (emailResponse.error) {
-          console.error('❌❌❌ [CLIENT-VITRINE] ERREUR CRITIQUE envoi email:', {
-            error: emailResponse.error,
-            email: profileData.email,
-            data: emailResponse.data
-          });
-        } else {
+        const resend = new Resend(Deno.env.get("RESEND_API_KEY") as string);
+        
+        const emailResult = await sendEmailWithRetry(
+          resend,
+          {
+            from: "SoloCab <noreply@solocab.fr>",
+            to: [profileData.email],
+            subject: "🎉 Bienvenue sur SoloCab !",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                  <h1>🎉 Bienvenue sur SoloCab !</h1>
+                </div>
+                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+                  <p>Bonjour <strong>${profileData.full_name}</strong>,</p>
+                  
+                  <p>Nous sommes ravis de vous accueillir sur SoloCab !</p>
+                  
+                  <p>Votre compte a été créé avec succès. Vous pouvez maintenant profiter de tous nos services :</p>
+                  
+                  <ul>
+                    <li>🚗 Réserver des courses avec votre chauffeur</li>
+                    <li>📋 Consulter vos devis et factures</li>
+                    <li>💬 Communiquer directement avec votre chauffeur</li>
+                    <li>📊 Suivre l'historique de vos courses</li>
+                  </ul>
+                  
+                  <p>Pour toute question, n'hésitez pas à contacter votre chauffeur via la messagerie intégrée.</p>
+                  
+                  <p>Bonne route avec SoloCab !</p>
+                  
+                  <p>L'équipe SoloCab</p>
+                </div>
+                <div style="text-align: center; margin-top: 30px; color: #888; font-size: 12px;">
+                  <p>SoloCab - Plateforme de mise en relation chauffeurs VTC</p>
+                  <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+                </div>
+              </div>
+            `
+          },
+          { maxAttempts: 3 }
+        );
+        
+        if (emailResult.success) {
           console.log('✅✅✅ [CLIENT-VITRINE] Email bienvenue envoyé avec succès');
+        } else {
+          console.error('❌❌❌ [CLIENT-VITRINE] ÉCHEC DÉFINITIF envoi email après retry');
+          
+          // Envoyer alerte admin
+          await sendAdminAlert(resend, {
+            emailType: "client_welcome (Vitrine)",
+            recipient: profileData.email,
+            error: emailResult.error || "Erreur inconnue",
+            context: `Client ID: ${newClient.id}, Driver ID: ${driver_id}`
+          });
         }
       }
     } catch (emailError: any) {
