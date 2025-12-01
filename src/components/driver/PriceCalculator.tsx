@@ -115,6 +115,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         _distance_km: distanceKm,
         _duration_minutes: durationMinutes,
         _use_hourly_rate: false,
+        _scheduled_date: null,
       });
       
       const { data: priceData, error: priceError } = await supabase.rpc("calculate_course_price", {
@@ -122,6 +123,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
         _distance_km: distanceKm,
         _duration_minutes: durationMinutes,
         _use_hourly_rate: false,
+        _scheduled_date: null,
       });
       
       console.log("📊 Réponse RPC:", { priceData, priceError });
