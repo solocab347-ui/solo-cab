@@ -203,16 +203,17 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
 
           {/* Planning */}
           <Card 
-            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-accent group"
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-accent hover:shadow-accent/80 group"
             onClick={() => onTabChange("planning")}
           >
             <div className="absolute inset-0 bg-gradient-accent opacity-10 group-hover:opacity-20 transition-opacity"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 bg-gradient-accent rounded-2xl flex items-center justify-center shadow-accent group-hover:scale-110 transition-transform">
+              <div className="w-20 h-20 bg-gradient-accent rounded-2xl flex items-center justify-center shadow-accent group-hover:scale-110 transition-transform group-hover:shadow-accent/60">
                 <Calendar className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground">Planning</h3>
+                <h3 className="text-xl font-bold text-foreground group-hover:text-accent transition-colors">Planning</h3>
                 <p className="text-sm text-muted-foreground">Voir mes courses</p>
               </div>
             </div>

@@ -5,7 +5,9 @@ import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Calculator, MapPin, Navigation, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { calculateRoute } from "@/lib/geocoding";
@@ -26,6 +28,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [creatingCourse, setCreatingCourse] = useState(false);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   const handleCalculate = async () => {
     // Validation stricte des entrées
@@ -359,18 +362,37 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                 <span>Distance ({result.distance} km)</span>
                 <span>{result.price.distance_price.toFixed(2)} €</span>
               </div>
-              <div className="flex justify-between">
-                <span>Sous-total HT</span>
-                <span>{result.price.subtotal.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between">
-                <span>TVA (10%)</span>
-                <span>{result.price.tva_amount.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between font-bold text-premium-foreground pt-2 border-t border-premium-foreground/20">
-                <span>Total TTC</span>
-                <span>{result.price.total_price.toFixed(2)} €</span>
-              </div>
+              {driverProfile?.driver?.tva_included ? (
+                <>
+                  <div className="flex justify-between font-bold text-premium-foreground pt-2 border-t border-premium-foreground/20">
+                    <span>Total TTC</span>
+                    <span>{result.price.total_price.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Dont TVA (10%)</span>
+                    <span>{result.price.tva_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span>Montant HT</span>
+                    <span>{result.price.subtotal.toFixed(2)} €</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span>Sous-total HT</span>
+                    <span>{result.price.subtotal.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>TVA (10%)</span>
+                    <span>{result.price.tva_amount.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-premium-foreground pt-2 border-t border-premium-foreground/20">
+                    <span>Total TTC</span>
+                    <span>{result.price.total_price.toFixed(2)} €</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -379,18 +401,50 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
             <h5 className="font-semibold text-premium-foreground">Créer une course avec ce calcul</h5>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Sélectionner un client</Label>
-              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger className="bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground">
-                  <SelectValue placeholder="Choisir un client" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border z-[100000] max-h-80">
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.profiles.full_name} ({client.profiles.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={clientSearchOpen}
+                    className="w-full justify-between bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20"
+                  >
+                    {selectedClientId
+                      ? clients.find((client) => client.id === selectedClientId)?.profiles.full_name
+                      : "Rechercher un client..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 bg-card border-border z-[100000]" align="start">
+                  <Command className="bg-card">
+                    <CommandInput placeholder="Taper le nom du client..." className="h-9" />
+                    <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                    <CommandGroup className="max-h-80 overflow-auto">
+                      {clients.map((client) => (
+                        <CommandItem
+                          key={client.id}
+                          value={`${client.profiles.full_name} ${client.profiles.email}`}
+                          onSelect={() => {
+                            setSelectedClientId(client.id);
+                            setClientSearchOpen(false);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-medium">{client.profiles.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{client.profiles.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
