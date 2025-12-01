@@ -79,6 +79,12 @@ const RegisterClientQR = () => {
           vehicle_brand,
           vehicle_color,
           vehicle_year,
+          vehicle_plate,
+          vehicle_equipment,
+          services_offered,
+          vehicle_photos,
+          gallery_photos,
+          card_photo_url,
           rating,
           total_rides,
           status,
@@ -105,10 +111,12 @@ const RegisterClientQR = () => {
         console.error("Erreur profil:", profileError);
       }
 
-      // Combiner les données
+      // Combiner les données - PRIORITÉ à card_photo_url
       const completeDriverInfo = {
         ...driverData,
-        profile: profileData || {}
+        profile: profileData || {},
+        // Utiliser card_photo_url en priorité, sinon profile_photo_url
+        display_photo: driverData.card_photo_url || profileData?.profile_photo_url
       };
 
       if (qrError || !qrData) {
@@ -236,12 +244,12 @@ const RegisterClientQR = () => {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full blur-2xl" />
                   <Avatar className="relative w-40 h-40 border-4 border-background shadow-2xl ring-2 ring-primary/20">
                     <AvatarImage 
-                      src={driverInfo.profile?.profile_photo_url} 
+                      src={driverInfo.display_photo} 
                       alt={driverInfo.profile?.full_name}
                       className="object-cover object-center"
                     />
                     <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                      {driverInfo.profile?.full_name?.charAt(0) || "C"}
+                      {driverInfo.profile?.full_name?.charAt(0) || driverInfo.company_name?.charAt(0) || "C"}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -302,6 +310,52 @@ const RegisterClientQR = () => {
                   <p className="text-muted-foreground leading-relaxed text-base">
                     {driverInfo.service_description || driverInfo.bio}
                   </p>
+                </div>
+              )}
+
+              {/* Services proposés */}
+              {driverInfo.services_offered && driverInfo.services_offered.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground text-center">Services proposés</h3>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {driverInfo.services_offered.map((service: string) => (
+                      <Badge key={service} variant="secondary" className="px-3 py-1">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Équipements véhicule */}
+              {driverInfo.vehicle_equipment && driverInfo.vehicle_equipment.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground text-center">Équipements du véhicule</h3>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {driverInfo.vehicle_equipment.map((equipment: string) => (
+                      <Badge key={equipment} variant="outline" className="px-3 py-1">
+                        {equipment}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Photos du véhicule */}
+              {driverInfo.vehicle_photos && driverInfo.vehicle_photos.length > 0 && (
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground text-center">Photos du véhicule</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {driverInfo.vehicle_photos.slice(0, 4).map((photo: string, index: number) => (
+                      <div key={index} className="aspect-video rounded-lg overflow-hidden border-2 border-border/50">
+                        <img 
+                          src={photo} 
+                          alt={`Véhicule ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
