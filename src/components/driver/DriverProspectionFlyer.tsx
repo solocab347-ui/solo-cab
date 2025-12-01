@@ -486,12 +486,12 @@ Scannez le QR code pour réserver`
                       </div>
                     </div>
 
-                    {/* Zone centrale - QR Code */}
-                    <div className="flex-1 flex flex-col items-center justify-center py-2">
+                    {/* Zone centrale - QR Code et Services */}
+                    <div className="flex-1 flex flex-col items-center py-2" style={{ minHeight: 0 }}>
                       <div 
                         className="bg-gradient-to-br from-success/10 via-success/5 to-success/10 p-2 rounded-xl shadow-md border-2 border-success/30"
                         style={{
-                          marginBottom: flyersPerPage === 1 ? "3%" : "2%"
+                          marginBottom: flyersPerPage === 1 ? "2%" : "1.5%"
                         }}
                       >
                         <img 
@@ -506,7 +506,7 @@ Scannez le QR code pour réserver`
                       </div>
 
                       {/* Call to action en orange */}
-                      <div className="bg-gradient-to-r from-warning via-accent to-warning text-white font-bold px-3 py-1 rounded-full shadow-lg"
+                      <div className="bg-gradient-to-r from-warning via-accent to-warning text-white font-bold px-3 py-1 rounded-full shadow-lg mb-2"
                         style={{
                           fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
                         }}
@@ -514,8 +514,8 @@ Scannez le QR code pour réserver`
                         SCANNEZ POUR RESERVER
                       </div>
 
-                      {/* Texte de présentation - SERVICES CENTRÉS ET AGRANDIS */}
-                      <div className="text-center space-y-2 mt-3 px-2">
+                      {/* Texte de présentation - SERVICES OPTIMISÉS POUR REMPLIR L'ESPACE */}
+                      <div className="flex-1 flex flex-col justify-evenly text-center px-2 w-full" style={{ minHeight: 0 }}>
                         {presentation.split('\n').filter(line => line.trim()).map((line, i) => {
                           const isService = line.includes('•');
                           const text = line.replace('•', '').trim();
@@ -527,7 +527,8 @@ Scannez le QR code pour réserver`
                               style={{
                                 fontSize: isService 
                                   ? (flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.55rem, 1.2vw, 0.75rem)")
-                                  : (flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)")
+                                  : (flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)"),
+                                lineHeight: "1.3"
                               }}
                             >
                               {isService && '- '}{text}
