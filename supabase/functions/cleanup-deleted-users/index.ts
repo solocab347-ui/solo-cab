@@ -5,24 +5,73 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; response?: Response } {
+  const now = Date.now();
+  const limit = rateLimiter.get(ip);
+  
+  if (limit && now < limit.resetTime) {
+    if (limit.count >= 10) {
+      return {
+        allowed: false,
+        response: new Response(
+          JSON.stringify({ error: 'Trop de requêtes. Réessayez plus tard.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        ),
+      };
+    }
+    limit.count++;
+  } else {
+    rateLimiter.set(ip, { count: 1, resetTime: now + 60000 });
+  }
+  
+  return { allowed: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { email } = await req.json();
+  // Apply rate limiting
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const rateLimitResult = checkRateLimit(ip);
+  if (!rateLimitResult.allowed) {
+    console.log('🚫 Rate limit exceeded for user cleanup');
+    return rateLimitResult.response!;
+  }
 
-    if (!email) {
+  try {
+    // Initialize auth client to verify JWT
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    // Verify JWT authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log('❌ No authorization header');
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Non autorisé: Authentification requise' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('🧹 Cleaning up user:', email);
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await authClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.log('❌ Invalid token:', userError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Non autorisé: Token invalide' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Créer un client admin avec SERVICE_ROLE_KEY
+    // Initialize admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -33,6 +82,35 @@ Deno.serve(async (req) => {
         },
       }
     );
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (roleError || !roleData) {
+      console.log('❌ User is not admin:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Non autorisé: Accès administrateur requis' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Admin verified:', user.email);
+
+    const { email } = await req.json();
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: 'Email is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('🧹 Cleaning up user:', email);
 
     // 1. Chercher l'utilisateur dans auth.users
     const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();

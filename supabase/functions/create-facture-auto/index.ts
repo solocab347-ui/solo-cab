@@ -6,12 +6,74 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; response?: Response } {
+  const now = Date.now();
+  const limit = rateLimiter.get(ip);
+  
+  if (limit && now < limit.resetTime) {
+    if (limit.count >= 30) {
+      return {
+        allowed: false,
+        response: new Response(
+          JSON.stringify({ error: 'Trop de requêtes. Réessayez plus tard.' }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        ),
+      };
+    }
+    limit.count++;
+  } else {
+    rateLimiter.set(ip, { count: 1, resetTime: now + 60000 });
+  }
+  
+  return { allowed: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Apply rate limiting
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const rateLimitResult = checkRateLimit(ip);
+  if (!rateLimitResult.allowed) {
+    console.log('[CREATE-FACTURE-AUTO] 🚫 Rate limit exceeded');
+    return rateLimitResult.response!;
+  }
+
   try {
+    // Initialize auth client to verify JWT
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
+    // Verify JWT authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.log("[CREATE-FACTURE-AUTO] ❌ No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Non autorisé: Authentification requise" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await authClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.log("[CREATE-FACTURE-AUTO] ❌ Invalid token:", userError?.message);
+      return new Response(
+        JSON.stringify({ error: "Non autorisé: Token invalide" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("[CREATE-FACTURE-AUTO] ✅ User authenticated:", user.id);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -19,6 +81,40 @@ serve(async (req) => {
     const { course_id, payment_method } = await req.json();
 
     console.log("[CREATE-FACTURE-AUTO] Processing:", { course_id, payment_method });
+
+    // Verify user owns this course (either as driver or client)
+    const { data: courseCheck, error: courseCheckError } = await supabase
+      .from("courses")
+      .select(`
+        driver_id,
+        client_id,
+        clients!inner(user_id),
+        drivers!inner(user_id)
+      `)
+      .eq("id", course_id)
+      .single();
+
+    if (courseCheckError || !courseCheck) {
+      console.log("[CREATE-FACTURE-AUTO] ❌ Course not found or access denied");
+      return new Response(
+        JSON.stringify({ error: "Course introuvable ou accès refusé" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if authenticated user is either the driver or the client
+    const isDriver = courseCheck.drivers && Array.isArray(courseCheck.drivers) && courseCheck.drivers[0]?.user_id === user.id;
+    const isClient = courseCheck.clients && Array.isArray(courseCheck.clients) && courseCheck.clients[0]?.user_id === user.id;
+
+    if (!isDriver && !isClient) {
+      console.log("[CREATE-FACTURE-AUTO] ❌ User not authorized for this course");
+      return new Response(
+        JSON.stringify({ error: "Non autorisé pour cette course" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("[CREATE-FACTURE-AUTO] ✅ User authorized:", { isDriver, isClient });
 
     // Check if facture already exists for this course
     const { data: existingFacture } = await supabase
