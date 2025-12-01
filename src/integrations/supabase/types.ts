@@ -1553,6 +1553,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_notification: {
+        Args: {
+          p_link?: string
+          p_message: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
