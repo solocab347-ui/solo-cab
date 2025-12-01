@@ -10,10 +10,43 @@ interface LoginRequest {
   password: string;
 }
 
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; response?: Response } {
+  const now = Date.now();
+  const limit = rateLimiter.get(ip);
+  
+  if (limit && now < limit.resetTime) {
+    if (limit.count >= 5) {
+      return {
+        allowed: false,
+        response: new Response(
+          JSON.stringify({ success: false, error: 'Trop de tentatives. Réessayez dans une minute.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        ),
+      };
+    }
+    limit.count++;
+  } else {
+    rateLimiter.set(ip, { count: 1, resetTime: now + 60000 });
+  }
+  
+  return { allowed: true };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Apply rate limiting: 5 attempts per minute per IP
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const rateLimitResult = checkRateLimit(ip);
+  if (!rateLimitResult.allowed) {
+    console.log('🚫 Rate limit exceeded for:', ip);
+    return rateLimitResult.response!;
   }
 
   try {
@@ -22,6 +55,23 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { email, password }: LoginRequest = await req.json();
+
+    // Input validation
+    if (!email || typeof email !== 'string' || email.length > 255 || !email.includes('@')) {
+      console.log('❌ Invalid email format');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Format d\'email invalide' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 1 || password.length > 128) {
+      console.log('❌ Invalid password format');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Mot de passe invalide' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('Login attempt for:', email);
 

@@ -41,3 +41,42 @@ verify_jwt = true
 
 [functions.regenerate-qr-codes]
 verify_jwt = true
+
+[functions.auth-login]
+verify_jwt = false
+
+[functions.cleanup-deleted-users]
+verify_jwt = true
+
+[functions.create-facture-auto]
+verify_jwt = true
+
+[functions.register-client-driver]
+verify_jwt = false
+
+[functions.check-driver-subscription]
+verify_jwt = true
+
+[functions.get-mapbox-token]
+verify_jwt = true
+
+[functions.send-driver-registration-email]
+verify_jwt = true
+
+[functions.send-payment-reminder-email]
+verify_jwt = true
+
+[functions.validate-course-price]
+verify_jwt = true
+
+[functions.email-health-check]
+verify_jwt = true
+
+[functions.repair-driver-profiles]
+verify_jwt = true
+
+[functions.cleanup-expired-promos]
+verify_jwt = true
+
+[functions.calculate-mapbox-route]
+verify_jwt = true
