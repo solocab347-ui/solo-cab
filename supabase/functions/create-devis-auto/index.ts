@@ -120,13 +120,18 @@ Deno.serve(async (req) => {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        console.log(`🔄 Tentative ${attempt + 1}/${maxRetries} de création de devis`);
+        
         // Generate unified reservation number (same for course, devis, facture)
         const { data: reservationNumber, error: reservationError } = await supabaseClient
           .rpc('generate_reservation_number', { _driver_id: driver_id });
 
         if (reservationError) {
-          throw new Error('Erreur génération numéro réservation');
+          console.error('❌ Erreur génération numéro réservation:', reservationError);
+          throw new Error(`Erreur génération numéro réservation: ${reservationError.message}`);
         }
+
+        console.log(`📋 Numéro de réservation généré: ${reservationNumber}`);
 
         // Try to create devis with unified reservation number and promo
         const { data: createdDevis, error: devisError } = await supabaseClient
@@ -151,8 +156,16 @@ Deno.serve(async (req) => {
           .single();
 
         if (devisError) {
+          console.error('❌ Erreur création devis:', {
+            code: devisError.code,
+            message: devisError.message,
+            details: devisError.details,
+            hint: devisError.hint
+          });
+          
           // Check if it's a duplicate key error
           if (devisError.code === '23505' && devisError.message?.includes('quote_number')) {
+            console.log('⚠️ Duplicate quote_number détecté, nouvelle tentative...');
             lastError = devisError;
             continue; // Retry with a new number
           }
@@ -161,6 +174,7 @@ Deno.serve(async (req) => {
         }
 
         // Success!
+        console.log('✅ Devis créé avec succès:', createdDevis);
         devis = createdDevis;
         
         // COHÉRENCE: Mettre à jour la course avec le même numéro de réservation
@@ -172,9 +186,15 @@ Deno.serve(async (req) => {
         break;
 
       } catch (error: any) {
+        console.error(`❌ Erreur tentative ${attempt + 1}:`, {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
         lastError = error;
         // For non-duplicate errors, don't retry
         if (!(error.code === '23505' && error.message?.includes('quote_number'))) {
+          console.error('⛔ Erreur non-duplicate, arrêt des tentatives');
           break;
         }
       }
@@ -182,8 +202,22 @@ Deno.serve(async (req) => {
 
     // If we exhausted all retries
     if (!devis) {
+      const errorDetails = lastError ? {
+        message: lastError.message,
+        code: lastError.code,
+        details: lastError.details,
+        hint: lastError.hint
+      } : 'Aucun détail disponible';
+      
+      console.error('❌ Échec création devis après toutes les tentatives:', errorDetails);
+      
       return new Response(
-        JSON.stringify({ error: 'Erreur création devis après plusieurs tentatives' }),
+        JSON.stringify({ 
+          error: 'Erreur création devis',
+          details: lastError?.message || 'Erreur inconnue',
+          errorCode: lastError?.code,
+          errorHint: lastError?.hint
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
