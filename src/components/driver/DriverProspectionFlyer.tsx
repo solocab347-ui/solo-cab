@@ -161,11 +161,24 @@ Scannez le QR code pour réserver`
         pdf.text("SCANNEZ POUR RÉSERVER", centerX, currentY + (2 * scale), { align: "center" });
         currentY += (12 * scale);
 
-        // Texte de présentation sur fond blanc - SERVICES CENTRÉS ET AGRANDIS
+        // Texte de présentation sur fond blanc - SERVICES OPTIMISÉS POUR REMPLIR L'ESPACE
         const lines = presentation.split('\n').filter(line => line.trim());
+        const contactSectionHeight = (phone || email) ? (20 * scale) : 0;
+        const availableHeight = (pos.y + flyerHeight) - currentY - contactSectionHeight - (8 * scale);
+        
+        // Séparer les services des autres lignes
+        const serviceLines = lines.filter(line => line.includes('•'));
+        const otherLines = lines.filter(line => !line.includes('•'));
+        
+        // Calculer l'espacement optimal pour les services
+        const serviceTextHeight = 13 * scale; // Taille du texte des services
+        const otherTextHeight = 11 * scale; // Taille du texte des autres lignes
+        const totalTextHeight = (serviceLines.length * serviceTextHeight) + (otherLines.length * otherTextHeight);
+        const totalSpacing = availableHeight - totalTextHeight;
+        const spacingPerLine = Math.max(4 * scale, totalSpacing / (lines.length + 1));
         
         lines.forEach(line => {
-          if (currentY < pos.y + flyerHeight - (15 * scale)) {
+          if (currentY < pos.y + flyerHeight - contactSectionHeight - (8 * scale)) {
             if (line.includes('•')) {
               // Services avec taille augmentée et centrage
               pdf.setFontSize(Math.round(13 * scale));
@@ -177,7 +190,7 @@ Scannez le QR code pour réserver`
                 align: "center",
                 maxWidth: flyerWidth - 16
               });
-              currentY += (8 * scale);
+              currentY += serviceTextHeight + spacingPerLine;
             } else {
               // Autres textes centrés
               pdf.setFontSize(Math.round(11 * scale));
@@ -187,7 +200,7 @@ Scannez le QR code pour réserver`
                 align: "center",
                 maxWidth: flyerWidth - 16
               });
-              currentY += (7 * scale);
+              currentY += otherTextHeight + spacingPerLine;
             }
           }
         });
