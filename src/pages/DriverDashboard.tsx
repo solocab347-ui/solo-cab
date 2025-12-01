@@ -349,17 +349,10 @@ const DriverDashboard = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
-            <TabsTrigger 
-              value="home" 
-              className="w-full justify-start gap-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-white/5 transition-all px-4 py-3 rounded-lg"
-            >
-              <Home className="w-5 h-5" />
-              <span className="font-medium">Accueil</span>
-            </TabsTrigger>
             {/* Première ligne */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
-                <LayoutGrid className="w-4 h-4" />
+                <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">Accueil</span>
                 <span className="sm:hidden">Accueil</span>
               </TabsTrigger>
