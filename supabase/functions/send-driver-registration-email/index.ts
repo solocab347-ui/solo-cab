@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { sendEmailWithRetry, sendAdminAlert } from '../_shared/emailRetry.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,25 +79,38 @@ serve(async (req) => {
       </p>
     `;
 
-    console.log("📧 [DRIVER-REGISTRATION-EMAIL] Tentative envoi à:", driver.profiles.email);
+    console.log("📧 [DRIVER-REGISTRATION-EMAIL] Envoi avec retry à:", driver.profiles.email);
     
-    const emailResult = await resend.emails.send({
-      from: "SoloCab <noreply@solocab.fr>",
-      to: [driver.profiles.email],
-      subject: subject,
-      html: html,
-    });
+    const emailResult = await sendEmailWithRetry(
+      resend,
+      {
+        from: "SoloCab <noreply@solocab.fr>",
+        to: [driver.profiles.email],
+        subject: subject,
+        html: html,
+      },
+      { maxAttempts: 3 }
+    );
 
-    if (emailResult.error) {
-      console.error("❌❌❌ [DRIVER-REGISTRATION-EMAIL] Resend API error:", emailResult.error);
-      throw new Error(`Resend API error: ${JSON.stringify(emailResult.error)}`);
+    if (!emailResult.success) {
+      console.error("❌❌❌ [DRIVER-REGISTRATION-EMAIL] ÉCHEC DÉFINITIF après retry");
+      
+      // Envoyer alerte admin
+      await sendAdminAlert(resend, {
+        emailType: "driver_registration",
+        recipient: driver.profiles.email,
+        error: emailResult.error || "Erreur inconnue",
+        context: `Driver ID: ${driver_id}`
+      });
+      
+      throw new Error(`Échec envoi email après retry: ${emailResult.error}`);
     }
 
-    console.log("✅✅✅ [DRIVER-REGISTRATION-EMAIL] Email envoyé avec succès, ID:", emailResult.data?.id);
+    console.log("✅✅✅ [DRIVER-REGISTRATION-EMAIL] Email envoyé avec succès, ID:", emailResult.emailId);
 
     return new Response(JSON.stringify({ 
       success: true,
-      emailId: emailResult.data?.id 
+      emailId: emailResult.emailId
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

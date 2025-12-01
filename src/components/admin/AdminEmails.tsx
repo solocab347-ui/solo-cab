@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Mail, Users, UserCheck, Send, Save, Trash2, Clock, CheckCircle } from "lucide-react";
+import { Mail, Users, UserCheck, Send, Save, Trash2, Clock, CheckCircle, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AdminEmailTest } from "./AdminEmailTest";
+import AdminEmailHealthCheck from "./AdminEmailHealthCheck";
 
 interface EmailTemplate {
   id: string;
@@ -230,10 +231,14 @@ const AdminEmails = () => {
       <AdminEmailTest />
       
       <Tabs defaultValue="send" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="send">
             <Mail className="w-4 h-4 mr-2" />
             Envoyer un email
+          </TabsTrigger>
+          <TabsTrigger value="diagnostic">
+            <Activity className="w-4 h-4 mr-2" />
+            Diagnostic Système
           </TabsTrigger>
           <TabsTrigger value="templates">
             <Save className="w-4 h-4 mr-2" />
@@ -244,6 +249,11 @@ const AdminEmails = () => {
             Historique
           </TabsTrigger>
         </TabsList>
+
+        {/* Onglet Diagnostic */}
+        <TabsContent value="diagnostic">
+          <AdminEmailHealthCheck />
+        </TabsContent>
 
         {/* Onglet Envoi */}
         <TabsContent value="send">
