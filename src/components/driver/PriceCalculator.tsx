@@ -374,7 +374,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span>Montant HT</span>
-                    <span>{result.price.subtotal.toFixed(2)} €</span>
+                    <span>{(result.price.total_price - result.price.tva_amount).toFixed(2)} €</span>
                   </div>
                 </>
               ) : (
