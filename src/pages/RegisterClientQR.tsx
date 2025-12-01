@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Star, Car, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeAddress } from "@/lib/inputSanitizer";
+import { getServiceIcon, getServiceLabel, getEquipmentIcon, getEquipmentLabel } from "@/lib/vehicleEquipmentDisplay";
 
 const RegisterClientQR = () => {
   const navigate = useNavigate();
@@ -319,8 +320,9 @@ const RegisterClientQR = () => {
                   <h3 className="text-lg font-semibold text-foreground text-center">Services proposés</h3>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {driverInfo.services_offered.map((service: string) => (
-                      <Badge key={service} variant="secondary" className="px-3 py-1">
-                        {service}
+                      <Badge key={service} variant="secondary" className="px-3 py-1 text-base">
+                        <span className="mr-1.5">{getServiceIcon(service)}</span>
+                        {getServiceLabel(service)}
                       </Badge>
                     ))}
                   </div>
@@ -333,8 +335,9 @@ const RegisterClientQR = () => {
                   <h3 className="text-lg font-semibold text-foreground text-center">Équipements du véhicule</h3>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {driverInfo.vehicle_equipment.map((equipment: string) => (
-                      <Badge key={equipment} variant="outline" className="px-3 py-1">
-                        {equipment}
+                      <Badge key={equipment} variant="outline" className="px-3 py-1 text-base">
+                        <span className="mr-1.5">{getEquipmentIcon(equipment)}</span>
+                        {getEquipmentLabel(equipment)}
                       </Badge>
                     ))}
                   </div>
