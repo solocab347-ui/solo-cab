@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
+import ShareButtons from "@/components/ShareButtons";
 
 interface DriverProfile {
   id: string;
@@ -136,7 +137,13 @@ const ClientDriverProfile = () => {
           )}
 
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold mb-2">{driver.profiles?.full_name}</h1>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+              <h1 className="text-3xl font-bold">{driver.profiles?.full_name}</h1>
+              <ShareButtons
+                title={`Profil de ${driver.profiles?.full_name}`}
+                message={`Découvrez le profil de ${driver.profiles?.full_name}, votre chauffeur VTC professionnel`}
+              />
+            </div>
             {driver.company_name && driver.company_name.trim() && 
              !driver.company_name.toLowerCase().includes('compléter') &&
              !driver.company_name.toLowerCase().includes('attente') && (
