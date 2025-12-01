@@ -411,6 +411,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Variables pour logging dans le catch (déclarées en dehors du try)
+  let emailTo = "inconnu";
+  let emailType = "inconnu";
+
   try {
     // ⚠️ SÉCURITÉ: Vérifier l'authentification
     // Option 1: JWT token (pour appels depuis le frontend)
@@ -456,8 +460,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { to, type, data = {} }: EmailRequest = await req.json();
+    
+    // Capturer pour le catch
+    emailTo = to;
+    emailType = type;
 
-    console.log(`📧 Envoi d'email de type: ${type} à ${to}`);
+    console.log(`📧 [SEND-EMAIL] Envoi email ${type} à:`, to);
+    console.log(`🔑 [SEND-EMAIL] API Key présente:`, Deno.env.get("RESEND_API_KEY") ? "OUI" : "NON");
 
     if (!to || !type) {
       throw new Error("Paramètres manquants: 'to' et 'type' sont requis");
@@ -465,7 +474,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const template = getEmailTemplate(type, data);
 
-    console.log('📄 Template généré - Sujet:', template.subject);
+    console.log('📄 [SEND-EMAIL] Template généré - Sujet:', template.subject);
 
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "SoloCab <noreply@solocab.fr>",
@@ -475,11 +484,16 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailError) {
-      console.error("❌ ERREUR Resend API:", emailError);
+      console.error("❌❌❌ [SEND-EMAIL] ERREUR RESEND API:", {
+        error: emailError,
+        type: type,
+        to: to
+      });
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: emailError.message || 'Erreur Resend inconnue'
+          error: emailError.message || 'Erreur Resend inconnue',
+          errorDetails: emailError
         }),
         {
           status: 500,
@@ -488,7 +502,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("✅ Email envoyé avec succès - ID:", emailData?.id);
+    console.log("✅✅✅ [SEND-EMAIL] Email envoyé avec succès - ID:", emailData?.id);
 
     return new Response(
       JSON.stringify({ 
@@ -501,11 +515,40 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("❌ Erreur lors de l'envoi de l'email:", error);
+    console.error("❌❌❌ [SEND-EMAIL] ERREUR CRITIQUE COMPLÈTE:", {
+      message: error.message,
+      stack: error.stack,
+      type: emailType,
+      to: emailTo,
+      resendConfigured: Deno.env.get("RESEND_API_KEY") ? "OUI" : "NON"
+    });
+
+    // Tenter d'envoyer un email d'alerte à l'admin
+    try {
+      await resend.emails.send({
+        from: "SoloCab Error <noreply@solocab.fr>",
+        to: ["alexandrediarra00@gmail.com"],
+        subject: `[ERREUR SOLOCAB] Échec envoi email ${emailType}`,
+        html: `
+          <h2>⚠️ Erreur d'envoi d'email détectée</h2>
+          <p><strong>Type d'email:</strong> ${emailType}</p>
+          <p><strong>Destinataire:</strong> ${emailTo}</p>
+          <p><strong>Erreur:</strong> ${error.message}</p>
+          <pre>${error.stack}</pre>
+          <hr>
+          <p><small>Email automatique du système SoloCab</small></p>
+        `,
+      });
+      console.log("✅ [SEND-EMAIL] Email d'alerte envoyé à l'admin");
+    } catch (alertError: any) {
+      console.error("❌ [SEND-EMAIL] Impossible d'envoyer l'alerte admin:", alertError.message);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error.message,
+        details: "Vérifier les logs Supabase pour plus de détails"
       }),
       {
         status: 500,

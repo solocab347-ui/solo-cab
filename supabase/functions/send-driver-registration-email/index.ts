@@ -78,22 +78,39 @@ serve(async (req) => {
       </p>
     `;
 
-    await resend.emails.send({
+    console.log("📧 [DRIVER-REGISTRATION-EMAIL] Tentative envoi à:", driver.profiles.email);
+    
+    const emailResult = await resend.emails.send({
       from: "SoloCab <noreply@solocab.fr>",
       to: [driver.profiles.email],
       subject: subject,
       html: html,
     });
 
-    console.log("[DRIVER-REGISTRATION-EMAIL] Email sent successfully");
+    if (emailResult.error) {
+      console.error("❌❌❌ [DRIVER-REGISTRATION-EMAIL] Resend API error:", emailResult.error);
+      throw new Error(`Resend API error: ${JSON.stringify(emailResult.error)}`);
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
+    console.log("✅✅✅ [DRIVER-REGISTRATION-EMAIL] Email envoyé avec succès, ID:", emailResult.data?.id);
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      emailId: emailResult.data?.id 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error: any) {
-    console.error("[DRIVER-REGISTRATION-EMAIL] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("❌❌❌ [DRIVER-REGISTRATION-EMAIL] ERREUR CRITIQUE:", {
+      error: error.message,
+      stack: error.stack,
+      resendApiKey: Deno.env.get("RESEND_API_KEY") ? "PRESENT" : "MISSING"
+    });
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: "Erreur lors de l'envoi de l'email d'inscription chauffeur"
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

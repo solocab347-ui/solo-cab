@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (profileData) {
-        console.log('📧 Envoi email bienvenue client QR à:', profileData.email);
+        console.log('📧 [CLIENT-QR] Tentative envoi email à:', profileData.email);
         const emailResponse = await serviceClient.functions.invoke('send-email', {
           body: {
             to: profileData.email,
@@ -171,13 +171,20 @@ Deno.serve(async (req) => {
         });
         
         if (emailResponse.error) {
-          console.error('❌ ERREUR envoi email client QR:', emailResponse.error);
+          console.error('❌❌❌ [CLIENT-QR] ERREUR CRITIQUE envoi email:', {
+            error: emailResponse.error,
+            email: profileData.email,
+            data: emailResponse.data
+          });
         } else {
-          console.log('✅ Email bienvenue client QR envoyé avec succès');
+          console.log('✅✅✅ [CLIENT-QR] Email bienvenue envoyé avec succès');
         }
       }
-    } catch (emailError) {
-      console.error('❌ EXCEPTION lors envoi email client QR:', emailError);
+    } catch (emailError: any) {
+      console.error('❌❌❌ [CLIENT-QR] EXCEPTION CRITIQUE lors envoi email:', {
+        error: emailError.message,
+        stack: emailError.stack
+      });
       // Don't block registration if email fails
     }
     return new Response(JSON.stringify({ 
