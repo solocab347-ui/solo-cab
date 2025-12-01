@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { AdminEmailTest } from "./AdminEmailTest";
 
 interface EmailTemplate {
   id: string;
@@ -225,6 +226,9 @@ const AdminEmails = () => {
 
   return (
     <div className="space-y-6">
+      {/* Section de test email pour Alexandre */}
+      <AdminEmailTest />
+      
       <Tabs defaultValue="send" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="send">
