@@ -244,7 +244,7 @@ serve(async (req) => {
 
         if (profileData && courseData) {
           await resend.emails.send({
-            from: "SoloCab <onboarding@resend.dev>",
+            from: "SoloCab <noreply@solocab.fr>",
             to: [profileData.email],
             subject: "Paiement confirmé - Votre course est réservée !",
             html: `
