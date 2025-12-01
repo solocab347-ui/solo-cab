@@ -487,11 +487,12 @@ Scannez le QR code pour réserver`
                     </div>
 
                     {/* Zone centrale - QR Code et Services */}
-                    <div className="flex-1 flex flex-col items-center py-2" style={{ minHeight: 0 }}>
+                    <div className="flex-1 flex flex-col items-center" style={{ minHeight: 0, paddingTop: flyersPerPage === 4 ? "3px" : "8px", paddingBottom: flyersPerPage === 4 ? "2px" : "8px" }}>
                       <div 
                         className="bg-gradient-to-br from-success/10 via-success/5 to-success/10 p-2 rounded-xl shadow-md border-2 border-success/30"
                         style={{
-                          marginBottom: flyersPerPage === 1 ? "2%" : "1.5%"
+                          marginBottom: flyersPerPage === 1 ? "2%" : flyersPerPage === 2 ? "1.5%" : "2px",
+                          padding: flyersPerPage === 4 ? "4px" : "8px"
                         }}
                       >
                         <img 
@@ -499,23 +500,28 @@ Scannez le QR code pour réserver`
                           alt="QR Code"
                           className="object-contain"
                           style={{
-                            width: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(60px, 13vw, 95px)",
-                            height: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(60px, 13vw, 95px)"
+                            width: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(45px, 11vw, 75px)",
+                            height: flyersPerPage === 1 ? "clamp(90px, 22vw, 160px)" : flyersPerPage === 2 ? "clamp(70px, 16vw, 120px)" : "clamp(45px, 11vw, 75px)"
                           }}
                         />
                       </div>
 
                       {/* Call to action en orange */}
-                      <div className="bg-gradient-to-r from-warning via-accent to-warning text-white font-bold px-3 py-1 rounded-full shadow-lg mb-2"
+                      <div className="bg-gradient-to-r from-warning via-accent to-warning text-white font-bold rounded-full shadow-lg"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"
+                          fontSize: flyersPerPage === 1 ? "clamp(0.6rem, 1.4vw, 0.9rem)" : flyersPerPage === 2 ? "clamp(0.5rem, 1.1vw, 0.7rem)" : "clamp(0.35rem, 0.8vw, 0.5rem)",
+                          marginBottom: flyersPerPage === 4 ? "3px" : "8px",
+                          paddingLeft: flyersPerPage === 4 ? "6px" : "12px",
+                          paddingRight: flyersPerPage === 4 ? "6px" : "12px",
+                          paddingTop: flyersPerPage === 4 ? "2px" : "4px",
+                          paddingBottom: flyersPerPage === 4 ? "2px" : "4px"
                         }}
                       >
                         SCANNEZ POUR RESERVER
                       </div>
 
                       {/* Texte de présentation - SERVICES OPTIMISÉS POUR REMPLIR L'ESPACE */}
-                      <div className="flex-1 flex flex-col justify-evenly text-center px-2 w-full" style={{ minHeight: 0 }}>
+                      <div className="flex-1 flex flex-col justify-evenly text-center w-full" style={{ minHeight: 0, paddingLeft: flyersPerPage === 4 ? "3px" : "8px", paddingRight: flyersPerPage === 4 ? "3px" : "8px" }}>
                         {presentation.split('\n').filter(line => line.trim()).map((line, i) => {
                           const isService = line.includes('•');
                           const text = line.replace('•', '').trim();
@@ -526,9 +532,10 @@ Scannez le QR code pour réserver`
                               className={isService ? "text-success font-bold" : "text-foreground font-bold"}
                               style={{
                                 fontSize: isService 
-                                  ? (flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.55rem, 1.2vw, 0.75rem)")
-                                  : (flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.5rem, 1.1vw, 0.7rem)"),
-                                lineHeight: "1.3"
+                                  ? (flyersPerPage === 1 ? "clamp(0.75rem, 1.8vw, 1.1rem)" : flyersPerPage === 2 ? "clamp(0.65rem, 1.5vw, 0.9rem)" : "clamp(0.45rem, 1vw, 0.65rem)")
+                                  : (flyersPerPage === 1 ? "clamp(0.65rem, 1.5vw, 1rem)" : flyersPerPage === 2 ? "clamp(0.55rem, 1.3vw, 0.8rem)" : "clamp(0.4rem, 0.9vw, 0.6rem)"),
+                                lineHeight: flyersPerPage === 4 ? "1.15" : "1.3",
+                                marginBottom: flyersPerPage === 4 ? "1px" : "2px"
                               }}
                             >
                               {isService && '- '}{text}
@@ -540,12 +547,14 @@ Scannez le QR code pour réserver`
 
                     {/* Section contact en bas - SANS EMOJIS */}
                     {(phone || email) && (
-                      <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-lg p-1.5 mt-2 border border-primary/20 text-center"
+                      <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 rounded-lg border border-primary/20 text-center"
                         style={{
-                          fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.2vw, 0.8rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1vw, 0.65rem)" : "clamp(0.4rem, 0.9vw, 0.55rem)"
+                          fontSize: flyersPerPage === 1 ? "clamp(0.55rem, 1.2vw, 0.8rem)" : flyersPerPage === 2 ? "clamp(0.45rem, 1vw, 0.65rem)" : "clamp(0.38rem, 0.85vw, 0.52rem)",
+                          padding: flyersPerPage === 4 ? "3px" : "6px",
+                          marginTop: flyersPerPage === 4 ? "3px" : "8px"
                         }}
                       >
-                        <div className="text-primary">
+                        <div className="text-primary" style={{ lineHeight: flyersPerPage === 4 ? "1.15" : "1.3" }}>
                           {phone && <div>{phone}</div>}
                           {email && <div>{email}</div>}
                         </div>
