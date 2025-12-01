@@ -175,7 +175,7 @@ serve(async (req) => {
         .single();
 
       if (profileData) {
-        console.log('📧 Envoi email bienvenue client vitrine à:', profileData.email);
+        console.log('📧 [CLIENT-VITRINE] Tentative envoi email à:', profileData.email);
         const emailResponse = await supabase.functions.invoke("send-email", {
           body: {
             to: profileData.email,
@@ -187,13 +187,20 @@ serve(async (req) => {
         });
         
         if (emailResponse.error) {
-          console.error('❌ ERREUR envoi email client vitrine:', emailResponse.error);
+          console.error('❌❌❌ [CLIENT-VITRINE] ERREUR CRITIQUE envoi email:', {
+            error: emailResponse.error,
+            email: profileData.email,
+            data: emailResponse.data
+          });
         } else {
-          console.log('✅ Email bienvenue client vitrine envoyé avec succès');
+          console.log('✅✅✅ [CLIENT-VITRINE] Email bienvenue envoyé avec succès');
         }
       }
-    } catch (emailError) {
-      console.error('❌ EXCEPTION lors envoi email client vitrine:', emailError);
+    } catch (emailError: any) {
+      console.error('❌❌❌ [CLIENT-VITRINE] EXCEPTION CRITIQUE lors envoi email:', {
+        error: emailError.message,
+        stack: emailError.stack
+      });
       // Ne pas bloquer l'inscription si l'email échoue
     }
 
