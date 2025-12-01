@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Input } from "@/components/ui/input";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { searchFamousPlaces, famousPlaceToSuggestion } from "@/lib/famousPlaces";
 
 interface AddressSuggestion {
   id: string;
   place_name: string;
   center: [number, number]; // [longitude, latitude]
   text: string;
+  isFamous?: boolean; // Flag to identify famous places
 }
 
 interface AddressAutocompleteProps {
@@ -94,23 +96,60 @@ export const AddressAutocomplete = ({
   }, [showSuggestions]);
 
   const fetchSuggestions = async (query: string) => {
-    if (!query || query.length < 3 || !mapboxToken) {
+    if (!query || query.length < 2) {
       setSuggestions([]);
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          query
-        )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=5&types=address,place,locality`
-      );
+      // Search famous places first (works with 2+ characters)
+      const famousPlaces = searchFamousPlaces(query);
+      const famousSuggestions = famousPlaces.map(place => ({
+        ...famousPlaceToSuggestion(place),
+        isFamous: true
+      }));
 
-      if (!response.ok) throw new Error("Geocoding failed");
+      // If we have famous place matches, prioritize them
+      if (famousSuggestions.length > 0) {
+        // Still fetch Mapbox for additional suggestions, but only if query is long enough
+        if (query.length >= 3 && mapboxToken) {
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+              query
+            )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=3&types=address,place,locality`
+          );
 
-      const data = await response.json();
-      setSuggestions(data.features || []);
+          if (response.ok) {
+            const data = await response.json();
+            const mapboxSuggestions = data.features || [];
+            // Combine: famous places first, then Mapbox results
+            setSuggestions([...famousSuggestions, ...mapboxSuggestions]);
+          } else {
+            // Only show famous places if Mapbox fails
+            setSuggestions(famousSuggestions);
+          }
+        } else {
+          // Query too short for Mapbox, only show famous places
+          setSuggestions(famousSuggestions);
+        }
+      } else if (query.length >= 3 && mapboxToken) {
+        // No famous places matched, use Mapbox normally
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            query
+          )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=5&types=address,place,locality`
+        );
+
+        if (!response.ok) throw new Error("Geocoding failed");
+
+        const data = await response.json();
+        setSuggestions(data.features || []);
+      } else {
+        // Query too short and no famous places
+        setSuggestions([]);
+      }
+
       setShowSuggestions(true);
     } catch (error) {
       console.error("Error fetching address suggestions:", error);
@@ -147,7 +186,7 @@ export const AddressAutocomplete = ({
   };
 
   const renderDropdown = () => {
-    if (!showSuggestions || (!suggestions.length && !isLoading && inputValue.length < 3)) {
+    if (!showSuggestions || (!suggestions.length && !isLoading && inputValue.length < 2)) {
       return null;
     }
 
@@ -178,9 +217,16 @@ export const AddressAutocomplete = ({
                   e.stopPropagation();
                   handleSelectSuggestion(suggestion);
                 }}
-                className="w-full text-left px-4 py-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 group"
+                className={cn(
+                  "w-full text-left px-4 py-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-start gap-3 group",
+                  suggestion.isFamous && "bg-primary/5 border border-primary/20"
+                )}
               >
-                <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary group-hover:text-accent-foreground" />
+                {suggestion.isFamous ? (
+                  <Star className="w-5 h-5 mt-0.5 flex-shrink-0 text-amber-500 fill-amber-500 group-hover:text-amber-600" />
+                ) : (
+                  <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary group-hover:text-accent-foreground" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate text-foreground group-hover:text-accent-foreground">
                     {suggestion.text}
@@ -191,7 +237,7 @@ export const AddressAutocomplete = ({
                 </div>
               </button>
             ))
-          ) : inputValue.length >= 3 ? (
+          ) : inputValue.length >= 2 ? (
             <div className="px-4 py-4 text-center">
               <p className="text-sm text-muted-foreground">Aucune adresse trouvée</p>
               <p className="text-xs text-muted-foreground mt-1">Essayez de modifier votre recherche</p>
