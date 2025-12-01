@@ -113,10 +113,51 @@ Deno.serve(async (req) => {
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 7); // Valid for 7 days
 
+    // Synchroniser le compteur avec les numéros existants avant de créer le devis
+    console.log('🔍 Vérification de la synchronisation du compteur...');
+    
+    // Récupérer le numéro le plus élevé existant pour ce driver
+    const { data: maxDevis } = await supabaseClient
+      .from('devis')
+      .select('quote_number')
+      .eq('driver_id', driver_id)
+      .like('quote_number', 'RES-%')
+      .order('quote_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    let maxNumber = 0;
+    if (maxDevis?.quote_number) {
+      const match = maxDevis.quote_number.match(/RES-(\d+)/);
+      if (match) {
+        maxNumber = parseInt(match[1]);
+        console.log(`📊 Numéro le plus élevé existant: ${maxNumber}`);
+      }
+    }
+    
+    // Récupérer le compteur actuel du driver
+    const { data: driverData } = await supabaseClient
+      .from('drivers')
+      .select('reservation_counter')
+      .eq('id', driver_id)
+      .single();
+    
+    const currentCounter = driverData?.reservation_counter || 0;
+    console.log(`📊 Compteur actuel: ${currentCounter}`);
+    
+    // Si le compteur est inférieur au max existant, le synchroniser
+    if (currentCounter < maxNumber) {
+      console.log(`⚠️ Compteur désynchronisé! Mise à jour de ${currentCounter} vers ${maxNumber}`);
+      await supabaseClient
+        .from('drivers')
+        .update({ reservation_counter: maxNumber })
+        .eq('id', driver_id);
+    }
+
     // Retry mechanism for duplicate quote numbers
     let devis = null;
     let lastError = null;
-    const maxRetries = 10;
+    const maxRetries = 5;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
