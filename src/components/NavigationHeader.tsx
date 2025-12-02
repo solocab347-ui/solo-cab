@@ -87,7 +87,7 @@ export const NavigationHeader = ({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2 safe-area-top ${className}`}>
       {showBack && (
         <Button
           variant="ghost"
