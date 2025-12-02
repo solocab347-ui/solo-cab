@@ -132,9 +132,20 @@ serve(async (req) => {
           await supabaseClient.functions.invoke("send-driver-registration-email", {
             body: { driver_id: driverId }
           });
-          console.log("[STRIPE-WEBHOOK] Registration email sent");
+          console.log("[STRIPE-WEBHOOK] Registration email sent to driver");
         } catch (emailError) {
           console.error("[STRIPE-WEBHOOK] Error sending registration email:", emailError);
+          // Ne pas bloquer le webhook si l'email échoue
+        }
+
+        // NOUVEAU: Envoyer email à l'admin pour notification de dossier en attente
+        try {
+          await supabaseClient.functions.invoke("send-admin-driver-pending", {
+            body: { driver_id: driverId }
+          });
+          console.log("[STRIPE-WEBHOOK] Admin notification email sent");
+        } catch (adminEmailError) {
+          console.error("[STRIPE-WEBHOOK] Error sending admin notification:", adminEmailError);
           // Ne pas bloquer le webhook si l'email échoue
         }
 
