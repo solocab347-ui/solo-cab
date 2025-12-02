@@ -1504,6 +1504,41 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: undefined
       }
+      admin_get_all_driver_statistics: {
+        Args: never
+        Returns: {
+          accepted_quotes: number | null
+          cancelled_courses: number | null
+          completed_courses: number | null
+          confirmed_courses: number | null
+          courses_today: number | null
+          driver_id: string | null
+          exclusive_clients: number | null
+          free_clients: number | null
+          in_progress_courses: number | null
+          last_updated: string | null
+          paid_invoices: number | null
+          pending_courses: number | null
+          pending_invoices: number | null
+          pending_quotes: number | null
+          rejected_quotes: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_clients: number | null
+          total_courses: number | null
+          total_invoices: number | null
+          total_quotes: number | null
+          total_revenue: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "driver_statistics"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       calculate_course_price:
         | {
             Args: {
@@ -1580,6 +1615,41 @@ export type Database = {
         Returns: number
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_my_driver_statistics: {
+        Args: never
+        Returns: {
+          accepted_quotes: number | null
+          cancelled_courses: number | null
+          completed_courses: number | null
+          confirmed_courses: number | null
+          courses_today: number | null
+          driver_id: string | null
+          exclusive_clients: number | null
+          free_clients: number | null
+          in_progress_courses: number | null
+          last_updated: string | null
+          paid_invoices: number | null
+          pending_courses: number | null
+          pending_invoices: number | null
+          pending_quotes: number | null
+          rejected_quotes: number | null
+          revenue_this_month: number | null
+          revenue_this_week: number | null
+          revenue_today: number | null
+          total_clients: number | null
+          total_courses: number | null
+          total_invoices: number | null
+          total_quotes: number | null
+          total_revenue: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "driver_statistics"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_or_create_conversation: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
