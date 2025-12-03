@@ -18,7 +18,8 @@ import {
   QrCode,
   User,
   Sparkles,
-  Menu
+  Menu,
+  Share2
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -33,6 +34,7 @@ import ClientQRScanner from "@/components/client/ClientQRScanner";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
+import ShareButtons from "@/components/ShareButtons";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
@@ -301,7 +303,14 @@ const ClientDashboard = () => {
 
             {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
               <Card className="p-4 md:p-6">
-                <h2 className="text-lg md:text-xl font-bold mb-4">Mon Chauffeur</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg md:text-xl font-bold">Mon Chauffeur</h2>
+                  <ShareButtons
+                    title={`Découvrez ${clientProfile.client.drivers.profiles?.full_name || "mon chauffeur"} sur SoloCab`}
+                    message={`Je vous recommande mon chauffeur VTC ${clientProfile.client.drivers.profiles?.full_name || ""} sur SoloCab ! Un service de qualité, ponctuel et professionnel. 🚗✨`}
+                    url={`${window.location.origin}/chauffeur/${clientProfile.client.driver_id}`}
+                  />
+                </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   {clientProfile.client.drivers.profiles?.profile_photo_url ? (
                     <img
