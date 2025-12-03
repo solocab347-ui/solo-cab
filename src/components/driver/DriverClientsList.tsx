@@ -158,46 +158,89 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteClientId) return;
+    if (!deleteClientId || !deleteClientData) return;
 
     try {
-      const isExclusive = deleteClientData?.is_exclusive;
+      const userId = deleteClientData.user_id;
 
-      if (isExclusive && deleteClientData?.driver_id === driverId) {
-        // Client exclusif : devient libre
-        const { error } = await supabase
-          .from("clients")
-          .update({
-            is_exclusive: false,
-            driver_id: null,
-            driver_ids: [],
-          })
-          .eq("id", deleteClientId);
+      // Supprimer toutes les données liées au client
+      // 1. Supprimer les factures
+      await supabase
+        .from("factures")
+        .delete()
+        .eq("client_id", deleteClientId);
 
-        if (error) throw error;
-        toast.success("Client retiré - Il devient maintenant un client libre");
-      } else {
-        // Client libre : retirer de driver_ids
-        const currentDriverIds = deleteClientData?.driver_ids || [];
-        const updatedDriverIds = currentDriverIds.filter((id: string) => id !== driverId);
+      // 2. Supprimer les devis
+      await supabase
+        .from("devis")
+        .delete()
+        .eq("client_id", deleteClientId);
 
-        const { error } = await supabase
-          .from("clients")
-          .update({
-            driver_ids: updatedDriverIds,
-          })
-          .eq("id", deleteClientId);
+      // 3. Supprimer les courses
+      await supabase
+        .from("courses")
+        .delete()
+        .eq("client_id", deleteClientId);
 
-        if (error) throw error;
-        toast.success("Client retiré de votre liste");
+      // 4. Supprimer les conversations et messages
+      const { data: conversations } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`);
+
+      if (conversations && conversations.length > 0) {
+        const conversationIds = conversations.map(c => c.id);
+        await supabase
+          .from("messages")
+          .delete()
+          .in("conversation_id", conversationIds);
+        
+        await supabase
+          .from("conversations")
+          .delete()
+          .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`);
       }
+
+      // 5. Supprimer les notifications
+      await supabase
+        .from("notifications")
+        .delete()
+        .eq("user_id", userId);
+
+      // 6. Supprimer les préférences de notification
+      await supabase
+        .from("notification_preferences")
+        .delete()
+        .eq("user_id", userId);
+
+      // 7. Supprimer le client
+      const { error: clientError } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", deleteClientId);
+
+      if (clientError) throw clientError;
+
+      // 8. Supprimer le profil
+      await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      // 9. Supprimer les roles
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      toast.success("Client supprimé définitivement de votre base de données");
 
       setDeleteClientId(null);
       setDeleteClientData(null);
       fetchClients();
     } catch (error: any) {
       console.error("Error deleting client:", error);
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression du client");
     }
   };
 
@@ -503,32 +546,26 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
       <AlertDialog open={!!deleteClientId} onOpenChange={(open) => !open && setDeleteClientId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Retirer ce client ?
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Supprimer définitivement ce client ?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              {deleteClientData?.is_exclusive ? (
-                <>
-                  <p className="font-medium text-foreground">
-                    ⚠️ Ce client est un client exclusif
-                  </p>
-                  <p>
-                    En le retirant, il deviendra un <strong>client libre</strong> et pourra choisir
-                    d'autres chauffeurs sur la plateforme.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Vous ne pourrez plus le récupérer automatiquement.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Ce client sera retiré de votre liste. Il pourra toujours réserver avec
-                    d'autres chauffeurs.
-                  </p>
-                </>
-              )}
+              <p className="font-medium text-destructive">
+                ⚠️ ATTENTION : Action irréversible
+              </p>
+              <p>
+                Cette action supprimera <strong>définitivement</strong> ce client et toutes ses données :
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                <li>Toutes les courses associées</li>
+                <li>Tous les devis et factures</li>
+                <li>Toutes les conversations et messages</li>
+                <li>Le compte utilisateur</li>
+              </ul>
+              <p className="text-destructive font-medium mt-3">
+                Cette action ne peut pas être annulée !
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -537,7 +574,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirmer le retrait
+              Supprimer définitivement
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
