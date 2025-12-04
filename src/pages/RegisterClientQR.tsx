@@ -46,17 +46,10 @@ const RegisterClientQR = () => {
     try {
       setLoadingDriver(true);
       
-      // Récupérer les informations du QR code et du chauffeur
-      // SÉCURITÉ: SELECT explicite excluant scans_count (données sensibles)
+      // Récupérer les informations du QR code
       const { data: qrData, error: qrError } = await supabase
         .from("qr_codes")
-        .select(`
-          id,
-          driver_id,
-          code,
-          is_active,
-          qr_code_image
-        `)
+        .select(`id, driver_id, code, is_active, qr_code_image`)
         .eq("id", qrCodeId)
         .eq("is_active", true)
         .maybeSingle();
@@ -67,70 +60,56 @@ const RegisterClientQR = () => {
         return;
       }
 
-      // Récupérer les infos complètes du driver avec le profile
+      // Utiliser la fonction RPC pour obtenir les données du chauffeur (bypass RLS)
       const { data: driverData, error: driverError } = await supabase
-        .from("drivers")
-        .select(`
-          id,
-          user_id,
-          company_name,
-          bio,
-          service_description,
-          vehicle_model,
-          vehicle_brand,
-          vehicle_color,
-          vehicle_year,
-          vehicle_plate,
-          vehicle_equipment,
-          services_offered,
-          vehicle_photos,
-          gallery_photos,
-          card_photo_url,
-          rating,
-          total_rides,
-          status,
-          display_driver_name,
-          display_company_name
-        `)
-        .eq("id", qrData.driver_id)
-        .single();
+        .rpc("get_public_driver_profile", { driver_id_param: qrData.driver_id });
 
-      if (driverError || !driverData) {
+      if (driverError || !driverData || driverData.length === 0) {
+        console.error("Erreur driver RPC:", driverError);
         toast.error("Chauffeur introuvable");
         navigate("/");
         return;
       }
 
-      // Récupérer le profil du chauffeur
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("full_name, profile_photo_url")
-        .eq("id", driverData.user_id)
+      const driver = driverData[0];
+
+      // Récupérer card_photo_url directement depuis la table drivers (policy publique existe)
+      const { data: driverExtra, error: extraError } = await supabase
+        .from("drivers")
+        .select("card_photo_url, status")
+        .eq("id", qrData.driver_id)
         .single();
 
+      if (extraError) {
+        console.error("Erreur driver extra:", extraError);
+      }
+
+      // Utiliser la fonction RPC pour obtenir le profil (bypass RLS)
+      const { data: profileData, error: profileError } = await supabase
+        .rpc("get_public_profile_info", { user_id_param: driver.user_id });
+
       if (profileError) {
-        console.error("Erreur profil:", profileError);
+        console.error("Erreur profil RPC:", profileError);
       }
 
-      // Combiner les données - PRIORITÉ à card_photo_url
-      const completeDriverInfo = {
-        ...driverData,
-        profile: profileData || {},
-        // Utiliser card_photo_url en priorité, sinon profile_photo_url
-        display_photo: driverData.card_photo_url || profileData?.profile_photo_url
-      };
+      const profile = profileData && profileData.length > 0 ? profileData[0] : null;
 
-      if (qrError || !qrData) {
-        toast.error("QR code invalide ou expiré");
-        navigate("/");
-        return;
-      }
-
-      if (completeDriverInfo.status !== "validated") {
+      // Vérifier que le chauffeur est validé
+      if (driverExtra?.status !== "validated") {
         toast.error("Ce chauffeur n'est pas encore validé");
         navigate("/");
         return;
       }
+
+      // Combiner les données - PRIORITÉ à card_photo_url
+      const completeDriverInfo = {
+        ...driver,
+        card_photo_url: driverExtra?.card_photo_url,
+        status: driverExtra?.status,
+        profile: profile || {},
+        // Photo: priorité card_photo_url > profile_photo_url (from profile)
+        display_photo: driverExtra?.card_photo_url || profile?.profile_photo_url
+      };
 
       setDriverInfo(completeDriverInfo);
     } catch (error) {
