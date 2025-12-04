@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Require a secret admin token from environment
     const ADMIN_INIT_SECRET = Deno.env.get('ADMIN_INIT_SECRET');
     
     if (!ADMIN_INIT_SECRET) {
@@ -30,7 +29,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Creating admin account with secure token validation...');
+    console.log('Creating admin account...');
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -43,78 +42,108 @@ Deno.serve(async (req) => {
       }
     );
 
-    const adminEmail = 'admin@solocab.fr';
-    // Generate a strong random password
-    const adminPassword = crypto.randomUUID() + '-' + crypto.randomUUID();
+    const adminEmail = 'solocab347@gmail.com';
+    // Generate a password under 72 characters (bcrypt limit)
+    const adminPassword = crypto.randomUUID().replace(/-/g, '');
 
-    // Check if admin already exists
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-    const adminExists = existingUser?.users.find(u => u.email === adminEmail);
-
+    // List all users
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    console.log('Found users:', existingUsers?.users?.length);
+    
+    // Check if new admin already exists
+    const existingAdmin = existingUsers?.users.find(u => u.email === adminEmail);
+    
     let userId: string;
 
-    if (adminExists) {
-      console.log('Admin user already exists, updating password...');
-      userId = adminExists.id;
+    if (existingAdmin) {
+      console.log('Admin with new email already exists, updating password...');
+      userId = existingAdmin.id;
       
-      // Update password
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         password: adminPassword
       });
-    } else {
-      // Create new admin user
-      console.log('Creating new admin user...');
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: adminEmail,
-        password: adminPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: 'Administrateur SoloCab'
-        }
-      });
-
-      if (createError) {
-        console.error('Error creating admin user:', createError);
-        throw createError;
+      
+      if (updateError) {
+        console.error('Error updating password:', updateError);
+        throw updateError;
       }
+    } else {
+      // Find old admin and update email+password
+      const oldAdmin = existingUsers?.users.find(u => u.email === 'admin@solocab.fr');
+      
+      if (oldAdmin) {
+        console.log('Updating old admin email and password...');
+        userId = oldAdmin.id;
+        
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          email: adminEmail,
+          password: adminPassword,
+          email_confirm: true
+        });
+        
+        if (updateError) {
+          console.error('Error updating old admin:', updateError);
+          throw updateError;
+        }
+        
+        // Update profile email
+        await supabaseAdmin.from('profiles').update({ email: adminEmail }).eq('id', userId);
+        
+      } else {
+        // Create new admin
+        console.log('Creating new admin user...');
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: adminEmail,
+          password: adminPassword,
+          email_confirm: true,
+          user_metadata: {
+            full_name: 'Administrateur SoloCab'
+          }
+        });
 
-      userId = newUser.user!.id;
+        if (createError) {
+          console.error('Error creating admin user:', createError);
+          throw createError;
+        }
+
+        userId = newUser.user!.id;
+        
+        // Create profile
+        console.log('Creating admin profile...');
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .upsert({
+            id: userId,
+            email: adminEmail,
+            full_name: 'Administrateur SoloCab',
+            phone: '+33600000000',
+            roles: ['admin']
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          throw profileError;
+        }
+
+        // Create admin role
+        console.log('Creating admin role...');
+        const { error: roleError } = await supabaseAdmin
+          .from('user_roles')
+          .upsert({
+            user_id: userId,
+            role: 'admin'
+          }, {
+            onConflict: 'user_id,role'
+          });
+
+        if (roleError) {
+          console.error('Error creating role:', roleError);
+          throw roleError;
+        }
+      }
     }
 
-    // Upsert profile
-    console.log('Upserting admin profile...');
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .upsert({
-        id: userId,
-        email: adminEmail,
-        full_name: 'Administrateur SoloCab',
-        phone: '+33600000000',
-        roles: ['admin']
-      });
-
-    if (profileError) {
-      console.error('Error upserting profile:', profileError);
-      throw profileError;
-    }
-
-    // Upsert admin role
-    console.log('Upserting admin role...');
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role: 'admin'
-      }, {
-        onConflict: 'user_id,role'
-      });
-
-    if (roleError) {
-      console.error('Error upserting role:', roleError);
-      throw roleError;
-    }
-
-    console.log('Admin account created/updated successfully!');
+    console.log('Admin account ready!');
 
     return new Response(
       JSON.stringify({
