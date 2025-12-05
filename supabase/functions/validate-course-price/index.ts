@@ -51,7 +51,7 @@ serve(async (req) => {
     // Récupérer les paramètres du chauffeur
     const { data: driver, error: driverError } = await supabase
       .from("drivers")
-      .select("base_fare, per_km_rate, hourly_rate, tva_rate, tva_included, evening_surcharge, weekend_surcharge")
+      .select("base_fare, per_km_rate, hourly_rate, tva_rate, tva_included, evening_surcharge, weekend_surcharge, minimum_price")
       .eq("id", driver_id)
       .single();
 
@@ -64,7 +64,7 @@ serve(async (req) => {
     let calculation: PriceCalculation;
 
     if (use_hourly_rate) {
-      // Mise à disposition (horaire)
+      // Mise à disposition (horaire) - PAS de prix minimum
       if (!duration_minutes) {
         throw new Error("Duration required for hourly rate");
       }
@@ -130,6 +130,7 @@ serve(async (req) => {
 
       const baseFare = driver.base_fare || 0;
       const perKmRate = driver.per_km_rate || 0;
+      const minimumPrice = driver.minimum_price || 0;
       const tvaRate = 10; // TVA 10% pour facturation au km
 
       let subtotal: number;
@@ -148,6 +149,17 @@ serve(async (req) => {
         base_price = baseFare;
         distance_price = distance_km * perKmRate;
         subtotal = base_price + distance_price;
+      }
+
+      // APPLIQUER LE PRIX MINIMUM (uniquement pour courses au km)
+      if (minimumPrice > 0 && subtotal < minimumPrice) {
+        // Ajuster pour atteindre le prix minimum
+        distance_price = minimumPrice - base_price;
+        if (distance_price < 0) {
+          distance_price = 0;
+          base_price = minimumPrice;
+        }
+        subtotal = minimumPrice;
       }
 
       // Augmentations soirée/weekend
