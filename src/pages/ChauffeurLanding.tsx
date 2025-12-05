@@ -34,6 +34,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import SocialLinks from "@/components/SocialLinks";
+import CountdownTimer from "@/components/CountdownTimer";
 
 const ChauffeurLanding = () => {
   const [revenue, setRevenue] = useState([5000]);
@@ -44,10 +45,10 @@ const ChauffeurLanding = () => {
   }, []);
 
   // Check if promo is active (jusqu'au 31 décembre 2025)
+  const promoEndDate = new Date('2025-12-31T23:59:59');
   const isPromoActive = () => {
     const now = new Date();
-    const endDate = new Date('2025-12-31T23:59:59');
-    return now <= endDate;
+    return now <= promoEndDate;
   };
 
   const calculateCosts = (monthlyRevenue: number) => {
@@ -155,7 +156,7 @@ const ChauffeurLanding = () => {
                   <div className="absolute inset-0 bg-gradient-premium opacity-10 blur-xl"></div>
                   <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium relative z-10">
                     <Sparkles className="w-3 h-3 mr-1" />
-                    OFFRE DÉCEMBRE 2025 - Valable tout le mois
+                    OFFRE DÉCEMBRE 2025
                   </Badge>
                   <div className="relative z-10">
                     <div className="flex items-center justify-center gap-4 mb-3">
@@ -169,6 +170,12 @@ const ChauffeurLanding = () => {
                     <p className="text-sm text-muted-foreground text-center mb-4">
                       Profitez de 40€ de réduction sur votre premier mois d'abonnement
                     </p>
+                    
+                    {/* Countdown Timer */}
+                    <div className="my-6">
+                      <CountdownTimer targetDate={promoEndDate} />
+                    </div>
+                    
                     <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                       <p className="text-sm flex items-center gap-2">
                         <Check className="w-4 h-4 text-success" />
