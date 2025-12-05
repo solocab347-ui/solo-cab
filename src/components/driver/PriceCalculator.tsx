@@ -410,7 +410,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                     className="w-full justify-between bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20"
                   >
                     {selectedClientId
-                      ? clients.find((client) => client.id === selectedClientId)?.profiles.full_name
+                      ? clients.find((client) => client.id === selectedClientId)?.profiles?.full_name || "Client sélectionné"
                       : "Rechercher un client..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -420,10 +420,10 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                     <CommandInput placeholder="Taper le nom du client..." className="h-9" />
                     <CommandEmpty>Aucun client trouvé.</CommandEmpty>
                     <CommandGroup className="max-h-80 overflow-auto">
-                      {clients.map((client) => (
+                      {clients.filter(client => client.profiles).map((client) => (
                         <CommandItem
                           key={client.id}
-                          value={`${client.profiles.full_name} ${client.profiles.email}`}
+                          value={`${client.profiles?.full_name || ""} ${client.profiles?.email || ""}`}
                           onSelect={() => {
                             setSelectedClientId(client.id);
                             setClientSearchOpen(false);
@@ -436,8 +436,8 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
                             }`}
                           />
                           <div className="flex flex-col">
-                            <span className="font-medium">{client.profiles.full_name}</span>
-                            <span className="text-xs text-muted-foreground">{client.profiles.email}</span>
+                            <span className="font-medium">{client.profiles?.full_name || "Client sans nom"}</span>
+                            <span className="text-xs text-muted-foreground">{client.profiles?.email || ""}</span>
                           </div>
                         </CommandItem>
                       ))}

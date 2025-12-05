@@ -653,6 +653,7 @@ export type Database = {
           is_demo_account: boolean | null
           license_number: string
           max_passengers: number
+          minimum_price: number | null
           per_km_rate: number | null
           public_profile_enabled: boolean | null
           quote_counter: number | null
@@ -714,6 +715,7 @@ export type Database = {
           is_demo_account?: boolean | null
           license_number: string
           max_passengers?: number
+          minimum_price?: number | null
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -775,6 +777,7 @@ export type Database = {
           is_demo_account?: boolean | null
           license_number?: string
           max_passengers?: number
+          minimum_price?: number | null
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null

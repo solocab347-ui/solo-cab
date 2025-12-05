@@ -85,6 +85,7 @@ const DriverDashboard = () => {
   const [vehicleYear, setVehicleYear] = useState("");
   const [eveningSurcharge, setEveningSurcharge] = useState("0");
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
+  const [minimumPrice, setMinimumPrice] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
 
@@ -137,6 +138,7 @@ const DriverDashboard = () => {
     setVehicleYear(driver.vehicle_year?.toString() || "");
     setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
     setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
+    setMinimumPrice((driver as any).minimum_price?.toString() || "0");
     setProfilePhotoUrl(driverProfile.profile_photo_url || null);
     setCardPhotoUrl(driver.card_photo_url || null);
     setVehiclePhotos(driver.vehicle_photos || []);
@@ -244,6 +246,7 @@ const DriverDashboard = () => {
         services_offered: servicesOffered,
         evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
+        minimum_price: minimumPrice ? parseFloat(minimumPrice) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
         card_photo_url: cardPhotoUrl, // Ajouter la photo de carte ici aussi
@@ -599,6 +602,20 @@ const DriverDashboard = () => {
                     required
                   />
                   <p className="text-xs text-white">Pour les mises à disposition (obligatoire)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="minimumPrice" className="text-white">Prix minimum par course (€)</Label>
+                  <Input
+                    id="minimumPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={minimumPrice}
+                    onChange={(e) => setMinimumPrice(e.target.value)}
+                    placeholder="15.00"
+                  />
+                  <p className="text-xs text-white">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
                 </div>
               </div>
 
