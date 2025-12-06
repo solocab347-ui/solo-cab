@@ -142,7 +142,7 @@ serve(async (req) => {
       .from("courses")
       .select(`
         *,
-        devis!inner(id, amount, base_price, distance_price, time_price, status, quote_number, discount_amount, promo_code),
+        devis(id, amount, base_price, distance_price, time_price, status, quote_number, discount_amount, promo_code, created_at),
         clients!inner(user_id)
       `)
       .eq("id", course_id)
@@ -151,9 +151,41 @@ serve(async (req) => {
     if (courseError) throw courseError;
     if (!course) throw new Error("Course not found");
 
-    // Get accepted devis
-    const acceptedDevis = course.devis.find((d: any) => d.status === "accepted");
-    if (!acceptedDevis) throw new Error("No accepted devis found for this course");
+    // Get accepted devis or the most recent one
+    let acceptedDevis = course.devis?.find((d: any) => d.status === "accepted");
+    
+    // ROBUSTESSE: Si aucun devis n'est accepté, accepter automatiquement le plus récent
+    if (!acceptedDevis && course.devis && course.devis.length > 0) {
+      console.log("[CREATE-FACTURE-AUTO] ⚠️ No accepted devis, auto-accepting most recent");
+      
+      // Trier par date de création (le plus récent en premier)
+      const sortedDevis = course.devis.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const mostRecentDevis = sortedDevis[0];
+      
+      // Accepter automatiquement le devis le plus récent
+      const { error: updateError } = await supabase
+        .from("devis")
+        .update({ 
+          status: "accepted", 
+          accepted_at: new Date().toISOString() 
+        })
+        .eq("id", mostRecentDevis.id);
+      
+      if (updateError) {
+        console.error("[CREATE-FACTURE-AUTO] Error auto-accepting devis:", updateError);
+        throw new Error("Impossible d'accepter le devis automatiquement");
+      }
+      
+      // Utiliser ce devis
+      acceptedDevis = { ...mostRecentDevis, status: "accepted" };
+      console.log("[CREATE-FACTURE-AUTO] ✅ Auto-accepted devis:", acceptedDevis.id);
+    }
+    
+    if (!acceptedDevis) {
+      throw new Error("Aucun devis trouvé pour cette course. Veuillez d'abord créer un devis.");
+    }
 
     // Use the SAME reservation number as the devis for the invoice
     // This ensures: Course RES-001 → Devis RES-001 → Facture RES-001 (logical sequence)
