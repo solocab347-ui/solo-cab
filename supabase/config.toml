@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.send-admin-driver-pending]
 verify_jwt = false
+
+[functions.reset-test-password]
+verify_jwt = false
