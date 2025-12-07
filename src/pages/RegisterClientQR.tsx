@@ -12,6 +12,8 @@ import { Loader2, Star, Car, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeAddress } from "@/lib/inputSanitizer";
 import { getServiceIcon, getServiceLabel, getEquipmentIcon, getEquipmentLabel } from "@/lib/vehicleEquipmentDisplay";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 
 const RegisterClientQR = () => {
   const navigate = useNavigate();
@@ -203,16 +205,23 @@ const RegisterClientQR = () => {
     return null;
   }
 
+  const { t } = useLocale();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-muted/10 to-background flex items-center justify-center p-4">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+      
       <Card className="w-full max-w-2xl p-8 shadow-xl border-2">
         {!showRegistrationForm ? (
           // Affichage du profil du chauffeur
           <div className="space-y-8">
             {/* En-tête élégant */}
             <div className="text-center space-y-2 pb-6 border-b">
-              <h1 className="text-3xl font-bold text-foreground">Rejoignez votre chauffeur VTC</h1>
-              <p className="text-muted-foreground text-base">Découvrez le profil de votre chauffeur</p>
+              <h1 className="text-3xl font-bold text-foreground">{t('register.joinDriver')}</h1>
+              <p className="text-muted-foreground text-base">{t('register.discoverDriver')}</p>
             </div>
 
             {/* Carte profil chauffeur - Design sobre et professionnel */}
@@ -348,26 +357,26 @@ const RegisterClientQR = () => {
               className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary via-primary to-primary/90 hover:opacity-90 shadow-lg hover:shadow-xl transition-all"
               size="lg"
             >
-              S'inscrire avec ce chauffeur
+              {t('register.withThisDriver')}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground leading-relaxed">
-              En vous inscrivant, vous deviendrez client exclusif de ce chauffeur
+              {t('register.exclusiveNote')}
             </p>
           </div>
         ) : (
           // Formulaire d'inscription
           <div className="space-y-6">
             <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Inscription Client</h1>
+              <h1 className="text-2xl font-bold mb-2">{t('register.title')}</h1>
               <p className="text-muted-foreground">
-                Complétez vos informations pour finaliser l'inscription
+                {t('register.subtitle')}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="fullName">Nom complet</Label>
+                <Label htmlFor="fullName">{t('register.fullName')}</Label>
                 <Input
                   id="fullName"
                   required
@@ -377,7 +386,7 @@ const RegisterClientQR = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -388,7 +397,7 @@ const RegisterClientQR = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="password">Mot de passe</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -397,7 +406,7 @@ const RegisterClientQR = () => {
                     minLength={6}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Minimum 6 caractères"
+                    placeholder={t('auth.passwordMinLength')}
                     className="pr-10"
                   />
                   <button
@@ -410,7 +419,7 @@ const RegisterClientQR = () => {
                 </div>
               </div>
               <div>
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -419,7 +428,7 @@ const RegisterClientQR = () => {
                     minLength={6}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="Confirmer le mot de passe"
+                    placeholder={t('auth.confirmPassword')}
                     className="pr-10"
                   />
                   <button
@@ -431,11 +440,11 @@ const RegisterClientQR = () => {
                   </button>
                 </div>
                 {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="text-sm text-destructive mt-1">Les mots de passe ne correspondent pas</p>
+                  <p className="text-sm text-destructive mt-1">{t('auth.passwordMismatch')}</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">{t('register.phone')}</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -445,14 +454,14 @@ const RegisterClientQR = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="address">Adresse de mon domicile</Label>
+                <Label htmlFor="address">{t('register.address')}</Label>
                 <AddressAutocomplete
                   value={formData.address}
                   onChange={(address) => setFormData({ ...formData, address })}
                   placeholder="Commencez à taper votre adresse..."
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Cette adresse facilitera la réservation de vos courses
+                  {t('register.addressHint')}
                 </p>
               </div>
 
@@ -464,7 +473,7 @@ const RegisterClientQR = () => {
                   className="flex-1"
                   disabled={loading}
                 >
-                  Retour
+                  {t('common.back')}
                 </Button>
                 <Button 
                   type="submit" 
@@ -474,10 +483,10 @@ const RegisterClientQR = () => {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Inscription...
+                      {t('register.submitting')}
                     </>
                   ) : (
-                    "S'inscrire"
+                    t('register.submit')
                   )}
                 </Button>
               </div>

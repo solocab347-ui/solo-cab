@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NavigationHeader } from "@/components/NavigationHeader";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -451,6 +452,7 @@ const ClientDashboard = () => {
               >
                 <Plus className="w-4 h-4" />
               </Button>
+              <LanguageSelector variant="compact" />
               <NotificationBell />
               <Button variant="ghost" size="icon" onClick={signOut} className="flex-shrink-0">
                 <LogOut className="w-4 h-4 md:w-5 md:h-5" />
