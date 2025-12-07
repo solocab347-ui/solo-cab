@@ -1757,6 +1757,16 @@ export type Database = {
           working_sectors: string[]
         }[]
       }
+      validate_invitation_token: {
+        Args: { token_value: string }
+        Returns: {
+          expires_at: string
+          id: string
+          skip_documents: boolean
+          token: string
+          used: boolean
+        }[]
+      }
       verify_client_driver_association: {
         Args: { _client_id: string; _driver_id: string }
         Returns: boolean

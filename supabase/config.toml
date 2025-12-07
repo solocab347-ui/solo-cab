@@ -82,16 +82,22 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-driver-client-registered]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-driver-course-request]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-driver-devis-accepted]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-admin-driver-pending]
-verify_jwt = false
+verify_jwt = true
 
-[functions.reset-test-password]
-verify_jwt = false
+[functions.create-driver-subscription]
+verify_jwt = true
+
+[functions.create-test-driver]
+verify_jwt = true
+
+[functions.create-alexandre-test-data]
+verify_jwt = true

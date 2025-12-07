@@ -16,6 +16,18 @@ serve(async (req) => {
   }
 
   try {
+    // Validate internal service call with secret header
+    const internalSecret = req.headers.get("x-internal-secret");
+    const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!internalSecret || internalSecret !== expectedSecret) {
+      console.error("❌ Unauthorized access attempt to email function");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { driver_id } = await req.json();
 
     if (!driver_id) {
