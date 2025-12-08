@@ -18,6 +18,7 @@ import { useLocale } from "@/hooks/useLocale";
 const RegisterClientQR = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useLocale(); // Hook appelé en haut du composant (règle des hooks)
   const qrCodeId = searchParams.get("qr") || searchParams.get("qr_code_id");
   
   const [loading, setLoading] = useState(false);
@@ -204,8 +205,6 @@ const RegisterClientQR = () => {
   if (!driverInfo) {
     return null;
   }
-
-  const { t } = useLocale();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-muted/10 to-background flex items-center justify-center p-4">
