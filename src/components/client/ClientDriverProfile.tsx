@@ -27,6 +27,7 @@ interface DriverProfile {
   bio: string | null;
   service_description: string | null;
   max_passengers: number;
+  public_profile_enabled: boolean | null;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
@@ -77,6 +78,7 @@ const ClientDriverProfile = () => {
           bio,
           service_description,
           max_passengers,
+          public_profile_enabled,
           profiles:user_id(full_name, profile_photo_url)
         `)
         .eq("id", client.driver_id)
@@ -91,6 +93,19 @@ const ClientDriverProfile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Générer le lien de partage du chauffeur
+  const getDriverShareUrl = (): string => {
+    if (!driver) return window.location.href;
+    
+    // Si le chauffeur a un profil public, utiliser le lien public
+    if (driver.public_profile_enabled) {
+      return `${window.location.origin}/chauffeur/${driver.id}`;
+    }
+    
+    // Sinon, utiliser le lien de la page actuelle (mais ce ne sera pas accessible publiquement)
+    return `${window.location.origin}/chauffeur/${driver.id}`;
   };
 
   if (loading) {
@@ -109,6 +124,8 @@ const ClientDriverProfile = () => {
       </Card>
     );
   }
+
+  const driverName = driver.profiles?.full_name || "Votre chauffeur";
 
   return (
     <div className="space-y-6">
@@ -140,8 +157,9 @@ const ClientDriverProfile = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
               <h1 className="text-3xl font-bold">{driver.profiles?.full_name}</h1>
               <ShareButtons
-                title={`Profil de ${driver.profiles?.full_name}`}
-                message={`Découvrez le profil de ${driver.profiles?.full_name}, votre chauffeur VTC professionnel`}
+                title={`Découvrez ${driverName}, mon chauffeur VTC`}
+                message={`Je vous recommande ${driverName}, un excellent chauffeur VTC professionnel sur SoloCab !`}
+                url={getDriverShareUrl()}
               />
             </div>
             {driver.company_name && driver.company_name.trim() && 

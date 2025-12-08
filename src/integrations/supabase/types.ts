@@ -80,6 +80,13 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       campaigns: {
@@ -148,6 +155,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "campaigns_promotion_id_fkey"
             columns: ["promotion_id"]
             isOneToOne: false
@@ -213,6 +227,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -378,6 +399,13 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       devis: {
@@ -478,6 +506,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -621,6 +656,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -980,6 +1022,13 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       invitation_tokens: {
@@ -1046,6 +1095,13 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1316,6 +1372,13 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       qr_codes: {
@@ -1369,6 +1432,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1490,6 +1560,89 @@ export type Database = {
           total_quotes: number | null
           total_revenue: number | null
           user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_driver_profiles: {
+        Row: {
+          bio: string | null
+          card_photo_url: string | null
+          company_name: string | null
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
+          gallery_photos: string[] | null
+          id: string | null
+          max_passengers: number | null
+          rating: number | null
+          service_description: string | null
+          services_offered: string[] | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          total_rides: number | null
+          user_id: string | null
+          vehicle_brand: string | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
+          vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_year: number | null
+          working_sectors: string[] | null
+        }
+        Insert: {
+          bio?: string | null
+          card_photo_url?: string | null
+          company_name?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          gallery_photos?: string[] | null
+          id?: string | null
+          max_passengers?: number | null
+          rating?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          total_rides?: number | null
+          user_id?: string | null
+          vehicle_brand?: string | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_year?: number | null
+          working_sectors?: string[] | null
+        }
+        Update: {
+          bio?: string | null
+          card_photo_url?: string | null
+          company_name?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          gallery_photos?: string[] | null
+          id?: string | null
+          max_passengers?: number | null
+          rating?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          total_rides?: number | null
+          user_id?: string | null
+          vehicle_brand?: string | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_year?: number | null
+          working_sectors?: string[] | null
         }
         Relationships: [
           {
@@ -1692,6 +1845,33 @@ export type Database = {
           id: string
           phone: string
           profile_photo_url: string
+        }[]
+      }
+      get_safe_public_driver_data: {
+        Args: { driver_id_param: string }
+        Returns: {
+          bio: string
+          card_photo_url: string
+          company_name: string
+          display_company_name: boolean
+          display_driver_name: boolean
+          gallery_photos: string[]
+          id: string
+          max_passengers: number
+          rating: number
+          service_description: string
+          services_offered: string[]
+          show_email: boolean
+          show_phone: boolean
+          total_rides: number
+          user_id: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_equipment: string[]
+          vehicle_model: string
+          vehicle_photos: string[]
+          vehicle_year: number
+          working_sectors: string[]
         }[]
       }
       get_user_role: {
