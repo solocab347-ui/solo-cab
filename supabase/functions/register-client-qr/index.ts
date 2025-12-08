@@ -220,20 +220,21 @@ Deno.serve(async (req) => {
           });
         }
 
-        // NOUVEAU: Envoyer notification email au chauffeur
+        // NOUVEAU: Envoyer notification email au chauffeur avec le bon header
         console.log('📧 [CLIENT-QR] Notification chauffeur inscription client');
         try {
           await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-driver-client-registered`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`
+              'x-internal-secret': Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ''
             },
             body: JSON.stringify({
               driver_id: qrCode.driver_id,
               client_name: profileData.full_name
             })
           });
+          console.log('✅ [CLIENT-QR] Notification chauffeur envoyée');
         } catch (driverEmailError: any) {
           console.error('❌ Erreur envoi email chauffeur:', driverEmailError);
           // Ne pas bloquer si échec
