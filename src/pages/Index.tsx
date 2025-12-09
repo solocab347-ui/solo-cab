@@ -33,12 +33,16 @@ import {
   CreditCard,
   CalendarCheck,
   TrendingUp,
+  Building2,
+  Briefcase,
+  Receipt,
+  UserCheck,
 } from "lucide-react";
 
 const Index = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<"clients" | "drivers">("clients");
+  const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies">("clients");
 
   useEffect(() => {
     // Redirect authenticated users to their dashboard
@@ -155,6 +159,57 @@ const Index = () => {
     },
   ];
 
+  const companyFeatures = [
+    {
+      icon: Users,
+      title: "Plusieurs Chauffeurs",
+      description: "Accédez à un réseau de chauffeurs professionnels pour tous vos besoins",
+      gradient: "from-emerald-500 to-teal-600",
+    },
+    {
+      icon: Receipt,
+      title: "Facturation Automatique",
+      description: "Factures générées automatiquement avec récapitulatif mensuel",
+      gradient: "from-blue-500 to-cyan-600",
+    },
+    {
+      icon: Briefcase,
+      title: "Compte Entreprise",
+      description: "Gestion centralisée des déplacements de vos collaborateurs",
+      gradient: "from-purple-500 to-pink-600",
+    },
+    {
+      icon: FileText,
+      title: "Justificatifs Comptables",
+      description: "Téléchargez tous vos justificatifs pour votre comptabilité",
+      gradient: "from-amber-500 to-orange-600",
+    },
+    {
+      icon: Shield,
+      title: "Chauffeurs Vérifiés",
+      description: "Tous nos chauffeurs sont des professionnels certifiés VTC",
+      gradient: "from-green-500 to-emerald-600",
+    },
+    {
+      icon: UserCheck,
+      title: "Chauffeurs Favoris",
+      description: "Enregistrez vos chauffeurs préférés pour des réservations rapides",
+      gradient: "from-pink-500 to-rose-600",
+    },
+    {
+      icon: BarChart3,
+      title: "Suivi des Dépenses",
+      description: "Tableau de bord avec statistiques et budget mensuel",
+      gradient: "from-cyan-500 to-blue-600",
+    },
+    {
+      icon: Calendar,
+      title: "Réservation Simplifiée",
+      description: "Réservez en quelques clics pour vous ou vos collaborateurs",
+      gradient: "from-indigo-500 to-purple-600",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Navigation with black background */}
@@ -211,6 +266,18 @@ const Index = () => {
               >
                 <Car className="w-4 h-4" />
                 Pour les Chauffeurs
+              </button>
+              <button
+                onClick={() => setActiveView("companies")}
+                className={cn(
+                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  activeView === "companies"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                <Building2 className="w-4 h-4" />
+                Pour les Entreprises
               </button>
             </div>
           </div>
@@ -278,6 +345,41 @@ const Index = () => {
                   <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
                     <Zap className="w-5 h-5 mr-2" />
                     Rejoindre la communauté
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Companies View */}
+          {activeView === "companies" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
+                Solutions <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Transport Entreprise</span>
+              </h1>
+              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+                Gérez les déplacements de vos collaborateurs en toute simplicité
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                {companyFeatures.map((feature, index) => (
+                  <Card 
+                    key={index} 
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
+                  >
+                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
+                      <feature.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link to="/register-company">
+                  <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
+                    <Building2 className="w-5 h-5 mr-2" />
+                    Créer un compte entreprise
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>

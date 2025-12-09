@@ -252,6 +252,129 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          address: string
+          billing_address: string | null
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          department: string | null
+          employee_count: number | null
+          id: string
+          monthly_budget: number | null
+          notes: string | null
+          preferred_vehicle_types: string[] | null
+          siren: string | null
+          siret: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          billing_address?: string | null
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          department?: string | null
+          employee_count?: number | null
+          id?: string
+          monthly_budget?: number | null
+          notes?: string | null
+          preferred_vehicle_types?: string[] | null
+          siren?: string | null
+          siret: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          billing_address?: string | null
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          department?: string | null
+          employee_count?: number | null
+          id?: string
+          monthly_budget?: number | null
+          notes?: string | null
+          preferred_vehicle_types?: string[] | null
+          siren?: string | null
+          siret?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      company_drivers: {
+        Row: {
+          company_id: string
+          created_at: string
+          driver_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_drivers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -1762,6 +1885,7 @@ export type Database = {
         Returns: string
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
+      get_company_id: { Args: { _user_id: string }; Returns: string }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number
@@ -1953,7 +2077,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "driver" | "client"
+      app_role: "admin" | "driver" | "client" | "company"
       course_status:
         | "pending"
         | "accepted"
@@ -2090,7 +2214,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "driver", "client"],
+      app_role: ["admin", "driver", "client", "company"],
       course_status: [
         "pending",
         "accepted",
