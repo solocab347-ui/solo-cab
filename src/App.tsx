@@ -27,6 +27,10 @@ import RegisterDriverPromo from "./pages/RegisterDriverPromo";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
+import RegisterCompany from "./pages/RegisterCompany";
+
+// Lazy load heavy dashboards and authenticated pages
+const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
 
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
@@ -66,6 +70,7 @@ const App = () => (
               <Route path="/register-driver" element={<RegisterDriver />} />
               <Route path="/register-driver-promo" element={<RegisterDriverPromo />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
+              <Route path="/register-company" element={<RegisterCompany />} />
               <Route path="/pioneer-test" element={<PioneerTest />} />
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
@@ -139,6 +144,16 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <AdminDashboard />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/company-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["company"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CompanyDashboard />
                     </Suspense>
                   </ProtectedRoute>
                 }
