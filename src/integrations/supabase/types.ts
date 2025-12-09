@@ -1701,15 +1701,12 @@ export type Database = {
               _distance_km: number
               _driver_id: string
               _duration_minutes: number
-              _scheduled_date?: string
               _use_hourly_rate?: boolean
             }
             Returns: {
               base_price: number
               distance_price: number
               subtotal: number
-              surcharge_evening: number
-              surcharge_weekend: number
               time_price: number
               total_price: number
               tva_amount: number
@@ -1720,12 +1717,15 @@ export type Database = {
               _distance_km: number
               _driver_id: string
               _duration_minutes: number
+              _scheduled_date?: string
               _use_hourly_rate?: boolean
             }
             Returns: {
               base_price: number
               distance_price: number
               subtotal: number
+              surcharge_evening: number
+              surcharge_weekend: number
               time_price: number
               total_price: number
               tva_amount: number
