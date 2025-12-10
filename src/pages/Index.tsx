@@ -624,24 +624,14 @@ const Index = () => {
               <h4 className="font-bold mb-4 text-white">Légal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Mentions légales
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link to="/privacy-policy" className="hover:text-white transition-colors">
                     Politique de confidentialité
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link to="/terms-of-service" className="hover:text-white transition-colors">
                     CGU
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Cookies
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

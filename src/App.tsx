@@ -46,6 +46,8 @@ const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const CreateTestAccounts = lazy(() => import("./pages/CreateTestAccounts"));
 const CreateParisDrivers = lazy(() => import("./pages/CreateParisDrivers"));
 const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -193,6 +195,16 @@ const App = () => (
               <Route path="/install" element={
                 <Suspense fallback={<LoadingFallback />}>
                   <InstallPWA />
+                </Suspense>
+              } />
+              <Route path="/privacy-policy" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <PrivacyPolicy />
+                </Suspense>
+              } />
+              <Route path="/terms-of-service" element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <TermsOfService />
                 </Suspense>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
