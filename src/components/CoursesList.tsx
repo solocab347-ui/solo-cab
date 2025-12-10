@@ -13,7 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation } from "lucide-react";
+import { CourseNavigationButtons } from "@/components/course/CourseNavigationButtons";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -1689,6 +1690,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       </div>
                     </div>
                   )}
+
+                  {/* Boutons de navigation GPS */}
+                  <CourseNavigationButtons
+                    status={course.status}
+                    pickupAddress={course.pickup_address}
+                    pickupLatitude={course.pickup_latitude}
+                    pickupLongitude={course.pickup_longitude}
+                    destinationAddress={course.destination_address}
+                    destinationLatitude={course.destination_latitude}
+                    destinationLongitude={course.destination_longitude}
+                  />
 
                   <div className="flex gap-2 flex-wrap">
                     {course.status === "accepted" && (
