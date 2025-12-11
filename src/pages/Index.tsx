@@ -37,12 +37,13 @@ import {
   Briefcase,
   Receipt,
   UserCheck,
+  Truck,
 } from "lucide-react";
 
 const Index = () => {
   const { user, userRole } = useAuth();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies">("clients");
+  const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies" | "fleet">("clients");
 
   useEffect(() => {
     // Redirect authenticated users to their dashboard
@@ -210,6 +211,57 @@ const Index = () => {
     },
   ];
 
+  const fleetFeatures = [
+    {
+      icon: Truck,
+      title: "Gestion Multi-Véhicules",
+      description: "Gérez l'ensemble de votre flotte de véhicules depuis un seul tableau de bord",
+      gradient: "from-indigo-500 to-violet-600",
+    },
+    {
+      icon: Users,
+      title: "Équipe de Chauffeurs",
+      description: "Attribuez des chauffeurs à vos véhicules et suivez leur activité",
+      gradient: "from-blue-500 to-cyan-600",
+    },
+    {
+      icon: BarChart3,
+      title: "Analytics Avancés",
+      description: "Statistiques détaillées sur les performances de votre flotte",
+      gradient: "from-purple-500 to-pink-600",
+    },
+    {
+      icon: Calendar,
+      title: "Planning Centralisé",
+      description: "Planifiez les courses et optimisez l'utilisation de vos véhicules",
+      gradient: "from-emerald-500 to-teal-600",
+    },
+    {
+      icon: Receipt,
+      title: "Facturation Groupée",
+      description: "Factures consolidées pour tous vos chauffeurs et véhicules",
+      gradient: "from-amber-500 to-orange-600",
+    },
+    {
+      icon: TrendingUp,
+      title: "Rentabilité par Véhicule",
+      description: "Analysez la rentabilité de chaque véhicule de votre flotte",
+      gradient: "from-green-500 to-emerald-600",
+    },
+    {
+      icon: Shield,
+      title: "Conformité Garantie",
+      description: "Suivi des documents et assurances de tous vos véhicules",
+      gradient: "from-red-500 to-pink-600",
+    },
+    {
+      icon: MessageSquare,
+      title: "Communication Équipe",
+      description: "Messagerie intégrée pour coordonner votre équipe de chauffeurs",
+      gradient: "from-cyan-500 to-blue-600",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Navigation with black background */}
@@ -242,42 +294,54 @@ const Index = () => {
         <div className="container mx-auto px-4">
           {/* Toggle Buttons */}
           <div className="flex justify-center mb-12">
-            <div className="inline-flex rounded-lg bg-white/5 p-1 backdrop-blur-sm border border-white/10">
+            <div className="inline-flex flex-wrap justify-center rounded-lg bg-white/5 p-1 backdrop-blur-sm border border-white/10 gap-1">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
-                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white"
                 )}
               >
                 <Users className="w-4 h-4" />
-                Pour les Clients
+                <span className="hidden sm:inline">Pour les</span> Clients
               </button>
               <button
                 onClick={() => setActiveView("drivers")}
                 className={cn(
-                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white"
                 )}
               >
                 <Car className="w-4 h-4" />
-                Pour les Chauffeurs
+                <span className="hidden sm:inline">Pour les</span> Chauffeurs
               </button>
               <button
                 onClick={() => setActiveView("companies")}
                 className={cn(
-                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
                   activeView === "companies"
                     ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white"
                 )}
               >
                 <Building2 className="w-4 h-4" />
-                Pour les Entreprises
+                <span className="hidden sm:inline">Pour les</span> Entreprises
+              </button>
+              <button
+                onClick={() => setActiveView("fleet")}
+                className={cn(
+                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
+                  activeView === "fleet"
+                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white"
+                )}
+              >
+                <Truck className="w-4 h-4" />
+                <span className="hidden sm:inline">Gestionnaire de</span> Flotte
               </button>
             </div>
           </div>
@@ -380,6 +444,41 @@ const Index = () => {
                   <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
                     <Building2 className="w-5 h-5 mr-2" />
                     Créer un compte entreprise
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Fleet Manager View */}
+          {activeView === "fleet" && (
+            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
+                <span className="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">Gestionnaire de Flotte</span>
+              </h1>
+              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+                Gérez votre flotte de véhicules et votre équipe de chauffeurs
+              </p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                {fleetFeatures.map((feature, index) => (
+                  <Card 
+                    key={index} 
+                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
+                  >
+                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
+                      <feature.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-12">
+                <Link to="/register-fleet">
+                  <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-lg">
+                    <Truck className="w-5 h-5 mr-2" />
+                    Créer un compte gestionnaire
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
