@@ -54,6 +54,10 @@ const Index = () => {
         navigate("/client-dashboard");
       } else if (userRole === "admin") {
         navigate("/admin-dashboard");
+      } else if (userRole === "fleet_manager") {
+        navigate("/fleet-dashboard");
+      } else if (userRole === "company") {
+        navigate("/company-dashboard");
       }
     }
   }, [user, userRole, navigate]);

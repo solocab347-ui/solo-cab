@@ -1154,6 +1154,290 @@ export type Database = {
           },
         ]
       }
+      fleet_manager_clients: {
+        Row: {
+          client_id: string
+          created_at: string
+          fleet_manager_id: string
+          id: string
+          registered_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          fleet_manager_id: string
+          id?: string
+          registered_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          fleet_manager_id?: string
+          id?: string
+          registered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_manager_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_clients_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_manager_drivers: {
+        Row: {
+          created_at: string
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+          joined_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+          joined_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          joined_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_manager_invitations: {
+        Row: {
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          token: string
+          used: boolean | null
+          used_at: string | null
+          used_by_driver_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id: string
+          id?: string
+          token: string
+          used?: boolean | null
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id?: string
+          id?: string
+          token?: string
+          used?: boolean | null
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_manager_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_manager_qr_codes: {
+        Row: {
+          code: string
+          created_at: string
+          fleet_manager_id: string
+          id: string
+          is_active: boolean | null
+          qr_code_image: string | null
+          scans_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          fleet_manager_id: string
+          id?: string
+          is_active?: boolean | null
+          qr_code_image?: string | null
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          fleet_manager_id?: string
+          id?: string
+          is_active?: boolean | null
+          qr_code_image?: string | null
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_manager_qr_codes_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_managers: {
+        Row: {
+          address: string
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          qr_code_id: string | null
+          show_drivers_in_public_storefront: boolean | null
+          siren: string | null
+          siret: string
+          status: string
+          subscription_end_date: string | null
+          subscription_paid: boolean | null
+          subscription_status: string | null
+          subscription_stripe_id: string | null
+          total_clients: number | null
+          total_drivers: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          company_name: string
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          qr_code_id?: string | null
+          show_drivers_in_public_storefront?: boolean | null
+          siren?: string | null
+          siret: string
+          status?: string
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_clients?: number | null
+          total_drivers?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          qr_code_id?: string | null
+          show_drivers_in_public_storefront?: boolean | null
+          siren?: string | null
+          siret?: string
+          status?: string
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_clients?: number | null
+          total_drivers?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitation_tokens: {
         Row: {
           created_at: string
@@ -1895,6 +2179,7 @@ export type Database = {
         Returns: number
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_fleet_manager_id: { Args: { _user_id: string }; Returns: string }
       get_my_driver_statistics: {
         Args: never
         Returns: {
@@ -2077,7 +2362,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "driver" | "client" | "company"
+      app_role: "admin" | "driver" | "client" | "company" | "fleet_manager"
       course_status:
         | "pending"
         | "accepted"
@@ -2214,7 +2499,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "driver", "client", "company"],
+      app_role: ["admin", "driver", "client", "company", "fleet_manager"],
       course_status: [
         "pending",
         "accepted",

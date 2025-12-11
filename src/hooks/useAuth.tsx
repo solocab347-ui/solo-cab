@@ -5,10 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logger } from "@/lib/productionLogger";
 
+type UserRole = "admin" | "driver" | "client" | "company" | "fleet_manager" | null;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  userRole: "admin" | "driver" | "client" | null;
+  userRole: UserRole;
   userRoles: string[];
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: "driver" | "client", additionalData?: any) => Promise<void>;
@@ -21,13 +23,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<"admin" | "driver" | "client" | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Fonction simple pour récupérer le rôle - SANS CACHE
-  const fetchUserRole = async (userId: string): Promise<"admin" | "driver" | "client" | null> => {
+  const fetchUserRole = async (userId: string): Promise<UserRole> => {
     try {
       const { data, error } = await supabase
         .from("user_roles")
@@ -38,9 +40,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const roles = data?.map((r) => r.role) || [];
       
-      // Set primary role (priority: admin > driver > client)
-      const primaryRole: "admin" | "driver" | "client" | null = roles.includes("admin") 
+      // Set primary role (priority: admin > fleet_manager > company > driver > client)
+      const primaryRole: UserRole = roles.includes("admin") 
         ? "admin" 
+        : roles.includes("fleet_manager")
+        ? "fleet_manager"
+        : roles.includes("company")
+        ? "company"
         : roles.includes("driver")
         ? "driver"
         : roles.includes("client")

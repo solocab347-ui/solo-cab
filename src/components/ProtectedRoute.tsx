@@ -9,7 +9,7 @@ import { logger } from "@/lib/productionLogger";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ("admin" | "driver" | "client" | "company")[];
+  allowedRoles?: ("admin" | "driver" | "client" | "company" | "fleet_manager")[];
   requireValidatedDriver?: boolean;
 }
 
