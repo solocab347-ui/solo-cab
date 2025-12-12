@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Users, 
   Search, 
@@ -25,7 +27,12 @@ import {
   TrendingUp,
   TrendingDown,
   Copy,
-  Car
+  Car,
+  AlertTriangle,
+  Shield,
+  Calendar,
+  MessageSquare,
+  Flag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -43,6 +50,10 @@ interface Partner {
   partner_code: string;
   partner_rating: number;
   partner_rides: number;
+  payment_schedule: string;
+  payment_day: number;
+  custom_payment_days: number;
+  sharing_blocked: boolean;
 }
 
 interface SharedCourse {
@@ -56,6 +67,7 @@ interface SharedCourse {
   status: string;
   created_at: string;
   completed_at: string | null;
+  client_notified: boolean;
   course: {
     pickup_address: string;
     destination_address: string;
@@ -81,23 +93,49 @@ interface AvailableCourse {
   scheduled_date: string;
   status: string;
   client_name: string;
+  client_id: string;
 }
+
+const PAYMENT_SCHEDULES = [
+  { value: 'per_course', label: 'À chaque course', description: 'Paiement après chaque course terminée' },
+  { value: 'weekly', label: 'Hebdomadaire', description: 'Paiement chaque semaine' },
+  { value: 'monthly', label: 'Mensuel', description: 'Paiement chaque mois' },
+  { value: 'custom', label: 'Personnalisé', description: 'Définir un nombre de jours' },
+];
 
 export function DriverCourseSharing() {
   const { user } = useAuth();
   const [driverInfo, setDriverInfo] = useState<{ id: string; driver_code: string } | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [sharedCourses, setSharedCourses] = useState<SharedCourse[]>([]);
-  const [balances, setBalances] = useState<any[]>([]);
   const [availableCourses, setAvailableCourses] = useState<AvailableCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canShare, setCanShare] = useState(true);
+  
+  // Search state
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState<DriverSearchResult | null>(null);
   const [searching, setSearching] = useState(false);
+  
+  // Partnership proposal state
   const [proposedCommission, setProposedCommission] = useState(10);
+  const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
+  const [proposedPaymentDay, setProposedPaymentDay] = useState(1);
+  const [proposedCustomDays, setProposedCustomDays] = useState(30);
+  
+  // Send course state
   const [selectedPartner, setSelectedPartner] = useState<string>('');
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [notifyClient, setNotifyClient] = useState(true);
+  const [clientMessage, setClientMessage] = useState('');
+  
+  // Report state
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportPartner, setReportPartner] = useState<Partner | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportAmount, setReportAmount] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
@@ -108,6 +146,7 @@ export function DriverCourseSharing() {
   useEffect(() => {
     if (driverInfo?.id) {
       loadData();
+      checkSharingAccess();
     }
   }, [driverInfo?.id]);
 
@@ -123,6 +162,13 @@ export function DriverCourseSharing() {
       return;
     }
     setDriverInfo(data);
+  };
+
+  const checkSharingAccess = async () => {
+    if (!driverInfo?.id) return;
+    
+    const { data } = await supabase.rpc('can_share_courses', { _driver_id: driverInfo.id });
+    setCanShare(data ?? true);
   };
 
   const loadData = async () => {
@@ -213,6 +259,7 @@ export function DriverCourseSharing() {
           destination_address,
           scheduled_date,
           status,
+          client_id,
           client:clients(user_id)
         `)
         .eq('driver_id', driverInfo.id)
@@ -287,6 +334,9 @@ export function DriverCourseSharing() {
         commission_percentage: proposedCommission,
         proposed_by: driverInfo.id,
         status: 'pending',
+        payment_schedule: proposedPaymentSchedule,
+        payment_day: proposedPaymentDay,
+        custom_payment_days: proposedCustomDays,
       });
 
       if (error) throw error;
@@ -338,6 +388,11 @@ export function DriverCourseSharing() {
       return;
     }
 
+    if (partnership.sharing_blocked) {
+      toast.error('Le partage est bloqué pour ce partenariat');
+      return;
+    }
+
     const course = availableCourses.find(c => c.id === selectedCourse);
     if (!course) {
       toast.error('Course introuvable');
@@ -350,10 +405,19 @@ export function DriverCourseSharing() {
       .select('amount')
       .eq('course_id', selectedCourse)
       .eq('status', 'pending')
-      .single();
+      .maybeSingle();
 
     const courseAmount = devisData?.amount || 0;
     const commissionAmount = (courseAmount * partnership.commission_percentage) / 100;
+
+    // Get partner name for client message
+    const partner = partners.find(p => 
+      p.driver_a_id === selectedPartner || p.driver_b_id === selectedPartner
+    );
+
+    const finalClientMessage = notifyClient && clientMessage 
+      ? clientMessage 
+      : `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${partner?.partner_name || 'un chauffeur'} qui prendra soin de vous. Vous restez mon client et pourrez me recontacter pour vos prochaines courses.`;
 
     try {
       const { error } = await supabase.from('shared_courses').insert({
@@ -365,14 +429,37 @@ export function DriverCourseSharing() {
         commission_percentage: partnership.commission_percentage,
         commission_amount: commissionAmount,
         status: 'pending',
+        client_notified: notifyClient,
+        client_notified_at: notifyClient ? new Date().toISOString() : null,
+        client_message: notifyClient ? finalClientMessage : null,
       });
 
       if (error) throw error;
+
+      // If client notification is enabled, create a notification for the client
+      if (notifyClient && course.client_id) {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('user_id')
+          .eq('id', course.client_id)
+          .single();
+
+        if (clientData?.user_id) {
+          await supabase.from('notifications').insert({
+            user_id: clientData.user_id,
+            title: '🚗 Changement de chauffeur pour votre course',
+            message: finalClientMessage,
+            type: 'info',
+            link: '/client-dashboard',
+          });
+        }
+      }
 
       toast.success('Course envoyée au partenaire !');
       setSendDialogOpen(false);
       setSelectedCourse('');
       setSelectedPartner('');
+      setClientMessage('');
       loadData();
     } catch (error: any) {
       console.error('Send course error:', error);
@@ -392,12 +479,16 @@ export function DriverCourseSharing() {
       if (error) throw error;
 
       if (accept) {
-        // Update the original course to assign to receiver
+        // Update the original course to assign to receiver (but keep original driver relationship)
         const sharedCourse = sharedCourses.find(sc => sc.id === sharedCourseId);
         if (sharedCourse) {
+          // Add receiver to driver_ids but keep original driver_id (client protection)
           await supabase
             .from('courses')
-            .update({ driver_id: sharedCourse.receiver_driver_id })
+            .update({ 
+              driver_ids: [sharedCourse.receiver_driver_id],
+              // Note: We don't change driver_id to protect client ownership
+            })
             .eq('id', sharedCourse.course_id);
         }
       }
@@ -410,10 +501,52 @@ export function DriverCourseSharing() {
     }
   };
 
+  const reportPartnerNonPayment = async () => {
+    if (!reportPartner || !reportReason || !driverInfo?.id) return;
+
+    const partnerId = reportPartner.driver_a_id === driverInfo.id 
+      ? reportPartner.driver_b_id 
+      : reportPartner.driver_a_id;
+
+    try {
+      const { error } = await supabase.from('partnership_disputes').insert({
+        partnership_id: reportPartner.id,
+        reporter_driver_id: driverInfo.id,
+        reported_driver_id: partnerId,
+        reason: reportReason,
+        amount_owed: reportAmount,
+        description: reportDescription,
+        status: 'pending',
+      });
+
+      if (error) throw error;
+
+      toast.success('Signalement envoyé à l\'administration');
+      setReportDialogOpen(false);
+      setReportPartner(null);
+      setReportReason('');
+      setReportDescription('');
+      setReportAmount(0);
+    } catch (error: any) {
+      console.error('Report error:', error);
+      toast.error('Erreur lors du signalement');
+    }
+  };
+
   const copyDriverCode = () => {
     if (driverInfo?.driver_code) {
       navigator.clipboard.writeText(driverInfo.driver_code);
       toast.success('Code copié !');
+    }
+  };
+
+  const getPaymentScheduleLabel = (schedule: string, customDays?: number) => {
+    switch (schedule) {
+      case 'per_course': return 'À chaque course';
+      case 'weekly': return 'Hebdomadaire';
+      case 'monthly': return 'Mensuel';
+      case 'custom': return `Tous les ${customDays || 30} jours`;
+      default: return schedule;
     }
   };
 
@@ -457,6 +590,27 @@ export function DriverCourseSharing() {
 
   return (
     <div className="space-y-6">
+      {/* Warning Alert */}
+      <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <AlertTitle className="text-amber-800 dark:text-amber-200">Engagement de confiance</AlertTitle>
+        <AlertDescription className="text-amber-700 dark:text-amber-300">
+          Le partage de courses repose sur la confiance mutuelle. Respectez vos engagements de paiement envers vos partenaires. 
+          <strong> Les bons comptes font les bons amis.</strong> Tout manquement aux paiements peut entraîner la suspension du partage.
+        </AlertDescription>
+      </Alert>
+
+      {/* Blocked Warning */}
+      {!canShare && (
+        <Alert variant="destructive">
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Partage suspendu</AlertTitle>
+          <AlertDescription>
+            Votre accès au partage de courses a été suspendu suite à un signalement. Contactez l'administration pour plus d'informations.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Driver Code Card */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
@@ -521,8 +675,9 @@ export function DriverCourseSharing() {
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
                   className="font-mono"
+                  disabled={!canShare}
                 />
-                <Button onClick={searchDriver} disabled={searching}>
+                <Button onClick={searchDriver} disabled={searching || !canShare}>
                   <Search className="h-4 w-4 mr-2" />
                   {searching ? 'Recherche...' : 'Rechercher'}
                 </Button>
@@ -530,7 +685,7 @@ export function DriverCourseSharing() {
 
               {searchResult && (
                 <Card className="bg-muted/50">
-                  <CardContent className="flex items-center justify-between p-4">
+                  <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={searchResult.profile_photo_url || undefined} />
@@ -550,24 +705,67 @@ export function DriverCourseSharing() {
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Commission:</Label>
-                        <span className="font-bold">{proposedCommission}%</span>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Commission: {proposedCommission}%</Label>
+                        <Slider
+                          value={[proposedCommission]}
+                          onValueChange={(v) => setProposedCommission(v[0])}
+                          min={5}
+                          max={30}
+                          step={1}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Commission que vous recevrez quand vous envoyez une course
+                        </p>
                       </div>
-                      <Slider
-                        value={[proposedCommission]}
-                        onValueChange={(v) => setProposedCommission(v[0])}
-                        min={5}
-                        max={30}
-                        step={1}
-                        className="w-32"
-                      />
-                      <Button size="sm" onClick={proposePartnership}>
-                        <Handshake className="h-4 w-4 mr-2" />
-                        Proposer
-                      </Button>
+
+                      <div className="space-y-2">
+                        <Label>Calendrier de paiement</Label>
+                        <Select value={proposedPaymentSchedule} onValueChange={setProposedPaymentSchedule}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_SCHEDULES.map(s => (
+                              <SelectItem key={s.value} value={s.value}>
+                                <div>
+                                  <div>{s.label}</div>
+                                  <div className="text-xs text-muted-foreground">{s.description}</div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {proposedPaymentSchedule === 'custom' && (
+                        <div className="space-y-2">
+                          <Label>Nombre de jours</Label>
+                          <Input
+                            type="number"
+                            value={proposedCustomDays}
+                            onChange={(e) => setProposedCustomDays(parseInt(e.target.value) || 30)}
+                            min={1}
+                            max={90}
+                          />
+                        </div>
+                      )}
                     </div>
+
+                    <Alert>
+                      <Calendar className="h-4 w-4" />
+                      <AlertDescription>
+                        Les deux chauffeurs doivent valider les termes du partenariat. 
+                        Les paiements seront effectués {getPaymentScheduleLabel(proposedPaymentSchedule, proposedCustomDays).toLowerCase()}.
+                      </AlertDescription>
+                    </Alert>
+
+                    <Button className="w-full" onClick={proposePartnership}>
+                      <Handshake className="h-4 w-4 mr-2" />
+                      Proposer le partenariat
+                    </Button>
                   </CardContent>
                 </Card>
               )}
@@ -585,25 +783,41 @@ export function DriverCourseSharing() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {pendingPartners.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={p.partner_photo || undefined} />
-                        <AvatarFallback>{p.partner_name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{p.partner_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Commission proposée: {p.commission_percentage}%
-                        </p>
+                  <div key={p.id} className="p-4 bg-muted/50 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={p.partner_photo || undefined} />
+                          <AvatarFallback>{p.partner_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{p.partner_name}</p>
+                          <p className="text-sm text-muted-foreground font-mono">
+                            {p.partner_code}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Commission:</span>
+                        <span className="ml-2 font-medium">{p.commission_percentage}%</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Paiement:</span>
+                        <span className="ml-2 font-medium">
+                          {getPaymentScheduleLabel(p.payment_schedule, p.custom_payment_days)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
                       <Button size="sm" variant="outline" onClick={() => respondToPartnership(p.id, false)}>
-                        <X className="h-4 w-4" />
+                        <X className="h-4 w-4 mr-1" />
+                        Refuser
                       </Button>
                       <Button size="sm" onClick={() => respondToPartnership(p.id, true)}>
-                        <Check className="h-4 w-4" />
+                        <Check className="h-4 w-4 mr-1" />
+                        Accepter
                       </Button>
                     </div>
                   </div>
@@ -656,31 +870,55 @@ export function DriverCourseSharing() {
               ) : (
                 <div className="space-y-3">
                   {activePartners.map((p) => {
-                    const balance = calculateBalance(
-                      p.driver_a_id === driverInfo?.id ? p.driver_b_id : p.driver_a_id
-                    );
+                    const partnerId = p.driver_a_id === driverInfo?.id ? p.driver_b_id : p.driver_a_id;
+                    const balance = calculateBalance(partnerId);
                     return (
-                      <div key={p.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={p.partner_photo || undefined} />
-                            <AvatarFallback>{p.partner_name?.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{p.partner_name}</p>
-                            <p className="text-sm text-muted-foreground font-mono">
-                              {p.partner_code}
+                      <div key={p.id} className="p-4 bg-muted/50 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={p.partner_photo || undefined} />
+                              <AvatarFallback>{p.partner_name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{p.partner_name}</p>
+                              <p className="text-sm text-muted-foreground font-mono">
+                                {p.partner_code}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline">{p.commission_percentage}%</Badge>
+                            <p className={`text-sm font-medium mt-1 ${
+                              balance.net > 0 ? 'text-green-600' : balance.net < 0 ? 'text-red-600' : 'text-muted-foreground'
+                            }`}>
+                              {balance.net > 0 ? '+' : ''}{balance.net.toFixed(2)}€
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant="outline">{p.commission_percentage}%</Badge>
-                          <p className={`text-sm font-medium mt-1 ${
-                            balance.net > 0 ? 'text-green-600' : balance.net < 0 ? 'text-red-600' : 'text-muted-foreground'
-                          }`}>
-                            {balance.net > 0 ? '+' : ''}{balance.net.toFixed(2)}€
-                          </p>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Paiement: {getPaymentScheduleLabel(p.payment_schedule, p.custom_payment_days)}
+                          </span>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setReportPartner(p);
+                              setReportDialogOpen(true);
+                            }}
+                          >
+                            <Flag className="h-4 w-4 mr-1" />
+                            Signaler
+                          </Button>
                         </div>
+                        {p.sharing_blocked && (
+                          <Badge variant="destructive" className="w-full justify-center">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Partage suspendu
+                          </Badge>
+                        )}
                       </div>
                     );
                   })}
@@ -695,16 +933,20 @@ export function DriverCourseSharing() {
           {/* Send course dialog */}
           <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full" disabled={activePartners.length === 0 || availableCourses.length === 0}>
+              <Button 
+                className="w-full" 
+                disabled={activePartners.length === 0 || availableCourses.length === 0 || !canShare}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 Envoyer une course à un partenaire
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Envoyer une course</DialogTitle>
                 <DialogDescription>
-                  Sélectionnez un partenaire et une course à lui transférer
+                  Sélectionnez un partenaire et une course à lui transférer. 
+                  Le client restera votre client.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -715,7 +957,7 @@ export function DriverCourseSharing() {
                       <SelectValue placeholder="Sélectionner un partenaire" />
                     </SelectTrigger>
                     <SelectContent>
-                      {activePartners.map((p) => {
+                      {activePartners.filter(p => !p.sharing_blocked).map((p) => {
                         const partnerId = p.driver_a_id === driverInfo?.id ? p.driver_b_id : p.driver_a_id;
                         return (
                           <SelectItem key={p.id} value={partnerId}>
@@ -741,6 +983,38 @@ export function DriverCourseSharing() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="notifyClient"
+                      checked={notifyClient}
+                      onChange={(e) => setNotifyClient(e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="notifyClient" className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Notifier le client du changement
+                    </Label>
+                  </div>
+                  {notifyClient && (
+                    <Textarea
+                      placeholder="Message personnalisé pour le client (optionnel)"
+                      value={clientMessage}
+                      onChange={(e) => setClientMessage(e.target.value)}
+                      rows={3}
+                    />
+                  )}
+                </div>
+
+                <Alert>
+                  <Shield className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Protection client:</strong> Le client reste exclusivement votre client. 
+                    Votre partenaire ne pourra pas l'ajouter à sa clientèle et le client ne pourra pas l'ajouter non plus.
+                  </AlertDescription>
+                </Alert>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setSendDialogOpen(false)}>
@@ -794,8 +1068,8 @@ export function DriverCourseSharing() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm">
                           Montant: <strong>{sc.course_amount.toFixed(2)}€</strong>
-                          <span className="text-muted-foreground ml-2">
-                            (commission: {sc.commission_amount.toFixed(2)}€)
+                          <span className="text-red-600 ml-2">
+                            (-{sc.commission_amount.toFixed(2)}€ commission)
                           </span>
                         </span>
                         {sc.status === 'pending' && (
@@ -853,11 +1127,19 @@ export function DriverCourseSharing() {
                       <p className="text-sm">
                         {sc.course?.pickup_address} → {sc.course?.destination_address}
                       </p>
-                      <div className="text-sm">
-                        Montant: <strong>{sc.course_amount.toFixed(2)}€</strong>
-                        <span className="text-green-600 ml-2">
-                          (+{sc.commission_amount.toFixed(2)}€ à recevoir)
-                        </span>
+                      <div className="flex items-center justify-between text-sm">
+                        <div>
+                          Montant: <strong>{sc.course_amount.toFixed(2)}€</strong>
+                          <span className="text-green-600 ml-2">
+                            (+{sc.commission_amount.toFixed(2)}€ à recevoir)
+                          </span>
+                        </div>
+                        {sc.client_notified && (
+                          <Badge variant="outline" className="text-xs">
+                            <MessageSquare className="h-3 w-3 mr-1" />
+                            Client notifié
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -889,12 +1171,11 @@ export function DriverCourseSharing() {
                     
                     return (
                       <Card key={p.id} className={`border ${
-                        balance.net > 0 ? 'border-green-500/30 bg-green-50/50 dark:bg-green-950/20' :
-                        balance.net < 0 ? 'border-red-500/30 bg-red-50/50 dark:bg-red-950/20' :
-                        'border-muted'
+                        balance.net > 0 ? 'border-green-500/30' : 
+                        balance.net < 0 ? 'border-red-500/30' : ''
                       }`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-4">
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <Avatar>
                                 <AvatarImage src={p.partner_photo || undefined} />
@@ -902,32 +1183,32 @@ export function DriverCourseSharing() {
                               </Avatar>
                               <div>
                                 <p className="font-medium">{p.partner_name}</p>
-                                <p className="text-sm text-muted-foreground font-mono">{p.partner_code}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Paiement: {getPaymentScheduleLabel(p.payment_schedule, p.custom_payment_days)}
+                                </p>
                               </div>
                             </div>
-                            <Badge variant="outline">{p.commission_percentage}%</Badge>
                           </div>
-
+                          
                           <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
-                              <p className="text-sm text-muted-foreground">Vous devez</p>
-                              <p className="text-lg font-bold text-red-600">
-                                {balance.iOwe.toFixed(2)}€
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-muted-foreground">Vous recevez</p>
-                              <p className="text-lg font-bold text-green-600">
+                              <p className="text-xs text-muted-foreground">À recevoir</p>
+                              <p className="font-semibold text-green-600">
                                 {balance.theyOwe.toFixed(2)}€
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm text-muted-foreground">Solde net</p>
-                              <p className={`text-lg font-bold flex items-center justify-center gap-1 ${
-                                balance.net > 0 ? 'text-green-600' : balance.net < 0 ? 'text-red-600' : ''
+                              <p className="text-xs text-muted-foreground">À payer</p>
+                              <p className="font-semibold text-red-600">
+                                {balance.iOwe.toFixed(2)}€
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Solde</p>
+                              <p className={`font-semibold ${
+                                balance.net > 0 ? 'text-green-600' : 
+                                balance.net < 0 ? 'text-red-600' : ''
                               }`}>
-                                {balance.net > 0 ? <TrendingUp className="h-4 w-4" /> : 
-                                 balance.net < 0 ? <TrendingDown className="h-4 w-4" /> : null}
                                 {balance.net > 0 ? '+' : ''}{balance.net.toFixed(2)}€
                               </p>
                             </div>
@@ -942,6 +1223,94 @@ export function DriverCourseSharing() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Report Dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Flag className="h-5 w-5" />
+              Signaler un problème de paiement
+            </DialogTitle>
+            <DialogDescription>
+              Signalez un partenaire qui ne respecte pas ses engagements de paiement. 
+              L'administration examinera votre signalement.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {reportPartner && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Avatar>
+                  <AvatarImage src={reportPartner.partner_photo || undefined} />
+                  <AvatarFallback>{reportPartner.partner_name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{reportPartner.partner_name}</p>
+                  <p className="text-sm text-muted-foreground">{reportPartner.partner_code}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Raison du signalement</Label>
+                <Select value={reportReason} onValueChange={setReportReason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une raison" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="non_payment">Non-paiement des commissions</SelectItem>
+                    <SelectItem value="late_payment">Retard de paiement répété</SelectItem>
+                    <SelectItem value="partial_payment">Paiement partiel</SelectItem>
+                    <SelectItem value="other">Autre problème</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Montant impayé (€)</Label>
+                <Input
+                  type="number"
+                  value={reportAmount}
+                  onChange={(e) => setReportAmount(parseFloat(e.target.value) || 0)}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description détaillée</Label>
+                <Textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Décrivez le problème en détail..."
+                  rows={4}
+                />
+              </div>
+
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Les faux signalements peuvent entraîner la suspension de votre propre accès au partage.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={reportPartnerNonPayment}
+              disabled={!reportReason || !reportDescription}
+            >
+              <Flag className="h-4 w-4 mr-2" />
+              Envoyer le signalement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
