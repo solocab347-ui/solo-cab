@@ -790,6 +790,127 @@ export type Database = {
           },
         ]
       }
+      driver_partnerships: {
+        Row: {
+          accepted_at: string | null
+          commission_percentage: number | null
+          created_at: string | null
+          driver_a_id: string
+          driver_b_id: string
+          id: string
+          proposed_by: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          driver_a_id: string
+          driver_b_id: string
+          id?: string
+          proposed_by: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          driver_a_id?: string
+          driver_b_id?: string
+          id?: string
+          proposed_by?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           base_fare: number | null
@@ -803,6 +924,7 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          driver_code: string | null
           evening_surcharge: number | null
           free_access_end_date: string | null
           free_access_granted: boolean | null
@@ -865,6 +987,7 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          driver_code?: string | null
           evening_surcharge?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
@@ -927,6 +1050,7 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          driver_code?: string | null
           evening_surcharge?: number | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
@@ -1850,6 +1974,129 @@ export type Database = {
           },
         ]
       }
+      shared_courses: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          completed_at: string | null
+          course_amount: number
+          course_id: string
+          created_at: string | null
+          id: string
+          partnership_id: string
+          receiver_driver_id: string
+          sender_driver_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_amount: number
+          commission_percentage: number
+          completed_at?: string | null
+          course_amount: number
+          course_id: string
+          created_at?: string | null
+          id?: string
+          partnership_id: string
+          receiver_driver_id: string
+          sender_driver_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          completed_at?: string | null
+          course_amount?: number
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          partnership_id?: string
+          receiver_driver_id?: string
+          sender_driver_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnership_balances"
+            referencedColumns: ["partnership_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_links: {
         Row: {
           created_at: string
@@ -1940,6 +2187,77 @@ export type Database = {
           total_factures: number | null
         }
         Relationships: []
+      }
+      driver_partnership_balances: {
+        Row: {
+          commission_percentage: number | null
+          driver_a_id: string | null
+          driver_a_owes_b: number | null
+          driver_b_id: string | null
+          driver_b_owes_a: number | null
+          net_balance: number | null
+          partnership_id: string | null
+          status: string | null
+          total_shared_courses: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_statistics: {
         Row: {
@@ -2160,6 +2478,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      find_driver_by_code: {
+        Args: { _code: string }
+        Returns: {
+          company_name: string
+          driver_code: string
+          full_name: string
+          id: string
+          profile_photo_url: string
+          rating: number
+          total_rides: number
+        }[]
       }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }

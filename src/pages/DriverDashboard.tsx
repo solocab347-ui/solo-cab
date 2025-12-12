@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -34,6 +34,7 @@ import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/DriverPlanning";
+import { DriverCourseSharing } from "@/components/driver/DriverCourseSharing";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -457,6 +458,11 @@ const DriverDashboard = () => {
                 <Globe className="w-4 h-4" />
                 <span className="hidden sm:inline">Profil Public</span>
                 <span className="sm:hidden">Profil</span>
+              </TabsTrigger>
+              <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
+                <Handshake className="w-4 h-4" />
+                <span className="hidden sm:inline">Partage</span>
+                <span className="sm:hidden">Partage</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
@@ -887,6 +893,11 @@ const DriverDashboard = () => {
               qrCode={qrCode} 
               driverProfile={driverProfile} 
             />
+          </TabsContent>
+
+          {/* Course Sharing Tab */}
+          <TabsContent value="sharing" className="space-y-6">
+            <DriverCourseSharing />
           </TabsContent>
 
         </Tabs>
