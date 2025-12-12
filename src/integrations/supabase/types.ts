@@ -793,38 +793,69 @@ export type Database = {
       driver_partnerships: {
         Row: {
           accepted_at: string | null
+          blocked_at: string | null
+          blocked_by_admin_id: string | null
+          blocked_reason: string | null
           commission_percentage: number | null
           created_at: string | null
+          custom_payment_days: number | null
           driver_a_id: string
           driver_b_id: string
           id: string
+          last_payment_date: string | null
+          payment_day: number | null
+          payment_schedule: string | null
           proposed_by: string
+          sharing_blocked: boolean | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
+          blocked_at?: string | null
+          blocked_by_admin_id?: string | null
+          blocked_reason?: string | null
           commission_percentage?: number | null
           created_at?: string | null
+          custom_payment_days?: number | null
           driver_a_id: string
           driver_b_id: string
           id?: string
+          last_payment_date?: string | null
+          payment_day?: number | null
+          payment_schedule?: string | null
           proposed_by: string
+          sharing_blocked?: boolean | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
+          blocked_at?: string | null
+          blocked_by_admin_id?: string | null
+          blocked_reason?: string | null
           commission_percentage?: number | null
           created_at?: string | null
+          custom_payment_days?: number | null
           driver_a_id?: string
           driver_b_id?: string
           id?: string
+          last_payment_date?: string | null
+          payment_day?: number | null
+          payment_schedule?: string | null
           proposed_by?: string
+          sharing_blocked?: boolean | null
           status?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "driver_partnerships_blocked_by_admin_id_fkey"
+            columns: ["blocked_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "driver_partnerships_driver_a_id_fkey"
             columns: ["driver_a_id"]
@@ -1760,6 +1791,135 @@ export type Database = {
         }
         Relationships: []
       }
+      partnership_disputes: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          amount_owed: number | null
+          created_at: string
+          description: string | null
+          id: string
+          partnership_id: string
+          reason: string
+          reported_driver_id: string
+          reporter_driver_id: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          amount_owed?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          partnership_id: string
+          reason: string
+          reported_driver_id: string
+          reporter_driver_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          amount_owed?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          partnership_id?: string
+          reason?: string
+          reported_driver_id?: string
+          reporter_driver_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_disputes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnership_balances"
+            referencedColumns: ["partnership_id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -1976,6 +2136,9 @@ export type Database = {
       }
       shared_courses: {
         Row: {
+          client_message: string | null
+          client_notified: boolean | null
+          client_notified_at: string | null
           commission_amount: number
           commission_percentage: number
           completed_at: string | null
@@ -1990,6 +2153,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          client_message?: string | null
+          client_notified?: boolean | null
+          client_notified_at?: string | null
           commission_amount: number
           commission_percentage: number
           completed_at?: string | null
@@ -2004,6 +2170,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          client_message?: string | null
+          client_notified?: boolean | null
+          client_notified_at?: string | null
           commission_amount?: number
           commission_percentage?: number
           completed_at?: string | null
@@ -2456,6 +2625,7 @@ export type Database = {
               tva_amount: number
             }[]
           }
+      can_share_courses: { Args: { _driver_id: string }; Returns: boolean }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string
@@ -2497,6 +2667,31 @@ export type Database = {
       generate_reservation_number: {
         Args: { _driver_id: string }
         Returns: string
+      }
+      get_all_partnership_disputes: {
+        Args: never
+        Returns: {
+          admin_id: string | null
+          admin_notes: string | null
+          amount_owed: number | null
+          created_at: string
+          description: string | null
+          id: string
+          partnership_id: string
+          reason: string
+          reported_driver_id: string
+          reporter_driver_id: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "partnership_disputes"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_company_id: { Args: { _user_id: string }; Returns: string }
