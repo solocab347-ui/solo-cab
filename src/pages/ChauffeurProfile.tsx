@@ -302,22 +302,34 @@ const ChauffeurProfile = () => {
               </div>
             </div>
 
-            {/* Bouton d'inscription */}
-            <Button
-              onClick={handleRegisterWithDriver}
-              disabled={registering}
-              size="lg"
-              className="w-full mt-8 bg-gradient-premium hover:opacity-90"
-            >
-              {registering ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Inscription en cours...</>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  S'inscrire avec ce chauffeur
-                </>
-              )}
-            </Button>
+            {/* Boutons d'action */}
+            <div className="w-full mt-8 space-y-3">
+              <Button
+                onClick={handleRegisterWithDriver}
+                disabled={registering}
+                size="lg"
+                className="w-full bg-gradient-premium hover:opacity-90"
+              >
+                {registering ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Inscription en cours...</>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    S'inscrire avec ce chauffeur
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => navigate(`/reservation-rapide/${id}`)}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                <Car className="w-5 h-5 mr-2" />
+                Réserver sans s'inscrire
+              </Button>
+            </div>
           </Card>
 
           {/* Description */}

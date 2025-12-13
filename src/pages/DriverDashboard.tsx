@@ -35,6 +35,7 @@ import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/DriverPlanning";
 import { DriverCourseSharing } from "@/components/driver/DriverCourseSharing";
+import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";

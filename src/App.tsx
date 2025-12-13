@@ -29,6 +29,8 @@ import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
 import RegisterCompany from "./pages/RegisterCompany";
 import RegisterFleetManager from "./pages/RegisterFleetManager";
+import GuestBooking from "./pages/GuestBooking";
+import GuestBookingTracking from "./pages/GuestBookingTracking";
 
 // Lazy load heavy dashboards and authenticated pages
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
@@ -77,6 +79,8 @@ const App = () => (
               <Route path="/register-company" element={<RegisterCompany />} />
               <Route path="/register-fleet" element={<RegisterFleetManager />} />
               <Route path="/pioneer-test" element={<PioneerTest />} />
+              <Route path="/reservation-rapide/:driverId" element={<GuestBooking />} />
+              <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
                   <Suspense fallback={<LoadingFallback />}>
