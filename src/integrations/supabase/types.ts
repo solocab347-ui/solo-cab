@@ -432,7 +432,14 @@ export type Database = {
           driver_id: string | null
           driver_ids: string[] | null
           duration_minutes: number | null
+          guest_email: string | null
+          guest_estimated_price: number | null
+          guest_name: string | null
+          guest_notified_at: string | null
+          guest_phone: string | null
+          guest_tracking_token: string | null
           id: string
+          is_guest_booking: boolean | null
           notes: string | null
           passengers_count: number
           pickup_address: string
@@ -457,7 +464,14 @@ export type Database = {
           driver_id?: string | null
           driver_ids?: string[] | null
           duration_minutes?: number | null
+          guest_email?: string | null
+          guest_estimated_price?: number | null
+          guest_name?: string | null
+          guest_notified_at?: string | null
+          guest_phone?: string | null
+          guest_tracking_token?: string | null
           id?: string
+          is_guest_booking?: boolean | null
           notes?: string | null
           passengers_count?: number
           pickup_address: string
@@ -482,7 +496,14 @@ export type Database = {
           driver_id?: string | null
           driver_ids?: string[] | null
           duration_minutes?: number | null
+          guest_email?: string | null
+          guest_estimated_price?: number | null
+          guest_name?: string | null
+          guest_notified_at?: string | null
+          guest_phone?: string | null
+          guest_tracking_token?: string | null
           id?: string
+          is_guest_booking?: boolean | null
           notes?: string | null
           passengers_count?: number
           pickup_address?: string
@@ -2705,6 +2726,22 @@ export type Database = {
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
       get_fleet_manager_id: { Args: { _user_id: string }; Returns: string }
+      get_guest_booking_by_token: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          destination_address: string
+          driver_company: string
+          driver_name: string
+          driver_phone: string
+          guest_estimated_price: number
+          guest_name: string
+          id: string
+          pickup_address: string
+          scheduled_date: string
+          status: Database["public"]["Enums"]["course_status"]
+        }[]
+      }
       get_my_driver_statistics: {
         Args: never
         Returns: {
