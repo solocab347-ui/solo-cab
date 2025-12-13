@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database, Handshake } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import AdminOverview from "@/components/admin/AdminOverview";
@@ -24,6 +24,7 @@ import AdminSettings from "@/components/admin/AdminSettings";
 import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
 import AdminUserCleanup from "@/components/admin/AdminUserCleanup";
 import { AdminTestData } from "@/components/admin/AdminTestData";
+import { AdminPartnershipDisputes } from "@/components/admin/AdminPartnershipDisputes";
 
 
 const AdminDashboard = () => {
@@ -93,6 +94,7 @@ const AdminDashboard = () => {
     { id: "user-cleanup", label: "Nettoyage Comptes", icon: AlertTriangle },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
     { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
+    { id: "partnership-disputes", label: "Litiges Partenaires", icon: Handshake },
     { id: "feedback", label: "Feedbacks Chauffeurs", icon: Lightbulb },
     { id: "data-integrity", label: "Intégrité des Données", icon: Database },
     { id: "rls-audit", label: "Audit Sécurité RLS", icon: Shield },
@@ -126,6 +128,8 @@ const AdminDashboard = () => {
         return <AdminAssistantRequests />;
       case "disputes":
         return <AdminDisputes />;
+      case "partnership-disputes":
+        return <AdminPartnershipDisputes />;
       case "feedback":
         return <AdminFeedback />;
       case "data-integrity":
