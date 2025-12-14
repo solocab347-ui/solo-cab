@@ -32,19 +32,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get course details avec code promo
+    // Get course details avec code promo - utiliser LEFT JOIN pour supporter les guest bookings
+    console.log('🔍 Récupération de la course:', course_id);
+    
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
-      .select('*, clients!inner(user_id, id), promo_code, discount_amount')
+      .select('*, clients(user_id, id), promo_code, discount_amount')
       .eq('id', course_id)
       .single();
 
     if (courseError || !course) {
+      console.error('❌ Course introuvable:', courseError);
       return new Response(
-        JSON.stringify({ error: 'Course introuvable' }),
+        JSON.stringify({ error: 'Course introuvable', details: courseError?.message }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ Course trouvée:', { 
+      id: course.id, 
+      client_id: course.client_id, 
+      driver_id: course.driver_id,
+      distance_km: course.distance_km,
+      duration_minutes: course.duration_minutes
+    });
 
     // Calculate price using existing function
     const { data: priceData, error: priceError } = await supabaseClient

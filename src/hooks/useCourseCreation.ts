@@ -169,6 +169,15 @@ export function useCourseCreation() {
       }
 
       // CRÉATION: Insérer la course avec toutes les validations passées
+      logger.info("Tentative de création de course", { 
+        clientId, 
+        driverId, 
+        pickupAddress, 
+        destinationAddress,
+        distanceKm,
+        durationMinutes
+      });
+
       const { data: course, error: courseError } = await supabase
         .from("courses")
         .insert({
@@ -194,8 +203,24 @@ export function useCourseCreation() {
         .single();
 
       if (courseError) {
-        logger.error("Course creation failed", { error: courseError, clientId, driverId });
-        toast.error("Erreur lors de la création de la course");
+        logger.error("Course creation failed", { 
+          error: courseError, 
+          clientId, 
+          driverId,
+          errorCode: courseError.code,
+          errorMessage: courseError.message,
+          errorDetails: courseError.details,
+          errorHint: courseError.hint
+        });
+        
+        // Messages d'erreur plus spécifiques selon le code d'erreur
+        if (courseError.code === '42501') {
+          toast.error("Erreur d'autorisation: Vous n'êtes pas autorisé à créer cette course");
+        } else if (courseError.code === '23503') {
+          toast.error("Erreur: Client ou chauffeur non trouvé");
+        } else {
+          toast.error("Erreur lors de la création de la course");
+        }
         return null;
       }
 
