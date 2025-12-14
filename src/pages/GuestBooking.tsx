@@ -184,7 +184,7 @@ const GuestBooking = () => {
         .from('courses')
         .insert({
           driver_id: driver.id,
-          client_id: null as any, // Guest booking has no client_id
+          driver_ids: [driver.id],
           pickup_address: pickupAddress,
           pickup_latitude: pickupCoords.latitude,
           pickup_longitude: pickupCoords.longitude,
