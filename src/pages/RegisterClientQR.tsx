@@ -362,6 +362,29 @@ const RegisterClientQR = () => {
             <p className="text-center text-sm text-muted-foreground leading-relaxed">
               {t('register.exclusiveNote')}
             </p>
+
+            {/* Séparateur */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">ou</span>
+              </div>
+            </div>
+
+            {/* Bouton réservation sans inscription */}
+            <Button 
+              variant="outline"
+              onClick={() => navigate(`/reservation-rapide/${driverInfo.id}`)}
+              className="w-full h-12 text-base font-medium border-2 hover:bg-muted/50 transition-all"
+              size="lg"
+            >
+              Réserver sans m'inscrire
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Réservez rapidement avec vos coordonnées, vous pourrez vous inscrire plus tard
+            </p>
           </div>
         ) : (
           // Formulaire d'inscription

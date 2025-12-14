@@ -140,36 +140,39 @@ export function useCourseCreation() {
         return null;
       }
 
-      // VALIDATION 7: Si clientId fourni, vérifier qu'il existe et appartient à ce driver
-      if (clientId) {
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id, driver_id, driver_ids")
-          .eq("id", clientId)
-          .maybeSingle();
+      // VALIDATION 7: clientId est obligatoire pour créer une course standard
+      if (!clientId) {
+        toast.error("ID client requis pour créer une course");
+        return null;
+      }
 
-        if (clientError || !clientData) {
-          logger.error("Client verification failed", { error: clientError, clientId });
-          toast.error("Client introuvable");
-          return null;
-        }
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, driver_id, driver_ids")
+        .eq("id", clientId)
+        .maybeSingle();
 
-        // Vérifier l'association client-driver (dual association)
-        const isAssociated =
-          clientData.driver_id === driverId ||
-          (clientData.driver_ids && clientData.driver_ids.includes(driverId));
+      if (clientError || !clientData) {
+        logger.error("Client verification failed", { error: clientError, clientId });
+        toast.error("Client introuvable");
+        return null;
+      }
 
-        if (!isAssociated) {
-          toast.error("Ce client n'est pas associé à ce chauffeur");
-          return null;
-        }
+      // Vérifier l'association client-driver (dual association)
+      const isAssociated =
+        clientData.driver_id === driverId ||
+        (clientData.driver_ids && clientData.driver_ids.includes(driverId));
+
+      if (!isAssociated) {
+        toast.error("Ce client n'est pas associé à ce chauffeur");
+        return null;
       }
 
       // CRÉATION: Insérer la course avec toutes les validations passées
       const { data: course, error: courseError } = await supabase
         .from("courses")
         .insert({
-          client_id: clientId!,
+          client_id: clientId,
           driver_id: driverId,
           driver_ids: [driverId],
           pickup_address: pickupAddress,
