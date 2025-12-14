@@ -419,7 +419,7 @@ export type Database = {
       }
       courses: {
         Row: {
-          client_id: string
+          client_id: string | null
           client_rating: number | null
           course_number: string | null
           created_at: string
@@ -451,7 +451,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           client_rating?: number | null
           course_number?: string | null
           created_at?: string
@@ -483,7 +483,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           client_rating?: number | null
           course_number?: string | null
           created_at?: string
