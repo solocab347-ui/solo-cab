@@ -2385,10 +2385,11 @@ export type Database = {
           driver_a_owes_b: number | null
           driver_b_id: string | null
           driver_b_owes_a: number | null
-          net_balance: number | null
+          last_payment_date: string | null
+          net_balance_a_to_b: number | null
           partnership_id: string | null
+          payment_schedule: string | null
           status: string | null
-          total_shared_courses: number | null
         }
         Relationships: [
           {
