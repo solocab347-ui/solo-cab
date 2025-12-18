@@ -13,13 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake } from "lucide-react";
 import { CourseNavigationButtons } from "@/components/course/CourseNavigationButtons";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
 import CourseReportDialog from "@/components/CourseReportDialog";
+import { ShareCourseWithPartnerDialog } from "@/components/driver/ShareCourseWithPartnerDialog";
 import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
@@ -57,6 +58,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   // État pour le signalement
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [courseToReport, setCourseToReport] = useState<any>(null);
+  
+  // État pour le partage avec partenaire
+  const [sharePartnerDialogOpen, setSharePartnerDialogOpen] = useState(false);
+  const [courseToShareWithPartner, setCourseToShareWithPartner] = useState<any>(null);
   
   // SYSTÈME DE FIGEMENT: Capture l'ordre initial des courses pour maintenir leur position
   const [confirmedCoursesOrder, setConfirmedCoursesOrder] = useState<Map<string, number>>(new Map());
@@ -1621,6 +1626,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
+                  {/* Bouton Partager avec Partenaire */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToShareWithPartner(course);
+                      setSharePartnerDialogOpen(true);
+                    }}
+                    className="w-full border-primary/50 text-primary hover:bg-primary/10"
+                  >
+                    <Handshake className="w-4 h-4 mr-2" />
+                    Partager avec un partenaire
+                  </Button>
+                  
                   <Button
                     variant="outline"
                     size="sm"
@@ -1792,6 +1811,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       Facebook
                     </Button>
                   </div>
+                  
+                  {/* Bouton Partager avec Partenaire */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCourseToShareWithPartner(course);
+                      setSharePartnerDialogOpen(true);
+                    }}
+                    className="w-full border-primary/50 text-primary hover:bg-primary/10"
+                  >
+                    <Handshake className="w-4 h-4 mr-2" />
+                    Partager avec un partenaire
+                  </Button>
                   
                   <Button
                     variant="outline"
@@ -2173,6 +2206,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           currentUserId={user?.id || ""}
         />
       )}
+
+      {/* Share with Partner Dialog */}
+      <ShareCourseWithPartnerDialog
+        open={sharePartnerDialogOpen}
+        onOpenChange={setSharePartnerDialogOpen}
+        course={courseToShareWithPartner}
+        driverId={driverId}
+        onSuccess={fetchCourses}
+      />
     </div>
   );
 };
