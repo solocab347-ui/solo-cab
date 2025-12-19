@@ -42,9 +42,9 @@ Deno.serve(async (req) => {
       }
     );
 
-    const adminEmail = 'solocab347@gmail.com';
-    // Generate a password under 72 characters (bcrypt limit)
-    const adminPassword = crypto.randomUUID().replace(/-/g, '');
+    const adminEmail = 'contact@solocab.fr';
+    // Generate a complex password under 72 characters (bcrypt limit)
+    const adminPassword = 'SoloCab$2025#Admin@Secure!Pwd';
 
     // List all users
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
