@@ -38,6 +38,8 @@ import QRCode from "qrcode";
 import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
 import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarningBanner";
 import { FleetSubscriptionManager } from "@/components/fleet-manager/FleetSubscriptionManager";
+import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverInvitations";
+import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlanning";
 
 interface FleetManager {
   id: string;
@@ -422,10 +424,14 @@ const FleetManagerDashboard = () => {
         </div>
 
         <Tabs defaultValue="drivers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 lg:w-auto">
             <TabsTrigger value="drivers" className="flex items-center gap-2">
               <Car className="w-4 h-4" />
               <span className="hidden sm:inline">Chauffeurs</span>
+            </TabsTrigger>
+            <TabsTrigger value="planning" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">Planning</span>
             </TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -510,6 +516,11 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Planning Tab */}
+          <TabsContent value="planning">
+            <FleetDriverPlanning fleetManagerId={fleetManager.id} />
+          </TabsContent>
+
           {/* Clients Tab */}
           <TabsContent value="clients">
             <Card>
@@ -561,96 +572,12 @@ const FleetManagerDashboard = () => {
 
           {/* Invitations Tab */}
           <TabsContent value="invitations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Invitations Chauffeurs</CardTitle>
-                <CardDescription>
-                  Envoyez des liens d'invitation à vos chauffeurs
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Create invitation form */}
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="invitationEmail">Email du chauffeur (optionnel)</Label>
-                    <Input
-                      id="invitationEmail"
-                      type="email"
-                      placeholder="chauffeur@email.com"
-                      value={newInvitationEmail}
-                      onChange={(e) => setNewInvitationEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={generateInvitation} disabled={sendingInvitation}>
-                      {sendingInvitation ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Créer invitation
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Invitations list */}
-                <div className="space-y-3">
-                  {invitations.map((invitation) => (
-                    <div
-                      key={invitation.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        {invitation.used ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Clock className="w-5 h-5 text-amber-500" />
-                        )}
-                        <div>
-                          <p className="font-medium">
-                            {invitation.email || "Invitation générique"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Créée le{" "}
-                            {new Date(invitation.created_at).toLocaleDateString("fr-FR")}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {invitation.used ? (
-                          <Badge variant="secondary">Utilisée</Badge>
-                        ) : (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => copyInvitationLink(invitation.token)}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteInvitation(invitation.id)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {invitations.length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">
-                      Aucune invitation créée
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <FleetDriverInvitations 
+              fleetManagerId={fleetManager.id}
+              currentDriversCount={drivers.length}
+              maxFreeDrivers={fleetManager.max_free_drivers || 10}
+              onInvitationCreated={fetchData}
+            />
           </TabsContent>
 
           {/* QR Code Tab */}

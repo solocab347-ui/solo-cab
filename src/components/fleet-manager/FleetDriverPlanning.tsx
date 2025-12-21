@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 
 interface FleetDriverPlanningProps {
   fleetManagerId: string;
-  drivers: any[];
 }
 
-export const FleetDriverPlanning = ({ fleetManagerId, drivers }: FleetDriverPlanningProps) => {
+export const FleetDriverPlanning = ({ fleetManagerId }: FleetDriverPlanningProps) => {
+  const [drivers, setDrivers] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +23,66 @@ export const FleetDriverPlanning = ({ fleetManagerId, drivers }: FleetDriverPlan
   const [selectedDriver, setSelectedDriver] = useState<string>("all");
 
   useEffect(() => {
-    fetchData();
-  }, [fleetManagerId, drivers]);
+    fetchDrivers();
+  }, [fleetManagerId]);
+
+  useEffect(() => {
+    if (drivers.length > 0) {
+      fetchData();
+    }
+  }, [drivers]);
+
+  const fetchDrivers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("fleet_manager_drivers")
+        .select(`
+          *,
+          driver:drivers(
+            id,
+            vehicle_model,
+            status,
+            user_id
+          )
+        `)
+        .eq("fleet_manager_id", fleetManagerId)
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      // Fetch profiles for drivers
+      if (data && data.length > 0) {
+        const driverUserIds = data.filter((d) => d.driver).map((d) => d.driver.user_id);
+
+        if (driverUserIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email, phone")
+            .in("id", driverUserIds);
+
+          const driversWithProfiles = data.map((d) => ({
+            ...d,
+            driver: d.driver
+              ? {
+                  ...d.driver,
+                  profile: profiles?.find((p) => p.id === d.driver.user_id),
+                }
+              : undefined,
+          }));
+
+          setDrivers(driversWithProfiles);
+        } else {
+          setDrivers(data);
+        }
+      } else {
+        setDrivers([]);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
