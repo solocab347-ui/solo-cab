@@ -296,56 +296,56 @@ const Index = () => {
       {/* Hero Section */}
       <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
         <div className="container mx-auto px-4">
-          {/* Toggle Buttons */}
+          {/* Toggle Buttons - Always 2 rows */}
           <div className="flex justify-center mb-12">
-            <div className="inline-flex flex-wrap justify-center rounded-lg bg-white/5 p-1 backdrop-blur-sm border border-white/10 gap-1">
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10 max-w-lg w-full">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
-                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
+                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Pour les</span> Clients
+                <Users className="w-4 h-4 flex-shrink-0" />
+                <span>Pour les Clients</span>
               </button>
               <button
                 onClick={() => setActiveView("drivers")}
                 className={cn(
-                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
+                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Car className="w-4 h-4" />
-                <span className="hidden sm:inline">Pour les</span> Chauffeurs
+                <Car className="w-4 h-4 flex-shrink-0" />
+                <span>Pour les Chauffeurs</span>
               </button>
               <button
                 onClick={() => setActiveView("companies")}
                 className={cn(
-                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
+                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
                   activeView === "companies"
                     ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Building2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Pour les</span> Entreprises
+                <Building2 className="w-4 h-4 flex-shrink-0" />
+                <span>Pour les Entreprises</span>
               </button>
               <button
                 onClick={() => setActiveView("fleet")}
                 className={cn(
-                  "px-4 py-2 md:px-6 md:py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2 text-sm md:text-base",
+                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
                   activeView === "fleet"
                     ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Truck className="w-4 h-4" />
-                <span className="hidden sm:inline">Gestionnaire de</span> Flotte
+                <Truck className="w-4 h-4 flex-shrink-0" />
+                <span>Gestionnaire Flotte</span>
               </button>
             </div>
           </div>
