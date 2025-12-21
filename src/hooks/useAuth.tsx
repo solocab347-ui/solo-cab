@@ -275,15 +275,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const role = await fetchUserRole(data.user.id);
       
       // Toast de succès avec description claire
-      const roleLabel = role === "admin" ? "Administrateur" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
+      const roleLabel = role === "admin" ? "Administrateur" : role === "fleet_manager" ? "Gestionnaire de flotte" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
       toast.success("Connexion réussie !", {
         description: `Bienvenue ${roleLabel} ! Redirection vers votre espace...`,
         duration: 3000,
       });
 
+      // Check if driver is a fleet driver
+      if (role === "driver") {
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("is_fleet_driver, fleet_manager_id")
+          .eq("user_id", data.user.id)
+          .single();
+        
+        if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
+          navigate("/fleet-driver-dashboard", { replace: true });
+          return;
+        }
+      }
+
       // Navigation basée sur le rôle
       if (role === "admin") {
         navigate("/admin-dashboard", { replace: true });
+      } else if (role === "fleet_manager") {
+        navigate("/fleet-dashboard", { replace: true });
       } else if (role === "driver") {
         navigate("/driver-dashboard", { replace: true });
       } else if (role === "client") {
