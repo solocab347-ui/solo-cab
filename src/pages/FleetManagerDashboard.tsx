@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   Users,
   Car,
@@ -25,15 +26,24 @@ import {
   FileText,
   CreditCard,
   Star,
+  LogOut,
+  Shield,
+  Home,
+  ChevronDown,
+  Eye,
+  ExternalLink,
+  ArrowLeft,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import QRCode from "qrcode";
 import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
 import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarningBanner";
 import { FleetSubscriptionManager } from "@/components/fleet-manager/FleetSubscriptionManager";
 import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverInvitations";
 import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlanning";
-import { FleetDashboardHeader } from "@/components/fleet-manager/FleetDashboardHeader";
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
+import { FleetHome } from "@/components/fleet-manager/FleetHome";
+import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
   id: string;
@@ -70,6 +80,8 @@ interface FleetDriver {
     user_id: string;
     rating?: number | null;
     vehicle_photos?: string[] | null;
+    bio?: string | null;
+    services_offered?: string[] | null;
     profile?: {
       full_name: string;
       email: string;
@@ -104,7 +116,7 @@ interface Invitation {
 }
 
 const FleetManagerDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fleetManager, setFleetManager] = useState<FleetManager | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -113,8 +125,8 @@ const FleetManagerDashboard = () => {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [qrCodeData, setQrCodeData] = useState<string>("");
-  const [newInvitationEmail, setNewInvitationEmail] = useState("");
-  const [sendingInvitation, setSendingInvitation] = useState(false);
+  const [activeTab, setActiveTab] = useState("home");
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -145,7 +157,7 @@ const FleetManagerDashboard = () => {
         setUserProfile(profileData);
       }
 
-      // Fetch drivers
+      // Fetch drivers with more details
       const { data: driversData } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -153,8 +165,13 @@ const FleetManagerDashboard = () => {
           driver:drivers(
             id,
             vehicle_model,
+            vehicle_brand,
             status,
-            user_id
+            user_id,
+            rating,
+            vehicle_photos,
+            bio,
+            services_offered
           )
         `)
         .eq("fleet_manager_id", fmData.id);
@@ -168,7 +185,7 @@ const FleetManagerDashboard = () => {
         if (driverUserIds.length > 0) {
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, full_name, email, phone")
+            .select("id, full_name, email, phone, profile_photo_url")
             .in("id", driverUserIds);
 
           const driversWithProfiles = driversData.map((d) => ({
@@ -270,56 +287,10 @@ const FleetManagerDashboard = () => {
     }
   };
 
-  const generateInvitation = async () => {
-    if (!fleetManager) return;
-
-    setSendingInvitation(true);
-    try {
-      const token = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-
-      const { error } = await supabase.from("fleet_manager_invitations").insert({
-        fleet_manager_id: fleetManager.id,
-        token,
-        email: newInvitationEmail || null,
-        expires_at: expiresAt.toISOString(),
-      });
-
-      if (error) throw error;
-
-      toast.success("Invitation créée avec succès");
-      setNewInvitationEmail("");
-      fetchData();
-    } catch (error: any) {
-      console.error("Error creating invitation:", error);
-      toast.error("Erreur lors de la création de l'invitation");
-    } finally {
-      setSendingInvitation(false);
-    }
-  };
-
   const copyInvitationLink = (token: string) => {
     const link = `${window.location.origin}/register-driver-fleet?token=${token}`;
     navigator.clipboard.writeText(link);
     toast.success("Lien copié dans le presse-papiers");
-  };
-
-  const deleteInvitation = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("fleet_manager_invitations")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success("Invitation supprimée");
-      setInvitations(invitations.filter((inv) => inv.id !== id));
-    } catch (error: any) {
-      console.error("Error deleting invitation:", error);
-      toast.error("Erreur lors de la suppression");
-    }
   };
 
   const togglePublicStorefront = async (enabled: boolean) => {
@@ -350,9 +321,14 @@ const FleetManagerDashboard = () => {
     toast.success("Lien copié dans le presse-papiers");
   };
 
+  const handleViewDriverProfile = (driverId: string) => {
+    setSelectedDriverId(driverId);
+    setActiveTab("driver-profile");
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -360,133 +336,292 @@ const FleetManagerDashboard = () => {
 
   if (!fleetManager) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Profil non trouvé</p>
       </div>
     );
   }
 
-  // Fleet managers can access dashboard immediately but must submit documents
-  // Only block if documents are overdue AND status is still pending
-  const documentsOverdue = fleetManager.documents_deadline && 
-    new Date(fleetManager.documents_deadline) < new Date() &&
-    fleetManager.documents_status !== "validated" &&
-    fleetManager.documents_status !== "submitted";
+  const selectedDriver = drivers.find(d => d.driver?.id === selectedDriverId);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Document Warning Banner - Always visible if documents pending */}
+    <div className="min-h-screen bg-gradient-bg">
+      {/* Document Warning Banner */}
       <DocumentWarningBanner 
         documentsStatus={fleetManager.documents_status || "pending"}
         documentsDeadline={fleetManager.documents_deadline}
       />
-      
-      <NavigationHeader />
 
-      {/* Modern Dashboard Header */}
-      <FleetDashboardHeader 
-        fleetManager={fleetManager}
-        driversCount={drivers.length}
-        clientsCount={clients.length}
-        userProfile={userProfile}
-      />
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-lg">
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src={logoSolocab} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            {activeTab !== "home" && (
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("home")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Accueil</span>
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <NotificationBell />
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-medium text-foreground">{userProfile?.full_name || fleetManager.contact_name}</span>
+              <Badge 
+                variant="outline" 
+                className={`text-xs border ${
+                  fleetManager.subscription_status === "active" 
+                    ? "border-success/50 text-success bg-success/10"
+                    : "border-muted-foreground/50 text-muted-foreground bg-muted"
+                }`}
+              >
+                {fleetManager.subscription_status === "active" ? "Premium" : "Standard"}
+              </Badge>
+            </div>
+            <Link to="/rgpd-data">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground" title="Mes Données RGPD">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+            </Link>
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="drivers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 lg:w-auto">
-            <TabsTrigger value="drivers" className="flex items-center gap-2">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Navigation Tabs */}
+          <TabsList className="w-full bg-card/50 backdrop-blur-sm flex flex-wrap gap-1 h-auto p-2 shadow-lg border border-white/10 rounded-xl">
+            <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
+              <Home className="w-4 h-4" />
+              <span>Accueil</span>
+            </TabsTrigger>
+            <TabsTrigger value="drivers" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white">
               <Car className="w-4 h-4" />
-              <span className="hidden sm:inline">Chauffeurs</span>
+              <span>Chauffeurs</span>
             </TabsTrigger>
-            <TabsTrigger value="planning" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span className="hidden sm:inline">Planning</span>
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="flex items-center gap-2">
+            <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
               <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Clients</span>
+              <span>Clients</span>
             </TabsTrigger>
-            <TabsTrigger value="invitations" className="flex items-center gap-2">
+            <TabsTrigger value="planning" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+              <Clock className="w-4 h-4" />
+              <span>Planning</span>
+            </TabsTrigger>
+            <TabsTrigger value="invitations" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
               <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Invitations</span>
+              <span>Invitations</span>
             </TabsTrigger>
-            <TabsTrigger value="public-profile" className="flex items-center gap-2">
+            <TabsTrigger value="public-profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white">
               <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">Profil Public</span>
+              <span>Vitrine</span>
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              <span className="hidden sm:inline">Abonnement</span>
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Documents</span>
-            </TabsTrigger>
-            <TabsTrigger value="qrcode" className="flex items-center gap-2">
+            <TabsTrigger value="qrcode" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
               <QrCode className="w-4 h-4" />
-              <span className="hidden sm:inline">QR Code</span>
+              <span>QR</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white">
+              <CreditCard className="w-4 h-4" />
+              <span>Abo</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+              <FileText className="w-4 h-4" />
+              <span>Docs</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-white">
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Paramètres</span>
+              <span>Param.</span>
             </TabsTrigger>
           </TabsList>
 
+          {/* Home Tab */}
+          <TabsContent value="home">
+            <FleetHome 
+              fleetManager={fleetManager}
+              userProfile={userProfile}
+              drivers={drivers}
+              clientsCount={clients.length}
+              pendingInvitationsCount={invitations.filter(i => !i.used).length}
+              onTabChange={setActiveTab}
+              onViewDriverProfile={handleViewDriverProfile}
+            />
+          </TabsContent>
+
           {/* Drivers Tab */}
           <TabsContent value="drivers">
-            <Card>
+            <Card className="bg-card/50 backdrop-blur border-white/10">
               <CardHeader>
-                <CardTitle>Mes Chauffeurs</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="w-5 h-5 text-primary" />
+                  Mes Chauffeurs
+                </CardTitle>
                 <CardDescription>
-                  Gérez votre équipe de chauffeurs VTC
+                  Cliquez sur un chauffeur pour voir son profil complet
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {drivers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Car className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucun chauffeur pour le moment</p>
-                    <p className="text-sm mt-2">
-                      Envoyez des invitations pour recruter des chauffeurs
-                    </p>
+                  <div className="text-center py-12">
+                    <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                    <p className="text-muted-foreground mb-4">Aucun chauffeur pour le moment</p>
+                    <Button onClick={() => setActiveTab("invitations")} className="gap-2">
+                      <Send className="w-4 h-4" />
+                      Inviter un chauffeur
+                    </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {drivers.map((driver) => (
-                      <div
+                      <Card 
                         key={driver.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="overflow-hidden hover:border-primary/50 transition-all cursor-pointer group bg-card/50"
+                        onClick={() => driver.driver?.id && handleViewDriverProfile(driver.driver.id)}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                            <Car className="w-5 h-5 text-primary" />
+                        {/* Photo */}
+                        <div className="relative h-32 bg-gradient-to-br from-muted to-muted/50">
+                          {driver.driver?.vehicle_photos?.[0] ? (
+                            <img 
+                              src={driver.driver.vehicle_photos[0]} 
+                              alt="Véhicule" 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Car className="w-12 h-12 text-muted-foreground/30" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-3 left-3">
+                            <Avatar className="w-14 h-14 border-4 border-background shadow-xl">
+                              <AvatarImage src={driver.driver?.profile?.profile_photo_url || undefined} />
+                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
+                                {(driver.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
                           </div>
-                          <div>
-                            <p className="font-medium">
-                              {driver.driver?.profile?.full_name || "Chauffeur"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {driver.driver?.vehicle_model}
-                            </p>
-                          </div>
+                          {driver.driver?.rating && (
+                            <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                              <Star className="w-3 h-3 text-warning fill-warning" />
+                              <span className="text-sm font-semibold">{driver.driver.rating.toFixed(1)}</span>
+                            </div>
+                          )}
                         </div>
-                        <Badge
-                          variant={
-                            driver.driver?.status === "validated"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {driver.driver?.status === "validated"
-                            ? "Validé"
-                            : "En attente"}
-                        </Badge>
-                      </div>
+                        <CardContent className="pt-3">
+                          <h3 className="font-semibold text-lg">{driver.driver?.profile?.full_name || "Chauffeur"}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {driver.driver?.vehicle_brand} {driver.driver?.vehicle_model}
+                          </p>
+                          <div className="flex items-center justify-between mt-3">
+                            <Badge variant={driver.driver?.status === "validated" ? "default" : "secondary"}>
+                              {driver.driver?.status === "validated" ? "Validé" : "En attente"}
+                            </Badge>
+                            <Button variant="ghost" size="sm" className="gap-1">
+                              <Eye className="w-4 h-4" />
+                              Voir
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Driver Profile Tab */}
+          <TabsContent value="driver-profile">
+            {selectedDriver?.driver && (
+              <Card className="bg-card/50 backdrop-blur border-white/10">
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab("drivers")}>
+                      <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                    <Avatar className="w-16 h-16 border-2 border-primary/30">
+                      <AvatarImage src={selectedDriver.driver.profile?.profile_photo_url || undefined} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
+                        {(selectedDriver.driver.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle>{selectedDriver.driver.profile?.full_name || "Chauffeur"}</CardTitle>
+                      <CardDescription>{selectedDriver.driver.vehicle_brand} {selectedDriver.driver.vehicle_model}</CardDescription>
+                    </div>
+                    {selectedDriver.driver.rating && (
+                      <Badge className="ml-auto bg-warning/20 text-warning border-warning/30 gap-1">
+                        <Star className="w-3 h-3 fill-warning" />
+                        {selectedDriver.driver.rating.toFixed(1)}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Contact */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Email</p>
+                      <p className="font-medium">{selectedDriver.driver.profile?.email || "Non renseigné"}</p>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Téléphone</p>
+                      <p className="font-medium">{selectedDriver.driver.profile?.phone || "Non renseigné"}</p>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {selectedDriver.driver.bio && (
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">Bio</p>
+                      <p>{selectedDriver.driver.bio}</p>
+                    </div>
+                  )}
+
+                  {/* Services */}
+                  {selectedDriver.driver.services_offered && selectedDriver.driver.services_offered.length > 0 && (
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">Services proposés</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedDriver.driver.services_offered.map((service, i) => (
+                          <Badge key={i} variant="outline">{service}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photos véhicule */}
+                  {selectedDriver.driver.vehicle_photos && selectedDriver.driver.vehicle_photos.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-3">Photos du véhicule</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {selectedDriver.driver.vehicle_photos.map((photo, i) => (
+                          <img 
+                            key={i}
+                            src={photo}
+                            alt={`Véhicule ${i+1}`}
+                            className="rounded-lg aspect-video object-cover"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => window.open(`/chauffeur/${selectedDriver.driver?.id}`, '_blank')}
+                    >
+                      <Globe className="w-4 h-4 mr-2" />
+                      Voir profil public
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Planning Tab */}
@@ -496,40 +631,42 @@ const FleetManagerDashboard = () => {
 
           {/* Clients Tab */}
           <TabsContent value="clients">
-            <Card>
+            <Card className="bg-card/50 backdrop-blur border-white/10">
               <CardHeader>
-                <CardTitle>Mes Clients</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-success" />
+                  Mes Clients
+                </CardTitle>
                 <CardDescription>
                   Clients inscrits via votre QR code
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {clients.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucun client pour le moment</p>
-                    <p className="text-sm mt-2">
-                      Partagez votre QR code pour recruter des clients
-                    </p>
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                    <p className="text-muted-foreground mb-4">Aucun client pour le moment</p>
+                    <Button onClick={() => setActiveTab("qrcode")} className="gap-2">
+                      <QrCode className="w-4 h-4" />
+                      Partager mon QR Code
+                    </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {clients.map((client) => (
                       <div
                         key={client.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                            <Users className="w-5 h-5 text-green-500" />
-                          </div>
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-success/20 text-success">
+                              {(client.client?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
-                            <p className="font-medium">
-                              {client.client?.profile?.full_name || "Client"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {client.client?.total_rides || 0} courses
-                            </p>
+                            <p className="font-medium">{client.client?.profile?.full_name || "Client"}</p>
+                            <p className="text-sm text-muted-foreground">{client.client?.total_rides || 0} courses</p>
                           </div>
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -553,25 +690,38 @@ const FleetManagerDashboard = () => {
             />
           </TabsContent>
 
+          {/* Public Profile Tab */}
+          <TabsContent value="public-profile">
+            <FleetPublicProfileSettings
+              fleetManagerId={fleetManager.id}
+              companyName={fleetManager.company_name}
+              showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+              onUpdate={fetchData}
+            />
+          </TabsContent>
+
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
-            <Card>
+            <Card className="bg-card/50 backdrop-blur border-white/10">
               <CardHeader>
-                <CardTitle>QR Code Client</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="w-5 h-5 text-accent" />
+                  QR Code Client
+                </CardTitle>
                 <CardDescription>
                   Partagez ce QR code pour que vos clients s'inscrivent
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-6">
                 {qrCodeUrl && (
-                  <div className="p-4 bg-white rounded-lg">
+                  <div className="p-4 bg-white rounded-2xl shadow-xl">
                     <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
                   </div>
                 )}
 
                 <div className="flex gap-4">
-                  <Button variant="outline" onClick={copyQrLink}>
-                    <Copy className="w-4 h-4 mr-2" />
+                  <Button variant="outline" onClick={copyQrLink} className="gap-2">
+                    <Copy className="w-4 h-4" />
                     Copier le lien
                   </Button>
                   <Button
@@ -595,27 +745,20 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Public Profile Tab */}
-          <TabsContent value="public-profile">
-            <FleetPublicProfileSettings
-              fleetManagerId={fleetManager.id}
-              companyName={fleetManager.company_name}
-              showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
-              onUpdate={fetchData}
-            />
-          </TabsContent>
-
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Card>
+            <Card className="bg-card/50 backdrop-blur border-white/10">
               <CardHeader>
-                <CardTitle>Paramètres</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Paramètres
+                </CardTitle>
                 <CardDescription>
                   Configurez les options de votre flotte
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
                   <div className="flex items-center gap-4">
                     <Globe className="w-5 h-5 text-primary" />
                     <div>
@@ -650,7 +793,7 @@ const FleetManagerDashboard = () => {
             />
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
     </div>
   );
 };
