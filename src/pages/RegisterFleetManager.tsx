@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Truck, ArrowLeft, Eye, EyeOff, Building2 } from "lucide-react";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import logo from "@/assets/logo-solocab.png";
 
 const RegisterFleetManager = () => {
@@ -86,8 +87,21 @@ const RegisterFleetManager = () => {
 
       if (roleError) throw roleError;
 
-      toast.success("Compte créé avec succès ! Votre demande est en cours de validation.");
-      navigate("/login");
+      // 4. Send welcome email with document reminder
+      try {
+        await supabase.functions.invoke("send-fleet-manager-document-reminder", {
+          body: { 
+            fleetManagerId: authData.user.id,
+            reminderType: "registration"
+          }
+        });
+      } catch (emailError) {
+        console.error("Email notification error:", emailError);
+        // Don't block registration if email fails
+      }
+
+      toast.success("Compte créé avec succès ! Vous pouvez maintenant accéder à votre espace et soumettre vos documents.");
+      navigate("/fleet-manager");
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error.message || "Erreur lors de l'inscription");
@@ -168,12 +182,9 @@ const RegisterFleetManager = () => {
 
                 <div>
                   <Label htmlFor="address">Adresse *</Label>
-                  <Input
-                    id="address"
-                    name="address"
+                  <AddressAutocomplete
                     value={formData.address}
-                    onChange={handleChange}
-                    required
+                    onChange={(address) => setFormData({ ...formData, address })}
                     placeholder="123 Rue de Paris, 75001 Paris"
                   />
                 </div>
