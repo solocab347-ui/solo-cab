@@ -107,3 +107,12 @@ verify_jwt = false
 
 [functions.send-fleet-manager-document-reminder]
 verify_jwt = true
+
+[functions.create-fleet-manager-subscription]
+verify_jwt = true
+
+[functions.add-fleet-extra-driver]
+verify_jwt = true
+
+[functions.check-fleet-subscription]
+verify_jwt = true

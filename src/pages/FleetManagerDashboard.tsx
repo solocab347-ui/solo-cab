@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -29,10 +30,14 @@ import {
   Clock,
   XCircle,
   FileText,
+  CreditCard,
+  AlertTriangle,
+  Euro,
 } from "lucide-react";
 import QRCode from "qrcode";
 import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
 import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarningBanner";
+import { FleetSubscriptionManager } from "@/components/fleet-manager/FleetSubscriptionManager";
 
 interface FleetManager {
   id: string;
@@ -43,6 +48,9 @@ interface FleetManager {
   total_clients: number;
   documents_status: string | null;
   documents_deadline: string | null;
+  subscription_status: string | null;
+  subscription_paid: boolean | null;
+  max_free_drivers: number | null;
 }
 
 interface FleetDriver {
@@ -414,7 +422,7 @@ const FleetManagerDashboard = () => {
         </div>
 
         <Tabs defaultValue="drivers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
             <TabsTrigger value="drivers" className="flex items-center gap-2">
               <Car className="w-4 h-4" />
               <span className="hidden sm:inline">Chauffeurs</span>
@@ -426,6 +434,10 @@ const FleetManagerDashboard = () => {
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">Invitations</span>
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Abonnement</span>
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -712,10 +724,18 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* Subscription Tab */}
+          <TabsContent value="subscription">
+            <FleetSubscriptionManager 
+              fleetManagerId={fleetManager.id}
+              onSubscriptionChange={fetchData}
+            />
+          </TabsContent>
+
           {/* Documents Tab */}
           <TabsContent value="documents">
             <FleetManagerDocuments 
-              fleetManagerId={fleetManager.id} 
+              fleetManagerId={fleetManager.id}
               userId={user?.id || ""} 
             />
           </TabsContent>
