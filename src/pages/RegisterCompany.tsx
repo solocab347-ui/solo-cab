@@ -15,6 +15,7 @@ export default function RegisterCompany() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
   
   const [formData, setFormData] = useState({
@@ -150,7 +151,11 @@ export default function RegisterCompany() {
       
     } catch (error: any) {
       console.error("Erreur inscription entreprise:", error);
-      toast.error(error.message || "Erreur lors de l'inscription");
+      if (error.code === "user_already_exists" || error.message?.includes("already registered")) {
+        toast.error("Cette adresse email est déjà utilisée. Veuillez vous connecter ou utiliser une autre adresse.");
+      } else {
+        toast.error(error.message || "Erreur lors de l'inscription");
+      }
     } finally {
       setLoading(false);
     }
@@ -240,15 +245,33 @@ export default function RegisterCompany() {
               
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className={formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-destructive" : formData.confirmPassword && formData.password === formData.confirmPassword ? "border-green-500" : ""}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
+                )}
+                {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Les mots de passe correspondent
+                  </p>
+                )}
               </div>
 
               <Button
