@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
+import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarningBanner";
 
 interface FleetManager {
   id: string;
@@ -40,6 +41,8 @@ interface FleetManager {
   show_drivers_in_public_storefront: boolean;
   total_drivers: number;
   total_clients: number;
+  documents_status: string | null;
+  documents_deadline: string | null;
 }
 
 interface FleetDriver {
@@ -357,6 +360,12 @@ const FleetManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Document Warning Banner - Always visible if documents pending */}
+      <DocumentWarningBanner 
+        documentsStatus={fleetManager.documents_status || "pending"}
+        documentsDeadline={fleetManager.documents_deadline}
+      />
+      
       <NavigationHeader />
 
       <main className="container mx-auto px-4 py-8">

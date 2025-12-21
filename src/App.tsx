@@ -29,6 +29,7 @@ import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
 import RegisterCompany from "./pages/RegisterCompany";
 import RegisterFleetManager from "./pages/RegisterFleetManager";
+import FleetManagerLanding from "./pages/FleetManagerLanding";
 import GuestBooking from "./pages/GuestBooking";
 import GuestBookingTracking from "./pages/GuestBookingTracking";
 
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/registration-success" element={<RegistrationSuccess />} />
               <Route path="/register-company" element={<RegisterCompany />} />
               <Route path="/register-fleet" element={<RegisterFleetManager />} />
+              <Route path="/devenir-gestionnaire-flotte" element={<FleetManagerLanding />} />
               <Route path="/pioneer-test" element={<PioneerTest />} />
               <Route path="/reservation-rapide/:driverId" element={<GuestBooking />} />
               <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
