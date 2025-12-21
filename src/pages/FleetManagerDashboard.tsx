@@ -6,33 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import {
-  Truck,
   Users,
   Car,
   QrCode,
   Send,
-  Plus,
   Copy,
-  Trash2,
   Loader2,
-  Eye,
-  BarChart3,
   Settings,
-  Mail,
   Globe,
   CheckCircle,
   Clock,
-  XCircle,
   FileText,
   CreditCard,
-  AlertTriangle,
-  Euro,
+  Star,
 } from "lucide-react";
 import QRCode from "qrcode";
 import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
@@ -40,10 +32,14 @@ import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarnin
 import { FleetSubscriptionManager } from "@/components/fleet-manager/FleetSubscriptionManager";
 import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverInvitations";
 import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlanning";
+import { FleetDashboardHeader } from "@/components/fleet-manager/FleetDashboardHeader";
+import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 
 interface FleetManager {
   id: string;
   company_name: string;
+  contact_name: string;
+  contact_email: string;
   status: string;
   show_drivers_in_public_storefront: boolean;
   total_drivers: number;
@@ -55,6 +51,12 @@ interface FleetManager {
   max_free_drivers: number | null;
 }
 
+interface UserProfile {
+  full_name: string;
+  avatar_url: string | null;
+  profile_photo_url: string | null;
+}
+
 interface FleetDriver {
   id: string;
   driver_id: string;
@@ -63,12 +65,16 @@ interface FleetDriver {
   driver?: {
     id: string;
     vehicle_model: string;
+    vehicle_brand?: string | null;
     status: string;
     user_id: string;
+    rating?: number | null;
+    vehicle_photos?: string[] | null;
     profile?: {
       full_name: string;
       email: string;
       phone: string;
+      profile_photo_url?: string | null;
     };
   };
 }
@@ -101,6 +107,7 @@ const FleetManagerDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [fleetManager, setFleetManager] = useState<FleetManager | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
   const [clients, setClients] = useState<FleetClient[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -126,6 +133,17 @@ const FleetManagerDashboard = () => {
 
       if (fmError) throw fmError;
       setFleetManager(fmData);
+
+      // Fetch user profile for header
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, profile_photo_url")
+        .eq("id", user?.id)
+        .single();
+      
+      if (profileData) {
+        setUserProfile(profileData);
+      }
 
       // Fetch drivers
       const { data: driversData } = await supabase
@@ -365,66 +383,17 @@ const FleetManagerDashboard = () => {
       
       <NavigationHeader />
 
+      {/* Modern Dashboard Header */}
+      <FleetDashboardHeader 
+        fleetManager={fleetManager}
+        driversCount={drivers.length}
+        clientsCount={clients.length}
+        userProfile={userProfile}
+      />
+
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Truck className="w-8 h-8 text-primary" />
-            {fleetManager.company_name}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Tableau de bord gestionnaire de flotte
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Car className="w-6 h-6 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{drivers.length}</p>
-                  <p className="text-muted-foreground text-sm">Chauffeurs</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <Users className="w-6 h-6 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{clients.length}</p>
-                  <p className="text-muted-foreground text-sm">Clients</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <Send className="w-6 h-6 text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {invitations.filter((i) => !i.used).length}
-                  </p>
-                  <p className="text-muted-foreground text-sm">Invitations en attente</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         <Tabs defaultValue="drivers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 lg:w-auto">
             <TabsTrigger value="drivers" className="flex items-center gap-2">
               <Car className="w-4 h-4" />
               <span className="hidden sm:inline">Chauffeurs</span>
@@ -440,6 +409,10 @@ const FleetManagerDashboard = () => {
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">Invitations</span>
+            </TabsTrigger>
+            <TabsTrigger value="public-profile" className="flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Profil Public</span>
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
@@ -620,6 +593,16 @@ const FleetManagerDashboard = () => {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Public Profile Tab */}
+          <TabsContent value="public-profile">
+            <FleetPublicProfileSettings
+              fleetManagerId={fleetManager.id}
+              companyName={fleetManager.company_name}
+              showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+              onUpdate={fetchData}
+            />
           </TabsContent>
 
           {/* Settings Tab */}
