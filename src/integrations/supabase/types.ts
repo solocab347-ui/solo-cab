@@ -1330,6 +1330,81 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_invitations: {
+        Row: {
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          is_paid: boolean | null
+          token: string
+          used: boolean | null
+          used_at: string | null
+          used_by_driver_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id: string
+          id?: string
+          is_paid?: boolean | null
+          token: string
+          used?: boolean | null
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id?: string
+          id?: string
+          is_paid?: boolean | null
+          token?: string
+          used?: boolean | null
+          used_at?: string | null
+          used_by_driver_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_manager_clients: {
         Row: {
           client_id: string
@@ -1548,6 +1623,8 @@ export type Database = {
       fleet_managers: {
         Row: {
           address: string
+          base_subscription_cost: number | null
+          billing_history: Json | null
           company_name: string
           contact_email: string
           contact_name: string
@@ -1557,12 +1634,17 @@ export type Database = {
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
+          extra_drivers_count: number | null
           id: string
+          max_free_drivers: number | null
+          monthly_extra_driver_cost: number | null
+          next_billing_date: string | null
           qr_code_id: string | null
           show_drivers_in_public_storefront: boolean | null
           siren: string | null
           siret: string
           status: string
+          stripe_customer_id: string | null
           subscription_end_date: string | null
           subscription_paid: boolean | null
           subscription_status: string | null
@@ -1574,6 +1656,8 @@ export type Database = {
         }
         Insert: {
           address: string
+          base_subscription_cost?: number | null
+          billing_history?: Json | null
           company_name: string
           contact_email: string
           contact_name: string
@@ -1583,12 +1667,17 @@ export type Database = {
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          extra_drivers_count?: number | null
           id?: string
+          max_free_drivers?: number | null
+          monthly_extra_driver_cost?: number | null
+          next_billing_date?: string | null
           qr_code_id?: string | null
           show_drivers_in_public_storefront?: boolean | null
           siren?: string | null
           siret: string
           status?: string
+          stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -1600,6 +1689,8 @@ export type Database = {
         }
         Update: {
           address?: string
+          base_subscription_cost?: number | null
+          billing_history?: Json | null
           company_name?: string
           contact_email?: string
           contact_name?: string
@@ -1609,12 +1700,17 @@ export type Database = {
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          extra_drivers_count?: number | null
           id?: string
+          max_free_drivers?: number | null
+          monthly_extra_driver_cost?: number | null
+          next_billing_date?: string | null
           qr_code_id?: string | null
           show_drivers_in_public_storefront?: boolean | null
           siren?: string | null
           siret?: string
           status?: string
+          stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -2659,6 +2755,19 @@ export type Database = {
               tva_amount: number
             }[]
           }
+      calculate_fleet_monthly_billing: {
+        Args: { _fleet_manager_id: string }
+        Returns: {
+          base_cost: number
+          extra_cost: number
+          extra_drivers: number
+          total_cost: number
+        }[]
+      }
+      can_add_free_driver: {
+        Args: { _fleet_manager_id: string }
+        Returns: boolean
+      }
       can_share_courses: { Args: { _driver_id: string }; Returns: boolean }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
@@ -2738,6 +2847,10 @@ export type Database = {
         Returns: number
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_fleet_driver_count: {
+        Args: { _fleet_manager_id: string }
+        Returns: number
+      }
       get_fleet_manager_id: { Args: { _user_id: string }; Returns: string }
       get_guest_booking_by_token: {
         Args: { _token: string }
