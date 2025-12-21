@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo-solocab.png";
 import { Building2, User, Mail, Phone, MapPin, FileText, Users, ArrowRight, Eye, EyeOff, Check } from "lucide-react";
 import { sanitizeString, sanitizeEmail, sanitizePhone } from "@/lib/inputSanitizer";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 
 export default function RegisterCompany() {
   const navigate = useNavigate();
@@ -333,28 +334,19 @@ export default function RegisterCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="address">Adresse du siège *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    name="address"
-                    placeholder="123 Avenue des Champs-Élysées, 75008 Paris"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
+                <AddressAutocomplete
+                  value={formData.address}
+                  onChange={(address) => setFormData(prev => ({ ...prev, address }))}
+                  placeholder="123 Avenue des Champs-Élysées, 75008 Paris"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="billingAddress">Adresse de facturation (si différente)</Label>
-                <Input
-                  id="billingAddress"
-                  name="billingAddress"
-                  placeholder="Adresse de facturation"
+                <AddressAutocomplete
                   value={formData.billingAddress}
-                  onChange={handleChange}
+                  onChange={(address) => setFormData(prev => ({ ...prev, billingAddress: address }))}
+                  placeholder="Adresse de facturation"
                 />
               </div>
 

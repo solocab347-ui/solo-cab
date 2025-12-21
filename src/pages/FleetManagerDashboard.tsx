@@ -338,25 +338,12 @@ const FleetManagerDashboard = () => {
     );
   }
 
-  if (fleetManager.status === "pending") {
-    return (
-      <div className="min-h-screen bg-background">
-        <NavigationHeader />
-        <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-lg mx-auto">
-            <CardHeader className="text-center">
-              <Clock className="w-16 h-16 mx-auto text-amber-500 mb-4" />
-              <CardTitle>En attente de validation</CardTitle>
-              <CardDescription>
-                Votre compte gestionnaire de flotte est en cours de vérification.
-                Vous recevrez un email dès que votre compte sera validé.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  // Fleet managers can access dashboard immediately but must submit documents
+  // Only block if documents are overdue AND status is still pending
+  const documentsOverdue = fleetManager.documents_deadline && 
+    new Date(fleetManager.documents_deadline) < new Date() &&
+    fleetManager.documents_status !== "validated" &&
+    fleetManager.documents_status !== "submitted";
 
   return (
     <div className="min-h-screen bg-background">
