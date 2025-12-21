@@ -25,7 +25,7 @@ import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
 import AdminUserCleanup from "@/components/admin/AdminUserCleanup";
 import { AdminTestData } from "@/components/admin/AdminTestData";
 import { AdminPartnershipDisputes } from "@/components/admin/AdminPartnershipDisputes";
-
+import { AdminFleetManagersDocuments } from "@/components/admin/AdminFleetManagersDocuments";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -86,6 +86,7 @@ const AdminDashboard = () => {
     { id: "overview", label: "Vue d'ensemble", icon: Home },
     { id: "stats", label: "Statistiques", icon: TrendingUp },
     { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
+    { id: "fleet-managers", label: "Gestionnaires Flotte", icon: Users },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
     { id: "test-campaign", label: "Campagne Test", icon: Users },
@@ -112,6 +113,8 @@ const AdminDashboard = () => {
         return <AdminSubscriptionStats />;
       case "drivers":
         return <AdminDriversManagement />;
+      case "fleet-managers":
+        return <AdminFleetManagersDocuments />;
       case "subscriptions":
         return <AdminSubscriptions />;
       case "free-access":

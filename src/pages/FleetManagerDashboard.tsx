@@ -28,8 +28,10 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  FileText,
 } from "lucide-react";
 import QRCode from "qrcode";
+import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
 
 interface FleetManager {
   id: string;
@@ -416,7 +418,7 @@ const FleetManagerDashboard = () => {
         </div>
 
         <Tabs defaultValue="drivers" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
             <TabsTrigger value="drivers" className="flex items-center gap-2">
               <Car className="w-4 h-4" />
               <span className="hidden sm:inline">Chauffeurs</span>
@@ -428,6 +430,10 @@ const FleetManagerDashboard = () => {
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">Invitations</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Documents</span>
             </TabsTrigger>
             <TabsTrigger value="qrcode" className="flex items-center gap-2">
               <QrCode className="w-4 h-4" />
@@ -708,6 +714,14 @@ const FleetManagerDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            <FleetManagerDocuments 
+              fleetManagerId={fleetManager.id} 
+              userId={user?.id || ""} 
+            />
           </TabsContent>
         </Tabs>
       </main>

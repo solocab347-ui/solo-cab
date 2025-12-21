@@ -1553,6 +1553,10 @@ export type Database = {
           contact_name: string
           contact_phone: string | null
           created_at: string
+          documents: Json | null
+          documents_deadline: string | null
+          documents_status: string | null
+          documents_submitted_at: string | null
           id: string
           qr_code_id: string | null
           show_drivers_in_public_storefront: boolean | null
@@ -1575,6 +1579,10 @@ export type Database = {
           contact_name: string
           contact_phone?: string | null
           created_at?: string
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
           id?: string
           qr_code_id?: string | null
           show_drivers_in_public_storefront?: boolean | null
@@ -1597,6 +1605,10 @@ export type Database = {
           contact_name?: string
           contact_phone?: string | null
           created_at?: string
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
           id?: string
           qr_code_id?: string | null
           show_drivers_in_public_storefront?: boolean | null
