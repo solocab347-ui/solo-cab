@@ -963,11 +963,88 @@ export type Database = {
           },
         ]
       }
+      driver_schedules: {
+        Row: {
+          blocked_by_course_id: string | null
+          blocked_reason: string | null
+          created_at: string
+          date: string
+          driver_id: string
+          end_time: string
+          id: string
+          is_available: boolean | null
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          blocked_by_course_id?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          date: string
+          driver_id: string
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          blocked_by_course_id?: string | null
+          blocked_reason?: string | null
+          created_at?: string
+          date?: string
+          driver_id?: string
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_schedules_blocked_by_course_id_fkey"
+            columns: ["blocked_by_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           base_fare: number | null
           base_rate: number | null
           bio: string | null
+          can_create_courses: boolean | null
+          can_manage_clients: boolean | null
           card_photo_url: string | null
           company_address: string | null
           company_name: string | null
@@ -978,6 +1055,7 @@ export type Database = {
           documents: Json | null
           driver_code: string | null
           evening_surcharge: number | null
+          fleet_manager_id: string | null
           free_access_end_date: string | null
           free_access_granted: boolean | null
           free_access_start_date: string | null
@@ -990,6 +1068,7 @@ export type Database = {
           id: string
           invoice_counter: number | null
           is_demo_account: boolean | null
+          is_fleet_driver: boolean | null
           license_number: string
           max_passengers: number
           minimum_price: number | null
@@ -1031,6 +1110,8 @@ export type Database = {
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
           card_photo_url?: string | null
           company_address?: string | null
           company_name?: string | null
@@ -1041,6 +1122,7 @@ export type Database = {
           documents?: Json | null
           driver_code?: string | null
           evening_surcharge?: number | null
+          fleet_manager_id?: string | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
@@ -1053,6 +1135,7 @@ export type Database = {
           id?: string
           invoice_counter?: number | null
           is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
           license_number: string
           max_passengers?: number
           minimum_price?: number | null
@@ -1094,6 +1177,8 @@ export type Database = {
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
           card_photo_url?: string | null
           company_address?: string | null
           company_name?: string | null
@@ -1104,6 +1189,7 @@ export type Database = {
           documents?: Json | null
           driver_code?: string | null
           evening_surcharge?: number | null
+          fleet_manager_id?: string | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
           free_access_start_date?: string | null
@@ -1116,6 +1202,7 @@ export type Database = {
           id?: string
           invoice_counter?: number | null
           is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
           license_number?: string
           max_passengers?: number
           minimum_price?: number | null
@@ -1154,6 +1241,13 @@ export type Database = {
           working_sectors?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drivers_user_id_fkey"
             columns: ["user_id"]
@@ -1333,6 +1427,7 @@ export type Database = {
       fleet_driver_invitations: {
         Row: {
           created_at: string
+          driver_cost: number | null
           email: string | null
           expires_at: string | null
           fleet_manager_id: string
@@ -1345,6 +1440,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          driver_cost?: number | null
           email?: string | null
           expires_at?: string | null
           fleet_manager_id: string
@@ -1357,6 +1453,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          driver_cost?: number | null
           email?: string | null
           expires_at?: string | null
           fleet_manager_id?: string
@@ -2769,6 +2866,14 @@ export type Database = {
         Returns: boolean
       }
       can_share_courses: { Args: { _driver_id: string }; Returns: boolean }
+      check_driver_availability: {
+        Args: {
+          p_driver_id: string
+          p_duration_minutes?: number
+          p_scheduled_date: string
+        }
+        Returns: boolean
+      }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string
@@ -2791,6 +2896,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      find_available_fleet_driver: {
+        Args: {
+          p_duration_minutes?: number
+          p_excluded_driver_id?: string
+          p_fleet_manager_id: string
+          p_scheduled_date: string
+        }
+        Returns: string
       }
       find_driver_by_code: {
         Args: { _code: string }
