@@ -1,0 +1,101 @@
+import { useState, useEffect } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { X, AlertTriangle, Clock, FileWarning } from "lucide-react";
+import { differenceInDays, isPast, format } from "date-fns";
+import { Link } from "react-router-dom";
+
+interface DocumentWarningBannerProps {
+  documentsStatus: string;
+  documentsDeadline: string | null;
+  onDismiss?: () => void;
+  showCloseButton?: boolean;
+}
+
+export const DocumentWarningBanner = ({
+  documentsStatus,
+  documentsDeadline,
+  onDismiss,
+  showCloseButton = false,
+}: DocumentWarningBannerProps) => {
+  const [dismissed, setDismissed] = useState(false);
+
+  // Don't show banner if documents are validated or submitted
+  if (documentsStatus === "validated" || documentsStatus === "submitted" || dismissed) {
+    return null;
+  }
+
+  const getDeadlineInfo = () => {
+    if (!documentsDeadline) return null;
+
+    const deadline = new Date(documentsDeadline);
+    const daysRemaining = differenceInDays(deadline, new Date());
+    const isExpired = isPast(deadline);
+
+    return { deadline, daysRemaining, isExpired };
+  };
+
+  const deadlineInfo = getDeadlineInfo();
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    onDismiss?.();
+  };
+
+  // Critical warning - expired or less than 2 days
+  const isCritical = deadlineInfo?.isExpired || (deadlineInfo?.daysRemaining !== undefined && deadlineInfo.daysRemaining <= 2);
+  
+  // Warning - less than 5 days
+  const isWarning = deadlineInfo?.daysRemaining !== undefined && deadlineInfo.daysRemaining <= 5 && !isCritical;
+
+  return (
+    <div className={`w-full ${isCritical ? 'bg-destructive' : isWarning ? 'bg-orange-500' : 'bg-amber-500'} text-white`}>
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {isCritical ? (
+              <AlertTriangle className="w-5 h-5 shrink-0 animate-pulse" />
+            ) : (
+              <FileWarning className="w-5 h-5 shrink-0" />
+            )}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <span className="font-semibold">
+                {deadlineInfo?.isExpired
+                  ? "⚠️ WARNING: Deadline expired!"
+                  : deadlineInfo
+                  ? `⚠️ WARNING: ${deadlineInfo.daysRemaining} day${deadlineInfo.daysRemaining !== 1 ? 's' : ''} left to submit documents!`
+                  : "⚠️ WARNING: Documents required!"}
+              </span>
+              <span className="text-sm opacity-90">
+                {deadlineInfo?.isExpired
+                  ? "Your account will be suspended until documents are submitted."
+                  : "Submit your documents now to avoid account suspension."}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/fleet-manager?tab=documents">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                Upload Now
+              </Button>
+            </Link>
+            {showCloseButton && (
+              <button
+                onClick={handleDismiss}
+                className="p-1 hover:bg-white/20 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DocumentWarningBanner;
