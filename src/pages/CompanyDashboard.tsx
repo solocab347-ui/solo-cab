@@ -102,32 +102,7 @@ export default function CompanyDashboard() {
     );
   }
 
-  if (company.status === "pending") {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
-        <Card className="max-w-lg shadow-elegant">
-          <CardContent className="pt-8 text-center">
-            <img src={logo} alt="SoloCab" className="w-20 h-20 mx-auto mb-6" />
-            <Clock className="w-16 h-16 mx-auto text-amber-500 mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Validation en cours</h2>
-            <p className="text-muted-foreground mb-6">
-              Votre compte entreprise <strong>{company.company_name}</strong> est en attente de validation par notre équipe.
-              Vous recevrez un email une fois votre compte activé.
-            </p>
-            <Badge variant="outline" className="text-amber-600 border-amber-500">
-              En attente de validation
-            </Badge>
-            <div className="mt-8">
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Se déconnecter
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Les entreprises sont validées automatiquement - pas de blocage
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">

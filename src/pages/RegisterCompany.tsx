@@ -117,7 +117,7 @@ export default function RegisterCompany() {
           department: formData.department ? sanitizeString(formData.department) : null,
           employee_count: formData.employeeCount ? parseInt(formData.employeeCount) : null,
           notes: formData.notes ? sanitizeString(formData.notes) : null,
-          status: "pending",
+          status: "validated",
         });
 
       if (companyError) throw companyError;
@@ -132,7 +132,7 @@ export default function RegisterCompany() {
 
       if (roleError) throw roleError;
 
-      toast.success("Inscription réussie ! Votre compte est en attente de validation.");
+      toast.success("Inscription réussie ! Vous pouvez maintenant vous connecter.");
       navigate("/login");
       
     } catch (error: any) {
