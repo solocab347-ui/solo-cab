@@ -61,26 +61,26 @@ export const DocumentWarningBanner = ({
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
               <span className="font-semibold">
                 {deadlineInfo?.isExpired
-                  ? "⚠️ WARNING: Deadline expired!"
+                  ? "⚠️ ATTENTION : Délai expiré !"
                   : deadlineInfo
-                  ? `⚠️ WARNING: ${deadlineInfo.daysRemaining} day${deadlineInfo.daysRemaining !== 1 ? 's' : ''} left to submit documents!`
-                  : "⚠️ WARNING: Documents required!"}
+                  ? `⚠️ ATTENTION : ${deadlineInfo.daysRemaining} jour${deadlineInfo.daysRemaining !== 1 ? 's' : ''} restant${deadlineInfo.daysRemaining !== 1 ? 's' : ''} pour soumettre vos documents !`
+                  : "⚠️ ATTENTION : Documents requis !"}
               </span>
               <span className="text-sm opacity-90">
                 {deadlineInfo?.isExpired
-                  ? "Your account will be suspended until documents are submitted."
-                  : "Submit your documents now to avoid account suspension."}
+                  ? "Votre compte sera suspendu tant que les documents ne seront pas soumis."
+                  : "Soumettez vos documents maintenant pour éviter la suspension de votre compte."}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link to="/fleet-manager?tab=documents">
+            <Link to="/fleet-dashboard?tab=documents">
               <Button 
                 variant="secondary" 
                 size="sm" 
                 className="bg-white/20 hover:bg-white/30 text-white border-white/30"
               >
-                Upload Now
+                Envoyer maintenant
               </Button>
             </Link>
             {showCloseButton && (
