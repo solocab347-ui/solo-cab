@@ -33,7 +33,7 @@ import FleetManagerLanding from "./pages/FleetManagerLanding";
 import GuestBooking from "./pages/GuestBooking";
 import GuestBookingTracking from "./pages/GuestBookingTracking";
 import RegisterDriverFleet from "./pages/RegisterDriverFleet";
-
+import FleetPublicProfile from "./pages/FleetPublicProfile";
 // Lazy load heavy dashboards and authenticated pages
 const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
@@ -86,6 +86,7 @@ const App = () => (
               <Route path="/reservation-rapide/:driverId" element={<GuestBooking />} />
               <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
               <Route path="/register-driver-fleet" element={<RegisterDriverFleet />} />
+              <Route path="/flotte/:id" element={<FleetPublicProfile />} />
               <Route
                 path="/fleet-driver-dashboard"
                 element={
