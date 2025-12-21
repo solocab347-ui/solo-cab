@@ -102,7 +102,7 @@ export default function RegisterCompany() {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // 3. Créer l'entrée entreprise
-      const { error: companyError } = await supabase
+      const { data: companyData, error: companyError } = await supabase
         .from("companies")
         .insert({
           user_id: authData.user.id,
@@ -118,7 +118,9 @@ export default function RegisterCompany() {
           employee_count: formData.employeeCount ? parseInt(formData.employeeCount) : null,
           notes: formData.notes ? sanitizeString(formData.notes) : null,
           status: "validated",
-        });
+        })
+        .select()
+        .single();
 
       if (companyError) throw companyError;
 
@@ -131,6 +133,17 @@ export default function RegisterCompany() {
         });
 
       if (roleError) throw roleError;
+
+      // 5. Envoyer l'email de confirmation
+      try {
+        await supabase.functions.invoke("send-company-registration-email", {
+          body: { company_id: companyData.id },
+        });
+        console.log("Email de confirmation envoyé");
+      } catch (emailError) {
+        console.error("Erreur envoi email:", emailError);
+        // Ne pas bloquer l'inscription si l'email échoue
+      }
 
       toast.success("Inscription réussie ! Vous pouvez maintenant vous connecter.");
       navigate("/login");

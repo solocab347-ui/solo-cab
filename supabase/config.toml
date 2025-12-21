@@ -101,3 +101,6 @@ verify_jwt = true
 
 [functions.create-alexandre-test-data]
 verify_jwt = true
+
+[functions.send-company-registration-email]
+verify_jwt = false
