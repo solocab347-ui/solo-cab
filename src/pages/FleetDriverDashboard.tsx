@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Car, Calendar, LogOut, Building2, MessageSquare, Shield, Home, FileText, User } from "lucide-react";
+import { Car, Calendar, LogOut, Building2, MessageSquare, Shield, Home, FileText, User, Lock } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -13,6 +13,7 @@ import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import DriverPlanning from "@/components/driver/DriverPlanning";
 import { FleetDriverDocuments } from "@/components/fleet-manager/FleetDriverDocuments";
 import { NavigationHeader } from "@/components/NavigationHeader";
+import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQueryClient } from "@tanstack/react-query";
+import { differenceInDays, isPast } from "date-fns";
 
 const FleetDriverDashboard = () => {
   const { signOut, user } = useAuth();
@@ -29,6 +31,27 @@ const FleetDriverDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [fleetManager, setFleetManager] = useState<any>(null);
+
+  // Vérifier si le compte est restreint (documents non soumis après 7 jours)
+  const isAccountRestricted = useMemo(() => {
+    if (!driverProfile?.driver) return false;
+    
+    const driver = driverProfile.driver as any;
+    const documentsStatus = driver.fleet_documents_status || "pending";
+    const documentsDeadline = driver.fleet_documents_deadline;
+    
+    // Si documents validés ou soumis, pas de restriction
+    if (documentsStatus === "validated" || documentsStatus === "submitted") {
+      return false;
+    }
+    
+    // Si deadline passée et documents non soumis, restriction
+    if (documentsDeadline && isPast(new Date(documentsDeadline))) {
+      return true;
+    }
+    
+    return false;
+  }, [driverProfile?.driver]);
 
   // Form states - only editable ones for fleet drivers
   const [showPhone, setShowPhone] = useState(false);
@@ -149,8 +172,28 @@ const FleetDriverDashboard = () => {
       </header>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        {/* Document Warning Banner */}
+        {driverProfile?.driver && (
+          <DocumentWarningBanner
+            documentsStatus={(driverProfile.driver as any).fleet_documents_status || "pending"}
+            documentsDeadline={(driverProfile.driver as any).fleet_documents_deadline}
+            onNavigateToDocuments={() => setActiveTab("documents")}
+          />
+        )}
+
+        {/* Account Restricted Alert */}
+        {isAccountRestricted && (
+          <Alert variant="destructive" className="mb-6">
+            <Lock className="w-4 h-4" />
+            <AlertTitle>Accès restreint</AlertTitle>
+            <AlertDescription>
+              Le délai pour soumettre vos documents est dépassé. Veuillez soumettre vos documents pour retrouver un accès complet à votre espace.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Fleet Manager Info */}
-        {fleetManager && (
+        {fleetManager && !isAccountRestricted && (
           <Alert className="mb-6 bg-primary/5 border-primary/20">
             <Building2 className="w-4 h-4 text-primary" />
             <AlertTitle>Flotte : {fleetManager.company_name}</AlertTitle>
@@ -161,40 +204,70 @@ const FleetDriverDashboard = () => {
         )}
 
         {/* Pending Validation Alert */}
-        {driverProfile?.driver?.status === "pending" && (
+        {driverProfile?.driver?.status === "pending" && !isAccountRestricted && (
           <Alert className="mb-6 bg-yellow-500/10 border-yellow-500/30">
             <FileText className="w-4 h-4 text-yellow-600" />
             <AlertTitle className="text-yellow-700">En attente de validation</AlertTitle>
             <AlertDescription className="text-yellow-600">
-              Votre profil est en cours de validation par l'administrateur. Vous serez notifié dès que votre compte sera activé.
+              Votre profil est en cours de validation par votre gestionnaire de flotte. Vous serez notifié dès que votre compte sera activé.
             </AlertDescription>
           </Alert>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          // Si compte restreint, seulement onglet documents accessible
+          if (isAccountRestricted && value !== "documents") {
+            toast.error("Veuillez d'abord soumettre vos documents pour accéder à cette fonctionnalité");
+            return;
+          }
+          setActiveTab(value);
+        }} className="space-y-6">
           <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 w-full">
-              <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="home" 
+                disabled={isAccountRestricted}
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <Home className="w-4 h-4" />
                 <span>Accueil</span>
               </TabsTrigger>
-              <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="courses" 
+                disabled={isAccountRestricted}
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <Car className="w-4 h-4" />
                 <span>Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="planning" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="planning" 
+                disabled={isAccountRestricted}
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <Calendar className="w-4 h-4" />
                 <span>Planning</span>
               </TabsTrigger>
-              <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="messages" 
+                disabled={isAccountRestricted}
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-rose-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <MessageSquare className="w-4 h-4" />
                 <span>Messages</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="documents" 
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white ${isAccountRestricted ? 'ring-2 ring-destructive animate-pulse' : ''}`}
+              >
                 <FileText className="w-4 h-4" />
                 <span>Documents</span>
               </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="profile" 
+                disabled={isAccountRestricted}
+                className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <User className="w-4 h-4" />
                 <span>Profil</span>
               </TabsTrigger>
