@@ -43,6 +43,7 @@ import {
   BarChart3,
   Euro,
   Handshake,
+  Tag,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -60,6 +61,7 @@ import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
 import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
+import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -861,6 +863,17 @@ const FleetManagerDashboard = () => {
                   <CardDescription>Configurez votre page publique</CardDescription>
                 </CardHeader>
               </Card>
+
+              {/* Promotions */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("promotions")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-success" />
+                    Promotions
+                  </CardTitle>
+                  <CardDescription>Créez des codes promo et offres spéciales</CardDescription>
+                </CardHeader>
+              </Card>
             </div>
           </TabsContent>
 
@@ -1023,6 +1036,11 @@ const FleetManagerDashboard = () => {
               userId={user?.id || ""}
               onDocumentsSubmitted={fetchData}
             />
+          </TabsContent>
+
+          {/* Promotions Tab */}
+          <TabsContent value="promotions">
+            <FleetPromotions fleetManagerId={fleetManager.id} />
           </TabsContent>
         </Tabs>
       </div>
