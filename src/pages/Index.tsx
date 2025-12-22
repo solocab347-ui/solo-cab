@@ -41,26 +41,36 @@ import {
 } from "lucide-react";
 
 const Index = () => {
-  const { user, userRole } = useAuth();
+  const { user, userRole, loading } = useAuth();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies" | "fleet">("clients");
 
   useEffect(() => {
-    // Redirect authenticated users to their dashboard
-    if (user && userRole) {
-      if (userRole === "driver") {
-        navigate("/driver-dashboard");
-      } else if (userRole === "client") {
-        navigate("/client-dashboard");
-      } else if (userRole === "admin") {
-        navigate("/admin-dashboard");
-      } else if (userRole === "fleet_manager") {
-        navigate("/fleet-dashboard");
-      } else if (userRole === "company") {
-        navigate("/company-dashboard");
+    // Redirect authenticated users to their dashboard - only after loading is complete
+    if (!loading && user && userRole) {
+      const dashboardRoutes: Record<string, string> = {
+        driver: "/driver-dashboard",
+        client: "/client-dashboard",
+        admin: "/admin-dashboard",
+        fleet_manager: "/fleet-dashboard",
+        company: "/company-dashboard",
+      };
+      
+      const route = dashboardRoutes[userRole];
+      if (route) {
+        navigate(route, { replace: true });
       }
     }
-  }, [user, userRole, navigate]);
+  }, [user, userRole, loading, navigate]);
+
+  // Show minimal loading state during auth check to prevent flash
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const clientFeatures = [
     {
