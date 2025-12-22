@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, FileText, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -225,26 +225,66 @@ const RegistrationSuccess = () => {
             <p className="text-lg text-gray-700 mb-6">
               Votre paiement a été validé avec succès.
             </p>
+            {/* Documents section */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <FileText className="w-6 h-6 text-amber-600" />
+                <h2 className="text-xl font-bold text-gray-900">
+                  Documents requis
+                </h2>
+              </div>
+              <p className="text-gray-700 mb-4">
+                Vous avez <strong>30 jours</strong> pour soumettre vos documents professionnels via votre espace personnel.
+                Passé ce délai, votre accès sera temporairement bloqué.
+              </p>
+              <ul className="text-left text-sm text-gray-700 space-y-2">
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Carte professionnelle VTC</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Permis de conduire</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Pièce d'identité</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Carte grise du véhicule</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Attestation d'assurance RC Pro VTC</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-500 mt-0.5" />
+                  <span>Extrait Kbis ou INSEE</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Prochaines étapes */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-2">
                 Prochaines étapes
               </h2>
               <p className="text-gray-700 mb-4">
-                Votre dossier est maintenant en cours de validation par notre équipe administrative.
-                Vous recevrez un email de confirmation une fois votre compte validé (généralement sous 24-48h).
+                Une fois vos documents soumis, notre équipe les vérifiera et validera votre compte.
               </p>
               <ul className="text-left text-sm text-gray-700 space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Vérification de vos documents</span>
+                  <span>Connectez-vous à votre espace</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Validation de votre profil</span>
+                  <span>Téléchargez vos documents dans "Outils &gt; Mes Documents"</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-green-500 mt-0.5" />
-                  <span>Activation de votre compte</span>
+                  <span>Validation sous 24-48h après soumission</span>
                 </li>
               </ul>
             </div>
