@@ -58,6 +58,7 @@ const CreateParisDrivers = lazy(() => import("./pages/CreateParisDrivers"));
 const UploadDriverPhotos = lazy(() => import("./pages/UploadDriverPhotos"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -266,6 +267,16 @@ const App = () => (
                   <TermsOfService />
                 </Suspense>
               } />
+              <Route
+                path="/driver/partner-search"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DriverPartnerSearch />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
