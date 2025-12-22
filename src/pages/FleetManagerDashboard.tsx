@@ -56,6 +56,7 @@ import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPubl
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
 import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesManager";
 import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSettings";
+import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
 import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
 import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
@@ -1006,13 +1007,17 @@ const FleetManagerDashboard = () => {
           {/* Pricing Tab */}
           <TabsContent value="pricing">
             <Tabs defaultValue="tarifs" className="space-y-6">
-              <TabsList>
+              <TabsList className="flex-wrap">
                 <TabsTrigger value="tarifs">Tarification</TabsTrigger>
+                <TabsTrigger value="city-pricing">Par ville</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
                 <TabsTrigger value="suivi">Suivi commissions</TabsTrigger>
               </TabsList>
               <TabsContent value="tarifs">
                 <FleetPricingSettings fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="city-pricing">
+                <CityPricingManager fleetManagerId={fleetManager.id} />
               </TabsContent>
               <TabsContent value="commissions">
                 <FleetDriverCommissions fleetManagerId={fleetManager.id} />

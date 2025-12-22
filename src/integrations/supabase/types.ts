@@ -170,6 +170,153 @@ export type Database = {
           },
         ]
       }
+      city_pricing: {
+        Row: {
+          base_fare: number | null
+          city_name: string
+          created_at: string
+          driver_id: string | null
+          evening_surcharge: number | null
+          fleet_manager_id: string | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          minimum_price: number | null
+          off_peak_discount: number | null
+          off_peak_enabled: boolean | null
+          off_peak_end: string | null
+          off_peak_start: string | null
+          peak_hours_enabled: boolean | null
+          peak_hours_end: string | null
+          peak_hours_multiplier: number | null
+          peak_hours_start: string | null
+          per_km_rate: number | null
+          pricing_type: string
+          priority: number | null
+          sectors: string[] | null
+          tva_included: boolean | null
+          tva_rate: number | null
+          updated_at: string
+          weekend_surcharge: number | null
+        }
+        Insert: {
+          base_fare?: number | null
+          city_name: string
+          created_at?: string
+          driver_id?: string | null
+          evening_surcharge?: number | null
+          fleet_manager_id?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          minimum_price?: number | null
+          off_peak_discount?: number | null
+          off_peak_enabled?: boolean | null
+          off_peak_end?: string | null
+          off_peak_start?: string | null
+          peak_hours_enabled?: boolean | null
+          peak_hours_end?: string | null
+          peak_hours_multiplier?: number | null
+          peak_hours_start?: string | null
+          per_km_rate?: number | null
+          pricing_type?: string
+          priority?: number | null
+          sectors?: string[] | null
+          tva_included?: boolean | null
+          tva_rate?: number | null
+          updated_at?: string
+          weekend_surcharge?: number | null
+        }
+        Update: {
+          base_fare?: number | null
+          city_name?: string
+          created_at?: string
+          driver_id?: string | null
+          evening_surcharge?: number | null
+          fleet_manager_id?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          minimum_price?: number | null
+          off_peak_discount?: number | null
+          off_peak_enabled?: boolean | null
+          off_peak_end?: string | null
+          off_peak_start?: string | null
+          peak_hours_enabled?: boolean | null
+          peak_hours_end?: string | null
+          peak_hours_multiplier?: number | null
+          peak_hours_start?: string | null
+          per_km_rate?: number | null
+          pricing_type?: string
+          priority?: number | null
+          sectors?: string[] | null
+          tva_included?: boolean | null
+          tva_rate?: number | null
+          updated_at?: string
+          weekend_surcharge?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      city_sectors: {
+        Row: {
+          city_name: string
+          created_at: string
+          display_order: number | null
+          id: string
+          sector_name: string
+        }
+        Insert: {
+          city_name: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          sector_name: string
+        }
+        Update: {
+          city_name?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          sector_name?: string
+        }
+        Relationships: []
+      }
       client_first_orders: {
         Row: {
           client_id: string
@@ -3406,6 +3553,26 @@ export type Database = {
         }
         Returns: string
       }
+      calculate_city_course_price: {
+        Args: {
+          p_city_pricing_id: string
+          p_distance_km: number
+          p_duration_minutes: number
+          p_scheduled_date?: string
+        }
+        Returns: {
+          base_price: number
+          distance_price: number
+          off_peak_discount: number
+          peak_adjustment: number
+          subtotal: number
+          surcharge_evening: number
+          surcharge_weekend: number
+          time_price: number
+          total_price: number
+          tva_amount: number
+        }[]
+      }
       calculate_course_price:
         | {
             Args: {
@@ -3584,6 +3751,36 @@ export type Database = {
           driver_name: string
           is_available: boolean
           rating: number
+        }[]
+      }
+      get_city_pricing: {
+        Args: {
+          p_city_name?: string
+          p_driver_id?: string
+          p_fleet_manager_id?: string
+          p_sector?: string
+        }
+        Returns: {
+          base_fare: number
+          city_name: string
+          evening_surcharge: number
+          hourly_rate: number
+          id: string
+          minimum_price: number
+          off_peak_discount: number
+          off_peak_enabled: boolean
+          off_peak_end: string
+          off_peak_start: string
+          peak_hours_enabled: boolean
+          peak_hours_end: string
+          peak_hours_multiplier: number
+          peak_hours_start: string
+          per_km_rate: number
+          pricing_type: string
+          sectors: string[]
+          tva_included: boolean
+          tva_rate: number
+          weekend_surcharge: number
         }[]
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }

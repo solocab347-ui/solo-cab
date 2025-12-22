@@ -40,6 +40,7 @@ import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
+import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -734,6 +735,13 @@ const DriverDashboard = () => {
                   💡 <span className="font-medium">Info :</span> Mettez 0 si vous ne souhaitez pas appliquer d'augmentation. Les pourcentages sont appliqués automatiquement lors du calcul des prix.
                 </p>
               </div>
+            </Card>
+
+            {/* City Pricing */}
+            <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
+              {driverProfile?.driver?.id && (
+                <CityPricingManager driverId={driverProfile.driver.id} />
+              )}
             </Card>
 
             {/* Company Info */}
