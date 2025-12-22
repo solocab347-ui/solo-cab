@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { X, Download, Share } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { X, Download, Share, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +9,18 @@ import {
 } from "@/components/ui/dialog";
 
 type Platform = 'ios' | 'android' | 'desktop';
+
+// Variable globale pour stocker le prompt
+let globalDeferredPrompt: any = null;
+
+// Capturer le prompt le plus tôt possible
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    globalDeferredPrompt = e;
+    console.log('PWA: beforeinstallprompt captured globally');
+  });
+}
 
 // Fonction de détection de plateforme améliorée
 const detectPlatform = (): Platform => {
@@ -32,9 +44,11 @@ const detectPlatform = (): Platform => {
 
 export const PWAInstallBanner = () => {
   const [showBanner, setShowBanner] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(globalDeferredPrompt);
   const [platform, setPlatform] = useState<Platform>('desktop');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const promptCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Détection de la plateforme
@@ -60,10 +74,17 @@ export const PWAInstallBanner = () => {
       setShowBanner(true);
     }
 
-    // Capturer l'événement beforeinstallprompt (Android/Desktop Chrome uniquement)
+    // Vérifier si le prompt global est déjà disponible
+    if (globalDeferredPrompt) {
+      setDeferredPrompt(globalDeferredPrompt);
+    }
+
+    // Capturer l'événement beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      globalDeferredPrompt = e;
       setDeferredPrompt(e);
+      console.log('PWA: beforeinstallprompt captured in component');
       // Réafficher la bannière si le prompt est disponible
       if (isMobile && !isInstalled && !wasInstalled) {
         setShowBanner(true);
@@ -74,9 +95,12 @@ export const PWAInstallBanner = () => {
 
     // Écouter l'événement d'installation réussie
     const handleAppInstalled = () => {
+      console.log('PWA: App installed successfully');
       setShowBanner(false);
+      setIsInstalling(false);
       localStorage.setItem('pwa-installed', 'true');
       sessionStorage.removeItem('pwa-banner-dismissed-at');
+      globalDeferredPrompt = null;
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -84,15 +108,25 @@ export const PWAInstallBanner = () => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      if (promptCheckInterval.current) {
+        clearInterval(promptCheckInterval.current);
+      }
     };
   }, []);
 
   const handleInstall = useCallback(async () => {
+    // Utiliser le prompt global ou local
+    const prompt = deferredPrompt || globalDeferredPrompt;
+    
+    console.log('PWA: Install clicked, prompt available:', !!prompt, 'platform:', platform);
+    
     // Si on a le prompt natif (Android Chrome), l'utiliser directement
-    if (deferredPrompt) {
+    if (prompt) {
+      setIsInstalling(true);
       try {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        await prompt.prompt();
+        const { outcome } = await prompt.userChoice;
+        console.log('PWA: User choice:', outcome);
         
         if (outcome === 'accepted') {
           setShowBanner(false);
@@ -100,16 +134,53 @@ export const PWAInstallBanner = () => {
           sessionStorage.removeItem('pwa-banner-dismissed-at');
         }
         
+        // Nettoyer le prompt après utilisation
+        globalDeferredPrompt = null;
         setDeferredPrompt(null);
       } catch (error) {
-        console.error('Erreur lors de l\'installation:', error);
+        console.error('PWA: Erreur lors de l\'installation:', error);
+        // Si erreur, afficher les instructions
         setShowInstructions(true);
+      } finally {
+        setIsInstalling(false);
       }
+    } else if (platform === 'android') {
+      // Sur Android sans prompt, attendre un peu que le prompt arrive
+      setIsInstalling(true);
+      console.log('PWA: Waiting for prompt on Android...');
+      
+      // Attendre jusqu'à 2 secondes pour le prompt
+      let attempts = 0;
+      promptCheckInterval.current = setInterval(async () => {
+        attempts++;
+        if (globalDeferredPrompt) {
+          clearInterval(promptCheckInterval.current!);
+          try {
+            await globalDeferredPrompt.prompt();
+            const { outcome } = await globalDeferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+              setShowBanner(false);
+              localStorage.setItem('pwa-installed', 'true');
+            }
+            globalDeferredPrompt = null;
+            setDeferredPrompt(null);
+          } catch (error) {
+            console.error('PWA: Error with delayed prompt:', error);
+            setShowInstructions(true);
+          }
+          setIsInstalling(false);
+        } else if (attempts >= 4) {
+          // Après 2 secondes, afficher les instructions
+          clearInterval(promptCheckInterval.current!);
+          setIsInstalling(false);
+          setShowInstructions(true);
+        }
+      }, 500);
     } else {
-      // Pas de prompt disponible, afficher les instructions
+      // Pas de prompt disponible (iOS ou navigateur non supporté), afficher les instructions
       setShowInstructions(true);
     }
-  }, [deferredPrompt]);
+  }, [deferredPrompt, platform]);
 
   const handleDismiss = useCallback(() => {
     setShowBanner(false);
@@ -140,9 +211,17 @@ export const PWAInstallBanner = () => {
               size="sm"
               variant="secondary"
               onClick={handleInstall}
+              disabled={isInstalling}
               className="text-xs"
             >
-              Installer
+              {isInstalling ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Installation...
+                </>
+              ) : (
+                'Installer'
+              )}
             </Button>
             <Button
               size="sm"
