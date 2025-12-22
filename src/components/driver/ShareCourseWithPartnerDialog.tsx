@@ -6,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Send, Star, Car, AlertTriangle } from 'lucide-react';
+import { Users, Send, Star, Car, AlertTriangle, Hash, Phone, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -25,6 +26,8 @@ interface Partner {
   partner_rides: number;
   partner_driver_id: string;
   sharing_blocked: boolean;
+  sharing_number: number | null;
+  partner_phone: string | null;
 }
 
 interface ShareCourseWithPartnerDialogProps {
@@ -49,6 +52,8 @@ interface ShareCourseWithPartnerDialogProps {
   onSuccess: () => void;
 }
 
+type ShareMode = 'choose' | 'specific' | 'all';
+
 export function ShareCourseWithPartnerDialog({
   open,
   onOpenChange,
@@ -62,10 +67,13 @@ export function ShareCourseWithPartnerDialog({
   const [sending, setSending] = useState(false);
   const [notifyClient, setNotifyClient] = useState(true);
   const [clientMessage, setClientMessage] = useState('');
+  const [shareMode, setShareMode] = useState<ShareMode>('choose');
 
   useEffect(() => {
     if (open && driverId) {
       loadPartners();
+      setShareMode('choose');
+      setSelectedPartner(null);
     }
   }, [open, driverId]);
 
@@ -74,8 +82,12 @@ export function ShareCourseWithPartnerDialog({
       setClientMessage(
         `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner.partner_name} qui prendra soin de vous. Vous restez mon client et pourrez me recontacter pour vos prochaines courses.`
       );
+    } else if (shareMode === 'all') {
+      setClientMessage(
+        `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance qui prendra soin de vous. Vous restez mon client et pourrez me recontacter pour vos prochaines courses.`
+      );
     }
-  }, [selectedPartner]);
+  }, [selectedPartner, shareMode]);
 
   const loadPartners = async () => {
     setLoading(true);
@@ -94,14 +106,14 @@ export function ShareCourseWithPartnerDialog({
         
         const { data: partnerData } = await supabase
           .from('drivers')
-          .select('driver_code, rating, total_rides, user_id')
+          .select('driver_code, rating, total_rides, user_id, sharing_number')
           .eq('id', partnerId)
           .single();
 
         if (partnerData) {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('full_name, profile_photo_url')
+            .select('full_name, profile_photo_url, phone')
             .eq('id', partnerData.user_id)
             .single();
 
@@ -109,10 +121,12 @@ export function ShareCourseWithPartnerDialog({
             ...p,
             partner_name: profileData?.full_name || 'Chauffeur',
             partner_photo: profileData?.profile_photo_url,
+            partner_phone: profileData?.phone,
             partner_code: partnerData.driver_code,
             partner_rating: partnerData.rating || 0,
             partner_rides: partnerData.total_rides || 0,
             partner_driver_id: partnerId,
+            sharing_number: partnerData.sharing_number,
           });
         }
       }
@@ -125,79 +139,154 @@ export function ShareCourseWithPartnerDialog({
     }
   };
 
-  const handleSendCourse = async () => {
-    if (!selectedPartner || !course) return;
+  const formatSharingNumber = (num: number | null) => {
+    if (!num) return 'N/A';
+    return `#${String(num).padStart(5, '0')}`;
+  };
 
-    if (selectedPartner.sharing_blocked) {
-      toast.error('Le partage est bloqué pour ce partenariat');
+  const handleSendCourse = async () => {
+    if (shareMode === 'specific' && !selectedPartner) {
+      toast.error('Veuillez sélectionner un partenaire');
       return;
     }
+    if (!course) return;
 
     setSending(true);
     try {
-      const courseAmount = course.devis?.[0]?.amount || 0;
-      const commissionAmount = (courseAmount * selectedPartner.commission_percentage) / 100;
-
       const finalClientMessage = notifyClient && clientMessage
         ? clientMessage
-        : `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner.partner_name} qui prendra soin de vous.`;
+        : shareMode === 'all'
+        ? `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance.`
+        : `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner?.partner_name}.`;
 
-      const { error } = await supabase.from('shared_courses').insert({
-        course_id: course.id,
-        partnership_id: selectedPartner.id,
-        sender_driver_id: driverId,
-        receiver_driver_id: selectedPartner.partner_driver_id,
-        course_amount: courseAmount,
-        commission_percentage: selectedPartner.commission_percentage,
-        commission_amount: commissionAmount,
-        status: 'pending',
-        client_notified: notifyClient,
-        client_notified_at: notifyClient ? new Date().toISOString() : null,
-        client_message: notifyClient ? finalClientMessage : null,
-      });
+      if (shareMode === 'all') {
+        // Send to all partners
+        const courseAmount = course.devis?.[0]?.amount || 0;
+        
+        for (const partner of partners.filter(p => !p.sharing_blocked)) {
+          const commissionAmount = (courseAmount * partner.commission_percentage) / 100;
+          
+          await supabase.from('shared_courses').insert({
+            course_id: course.id,
+            partnership_id: partner.id,
+            sender_driver_id: driverId,
+            receiver_driver_id: partner.partner_driver_id,
+            course_amount: courseAmount,
+            commission_percentage: partner.commission_percentage,
+            commission_amount: commissionAmount,
+            status: 'pending',
+            client_notified: false,
+            client_message: null,
+          });
 
-      if (error) throw error;
+          // Notify each partner
+          const { data: receiverData } = await supabase
+            .from('drivers')
+            .select('user_id')
+            .eq('id', partner.partner_driver_id)
+            .single();
 
-      // Notify client if enabled
-      if (notifyClient && course.client_id) {
-        const { data: clientData } = await supabase
-          .from('clients')
+          if (receiverData?.user_id) {
+            await supabase.from('notifications').insert({
+              user_id: receiverData.user_id,
+              title: '🤝 Nouvelle course disponible',
+              message: `Une course est disponible pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
+              type: 'info',
+              link: '/driver-dashboard',
+            });
+          }
+        }
+
+        // Notify client once if enabled
+        if (notifyClient && course.client_id) {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('user_id')
+            .eq('id', course.client_id)
+            .single();
+
+          if (clientData?.user_id) {
+            await supabase.from('notifications').insert({
+              user_id: clientData.user_id,
+              title: '🚗 Information sur votre course',
+              message: finalClientMessage,
+              type: 'info',
+              link: '/client-dashboard',
+            });
+          }
+        }
+
+        toast.success(`Course envoyée à ${partners.filter(p => !p.sharing_blocked).length} partenaires !`);
+      } else if (shareMode === 'specific' && selectedPartner) {
+        // Send to specific partner
+        if (selectedPartner.sharing_blocked) {
+          toast.error('Le partage est bloqué pour ce partenariat');
+          setSending(false);
+          return;
+        }
+
+        const courseAmount = course.devis?.[0]?.amount || 0;
+        const commissionAmount = (courseAmount * selectedPartner.commission_percentage) / 100;
+
+        const { error } = await supabase.from('shared_courses').insert({
+          course_id: course.id,
+          partnership_id: selectedPartner.id,
+          sender_driver_id: driverId,
+          receiver_driver_id: selectedPartner.partner_driver_id,
+          course_amount: courseAmount,
+          commission_percentage: selectedPartner.commission_percentage,
+          commission_amount: commissionAmount,
+          status: 'pending',
+          client_notified: notifyClient,
+          client_notified_at: notifyClient ? new Date().toISOString() : null,
+          client_message: notifyClient ? finalClientMessage : null,
+        });
+
+        if (error) throw error;
+
+        // Notify client
+        if (notifyClient && course.client_id) {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('user_id')
+            .eq('id', course.client_id)
+            .single();
+
+          if (clientData?.user_id) {
+            await supabase.from('notifications').insert({
+              user_id: clientData.user_id,
+              title: '🚗 Changement de chauffeur pour votre course',
+              message: finalClientMessage,
+              type: 'info',
+              link: '/client-dashboard',
+            });
+          }
+        }
+
+        // Notify receiving driver
+        const { data: receiverData } = await supabase
+          .from('drivers')
           .select('user_id')
-          .eq('id', course.client_id)
+          .eq('id', selectedPartner.partner_driver_id)
           .single();
 
-        if (clientData?.user_id) {
+        if (receiverData?.user_id) {
           await supabase.from('notifications').insert({
-            user_id: clientData.user_id,
-            title: '🚗 Changement de chauffeur pour votre course',
-            message: finalClientMessage,
+            user_id: receiverData.user_id,
+            title: '🤝 Nouvelle course partagée',
+            message: `Un partenaire vous a envoyé une course pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
             type: 'info',
-            link: '/client-dashboard',
+            link: '/driver-dashboard',
           });
         }
+
+        toast.success(`Course envoyée à ${selectedPartner.partner_name} !`);
       }
 
-      // Notify receiving driver
-      const { data: receiverData } = await supabase
-        .from('drivers')
-        .select('user_id')
-        .eq('id', selectedPartner.partner_driver_id)
-        .single();
-
-      if (receiverData?.user_id) {
-        await supabase.from('notifications').insert({
-          user_id: receiverData.user_id,
-          title: '🤝 Nouvelle course partagée',
-          message: `Un partenaire vous a envoyé une course pour le ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-          type: 'info',
-          link: '/driver-dashboard',
-        });
-      }
-
-      toast.success('Course envoyée au partenaire !');
       onOpenChange(false);
       setSelectedPartner(null);
       setClientMessage('');
+      setShareMode('choose');
       onSuccess();
     } catch (error: any) {
       console.error('Error sending course:', error);
@@ -209,16 +298,18 @@ export function ShareCourseWithPartnerDialog({
 
   if (!course) return null;
 
+  const availablePartners = partners.filter(p => !p.sharing_blocked);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            Partager avec un partenaire
+            Partager la course
           </DialogTitle>
           <DialogDescription>
-            Envoyez cette course à un chauffeur partenaire. Le client reste votre client.
+            Envoyez cette course à un ou plusieurs partenaires.
           </DialogDescription>
         </DialogHeader>
 
@@ -236,23 +327,74 @@ export function ShareCourseWithPartnerDialog({
             )}
           </div>
 
-          {/* Partners list */}
-          <div className="space-y-2">
-            <Label>Sélectionner un partenaire</Label>
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
-            ) : partners.length === 0 ? (
-              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <p className="text-sm text-warning font-medium flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Aucun partenaire actif
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Créez un partenariat depuis l'onglet "Partage" de votre tableau de bord.
-                </p>
+          {/* Share mode selection */}
+          {shareMode === 'choose' && (
+            <div className="space-y-3">
+              <Label>Comment souhaitez-vous partager ?</Label>
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              ) : partners.length === 0 ? (
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                  <p className="text-sm text-warning font-medium flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Aucun partenaire actif
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Créez un partenariat depuis l'onglet "Partage" de votre tableau de bord.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    onClick={() => setShareMode('specific')}
+                  >
+                    <UserCheck className="w-5 h-5 mr-3 text-primary" />
+                    <div className="text-left">
+                      <p className="font-medium">Choisir un partenaire</p>
+                      <p className="text-xs text-muted-foreground">
+                        Sélectionnez un partenaire spécifique
+                      </p>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    onClick={() => setShareMode('all')}
+                  >
+                    <Users className="w-5 h-5 mr-3 text-primary" />
+                    <div className="text-left">
+                      <p className="font-medium">Envoyer à tous ({availablePartners.length})</p>
+                      <p className="text-xs text-muted-foreground">
+                        Le premier à accepter prend la course
+                      </p>
+                    </div>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Partner selection */}
+          {shareMode === 'specific' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Sélectionner un partenaire</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => {
+                    setShareMode('choose');
+                    setSelectedPartner(null);
+                  }}
+                >
+                  Retour
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              
+              <div className="space-y-2 max-h-56 overflow-y-auto">
                 {partners.map((partner) => (
                   <div
                     key={partner.id}
@@ -266,24 +408,37 @@ export function ShareCourseWithPartnerDialog({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-12 w-12">
                         <AvatarImage src={partner.partner_photo || undefined} />
                         <AvatarFallback>{partner.partner_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{partner.partner_name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        
+                        {/* Sharing number prominently displayed */}
+                        <div className="flex items-center gap-1 text-primary font-mono text-sm">
+                          <Hash className="w-3 h-3" />
+                          {formatSharingNumber(partner.sharing_number)}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                           <span className="flex items-center gap-1">
                             <Star className="w-3 h-3 text-yellow-500" />
                             {partner.partner_rating?.toFixed(1) || '0.0'}
                           </span>
                           <span className="flex items-center gap-1">
                             <Car className="w-3 h-3" />
-                            {partner.partner_rides || 0} courses
+                            {partner.partner_rides || 0}
                           </span>
+                          {partner.partner_phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {partner.partner_phone}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {partner.commission_percentage}%
                       </Badge>
                     </div>
@@ -293,12 +448,50 @@ export function ShareCourseWithPartnerDialog({
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* All partners confirmation */}
+          {shareMode === 'all' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Envoyer à tous les partenaires</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShareMode('choose')}
+                >
+                  Retour
+                </Button>
+              </div>
+              
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium text-primary">
+                  {availablePartners.length} partenaire{availablePartners.length > 1 ? 's' : ''} recevr{availablePartners.length > 1 ? 'ont' : 'a'} cette course
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Le premier à accepter prendra la course automatiquement.
+                </p>
+              </div>
+
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {availablePartners.map((partner) => (
+                  <div key={partner.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={partner.partner_photo || undefined} />
+                      <AvatarFallback className="text-xs">{partner.partner_name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="flex-1 truncate">{partner.partner_name}</span>
+                    <span className="text-xs text-primary font-mono">{formatSharingNumber(partner.sharing_number)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Client notification */}
-          {selectedPartner && (
-            <div className="space-y-3">
+          {(shareMode === 'specific' && selectedPartner) || shareMode === 'all' ? (
+            <div className="space-y-3 pt-2 border-t">
               <div className="flex items-center justify-between">
                 <Label htmlFor="notify-client">Notifier le client</Label>
                 <Switch
@@ -309,7 +502,7 @@ export function ShareCourseWithPartnerDialog({
               </div>
               {notifyClient && (
                 <div className="space-y-2">
-                  <Label>Message au client</Label>
+                  <Label className="text-xs">Message au client</Label>
                   <Textarea
                     value={clientMessage}
                     onChange={(e) => setClientMessage(e.target.value)}
@@ -320,20 +513,22 @@ export function ShareCourseWithPartnerDialog({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button
-            onClick={handleSendCourse}
-            disabled={!selectedPartner || sending}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            {sending ? 'Envoi...' : 'Envoyer'}
-          </Button>
+          {(shareMode === 'specific' || shareMode === 'all') && (
+            <Button
+              onClick={handleSendCourse}
+              disabled={(shareMode === 'specific' && !selectedPartner) || sending || availablePartners.length === 0}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {sending ? 'Envoi...' : shareMode === 'all' ? 'Envoyer à tous' : 'Envoyer'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
