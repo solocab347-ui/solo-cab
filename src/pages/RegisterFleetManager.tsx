@@ -64,7 +64,8 @@ const RegisterFleetManager = () => {
       // Wait for profile to be created by trigger
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // 2. Create fleet manager profile
+      // 2. Create fleet manager profile - compte actif immédiatement
+      // Le statut passera en "pending" uniquement si les documents ne sont pas soumis après 7 jours
       const { error: fleetError } = await supabase.from("fleet_managers").insert({
         user_id: authData.user.id,
         company_name: formData.companyName,
@@ -74,7 +75,8 @@ const RegisterFleetManager = () => {
         contact_name: formData.contactName,
         contact_email: formData.email,
         contact_phone: formData.contactPhone || null,
-        status: "pending",
+        status: "active",
+        documents_status: "pending",
       });
 
       if (fleetError) throw fleetError;
@@ -100,7 +102,7 @@ const RegisterFleetManager = () => {
         // Don't block registration if email fails
       }
 
-      toast.success("Compte créé avec succès ! Vous pouvez maintenant accéder à votre espace et soumettre vos documents.");
+      toast.success("Compte créé avec succès ! Vous avez 7 jours pour soumettre vos documents professionnels.");
       navigate("/fleet-manager");
     } catch (error: any) {
       console.error("Registration error:", error);

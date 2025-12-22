@@ -350,6 +350,7 @@ const FleetManagerDashboard = () => {
       <DocumentWarningBanner 
         documentsStatus={fleetManager.documents_status || "pending"}
         documentsDeadline={fleetManager.documents_deadline}
+        onNavigateToDocuments={() => setActiveTab("documents")}
       />
 
       {/* Header */}
