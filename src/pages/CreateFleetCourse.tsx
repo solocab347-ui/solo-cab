@@ -213,19 +213,85 @@ const CreateFleetCourse = () => {
     setSubmitting(true);
     
     try {
-      // Déterminer le chauffeur
+      // Déterminer le chauffeur avec dispatch intelligent
       let assignedDriverId: string | null = null;
+      const scheduledDateTime = new Date(scheduledDate);
+      const estimatedDuration = 60; // Durée estimée par défaut en minutes
+      
+      // Fonction pour vérifier la disponibilité d'un chauffeur
+      const checkDriverAvailability = async (driverId: string): Promise<boolean> => {
+        const { data, error } = await supabase.rpc('check_driver_availability', {
+          p_driver_id: driverId,
+          p_scheduled_date: scheduledDateTime.toISOString(),
+          p_duration_minutes: estimatedDuration
+        });
+        return !error && data === true;
+      };
+
+      // Trouver un chauffeur disponible avec fallback intelligent
+      const findAvailableDriver = async (): Promise<string | null> => {
+        // Utiliser la fonction de dispatch intelligent
+        const { data: availableDriverId, error } = await supabase.rpc('find_available_fleet_driver', {
+          p_fleet_manager_id: fleetManagerId,
+          p_scheduled_date: scheduledDateTime.toISOString(),
+          p_duration_minutes: estimatedDuration,
+          p_excluded_driver_id: null
+        });
+        
+        if (!error && availableDriverId) {
+          return availableDriverId;
+        }
+        
+        // Fallback : chercher parmi les chauffeurs locaux
+        for (const driver of drivers) {
+          const isAvailable = await checkDriverAvailability(driver.id);
+          if (isAvailable) return driver.id;
+        }
+        return null;
+      };
       
       if (selectedDriverId === "random") {
-        // Choix aléatoire parmi les chauffeurs disponibles
-        if (drivers.length > 0) {
-          const randomIndex = Math.floor(Math.random() * drivers.length);
-          assignedDriverId = drivers[randomIndex].id;
+        // Dispatch intelligent : trouver un chauffeur disponible
+        assignedDriverId = await findAvailableDriver();
+        if (!assignedDriverId) {
+          toast.error("Aucun chauffeur disponible pour ce créneau");
+          setSubmitting(false);
+          return;
         }
       } else if (selectedDriverId === "favorite" && favoriteDriverId) {
-        assignedDriverId = favoriteDriverId;
+        // Vérifier si le chauffeur favori est disponible
+        const isFavoriteAvailable = await checkDriverAvailability(favoriteDriverId);
+        if (isFavoriteAvailable) {
+          assignedDriverId = favoriteDriverId;
+        } else {
+          // Le favori n'est pas dispo, chercher un remplaçant
+          toast.info("Votre chauffeur favori n'est pas disponible, recherche d'un remplaçant...");
+          const { data: replacementId } = await supabase.rpc('find_available_fleet_driver', {
+            p_fleet_manager_id: fleetManagerId,
+            p_scheduled_date: scheduledDateTime.toISOString(),
+            p_duration_minutes: estimatedDuration,
+            p_excluded_driver_id: favoriteDriverId
+          });
+          
+          if (replacementId) {
+            assignedDriverId = replacementId;
+            toast.success("Un chauffeur de remplacement a été assigné");
+          } else {
+            toast.error("Aucun chauffeur disponible pour ce créneau");
+            setSubmitting(false);
+            return;
+          }
+        }
       } else if (selectedDriverId !== "favorite" && selectedDriverId !== "random") {
-        assignedDriverId = selectedDriverId;
+        // Chauffeur spécifique sélectionné
+        const isSelectedAvailable = await checkDriverAvailability(selectedDriverId);
+        if (isSelectedAvailable) {
+          assignedDriverId = selectedDriverId;
+        } else {
+          toast.error("Ce chauffeur n'est pas disponible pour ce créneau. Veuillez en choisir un autre.");
+          setSubmitting(false);
+          return;
+        }
       }
       
       if (!assignedDriverId) {

@@ -935,6 +935,13 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
+          {/* Fleet Partnerships Tab - seulement pour chauffeurs indépendants */}
+          <TabsContent value="fleet-partnerships" className="space-y-6">
+            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
+              <DriverFleetPartnerships driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
         </Tabs>
       </div>
       
