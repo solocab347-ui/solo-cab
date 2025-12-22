@@ -47,6 +47,7 @@ import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverIn
 import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlanning";
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
+import { FleetCourseValidation } from "@/components/fleet-manager/FleetCourseValidation";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -63,6 +64,7 @@ interface FleetManager {
   subscription_status: string | null;
   subscription_paid: boolean | null;
   max_free_drivers: number | null;
+  auto_validate_courses: boolean | null;
 }
 
 interface UserProfile {
@@ -483,6 +485,14 @@ const FleetManagerDashboard = () => {
               <span>Planning</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="validation" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>Validation</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="invitations" 
               disabled={isAccountRestricted}
               className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -772,6 +782,15 @@ const FleetManagerDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Course Validation Tab */}
+          <TabsContent value="validation">
+            <FleetCourseValidation
+              fleetManagerId={fleetManager.id}
+              autoValidate={fleetManager.auto_validate_courses || false}
+              onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
+            />
           </TabsContent>
 
           {/* Invitations Tab */}
