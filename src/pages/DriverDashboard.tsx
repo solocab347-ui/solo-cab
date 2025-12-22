@@ -39,6 +39,7 @@ import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
+import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -434,6 +435,12 @@ const DriverDashboard = () => {
                     <DropdownMenuItem onClick={() => setActiveTab("fleet-partnerships")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
                       <Building2 className="w-4 h-4" />
                       Partenariats Flottes
+                    </DropdownMenuItem>
+                  )}
+                  {!driverProfile?.driver?.is_fleet_driver && (
+                    <DropdownMenuItem onClick={() => setActiveTab("fleet-commissions")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-yellow-600 hover:text-white">
+                      <CreditCard className="w-4 h-4" />
+                      Mes Commissions
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -939,6 +946,13 @@ const DriverDashboard = () => {
           <TabsContent value="fleet-partnerships" className="space-y-6">
             {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
               <DriverFleetPartnerships driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
+          {/* Fleet Commissions Tab - seulement pour chauffeurs indépendants */}
+          <TabsContent value="fleet-commissions" className="space-y-6">
+            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
+              <DriverFleetCommissions driverId={driverProfile.driver.id} />
             )}
           </TabsContent>
 

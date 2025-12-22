@@ -25,8 +25,10 @@ import {
   Loader2,
   Users,
   Percent,
-  AlertTriangle
+  AlertTriangle,
+  Wallet
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface FleetDriverPartnershipsProps {
   fleetManagerId: string;
@@ -76,6 +78,7 @@ export const FleetDriverPartnerships = ({
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
   const [commissionRate, setCommissionRate] = useState(defaultCommission.toString());
+  const [paymentSchedule, setPaymentSchedule] = useState("per_course");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -156,6 +159,7 @@ export const FleetDriverPartnerships = ({
   const handleProposePartnership = (driver: IndependentDriver) => {
     setSelectedDriver(driver);
     setCommissionRate(defaultCommission.toString());
+    setPaymentSchedule("per_course");
     setProposalMessage("");
     setShowProposalDialog(true);
   };
@@ -172,6 +176,7 @@ export const FleetDriverPartnerships = ({
           driver_id: selectedDriver.id,
           initiated_by: "fleet_manager",
           commission_percentage: parseFloat(commissionRate),
+          payment_schedule: paymentSchedule,
           proposal_message: proposalMessage || null,
           fleet_manager_signed: true,
           fleet_manager_signed_at: new Date().toISOString()
@@ -508,7 +513,9 @@ export const FleetDriverPartnerships = ({
             <Alert>
               <AlertTriangle className="w-4 h-4" />
               <AlertDescription>
-                Ce partenariat nécessite la signature des deux parties. Le chauffeur devra accepter et signer le contrat.
+                <strong>Important :</strong> Ce partenariat nécessite la signature des deux parties. 
+                Le non-respect des délais de paiement peut entraîner la suspension du compte du chauffeur 
+                et de sa capacité à établir des partenariats.
               </AlertDescription>
             </Alert>
 
@@ -531,14 +538,44 @@ export const FleetDriverPartnerships = ({
             </div>
 
             <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Période de versement des commissions
+              </Label>
+              <Select value={paymentSchedule} onValueChange={setPaymentSchedule}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir la période" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per_course">À chaque course (48h max)</SelectItem>
+                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                  <SelectItem value="monthly">Mensuel</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Le chauffeur devra régler ses commissions selon cette période
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Message (optionnel)</Label>
               <Textarea
                 placeholder="Présentez votre offre de partenariat..."
                 value={proposalMessage}
                 onChange={(e) => setProposalMessage(e.target.value)}
-                rows={4}
+                rows={3}
               />
             </div>
+
+            <Alert className="bg-info/10 border-info/30">
+              <Wallet className="w-4 h-4 text-info" />
+              <AlertDescription className="text-sm">
+                En signant ce contrat, le chauffeur s'engage à verser {commissionRate}% de chaque course 
+                {paymentSchedule === "per_course" && " dans les 48h suivant chaque course."}
+                {paymentSchedule === "weekly" && " de façon hebdomadaire."}
+                {paymentSchedule === "monthly" && " de façon mensuelle."}
+              </AlertDescription>
+            </Alert>
           </div>
 
           <DialogFooter>
