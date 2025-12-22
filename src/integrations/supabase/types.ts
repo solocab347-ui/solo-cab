@@ -1096,6 +1096,9 @@ export type Database = {
           documents: Json | null
           driver_code: string | null
           evening_surcharge: number | null
+          fleet_documents_deadline: string | null
+          fleet_documents_status: string | null
+          fleet_documents_submitted_at: string | null
           fleet_manager_id: string | null
           free_access_end_date: string | null
           free_access_granted: boolean | null
@@ -1163,6 +1166,9 @@ export type Database = {
           documents?: Json | null
           driver_code?: string | null
           evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
           fleet_manager_id?: string | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
@@ -1230,6 +1236,9 @@ export type Database = {
           documents?: Json | null
           driver_code?: string | null
           evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
           fleet_manager_id?: string | null
           free_access_end_date?: string | null
           free_access_granted?: boolean | null
@@ -1467,8 +1476,12 @@ export type Database = {
       }
       fleet_driver_invitations: {
         Row: {
+          commission_accepted: boolean | null
+          commission_accepted_at: string | null
+          commission_percentage: number | null
           created_at: string
           driver_cost: number | null
+          driver_type: string
           email: string | null
           expires_at: string | null
           fleet_manager_id: string
@@ -1480,8 +1493,12 @@ export type Database = {
           used_by_driver_id: string | null
         }
         Insert: {
+          commission_accepted?: boolean | null
+          commission_accepted_at?: string | null
+          commission_percentage?: number | null
           created_at?: string
           driver_cost?: number | null
+          driver_type?: string
           email?: string | null
           expires_at?: string | null
           fleet_manager_id: string
@@ -1493,8 +1510,12 @@ export type Database = {
           used_by_driver_id?: string | null
         }
         Update: {
+          commission_accepted?: boolean | null
+          commission_accepted_at?: string | null
+          commission_percentage?: number | null
           created_at?: string
           driver_cost?: number | null
+          driver_type?: string
           email?: string | null
           expires_at?: string | null
           fleet_manager_id?: string
