@@ -54,27 +54,77 @@ Deno.serve(async (req) => {
       client_id: course.client_id, 
       driver_id: course.driver_id,
       distance_km: course.distance_km,
-      duration_minutes: course.duration_minutes
+      duration_minutes: course.duration_minutes,
+      pickup_address: course.pickup_address,
+      destination_address: course.destination_address
     });
 
-    // Calculate price using existing function
-    const { data: priceData, error: priceError } = await supabaseClient
-      .rpc('calculate_course_price', {
-        _driver_id: driver_id,
-        _distance_km: course.distance_km || 0,
-        _duration_minutes: course.duration_minutes || 0,
-        _use_hourly_rate: use_hourly_rate,
-        _scheduled_date: course.scheduled_date, // Passer la date pour les augmentations soir/weekend
+    // Déterminer quel type de tarification appliquer (ville ou classique)
+    let pricing = null;
+    let pricingType = 'classic';
+    
+    // Vérifier si une tarification par ville s'applique
+    const { data: applicablePricing, error: applicablePricingError } = await supabaseClient
+      .rpc('get_applicable_pricing', {
+        p_driver_id: driver_id,
+        p_pickup_address: course.pickup_address || '',
+        p_destination_address: course.destination_address || ''
       });
 
-    if (priceError || !priceData || priceData.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Erreur calcul du prix' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    console.log('🔍 Tarification applicable:', { applicablePricing, error: applicablePricingError });
+
+    if (!applicablePricingError && applicablePricing && applicablePricing.length > 0) {
+      const pricingInfo = applicablePricing[0];
+      pricingType = pricingInfo.pricing_type;
+      
+      if (pricingType === 'city' && pricingInfo.city_pricing_id) {
+        console.log('🏙️ Utilisation de la tarification par ville:', pricingInfo.city_pricing_id);
+        
+        // Calculer avec la tarification par ville
+        const { data: cityPriceData, error: cityPriceError } = await supabaseClient
+          .rpc('calculate_city_course_price', {
+            p_city_pricing_id: pricingInfo.city_pricing_id,
+            p_distance_km: course.distance_km || 0,
+            p_duration_minutes: course.duration_minutes || 0,
+            p_use_hourly_rate: use_hourly_rate,
+            p_scheduled_date: course.scheduled_date
+          });
+
+        if (!cityPriceError && cityPriceData && cityPriceData.length > 0) {
+          pricing = cityPriceData[0];
+          console.log('💰 Prix ville calculé:', pricing);
+        } else {
+          console.warn('⚠️ Erreur calcul prix ville, fallback sur classique:', cityPriceError);
+          pricingType = 'classic';
+        }
+      }
     }
 
-    const pricing = priceData[0];
+    // Fallback sur la tarification classique
+    if (!pricing) {
+      console.log('📊 Utilisation de la tarification classique');
+      
+      const { data: priceData, error: priceError } = await supabaseClient
+        .rpc('calculate_course_price', {
+          _driver_id: driver_id,
+          _distance_km: course.distance_km || 0,
+          _duration_minutes: course.duration_minutes || 0,
+          _use_hourly_rate: use_hourly_rate,
+          _scheduled_date: course.scheduled_date,
+        });
+
+      if (priceError || !priceData || priceData.length === 0) {
+        console.error('❌ Erreur calcul prix classique:', priceError);
+        return new Response(
+          JSON.stringify({ error: 'Erreur calcul du prix' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      pricing = priceData[0];
+    }
+
+    console.log('💰 Prix final utilisé:', { pricingType, pricing });
     
     // Validation et application du code promo
     let discountAmount = 0;
@@ -278,7 +328,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         devis,
-        pricing 
+        pricing,
+        pricingType // Indiquer quel type de tarification a été utilisé
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

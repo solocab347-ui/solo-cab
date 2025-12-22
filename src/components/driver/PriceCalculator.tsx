@@ -110,24 +110,57 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
 
       logger.info("Itinéraire calculé", { distanceKm, durationMinutes });
 
-      // Étape 2: Calcul du prix
+      // Étape 2: Vérifier si une tarification par ville s'applique
       const startPrice = performance.now();
       
-      console.log("🔢 Appel RPC calculate_course_price avec:", {
-        _driver_id: driverProfile.driver.id,
-        _distance_km: distanceKm,
-        _duration_minutes: durationMinutes,
-        _use_hourly_rate: false,
-        _scheduled_date: null,
+      console.log("🔍 Vérification tarification par ville...");
+      
+      let priceData = null;
+      let priceError = null;
+      let pricingType = "classic";
+      
+      // Vérifier si une tarification par ville existe pour ce trajet
+      // Utilisation de "as any" car les types ne sont pas encore régénérés
+      const { data: applicablePricing } = await (supabase.rpc as any)("get_applicable_pricing", {
+        p_driver_id: driverProfile.driver.id,
+        p_pickup_address: pickupAddress,
+        p_destination_address: destinationAddress
       });
       
-      const { data: priceData, error: priceError } = await supabase.rpc("calculate_course_price", {
-        _driver_id: driverProfile.driver.id,
-        _distance_km: distanceKm,
-        _duration_minutes: durationMinutes,
-        _use_hourly_rate: false,
-        _scheduled_date: null,
-      });
+      console.log("📊 Tarification applicable:", applicablePricing);
+      
+      if (applicablePricing && Array.isArray(applicablePricing) && applicablePricing.length > 0 && applicablePricing[0]?.pricing_type === "city") {
+        // Utiliser la tarification par ville
+        pricingType = "city";
+        const cityPricingId = applicablePricing[0].city_pricing_id;
+        
+        console.log("🏙️ Utilisation tarification ville:", cityPricingId);
+        
+        const { data, error } = await supabase.rpc("calculate_city_course_price", {
+          p_city_pricing_id: cityPricingId,
+          p_distance_km: distanceKm,
+          p_duration_minutes: durationMinutes,
+          p_use_hourly_rate: false,
+          p_scheduled_date: null
+        });
+        
+        priceData = data;
+        priceError = error;
+      } else {
+        // Utiliser la tarification classique
+        console.log("🔢 Utilisation tarification classique");
+        
+        const { data, error } = await supabase.rpc("calculate_course_price", {
+          _driver_id: driverProfile.driver.id,
+          _distance_km: distanceKm,
+          _duration_minutes: durationMinutes,
+          _use_hourly_rate: false,
+          _scheduled_date: null,
+        });
+        
+        priceData = data;
+        priceError = error;
+      }
       
       console.log("📊 Réponse RPC:", { priceData, priceError });
       
