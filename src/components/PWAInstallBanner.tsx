@@ -48,11 +48,15 @@ export const PWAInstallBanner = () => {
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
                         (window.navigator as any).standalone === true;
     
-    // Vérifier si l'utilisateur a déjà fermé la bannière
-    const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+    // Vérifier si l'app a été installée (persistant)
+    const wasInstalled = localStorage.getItem('pwa-installed') === 'true';
     
-    // Afficher la bannière si mobile, pas installé, et pas fermé
-    if (isMobile && !isInstalled && !bannerDismissed) {
+    // Vérifier si temporairement masqué (session only, expire après 24h)
+    const dismissedAt = sessionStorage.getItem('pwa-banner-dismissed-at');
+    const isTemporarilyDismissed = dismissedAt && (Date.now() - parseInt(dismissedAt)) < 24 * 60 * 60 * 1000;
+    
+    // Afficher la bannière si mobile, pas installé, et pas temporairement masqué
+    if (isMobile && !isInstalled && !wasInstalled && !isTemporarilyDismissed) {
       setShowBanner(true);
     }
 
@@ -60,6 +64,10 @@ export const PWAInstallBanner = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      // Réafficher la bannière si le prompt est disponible
+      if (isMobile && !isInstalled && !wasInstalled) {
+        setShowBanner(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -67,7 +75,8 @@ export const PWAInstallBanner = () => {
     // Écouter l'événement d'installation réussie
     const handleAppInstalled = () => {
       setShowBanner(false);
-      localStorage.setItem('pwa-banner-dismissed', 'true');
+      localStorage.setItem('pwa-installed', 'true');
+      sessionStorage.removeItem('pwa-banner-dismissed-at');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -87,7 +96,8 @@ export const PWAInstallBanner = () => {
         
         if (outcome === 'accepted') {
           setShowBanner(false);
-          localStorage.setItem('pwa-banner-dismissed', 'true');
+          localStorage.setItem('pwa-installed', 'true');
+          sessionStorage.removeItem('pwa-banner-dismissed-at');
         }
         
         setDeferredPrompt(null);
@@ -103,7 +113,8 @@ export const PWAInstallBanner = () => {
 
   const handleDismiss = useCallback(() => {
     setShowBanner(false);
-    localStorage.setItem('pwa-banner-dismissed', 'true');
+    // Ne masquer que temporairement (se réaffiche à la prochaine session ou après 24h)
+    sessionStorage.setItem('pwa-banner-dismissed-at', Date.now().toString());
   }, []);
 
   if (!showBanner) return null;
