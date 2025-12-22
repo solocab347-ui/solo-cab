@@ -1119,6 +1119,9 @@ export type Database = {
           license_number: string
           max_passengers: number
           minimum_price: number | null
+          partnerships_suspended: boolean | null
+          partnerships_suspended_at: string | null
+          partnerships_suspended_reason: string | null
           per_km_rate: number | null
           public_profile_enabled: boolean | null
           quote_counter: number | null
@@ -1192,6 +1195,9 @@ export type Database = {
           license_number: string
           max_passengers?: number
           minimum_price?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -1265,6 +1271,9 @@ export type Database = {
           license_number?: string
           max_passengers?: number
           minimum_price?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
           per_km_rate?: number | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -1587,12 +1596,21 @@ export type Database = {
           fleet_manager_signed_at: string | null
           id: string
           initiated_by: string
+          last_payment_date: string | null
+          next_payment_date: string | null
+          partnership_suspended: boolean | null
+          payment_reminder_sent_at: string | null
+          payment_schedule: string | null
           proposal_message: string | null
           proposed_at: string | null
           rejected_at: string | null
           rejection_reason: string | null
           status: string
+          suspended_at: string | null
+          suspension_reason: string | null
           terminated_at: string | null
+          total_owed: number | null
+          total_paid: number | null
           updated_at: string
         }
         Insert: {
@@ -1608,12 +1626,21 @@ export type Database = {
           fleet_manager_signed_at?: string | null
           id?: string
           initiated_by: string
+          last_payment_date?: string | null
+          next_payment_date?: string | null
+          partnership_suspended?: boolean | null
+          payment_reminder_sent_at?: string | null
+          payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
           status?: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
           terminated_at?: string | null
+          total_owed?: number | null
+          total_paid?: number | null
           updated_at?: string
         }
         Update: {
@@ -1629,12 +1656,21 @@ export type Database = {
           fleet_manager_signed_at?: string | null
           id?: string
           initiated_by?: string
+          last_payment_date?: string | null
+          next_payment_date?: string | null
+          partnership_suspended?: boolean | null
+          payment_reminder_sent_at?: string | null
+          payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
           status?: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
           terminated_at?: string | null
+          total_owed?: number | null
+          total_paid?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1929,6 +1965,7 @@ export type Database = {
           created_at: string
           default_commission_percentage: number | null
           default_partnership_commission: number | null
+          default_payment_schedule: string | null
           description: string | null
           documents: Json | null
           documents_deadline: string | null
@@ -1984,6 +2021,7 @@ export type Database = {
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null
+          default_payment_schedule?: string | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
@@ -2039,6 +2077,7 @@ export type Database = {
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null
+          default_payment_schedule?: string | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
@@ -2279,6 +2318,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      partnership_course_commissions: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          course_amount: number
+          course_id: string
+          created_at: string
+          due_date: string | null
+          id: string
+          paid_at: string | null
+          partnership_id: string
+          payment_status: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_percentage: number
+          course_amount: number
+          course_id: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          partnership_id: string
+          payment_status?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          course_amount?: number
+          course_id?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          partnership_id?: string
+          payment_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_course_commissions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_course_commissions_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_driver_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partnership_disputes: {
         Row: {
@@ -3182,6 +3275,20 @@ export type Database = {
               tva_amount: number
             }[]
           }
+      calculate_driver_fleet_commissions: {
+        Args: { _driver_id: string }
+        Returns: {
+          commission_percentage: number
+          courses_count: number
+          fleet_manager_id: string
+          fleet_manager_name: string
+          next_due_date: string
+          partnership_id: string
+          payment_schedule: string
+          total_paid: number
+          total_pending: number
+        }[]
+      }
       calculate_fleet_course_price: {
         Args: {
           p_distance_km: number
@@ -3477,6 +3584,10 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      mark_commission_paid: {
+        Args: { _commission_ids: string[] }
+        Returns: undefined
+      }
       refresh_driver_statistics: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: { _role: string; _user_id: string }

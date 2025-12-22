@@ -59,6 +59,7 @@ import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCo
 import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
 import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
+import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -972,10 +973,21 @@ const FleetManagerDashboard = () => {
 
           {/* Partnerships Tab */}
           <TabsContent value="partnerships">
-            <FleetDriverPartnerships 
-              fleetManagerId={fleetManager.id}
-              defaultCommission={10}
-            />
+            <Tabs defaultValue="explorer" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="explorer">Explorer / Gérer</TabsTrigger>
+                <TabsTrigger value="commissions">Suivi Commissions</TabsTrigger>
+              </TabsList>
+              <TabsContent value="explorer">
+                <FleetDriverPartnerships 
+                  fleetManagerId={fleetManager.id}
+                  defaultCommission={10}
+                />
+              </TabsContent>
+              <TabsContent value="commissions">
+                <FleetPartnerCommissions fleetManagerId={fleetManager.id} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Pricing Tab */}
