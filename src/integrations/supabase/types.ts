@@ -175,6 +175,8 @@ export type Database = {
           created_at: string
           driver_id: string | null
           driver_ids: string[] | null
+          favorite_driver_id: string | null
+          fleet_manager_id: string | null
           id: string
           is_exclusive: boolean
           qr_code_id: string | null
@@ -187,6 +189,8 @@ export type Database = {
           created_at?: string
           driver_id?: string | null
           driver_ids?: string[] | null
+          favorite_driver_id?: string | null
+          fleet_manager_id?: string | null
           id?: string
           is_exclusive?: boolean
           qr_code_id?: string | null
@@ -199,6 +203,8 @@ export type Database = {
           created_at?: string
           driver_id?: string | null
           driver_ids?: string[] | null
+          favorite_driver_id?: string | null
+          fleet_manager_id?: string | null
           id?: string
           is_exclusive?: boolean
           qr_code_id?: string | null
@@ -234,6 +240,41 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -1720,6 +1761,7 @@ export type Database = {
       fleet_managers: {
         Row: {
           address: string
+          auto_validate_courses: boolean | null
           base_subscription_cost: number | null
           billing_history: Json | null
           company_name: string
@@ -1727,17 +1769,24 @@ export type Database = {
           contact_name: string
           contact_phone: string | null
           created_at: string
+          description: string | null
           documents: Json | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
           extra_drivers_count: number | null
+          favorite_driver_priority: boolean | null
           id: string
+          logo_url: string | null
           max_free_drivers: number | null
           monthly_extra_driver_cost: number | null
           next_billing_date: string | null
           qr_code_id: string | null
+          show_address: boolean | null
+          show_contact_name: boolean | null
           show_drivers_in_public_storefront: boolean | null
+          show_email: boolean | null
+          show_phone: boolean | null
           siren: string | null
           siret: string
           status: string
@@ -1753,6 +1802,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          auto_validate_courses?: boolean | null
           base_subscription_cost?: number | null
           billing_history?: Json | null
           company_name: string
@@ -1760,17 +1810,24 @@ export type Database = {
           contact_name: string
           contact_phone?: string | null
           created_at?: string
+          description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
           extra_drivers_count?: number | null
+          favorite_driver_priority?: boolean | null
           id?: string
+          logo_url?: string | null
           max_free_drivers?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
           qr_code_id?: string | null
+          show_address?: boolean | null
+          show_contact_name?: boolean | null
           show_drivers_in_public_storefront?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           siren?: string | null
           siret: string
           status?: string
@@ -1786,6 +1843,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          auto_validate_courses?: boolean | null
           base_subscription_cost?: number | null
           billing_history?: Json | null
           company_name?: string
@@ -1793,17 +1851,24 @@ export type Database = {
           contact_name?: string
           contact_phone?: string | null
           created_at?: string
+          description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
           extra_drivers_count?: number | null
+          favorite_driver_priority?: boolean | null
           id?: string
+          logo_url?: string | null
           max_free_drivers?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
           qr_code_id?: string | null
+          show_address?: boolean | null
+          show_contact_name?: boolean | null
           show_drivers_in_public_storefront?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           siren?: string | null
           siret?: string
           status?: string

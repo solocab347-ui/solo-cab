@@ -34,10 +34,12 @@ import GuestBooking from "./pages/GuestBooking";
 import GuestBookingTracking from "./pages/GuestBookingTracking";
 import RegisterDriverFleet from "./pages/RegisterDriverFleet";
 import FleetPublicProfile from "./pages/FleetPublicProfile";
+import RegisterClientFleet from "./pages/RegisterClientFleet";
 // Lazy load heavy dashboards and authenticated pages
 const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
 const FleetManagerDashboard = lazy(() => import("./pages/FleetManagerDashboard"));
+const FleetClientDashboard = lazy(() => import("./pages/FleetClientDashboard"));
 
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
@@ -87,6 +89,17 @@ const App = () => (
               <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
               <Route path="/register-driver-fleet" element={<RegisterDriverFleet />} />
               <Route path="/flotte/:id" element={<FleetPublicProfile />} />
+              <Route path="/register-client-fleet" element={<RegisterClientFleet />} />
+              <Route
+                path="/fleet-client-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["client"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <FleetClientDashboard />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/fleet-driver-dashboard"
                 element={
