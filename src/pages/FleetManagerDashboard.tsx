@@ -37,6 +37,9 @@ import {
   ArrowLeft,
   AlertTriangle,
   Lock,
+  Wrench,
+  Calendar,
+  Route,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -47,7 +50,7 @@ import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverIn
 import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlanning";
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
-import { FleetCourseValidation } from "@/components/fleet-manager/FleetCourseValidation";
+import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesManager";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -477,44 +480,20 @@ const FleetManagerDashboard = () => {
               <span>Clients</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="planning" 
+              value="courses" 
               disabled={isAccountRestricted}
               className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <Clock className="w-4 h-4" />
-              <span>Planning</span>
+              <Route className="w-4 h-4" />
+              <span>Courses</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="validation" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <CheckCircle className="w-4 h-4" />
-              <span>Validation</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="invitations" 
+              value="tools" 
               disabled={isAccountRestricted}
               className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <Send className="w-4 h-4" />
-              <span>Invitations</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="public-profile" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Globe className="w-4 h-4" />
-              <span>Vitrine</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="qrcode" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <QrCode className="w-4 h-4" />
-              <span>QR</span>
+              <Wrench className="w-4 h-4" />
+              <span>Outils</span>
             </TabsTrigger>
             <TabsTrigger 
               value="subscription" 
@@ -728,10 +707,6 @@ const FleetManagerDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Planning Tab */}
-          <TabsContent value="planning">
-            <FleetDriverPlanning fleetManagerId={fleetManager.id} />
-          </TabsContent>
 
           {/* Clients Tab */}
           <TabsContent value="clients">
@@ -784,13 +759,62 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Course Validation Tab */}
-          <TabsContent value="validation">
-            <FleetCourseValidation
+          {/* Courses Tab */}
+          <TabsContent value="courses">
+            <FleetCoursesManager
               fleetManagerId={fleetManager.id}
               autoValidate={fleetManager.auto_validate_courses || false}
               onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
             />
+          </TabsContent>
+
+          {/* Tools Tab */}
+          <TabsContent value="tools">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Invitations */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("invitations")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Send className="w-5 h-5 text-warning" />
+                    Invitations
+                  </CardTitle>
+                  <CardDescription>Invitez des chauffeurs à rejoindre votre flotte</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Planning */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("planning")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-info" />
+                    Planning
+                  </CardTitle>
+                  <CardDescription>Gérez les plannings de vos chauffeurs</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* QR Code */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("qrcode")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5 text-accent" />
+                    QR Code
+                  </CardTitle>
+                  <CardDescription>Partagez votre QR code pour les inscriptions clients</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Vitrine */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("public-profile")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-purple-500" />
+                    Vitrine
+                  </CardTitle>
+                  <CardDescription>Configurez votre page publique</CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Invitations Tab */}
@@ -801,6 +825,11 @@ const FleetManagerDashboard = () => {
               maxFreeDrivers={fleetManager.max_free_drivers || 10}
               onInvitationCreated={fetchData}
             />
+          </TabsContent>
+
+          {/* Planning Tab */}
+          <TabsContent value="planning">
+            <FleetDriverPlanning fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Public Profile Tab */}
