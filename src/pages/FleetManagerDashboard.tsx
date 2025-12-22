@@ -63,6 +63,7 @@ import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissi
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
 import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
+import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/FleetDriverDocumentsValidation";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -563,7 +564,11 @@ const FleetManagerDashboard = () => {
 
           {/* Drivers Tab */}
           <TabsContent value="drivers">
-            <Card className="bg-card/50 backdrop-blur border-white/10">
+            <div className="space-y-6">
+              {/* Documents Validation Section */}
+              <FleetDriverDocumentsValidation fleetManagerId={fleetManager.id} />
+
+              <Card className="bg-card/50 backdrop-blur border-white/10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Car className="w-5 h-5 text-primary" />
@@ -640,6 +645,7 @@ const FleetManagerDashboard = () => {
                 )}
               </CardContent>
             </Card>
+            </div>
           </TabsContent>
 
           {/* Driver Profile Tab */}
