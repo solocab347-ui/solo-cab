@@ -27,11 +27,11 @@ export const DocumentWarningBanner = ({
     return (
       <Alert variant="destructive" className="mb-6">
         <XCircle className="h-4 w-4" />
-        <AlertTitle>Accès bloqué - Documents non soumis</AlertTitle>
+        <AlertTitle>Accès restreint - Documents requis</AlertTitle>
         <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
           <span>
-            Le délai pour soumettre vos documents est expiré. Votre accès aux fonctionnalités est restreint
-            jusqu'à ce que vos documents soient validés.
+            Le délai pour soumettre vos documents est expiré. Votre accès aux fonctionnalités est restreint.
+            Soumettez vos documents pour retrouver un accès complet.
           </span>
           <Button
             variant="outline"
