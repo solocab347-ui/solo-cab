@@ -1584,26 +1584,35 @@ export type Database = {
       }
       fleet_manager_drivers: {
         Row: {
+          commission_percentage: number | null
+          commission_type: string | null
           created_at: string
           driver_id: string
           fleet_manager_id: string
           id: string
+          is_salaried: boolean | null
           joined_at: string
           status: string
         }
         Insert: {
+          commission_percentage?: number | null
+          commission_type?: string | null
           created_at?: string
           driver_id: string
           fleet_manager_id: string
           id?: string
+          is_salaried?: boolean | null
           joined_at?: string
           status?: string
         }
         Update: {
+          commission_percentage?: number | null
+          commission_type?: string | null
           created_at?: string
           driver_id?: string
           fleet_manager_id?: string
           id?: string
+          is_salaried?: boolean | null
           joined_at?: string
           status?: string
         }
@@ -1761,7 +1770,9 @@ export type Database = {
       fleet_managers: {
         Row: {
           address: string
+          assignment_mode: string | null
           auto_validate_courses: boolean | null
+          base_fare: number | null
           base_subscription_cost: number | null
           billing_history: Json | null
           company_name: string
@@ -1769,18 +1780,23 @@ export type Database = {
           contact_name: string
           contact_phone: string | null
           created_at: string
+          default_commission_percentage: number | null
           description: string | null
           documents: Json | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
+          evening_surcharge: number | null
           extra_drivers_count: number | null
           favorite_driver_priority: boolean | null
+          hourly_rate: number | null
           id: string
           logo_url: string | null
           max_free_drivers: number | null
+          minimum_price: number | null
           monthly_extra_driver_cost: number | null
           next_billing_date: string | null
+          per_km_rate: number | null
           qr_code_id: string | null
           show_address: boolean | null
           show_contact_name: boolean | null
@@ -1797,12 +1813,17 @@ export type Database = {
           subscription_stripe_id: string | null
           total_clients: number | null
           total_drivers: number | null
+          tva_included: boolean | null
+          tva_rate: number | null
           updated_at: string
           user_id: string
+          weekend_surcharge: number | null
         }
         Insert: {
           address: string
+          assignment_mode?: string | null
           auto_validate_courses?: boolean | null
+          base_fare?: number | null
           base_subscription_cost?: number | null
           billing_history?: Json | null
           company_name: string
@@ -1810,18 +1831,23 @@ export type Database = {
           contact_name: string
           contact_phone?: string | null
           created_at?: string
+          default_commission_percentage?: number | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
+          hourly_rate?: number | null
           id?: string
           logo_url?: string | null
           max_free_drivers?: number | null
+          minimum_price?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
+          per_km_rate?: number | null
           qr_code_id?: string | null
           show_address?: boolean | null
           show_contact_name?: boolean | null
@@ -1838,12 +1864,17 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_clients?: number | null
           total_drivers?: number | null
+          tva_included?: boolean | null
+          tva_rate?: number | null
           updated_at?: string
           user_id: string
+          weekend_surcharge?: number | null
         }
         Update: {
           address?: string
+          assignment_mode?: string | null
           auto_validate_courses?: boolean | null
+          base_fare?: number | null
           base_subscription_cost?: number | null
           billing_history?: Json | null
           company_name?: string
@@ -1851,18 +1882,23 @@ export type Database = {
           contact_name?: string
           contact_phone?: string | null
           created_at?: string
+          default_commission_percentage?: number | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
+          hourly_rate?: number | null
           id?: string
           logo_url?: string | null
           max_free_drivers?: number | null
+          minimum_price?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
+          per_km_rate?: number | null
           qr_code_id?: string | null
           show_address?: boolean | null
           show_contact_name?: boolean | null
@@ -1879,8 +1915,11 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_clients?: number | null
           total_drivers?: number | null
+          tva_included?: boolean | null
+          tva_rate?: number | null
           updated_at?: string
           user_id?: string
+          weekend_surcharge?: number | null
         }
         Relationships: []
       }
@@ -2587,6 +2626,64 @@ export type Database = {
         }
         Relationships: []
       }
+      unassigned_fleet_courses: {
+        Row: {
+          attempts: number | null
+          course_id: string
+          created_at: string
+          fleet_manager_id: string
+          id: string
+          last_attempt_at: string | null
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          course_id: string
+          created_at?: string
+          fleet_manager_id: string
+          id?: string
+          last_attempt_at?: string | null
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          course_id?: string
+          created_at?: string
+          fleet_manager_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unassigned_fleet_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unassigned_fleet_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unassigned_fleet_courses_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2881,6 +2978,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      auto_assign_fleet_driver: {
+        Args: {
+          p_duration_minutes?: number
+          p_favorite_driver_id?: string
+          p_fleet_manager_id: string
+          p_scheduled_date: string
+        }
+        Returns: string
+      }
       calculate_course_price:
         | {
             Args: {
@@ -2917,6 +3023,25 @@ export type Database = {
               tva_amount: number
             }[]
           }
+      calculate_fleet_course_price: {
+        Args: {
+          p_distance_km: number
+          p_duration_minutes: number
+          p_fleet_manager_id: string
+          p_scheduled_date?: string
+          p_use_hourly_rate?: boolean
+        }
+        Returns: {
+          base_price: number
+          distance_price: number
+          subtotal: number
+          surcharge_evening: number
+          surcharge_weekend: number
+          time_price: number
+          total_price: number
+          tva_amount: number
+        }[]
+      }
       calculate_fleet_monthly_billing: {
         Args: { _fleet_manager_id: string }
         Returns: {
