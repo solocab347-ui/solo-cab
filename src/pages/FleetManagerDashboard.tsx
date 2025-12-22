@@ -56,6 +56,7 @@ import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesMana
 import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSettings";
 import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
 import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
+import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -951,12 +952,16 @@ const FleetManagerDashboard = () => {
               <TabsList>
                 <TabsTrigger value="tarifs">Tarification</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                <TabsTrigger value="suivi">Suivi commissions</TabsTrigger>
               </TabsList>
               <TabsContent value="tarifs">
                 <FleetPricingSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
               <TabsContent value="commissions">
                 <FleetDriverCommissions fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="suivi">
+                <FleetCommissionTracker fleetManagerId={fleetManager.id} />
               </TabsContent>
             </Tabs>
           </TabsContent>
