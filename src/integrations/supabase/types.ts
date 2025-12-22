@@ -3358,6 +3358,7 @@ export type Database = {
           course_amount: number
           course_id: string
           created_at: string | null
+          decline_reason: string | null
           id: string
           partnership_id: string
           receiver_driver_id: string
@@ -3375,6 +3376,7 @@ export type Database = {
           course_amount: number
           course_id: string
           created_at?: string | null
+          decline_reason?: string | null
           id?: string
           partnership_id: string
           receiver_driver_id: string
@@ -3392,6 +3394,7 @@ export type Database = {
           course_amount?: number
           course_id?: string
           created_at?: string | null
+          decline_reason?: string | null
           id?: string
           partnership_id?: string
           receiver_driver_id?: string
@@ -3942,6 +3945,14 @@ export type Database = {
       }
     }
     Functions: {
+      accept_shared_course: {
+        Args: { p_driver_id: string; p_shared_course_id: string }
+        Returns: {
+          message: string
+          shared_course_data: Json
+          success: boolean
+        }[]
+      }
       add_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
@@ -4141,6 +4152,17 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      decline_shared_course: {
+        Args: {
+          p_driver_id: string
+          p_reason?: string
+          p_shared_course_id: string
+        }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
       }
       find_available_fleet_driver: {
         Args: {

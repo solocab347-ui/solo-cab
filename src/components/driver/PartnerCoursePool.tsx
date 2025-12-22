@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Car, 
   MapPin, 
@@ -15,10 +16,13 @@ import {
   Euro, 
   Clock,
   Check,
+  X,
   AlertCircle,
   Loader2,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  Hash,
+  Phone
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -41,15 +45,40 @@ interface PooledCourse {
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
+  sender_sharing_number: number | null;
+  sender_phone: string | null;
+}
+
+interface SharedCourse {
+  id: string;
+  course_id: string;
+  sender_driver_id: string;
+  course_amount: number;
+  commission_percentage: number;
+  commission_amount: number;
+  status: string;
+  created_at: string;
+  pickup_address: string;
+  destination_address: string;
+  scheduled_date: string;
+  passengers_count: number;
+  distance_km: number | null;
+  sender_name: string;
+  sender_photo: string | null;
+  sender_company: string | null;
+  sender_sharing_number: number | null;
+  sender_phone: string | null;
 }
 
 export function PartnerCoursePool() {
   const { user } = useAuth();
   const [driverId, setDriverId] = useState<string | null>(null);
   const [pooledCourses, setPooledCourses] = useState<PooledCourse[]>([]);
+  const [sharedCourses, setSharedCourses] = useState<SharedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
 
   useEffect(() => {
     if (user?.id) {
@@ -59,7 +88,9 @@ export function PartnerCoursePool() {
 
   // Realtime subscription
   useEffect(() => {
-    const channel = supabase
+    if (!driverId) return;
+
+    const poolChannel = supabase
       .channel('pool-changes')
       .on(
         'postgres_changes',
@@ -74,8 +105,24 @@ export function PartnerCoursePool() {
       )
       .subscribe();
 
+    const sharedChannel = supabase
+      .channel('shared-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shared_courses'
+        },
+        () => {
+          loadSharedCourses();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(poolChannel);
+      supabase.removeChannel(sharedChannel);
     };
   }, [driverId]);
 
@@ -88,9 +135,82 @@ export function PartnerCoursePool() {
 
     if (driver) {
       setDriverId(driver.id);
-      await loadPooledCourses();
+      await Promise.all([loadPooledCourses(), loadSharedCourses()]);
     }
     setLoading(false);
+  };
+
+  const loadSharedCourses = async () => {
+    if (!driverId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('shared_courses')
+        .select(`
+          id,
+          course_id,
+          sender_driver_id,
+          course_amount,
+          commission_percentage,
+          commission_amount,
+          status,
+          created_at,
+          courses!inner(
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            passengers_count,
+            distance_km
+          )
+        `)
+        .eq('receiver_driver_id', driverId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const enrichedCourses: SharedCourse[] = [];
+      for (const item of data || []) {
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('user_id, company_name, sharing_number')
+          .eq('id', item.sender_driver_id)
+          .single();
+
+        if (driverData) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_photo_url, phone')
+            .eq('id', driverData.user_id)
+            .single();
+
+          const course = item.courses as any;
+          enrichedCourses.push({
+            id: item.id,
+            course_id: item.course_id,
+            sender_driver_id: item.sender_driver_id,
+            course_amount: item.course_amount,
+            commission_percentage: item.commission_percentage,
+            commission_amount: item.commission_amount,
+            status: item.status,
+            created_at: item.created_at,
+            pickup_address: course.pickup_address,
+            destination_address: course.destination_address,
+            scheduled_date: course.scheduled_date,
+            passengers_count: course.passengers_count,
+            distance_km: course.distance_km,
+            sender_name: profile?.full_name || 'Chauffeur',
+            sender_photo: profile?.profile_photo_url,
+            sender_company: driverData.company_name,
+            sender_sharing_number: driverData.sharing_number,
+            sender_phone: profile?.phone,
+          });
+        }
+      }
+      setSharedCourses(enrichedCourses);
+    } catch (error) {
+      console.error('Error loading shared courses:', error);
+    }
   };
 
   const loadPooledCourses = async () => {
@@ -125,14 +245,14 @@ export function PartnerCoursePool() {
       for (const item of data || []) {
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name')
+          .select('user_id, company_name, sharing_number')
           .eq('id', item.sender_driver_id)
           .single();
 
         if (driverData) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, profile_photo_url')
+            .select('full_name, profile_photo_url, phone')
             .eq('id', driverData.user_id)
             .single();
 
@@ -155,6 +275,8 @@ export function PartnerCoursePool() {
             sender_name: profile?.full_name || 'Chauffeur',
             sender_photo: profile?.profile_photo_url,
             sender_company: driverData.company_name,
+            sender_sharing_number: driverData.sharing_number,
+            sender_phone: profile?.phone,
           });
         }
       }
@@ -166,12 +288,72 @@ export function PartnerCoursePool() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadPooledCourses();
+    await Promise.all([loadPooledCourses(), loadSharedCourses()]);
     setRefreshing(false);
     toast.success('Liste actualisée');
   };
 
-  const claimCourse = async (poolId: string) => {
+  // Accept shared course with atomic function
+  const acceptSharedCourse = async (sharedCourseId: string) => {
+    if (!driverId) return;
+    
+    setClaiming(sharedCourseId);
+    try {
+      const { data, error } = await supabase.rpc('accept_shared_course', {
+        p_shared_course_id: sharedCourseId,
+        p_driver_id: driverId
+      });
+
+      if (error) throw error;
+
+      const result = data?.[0];
+      if (result?.success) {
+        toast.success(result.message);
+        loadSharedCourses();
+      } else {
+        toast.error(result?.message || 'Cette course n\'est plus disponible');
+        loadSharedCourses();
+      }
+    } catch (error: any) {
+      console.error('Accept error:', error);
+      toast.error('Cette course a déjà été prise par un autre chauffeur');
+      loadSharedCourses();
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  // Decline shared course
+  const declineSharedCourse = async (sharedCourseId: string) => {
+    if (!driverId) return;
+    
+    setClaiming(sharedCourseId);
+    try {
+      const { data, error } = await supabase.rpc('decline_shared_course', {
+        p_shared_course_id: sharedCourseId,
+        p_driver_id: driverId,
+        p_reason: null
+      });
+
+      if (error) throw error;
+
+      const result = data?.[0];
+      if (result?.success) {
+        toast.success('Course refusée');
+        loadSharedCourses();
+      } else {
+        toast.error(result?.message || 'Erreur');
+      }
+    } catch (error: any) {
+      console.error('Decline error:', error);
+      toast.error('Erreur lors du refus');
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  // Claim pooled course
+  const claimPooledCourse = async (poolId: string) => {
     if (!driverId) return;
     
     setClaiming(poolId);
@@ -188,22 +370,28 @@ export function PartnerCoursePool() {
         toast.success(result.message);
         loadPooledCourses();
       } else {
-        toast.error(result?.message || 'Erreur lors de la réclamation');
+        toast.error(result?.message || 'Cette course n\'est plus disponible');
+        loadPooledCourses();
       }
     } catch (error: any) {
       console.error('Claim error:', error);
       toast.error('Cette course a déjà été prise');
+      loadPooledCourses();
     } finally {
       setClaiming(null);
     }
   };
 
-  // Helper to shorten address
   const shortenAddress = (address: string) => {
     if (address.length > 40) {
       return address.substring(0, 37) + '...';
     }
     return address;
+  };
+
+  const formatSharingNumber = (num: number | null) => {
+    if (!num) return null;
+    return `#${String(num).padStart(5, '0')}`;
   };
 
   if (loading) {
@@ -214,6 +402,8 @@ export function PartnerCoursePool() {
     );
   }
 
+  const totalCourses = sharedCourses.length + pooledCourses.length;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -222,6 +412,9 @@ export function PartnerCoursePool() {
           <h3 className="font-semibold flex items-center gap-2">
             <Car className="h-4 w-4" />
             Courses disponibles
+            {totalCourses > 0 && (
+              <Badge variant="secondary" className="ml-1">{totalCourses}</Badge>
+            )}
           </h3>
           <p className="text-xs text-muted-foreground">
             Premier arrivé, premier servi
@@ -237,115 +430,251 @@ export function PartnerCoursePool() {
         </Button>
       </div>
 
-      {pooledCourses.length === 0 ? (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            Aucune course disponible. Vos partenaires peuvent proposer des courses ici.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <div className="space-y-3">
-          {pooledCourses.map((course) => (
-            <Card key={course.pool_id} className="overflow-hidden">
-              <CardContent className="p-0">
-                {/* Top section - Sender & Expiry */}
-                <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={course.sender_photo || undefined} />
-                      <AvatarFallback className="text-xs">{course.sender_name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{course.sender_name}</p>
-                      {course.sender_company && (
-                        <p className="text-[10px] text-muted-foreground">{course.sender_company}</p>
+      {/* Tabs for direct vs pool */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'direct' | 'pool')}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="direct" className="text-xs">
+            Pour vous ({sharedCourses.length})
+          </TabsTrigger>
+          <TabsTrigger value="pool" className="text-xs">
+            Pool partenaires ({pooledCourses.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Direct shared courses */}
+        <TabsContent value="direct" className="mt-4 space-y-3">
+          {sharedCourses.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Aucune course ne vous a été envoyée directement.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            sharedCourses.map((course) => (
+              <Card key={course.id} className="overflow-hidden border-primary/30">
+                <CardContent className="p-0">
+                  {/* Sender info */}
+                  <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={course.sender_photo || undefined} />
+                        <AvatarFallback>{course.sender_name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{course.sender_name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {course.sender_sharing_number && (
+                            <span className="flex items-center gap-0.5 text-primary font-mono">
+                              <Hash className="h-3 w-3" />
+                              {formatSharingNumber(course.sender_sharing_number)}
+                            </span>
+                          )}
+                          {course.sender_phone && (
+                            <span className="flex items-center gap-0.5">
+                              <Phone className="h-3 w-3" />
+                              {course.sender_phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className="bg-primary/20 text-primary border-0">
+                      Pour vous
+                    </Badge>
+                  </div>
+
+                  {/* Course info */}
+                  <div className="p-3 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                        <span className="text-sm">{shortenAddress(course.pickup_address)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 ml-0.5">
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                        <span className="text-sm">{shortenAddress(course.destination_address)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {course.passengers_count}
+                      </span>
+                      {course.distance_km && (
+                        <span className="flex items-center gap-1">
+                          <Car className="h-3 w-3" />
+                          {course.distance_km.toFixed(0)} km
+                        </span>
                       )}
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[10px] flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
-                  </Badge>
-                </div>
 
-                {/* Course info */}
-                <div className="p-3 space-y-3">
-                  {/* Date */}
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
+                  {/* Footer with actions */}
+                  <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold flex items-center gap-1">
+                        <Euro className="h-4 w-4" />
+                        {course.course_amount.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        -{course.commission_percentage}% = {course.commission_amount.toFixed(2)}€ comm.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => declineSharedCourse(course.id)}
+                        disabled={claiming === course.id}
+                        className="h-9"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => acceptSharedCourse(course.id)}
+                        disabled={claiming === course.id}
+                        size="sm"
+                        className="h-9 px-4"
+                      >
+                        {claiming === course.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Accepter
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* Pool courses */}
+        <TabsContent value="pool" className="mt-4 space-y-3">
+          {pooledCourses.length === 0 ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Aucune course disponible dans le pool. Vos partenaires peuvent proposer des courses ici.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            pooledCourses.map((course) => (
+              <Card key={course.pool_id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  {/* Sender & Expiry */}
+                  <div className="p-3 border-b bg-muted/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={course.sender_photo || undefined} />
+                        <AvatarFallback className="text-xs">{course.sender_name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{course.sender_name}</p>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          {course.sender_sharing_number && (
+                            <span className="text-primary font-mono">{formatSharingNumber(course.sender_sharing_number)}</span>
+                          )}
+                          {course.sender_company && (
+                            <span>{course.sender_company}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(course.expires_at), { locale: fr, addSuffix: false })}
+                    </Badge>
                   </div>
 
-                  {/* Addresses */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
-                      <span className="text-sm">{shortenAddress(course.pickup_address)}</span>
+                  {/* Course info */}
+                  <div className="p-3 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
                     </div>
-                    <div className="flex items-center gap-2 ml-0.5">
-                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                      <span className="text-sm">{shortenAddress(course.destination_address)}</span>
-                    </div>
-                  </div>
 
-                  {/* Meta info */}
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {course.passengers_count}
-                    </span>
-                    {course.distance_km && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                        <span className="text-sm">{shortenAddress(course.pickup_address)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 ml-0.5">
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                        <span className="text-sm">{shortenAddress(course.destination_address)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Car className="h-3 w-3" />
-                        {course.distance_km.toFixed(0)} km
+                        <Users className="h-3 w-3" />
+                        {course.passengers_count}
                       </span>
+                      {course.distance_km && (
+                        <span className="flex items-center gap-1">
+                          <Car className="h-3 w-3" />
+                          {course.distance_km.toFixed(0)} km
+                        </span>
+                      )}
+                    </div>
+
+                    {course.message && (
+                      <p className="text-xs italic text-muted-foreground bg-muted/50 p-2 rounded">
+                        "{course.message}"
+                      </p>
                     )}
                   </div>
 
-                  {/* Message if any */}
-                  {course.message && (
-                    <p className="text-xs italic text-muted-foreground bg-muted/50 p-2 rounded">
-                      "{course.message}"
-                    </p>
-                  )}
-                </div>
-
-                {/* Footer - Price & Action */}
-                <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
-                  <div>
-                    <p className="text-lg font-bold flex items-center gap-1">
-                      <Euro className="h-4 w-4" />
-                      {course.course_amount.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      -{course.commission_percentage}% = {course.estimated_commission.toFixed(2)}€ comm.
-                    </p>
+                  {/* Footer */}
+                  <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-bold flex items-center gap-1">
+                        <Euro className="h-4 w-4" />
+                        {course.course_amount.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        -{course.commission_percentage}% = {course.estimated_commission.toFixed(2)}€ comm.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => claimPooledCourse(course.pool_id)}
+                      disabled={claiming === course.pool_id}
+                      size="sm"
+                      className="h-10 px-4"
+                    >
+                      {claiming === course.pool_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-1" />
+                          Prendre
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => claimCourse(course.pool_id)}
-                    disabled={claiming === course.pool_id}
-                    size="sm"
-                    className="h-10 px-4"
-                  >
-                    {claiming === course.pool_id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        Prendre
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
