@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Car, AlertTriangle, CheckCircle, Eye, EyeOff, Building2 } from "lucide-react";
+import { Loader2, Car, AlertTriangle, CheckCircle, Eye, EyeOff, Building2, Percent, FileText, Handshake } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 
 const RegisterDriverFleet = () => {
@@ -22,6 +23,7 @@ const RegisterDriverFleet = () => {
   const [fleetManager, setFleetManager] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [commissionAccepted, setCommissionAccepted] = useState(false);
 
   // Form state
   const [fullName, setFullName] = useState("");
@@ -44,7 +46,6 @@ const RegisterDriverFleet = () => {
 
   const validateToken = async () => {
     try {
-      // Check if token exists and is valid
       const { data: invitationData, error: invError } = await supabase
         .from("fleet_driver_invitations")
         .select(`
@@ -66,14 +67,12 @@ const RegisterDriverFleet = () => {
         return;
       }
 
-      // Check expiration
       if (invitationData.expires_at && new Date(invitationData.expires_at) < new Date()) {
         setError("Ce lien d'invitation a expiré. Veuillez demander un nouveau lien à votre gestionnaire.");
         setLoading(false);
         return;
       }
 
-      // Check if fleet manager is validated
       if (invitationData.fleet_manager?.status !== "validated") {
         setError("Le gestionnaire de flotte n'est pas encore validé. Veuillez patienter.");
         setLoading(false);
@@ -106,10 +105,15 @@ const RegisterDriverFleet = () => {
       return;
     }
 
+    // Check commission acceptance for independent drivers
+    if (invitation?.driver_type === "independent" && !commissionAccepted) {
+      toast.error("Vous devez accepter les conditions de commission pour continuer");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Create user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -127,10 +131,8 @@ const RegisterDriverFleet = () => {
         throw new Error("Erreur lors de la création du compte");
       }
 
-      // Wait a bit for the trigger to create the profile
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Update profile with phone
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
@@ -142,6 +144,10 @@ const RegisterDriverFleet = () => {
       if (profileError) {
         console.error("Profile update error:", profileError);
       }
+
+      // Calculate deadline (7 days from now)
+      const documentsDeadline = new Date();
+      documentsDeadline.setDate(documentsDeadline.getDate() + 7);
 
       // Create driver profile linked to fleet manager
       const { data: driverData, error: driverError } = await supabase
@@ -157,30 +163,39 @@ const RegisterDriverFleet = () => {
           can_manage_clients: false,
           can_create_courses: false,
           public_profile_enabled: true,
+          fleet_documents_status: "pending",
+          fleet_documents_deadline: documentsDeadline.toISOString(),
         })
         .select()
         .single();
 
       if (driverError) throw driverError;
 
-      // Link driver to fleet manager
+      // Link driver to fleet manager with commission settings
       const { error: linkError } = await supabase
         .from("fleet_manager_drivers")
         .insert({
           fleet_manager_id: fleetManager.id,
           driver_id: driverData.id,
           status: "active",
+          commission_type: invitation.driver_type === "independent" ? "percentage" : "none",
+          commission_percentage: invitation.driver_type === "independent" ? invitation.commission_percentage : 0,
+          is_salaried: invitation.driver_type === "salaried",
+          payment_agreement_signed: invitation.driver_type === "independent",
+          payment_agreement_signed_at: invitation.driver_type === "independent" ? new Date().toISOString() : null,
         });
 
       if (linkError) throw linkError;
 
-      // Mark invitation as used
+      // Mark invitation as used with commission acceptance
       await supabase
         .from("fleet_driver_invitations")
         .update({
           used: true,
           used_at: new Date().toISOString(),
           used_by_driver_id: driverData.id,
+          commission_accepted: invitation.driver_type === "independent" ? commissionAccepted : null,
+          commission_accepted_at: invitation.driver_type === "independent" ? new Date().toISOString() : null,
         })
         .eq("id", invitation.id);
 
@@ -198,7 +213,7 @@ const RegisterDriverFleet = () => {
         })
         .eq("id", fleetManager.id);
 
-      toast.success("Inscription réussie ! Votre compte est en attente de validation.");
+      toast.success("Inscription réussie ! Vous devez maintenant fournir vos documents.");
       navigate("/registration-success");
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -239,6 +254,8 @@ const RegisterDriverFleet = () => {
     );
   }
 
+  const isIndependent = invitation?.driver_type === "independent";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8">
@@ -260,6 +277,72 @@ const RegisterDriverFleet = () => {
               <Badge variant="outline" className="font-semibold">
                 {fleetManager?.company_name}
               </Badge>
+            </AlertDescription>
+          </Alert>
+
+          {/* Commission Agreement (for independent drivers) */}
+          {isIndependent && (
+            <Card className="mb-6 border-yellow-500/30 bg-yellow-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Handshake className="w-5 h-5 text-yellow-600" />
+                  Accord de commission
+                </CardTitle>
+                <CardDescription>
+                  En tant que chauffeur indépendant, vous devez accepter les conditions suivantes
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border">
+                  <div className="p-3 bg-yellow-500/10 rounded-full">
+                    <Percent className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-2xl">{invitation?.commission_percentage}%</p>
+                    <p className="text-sm text-muted-foreground">Taux de commission</p>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-muted-foreground space-y-2">
+                  <p>En acceptant ces conditions, vous vous engagez à :</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Reverser {invitation?.commission_percentage}% de vos courses effectuées via {fleetManager?.company_name}</li>
+                    <li>Fournir tous les documents requis dans les 7 jours</li>
+                    <li>Respecter les conditions générales de la plateforme</li>
+                  </ul>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 border rounded-lg">
+                  <Checkbox
+                    id="commission-accept"
+                    checked={commissionAccepted}
+                    onCheckedChange={(checked) => setCommissionAccepted(checked as boolean)}
+                  />
+                  <Label htmlFor="commission-accept" className="text-sm cursor-pointer">
+                    J'accepte le taux de commission de <strong>{invitation?.commission_percentage}%</strong> et m'engage à reverser ce montant pour chaque course effectuée via {fleetManager?.company_name}.
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Driver Benefits */}
+          {!isIndependent && (
+            <Alert className="mb-6 bg-muted">
+              <CheckCircle className="w-4 h-4 text-success" />
+              <AlertDescription>
+                En tant que chauffeur utilisant l'équipement du gestionnaire, vous n'avez pas de commission à reverser.
+                Votre planning sera géré par {fleetManager?.company_name}.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Documents Info */}
+          <Alert className="mb-6">
+            <FileText className="w-4 h-4" />
+            <AlertDescription>
+              Après votre inscription, vous aurez <strong>7 jours</strong> pour fournir tous les documents requis 
+              (carte VTC, assurance, carte grise, etc.) avant de pouvoir être validé.
             </AlertDescription>
           </Alert>
 
@@ -393,15 +476,11 @@ const RegisterDriverFleet = () => {
                   </div>
                 </div>
 
-                <Alert className="bg-muted">
-                  <CheckCircle className="w-4 h-4 text-success" />
-                  <AlertDescription>
-                    En tant que chauffeur de flotte, vous bénéficiez de l'abonnement de votre gestionnaire.
-                    Votre planning sera géré par {fleetManager?.company_name}.
-                  </AlertDescription>
-                </Alert>
-
-                <Button type="submit" className="w-full" disabled={submitting}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={submitting || (isIndependent && !commissionAccepted)}
+                >
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

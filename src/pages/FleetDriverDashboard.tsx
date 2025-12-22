@@ -11,6 +11,7 @@ import CoursesList from "@/components/CoursesList";
 import { DriverHome } from "@/components/driver/DriverHomeMemoized";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import DriverPlanning from "@/components/driver/DriverPlanning";
+import { FleetDriverDocuments } from "@/components/fleet-manager/FleetDriverDocuments";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -189,12 +190,26 @@ const FleetDriverDashboard = () => {
                 <MessageSquare className="w-4 h-4" />
                 <span>Messages</span>
               </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
+                <FileText className="w-4 h-4" />
+                <span>Documents</span>
+              </TabsTrigger>
               <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <User className="w-4 h-4" />
                 <span>Profil</span>
               </TabsTrigger>
             </div>
           </TabsList>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents">
+            {driverProfile?.driver?.id && user?.id && (
+              <FleetDriverDocuments 
+                driverId={driverProfile.driver.id} 
+                userId={user.id} 
+              />
+            )}
+          </TabsContent>
 
           {/* Home Tab */}
           <TabsContent value="home">
