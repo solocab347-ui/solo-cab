@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -36,6 +36,8 @@ import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/DriverPlanning";
 import { DriverCourseSharing } from "@/components/driver/DriverCourseSharing";
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
+import { DriverDocuments } from "@/components/driver/DriverDocuments";
+import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -352,6 +354,15 @@ const DriverDashboard = () => {
           </Alert>
         )}
 
+        {/* Documents Warning Banner - seulement pour chauffeurs indépendants */}
+        {driverProfile?.driver && !driverProfile.driver.is_fleet_driver && (
+          <DocumentWarningBanner
+            documentsStatus={(driverProfile.driver as any).documents_status || "pending"}
+            documentsDeadline={(driverProfile.driver as any).documents_deadline}
+            onNavigateToDocuments={() => setActiveTab("documents")}
+          />
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
             {/* Première ligne */}
@@ -412,6 +423,12 @@ const DriverDashboard = () => {
                     <QrCode className="w-4 h-4" />
                     Mon QR Code
                   </DropdownMenuItem>
+                  {!driverProfile?.driver?.is_fleet_driver && (
+                    <DropdownMenuItem onClick={() => setActiveTab("documents")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-600 hover:text-white">
+                      <FolderOpen className="w-4 h-4" />
+                      Mes Documents
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
               
@@ -899,6 +916,16 @@ const DriverDashboard = () => {
           {/* Course Sharing Tab */}
           <TabsContent value="sharing" className="space-y-6">
             <DriverCourseSharing />
+          </TabsContent>
+
+          {/* Documents Tab - seulement pour chauffeurs indépendants */}
+          <TabsContent value="documents" className="space-y-6">
+            {driverProfile?.driver?.id && user?.id && !driverProfile.driver.is_fleet_driver && (
+              <DriverDocuments 
+                driverId={driverProfile.driver.id} 
+                userId={user.id} 
+              />
+            )}
           </TabsContent>
 
         </Tabs>

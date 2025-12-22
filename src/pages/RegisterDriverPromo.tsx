@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, ArrowRight, Car, Crown, Shield, TrendingUp, Eye, EyeOff } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, ArrowRight, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 
 const RegisterDriverPromo = () => {
@@ -375,6 +375,15 @@ const RegisterDriverPromo = () => {
               <Sparkles className="w-5 h-5 text-premium" />
               <AlertDescription className="text-sm">
                 <strong>Offre spéciale décembre :</strong> Profitez de votre premier mois à seulement 9,99€ au lieu de 49,99€ !
+              </AlertDescription>
+            </Alert>
+
+            {/* Information sur les documents */}
+            <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
+              <FileText className="w-5 h-5 text-amber-500" />
+              <AlertDescription className="text-sm">
+                <strong>Documents requis :</strong> Après votre inscription, vous aurez <strong>30 jours</strong> pour 
+                soumettre vos documents professionnels (carte VTC, permis, assurance, etc.) via votre espace personnel.
               </AlertDescription>
             </Alert>
 

@@ -1094,6 +1094,9 @@ export type Database = {
           display_company_name: boolean | null
           display_driver_name: boolean | null
           documents: Json | null
+          documents_deadline: string | null
+          documents_status: string | null
+          documents_submitted_at: string | null
           driver_code: string | null
           evening_surcharge: number | null
           fleet_documents_deadline: string | null
@@ -1164,6 +1167,9 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
           driver_code?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
@@ -1234,6 +1240,9 @@ export type Database = {
           display_company_name?: boolean | null
           display_driver_name?: boolean | null
           documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
           driver_code?: string | null
           evening_surcharge?: number | null
           fleet_documents_deadline?: string | null
