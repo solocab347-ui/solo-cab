@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -32,7 +33,8 @@ import {
   Shield,
   Calendar,
   MessageSquare,
-  Flag
+  Flag,
+  ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -104,8 +106,9 @@ const PAYMENT_SCHEDULES = [
 ];
 
 export function DriverCourseSharing() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [driverInfo, setDriverInfo] = useState<{ id: string; driver_code: string } | null>(null);
+  const [driverInfo, setDriverInfo] = useState<{ id: string; driver_code: string; sharing_number: number | null } | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [sharedCourses, setSharedCourses] = useState<SharedCourse[]>([]);
   const [availableCourses, setAvailableCourses] = useState<AvailableCourse[]>([]);
@@ -153,7 +156,7 @@ export function DriverCourseSharing() {
   const loadDriverInfo = async () => {
     const { data, error } = await supabase
       .from('drivers')
-      .select('id, driver_code')
+      .select('id, driver_code, sharing_number')
       .eq('user_id', user?.id)
       .single();
 
@@ -163,6 +166,11 @@ export function DriverCourseSharing() {
     }
     setDriverInfo(data);
   };
+
+  // Format sharing number as SOL-0001
+  const formattedSharingNumber = driverInfo?.sharing_number 
+    ? `SOL-${String(driverInfo.sharing_number).padStart(4, '0')}` 
+    : null;
 
   const checkSharingAccess = async () => {
     if (!driverInfo?.id) return;
@@ -300,6 +308,30 @@ export function DriverCourseSharing() {
     setSearchResult(null);
 
     try {
+      // Essayer d'abord avec le numéro de partage SOL-XXXX
+      const { data: sharingData, error: sharingError } = await supabase.rpc('find_driver_by_sharing_number', {
+        _number: searchCode.trim().toUpperCase()
+      });
+
+      if (!sharingError && sharingData && sharingData.length > 0) {
+        const result = sharingData[0];
+        if (result.id === driverInfo?.id) {
+          toast.error('Vous ne pouvez pas vous ajouter vous-même');
+          return;
+        }
+        setSearchResult({
+          id: result.id,
+          driver_code: result.formatted_sharing_number,
+          full_name: result.full_name,
+          company_name: result.company_name,
+          profile_photo_url: result.profile_photo_url,
+          rating: result.rating || 0,
+          total_rides: result.total_rides || 0,
+        });
+        return;
+      }
+
+      // Fallback: ancien système avec driver_code
       const { data, error } = await supabase.rpc('find_driver_by_code', {
         _code: searchCode.trim().toUpperCase()
       });
@@ -314,7 +346,7 @@ export function DriverCourseSharing() {
         }
         setSearchResult(result);
       } else {
-        toast.error('Aucun chauffeur trouvé avec ce code');
+        toast.error('Aucun chauffeur trouvé avec ce numéro');
       }
     } catch (error: any) {
       console.error('Search error:', error);
@@ -533,10 +565,10 @@ export function DriverCourseSharing() {
     }
   };
 
-  const copyDriverCode = () => {
-    if (driverInfo?.driver_code) {
-      navigator.clipboard.writeText(driverInfo.driver_code);
-      toast.success('Code copié !');
+  const copySharingNumber = () => {
+    if (formattedSharingNumber) {
+      navigator.clipboard.writeText(formattedSharingNumber);
+      toast.success('Numéro copié !');
     }
   };
 
@@ -611,26 +643,35 @@ export function DriverCourseSharing() {
         </Alert>
       )}
 
-      {/* Driver Code Card */}
+      {/* Sharing Number Card */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Handshake className="h-5 w-5" />
-            Votre Code Chauffeur
+            Votre Numéro de Partage
           </CardTitle>
           <CardDescription>
-            Partagez ce code avec d'autres chauffeurs pour créer un partenariat
+            Partagez ce numéro avec d'autres chauffeurs pour créer un partenariat
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="bg-background rounded-lg px-6 py-3 border-2 border-primary font-mono text-2xl font-bold tracking-wider">
-              {driverInfo?.driver_code || 'N/A'}
+              {formattedSharingNumber || 'N/A'}
             </div>
-            <Button variant="outline" size="icon" onClick={copyDriverCode}>
+            <Button variant="outline" size="icon" onClick={copySharingNumber}>
               <Copy className="h-4 w-4" />
             </Button>
           </div>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => navigate('/driver/partner-search')}
+          >
+            <Search className="h-4 w-4 mr-2" />
+            Rechercher des partenaires disponibles
+            <ExternalLink className="h-4 w-4 ml-2" />
+          </Button>
         </CardContent>
       </Card>
 
@@ -671,7 +712,7 @@ export function DriverCourseSharing() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Code chauffeur (ex: DRV-ABC123)"
+                  placeholder="Numéro de partage (ex: SOL-0001)"
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
                   className="font-mono"
