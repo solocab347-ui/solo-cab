@@ -597,16 +597,54 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                 </div>
               </div>
 
-              {/* Price */}
+              {/* Price - Version détaillée pour le chauffeur */}
               <div className="bg-gradient-to-br from-emerald-500/40 to-green-500/20 backdrop-blur-sm border-2 border-emerald-400/50 rounded-lg p-4 mb-4 shadow-lg shadow-emerald-500/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Euro className="w-6 h-6 text-emerald-300 drop-shadow-glow" />
-                    <span className="font-bold text-lg text-white drop-shadow-md">Montant TTC</span>
+                <div className="space-y-2 text-sm">
+                  {/* Détails de la tarification */}
+                  <div className="flex justify-between text-white/80">
+                    <span>Forfait de base</span>
+                    <span>{parseFloat(devis.base_price).toFixed(2)} €</span>
                   </div>
-                  <span className="text-3xl font-black text-emerald-300 drop-shadow-glow">
-                    {parseFloat(devis.amount).toFixed(2)} €
-                  </span>
+                  {parseFloat(devis.distance_price) > 0 && (
+                    <div className="flex justify-between text-white/80">
+                      <span>Distance ({devis.courses.distance_km} km)</span>
+                      <span>{parseFloat(devis.distance_price).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {parseFloat(devis.time_price || 0) > 0 && (
+                    <div className="flex justify-between text-white/80">
+                      <span>Mise à disposition ({Math.round(devis.courses.duration_minutes / 60)}h)</span>
+                      <span>{parseFloat(devis.time_price).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {parseFloat(devis.evening_surcharge_amount || 0) > 0 && (
+                    <div className="flex justify-between text-amber-300">
+                      <span>🌙 Augmentation Soir</span>
+                      <span>+{parseFloat(devis.evening_surcharge_amount).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {parseFloat(devis.weekend_surcharge_amount || 0) > 0 && (
+                    <div className="flex justify-between text-amber-300">
+                      <span>📅 Augmentation Weekend</span>
+                      <span>+{parseFloat(devis.weekend_surcharge_amount).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {devis.promo_code && devis.discount_amount > 0 && (
+                    <div className="flex justify-between text-green-300">
+                      <span>🎁 Réduction ({devis.promo_code})</span>
+                      <span>-{parseFloat(devis.discount_amount).toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {/* Total TTC */}
+                  <div className="pt-2 border-t border-white/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Euro className="w-6 h-6 text-emerald-300 drop-shadow-glow" />
+                      <span className="font-bold text-lg text-white drop-shadow-md">Total TTC</span>
+                    </div>
+                    <span className="text-3xl font-black text-emerald-300 drop-shadow-glow">
+                      {parseFloat(devis.amount).toFixed(2)} €
+                    </span>
+                  </div>
                 </div>
               </div>
 

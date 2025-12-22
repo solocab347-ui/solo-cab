@@ -587,26 +587,29 @@ const DevisList = ({ clientId }: DevisListProps) => {
           )}
         </div>
 
+        {/* Prix simplifié pour le client - pas de détail des tarifs */}
         <div className="border border-border rounded-lg p-4 mb-4">
           <h4 className="font-semibold mb-3 flex items-center gap-2">
             <Euro className="w-4 h-4" />
-            Détail du prix
+            Prix de la course
           </h4>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Forfait de base</span>
-              <span className="font-medium">{parseFloat(devis.base_price).toFixed(2)} €</span>
-            </div>
-            {parseFloat(devis.distance_price) > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Prix au kilomètre</span>
-                <span className="font-medium">{parseFloat(devis.distance_price).toFixed(2)} €</span>
+            {devis.courses.distance_km && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Distance</span>
+                <span>{devis.courses.distance_km} km</span>
               </div>
             )}
-            {parseFloat(devis.time_price || 0) > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Prix horaire</span>
-                <span className="font-medium">{parseFloat(devis.time_price).toFixed(2)} €</span>
+            {devis.courses.duration_minutes && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Durée estimée</span>
+                <span>~{devis.courses.duration_minutes} min</span>
+              </div>
+            )}
+            {devis.promo_code && devis.discount_amount > 0 && (
+              <div className="flex justify-between text-success">
+                <span>Réduction ({devis.promo_code})</span>
+                <span>-{parseFloat(devis.discount_amount).toFixed(2)} €</span>
               </div>
             )}
             <div className="pt-2 border-t border-border flex justify-between text-lg font-bold">
