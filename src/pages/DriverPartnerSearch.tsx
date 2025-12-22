@@ -22,7 +22,8 @@ import {
   Filter,
   Loader2,
   Users,
-  Building2
+  Building2,
+  Phone
 } from 'lucide-react';
 import { SharingAvailabilityToggle } from '@/components/driver/SharingAvailabilityToggle';
 
@@ -39,6 +40,7 @@ interface AvailableDriver {
   vehicle_model: string | null;
   full_name: string;
   profile_photo_url: string | null;
+  phone: string | null;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -182,6 +184,7 @@ export default function DriverPartnerSearch() {
           vehicle_model: null,
           full_name: found.full_name,
           profile_photo_url: found.profile_photo_url,
+          phone: found.phone || null,
         }]);
       } else {
         toast.error('Aucun chauffeur trouvé avec ce numéro');
@@ -417,6 +420,18 @@ export default function DriverPartnerSearch() {
                           <p className="text-xs text-muted-foreground mt-1">
                             {driver.vehicle_brand} {driver.vehicle_model}
                           </p>
+                        )}
+
+                        {driver.phone && (
+                          <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 rounded-lg">
+                            <Phone className="h-4 w-4 text-blue-600" />
+                            <a 
+                              href={`tel:${driver.phone}`} 
+                              className="text-sm text-blue-600 font-medium hover:underline"
+                            >
+                              {driver.phone}
+                            </a>
+                          </div>
                         )}
 
                         {driver.working_sectors && driver.working_sectors.length > 0 && (

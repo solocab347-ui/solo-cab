@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Users, Copy, Check, Loader2 } from 'lucide-react';
+import { Users, Copy, Check, Loader2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SharingAvailabilityToggleProps {
@@ -17,6 +17,7 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
   const { user } = useAuth();
   const [sharingNumber, setSharingNumber] = useState<string | null>(null);
   const [sharingAvailable, setSharingAvailable] = useState(false);
+  const [showPhoneForSharing, setShowPhoneForSharing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -32,7 +33,7 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
     try {
       const { data, error } = await supabase
         .from('drivers')
-        .select('sharing_number, sharing_available, is_fleet_driver, fleet_manager_id')
+        .select('sharing_number, sharing_available, show_phone_for_sharing, is_fleet_driver, fleet_manager_id')
         .eq('user_id', user?.id)
         .single();
 
@@ -48,6 +49,7 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
         setSharingNumber(formatted);
       }
       setSharingAvailable(data.sharing_available || false);
+      setShowPhoneForSharing(data.show_phone_for_sharing || false);
     } catch (error) {
       console.error('Error loading driver info:', error);
     } finally {
@@ -81,6 +83,34 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
       );
     } catch (error) {
       console.error('Error updating availability:', error);
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const togglePhoneVisibility = async (checked: boolean) => {
+    if (isFleetDriver) {
+      toast.error('Cette fonctionnalité est réservée aux chauffeurs indépendants');
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('drivers')
+        .update({ show_phone_for_sharing: checked })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      setShowPhoneForSharing(checked);
+      toast.success(checked 
+        ? 'Votre numéro sera visible pour les autres chauffeurs' 
+        : 'Votre numéro ne sera plus visible'
+      );
+    } catch (error) {
+      console.error('Error updating phone visibility:', error);
       toast.error('Erreur lors de la mise à jour');
     } finally {
       setUpdating(false);
@@ -175,6 +205,32 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
               id="sharing-toggle"
               checked={sharingAvailable}
               onCheckedChange={toggleAvailability}
+              disabled={updating}
+            />
+          </div>
+        </div>
+
+        {/* Toggle affichage téléphone */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="space-y-1">
+            <Label htmlFor="phone-toggle" className="text-base font-medium flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Afficher mon téléphone
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Permettre aux autres chauffeurs de voir votre numéro pour vous contacter directement
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {showPhoneForSharing && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                Visible
+              </Badge>
+            )}
+            <Switch
+              id="phone-toggle"
+              checked={showPhoneForSharing}
+              onCheckedChange={togglePhoneVisibility}
               disabled={updating}
             />
           </div>
