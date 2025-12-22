@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, AlertTriangle, Clock, FileWarning } from "lucide-react";
-import { differenceInDays, isPast, format } from "date-fns";
-import { Link } from "react-router-dom";
+import { X, AlertTriangle, FileWarning } from "lucide-react";
+import { differenceInDays, isPast } from "date-fns";
 
 interface DocumentWarningBannerProps {
   documentsStatus: string;
   documentsDeadline: string | null;
   onDismiss?: () => void;
+  onNavigateToDocuments?: () => void;
   showCloseButton?: boolean;
 }
 
@@ -16,6 +15,7 @@ export const DocumentWarningBanner = ({
   documentsStatus,
   documentsDeadline,
   onDismiss,
+  onNavigateToDocuments,
   showCloseButton = false,
 }: DocumentWarningBannerProps) => {
   const [dismissed, setDismissed] = useState(false);
@@ -74,15 +74,14 @@ export const DocumentWarningBanner = ({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link to="/fleet-dashboard?tab=documents">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              >
-                Envoyer maintenant
-              </Button>
-            </Link>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              onClick={onNavigateToDocuments}
+            >
+              Envoyer maintenant
+            </Button>
             {showCloseButton && (
               <button
                 onClick={handleDismiss}
