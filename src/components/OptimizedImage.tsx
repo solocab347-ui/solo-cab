@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
@@ -11,10 +11,10 @@ interface OptimizedImageProps {
 }
 
 /**
- * Composant d'image optimisé pour éviter les problèmes de chargement
- * Utilise le lazy loading et gère les erreurs gracieusement
+ * Composant d'image optimisé pour éviter les problèmes de chargement et de flash
+ * Utilise le lazy loading natif et gère les erreurs gracieusement
  */
-export const OptimizedImage = ({
+export const OptimizedImage = memo(({
   src,
   alt,
   className,
@@ -22,62 +22,31 @@ export const OptimizedImage = ({
   onLoad,
   onError,
 }: OptimizedImageProps) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    // Ne rien faire si src est undefined/null ou identique
-    if (!src) {
-      setIsLoading(false);
-      setHasError(false);
-      setImageSrc(null);
-      return;
-    }
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+    onLoad?.();
+  }, [onLoad]);
 
-    // Si l'image est déjà chargée avec le même src, ne pas recharger
-    if (imageSrc === src && !isLoading && !hasError) {
-      return;
-    }
+  const handleError = useCallback(() => {
+    setHasError(true);
+    onError?.();
+  }, [onError]);
 
-    setIsLoading(true);
-    setHasError(false);
-
-    const img = new Image();
-    let mounted = true;
-    
-    img.onload = () => {
-      if (mounted) {
-        setImageSrc(src);
-        setIsLoading(false);
-        onLoad?.();
-      }
-    };
-
-    img.onerror = () => {
-      if (mounted) {
-        setHasError(true);
-        setIsLoading(false);
-        onError?.();
-      }
-    };
-
-    img.src = src;
-
-    return () => {
-      mounted = false;
-      img.onload = null;
-      img.onerror = null;
-    };
-  }, [src]); // Enlever onLoad et onError des dépendances pour éviter les re-renders
-
-  if (isLoading) {
-    return (
-      <div className={cn('bg-muted animate-pulse rounded', className)} />
+  // Si pas de src, afficher le fallback directement
+  if (!src) {
+    return fallback ? (
+      <>{fallback}</>
+    ) : (
+      <div className={cn('bg-muted rounded flex items-center justify-center', className)}>
+        <span className="text-muted-foreground text-sm">Image indisponible</span>
+      </div>
     );
   }
 
-  if (hasError || !imageSrc) {
+  if (hasError) {
     return fallback ? (
       <>{fallback}</>
     ) : (
@@ -88,12 +57,24 @@ export const OptimizedImage = ({
   }
 
   return (
-    <img
-      src={imageSrc}
-      alt={alt}
-      className={cn('object-cover', className)}
-      loading="lazy"
-      decoding="async"
-    />
+    <div className={cn('relative', className)}>
+      {/* Placeholder pendant le chargement - même dimensions */}
+      {!isLoaded && (
+        <div className={cn('absolute inset-0 bg-muted rounded', className)} />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(
+          'object-cover transition-opacity duration-200',
+          isLoaded ? 'opacity-100' : 'opacity-0',
+          className
+        )}
+        loading="lazy"
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </div>
   );
-};
+});

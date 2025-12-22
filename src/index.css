@@ -208,11 +208,22 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Optimisation des images */
+  /* Optimisation des images - Éviter les flash */
   img {
     max-width: 100%;
     height: auto;
     display: block;
+    content-visibility: auto;
+  }
+
+  /* Éviter le flash blanc au chargement */
+  img:not([src]), img[src=""] {
+    visibility: hidden;
+  }
+
+  /* Transition douce pour les images */
+  img[loading="lazy"] {
+    background-color: hsl(var(--muted));
   }
 
   /* Assurer que les overlays ne bloquent jamais le scroll */

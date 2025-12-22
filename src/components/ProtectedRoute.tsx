@@ -85,10 +85,11 @@ export const ProtectedRoute = ({
     }
   };
 
+  // Utiliser un loader minimal et cohérent pour éviter les flash
   if (loading || checkingDriver) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-premium" />
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
