@@ -1573,6 +1573,108 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_partnerships: {
+        Row: {
+          accepted_at: string | null
+          commission_percentage: number
+          contract_signed: boolean | null
+          created_at: string
+          driver_id: string
+          driver_signed: boolean | null
+          driver_signed_at: string | null
+          fleet_manager_id: string
+          fleet_manager_signed: boolean | null
+          fleet_manager_signed_at: string | null
+          id: string
+          initiated_by: string
+          proposal_message: string | null
+          proposed_at: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          terminated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          commission_percentage?: number
+          contract_signed?: boolean | null
+          created_at?: string
+          driver_id: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          fleet_manager_id: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          initiated_by: string
+          proposal_message?: string | null
+          proposed_at?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          commission_percentage?: number
+          contract_signed?: boolean | null
+          created_at?: string
+          driver_id?: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          fleet_manager_id?: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          initiated_by?: string
+          proposal_message?: string | null
+          proposed_at?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_manager_clients: {
         Row: {
           client_id: string
@@ -1826,11 +1928,13 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           default_commission_percentage: number | null
+          default_partnership_commission: number | null
           description: string | null
           documents: Json | null
           documents_deadline: string | null
           documents_status: string | null
           documents_submitted_at: string | null
+          driver_profile_description: string | null
           evening_surcharge: number | null
           extra_drivers_count: number | null
           favorite_driver_priority: boolean | null
@@ -1841,6 +1945,7 @@ export type Database = {
           minimum_price: number | null
           monthly_extra_driver_cost: number | null
           next_billing_date: string | null
+          partnership_terms: string | null
           per_km_rate: number | null
           qr_code_id: string | null
           show_address: boolean | null
@@ -1862,6 +1967,7 @@ export type Database = {
           tva_rate: number | null
           updated_at: string
           user_id: string
+          visible_to_drivers: boolean | null
           weekend_surcharge: number | null
         }
         Insert: {
@@ -1877,11 +1983,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           default_commission_percentage?: number | null
+          default_partnership_commission?: number | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          driver_profile_description?: string | null
           evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
@@ -1892,6 +2000,7 @@ export type Database = {
           minimum_price?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
+          partnership_terms?: string | null
           per_km_rate?: number | null
           qr_code_id?: string | null
           show_address?: boolean | null
@@ -1913,6 +2022,7 @@ export type Database = {
           tva_rate?: number | null
           updated_at?: string
           user_id: string
+          visible_to_drivers?: boolean | null
           weekend_surcharge?: number | null
         }
         Update: {
@@ -1928,11 +2038,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           default_commission_percentage?: number | null
+          default_partnership_commission?: number | null
           description?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
           documents_submitted_at?: string | null
+          driver_profile_description?: string | null
           evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
@@ -1943,6 +2055,7 @@ export type Database = {
           minimum_price?: number | null
           monthly_extra_driver_cost?: number | null
           next_billing_date?: string | null
+          partnership_terms?: string | null
           per_km_rate?: number | null
           qr_code_id?: string | null
           show_address?: boolean | null
@@ -1964,6 +2077,7 @@ export type Database = {
           tva_rate?: number | null
           updated_at?: string
           user_id?: string
+          visible_to_drivers?: boolean | null
           weekend_surcharge?: number | null
         }
         Relationships: []
@@ -3185,6 +3299,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_available_fleet_drivers_for_course: {
+        Args: {
+          p_duration_minutes?: number
+          p_fleet_manager_id: string
+          p_scheduled_date: string
+        }
+        Returns: {
+          driver_id: string
+          driver_name: string
+          is_available: boolean
+          rating: number
+        }[]
+      }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_company_id: { Args: { _user_id: string }; Returns: string }
       get_driver_clients_count: {
@@ -3325,6 +3452,22 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_roles: { Args: { _user_id: string }; Returns: string[] }
+      get_visible_fleet_managers: {
+        Args: never
+        Returns: {
+          address: string
+          company_name: string
+          contact_email: string
+          contact_name: string
+          default_partnership_commission: number
+          description: string
+          driver_profile_description: string
+          id: string
+          logo_url: string
+          total_clients: number
+          total_drivers: number
+        }[]
+      }
       has_role:
         | {
             Args: {
