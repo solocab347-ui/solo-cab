@@ -15,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MyPartnersList } from './MyPartnersList';
+import { PartnerCoursePool } from './PartnerCoursePool';
+import { PushCourseToPartners } from './PushCourseToPartners';
 import { 
   Users, 
   Search, 
@@ -675,29 +678,44 @@ export function DriverCourseSharing() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="partners" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="partners" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Partenaires
-            {pendingPartners.length > 0 && (
-              <Badge variant="destructive" className="ml-1">{pendingPartners.length}</Badge>
-            )}
+      <Tabs defaultValue="my-partners" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="my-partners" className="flex items-center gap-2">
+            <Handshake className="h-4 w-4" />
+            Mes Partenaires
           </TabsTrigger>
-          <TabsTrigger value="courses" className="flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4" />
-            Courses
-            {receivedCourses.filter(c => c.status === 'pending').length > 0 && (
-              <Badge variant="destructive" className="ml-1">
-                {receivedCourses.filter(c => c.status === 'pending').length}
-              </Badge>
-            )}
+          <TabsTrigger value="pool" className="flex items-center gap-2">
+            <Car className="h-4 w-4" />
+            Courses dispo
+          </TabsTrigger>
+          <TabsTrigger value="push" className="flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Proposer
+          </TabsTrigger>
+          <TabsTrigger value="partners" className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            Ajouter
           </TabsTrigger>
           <TabsTrigger value="balances" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Soldes
           </TabsTrigger>
         </TabsList>
+
+        {/* My Partners Tab */}
+        <TabsContent value="my-partners">
+          <MyPartnersList />
+        </TabsContent>
+
+        {/* Pool Tab */}
+        <TabsContent value="pool">
+          <PartnerCoursePool />
+        </TabsContent>
+
+        {/* Push Course Tab */}
+        <TabsContent value="push">
+          <PushCourseToPartners />
+        </TabsContent>
 
         {/* Partners Tab */}
         <TabsContent value="partners" className="space-y-4">
