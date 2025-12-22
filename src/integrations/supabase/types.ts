@@ -170,6 +170,95 @@ export type Database = {
           },
         ]
       }
+      client_first_orders: {
+        Row: {
+          client_id: string
+          commission_reduced: boolean | null
+          course_id: string
+          created_at: string | null
+          discount_applied: number | null
+          driver_id: string | null
+          fleet_manager_id: string | null
+          id: string
+          original_commission_percentage: number | null
+          reduced_commission_percentage: number | null
+        }
+        Insert: {
+          client_id: string
+          commission_reduced?: boolean | null
+          course_id: string
+          created_at?: string | null
+          discount_applied?: number | null
+          driver_id?: string | null
+          fleet_manager_id?: string | null
+          id?: string
+          original_commission_percentage?: number | null
+          reduced_commission_percentage?: number | null
+        }
+        Update: {
+          client_id?: string
+          commission_reduced?: boolean | null
+          course_id?: string
+          created_at?: string | null
+          discount_applied?: number | null
+          driver_id?: string | null
+          fleet_manager_id?: string | null
+          id?: string
+          original_commission_percentage?: number | null
+          reduced_commission_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_first_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -1975,6 +2064,9 @@ export type Database = {
           evening_surcharge: number | null
           extra_drivers_count: number | null
           favorite_driver_priority: boolean | null
+          first_order_commission_reduction: number | null
+          first_order_discount_fixed: number | null
+          first_order_discount_percentage: number | null
           hourly_rate: number | null
           id: string
           logo_url: string | null
@@ -2031,6 +2123,9 @@ export type Database = {
           evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
+          first_order_commission_reduction?: number | null
+          first_order_discount_fixed?: number | null
+          first_order_discount_percentage?: number | null
           hourly_rate?: number | null
           id?: string
           logo_url?: string | null
@@ -2087,6 +2182,9 @@ export type Database = {
           evening_surcharge?: number | null
           extra_drivers_count?: number | null
           favorite_driver_priority?: boolean | null
+          first_order_commission_reduction?: number | null
+          first_order_discount_fixed?: number | null
+          first_order_discount_percentage?: number | null
           hourly_rate?: number | null
           id?: string
           logo_url?: string | null
@@ -2120,6 +2218,65 @@ export type Database = {
           weekend_surcharge?: number | null
         }
         Relationships: []
+      }
+      fleet_promotions: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          description: string | null
+          fleet_manager_id: string
+          for_new_clients_only: boolean | null
+          id: string
+          max_uses: number | null
+          min_amount: number | null
+          type: string
+          updated_at: string | null
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          description?: string | null
+          fleet_manager_id: string
+          for_new_clients_only?: boolean | null
+          id?: string
+          max_uses?: number | null
+          min_amount?: number | null
+          type: string
+          updated_at?: string | null
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          description?: string | null
+          fleet_manager_id?: string
+          for_new_clients_only?: boolean | null
+          id?: string
+          max_uses?: number | null
+          min_amount?: number | null
+          type?: string
+          updated_at?: string | null
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_promotions_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitation_tokens: {
         Row: {
@@ -3230,6 +3387,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      apply_first_order_discount: {
+        Args: {
+          p_client_id: string
+          p_course_id: string
+          p_driver_id?: string
+          p_fleet_manager_id?: string
+          p_original_amount?: number
+        }
+        Returns: Json
+      }
       auto_assign_fleet_driver: {
         Args: {
           p_duration_minutes?: number
@@ -3584,6 +3751,14 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      is_first_order: {
+        Args: {
+          p_client_id: string
+          p_driver_id?: string
+          p_fleet_manager_id?: string
+        }
+        Returns: boolean
+      }
       mark_commission_paid: {
         Args: { _commission_ids: string[] }
         Returns: undefined
