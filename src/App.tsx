@@ -48,6 +48,7 @@ const DriverPendingValidation = lazy(() => import("./pages/DriverPendingValidati
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
+const CreateFleetCourse = lazy(() => import("./pages/CreateFleetCourse"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
 const RGPDData = lazy(() => import("./pages/RGPDData"));
@@ -96,6 +97,18 @@ const App = () => (
                   <ProtectedRoute allowedRoles={["client"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <FleetClientDashboard />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/create-fleet-course"
+                element={
+                  <ProtectedRoute allowedRoles={["client"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <CreateFleetCourse />
+                      </ErrorBoundary>
                     </Suspense>
                   </ProtectedRoute>
                 }
