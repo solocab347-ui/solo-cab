@@ -40,6 +40,8 @@ import {
   Wrench,
   Calendar,
   Route,
+  BarChart3,
+  Euro,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -51,6 +53,9 @@ import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlann
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
 import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesManager";
+import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSettings";
+import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
+import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -496,6 +501,22 @@ const FleetManagerDashboard = () => {
               <span>Outils</span>
             </TabsTrigger>
             <TabsTrigger 
+              value="stats" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Stats</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="pricing" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Euro className="w-4 h-4" />
+              <span>Tarifs</span>
+            </TabsTrigger>
+            <TabsTrigger 
               value="subscription" 
               disabled={isAccountRestricted}
               className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -919,7 +940,26 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Subscription Tab */}
+          {/* Statistics Tab */}
+          <TabsContent value="stats">
+            <FleetStatistics fleetManagerId={fleetManager.id} />
+          </TabsContent>
+
+          {/* Pricing Tab */}
+          <TabsContent value="pricing">
+            <Tabs defaultValue="tarifs" className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="tarifs">Tarification</TabsTrigger>
+                <TabsTrigger value="commissions">Commissions</TabsTrigger>
+              </TabsList>
+              <TabsContent value="tarifs">
+                <FleetPricingSettings fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="commissions">
+                <FleetDriverCommissions fleetManagerId={fleetManager.id} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
           <TabsContent value="subscription">
             <FleetSubscriptionManager 
               fleetManagerId={fleetManager.id}

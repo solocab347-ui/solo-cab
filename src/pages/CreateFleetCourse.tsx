@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Car, MapPin, Calendar, Users, Star, Loader2, Check } from "lucide-react";
+import { Car, MapPin, Calendar, Users, Star, Loader2, Check, Shuffle } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -43,7 +43,7 @@ const CreateFleetCourse = () => {
   const [favoriteDriverId, setFavoriteDriverId] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
-  const [selectedDriverId, setSelectedDriverId] = useState<string>("favorite");
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("favorite"); // "favorite", "random", or driver id
   
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -216,14 +216,20 @@ const CreateFleetCourse = () => {
       // Déterminer le chauffeur
       let assignedDriverId: string | null = null;
       
-      if (selectedDriverId === "favorite" && favoriteDriverId) {
+      if (selectedDriverId === "random") {
+        // Choix aléatoire parmi les chauffeurs disponibles
+        if (drivers.length > 0) {
+          const randomIndex = Math.floor(Math.random() * drivers.length);
+          assignedDriverId = drivers[randomIndex].id;
+        }
+      } else if (selectedDriverId === "favorite" && favoriteDriverId) {
         assignedDriverId = favoriteDriverId;
-      } else if (selectedDriverId !== "favorite") {
+      } else if (selectedDriverId !== "favorite" && selectedDriverId !== "random") {
         assignedDriverId = selectedDriverId;
       }
       
       if (!assignedDriverId) {
-        toast.error("Veuillez sélectionner un chauffeur");
+        toast.error("Aucun chauffeur disponible");
         setSubmitting(false);
         return;
       }
@@ -370,9 +376,34 @@ const CreateFleetCourse = () => {
                     </div>
                   )}
                   
+                  {/* Option chauffeur aléatoire */}
+                  <div 
+                    onClick={() => setSelectedDriverId("random")}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedDriverId === "random"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                        <Users className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-medium">Chauffeur au hasard</span>
+                        <p className="text-sm text-muted-foreground">
+                          Le gestionnaire assignera un chauffeur disponible
+                        </p>
+                      </div>
+                      {selectedDriverId === "random" && (
+                        <Check className="w-5 h-5 text-primary" />
+                      )}
+                    </div>
+                  </div>
+                  
                   <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Ou choisissez un autre chauffeur" />
+                      <SelectValue placeholder="Ou choisissez un chauffeur spécifique" />
                     </SelectTrigger>
                     <SelectContent>
                       {favoriteDriver && (
@@ -380,6 +411,7 @@ const CreateFleetCourse = () => {
                           ⭐ {favoriteDriver.profile?.full_name} (Favori)
                         </SelectItem>
                       )}
+                      <SelectItem value="random">🎲 Chauffeur au hasard</SelectItem>
                       {drivers.filter(d => d.id !== favoriteDriverId).map(driver => (
                         <SelectItem key={driver.id} value={driver.id}>
                           {driver.profile?.full_name || "Chauffeur"} - {driver.vehicle_brand} {driver.vehicle_model}
