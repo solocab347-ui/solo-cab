@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, Euro, Percent, Clock, Moon, Calendar } from "lucide-react";
+import { Loader2, Save, Euro, Percent, Clock, Moon, Calendar, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FleetPricingSettingsProps {
   fleetManagerId: string;
@@ -198,27 +199,21 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           {/* TVA */}
           <div className="space-y-4">
             <h4 className="font-medium">TVA</h4>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="tva_rate">Taux de TVA (%)</Label>
-                <Input
-                  id="tva_rate"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={pricing.tva_rate}
-                  onChange={(e) => setPricing({ ...pricing, tva_rate: parseFloat(e.target.value) || 20 })}
-                />
-              </div>
-              <div className="flex items-center gap-3 pt-6">
-                <Switch
-                  id="tva_included"
-                  checked={pricing.tva_included}
-                  onCheckedChange={(checked) => setPricing({ ...pricing, tva_included: checked })}
-                />
-                <Label htmlFor="tva_included">TVA incluse dans les prix</Label>
-              </div>
+            <Alert className="bg-info/5 border-info/20">
+              <Info className="h-4 w-4 text-info" />
+              <AlertDescription className="text-sm">
+                La TVA est appliquée automatiquement selon le type de course :
+                <br />• <strong>10%</strong> pour les courses classiques (au kilomètre)
+                <br />• <strong>20%</strong> pour les mises à disposition (tarif horaire)
+              </AlertDescription>
+            </Alert>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="tva_included"
+                checked={pricing.tva_included}
+                onCheckedChange={(checked) => setPricing({ ...pricing, tva_included: checked })}
+              />
+              <Label htmlFor="tva_included">TVA incluse dans les prix affichés</Label>
             </div>
           </div>
 

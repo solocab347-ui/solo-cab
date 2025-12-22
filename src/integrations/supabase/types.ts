@@ -1592,7 +1592,12 @@ export type Database = {
           id: string
           is_salaried: boolean | null
           joined_at: string
+          last_payment_date: string | null
+          payment_agreement_signed: boolean | null
+          payment_agreement_signed_at: string | null
+          payment_schedule: string | null
           status: string
+          total_owed: number | null
         }
         Insert: {
           commission_percentage?: number | null
@@ -1603,7 +1608,12 @@ export type Database = {
           id?: string
           is_salaried?: boolean | null
           joined_at?: string
+          last_payment_date?: string | null
+          payment_agreement_signed?: boolean | null
+          payment_agreement_signed_at?: string | null
+          payment_schedule?: string | null
           status?: string
+          total_owed?: number | null
         }
         Update: {
           commission_percentage?: number | null
@@ -1614,7 +1624,12 @@ export type Database = {
           id?: string
           is_salaried?: boolean | null
           joined_at?: string
+          last_payment_date?: string | null
+          payment_agreement_signed?: boolean | null
+          payment_agreement_signed_at?: string | null
+          payment_schedule?: string | null
           status?: string
+          total_owed?: number | null
         }
         Relationships: [
           {
