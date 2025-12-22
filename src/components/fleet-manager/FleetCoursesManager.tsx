@@ -55,6 +55,9 @@ import {
   User,
   Phone,
   Mail,
+  AlertCircle,
+  ArrowRight,
+  Send,
 } from "lucide-react";
 
 interface Course {
@@ -134,6 +137,15 @@ export const FleetCoursesManager = ({
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
+  
+  // Courses non affectées
+  const [unassignedCourses, setUnassignedCourses] = useState<any[]>([]);
+  
+  // Forçage assignation
+  const [showForceAssignDialog, setShowForceAssignDialog] = useState(false);
+  const [selectedCourseForForce, setSelectedCourseForForce] = useState<Course | null>(null);
+  const [forceDriverId, setForceDriverId] = useState("");
+  const [forceAssigning, setForceAssigning] = useState(false);
   
   // Création de course
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -267,6 +279,51 @@ export const FleetCoursesManager = ({
         setAllCourses([]);
       }
 
+      // Récupérer les courses non affectées
+      const { data: unassigned } = await supabase
+        .from("unassigned_fleet_courses")
+        .select(`
+          *,
+          course:courses(
+            *,
+            client:clients(id, user_id)
+          )
+        `)
+        .eq("fleet_manager_id", fleetManagerId)
+        .is("resolved_at", null)
+        .order("created_at", { ascending: false });
+
+      if (unassigned && unassigned.length > 0) {
+        // Récupérer les profils des clients
+        const clientUserIds = unassigned
+          .filter(u => u.course?.client)
+          .map(u => u.course.client.user_id);
+
+        if (clientUserIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, profile_photo_url")
+            .in("id", clientUserIds);
+
+          const unassignedWithProfiles = unassigned.map(u => ({
+            ...u,
+            course: u.course ? {
+              ...u.course,
+              client: u.course.client ? {
+                ...u.course.client,
+                profile: profiles?.find(p => p.id === u.course.client.user_id)
+              } : undefined
+            } : undefined
+          }));
+
+          setUnassignedCourses(unassignedWithProfiles);
+        } else {
+          setUnassignedCourses(unassigned);
+        }
+      } else {
+        setUnassignedCourses([]);
+      }
+
       // Récupérer les clients de la flotte
       const { data: fleetClients } = await supabase
         .from("fleet_manager_clients")
@@ -390,6 +447,59 @@ export const FleetCoursesManager = ({
     } catch (error) {
       console.error("Error updating settings:", error);
       toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  // Forcer l'assignation d'une course à un chauffeur
+  const handleForceAssign = async () => {
+    if (!selectedCourseForForce || !forceDriverId) return;
+
+    setForceAssigning(true);
+    try {
+      // Mettre à jour la course avec le chauffeur forcé
+      const { error: courseError } = await supabase
+        .from("courses")
+        .update({ 
+          driver_id: forceDriverId,
+          status: "accepted"
+        })
+        .eq("id", selectedCourseForForce.id);
+
+      if (courseError) throw courseError;
+
+      // Marquer comme résolu dans unassigned_fleet_courses
+      const unassignedEntry = unassignedCourses.find(
+        u => u.course_id === selectedCourseForForce.id
+      );
+      if (unassignedEntry) {
+        await supabase
+          .from("unassigned_fleet_courses")
+          .update({ resolved_at: new Date().toISOString() })
+          .eq("id", unassignedEntry.id);
+      }
+
+      // Notifier le chauffeur
+      const driver = drivers.find(d => d.driver_id === forceDriverId);
+      if (driver?.driver?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: driver.driver.user_id,
+          title: "⚡ Course assignée manuellement",
+          message: `Une course a été assignée à votre planning pour le ${format(new Date(selectedCourseForForce.scheduled_date), "d MMMM à HH:mm", { locale: fr })}`,
+          type: "warning",
+          link: "/fleet-driver-dashboard"
+        });
+      }
+
+      toast.success("Course assignée avec succès");
+      setShowForceAssignDialog(false);
+      setSelectedCourseForForce(null);
+      setForceDriverId("");
+      fetchData();
+    } catch (error: any) {
+      console.error("Error force assigning:", error);
+      toast.error(error.message || "Erreur lors de l'assignation");
+    } finally {
+      setForceAssigning(false);
     }
   };
 
@@ -564,9 +674,16 @@ export const FleetCoursesManager = ({
               <Badge variant="secondary" className="ml-1">{pendingCourses.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="unassigned" className="flex-1 gap-2">
+            <AlertCircle className="w-4 h-4" />
+            Non affectées
+            {unassignedCourses.length > 0 && (
+              <Badge variant="destructive" className="ml-1">{unassignedCourses.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="all" className="flex-1 gap-2">
             <List className="w-4 h-4" />
-            Toutes les courses
+            Toutes
           </TabsTrigger>
         </TabsList>
 
@@ -605,6 +722,101 @@ export const FleetCoursesManager = ({
           </Card>
         </TabsContent>
 
+        {/* Courses non affectées */}
+        <TabsContent value="unassigned">
+          <Card className="border-destructive/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="w-5 h-5" />
+                Courses sans chauffeur disponible
+              </CardTitle>
+              <CardDescription>
+                Ces courses n'ont pas pu être assignées automatiquement. Assignez-les manuellement.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {unassignedCourses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50 text-success" />
+                  <p>Toutes les courses sont bien assignées</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {unassignedCourses.map(item => (
+                      <div 
+                        key={item.id}
+                        className="p-4 border border-destructive/30 rounded-lg bg-destructive/5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-3">
+                            {/* Client */}
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-10 h-10">
+                                <AvatarImage src={item.course?.client?.profile?.profile_photo_url || ""} />
+                                <AvatarFallback>
+                                  {(item.course?.guest_name || item.course?.client?.profile?.full_name || "C").charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">
+                                  {item.course?.guest_name || item.course?.client?.profile?.full_name || "Client"}
+                                </p>
+                                <Badge variant="destructive" className="text-xs">
+                                  {item.reason === "no_available_driver" ? "Aucun chauffeur dispo" : item.reason}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            {/* Itinéraire */}
+                            <div className="space-y-1">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                <span className="text-sm">{item.course?.pickup_address}</span>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                                <span className="text-sm">{item.course?.destination_address}</span>
+                              </div>
+                            </div>
+
+                            {/* Détails */}
+                            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {item.course?.scheduled_date && format(new Date(item.course.scheduled_date), "d MMM à HH:mm", { locale: fr })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                {item.course?.passengers_count} passager(s)
+                              </span>
+                              <span className="text-xs">
+                                Tentatives: {item.attempts}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action forcer */}
+                          <Button
+                            onClick={() => {
+                              setSelectedCourseForForce(item.course);
+                              setShowForceAssignDialog(true);
+                            }}
+                            className="gap-2"
+                          >
+                            <Send className="w-4 h-4" />
+                            Assigner
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Toutes les courses */}
         <TabsContent value="all">
           <Card>
@@ -622,6 +834,12 @@ export const FleetCoursesManager = ({
                         key={course.id}
                         course={course}
                         getStatusBadge={getStatusBadge}
+                        showForceButton={course.status === "pending"}
+                        onForce={() => {
+                          setSelectedCourseForForce(course);
+                          setShowForceAssignDialog(true);
+                        }}
+                        drivers={drivers}
                       />
                     ))}
                   </div>
@@ -892,6 +1110,78 @@ export const FleetCoursesManager = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog forcer assignation */}
+      <Dialog open={showForceAssignDialog} onOpenChange={(open) => {
+        setShowForceAssignDialog(open);
+        if (!open) {
+          setSelectedCourseForForce(null);
+          setForceDriverId("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-primary" />
+              Assigner manuellement
+            </DialogTitle>
+            <DialogDescription>
+              Forcez l'assignation de cette course à un chauffeur, même si son planning est chargé.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCourseForForce && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <span>{selectedCourseForForce.pickup_address}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ArrowRight className="w-3 h-3" />
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                  <span>{selectedCourseForForce.destination_address}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                  <Calendar className="w-4 h-4" />
+                  {format(new Date(selectedCourseForForce.scheduled_date), "EEEE d MMMM à HH:mm", { locale: fr })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Sélectionnez un chauffeur</Label>
+                <Select value={forceDriverId} onValueChange={setForceDriverId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un chauffeur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {drivers.map(d => (
+                      <SelectItem key={d.driver_id} value={d.driver_id}>
+                        {d.driver?.profile?.full_name || "Chauffeur"} - {d.driver?.vehicle_brand} {d.driver?.vehicle_model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-warning">
+                  ⚠️ Le chauffeur sera notifié et la course sera ajoutée à son planning.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForceAssignDialog(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleForceAssign} disabled={forceAssigning || !forceDriverId}>
+              {forceAssigning && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Confirmer l'assignation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -900,12 +1190,23 @@ export const FleetCoursesManager = ({
 interface CourseCardProps {
   course: Course;
   showActions?: boolean;
+  showForceButton?: boolean;
   onApprove?: () => void;
   onReject?: () => void;
+  onForce?: () => void;
   getStatusBadge: (status: string) => JSX.Element;
+  drivers?: FleetDriver[];
 }
 
-const CourseCard = ({ course, showActions, onApprove, onReject, getStatusBadge }: CourseCardProps) => {
+const CourseCard = ({ 
+  course, 
+  showActions, 
+  showForceButton,
+  onApprove, 
+  onReject, 
+  onForce,
+  getStatusBadge 
+}: CourseCardProps) => {
   const clientName = course.client?.profile?.full_name || course.guest_name || "Client";
   const isGuest = !!course.guest_name;
 
@@ -964,26 +1265,34 @@ const CourseCard = ({ course, showActions, onApprove, onReject, getStatusBadge }
         </div>
 
         {/* Actions */}
-        {showActions && (
-          <div className="flex flex-col gap-2">
-            <Button
-              size="sm"
-              onClick={onApprove}
-              className="bg-success hover:bg-success/90"
-            >
-              <CheckCircle className="w-4 h-4 mr-1" />
-              Approuver
+        <div className="flex flex-col gap-2">
+          {showActions && (
+            <>
+              <Button
+                size="sm"
+                onClick={onApprove}
+                className="bg-success hover:bg-success/90"
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Approuver
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={onReject}
+              >
+                <XCircle className="w-4 h-4 mr-1" />
+                Refuser
+              </Button>
+            </>
+          )}
+          {showForceButton && onForce && (
+            <Button size="sm" variant="outline" onClick={onForce}>
+              <Send className="w-4 h-4 mr-1" />
+              Assigner
             </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={onReject}
-            >
-              <XCircle className="w-4 h-4 mr-1" />
-              Refuser
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
