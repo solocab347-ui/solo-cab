@@ -38,6 +38,7 @@ import { DriverCourseSharing } from "@/components/driver/DriverCourseSharing";
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
+import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -427,6 +428,12 @@ const DriverDashboard = () => {
                     <DropdownMenuItem onClick={() => setActiveTab("documents")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-600 hover:text-white">
                       <FolderOpen className="w-4 h-4" />
                       Mes Documents
+                    </DropdownMenuItem>
+                  )}
+                  {!driverProfile?.driver?.is_fleet_driver && (
+                    <DropdownMenuItem onClick={() => setActiveTab("fleet-partnerships")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
+                      <Building2 className="w-4 h-4" />
+                      Partenariats Flottes
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

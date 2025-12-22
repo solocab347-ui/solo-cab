@@ -42,6 +42,7 @@ import {
   Route,
   BarChart3,
   Euro,
+  Handshake,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -57,6 +58,7 @@ import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSet
 import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
 import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
 import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
+import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -793,6 +795,28 @@ const FleetManagerDashboard = () => {
           {/* Tools Tab */}
           <TabsContent value="tools">
             <div className="grid gap-6 md:grid-cols-2">
+              {/* Statistiques */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("stats")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-success" />
+                    Statistiques
+                  </CardTitle>
+                  <CardDescription>Analysez les performances de votre flotte</CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Partenariats */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("partnerships")}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Handshake className="w-5 h-5 text-primary" />
+                    Partenariats
+                  </CardTitle>
+                  <CardDescription>Collaborez avec des chauffeurs indépendants</CardDescription>
+                </CardHeader>
+              </Card>
+
               {/* Invitations */}
               <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("invitations")}>
                 <CardHeader>
@@ -944,6 +968,14 @@ const FleetManagerDashboard = () => {
           {/* Statistics Tab */}
           <TabsContent value="stats">
             <FleetStatistics fleetManagerId={fleetManager.id} />
+          </TabsContent>
+
+          {/* Partnerships Tab */}
+          <TabsContent value="partnerships">
+            <FleetDriverPartnerships 
+              fleetManagerId={fleetManager.id}
+              defaultCommission={10}
+            />
           </TabsContent>
 
           {/* Pricing Tab */}
