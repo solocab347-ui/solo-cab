@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,7 +19,8 @@ import {
   Send,
   AlertCircle,
   Clock,
-  Loader2
+  Loader2,
+  ArrowRight
 } from 'lucide-react';
 import { format, addHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -49,7 +50,6 @@ export function PushCourseToPartners() {
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<AvailableCourse | null>(null);
   const [message, setMessage] = useState('');
@@ -65,7 +65,6 @@ export function PushCourseToPartners() {
   const loadData = async () => {
     setLoading(true);
     
-    // Get driver ID
     const { data: driver } = await supabase
       .from('drivers')
       .select('id')
@@ -79,7 +78,7 @@ export function PushCourseToPartners() {
     
     setDriverId(driver.id);
 
-    // Load available courses (accepted courses that can be shared)
+    // Load available courses
     const { data: courses } = await supabase
       .from('courses')
       .select(`
@@ -151,7 +150,7 @@ export function PushCourseToPartners() {
 
   const openPushDialog = (course: AvailableCourse) => {
     setSelectedCourse(course);
-    setMessage(`Je ne peux pas effectuer cette course. Elle est disponible pour vous si vous êtes intéressé.`);
+    setMessage('');
     setDialogOpen(true);
   };
 
@@ -173,7 +172,7 @@ export function PushCourseToPartners() {
         course_amount: courseAmount,
         commission_percentage: avgCommission,
         estimated_commission: estimatedCommission,
-        message: message,
+        message: message || null,
         expires_at: expiresAt.toISOString(),
       });
 
@@ -187,7 +186,7 @@ export function PushCourseToPartners() {
     } catch (error: any) {
       console.error('Push error:', error);
       if (error.code === '23505') {
-        toast.error('Cette course est déjà dans le pool de partage');
+        toast.error('Cette course est déjà proposée');
       } else {
         toast.error('Erreur lors de la proposition');
       }
@@ -196,13 +195,16 @@ export function PushCourseToPartners() {
     }
   };
 
+  const shortenAddress = (address: string) => {
+    if (address.length > 35) return address.substring(0, 32) + '...';
+    return address;
+  };
+
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
-      </Card>
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -210,7 +212,7 @@ export function PushCourseToPartners() {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
+        <AlertDescription className="text-sm">
           Vous devez avoir au moins un partenariat actif pour proposer des courses.
         </AlertDescription>
       </Alert>
@@ -219,71 +221,74 @@ export function PushCourseToPartners() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Send className="h-5 w-5" />
-          Proposer une course à vos partenaires
+        <h3 className="font-semibold flex items-center gap-2">
+          <Send className="h-4 w-4" />
+          Proposer une course
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Sélectionnez une course que vous ne pouvez pas effectuer pour la proposer à vos partenaires
+        <p className="text-xs text-muted-foreground">
+          Sélectionnez une course à proposer à vos {partnerships.length} partenaire{partnerships.length > 1 ? 's' : ''}
         </p>
       </div>
 
       {availableCourses.length === 0 ? (
         <Alert>
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Vous n'avez aucune course disponible à partager pour le moment.
+          <AlertDescription className="text-sm">
+            Aucune course disponible à partager.
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-3">
           {availableCourses.map((course) => (
-            <Card key={course.id} className="hover:border-primary/50 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}
-                      <Badge variant="outline">{course.status}</Badge>
+            <Card key={course.id}>
+              <CardContent className="p-3">
+                <div className="space-y-2">
+                  {/* Date */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      {format(new Date(course.scheduled_date), "EEE d MMM 'à' HH:mm", { locale: fr })}
                     </div>
-                    
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
-                        <span className="line-clamp-1">{course.pickup_address}</span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-red-600 mt-0.5" />
-                        <span className="line-clamp-1">{course.destination_address}</span>
-                      </div>
-                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {course.status === 'accepted' ? 'Acceptée' : 'En attente'}
+                    </Badge>
+                  </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  {/* Addresses compact */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                    <span className="truncate flex-1">{shortenAddress(course.pickup_address)}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
+                        <Users className="h-3 w-3" />
                         {course.passengers_count}
                       </span>
                       {course.distance_km && (
                         <span className="flex items-center gap-1">
-                          <Car className="h-4 w-4" />
-                          {course.distance_km.toFixed(1)} km
+                          <Car className="h-3 w-3" />
+                          {course.distance_km.toFixed(0)} km
                         </span>
                       )}
                       {course.devis_amount && (
                         <span className="flex items-center gap-1 font-medium text-foreground">
-                          <Euro className="h-4 w-4" />
-                          {course.devis_amount.toFixed(2)} €
+                          <Euro className="h-3 w-3" />
+                          {course.devis_amount.toFixed(0)}€
                         </span>
                       )}
                     </div>
+                    <Button size="sm" onClick={() => openPushDialog(course)} className="h-8">
+                      <Send className="h-3 w-3 mr-1" />
+                      Proposer
+                    </Button>
                   </div>
-
-                  <Button onClick={() => openPushDialog(course)}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Proposer
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -293,52 +298,55 @@ export function PushCourseToPartners() {
 
       {/* Push Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Proposer la course à vos partenaires</DialogTitle>
+            <DialogTitle>Proposer la course</DialogTitle>
             <DialogDescription>
-              Cette course sera visible par tous vos partenaires actifs. Le premier à la réclamer l'obtiendra.
+              Tous vos partenaires verront cette offre
             </DialogDescription>
           </DialogHeader>
 
           {selectedCourse && (
             <div className="space-y-4">
+              {/* Course summary */}
               <div className="p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 font-medium">
                   <Calendar className="h-4 w-4" />
-                  {format(new Date(selectedCourse.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                  {format(new Date(selectedCourse.scheduled_date), "d MMMM 'à' HH:mm", { locale: fr })}
                 </div>
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-green-600 mt-0.5" />
-                  {selectedCourse.pickup_address}
+                  <MapPin className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <span className="text-xs">{selectedCourse.pickup_address}</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-red-600 mt-0.5" />
-                  {selectedCourse.destination_address}
+                  <MapPin className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                  <span className="text-xs">{selectedCourse.destination_address}</span>
                 </div>
                 {selectedCourse.devis_amount && (
-                  <div className="flex items-center gap-2 font-medium">
+                  <div className="flex items-center gap-2 font-semibold pt-1 border-t">
                     <Euro className="h-4 w-4" />
                     {selectedCourse.devis_amount.toFixed(2)} €
                   </div>
                 )}
               </div>
 
+              {/* Partners */}
               <div className="space-y-2">
-                <Label>Partenaires qui recevront cette offre</Label>
-                <div className="flex flex-wrap gap-2">
+                <Label className="text-xs">Partenaires notifiés</Label>
+                <div className="flex flex-wrap gap-1.5">
                   {partnerships.map(p => (
-                    <Badge key={p.id} variant="secondary">
+                    <Badge key={p.id} variant="secondary" className="text-xs">
                       {p.partner_name} ({p.commission_percentage}%)
                     </Badge>
                   ))}
                 </div>
               </div>
 
+              {/* Expiration */}
               <div className="space-y-2">
-                <Label>Durée de validité</Label>
+                <Label className="text-xs">Durée de validité</Label>
                 <Select value={expirationHours} onValueChange={setExpirationHours}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -350,32 +358,31 @@ export function PushCourseToPartners() {
                 </Select>
               </div>
 
+              {/* Message */}
               <div className="space-y-2">
-                <Label>Message (optionnel)</Label>
+                <Label className="text-xs">Message (optionnel)</Label>
                 <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ajoutez un message pour vos partenaires..."
-                  rows={3}
+                  placeholder="Ajoutez un message..."
+                  rows={2}
+                  className="text-sm"
                 />
               </div>
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
               Annuler
             </Button>
-            <Button onClick={pushCourseToPool} disabled={pushing}>
+            <Button onClick={pushCourseToPool} disabled={pushing} className="flex-1">
               {pushing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Envoi...
-                </>
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Proposer aux partenaires
+                  <Send className="h-4 w-4 mr-1" />
+                  Envoyer
                 </>
               )}
             </Button>
