@@ -307,14 +307,36 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
 
   return (
     <div className="space-y-6">
+      {/* Bannière informative - Option facultative */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-primary/10 rounded-full">
+              <MapPin className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-primary">Option facultative : Tarification par ville</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Cette fonctionnalité est <strong>optionnelle</strong> et complémentaire à vos tarifs classiques (au kilomètre ou mise à disposition).
+                Elle vous permet de définir des tarifs spécifiques pour les courses <strong>intra-ville</strong> (départ et arrivée dans la même ville),
+                particulièrement utile pour les grandes villes où la tarification au kilomètre peut ne pas être rentable.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                <strong>Note :</strong> Si vous ne configurez pas de tarification par ville, vos tarifs classiques seront automatiquement appliqués.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
-            Tarification par ville
+            Définir un prix par ville
           </h3>
           <p className="text-sm text-muted-foreground">
-            Définissez des tarifs spécifiques pour les courses intra-ville (départ et arrivée dans la même ville)
+            Configurez des tarifs spécifiques pour les courses dans les grandes villes
           </p>
         </div>
         <Button onClick={addNewPricing} className="gap-2">
@@ -324,11 +346,15 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
       </div>
 
       {pricings.length === 0 ? (
-        <Card>
+        <Card className="border-dashed">
           <CardContent className="py-12 text-center text-muted-foreground">
             <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Aucune tarification par ville configurée</p>
-            <p className="text-sm">Cliquez sur "Ajouter une ville" pour commencer</p>
+            <p className="font-medium">Aucune tarification par ville configurée</p>
+            <p className="text-sm mt-1">Vos tarifs classiques (au kilomètre / mise à disposition) s'appliquent</p>
+            <Button onClick={addNewPricing} variant="outline" className="mt-4 gap-2">
+              <Plus className="w-4 h-4" />
+              Ajouter une tarification ville (optionnel)
+            </Button>
           </CardContent>
         </Card>
       ) : (
