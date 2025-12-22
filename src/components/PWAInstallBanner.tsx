@@ -10,23 +10,47 @@ import {
 
 type Platform = 'ios' | 'android' | 'desktop';
 
-// Variable globale pour stocker le prompt
-let globalDeferredPrompt: any = null;
+// Stocker le prompt globalement pour ne pas le perdre
+interface PWAPromptStore {
+  prompt: any;
+  setPrompt: (p: any) => void;
+  getPrompt: () => any;
+}
 
-// Capturer le prompt le plus tôt possible
+const pwaStore: PWAPromptStore = {
+  prompt: null,
+  setPrompt(p: any) {
+    this.prompt = p;
+    console.log('PWA Store: Prompt saved', !!p);
+  },
+  getPrompt() {
+    return this.prompt;
+  }
+};
+
+// Capturer le prompt au niveau global le plus tôt possible
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => {
+  const capturePrompt = (e: Event) => {
     e.preventDefault();
-    globalDeferredPrompt = e;
-    console.log('PWA: beforeinstallprompt captured globally');
-  });
+    pwaStore.setPrompt(e);
+    console.log('PWA: Global beforeinstallprompt captured');
+  };
+  
+  window.addEventListener('beforeinstallprompt', capturePrompt);
+  
+  // Aussi sur DOMContentLoaded au cas où
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.addEventListener('beforeinstallprompt', capturePrompt);
+    });
+  }
 }
 
 // Fonction de détection de plateforme améliorée
 const detectPlatform = (): Platform => {
   const ua = navigator.userAgent || navigator.vendor || (window as any).opera || '';
   
-  // Détection iOS - vérifie plusieurs indicateurs
+  // Détection iOS
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
   const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
   
@@ -34,7 +58,7 @@ const detectPlatform = (): Platform => {
     return 'ios';
   }
   
-  // Détection Android - vérifie le user agent
+  // Détection Android
   if (/android/i.test(ua)) {
     return 'android';
   }
@@ -44,48 +68,38 @@ const detectPlatform = (): Platform => {
 
 export const PWAInstallBanner = () => {
   const [showBanner, setShowBanner] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(globalDeferredPrompt);
   const [platform, setPlatform] = useState<Platform>('desktop');
   const [showInstructions, setShowInstructions] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const promptCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const hasPromptRef = useRef(false);
 
   useEffect(() => {
-    // Détection de la plateforme
     const detectedPlatform = detectPlatform();
     setPlatform(detectedPlatform);
     
-    // Vérifier si l'utilisateur est sur mobile
     const isMobile = detectedPlatform === 'ios' || detectedPlatform === 'android';
     
     // Vérifier si l'app est déjà installée
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
                         (window.navigator as any).standalone === true;
     
-    // Vérifier si l'app a été installée (persistant)
     const wasInstalled = localStorage.getItem('pwa-installed') === 'true';
     
-    // Vérifier si temporairement masqué (session only, expire après 24h)
+    // Vérifier si temporairement masqué
     const dismissedAt = sessionStorage.getItem('pwa-banner-dismissed-at');
     const isTemporarilyDismissed = dismissedAt && (Date.now() - parseInt(dismissedAt)) < 24 * 60 * 60 * 1000;
     
-    // Afficher la bannière si mobile, pas installé, et pas temporairement masqué
     if (isMobile && !isInstalled && !wasInstalled && !isTemporarilyDismissed) {
       setShowBanner(true);
     }
 
-    // Vérifier si le prompt global est déjà disponible
-    if (globalDeferredPrompt) {
-      setDeferredPrompt(globalDeferredPrompt);
-    }
-
-    // Capturer l'événement beforeinstallprompt
+    // Écouter le prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      globalDeferredPrompt = e;
-      setDeferredPrompt(e);
-      console.log('PWA: beforeinstallprompt captured in component');
-      // Réafficher la bannière si le prompt est disponible
+      pwaStore.setPrompt(e);
+      hasPromptRef.current = true;
+      console.log('PWA: Component captured beforeinstallprompt');
+      
       if (isMobile && !isInstalled && !wasInstalled) {
         setShowBanner(true);
       }
@@ -93,98 +107,108 @@ export const PWAInstallBanner = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Écouter l'événement d'installation réussie
+    // Écouter l'installation réussie
     const handleAppInstalled = () => {
-      console.log('PWA: App installed successfully');
+      console.log('PWA: App installed!');
       setShowBanner(false);
       setIsInstalling(false);
       localStorage.setItem('pwa-installed', 'true');
       sessionStorage.removeItem('pwa-banner-dismissed-at');
-      globalDeferredPrompt = null;
+      pwaStore.setPrompt(null);
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // Vérifier si on a déjà le prompt
+    if (pwaStore.getPrompt()) {
+      hasPromptRef.current = true;
+      console.log('PWA: Prompt already available');
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      if (promptCheckInterval.current) {
-        clearInterval(promptCheckInterval.current);
-      }
     };
   }, []);
 
   const handleInstall = useCallback(async () => {
-    // Utiliser le prompt global ou local
-    const prompt = deferredPrompt || globalDeferredPrompt;
+    const prompt = pwaStore.getPrompt();
     
-    console.log('PWA: Install clicked, prompt available:', !!prompt, 'platform:', platform);
+    console.log('PWA: Install clicked, prompt:', !!prompt, 'platform:', platform);
     
-    // Si on a le prompt natif (Android Chrome), l'utiliser directement
+    // Sur Android avec prompt disponible - installation directe
     if (prompt) {
       setIsInstalling(true);
       try {
         await prompt.prompt();
-        const { outcome } = await prompt.userChoice;
-        console.log('PWA: User choice:', outcome);
+        const result = await prompt.userChoice;
+        console.log('PWA: User choice:', result.outcome);
         
-        if (outcome === 'accepted') {
+        if (result.outcome === 'accepted') {
           setShowBanner(false);
           localStorage.setItem('pwa-installed', 'true');
           sessionStorage.removeItem('pwa-banner-dismissed-at');
         }
         
-        // Nettoyer le prompt après utilisation
-        globalDeferredPrompt = null;
-        setDeferredPrompt(null);
+        // Le prompt ne peut être utilisé qu'une fois
+        pwaStore.setPrompt(null);
       } catch (error) {
-        console.error('PWA: Erreur lors de l\'installation:', error);
-        // Si erreur, afficher les instructions
-        setShowInstructions(true);
+        console.error('PWA: Install error:', error);
+        // Sur Android, si erreur on ne montre pas les instructions
+        // car Chrome gère lui-même l'installation
+        if (platform !== 'android') {
+          setShowInstructions(true);
+        }
       } finally {
         setIsInstalling(false);
       }
-    } else if (platform === 'android') {
-      // Sur Android sans prompt, attendre un peu que le prompt arrive
+      return;
+    }
+    
+    // Sur Android sans prompt - Chrome n'a pas encore déclenché beforeinstallprompt
+    // Cela signifie que la PWA n'est peut-être pas encore reconnue comme installable
+    // OU l'utilisateur doit utiliser le menu de Chrome
+    if (platform === 'android') {
+      // Afficher un message court puis tenter d'attendre le prompt
       setIsInstalling(true);
-      console.log('PWA: Waiting for prompt on Android...');
       
-      // Attendre jusqu'à 2 secondes pour le prompt
-      let attempts = 0;
-      promptCheckInterval.current = setInterval(async () => {
-        attempts++;
-        if (globalDeferredPrompt) {
-          clearInterval(promptCheckInterval.current!);
+      // Attendre jusqu'à 3 secondes pour le prompt
+      let waited = 0;
+      const checkInterval = setInterval(async () => {
+        waited += 300;
+        const newPrompt = pwaStore.getPrompt();
+        
+        if (newPrompt) {
+          clearInterval(checkInterval);
           try {
-            await globalDeferredPrompt.prompt();
-            const { outcome } = await globalDeferredPrompt.userChoice;
-            if (outcome === 'accepted') {
+            await newPrompt.prompt();
+            const result = await newPrompt.userChoice;
+            if (result.outcome === 'accepted') {
               setShowBanner(false);
               localStorage.setItem('pwa-installed', 'true');
             }
-            globalDeferredPrompt = null;
-            setDeferredPrompt(null);
-          } catch (error) {
-            console.error('PWA: Error with delayed prompt:', error);
-            setShowInstructions(true);
+            pwaStore.setPrompt(null);
+          } catch (e) {
+            console.error('PWA: Delayed prompt error:', e);
           }
           setIsInstalling(false);
-        } else if (attempts >= 4) {
-          // Après 2 secondes, afficher les instructions
-          clearInterval(promptCheckInterval.current!);
+        } else if (waited >= 3000) {
+          clearInterval(checkInterval);
           setIsInstalling(false);
+          // Sur Android, afficher les instructions en dernier recours
           setShowInstructions(true);
         }
-      }, 500);
-    } else {
-      // Pas de prompt disponible (iOS ou navigateur non supporté), afficher les instructions
-      setShowInstructions(true);
+      }, 300);
+      
+      return;
     }
-  }, [deferredPrompt, platform]);
+    
+    // iOS ou Desktop sans prompt - afficher les instructions
+    setShowInstructions(true);
+  }, [platform]);
 
   const handleDismiss = useCallback(() => {
     setShowBanner(false);
-    // Ne masquer que temporairement (se réaffiche à la prochaine session ou après 24h)
     sessionStorage.setItem('pwa-banner-dismissed-at', Date.now().toString());
   }, []);
 
@@ -198,10 +222,10 @@ export const PWAInstallBanner = () => {
             <Download className="h-5 w-5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">
-                Installez SoloCab sur votre mobile
+                Installez SoloCab
               </p>
               <p className="text-xs opacity-90 truncate">
-                Accédez plus facilement à l'application
+                Accès rapide depuis votre écran d'accueil
               </p>
             </div>
           </div>
@@ -212,13 +236,10 @@ export const PWAInstallBanner = () => {
               variant="secondary"
               onClick={handleInstall}
               disabled={isInstalling}
-              className="text-xs"
+              className="text-xs font-medium"
             >
               {isInstalling ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Installation...
-                </>
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 'Installer'
               )}
@@ -235,7 +256,7 @@ export const PWAInstallBanner = () => {
         </div>
       </div>
 
-      {/* Dialog d'instructions spécifique à la plateforme */}
+      {/* Instructions uniquement pour iOS ou si vraiment nécessaire */}
       <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -249,51 +270,25 @@ export const PWAInstallBanner = () => {
             {platform === 'ios' ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Pour installer l'application sur votre iPhone/iPad :
+                  Sur iPhone/iPad :
                 </p>
                 <ol className="space-y-3">
                   <li className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">1</span>
                     <span className="text-sm">
-                      Appuyez sur le bouton <Share className="inline h-4 w-4 mx-1" /> <strong>Partager</strong> en bas de Safari
+                      Appuyez sur <Share className="inline h-4 w-4 mx-1" /> <strong>Partager</strong>
                     </span>
                   </li>
                   <li className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">2</span>
                     <span className="text-sm">
-                      Faites défiler et sélectionnez <strong>"Sur l'écran d'accueil"</strong>
+                      <strong>"Sur l'écran d'accueil"</strong>
                     </span>
                   </li>
                   <li className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">3</span>
                     <span className="text-sm">
-                      Appuyez sur <strong>"Ajouter"</strong>
-                    </span>
-                  </li>
-                </ol>
-              </div>
-            ) : platform === 'android' ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Pour installer l'application sur votre Android :
-                </p>
-                <ol className="space-y-3">
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">1</span>
-                    <span className="text-sm">
-                      Appuyez sur le menu <strong>⋮</strong> en haut à droite de Chrome
-                    </span>
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">2</span>
-                    <span className="text-sm">
-                      Sélectionnez <strong>"Installer l'application"</strong> ou <strong>"Ajouter à l'écran d'accueil"</strong>
-                    </span>
-                  </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">3</span>
-                    <span className="text-sm">
-                      Confirmez l'installation
+                      <strong>"Ajouter"</strong>
                     </span>
                   </li>
                 </ol>
@@ -301,19 +296,19 @@ export const PWAInstallBanner = () => {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Pour installer l'application sur votre ordinateur :
+                  Pour installer l'application :
                 </p>
                 <ol className="space-y-3">
                   <li className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">1</span>
                     <span className="text-sm">
-                      Cliquez sur l'icône d'installation dans la barre d'adresse
+                      Menu <strong>⋮</strong> en haut à droite
                     </span>
                   </li>
                   <li className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">2</span>
                     <span className="text-sm">
-                      Confirmez l'installation
+                      <strong>"Installer l'application"</strong>
                     </span>
                   </li>
                 </ol>
