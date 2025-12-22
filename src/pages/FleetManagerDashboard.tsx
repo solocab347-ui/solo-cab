@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { NotificationBell } from "@/components/NotificationBell";
+import { isPast } from "date-fns";
 import {
   Users,
   Car,
@@ -33,6 +35,8 @@ import {
   Eye,
   ExternalLink,
   ArrowLeft,
+  AlertTriangle,
+  Lock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -127,6 +131,33 @@ const FleetManagerDashboard = () => {
   const [qrCodeData, setQrCodeData] = useState<string>("");
   const [activeTab, setActiveTab] = useState("home");
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+
+  // Calculer si le compte est restreint (deadline dépassée et documents non soumis)
+  const isAccountRestricted = useMemo(() => {
+    if (!fleetManager) return false;
+    
+    const documentsStatus = fleetManager.documents_status || "pending";
+    const deadline = fleetManager.documents_deadline;
+    
+    // Si documents validés ou soumis, pas de restriction
+    if (documentsStatus === "validated" || documentsStatus === "submitted") {
+      return false;
+    }
+    
+    // Si deadline dépassée et documents non soumis, restriction
+    if (deadline && isPast(new Date(deadline))) {
+      return true;
+    }
+    
+    return false;
+  }, [fleetManager]);
+
+  // Rediriger vers l'onglet documents si le compte est restreint
+  useEffect(() => {
+    if (isAccountRestricted && activeTab !== "documents") {
+      setActiveTab("documents");
+    }
+  }, [isAccountRestricted, activeTab]);
 
   useEffect(() => {
     if (user) {
@@ -393,46 +424,108 @@ const FleetManagerDashboard = () => {
       </header>
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        {/* Alerte si compte restreint */}
+        {isAccountRestricted && (
+          <Alert variant="destructive" className="mb-6 border-destructive/50 bg-destructive/10">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle className="text-lg font-bold">Compte temporairement restreint</AlertTitle>
+            <AlertDescription className="mt-2">
+              Le délai de 7 jours pour soumettre vos documents est dépassé. Veuillez envoyer vos documents ci-dessous pour débloquer l'accès complet à votre espace gestionnaire.
+              <br /><br />
+              <span className="text-sm opacity-80">
+                Une fois vos documents soumis, vous retrouverez l'accès à toutes les fonctionnalités en attendant la validation par notre équipe.
+              </span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Tabs value={activeTab} onValueChange={(tab) => {
+          // Si compte restreint, seul l'onglet documents est accessible
+          if (isAccountRestricted && tab !== "documents") {
+            toast.error("Veuillez d'abord soumettre vos documents pour accéder à cette fonctionnalité");
+            return;
+          }
+          setActiveTab(tab);
+        }} className="space-y-6">
           {/* Navigation Tabs */}
           <TabsList className="w-full bg-card/50 backdrop-blur-sm flex flex-wrap gap-1 h-auto p-2 shadow-lg border border-white/10 rounded-xl">
-            <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white">
+            <TabsTrigger 
+              value="home" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isAccountRestricted && <Lock className="w-3 h-3 absolute -top-1 -right-1" />}
               <Home className="w-4 h-4" />
               <span>Accueil</span>
             </TabsTrigger>
-            <TabsTrigger value="drivers" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="drivers" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Car className="w-4 h-4" />
               <span>Chauffeurs</span>
             </TabsTrigger>
-            <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="clients" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Users className="w-4 h-4" />
               <span>Clients</span>
             </TabsTrigger>
-            <TabsTrigger value="planning" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="planning" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Clock className="w-4 h-4" />
               <span>Planning</span>
             </TabsTrigger>
-            <TabsTrigger value="invitations" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="invitations" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Send className="w-4 h-4" />
               <span>Invitations</span>
             </TabsTrigger>
-            <TabsTrigger value="public-profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="public-profile" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Globe className="w-4 h-4" />
               <span>Vitrine</span>
             </TabsTrigger>
-            <TabsTrigger value="qrcode" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="qrcode" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <QrCode className="w-4 h-4" />
               <span>QR</span>
             </TabsTrigger>
-            <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="subscription" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <CreditCard className="w-4 h-4" />
               <span>Abo</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="documents" 
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white ${isAccountRestricted ? 'ring-2 ring-destructive animate-pulse' : ''}`}
+            >
               <FileText className="w-4 h-4" />
               <span>Docs</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-white">
+            <TabsTrigger 
+              value="settings" 
+              disabled={isAccountRestricted}
+              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
               <Settings className="w-4 h-4" />
               <span>Param.</span>
             </TabsTrigger>
@@ -790,7 +883,8 @@ const FleetManagerDashboard = () => {
           <TabsContent value="documents">
             <FleetManagerDocuments 
               fleetManagerId={fleetManager.id}
-              userId={user?.id || ""} 
+              userId={user?.id || ""}
+              onDocumentsSubmitted={fetchData}
             />
           </TabsContent>
         </Tabs>

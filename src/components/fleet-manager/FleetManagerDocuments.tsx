@@ -25,6 +25,7 @@ import { fr } from "date-fns/locale";
 interface FleetManagerDocumentsProps {
   fleetManagerId: string;
   userId: string;
+  onDocumentsSubmitted?: () => void;
 }
 
 interface DocumentInfo {
@@ -58,7 +59,7 @@ const REQUIRED_DOCUMENTS = [
   },
 ];
 
-export const FleetManagerDocuments = ({ fleetManagerId, userId }: FleetManagerDocumentsProps) => {
+export const FleetManagerDocuments = ({ fleetManagerId, userId, onDocumentsSubmitted }: FleetManagerDocumentsProps) => {
   const [documents, setDocuments] = useState<DocumentsData>({});
   const [documentsStatus, setDocumentsStatus] = useState<string>("pending");
   const [documentsDeadline, setDocumentsDeadline] = useState<string | null>(null);
@@ -152,7 +153,8 @@ export const FleetManagerDocuments = ({ fleetManagerId, userId }: FleetManagerDo
       setDocuments(newDocuments);
       if (allUploaded) {
         setDocumentsStatus("submitted");
-        toast.success("Tous les documents ont été soumis pour validation !");
+        toast.success("Tous les documents ont été soumis pour validation ! Vous avez maintenant accès à toutes les fonctionnalités.");
+        onDocumentsSubmitted?.();
       } else {
         toast.success("Document téléchargé avec succès");
       }
