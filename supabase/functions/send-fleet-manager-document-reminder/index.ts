@@ -10,8 +10,8 @@ const corsHeaders = {
 };
 
 interface ReminderRequest {
-  fleetManagerId?: string; // Optional: send to specific fleet manager
-  reminderType?: "registration" | "day3" | "day5" | "day7";
+  fleetManagerId?: string;
+  reminderType?: "day3" | "day5" | "day7";
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -55,7 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!fleetManagers || fleetManagers.length === 0) {
       console.log("No fleet managers need reminders");
       return new Response(
-        JSON.stringify({ success: true, message: "No reminders needed", sent: 0 }),
+        JSON.stringify({ success: true, message: "Aucune relance nécessaire", sent: 0 }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -69,37 +69,36 @@ const handler = async (req: Request): Promise<Response> => {
       const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
       const daysUntilDeadline = Math.floor((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Determine which reminder to send based on days since creation
       let shouldSend = false;
       let emailType = "";
       let subject = "";
       let urgencyLevel = "";
 
-      if (reminderType === "registration" || (daysSinceCreation === 0 && !reminderType)) {
-        shouldSend = true;
-        emailType = "registration";
-        subject = "⚠️ Important: Submit your documents within 7 days";
-        urgencyLevel = "normal";
-      } else if (reminderType === "day3" || (daysSinceCreation === 3 && !reminderType)) {
+      // Relance J+3 (4 jours restants)
+      if (reminderType === "day3" || (daysSinceCreation === 3 && !reminderType)) {
         shouldSend = true;
         emailType = "day3";
-        subject = "⚠️ Reminder: 4 days left to submit your documents";
+        subject = "⚠️ Rappel : Plus que 4 jours pour soumettre vos documents";
         urgencyLevel = "warning";
-      } else if (reminderType === "day5" || (daysSinceCreation === 5 && !reminderType)) {
+      } 
+      // Relance J+5 (2 jours restants)
+      else if (reminderType === "day5" || (daysSinceCreation === 5 && !reminderType)) {
         shouldSend = true;
         emailType = "day5";
-        subject = "🚨 URGENT: Only 2 days left to submit your documents!";
+        subject = "🚨 URGENT : Plus que 2 jours pour soumettre vos documents !";
         urgencyLevel = "urgent";
-      } else if (reminderType === "day7" || (daysSinceCreation >= 7 && !reminderType)) {
+      } 
+      // Relance J+7 (dernier jour/dépassé)
+      else if (reminderType === "day7" || (daysSinceCreation >= 7 && !reminderType)) {
         shouldSend = true;
         emailType = "day7";
-        subject = "🚨 FINAL WARNING: Submit your documents now to avoid suspension!";
+        subject = "🚨 DERNIER RAPPEL : Soumettez vos documents maintenant !";
         urgencyLevel = "critical";
       }
 
       if (!shouldSend) continue;
 
-      const deadlineFormatted = deadline.toLocaleDateString("en-US", {
+      const deadlineFormatted = deadline.toLocaleDateString("fr-FR", {
         weekday: "long",
         year: "numeric",
         month: "long",
@@ -113,83 +112,74 @@ const handler = async (req: Request): Promise<Response> => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   
   ${urgencyLevel === "critical" ? `
   <div style="background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">⚠️ FINAL WARNING ⚠️</h1>
-    <p style="margin: 10px 0 0;">Your account will be SUSPENDED if documents are not submitted!</p>
+    <h1 style="margin: 0; font-size: 24px;">⚠️ DERNIER RAPPEL ⚠️</h1>
+    <p style="margin: 10px 0 0;">Votre compte sera suspendu si les documents ne sont pas soumis !</p>
   </div>
   ` : urgencyLevel === "urgent" ? `
   <div style="background-color: #ea580c; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">🚨 URGENT REMINDER</h1>
-    <p style="margin: 10px 0 0;">Only ${daysUntilDeadline} days left!</p>
-  </div>
-  ` : urgencyLevel === "warning" ? `
-  <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">⚠️ Document Reminder</h1>
-    <p style="margin: 10px 0 0;">${daysUntilDeadline} days remaining</p>
+    <h1 style="margin: 0; font-size: 24px;">🚨 RAPPEL URGENT</h1>
+    <p style="margin: 10px 0 0;">Plus que ${daysUntilDeadline} jours !</p>
   </div>
   ` : `
-  <div style="background-color: #3b82f6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">Welcome to SoloCab!</h1>
-    <p style="margin: 10px 0 0;">Complete your registration</p>
+  <div style="background-color: #f59e0b; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">⚠️ Rappel Documents</h1>
+    <p style="margin: 10px 0 0;">${daysUntilDeadline} jours restants</p>
   </div>
   `}
 
   <div style="background-color: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
     
-    <p style="font-size: 16px;">Hello ${fm.contact_name},</p>
+    <p style="font-size: 16px;">Bonjour ${fm.contact_name},</p>
     
-    ${emailType === "registration" ? `
-    <p>Welcome to SoloCab Fleet Manager! Your account for <strong>${fm.company_name}</strong> has been created successfully.</p>
+    ${emailType === "day3" ? `
+    <p>Ceci est un rappel : il vous reste <strong>4 jours</strong> pour soumettre les documents requis pour <strong>${fm.company_name}</strong>.</p>
     
-    <p>To activate your account and start managing your drivers, you must submit the following documents <strong>within 7 days</strong>:</p>
-    ` : emailType === "day3" ? `
-    <p>This is a reminder that you have <strong>4 days left</strong> to submit your required documents for <strong>${fm.company_name}</strong>.</p>
-    
-    <p>The following documents are still required:</p>
+    <p>Les documents suivants sont toujours en attente :</p>
     ` : emailType === "day5" ? `
-    <p style="color: #ea580c; font-weight: bold;">URGENT: You have only <strong>2 days left</strong> to submit your documents for <strong>${fm.company_name}</strong>!</p>
+    <p style="color: #ea580c; font-weight: bold;">URGENT : Il ne vous reste plus que <strong>2 jours</strong> pour soumettre vos documents pour <strong>${fm.company_name}</strong> !</p>
     
-    <p>If documents are not submitted by the deadline, your account will be suspended.</p>
+    <p>Si les documents ne sont pas soumis avant la date limite, votre compte sera suspendu.</p>
     
-    <p>Required documents:</p>
+    <p>Documents requis :</p>
     ` : `
-    <p style="color: #dc2626; font-weight: bold;">FINAL WARNING: Your deadline to submit documents has passed or is about to expire!</p>
+    <p style="color: #dc2626; font-weight: bold;">DERNIER RAPPEL : Votre délai pour soumettre les documents est dépassé ou sur le point d'expirer !</p>
     
-    <p>Your account for <strong>${fm.company_name}</strong> will be <strong>SUSPENDED IMMEDIATELY</strong> if you do not submit the required documents today.</p>
+    <p>Votre compte <strong>${fm.company_name}</strong> sera <strong>SUSPENDU IMMÉDIATEMENT</strong> si vous ne soumettez pas les documents requis aujourd'hui.</p>
     
-    <p>Required documents:</p>
+    <p>Documents requis :</p>
     `}
 
     <ul style="background-color: white; padding: 20px 20px 20px 40px; border-radius: 8px; border: 1px solid #e2e8f0;">
-      <li style="margin-bottom: 10px;"><strong>Kbis Extract</strong> - Company registration document (less than 3 months old)</li>
-      <li style="margin-bottom: 10px;"><strong>Transport Capacity Certificate</strong> - Passenger transport capacity attestation</li>
-      <li><strong>Insurance Certificate</strong> - Professional liability insurance</li>
+      <li style="margin-bottom: 10px;"><strong>Extrait Kbis</strong> - Document d'immatriculation de moins de 3 mois</li>
+      <li style="margin-bottom: 10px;"><strong>Attestation de capacité de transport</strong> - Pour le transport de personnes</li>
+      <li><strong>Attestation d'assurance</strong> - Responsabilité civile professionnelle</li>
     </ul>
 
     <div style="background-color: ${urgencyLevel === "critical" ? "#fef2f2" : urgencyLevel === "urgent" ? "#fff7ed" : "#fefce8"}; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${urgencyLevel === "critical" ? "#dc2626" : urgencyLevel === "urgent" ? "#ea580c" : "#f59e0b"};">
-      <p style="margin: 0; font-weight: bold;">📅 Deadline: ${deadlineFormatted}</p>
-      <p style="margin: 5px 0 0; font-size: 14px;">Time remaining: <strong>${daysUntilDeadline > 0 ? daysUntilDeadline + " days" : "EXPIRED"}</strong></p>
+      <p style="margin: 0; font-weight: bold;">📅 Date limite : ${deadlineFormatted}</p>
+      <p style="margin: 5px 0 0; font-size: 14px;">Temps restant : <strong>${daysUntilDeadline > 0 ? daysUntilDeadline + " jours" : "EXPIRÉ"}</strong></p>
     </div>
 
     <div style="text-align: center; margin: 30px 0;">
       <a href="https://solocab.fr/fleet-manager?tab=documents" 
          style="background-color: ${urgencyLevel === "critical" ? "#dc2626" : "#3b82f6"}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-        📁 UPLOAD DOCUMENTS NOW
+        📁 SOUMETTRE MES DOCUMENTS
       </a>
     </div>
 
     <p style="font-size: 14px; color: #64748b;">
-      If you have any questions about the required documents, please contact our support team.
+      Si vous avez des questions concernant les documents requis, n'hésitez pas à contacter notre équipe support.
     </p>
 
     <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
 
     <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-      This is an automated message from SoloCab Fleet Management.<br>
-      © ${new Date().getFullYear()} SoloCab - All rights reserved
+      Ce message est un email automatique de SoloCab.<br>
+      © ${new Date().getFullYear()} SoloCab - Tous droits réservés
     </p>
   </div>
 </body>
@@ -204,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
           html: emailHtml,
         });
 
-        console.log(`Reminder sent to ${fm.contact_email}:`, emailResponse);
+        console.log(`✅ Rappel envoyé à ${fm.contact_email}:`, emailResponse);
         results.push({
           fleetManagerId: fm.id,
           email: fm.contact_email,
@@ -212,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
           success: true,
         });
       } catch (emailError: any) {
-        console.error(`Failed to send email to ${fm.contact_email}:`, emailError);
+        console.error(`❌ Échec envoi email à ${fm.contact_email}:`, emailError);
         results.push({
           fleetManagerId: fm.id,
           email: fm.contact_email,

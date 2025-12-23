@@ -108,6 +108,9 @@ verify_jwt = false
 [functions.send-fleet-manager-document-reminder]
 verify_jwt = true
 
+[functions.send-fleet-manager-welcome]
+verify_jwt = true
+
 [functions.create-fleet-manager-subscription]
 verify_jwt = true
 
