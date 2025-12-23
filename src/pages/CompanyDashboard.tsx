@@ -19,6 +19,7 @@ import {
   Plus,
   XCircle,
   Receipt,
+  CreditCard,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
@@ -27,6 +28,7 @@ import { CompanyCoursesList } from "@/components/company/CompanyCoursesList";
 import { CompanyDevisList } from "@/components/company/CompanyDevisList";
 import { CompanyFacturesList } from "@/components/company/CompanyFacturesList";
 import { CompanyBillingSettings } from "@/components/company/CompanyBillingSettings";
+import { CompanyPaymentsDue } from "@/components/company/CompanyPaymentsDue";
 
 interface Company {
   id: string;
@@ -149,11 +151,12 @@ export default function CompanyDashboard() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="overview"><Building2 className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="reservations"><Calendar className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="devis"><FileText className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="invoices"><Receipt className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="payments"><CreditCard className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="drivers"><Car className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="employees"><Users className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="settings"><Settings className="w-4 h-4" /></TabsTrigger>
@@ -226,6 +229,10 @@ export default function CompanyDashboard() {
 
           <TabsContent value="invoices">
             <CompanyFacturesList companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <CompanyPaymentsDue companyId={company.id} />
           </TabsContent>
 
           <TabsContent value="drivers">
