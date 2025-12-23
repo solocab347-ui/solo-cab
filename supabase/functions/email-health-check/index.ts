@@ -116,22 +116,49 @@ serve(async (req) => {
     };
 
     // ===== CHECK 6: TEST ENVOI RÉEL (optionnel) =====
-    const { test_send } = await req.json().catch(() => ({ test_send: false }));
+    const body = await req.json().catch(() => ({}));
+    const { test_send, test_email } = body;
     
-    if (test_send) {
-      console.log("[EMAIL-HEALTH] 📧 Test envoi email réel...");
+    if (test_send || test_email) {
+      const targetEmail = test_email || "alexandrediarra00@gmail.com";
+      console.log("[EMAIL-HEALTH] 📧 Test envoi email réel vers:", targetEmail);
       try {
         const resend = new Resend(resendKey);
         
         const result = await resend.emails.send({
           from: "SoloCab Health Check <noreply@solocab.fr>",
-          to: ["alexandrediarra00@gmail.com"],
+          to: [targetEmail],
           subject: "🩺 Test Système Emails SoloCab",
           html: `
-            <h1>Test Réussi ✅</h1>
-            <p>Le système d'emails SoloCab fonctionne correctement.</p>
-            <p><strong>Timestamp:</strong> ${diagnostics.timestamp}</p>
-            <p><strong>Tous les checks:</strong> ${diagnostics.status === "healthy" ? "✅ Passés" : "⚠️ Avec warnings"}</p>
+            <!DOCTYPE html>
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 12px; text-align: center;">
+                <h1 style="margin: 0;">✅ Test Réussi</h1>
+              </div>
+              <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 12px 12px;">
+                <p>Le système d'emails SoloCab fonctionne correctement.</p>
+                <table style="width: 100%; font-size: 14px;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Timestamp:</td>
+                    <td style="padding: 8px 0;"><strong>${diagnostics.timestamp}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Status:</td>
+                    <td style="padding: 8px 0;"><strong>${diagnostics.status === "healthy" ? "✅ Tous les checks passés" : "⚠️ Avec warnings"}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Destinataire test:</td>
+                    <td style="padding: 8px 0;"><strong>${targetEmail}</strong></td>
+                  </tr>
+                </table>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                  SoloCab - Plateforme de gestion VTC<br>www.solocab.fr
+                </p>
+              </div>
+            </body>
+            </html>
           `
         });
 
@@ -139,9 +166,10 @@ serve(async (req) => {
 
         diagnostics.checks.test_email = {
           status: "ok",
-          message: "Email de test envoyé avec succès",
+          message: `Email de test envoyé avec succès à ${targetEmail}`,
           email_id: result.data?.id
         };
+        console.log("[EMAIL-HEALTH] ✅ Email envoyé, ID:", result.data?.id);
       } catch (error: any) {
         diagnostics.checks.test_email = {
           status: "error",
@@ -149,6 +177,7 @@ serve(async (req) => {
         };
         diagnostics.errors.push(`Test email échoué: ${error.message}`);
         diagnostics.status = "unhealthy";
+        console.error("[EMAIL-HEALTH] ❌ Erreur envoi:", error.message);
       }
     }
 
