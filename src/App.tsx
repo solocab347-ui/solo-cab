@@ -42,6 +42,7 @@ const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
 const CompanyEmployeeDashboard = lazy(() => import("./pages/CompanyEmployeeDashboard"));
 const FleetManagerDashboard = lazy(() => import("./pages/FleetManagerDashboard"));
 const FleetClientDashboard = lazy(() => import("./pages/FleetClientDashboard"));
+const CreateCompanyCourse = lazy(() => import("./pages/CreateCompanyCourse"));
 
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
