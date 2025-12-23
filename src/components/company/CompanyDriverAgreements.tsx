@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Plus, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Eye, EyeOff, Car, Star, Settings } from "lucide-react";
 
 interface CompanyDriverAgreementsProps {
   companyId: string;
@@ -42,6 +44,42 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const [creditLimit, setCreditLimit] = useState(0);
   const [discountPercentage, setDiscountPercentage] = useState(0);
   const [notes, setNotes] = useState("");
+  const [selectedProposal, setSelectedProposal] = useState<any>(null);
+  const [showProposalDetails, setShowProposalDetails] = useState(false);
+
+  // Fetch company settings
+  const { data: company } = useQuery({
+    queryKey: ["company-settings", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("visible_to_drivers, accepting_proposals")
+        .eq("id", companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Update visibility settings
+  const updateVisibility = useMutation({
+    mutationFn: async (settings: { visible_to_drivers?: boolean; accepting_proposals?: boolean }) => {
+      const { error } = await supabase
+        .from("companies")
+        .update(settings)
+        .eq("id", companyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Paramètres mis à jour");
+      queryClient.invalidateQueries({ queryKey: ["company-settings"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour");
+    },
+  });
 
   // Fetch existing agreements
   const { data: agreements, isLoading: loadingAgreements } = useQuery({
@@ -200,8 +238,107 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     );
   }
 
+  // Separate proposals from drivers (pending, proposed_by = 'driver')
+  const driverProposals = agreements?.filter((a: any) => a.status === "pending" && a.proposed_by === "driver") || [];
+  const companyProposals = agreements?.filter((a: any) => a.status === "pending" && a.proposed_by === "company") || [];
+  const activeAgreements = agreements?.filter((a: any) => a.status === "accepted") || [];
+  const otherAgreements = agreements?.filter((a: any) => !["pending", "accepted"].includes(a.status)) || [];
+
+  // Accept driver proposal
+  const acceptProposal = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          status: "accepted",
+          company_signed: true,
+          company_signed_at: new Date().toISOString(),
+          accepted_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Partenariat accepté !");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      setShowProposalDetails(false);
+      setSelectedProposal(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'acceptation");
+    },
+  });
+
+  // Reject driver proposal
+  const rejectProposal = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          status: "rejected",
+          rejected_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Proposition refusée");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      setShowProposalDetails(false);
+      setSelectedProposal(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors du refus");
+    },
+  });
+
   return (
     <div className="space-y-6">
+      {/* Visibility Settings */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-muted-foreground" />
+              <h3 className="font-medium">Paramètres de visibilité</h3>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="flex items-center gap-2">
+                  {company?.visible_to_drivers ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  Visible par les chauffeurs
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Les chauffeurs peuvent voir votre entreprise et vous proposer leurs services
+                </p>
+              </div>
+              <Switch
+                checked={company?.visible_to_drivers || false}
+                onCheckedChange={(checked) => updateVisibility.mutate({ visible_to_drivers: checked })}
+              />
+            </div>
+            {company?.visible_to_drivers && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Accepter les propositions</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permettre aux chauffeurs de vous envoyer des propositions de partenariat
+                  </p>
+                </div>
+                <Switch
+                  checked={company?.accepting_proposals || false}
+                  onCheckedChange={(checked) => updateVisibility.mutate({ accepting_proposals: checked })}
+                />
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-semibold">Partenariats Chauffeurs</h2>
@@ -405,6 +542,59 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         </Dialog>
       </div>
 
+      {/* Driver Proposals - Highlighted */}
+      {driverProposals.length > 0 && (
+        <Card className="border-primary border-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-primary">
+              <AlertCircle className="w-5 h-5" />
+              Propositions de chauffeurs ({driverProposals.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {driverProposals.map((proposal: any) => (
+              <div
+                key={proposal.id}
+                className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                onClick={() => {
+                  setSelectedProposal(proposal);
+                  setShowProposalDetails(true);
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                      {proposal.driverProfile?.profile_photo_url ? (
+                        <img
+                          src={proposal.driverProfile.profile_photo_url}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <Car className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{proposal.driverProfile?.full_name || "Chauffeur"}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {proposal.driver?.company_name} • {proposal.driver?.vehicle_brand} {proposal.driver?.vehicle_model}
+                      </p>
+                      {proposal.driver?.rating && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-3 h-3 text-yellow-500" />
+                          <span className="text-xs">{proposal.driver.rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Badge className="bg-yellow-500">Nouvelle</Badge>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Agreements List */}
       {agreements?.length === 0 ? (
         <Card>
@@ -418,7 +608,8 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         </Card>
       ) : (
         <div className="grid gap-4">
-          {agreements?.map((agreement: any) => (
+          {/* Active agreements */}
+          {activeAgreements.map((agreement: any) => (
             <Card key={agreement.id}>
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
@@ -474,8 +665,191 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
               </CardContent>
             </Card>
           ))}
+
+          {/* Company pending proposals */}
+          {companyProposals.map((agreement: any) => (
+            <Card key={agreement.id} className="opacity-75">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                      <span className="text-lg">🚗</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">
+                        {agreement.driverProfile?.full_name || "Chauffeur"}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {agreement.driver?.company_name}
+                      </p>
+                    </div>
+                  </div>
+                  {getStatusBadge(agreement.status)}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
+      {/* Proposal Details Dialog */}
+      <Dialog open={showProposalDetails} onOpenChange={setShowProposalDetails}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Car className="w-5 h-5" />
+              Proposition de partenariat
+            </DialogTitle>
+            <DialogDescription>
+              {selectedProposal?.driverProfile?.full_name} vous propose ses services
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedProposal && (
+            <div className="space-y-6 py-4">
+              {/* Driver Info */}
+              <div className="flex gap-4 p-4 bg-muted rounded-lg">
+                <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center overflow-hidden">
+                  {selectedProposal.driverProfile?.profile_photo_url ? (
+                    <img
+                      src={selectedProposal.driverProfile.profile_photo_url}
+                      alt=""
+                      className="w-16 h-16 object-cover"
+                    />
+                  ) : (
+                    <Car className="w-8 h-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{selectedProposal.driverProfile?.full_name}</h3>
+                  <p className="text-muted-foreground">{selectedProposal.driver?.company_name}</p>
+                  {selectedProposal.driver?.rating && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      <span>{selectedProposal.driver.rating.toFixed(1)}/5</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Vehicle Info */}
+              {selectedProposal.driver_vehicle_info && (
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Car className="w-4 h-4" />
+                    Véhicule
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Modèle:</span>{" "}
+                      {selectedProposal.driver_vehicle_info.brand} {selectedProposal.driver_vehicle_info.model}
+                    </div>
+                    {selectedProposal.driver_vehicle_info.year && (
+                      <div>
+                        <span className="text-muted-foreground">Année:</span>{" "}
+                        {selectedProposal.driver_vehicle_info.year}
+                      </div>
+                    )}
+                    {selectedProposal.driver_vehicle_info.color && (
+                      <div>
+                        <span className="text-muted-foreground">Couleur:</span>{" "}
+                        {selectedProposal.driver_vehicle_info.color}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground">Passagers max:</span>{" "}
+                      {selectedProposal.driver_vehicle_info.max_passengers}
+                    </div>
+                  </div>
+                  {selectedProposal.driver_vehicle_info.equipment?.length > 0 && (
+                    <div className="mt-3">
+                      <span className="text-sm text-muted-foreground">Équipements:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedProposal.driver_vehicle_info.equipment.map((eq: string) => (
+                          <Badge key={eq} variant="outline" className="text-xs">
+                            {eq}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Driver Presentation */}
+              {selectedProposal.driver_presentation && (
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">Présentation</h4>
+                  <p className="text-sm whitespace-pre-wrap">{selectedProposal.driver_presentation}</p>
+                </div>
+              )}
+
+              {/* Payment Conditions */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 bg-muted rounded-lg">
+                  <h5 className="font-medium mb-2 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Modes de paiement acceptés
+                  </h5>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProposal.payment_methods?.map((method: string) => (
+                      <Badge key={method} variant="secondary">
+                        {PAYMENT_METHODS.find((m) => m.value === method)?.icon}{" "}
+                        {PAYMENT_METHODS.find((m) => m.value === method)?.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <h5 className="font-medium mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Fréquence de paiement
+                  </h5>
+                  <p className="font-semibold">
+                    {PAYMENT_FREQUENCIES.find((f) => f.value === selectedProposal.payment_frequency)?.label}
+                  </p>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedProposal.notes && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Conditions supplémentaires</h4>
+                  <p className="text-sm">{selectedProposal.notes}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => rejectProposal.mutate(selectedProposal.id)}
+                  disabled={rejectProposal.isPending}
+                >
+                  {rejectProposal.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <XCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Refuser
+                </Button>
+                <Button
+                  onClick={() => acceptProposal.mutate(selectedProposal.id)}
+                  disabled={acceptProposal.isPending}
+                >
+                  {acceptProposal.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Accepter le partenariat
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

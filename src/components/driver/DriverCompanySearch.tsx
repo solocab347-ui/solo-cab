@@ -1,0 +1,502 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase } from "lucide-react";
+
+interface DriverCompanySearchProps {
+  driverId: string;
+}
+
+const PAYMENT_METHODS = [
+  { value: "card", label: "Carte bancaire", icon: "💳" },
+  { value: "payment_link", label: "Lien de paiement", icon: "🔗" },
+  { value: "cash", label: "Espèces", icon: "💵" },
+  { value: "bank_transfer", label: "Virement bancaire", icon: "🏦" },
+];
+
+const PAYMENT_FREQUENCIES = [
+  { value: "per_course", label: "À la course", description: "Paiement après chaque course" },
+  { value: "weekly", label: "Hebdomadaire", description: "Paiement chaque semaine" },
+  { value: "monthly", label: "Mensuel", description: "Paiement chaque mois" },
+  { value: "mixed", label: "Mixte", description: "Selon l'accord" },
+];
+
+export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  
+  // Proposal form state
+  const [presentation, setPresentation] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["card"]);
+  const [paymentFrequency, setPaymentFrequency] = useState("per_course");
+  const [paymentDay, setPaymentDay] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+
+  // Fetch driver profile for auto-fill
+  const { data: driverProfile } = useQuery({
+    queryKey: ["driver-profile", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select(`
+          *,
+          profile:profiles!drivers_user_id_fkey(
+            full_name,
+            phone,
+            email,
+            profile_photo_url
+          )
+        `)
+        .eq("id", driverId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch visible companies
+  const { data: companies, isLoading } = useQuery({
+    queryKey: ["visible-companies", searchTerm],
+    queryFn: async () => {
+      let query = supabase
+        .from("companies")
+        .select("*")
+        .eq("visible_to_drivers", true)
+        .eq("status", "active")
+        .eq("accepting_proposals", true);
+
+      if (searchTerm) {
+        query = query.or(`company_name.ilike.%${searchTerm}%,contact_name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query.order("company_name").limit(20);
+      if (error) throw error;
+      return data;
+    },
+    enabled: true,
+  });
+
+  // Check existing proposals
+  const { data: existingProposals } = useQuery({
+    queryKey: ["driver-company-proposals", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("company_driver_agreements")
+        .select("company_id, status")
+        .eq("driver_id", driverId);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Send proposal mutation
+  const sendProposal = useMutation({
+    mutationFn: async (companyId: string) => {
+      const vehicleInfo = {
+        model: driverProfile?.vehicle_model,
+        brand: driverProfile?.vehicle_brand,
+        color: driverProfile?.vehicle_color,
+        year: driverProfile?.vehicle_year,
+        equipment: driverProfile?.vehicle_equipment,
+        max_passengers: driverProfile?.max_passengers,
+      };
+
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .insert({
+          company_id: companyId,
+          driver_id: driverId,
+          proposed_by: "driver",
+          status: "pending",
+          payment_methods: paymentMethods,
+          payment_frequency: paymentFrequency,
+          payment_day: paymentDay,
+          notes: notes,
+          driver_presentation: presentation,
+          driver_services_offered: driverProfile?.services_offered || [],
+          driver_vehicle_info: vehicleInfo,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Proposition de partenariat envoyée !");
+      queryClient.invalidateQueries({ queryKey: ["driver-company-proposals"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
+      resetForm();
+      setShowProposalDialog(false);
+      setSelectedCompany(null);
+    },
+    onError: (error: any) => {
+      toast.error("Erreur lors de l'envoi: " + error.message);
+    },
+  });
+
+  const resetForm = () => {
+    setPresentation("");
+    setPaymentMethods(["card"]);
+    setPaymentFrequency("per_course");
+    setPaymentDay(null);
+    setNotes("");
+  };
+
+  const getProposalStatus = (companyId: string) => {
+    const existing = existingProposals?.find((p) => p.company_id === companyId);
+    return existing?.status;
+  };
+
+  const handleOpenProposal = (company: any) => {
+    setSelectedCompany(company);
+    // Pre-fill presentation with driver info
+    if (driverProfile) {
+      const defaultPresentation = `Bonjour,
+
+Je suis ${driverProfile.profile?.full_name || "chauffeur VTC"} et je vous propose mes services de transport.
+
+${driverProfile.bio ? `À propos de moi: ${driverProfile.bio}` : ""}
+${driverProfile.service_description ? `Mes services: ${driverProfile.service_description}` : ""}
+
+Je suis disponible pour discuter de vos besoins de transport et établir un partenariat de confiance.
+
+Cordialement.`;
+      setPresentation(defaultPresentation);
+    }
+    setShowProposalDialog(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Search className="w-5 h-5" />
+          Rechercher des entreprises
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Trouvez des entreprises et proposez vos services de transport
+        </p>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Input
+          placeholder="Rechercher par nom, contact ou adresse..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : companies && companies.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {companies.map((company: any) => {
+            const proposalStatus = getProposalStatus(company.id);
+            const hasProposal = !!proposalStatus;
+
+            return (
+              <Card key={company.id} className={hasProposal ? "opacity-75" : ""}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        {company.company_name}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Contact: {company.contact_name}
+                      </p>
+                    </div>
+                    {hasProposal && (
+                      <Badge 
+                        className={
+                          proposalStatus === "accepted" 
+                            ? "bg-green-500" 
+                            : proposalStatus === "rejected" 
+                            ? "bg-red-500" 
+                            : "bg-yellow-500"
+                        }
+                      >
+                        {proposalStatus === "accepted" 
+                          ? "Partenaire" 
+                          : proposalStatus === "rejected" 
+                          ? "Refusé" 
+                          : "En attente"}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                    {company.address && (
+                      <p className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        {company.address}
+                      </p>
+                    )}
+                    {company.contact_phone && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        {company.contact_phone}
+                      </p>
+                    )}
+                    {company.contact_email && (
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {company.contact_email}
+                      </p>
+                    )}
+                  </div>
+
+                  {company.employee_count && (
+                    <Badge variant="secondary" className="mb-4">
+                      <Users className="w-3 h-3 mr-1" />
+                      {company.employee_count} employés
+                    </Badge>
+                  )}
+
+                  <Button
+                    className="w-full"
+                    onClick={() => handleOpenProposal(company)}
+                    disabled={hasProposal}
+                  >
+                    {hasProposal ? (
+                      proposalStatus === "accepted" ? "Partenariat actif" : "Proposition envoyée"
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Proposer mes services
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="font-semibold mb-2">
+              {searchTerm ? "Aucune entreprise trouvée" : "Aucune entreprise visible"}
+            </h3>
+            <p className="text-muted-foreground">
+              {searchTerm 
+                ? "Essayez avec d'autres termes de recherche"
+                : "Les entreprises peuvent choisir d'être visibles ou non pour les chauffeurs"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Proposal Dialog */}
+      <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5" />
+              Proposer un partenariat
+            </DialogTitle>
+            <DialogDescription>
+              Envoyez une proposition à {selectedCompany?.company_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Auto-filled vehicle info */}
+            {driverProfile && (
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Car className="w-4 h-4" />
+                  Informations véhicule (auto-renseignées)
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Véhicule:</span>{" "}
+                    {driverProfile.vehicle_brand} {driverProfile.vehicle_model}
+                  </div>
+                  {driverProfile.vehicle_year && (
+                    <div>
+                      <span className="text-muted-foreground">Année:</span>{" "}
+                      {driverProfile.vehicle_year}
+                    </div>
+                  )}
+                  {driverProfile.vehicle_color && (
+                    <div>
+                      <span className="text-muted-foreground">Couleur:</span>{" "}
+                      {driverProfile.vehicle_color}
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-muted-foreground">Passagers max:</span>{" "}
+                    {driverProfile.max_passengers}
+                  </div>
+                </div>
+                {driverProfile.vehicle_equipment && driverProfile.vehicle_equipment.length > 0 && (
+                  <div className="mt-3">
+                    <span className="text-sm text-muted-foreground">Équipements:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {driverProfile.vehicle_equipment.map((eq: string) => (
+                        <Badge key={eq} variant="outline" className="text-xs">
+                          {eq}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {driverProfile.rating && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium">{driverProfile.rating.toFixed(1)}/5</span>
+                    <span className="text-muted-foreground">({driverProfile.total_rides} courses)</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Presentation */}
+            <div className="space-y-2">
+              <Label htmlFor="presentation">Votre présentation</Label>
+              <Textarea
+                id="presentation"
+                placeholder="Présentez-vous et décrivez vos services..."
+                value={presentation}
+                onChange={(e) => setPresentation(e.target.value)}
+                rows={6}
+              />
+              <p className="text-xs text-muted-foreground">
+                Personnalisez ce message pour vous présenter à l'entreprise
+              </p>
+            </div>
+
+            {/* Payment Methods */}
+            <div className="space-y-3">
+              <Label>Modes de paiement acceptés</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {PAYMENT_METHODS.map((method) => (
+                  <div key={method.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`method-${method.value}`}
+                      checked={paymentMethods.includes(method.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setPaymentMethods([...paymentMethods, method.value]);
+                        } else {
+                          setPaymentMethods(paymentMethods.filter((m) => m !== method.value));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`method-${method.value}`} className="flex items-center gap-2 cursor-pointer">
+                      <span>{method.icon}</span>
+                      {method.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Frequency */}
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Fréquence de paiement souhaitée</Label>
+              <Select value={paymentFrequency} onValueChange={setPaymentFrequency}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_FREQUENCIES.map((freq) => (
+                    <SelectItem key={freq.value} value={freq.value}>
+                      <div>
+                        <span className="font-medium">{freq.label}</span>
+                        <span className="text-muted-foreground ml-2">- {freq.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Payment Day */}
+            {(paymentFrequency === "weekly" || paymentFrequency === "monthly") && (
+              <div className="space-y-2">
+                <Label htmlFor="paymentDay">
+                  {paymentFrequency === "weekly" ? "Jour de paiement" : "Jour du mois"}
+                </Label>
+                <Select 
+                  value={paymentDay?.toString() || ""} 
+                  onValueChange={(v) => setPaymentDay(v ? parseInt(v) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentFrequency === "weekly" ? (
+                      ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"].map((day, idx) => (
+                        <SelectItem key={idx + 1} value={(idx + 1).toString()}>
+                          {day}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      Array.from({ length: 28 }, (_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          Le {i + 1}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Additional Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Conditions supplémentaires (optionnel)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Ex: Disponibilité, zones desservies, tarifs spéciaux..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 justify-end pt-4 border-t">
+              <Button variant="outline" onClick={() => setShowProposalDialog(false)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => selectedCompany && sendProposal.mutate(selectedCompany.id)}
+                disabled={sendProposal.isPending || !presentation.trim() || paymentMethods.length === 0}
+              >
+                {sendProposal.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 mr-2" />
+                )}
+                Envoyer la proposition
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
