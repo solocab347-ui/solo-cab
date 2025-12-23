@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
 import {
@@ -15,17 +14,19 @@ import {
   Users,
   Settings,
   LogOut,
-  MapPin,
   Calendar,
   Euro,
   Plus,
-  Clock,
-  CheckCircle,
   XCircle,
+  Receipt,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
 import { CompanyDriverAgreements } from "@/components/company/CompanyDriverAgreements";
+import { CompanyCoursesList } from "@/components/company/CompanyCoursesList";
+import { CompanyDevisList } from "@/components/company/CompanyDevisList";
+import { CompanyFacturesList } from "@/components/company/CompanyFacturesList";
+import { CompanyBillingSettings } from "@/components/company/CompanyBillingSettings";
 
 interface Company {
   id: string;
@@ -42,15 +43,22 @@ interface Company {
 export default function CompanyDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
+  const [stats, setStats] = useState({ courses: 0, spent: 0, drivers: 0, employees: 0 });
 
   useEffect(() => {
     if (user) {
       fetchCompanyProfile();
     }
   }, [user]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
 
   const fetchCompanyProfile = async () => {
     try {
@@ -62,6 +70,22 @@ export default function CompanyDashboard() {
 
       if (error) throw error;
       setCompany(data);
+
+      // Fetch stats
+      if (data) {
+        const [coursesRes, driversRes, employeesRes] = await Promise.all([
+          supabase.from("company_courses").select("course_id").eq("company_id", data.id),
+          supabase.from("company_driver_agreements").select("id").eq("company_id", data.id).eq("status", "active"),
+          supabase.from("company_employees").select("id").eq("company_id", data.id).eq("is_active", true),
+        ]);
+
+        setStats({
+          courses: coursesRes.data?.length || 0,
+          spent: 0,
+          drivers: driversRes.data?.length || 0,
+          employees: employeesRes.data?.length || 0,
+        });
+      }
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Erreur lors du chargement du profil");
@@ -71,12 +95,12 @@ export default function CompanyDashboard() {
   };
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate("/");
-    } catch (error) {
-      toast.error("Erreur lors de la déconnexion");
-    }
+    await signOut();
+    navigate("/");
+  };
+
+  const handleCreateCourse = () => {
+    navigate("/chauffeurs");
   };
 
   if (loading) {
@@ -94,9 +118,7 @@ export default function CompanyDashboard() {
           <CardContent className="pt-6 text-center">
             <XCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
             <h2 className="text-xl font-semibold mb-2">Profil non trouvé</h2>
-            <p className="text-muted-foreground mb-4">
-              Votre profil entreprise n'a pas été trouvé.
-            </p>
+            <p className="text-muted-foreground mb-4">Votre profil entreprise n'a pas été trouvé.</p>
             <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
           </CardContent>
         </Card>
@@ -104,11 +126,8 @@ export default function CompanyDashboard() {
     );
   }
 
-  // Les entreprises sont validées automatiquement - pas de blocage
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -128,77 +147,54 @@ export default function CompanyDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6 mb-6">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Vue d'ensemble</span>
-            </TabsTrigger>
-            <TabsTrigger value="employees" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Collaborateurs</span>
-            </TabsTrigger>
-            <TabsTrigger value="reservations" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Réservations</span>
-            </TabsTrigger>
-            <TabsTrigger value="drivers" className="flex items-center gap-2">
-              <Car className="w-4 h-4" />
-              <span className="hidden sm:inline">Chauffeurs</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Factures</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Paramètres</span>
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7 mb-6">
+            <TabsTrigger value="overview"><Building2 className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="reservations"><Calendar className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="devis"><FileText className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="invoices"><Receipt className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="drivers"><Car className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="employees"><Users className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="settings"><Settings className="w-4 h-4" /></TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Courses ce mois</CardTitle>
+                  <CardTitle className="text-sm font-medium">Courses</CardTitle>
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">0</div>
-                  <p className="text-xs text-muted-foreground">Réservations confirmées</p>
+                  <div className="text-2xl font-bold">{stats.courses}</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Dépenses du mois</CardTitle>
+                  <CardTitle className="text-sm font-medium">Chauffeurs</CardTitle>
+                  <Car className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.drivers}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Collaborateurs</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.employees}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Dépenses</CardTitle>
                   <Euro className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">0 €</div>
-                  <p className="text-xs text-muted-foreground">Total facturé</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Chauffeurs favoris</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">0</div>
-                  <p className="text-xs text-muted-foreground">Partenaires actifs</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Employés</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">0</div>
-                  <p className="text-xs text-muted-foreground">Utilisateurs autorisés</p>
+                  <div className="text-2xl font-bold">{stats.spent} €</div>
                 </CardContent>
               </Card>
             </div>
@@ -206,135 +202,42 @@ export default function CompanyDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Actions rapides</CardTitle>
-                <CardDescription>Gérez vos réservations et vos chauffeurs</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
-                <Button className="h-24 flex-col" onClick={() => navigate("/chauffeurs")}>
+                <Button className="h-24 flex-col" onClick={handleCreateCourse}>
                   <Plus className="w-6 h-6 mb-2" />
                   Nouvelle réservation
                 </Button>
                 <Button variant="outline" className="h-24 flex-col" onClick={() => setActiveTab("drivers")}>
                   <Car className="w-6 h-6 mb-2" />
-                  Gérer mes chauffeurs
+                  Gérer les chauffeurs
                 </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Employees Tab */}
+          <TabsContent value="reservations">
+            <CompanyCoursesList companyId={company.id} onCreateCourse={handleCreateCourse} />
+          </TabsContent>
+
+          <TabsContent value="devis">
+            <CompanyDevisList companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="invoices">
+            <CompanyFacturesList companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="drivers">
+            <CompanyDriverAgreements companyId={company.id} />
+          </TabsContent>
+
           <TabsContent value="employees">
             <CompanyEmployeesManager companyId={company.id} />
           </TabsContent>
 
-          {/* Reservations Tab */}
-          <TabsContent value="reservations">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mes réservations</CardTitle>
-                <CardDescription>Historique et réservations en cours</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12">
-                <Calendar className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune réservation</h3>
-                <p className="text-muted-foreground mb-4">
-                  Vous n'avez pas encore de réservation.
-                </p>
-                <Button onClick={() => navigate("/chauffeurs")}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Créer une réservation
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Drivers Tab */}
-          <TabsContent value="drivers">
-            <div className="space-y-6">
-              <CompanyDriverAgreements companyId={company.id} />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Rechercher des chauffeurs</CardTitle>
-                  <CardDescription>Trouvez de nouveaux chauffeurs partenaires</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center py-8">
-                  <Button onClick={() => navigate("/chauffeurs")}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Trouver des chauffeurs
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Invoices Tab */}
-          <TabsContent value="invoices">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mes factures</CardTitle>
-                <CardDescription>Téléchargez vos justificatifs</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12">
-                <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune facture</h3>
-                <p className="text-muted-foreground">
-                  Vos factures apparaîtront ici après vos premières courses.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Settings Tab */}
           <TabsContent value="settings">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informations entreprise</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Raison sociale</p>
-                    <p className="font-medium">{company.company_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">SIRET</p>
-                    <p className="font-medium">{company.siret}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Adresse</p>
-                    <p className="font-medium">{company.address}</p>
-                  </div>
-                  {company.billing_address && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Adresse de facturation</p>
-                      <p className="font-medium">{company.billing_address}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contact principal</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nom</p>
-                    <p className="font-medium">{company.contact_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{company.contact_email}</p>
-                  </div>
-                  {company.contact_phone && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Téléphone</p>
-                      <p className="font-medium">{company.contact_phone}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <CompanyBillingSettings companyId={company.id} initialData={company} />
           </TabsContent>
         </Tabs>
       </main>

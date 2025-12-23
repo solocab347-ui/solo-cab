@@ -1,0 +1,402 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { subscriptionManager } from "@/lib/subscriptionManager";
+import { toast } from "sonner";
+import { 
+  MapPin, 
+  Calendar, 
+  Users, 
+  XCircle, 
+  Car, 
+  Clock, 
+  CheckCircle, 
+  FileText,
+  Download,
+  Plus,
+  Euro,
+  Phone
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import jsPDF from "jspdf";
+import { useNavigate } from "react-router-dom";
+
+interface CompanyCoursesListProps {
+  companyId: string;
+  onCreateCourse: () => void;
+}
+
+export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCoursesListProps) => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("pending");
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchCourses();
+    const unsubscribe = setupRealtimeSubscription();
+    return () => unsubscribe?.();
+  }, [companyId]);
+
+  const fetchCourses = async () => {
+    try {
+      // Récupérer les courses liées à l'entreprise via company_courses
+      const { data, error } = await supabase
+        .from("company_courses")
+        .select(`
+          id,
+          invoice_to_company,
+          employee_id,
+          approved_at,
+          courses:course_id(
+            *,
+            drivers(
+              id,
+              company_name,
+              vehicle_model,
+              vehicle_color,
+              profiles:user_id(full_name, phone, profile_photo_url)
+            ),
+            devis(
+              id,
+              quote_number,
+              amount,
+              status,
+              base_price,
+              distance_price,
+              time_price,
+              valid_until
+            ),
+            factures(
+              id,
+              invoice_number,
+              invoice_number_generated,
+              amount,
+              payment_status,
+              payment_method
+            )
+          ),
+          company_employees:employee_id(
+            profiles:user_id(full_name)
+          )
+        `)
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Transformer les données pour les rendre plus faciles à utiliser
+      const transformedCourses = (data || []).map((item: any) => ({
+        ...item.courses,
+        company_course_id: item.id,
+        invoice_to_company: item.invoice_to_company,
+        employee_name: item.company_employees?.profiles?.full_name,
+        approved_at: item.approved_at
+      }));
+
+      setCourses(transformedCourses);
+    } catch (error: any) {
+      console.error("Error fetching courses:", error);
+      toast.error("Erreur lors du chargement des courses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupRealtimeSubscription = () => {
+    if (!companyId) return () => {};
+
+    return subscriptionManager.subscribe(
+      `courses-company-${companyId}`,
+      {
+        table: "company_courses",
+        event: "*",
+        filter: `company_id=eq.${companyId}`,
+        debounceMs: 1000
+      },
+      () => fetchCourses()
+    );
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelCourseId) return;
+
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({ status: "cancelled" })
+        .eq("id", cancelCourseId);
+
+      if (error) throw error;
+      toast.success("Course annulée");
+      setCancelCourseId(null);
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error cancelling course:", error);
+      toast.error("Erreur lors de l'annulation");
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      accepted: "bg-green-500/10 text-green-500 border-green-500/20",
+      in_progress: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      completed: "bg-premium/10 text-premium border-premium/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+    };
+
+    const labels = {
+      pending: "En attente",
+      accepted: "Confirmée",
+      in_progress: "En cours",
+      completed: "Terminée",
+      cancelled: "Annulée",
+    };
+
+    return (
+      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
+        {labels[status as keyof typeof labels]}
+      </Badge>
+    );
+  };
+
+  const filterCourses = (tab: string) => {
+    switch (tab) {
+      case "pending":
+        return courses.filter(c => c.status === "pending");
+      case "upcoming":
+        return courses.filter(c => c.status === "accepted" && new Date(c.scheduled_date) > new Date());
+      case "completed":
+        return courses.filter(c => c.status === "completed");
+      case "cancelled":
+        return courses.filter(c => c.status === "cancelled");
+      default:
+        return courses;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Mes réservations</h2>
+          <p className="text-sm text-muted-foreground">Gérez les courses de votre entreprise</p>
+        </div>
+        <Button onClick={onCreateCourse}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nouvelle réservation
+        </Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="pending">
+            En attente ({filterCourses("pending").length})
+          </TabsTrigger>
+          <TabsTrigger value="upcoming">
+            À venir ({filterCourses("upcoming").length})
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Terminées ({filterCourses("completed").length})
+          </TabsTrigger>
+          <TabsTrigger value="cancelled">
+            Annulées ({filterCourses("cancelled").length})
+          </TabsTrigger>
+        </TabsList>
+
+        {["pending", "upcoming", "completed", "cancelled"].map((tab) => (
+          <TabsContent key={tab} value={tab}>
+            {filterCourses(tab).length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Calendar className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-medium mb-2">Aucune course</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {tab === "pending" && "Aucune course en attente de confirmation."}
+                    {tab === "upcoming" && "Aucune course à venir."}
+                    {tab === "completed" && "Aucune course terminée."}
+                    {tab === "cancelled" && "Aucune course annulée."}
+                  </p>
+                  {tab === "pending" && (
+                    <Button onClick={onCreateCourse}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Réserver une course
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filterCourses(tab).map((course) => (
+                  <Card key={course.id} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-3 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {getStatusBadge(course.status)}
+                            {course.employee_name && (
+                              <Badge variant="outline">
+                                Réservé par {course.employee_name}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-primary mt-1 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium">{course.pickup_address}</p>
+                              <p className="text-xs text-muted-foreground">Départ</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-destructive mt-1 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium">{course.destination_address}</p>
+                              <p className="text-xs text-muted-foreground">Arrivée</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="w-4 h-4" />
+                              {course.passengers_count} passager(s)
+                            </span>
+                            {course.distance_km && (
+                              <span className="flex items-center gap-1">
+                                <Car className="w-4 h-4" />
+                                {course.distance_km.toFixed(1)} km
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Info chauffeur */}
+                          {course.drivers && (
+                            <div className="flex items-center gap-3 pt-2 border-t">
+                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                                {course.drivers.profiles?.profile_photo_url ? (
+                                  <img 
+                                    src={course.drivers.profiles.profile_photo_url} 
+                                    alt="" 
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <Car className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">
+                                  {course.drivers.profiles?.full_name || course.drivers.company_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {course.drivers.vehicle_model} {course.drivers.vehicle_color && `- ${course.drivers.vehicle_color}`}
+                                </p>
+                              </div>
+                              {course.drivers.profiles?.phone && (
+                                <a 
+                                  href={`tel:${course.drivers.profiles.phone}`}
+                                  className="ml-auto p-2 rounded-full hover:bg-muted"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col gap-2 shrink-0">
+                          {/* Devis */}
+                          {course.devis && course.devis.length > 0 && (
+                            <div className="text-right">
+                              <p className="text-lg font-bold">
+                                {course.devis[0].amount.toFixed(2)} €
+                              </p>
+                              <Badge variant="outline" className="text-xs">
+                                Devis n°{course.devis[0].quote_number}
+                              </Badge>
+                            </div>
+                          )}
+
+                          {/* Facture */}
+                          {course.factures && course.factures.length > 0 && (
+                            <Badge 
+                              variant="outline" 
+                              className={course.factures[0].payment_status === 'paid' 
+                                ? "bg-green-500/10 text-green-500" 
+                                : "bg-yellow-500/10 text-yellow-500"
+                              }
+                            >
+                              {course.factures[0].payment_status === 'paid' ? 'Payée' : 'À payer'}
+                            </Badge>
+                          )}
+
+                          {/* Actions */}
+                          {course.status === "pending" && (
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => setCancelCourseId(course.id)}
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Annuler
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Dialog de confirmation d'annulation */}
+      <AlertDialog open={!!cancelCourseId} onOpenChange={() => setCancelCourseId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Annuler cette course ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le chauffeur sera notifié de l'annulation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Non, garder</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelConfirm} className="bg-destructive text-destructive-foreground">
+              Oui, annuler
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
