@@ -573,6 +573,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          accepting_proposals: boolean | null
           address: string
           billing_address: string | null
           company_name: string
@@ -591,8 +592,10 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          visible_to_drivers: boolean | null
         }
         Insert: {
+          accepting_proposals?: boolean | null
           address: string
           billing_address?: string | null
           company_name: string
@@ -611,8 +614,10 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          visible_to_drivers?: boolean | null
         }
         Update: {
+          accepting_proposals?: boolean | null
           address?: string
           billing_address?: string | null
           company_name?: string
@@ -631,6 +636,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          visible_to_drivers?: boolean | null
         }
         Relationships: []
       }
@@ -702,8 +708,11 @@ export type Database = {
           credit_limit: number | null
           discount_percentage: number | null
           driver_id: string
+          driver_presentation: string | null
+          driver_services_offered: string[] | null
           driver_signed: boolean | null
           driver_signed_at: string | null
+          driver_vehicle_info: Json | null
           id: string
           last_payment_date: string | null
           next_payment_due: string | null
@@ -731,8 +740,11 @@ export type Database = {
           credit_limit?: number | null
           discount_percentage?: number | null
           driver_id: string
+          driver_presentation?: string | null
+          driver_services_offered?: string[] | null
           driver_signed?: boolean | null
           driver_signed_at?: string | null
+          driver_vehicle_info?: Json | null
           id?: string
           last_payment_date?: string | null
           next_payment_due?: string | null
@@ -760,8 +772,11 @@ export type Database = {
           credit_limit?: number | null
           discount_percentage?: number | null
           driver_id?: string
+          driver_presentation?: string | null
+          driver_services_offered?: string[] | null
           driver_signed?: boolean | null
           driver_signed_at?: string | null
+          driver_vehicle_info?: Json | null
           id?: string
           last_payment_date?: string | null
           next_payment_due?: string | null

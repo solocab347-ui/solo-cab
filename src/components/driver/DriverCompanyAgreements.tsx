@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro } from "lucide-react";
+import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search } from "lucide-react";
+import { DriverCompanySearch } from "./DriverCompanySearch";
 
 interface DriverCompanyAgreementsProps {
   driverId: string;
@@ -155,11 +157,31 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         </p>
       </div>
 
-      {/* Pending Agreements - Highlighted */}
-      {pendingAgreements.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-medium text-yellow-600 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
+      <Tabs defaultValue="agreements" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="agreements" className="flex items-center gap-2">
+            <Handshake className="w-4 h-4" />
+            Mes partenariats
+            {pendingAgreements.length > 0 && (
+              <Badge className="bg-yellow-500 ml-1">{pendingAgreements.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="search" className="flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            Rechercher
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="search" className="mt-6">
+          <DriverCompanySearch driverId={driverId} />
+        </TabsContent>
+
+        <TabsContent value="agreements" className="mt-6 space-y-6">
+          {/* Pending Agreements - Highlighted */}
+          {pendingAgreements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium text-yellow-600 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
             Propositions en attente ({pendingAgreements.length})
           </h3>
           {pendingAgreements.map((agreement: any) => (
@@ -331,17 +353,26 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         </div>
       )}
 
-      {agreements?.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Aucun partenariat entreprise</h3>
-            <p className="text-muted-foreground">
-              Les entreprises peuvent vous proposer des partenariats avec des conditions de paiement personnalisées
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          {agreements?.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">Aucun partenariat entreprise</h3>
+                <p className="text-muted-foreground mb-4">
+                  Les entreprises peuvent vous proposer des partenariats, ou vous pouvez les rechercher
+                </p>
+                <Button variant="outline" onClick={() => {
+                  const tabTrigger = document.querySelector('[data-state="inactive"][value="search"]') as HTMLElement;
+                  tabTrigger?.click();
+                }}>
+                  <Search className="w-4 h-4 mr-2" />
+                  Rechercher des entreprises
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Reject Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
