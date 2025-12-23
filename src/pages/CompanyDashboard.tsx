@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
+import { CompanyDriverAgreements } from "@/components/company/CompanyDriverAgreements";
 
 interface Company {
   id: string;
@@ -248,23 +249,22 @@ export default function CompanyDashboard() {
 
           {/* Drivers Tab */}
           <TabsContent value="drivers">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mes chauffeurs partenaires</CardTitle>
-                <CardDescription>Gérez vos chauffeurs favoris</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12">
-                <Car className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucun chauffeur partenaire</h3>
-                <p className="text-muted-foreground mb-4">
-                  Ajoutez des chauffeurs à vos favoris pour des réservations plus rapides.
-                </p>
-                <Button onClick={() => navigate("/chauffeurs")}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Trouver des chauffeurs
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <CompanyDriverAgreements companyId={company.id} />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rechercher des chauffeurs</CardTitle>
+                  <CardDescription>Trouvez de nouveaux chauffeurs partenaires</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-8">
+                  <Button onClick={() => navigate("/chauffeurs")}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Trouver des chauffeurs
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Invoices Tab */}
