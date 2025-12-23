@@ -1049,13 +1049,21 @@ export type Database = {
           course_ids: string[] | null
           courses_count: number | null
           created_at: string
+          dispute_created_at: string | null
+          dispute_reason: string | null
+          dispute_status: string | null
           driver_id: string
           id: string
           notes: string | null
           paid_at: string | null
           payment_method: string
+          payment_reference: string | null
           period_end: string | null
           period_start: string | null
+          received_at: string | null
+          received_confirmed_by_user_id: string | null
+          sent_at: string | null
+          sent_by_user_id: string | null
           status: string
           stripe_invoice_id: string | null
           stripe_payment_id: string | null
@@ -1067,13 +1075,21 @@ export type Database = {
           course_ids?: string[] | null
           courses_count?: number | null
           created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
           driver_id: string
           id?: string
           notes?: string | null
           paid_at?: string | null
           payment_method: string
+          payment_reference?: string | null
           period_end?: string | null
           period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
           status?: string
           stripe_invoice_id?: string | null
           stripe_payment_id?: string | null
@@ -1085,13 +1101,21 @@ export type Database = {
           course_ids?: string[] | null
           courses_count?: number | null
           created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
           driver_id?: string
           id?: string
           notes?: string | null
           paid_at?: string | null
           payment_method?: string
+          payment_reference?: string | null
           period_end?: string | null
           period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
           status?: string
           stripe_invoice_id?: string | null
           stripe_payment_id?: string | null
