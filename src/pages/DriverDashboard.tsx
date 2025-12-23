@@ -40,6 +40,7 @@ import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
 import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreements";
+import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -449,6 +450,12 @@ const DriverDashboard = () => {
                     <DropdownMenuItem onClick={() => setActiveTab("company-agreements")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-600 hover:text-white">
                       <Building2 className="w-4 h-4" />
                       Partenariats Entreprises
+                    </DropdownMenuItem>
+                  )}
+                  {!driverProfile?.driver?.is_fleet_driver && (
+                    <DropdownMenuItem onClick={() => setActiveTab("company-payments")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
+                      <CreditCard className="w-4 h-4" />
+                      Paiements Entreprises
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -975,6 +982,13 @@ const DriverDashboard = () => {
           <TabsContent value="company-agreements" className="space-y-6">
             {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
               <DriverCompanyAgreements driverId={driverProfile.driver.id} />
+            )}
+          </TabsContent>
+
+          {/* Company Payments Tab - Paiements entreprises */}
+          <TabsContent value="company-payments" className="space-y-6">
+            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
+              <DriverCompanyPayments driverId={driverProfile.driver.id} />
             )}
           </TabsContent>
 
