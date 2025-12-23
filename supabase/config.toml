@@ -70,7 +70,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.email-health-check]
-verify_jwt = true
+verify_jwt = false
 
 [functions.repair-driver-profiles]
 verify_jwt = true
