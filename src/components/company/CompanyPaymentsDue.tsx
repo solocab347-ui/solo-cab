@@ -1,10 +1,14 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Calendar, 
   CreditCard, 
@@ -16,7 +20,9 @@ import {
   CheckCircle,
   AlertCircle,
   Car,
-  CalendarDays
+  CalendarDays,
+  Send,
+  Check
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, isSameWeek, isSameMonth } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -42,11 +48,18 @@ interface GroupedPayment {
   periodStart: Date;
   periodEnd: Date;
   dueDate: Date;
-  status: 'upcoming' | 'due' | 'overdue';
+  status: 'upcoming' | 'due' | 'overdue' | 'sent' | 'received';
+  paymentId?: string;
+  sentAt?: Date;
+  paymentReference?: string;
 }
 
 export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("pending");
+  const [showSendPaymentDialog, setShowSendPaymentDialog] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<GroupedPayment | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
+  const queryClient = useQueryClient();
 
   // Fetch agreements with payment settings
   const { data: agreements, isLoading: loadingAgreements } = useQuery({
@@ -124,6 +137,82 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     },
   });
 
+  // Fetch existing company payments
+  const { data: companyPayments, isLoading: loadingPayments } = useQuery({
+    queryKey: ["company-payments-tracking", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("company_payments")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Mark payment as sent mutation
+  const markPaymentSentMutation = useMutation({
+    mutationFn: async ({ payment, reference }: { payment: GroupedPayment; reference: string }) => {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      
+      // Create or update company_payments record
+      const { data, error } = await supabase
+        .from("company_payments")
+        .insert({
+          company_id: companyId,
+          driver_id: payment.driverId,
+          agreement_id: payment.agreementId,
+          amount: payment.totalAmount,
+          payment_method: payment.paymentMethods[0] || "virement",
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          sent_by_user_id: userId,
+          payment_reference: reference,
+          period_start: payment.periodStart.toISOString(),
+          period_end: payment.periodEnd.toISOString(),
+          course_ids: payment.invoices.map((i: any) => i.course_id),
+          courses_count: payment.invoiceCount
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create notification for driver
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("user_id")
+        .eq("id", payment.driverId)
+        .single();
+
+      if (driverData?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: driverData.user_id,
+          title: "💸 Paiement envoyé",
+          message: `Un paiement de ${payment.totalAmount.toFixed(2)}€ a été envoyé. Référence: ${reference || "N/A"}`,
+          type: "payment",
+          link: "/driver-dashboard?tab=company-payments"
+        });
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["company-payments-tracking"] });
+      queryClient.invalidateQueries({ queryKey: ["company-unpaid-invoices"] });
+      toast.success("Paiement marqué comme envoyé");
+      setShowSendPaymentDialog(false);
+      setSelectedPayment(null);
+      setPaymentReference("");
+    },
+    onError: (error) => {
+      console.error("Error marking payment as sent:", error);
+      toast.error("Erreur lors de l'envoi du paiement");
+    }
+  });
+
   // Group invoices by driver and payment period
   const groupedPayments = useMemo(() => {
     if (!agreements || !unpaidInvoices) return [];
@@ -140,6 +229,15 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
       return acc;
     }, {});
 
+    // Check for existing sent payments
+    const sentPaymentsByDriver = (companyPayments || []).reduce((acc: any, payment: any) => {
+      if (payment.status === "sent" || payment.status === "received") {
+        const key = `${payment.driver_id}-${payment.period_start}`;
+        acc[key] = payment;
+      }
+      return acc;
+    }, {});
+
     // Process each driver's invoices according to their payment agreement
     agreements?.forEach((agreement: any) => {
       const driverInvoices = invoicesByDriver[agreement.driver_id] || [];
@@ -149,10 +247,11 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
       const paymentDay = agreement.payment_day || 1;
 
       if (paymentFrequency === "per_course") {
-        // Each invoice is separate
         driverInvoices.forEach((invoice: any) => {
           const invoiceDate = new Date(invoice.created_at);
-          const dueDate = addDays(invoiceDate, 7); // 7 days to pay
+          const dueDate = addDays(invoiceDate, 7);
+          const paymentKey = `${agreement.driver_id}-${invoiceDate.toISOString()}`;
+          const existingPayment = sentPaymentsByDriver[paymentKey];
           
           groups.push({
             driverId: agreement.driver_id,
@@ -169,11 +268,15 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
             periodStart: invoiceDate,
             periodEnd: invoiceDate,
             dueDate,
-            status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming'
+            status: existingPayment?.status === "received" ? 'received' : 
+                   existingPayment?.status === "sent" ? 'sent' :
+                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
+            paymentId: existingPayment?.id,
+            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
+            paymentReference: existingPayment?.payment_reference
           });
         });
       } else if (paymentFrequency === "weekly") {
-        // Group by week
         const weeklyGroups: { [key: string]: any[] } = {};
         
         driverInvoices.forEach((invoice: any) => {
@@ -192,7 +295,9 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
           const invoiceDate = new Date(firstInvoice.courses?.scheduled_date || firstInvoice.created_at);
           const weekStart = startOfWeek(invoiceDate, { weekStartsOn: 1 });
           const weekEnd = endOfWeek(invoiceDate, { weekStartsOn: 1 });
-          const dueDate = addDays(weekEnd, paymentDay); // Payment due X days after week ends
+          const dueDate = addDays(weekEnd, paymentDay);
+          const paymentKey = `${agreement.driver_id}-${weekStart.toISOString()}`;
+          const existingPayment = sentPaymentsByDriver[paymentKey];
 
           const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
 
@@ -211,11 +316,15 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
             periodStart: weekStart,
             periodEnd: weekEnd,
             dueDate,
-            status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming'
+            status: existingPayment?.status === "received" ? 'received' : 
+                   existingPayment?.status === "sent" ? 'sent' :
+                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
+            paymentId: existingPayment?.id,
+            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
+            paymentReference: existingPayment?.payment_reference
           });
         });
       } else if (paymentFrequency === "monthly") {
-        // Group by month
         const monthlyGroups: { [key: string]: any[] } = {};
         
         driverInvoices.forEach((invoice: any) => {
@@ -233,10 +342,10 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
           const invoiceDate = new Date(firstInvoice.courses?.scheduled_date || firstInvoice.created_at);
           const monthStart = startOfMonth(invoiceDate);
           const monthEnd = endOfMonth(invoiceDate);
-          
-          // Payment due on the payment_day of the next month
           const nextMonth = addDays(monthEnd, 1);
           const dueDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay);
+          const paymentKey = `${agreement.driver_id}-${monthStart.toISOString()}`;
+          const existingPayment = sentPaymentsByDriver[paymentKey];
 
           const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
 
@@ -255,23 +364,27 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
             periodStart: monthStart,
             periodEnd: monthEnd,
             dueDate,
-            status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming'
+            status: existingPayment?.status === "received" ? 'received' : 
+                   existingPayment?.status === "sent" ? 'sent' :
+                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
+            paymentId: existingPayment?.id,
+            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
+            paymentReference: existingPayment?.payment_reference
           });
         });
       }
     });
 
-    // Sort by due date
     return groups.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-  }, [agreements, unpaidInvoices]);
+  }, [agreements, unpaidInvoices, companyPayments]);
 
-  const overduePayments = groupedPayments.filter(p => p.status === 'overdue');
-  const duePayments = groupedPayments.filter(p => p.status === 'due');
-  const upcomingPayments = groupedPayments.filter(p => p.status === 'upcoming');
+  const pendingPayments = groupedPayments.filter(p => !['sent', 'received'].includes(p.status));
+  const sentPayments = groupedPayments.filter(p => p.status === 'sent');
+  const receivedPayments = groupedPayments.filter(p => p.status === 'received');
 
-  const totalOverdue = overduePayments.reduce((sum, p) => sum + p.totalAmount, 0);
-  const totalDue = duePayments.reduce((sum, p) => sum + p.totalAmount, 0);
-  const totalUpcoming = upcomingPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+  const totalPending = pendingPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+  const totalSent = sentPayments.reduce((sum, p) => sum + p.totalAmount, 0);
+  const totalReceived = receivedPayments.reduce((sum, p) => sum + p.totalAmount, 0);
 
   const getFrequencyLabel = (frequency: string) => {
     switch (frequency) {
@@ -292,11 +405,24 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     }
   };
 
+  const openSendPaymentDialog = (payment: GroupedPayment) => {
+    setSelectedPayment(payment);
+    setPaymentReference("");
+    setShowSendPaymentDialog(true);
+  };
+
+  const handleSendPayment = () => {
+    if (!selectedPayment) return;
+    markPaymentSentMutation.mutate({ 
+      payment: selectedPayment, 
+      reference: paymentReference 
+    });
+  };
+
   const downloadRecap = (payment: GroupedPayment) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    // Header
     doc.setFillColor(0, 102, 204);
     doc.rect(0, 0, pageWidth, 35, 'F');
     doc.setFontSize(22);
@@ -310,7 +436,6 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     doc.setTextColor(0, 0, 0);
     let yPos = 50;
     
-    // Driver info
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
     doc.text("Chauffeur", 20, yPos);
@@ -329,7 +454,6 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     doc.text("Détail des factures", 20, yPos);
     yPos += 10;
     
-    // Invoices table header
     doc.setFillColor(240, 240, 240);
     doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
     doc.setFontSize(9);
@@ -339,7 +463,6 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     doc.text("Montant", pageWidth - 25, yPos, { align: "right" });
     yPos += 8;
     
-    // Invoice rows
     doc.setFont(undefined, 'normal');
     payment.invoices.forEach((invoice: any) => {
       if (yPos > 270) {
@@ -355,7 +478,6 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
       yPos += 6;
     });
     
-    // Total
     yPos += 10;
     doc.setDrawColor(0, 102, 204);
     doc.setLineWidth(1);
@@ -366,7 +488,6 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     doc.setFontSize(14);
     doc.text(`${payment.totalAmount.toFixed(2)} €`, pageWidth - 25, yPos + 5, { align: "right" });
     
-    // Due date
     yPos += 20;
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
@@ -378,7 +499,22 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     toast.success("Récapitulatif téléchargé");
   };
 
-  if (loadingAgreements || loadingInvoices) {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'overdue':
+        return <Badge variant="destructive">En retard</Badge>;
+      case 'due':
+        return <Badge className="bg-yellow-500">À payer</Badge>;
+      case 'sent':
+        return <Badge className="bg-blue-500">Envoyé</Badge>;
+      case 'received':
+        return <Badge className="bg-green-500">Reçu</Badge>;
+      default:
+        return <Badge variant="outline">À venir</Badge>;
+    }
+  };
+
+  if (loadingAgreements || loadingInvoices || loadingPayments) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -386,42 +522,105 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     );
   }
 
+  const PaymentCard = ({ payment }: { payment: GroupedPayment }) => (
+    <Card key={`${payment.driverId}-${payment.periodStart.getTime()}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={payment.driverPhoto || undefined} />
+            <AvatarFallback>
+              {payment.driverName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h4 className="font-medium truncate">{payment.driverName}</h4>
+              {getStatusBadge(payment.status)}
+            </div>
+            
+            {payment.driverCompany && (
+              <p className="text-sm text-muted-foreground">{payment.driverCompany}</p>
+            )}
+            
+            <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {getPeriodLabel(payment)}
+              </span>
+              <span className="flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                {payment.invoiceCount} facture(s)
+              </span>
+              <Badge variant="outline" className="text-xs">
+                {getFrequencyLabel(payment.paymentFrequency)}
+              </Badge>
+            </div>
+
+            {payment.sentAt && (
+              <p className="text-xs text-blue-600 mt-1">
+                Envoyé le {format(payment.sentAt, "d MMM yyyy", { locale: fr })}
+                {payment.paymentReference && ` - Réf: ${payment.paymentReference}`}
+              </p>
+            )}
+            
+            <div className="flex items-center justify-between mt-3">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Échéance: {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
+                </p>
+                <p className="text-lg font-bold text-primary">
+                  {payment.totalAmount.toFixed(2)} €
+                </p>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadRecap(payment)}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                
+                {!['sent', 'received'].includes(payment.status) && (
+                  <Button
+                    size="sm"
+                    onClick={() => openSendPaymentDialog(payment)}
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    Marquer envoyé
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Paiements à venir</h2>
+        <h2 className="text-xl font-semibold">Paiements aux chauffeurs</h2>
         <p className="text-sm text-muted-foreground">
-          Récapitulatif des montants à payer aux chauffeurs selon vos accords
+          Gérez et suivez vos paiements aux chauffeurs partenaires
         </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={overduePayments.length > 0 ? "border-destructive" : ""}>
+        <Card className={pendingPayments.filter(p => p.status === 'overdue').length > 0 ? "border-destructive" : ""}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${overduePayments.length > 0 ? "bg-destructive/10" : "bg-muted"}`}>
-                <AlertCircle className={`w-5 h-5 ${overduePayments.length > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              <div className="p-2 rounded-full bg-yellow-500/10">
+                <Clock className="w-5 h-5 text-yellow-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">En retard</p>
-                <p className="text-xl font-bold">{totalOverdue.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{overduePayments.length} paiement(s)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={duePayments.length > 0 ? "border-yellow-500" : ""}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${duePayments.length > 0 ? "bg-yellow-500/10" : "bg-muted"}`}>
-                <Clock className={`w-5 h-5 ${duePayments.length > 0 ? "text-yellow-500" : "text-muted-foreground"}`} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">À payer bientôt</p>
-                <p className="text-xl font-bold">{totalDue.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{duePayments.length} paiement(s)</p>
+                <p className="text-sm text-muted-foreground">À payer</p>
+                <p className="text-xl font-bold">{totalPending.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">{pendingPayments.length} paiement(s)</p>
               </div>
             </div>
           </CardContent>
@@ -430,13 +629,28 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-primary/10">
-                <CalendarDays className="w-5 h-5 text-primary" />
+              <div className="p-2 rounded-full bg-blue-500/10">
+                <Send className="w-5 h-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">À venir</p>
-                <p className="text-xl font-bold">{totalUpcoming.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{upcomingPayments.length} paiement(s)</p>
+                <p className="text-sm text-muted-foreground">Envoyés</p>
+                <p className="text-xl font-bold">{totalSent.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">{sentPayments.length} paiement(s)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-green-500/10">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Confirmés</p>
+                <p className="text-xl font-bold">{totalReceived.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">{receivedPayments.length} paiement(s)</p>
               </div>
             </div>
           </CardContent>
@@ -446,121 +660,125 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
       {/* Payment List */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overdue" className={overduePayments.length > 0 ? "text-destructive" : ""}>
-            En retard ({overduePayments.length})
+          <TabsTrigger value="pending">
+            À payer ({pendingPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="due" className={duePayments.length > 0 ? "text-yellow-600" : ""}>
-            À payer ({duePayments.length})
+          <TabsTrigger value="sent">
+            Envoyés ({sentPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="upcoming">
-            À venir ({upcomingPayments.length})
+          <TabsTrigger value="received">
+            Confirmés ({receivedPayments.length})
           </TabsTrigger>
         </TabsList>
 
-        {[
-          { key: "overdue", data: overduePayments, empty: "Aucun paiement en retard" },
-          { key: "due", data: duePayments, empty: "Aucun paiement imminent" },
-          { key: "upcoming", data: upcomingPayments, empty: "Aucun paiement à venir" }
-        ].map(({ key, data, empty }) => (
-          <TabsContent key={key} value={key}>
-            {data.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
-                  <p className="text-muted-foreground">{empty}</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {data.map((payment, index) => (
-                  <Card key={`${payment.driverId}-${index}`} className={
-                    payment.status === 'overdue' ? 'border-destructive/50' :
-                    payment.status === 'due' ? 'border-yellow-500/50' : ''
-                  }>
-                    <CardContent className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          {/* Driver Photo */}
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            {payment.driverPhoto ? (
-                              <img 
-                                src={payment.driverPhoto} 
-                                alt="" 
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                            ) : (
-                              <Car className="w-6 h-6 text-muted-foreground" />
-                            )}
-                          </div>
+        <TabsContent value="pending">
+          {pendingPayments.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <CheckCircle className="w-16 h-16 mx-auto text-green-500 mb-4" />
+                <p className="text-muted-foreground">Aucun paiement en attente</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {pendingPayments.map((payment) => (
+                <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold">{payment.driverName}</span>
-                              {payment.driverCompany && (
-                                <span className="text-sm text-muted-foreground">• {payment.driverCompany}</span>
-                              )}
-                              <Badge variant="outline">
-                                {getFrequencyLabel(payment.paymentFrequency)}
-                              </Badge>
-                            </div>
+        <TabsContent value="sent">
+          {sentPayments.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Send className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Aucun paiement envoyé en attente de confirmation</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {sentPayments.map((payment) => (
+                <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {getPeriodLabel(payment)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <FileText className="w-4 h-4" />
-                                {payment.invoiceCount} facture(s)
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className={
-                                payment.status === 'overdue' ? 'text-destructive font-medium' :
-                                payment.status === 'due' ? 'text-yellow-600 font-medium' : 
-                                'text-muted-foreground'
-                              }>
-                                {payment.status === 'overdue' && <AlertCircle className="w-4 h-4 inline mr-1" />}
-                                {payment.status === 'due' && <Clock className="w-4 h-4 inline mr-1" />}
-                                Échéance : {format(payment.dueDate, "d MMMM yyyy", { locale: fr })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="text-right">
-                            <p className="text-2xl font-bold">{payment.totalAmount.toFixed(2)} €</p>
-                            <div className="flex gap-1 mt-1">
-                              {payment.paymentMethods.slice(0, 3).map((method: string) => (
-                                <Badge key={method} variant="secondary" className="text-xs">
-                                  {method === "card" && "💳"}
-                                  {method === "bank_transfer" && "🏦"}
-                                  {method === "cash" && "💵"}
-                                  {method === "payment_link" && "🔗"}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => downloadRecap(payment)}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Télécharger récap
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        ))}
+        <TabsContent value="received">
+          {receivedPayments.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <CheckCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Aucun paiement confirmé</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {receivedPayments.map((payment) => (
+                <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Send Payment Dialog */}
+      <Dialog open={showSendPaymentDialog} onOpenChange={setShowSendPaymentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marquer le paiement comme envoyé</DialogTitle>
+            <DialogDescription>
+              Confirmez l'envoi du paiement à {selectedPayment?.driverName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPayment && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span>Montant</span>
+                  <span className="font-bold text-lg">{selectedPayment.totalAmount.toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-muted-foreground mt-1">
+                  <span>Période</span>
+                  <span>{getPeriodLabel(selectedPayment)}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="reference">Référence du paiement (optionnel)</Label>
+                <Input
+                  id="reference"
+                  placeholder="Ex: VIR-2024-001, Stripe pi_xxx..."
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Numéro de virement, ID Stripe, ou toute référence utile
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendPaymentDialog(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleSendPayment}
+              disabled={markPaymentSentMutation.isPending}
+            >
+              {markPaymentSentMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Confirmer l'envoi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
