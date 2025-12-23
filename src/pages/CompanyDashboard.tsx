@@ -68,7 +68,7 @@ export default function CompanyDashboard() {
         .from("companies")
         .select("*")
         .eq("user_id", user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setCompany(data);

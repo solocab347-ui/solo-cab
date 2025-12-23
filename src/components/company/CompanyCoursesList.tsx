@@ -54,6 +54,11 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
   }, [companyId]);
 
   const fetchCourses = async () => {
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Récupérer les courses liées à l'entreprise via company_courses
       const { data, error } = await supabase
@@ -63,51 +68,79 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
           invoice_to_company,
           employee_id,
           approved_at,
-          courses:course_id(
-            *,
-            drivers(
-              id,
-              company_name,
-              vehicle_model,
-              vehicle_color,
-              profiles:user_id(full_name, phone, profile_photo_url)
-            ),
-            devis(
-              id,
-              quote_number,
-              amount,
-              status,
-              base_price,
-              distance_price,
-              time_price,
-              valid_until
-            ),
-            factures(
-              id,
-              invoice_number,
-              invoice_number_generated,
-              amount,
-              payment_status,
-              payment_method
-            )
-          ),
-          company_employees:employee_id(
-            profiles:user_id(full_name)
-          )
+          course_id
         `)
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        setCourses([]);
+        setLoading(false);
+        return;
+      }
+
+      // Récupérer les IDs des courses
+      const courseIds = data.map((item: any) => item.course_id).filter(Boolean);
+      
+      if (courseIds.length === 0) {
+        setCourses([]);
+        setLoading(false);
+        return;
+      }
+
+      // Récupérer les courses séparément
+      const { data: coursesData, error: coursesError } = await supabase
+        .from("courses")
+        .select(`
+          *,
+          drivers:driver_id(
+            id,
+            company_name,
+            vehicle_model,
+            vehicle_color,
+            profiles:user_id(full_name, phone, profile_photo_url)
+          )
+        `)
+        .in("id", courseIds);
+
+      if (coursesError) throw coursesError;
+
+      // Récupérer les devis et factures séparément
+      const [devisRes, facturesRes] = await Promise.all([
+        supabase.from("devis").select("*").in("course_id", courseIds),
+        supabase.from("factures").select("*").in("course_id", courseIds)
+      ]);
+
+      // Récupérer les employés si nécessaire
+      const employeeIds = data.map((item: any) => item.employee_id).filter(Boolean);
+      let employeesData: any[] = [];
+      if (employeeIds.length > 0) {
+        const { data: empData } = await supabase
+          .from("company_employees")
+          .select("id, profiles:user_id(full_name)")
+          .in("id", employeeIds);
+        employeesData = empData || [];
+      }
+
       // Transformer les données pour les rendre plus faciles à utiliser
-      const transformedCourses = (data || []).map((item: any) => ({
-        ...item.courses,
-        company_course_id: item.id,
-        invoice_to_company: item.invoice_to_company,
-        employee_name: item.company_employees?.profiles?.full_name,
-        approved_at: item.approved_at
-      }));
+      const transformedCourses = data.map((item: any) => {
+        const course = coursesData?.find((c: any) => c.id === item.course_id);
+        const employee = employeesData?.find((e: any) => e.id === item.employee_id);
+        const courseDevis = devisRes.data?.filter((d: any) => d.course_id === item.course_id) || [];
+        const courseFactures = facturesRes.data?.filter((f: any) => f.course_id === item.course_id) || [];
+        
+        return {
+          ...course,
+          company_course_id: item.id,
+          invoice_to_company: item.invoice_to_company,
+          employee_name: employee?.profiles?.full_name,
+          approved_at: item.approved_at,
+          devis: courseDevis,
+          factures: courseFactures
+        };
+      }).filter((c: any) => c.id); // Filtrer les courses null
 
       setCourses(transformedCourses);
     } catch (error: any) {
