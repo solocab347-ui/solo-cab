@@ -361,26 +361,7 @@ const Chauffeurs = () => {
     );
   }
 
-  // Bloquer l'accès public, sauf pour les admins
-  if (!user || userRole !== 'admin') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-12 max-w-md text-center">
-          <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-purple-600" />
-          </div>
-          <h1 className="text-2xl font-bold mb-4">Vitrine temporairement fermée</h1>
-          <p className="text-muted-foreground mb-6">
-            La vitrine publique des chauffeurs est actuellement fermée. 
-            Seuls les administrateurs peuvent y accéder pour le moment.
-          </p>
-          <Button onClick={() => navigate("/")}>
-            Retour à l'accueil
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  // La vitrine est maintenant ouverte au public
 
   return (
     <div className="min-h-screen bg-background">
