@@ -692,6 +692,139 @@ export type Database = {
           },
         ]
       }
+      company_driver_agreements: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          company_signed: boolean | null
+          company_signed_at: string | null
+          created_at: string
+          credit_limit: number | null
+          discount_percentage: number | null
+          driver_id: string
+          driver_signed: boolean | null
+          driver_signed_at: string | null
+          id: string
+          last_payment_date: string | null
+          next_payment_due: string | null
+          notes: string | null
+          outstanding_balance: number | null
+          payment_day: number | null
+          payment_frequency: string
+          payment_methods: string[]
+          proposed_by: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          terminated_at: string | null
+          termination_reason: string | null
+          total_billed: number | null
+          total_paid: number | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          company_signed?: boolean | null
+          company_signed_at?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          discount_percentage?: number | null
+          driver_id: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          id?: string
+          last_payment_date?: string | null
+          next_payment_due?: string | null
+          notes?: string | null
+          outstanding_balance?: number | null
+          payment_day?: number | null
+          payment_frequency?: string
+          payment_methods?: string[]
+          proposed_by?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          termination_reason?: string | null
+          total_billed?: number | null
+          total_paid?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          company_signed?: boolean | null
+          company_signed_at?: string | null
+          created_at?: string
+          credit_limit?: number | null
+          discount_percentage?: number | null
+          driver_id?: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          id?: string
+          last_payment_date?: string | null
+          next_payment_due?: string | null
+          notes?: string | null
+          outstanding_balance?: number | null
+          payment_day?: number | null
+          payment_frequency?: string
+          payment_methods?: string[]
+          proposed_by?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          termination_reason?: string | null
+          total_billed?: number | null
+          total_paid?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_driver_agreements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_drivers: {
         Row: {
           company_id: string
@@ -889,6 +1022,113 @@ export type Database = {
             columns: ["invitation_id"]
             isOneToOne: false
             referencedRelation: "company_employee_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_payments: {
+        Row: {
+          agreement_id: string
+          amount: number
+          company_id: string
+          course_ids: string[] | null
+          courses_count: number | null
+          created_at: string
+          driver_id: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          agreement_id: string
+          amount: number
+          company_id: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          agreement_id?: string
+          amount?: number
+          company_id?: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_payments_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "company_driver_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
