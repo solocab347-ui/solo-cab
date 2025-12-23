@@ -35,9 +35,11 @@ import GuestBookingTracking from "./pages/GuestBookingTracking";
 import RegisterDriverFleet from "./pages/RegisterDriverFleet";
 import FleetPublicProfile from "./pages/FleetPublicProfile";
 import RegisterClientFleet from "./pages/RegisterClientFleet";
+import RegisterCompanyEmployee from "./pages/RegisterCompanyEmployee";
 // Lazy load heavy dashboards and authenticated pages
 const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
+const CompanyEmployeeDashboard = lazy(() => import("./pages/CompanyEmployeeDashboard"));
 const FleetManagerDashboard = lazy(() => import("./pages/FleetManagerDashboard"));
 const FleetClientDashboard = lazy(() => import("./pages/FleetClientDashboard"));
 
@@ -92,6 +94,7 @@ const App = () => (
               <Route path="/register-driver-fleet" element={<RegisterDriverFleet />} />
               <Route path="/flotte/:id" element={<FleetPublicProfile />} />
               <Route path="/register-client-fleet" element={<RegisterClientFleet />} />
+              <Route path="/register-employee" element={<RegisterCompanyEmployee />} />
               <Route
                 path="/fleet-client-dashboard"
                 element={

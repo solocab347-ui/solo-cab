@@ -24,6 +24,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
 
 interface Company {
   id: string;
@@ -129,10 +130,14 @@ export default function CompanyDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">Vue d'ensemble</span>
+            </TabsTrigger>
+            <TabsTrigger value="employees" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Collaborateurs</span>
             </TabsTrigger>
             <TabsTrigger value="reservations" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -213,6 +218,11 @@ export default function CompanyDashboard() {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Employees Tab */}
+          <TabsContent value="employees">
+            <CompanyEmployeesManager companyId={company.id} />
           </TabsContent>
 
           {/* Reservations Tab */}

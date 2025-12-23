@@ -634,6 +634,64 @@ export type Database = {
         }
         Relationships: []
       }
+      company_courses: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          course_id: string
+          created_at: string | null
+          created_by_employee: boolean | null
+          employee_id: string | null
+          id: string
+          invoice_to_company: boolean | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          course_id: string
+          created_at?: string | null
+          created_by_employee?: boolean | null
+          employee_id?: string | null
+          id?: string
+          invoice_to_company?: boolean | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          course_id?: string
+          created_at?: string | null
+          created_by_employee?: boolean | null
+          employee_id?: string | null
+          id?: string
+          invoice_to_company?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_courses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_courses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_drivers: {
         Row: {
           company_id: string
@@ -697,6 +755,140 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_employee_invitations: {
+        Row: {
+          can_create_courses: boolean | null
+          can_view_invoices: boolean | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          department: string | null
+          email: string | null
+          employee_name: string | null
+          expires_at: string | null
+          id: string
+          is_used: boolean | null
+          max_monthly_budget: number | null
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          can_create_courses?: boolean | null
+          can_view_invoices?: boolean | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          employee_name?: string | null
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          max_monthly_budget?: number | null
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          can_create_courses?: boolean | null
+          can_view_invoices?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          email?: string | null
+          employee_name?: string | null
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          max_monthly_budget?: number | null
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_employee_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_employees: {
+        Row: {
+          can_create_courses: boolean | null
+          can_view_all_company_courses: boolean | null
+          can_view_invoices: boolean | null
+          company_id: string
+          created_at: string | null
+          current_month_spent: number | null
+          department: string | null
+          employee_code: string | null
+          id: string
+          invitation_id: string | null
+          is_active: boolean | null
+          job_title: string | null
+          joined_at: string | null
+          max_monthly_budget: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_create_courses?: boolean | null
+          can_view_all_company_courses?: boolean | null
+          can_view_invoices?: boolean | null
+          company_id: string
+          created_at?: string | null
+          current_month_spent?: number | null
+          department?: string | null
+          employee_code?: string | null
+          id?: string
+          invitation_id?: string | null
+          is_active?: boolean | null
+          job_title?: string | null
+          joined_at?: string | null
+          max_monthly_budget?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_create_courses?: boolean | null
+          can_view_all_company_courses?: boolean | null
+          can_view_invoices?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          current_month_spent?: number | null
+          department?: string | null
+          employee_code?: string | null
+          id?: string
+          invitation_id?: string | null
+          is_active?: boolean | null
+          job_title?: string | null
+          joined_at?: string | null
+          max_monthly_budget?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_employees_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "company_employee_invitations"
             referencedColumns: ["id"]
           },
         ]
@@ -891,6 +1083,8 @@ export type Database = {
           amount: number
           base_price: number
           client_id: string
+          company_employee_id: string | null
+          company_id: string | null
           course_id: string
           created_at: string
           discount_amount: number
@@ -912,6 +1106,8 @@ export type Database = {
           amount: number
           base_price: number
           client_id: string
+          company_employee_id?: string | null
+          company_id?: string | null
           course_id: string
           created_at?: string
           discount_amount?: number
@@ -933,6 +1129,8 @@ export type Database = {
           amount?: number
           base_price?: number
           client_id?: string
+          company_employee_id?: string | null
+          company_id?: string | null
           course_id?: string
           created_at?: string
           discount_amount?: number
@@ -955,6 +1153,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_company_employee_id_fkey"
+            columns: ["company_employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -1753,6 +1965,8 @@ export type Database = {
         Row: {
           amount: number
           client_id: string
+          company_employee_id: string | null
+          company_id: string | null
           course_id: string
           created_at: string
           devis_id: string | null
@@ -1771,6 +1985,8 @@ export type Database = {
         Insert: {
           amount: number
           client_id: string
+          company_employee_id?: string | null
+          company_id?: string | null
           course_id: string
           created_at?: string
           devis_id?: string | null
@@ -1789,6 +2005,8 @@ export type Database = {
         Update: {
           amount?: number
           client_id?: string
+          company_employee_id?: string | null
+          company_id?: string | null
           course_id?: string
           created_at?: string
           devis_id?: string | null
@@ -1810,6 +2028,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_company_employee_id_fkey"
+            columns: ["company_employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -4286,6 +4518,7 @@ export type Database = {
         Returns: number
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_employee_company_id: { Args: { p_user_id: string }; Returns: string }
       get_fleet_driver_count: {
         Args: { _fleet_manager_id: string }
         Returns: number
