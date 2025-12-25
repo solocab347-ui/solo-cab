@@ -72,6 +72,8 @@ import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemova
 import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
 import { FleetClientsList } from "@/components/fleet-manager/FleetClientsList";
 import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
+import { FleetClientsTab } from "@/components/fleet-manager/FleetClientsTab";
+import { FleetCourseValidation } from "@/components/fleet-manager/FleetCourseValidation";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -773,13 +775,11 @@ const FleetManagerDashboard = () => {
 
           {/* Clients Tab */}
           <TabsContent value="clients">
-            <div className="space-y-6">
-              {/* Section Invitations Clients */}
-              <FleetClientInvitations fleetManagerId={fleetManager.id} />
-
-              {/* Liste des clients avec filtres avancés */}
-              <FleetClientsList clients={clients} />
-            </div>
+            <FleetClientsTab 
+              fleetManagerId={fleetManager.id}
+              clients={clients}
+              onNavigateToSettings={() => setActiveTab("settings")}
+            />
           </TabsContent>
 
           {/* Courses Tab */}
@@ -920,14 +920,31 @@ const FleetManagerDashboard = () => {
           {/* Settings Tab - Combined with Pricing, Public Profile and Subscription */}
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
-              <TabsList className="flex-wrap h-auto gap-1 p-1">
-                <TabsTrigger value="general">Général & Profil</TabsTrigger>
-                <TabsTrigger value="subscription">Abonnement</TabsTrigger>
-                <TabsTrigger value="pricing">Tarification</TabsTrigger>
-                <TabsTrigger value="city-pricing">Tarifs par ville</TabsTrigger>
-                <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                <TabsTrigger value="dispatch">Dispatch auto</TabsTrigger>
-              </TabsList>
+              <div className="glass-strong p-3 rounded-2xl">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 h-auto bg-transparent p-0">
+                  <TabsTrigger value="general" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white">
+                    Général
+                  </TabsTrigger>
+                  <TabsTrigger value="subscription" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+                    Abonnement
+                  </TabsTrigger>
+                  <TabsTrigger value="pricing" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
+                    Tarification
+                  </TabsTrigger>
+                  <TabsTrigger value="city-pricing" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white">
+                    Tarifs Ville
+                  </TabsTrigger>
+                  <TabsTrigger value="commissions" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+                    Commissions
+                  </TabsTrigger>
+                  <TabsTrigger value="validation" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-rose-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                    Validation
+                  </TabsTrigger>
+                  <TabsTrigger value="dispatch" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-slate-500 data-[state=active]:to-slate-700 data-[state=active]:text-white">
+                    Dispatch
+                  </TabsTrigger>
+                </TabsList>
+              </div>
               <TabsContent value="general">
                 <div className="space-y-6">
                   {/* Public Profile Settings - now merged with general */}
@@ -957,6 +974,13 @@ const FleetManagerDashboard = () => {
                   <FleetDriverCommissions fleetManagerId={fleetManager.id} />
                   <FleetCommissionTracker fleetManagerId={fleetManager.id} />
                 </div>
+              </TabsContent>
+              <TabsContent value="validation">
+                <FleetCourseValidation 
+                  fleetManagerId={fleetManager.id}
+                  autoValidate={fleetManager.auto_validate_courses || false}
+                  onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
+                />
               </TabsContent>
               <TabsContent value="dispatch">
                 <FleetDispatchSettings fleetManagerId={fleetManager.id} />
