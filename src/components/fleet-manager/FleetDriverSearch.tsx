@@ -40,6 +40,7 @@ interface SearchableDriver {
   vehicle_year: number | null;
   vehicle_color: string | null;
   vehicle_equipment: string[] | null;
+  vehicle_category: string | null;
   services_offered: string[] | null;
   working_sectors: string[] | null;
   bio: string | null;
@@ -60,6 +61,18 @@ interface SearchableDriver {
   phone: string | null;
   email: string | null;
 }
+
+// Vehicle categories
+const VEHICLE_CATEGORIES = [
+  { value: 'berline_standard', label: 'Berline Standard' },
+  { value: 'berline_luxe', label: 'Berline Luxe' },
+  { value: 'berline_electrique', label: 'Berline Électrique' },
+  { value: 'electrique', label: 'Électrique' },
+  { value: 'hybrid', label: 'Hybride' },
+  { value: 'van', label: 'Van' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'minivan', label: 'Minivan' },
+];
 
 interface FleetDriverSearchProps {
   fleetManagerId: string;
@@ -117,9 +130,10 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const [selectedDriver, setSelectedDriver] = useState<SearchableDriver | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
+  // Initial load only - filters are applied independently with the search button
   useEffect(() => {
     searchDrivers();
-  }, [selectedDepartment, selectedRegion, minRating]);
+  }, []);
 
   const searchDrivers = async () => {
     setSearching(true);
@@ -129,21 +143,28 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
         .from('fleet_searchable_drivers')
         .select('*');
 
-      // Apply filters
+      // Apply filters independently - each filter can work alone or combined
       if (minRating > 0) {
         query = query.gte('rating', minRating);
       }
 
-      if (searchText) {
+      if (searchText.trim()) {
         query = query.or(`full_name.ilike.%${searchText}%,company_name.ilike.%${searchText}%,vehicle_brand.ilike.%${searchText}%,vehicle_model.ilike.%${searchText}%`);
       }
 
+      // Department filter (independent)
       if (selectedDepartment) {
         query = query.contains('working_sectors', [selectedDepartment]);
       }
 
-      if (citySearch) {
-        query = query.contains('working_sectors', [citySearch]);
+      // City/sector filter (independent)
+      if (citySearch.trim()) {
+        query = query.contains('working_sectors', [citySearch.trim()]);
+      }
+
+      // Vehicle category filter (independent)
+      if (selectedVehicleType) {
+        query = query.eq('vehicle_category', selectedVehicleType);
       }
 
       const { data, error } = await query.order('rating', { ascending: false, nullsFirst: false });
@@ -157,6 +178,22 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
       setSearching(false);
       setLoading(false);
     }
+  };
+
+  const resetFilters = () => {
+    setSearchText('');
+    setSelectedDepartment('');
+    setSelectedRegion('');
+    setCitySearch('');
+    setMinRating(0);
+    setSelectedVehicleType('');
+    searchDrivers();
+  };
+
+  const getCategoryLabel = (category: string | null) => {
+    if (!category) return null;
+    const found = VEHICLE_CATEGORIES.find(c => c.value === category);
+    return found ? found.label : category;
   };
 
   const openDriverProfile = (driver: SearchableDriver) => {
@@ -227,9 +264,38 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
 
           {showFilters && (
             <div className="space-y-4 pt-4 border-t">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <p className="text-sm text-muted-foreground">
+                Chaque filtre fonctionne indépendamment. Vous pouvez les combiner ou utiliser un seul critère.
+              </p>
+              
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Vehicle Category Filter */}
                 <div className="space-y-2">
-                  <Label>Département</Label>
+                  <Label className="flex items-center gap-2">
+                    <Car className="h-4 w-4" />
+                    Catégorie de véhicule
+                  </Label>
+                  <Select value={selectedVehicleType} onValueChange={setSelectedVehicleType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes catégories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Toutes catégories</SelectItem>
+                      {VEHICLE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Department Filter */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Département
+                  </Label>
                   <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                     <SelectTrigger>
                       <SelectValue placeholder="Tous les départements" />
@@ -245,8 +311,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                   </Select>
                 </div>
 
+                {/* Region Filter */}
                 <div className="space-y-2">
-                  <Label>Région</Label>
+                  <Label className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Région
+                  </Label>
                   <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                     <SelectTrigger>
                       <SelectValue placeholder="Toutes les régions" />
@@ -262,8 +332,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                   </Select>
                 </div>
 
+                {/* City/Sector Filter */}
                 <div className="space-y-2">
-                  <Label>Ville / Secteur</Label>
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Ville / Secteur
+                  </Label>
                   <Input
                     placeholder="Paris, Lyon, Marseille..."
                     value={citySearch}
@@ -272,8 +346,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                 </div>
               </div>
 
+              {/* Rating Filter */}
               <div className="space-y-2">
-                <Label>Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}</Label>
+                <Label className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}
+                </Label>
                 <Slider
                   value={[minRating]}
                   onValueChange={(v) => setMinRating(v[0])}
@@ -282,10 +360,48 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                 />
               </div>
 
-              <Button onClick={handleSearch} className="w-full">
-                <Search className="h-4 w-4 mr-2" />
-                Appliquer les filtres
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button onClick={handleSearch} className="flex-1">
+                  <Search className="h-4 w-4 mr-2" />
+                  Rechercher
+                </Button>
+                <Button variant="outline" onClick={resetFilters}>
+                  Réinitialiser
+                </Button>
+              </div>
+
+              {/* Active filters display */}
+              {(selectedVehicleType || selectedDepartment || selectedRegion || citySearch || minRating > 0) && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Filtres actifs :</span>
+                  {selectedVehicleType && (
+                    <Badge variant="secondary" className="text-xs">
+                      {getCategoryLabel(selectedVehicleType)}
+                    </Badge>
+                  )}
+                  {selectedDepartment && (
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedDepartment}
+                    </Badge>
+                  )}
+                  {selectedRegion && (
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedRegion}
+                    </Badge>
+                  )}
+                  {citySearch && (
+                    <Badge variant="secondary" className="text-xs">
+                      {citySearch}
+                    </Badge>
+                  )}
+                  {minRating > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      ≥ {minRating}/5 ⭐
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -346,6 +462,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                           {driver.vehicle_brand} {driver.vehicle_model}
                           {driver.vehicle_year && ` (${driver.vehicle_year})`}
                         </p>
+                      )}
+                      
+                      {driver.vehicle_category && (
+                        <Badge variant="outline" className="mt-1 text-xs">
+                          {getCategoryLabel(driver.vehicle_category)}
+                        </Badge>
                       )}
                       
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
