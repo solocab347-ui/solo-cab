@@ -71,6 +71,7 @@ import { FleetRequiredDocumentsManager } from "@/components/fleet-manager/FleetR
 import { FleetDriversDocumentsReview } from "@/components/fleet-manager/FleetDriversDocumentsReview";
 import { FleetDriverDocumentsArchive } from "@/components/fleet-manager/FleetDriverDocumentsArchive";
 import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
+import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -744,53 +745,58 @@ const FleetManagerDashboard = () => {
 
           {/* Clients Tab */}
           <TabsContent value="clients">
-            <Card className="bg-card/50 backdrop-blur border-white/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-success" />
-                  Mes Clients
-                </CardTitle>
-                <CardDescription>
-                  Clients inscrits via votre QR code
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {clients.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                    <p className="text-muted-foreground mb-4">Aucun client pour le moment</p>
-                    <Button onClick={() => setActiveTab("qrcode")} className="gap-2">
-                      <QrCode className="w-4 h-4" />
-                      Partager mon QR Code
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {clients.map((client) => (
-                      <div
-                        key={client.id}
-                        className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50"
-                      >
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-success/20 text-success">
-                              {(client.client?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{client.client?.profile?.full_name || "Client"}</p>
-                            <p className="text-sm text-muted-foreground">{client.client?.total_rides || 0} courses</p>
+            <div className="space-y-6">
+              {/* Section Invitations Clients */}
+              <FleetClientInvitations fleetManagerId={fleetManager.id} />
+
+              {/* Liste des clients */}
+              <Card className="bg-card/50 backdrop-blur border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-success" />
+                    Mes Clients inscrits
+                  </CardTitle>
+                  <CardDescription>
+                    Clients déjà inscrits dans votre flotte
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {clients.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                      <p className="text-muted-foreground mb-4">Aucun client inscrit pour le moment</p>
+                      <p className="text-sm text-muted-foreground">
+                        Créez une invitation ci-dessus ou partagez votre vitrine publique
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {clients.map((client) => (
+                        <div
+                          key={client.id}
+                          className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-success/20 text-success">
+                                {(client.client?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{client.client?.profile?.full_name || "Client"}</p>
+                              <p className="text-sm text-muted-foreground">{client.client?.total_rides || 0} courses</p>
+                            </div>
                           </div>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(client.registered_at).toLocaleDateString("fr-FR")}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(client.registered_at).toLocaleDateString("fr-FR")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Courses Tab */}
