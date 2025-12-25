@@ -64,6 +64,8 @@ import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverP
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
 import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
 import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/FleetDriverDocumentsValidation";
+import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
+import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCourses";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -795,11 +797,14 @@ const FleetManagerDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses">
-            <FleetCoursesManager
-              fleetManagerId={fleetManager.id}
-              autoValidate={fleetManager.auto_validate_courses || false}
-              onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
-            />
+            <div className="space-y-6">
+              <FleetDeclinedCourses fleetManagerId={fleetManager.id} />
+              <FleetCoursesManager
+                fleetManagerId={fleetManager.id}
+                autoValidate={fleetManager.auto_validate_courses || false}
+                onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
+              />
+            </div>
           </TabsContent>
 
           {/* Tools Tab */}
@@ -901,12 +906,18 @@ const FleetManagerDashboard = () => {
 
           {/* Public Profile Tab */}
           <TabsContent value="public-profile">
-            <FleetPublicProfileSettings
-              fleetManagerId={fleetManager.id}
-              companyName={fleetManager.company_name}
-              showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
-              onUpdate={fetchData}
-            />
+            <div className="space-y-6">
+              <FleetPublicProfileSettings
+                fleetManagerId={fleetManager.id}
+                companyName={fleetManager.company_name}
+                showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+                onUpdate={fetchData}
+              />
+              <FleetStorefrontManager
+                fleetManagerId={fleetManager.id}
+                onUpdate={fetchData}
+              />
+            </div>
           </TabsContent>
 
           {/* QR Code Tab */}
