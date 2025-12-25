@@ -55,14 +55,20 @@ const DOCUMENT_CATEGORIES = {
   identite: {
     label: "Pièce d'Identité",
     icon: Shield,
-    description: "Document d'identité du gestionnaire",
+    description: "Document d'identité du gestionnaire (recto et verso)",
     color: "from-red-500/20 to-red-600/10",
     borderColor: "border-red-500/30",
     documents: [
       { 
-        key: "piece_identite", 
-        label: "Pièce d'identité", 
-        description: "Carte d'identité ou passeport en cours de validité",
+        key: "piece_identite_recto", 
+        label: "Pièce d'identité (Recto)", 
+        description: "Face avant de votre carte d'identité ou passeport",
+        icon: Shield
+      },
+      { 
+        key: "piece_identite_verso", 
+        label: "Pièce d'identité (Verso)", 
+        description: "Face arrière de votre carte d'identité",
         icon: Shield
       },
     ]

@@ -56,9 +56,10 @@ interface FleetDriverDocumentsValidationProps {
 }
 
 const REQUIRED_DOCUMENTS = [
+  { key: "id_card_recto", label: "Pièce d'identité (Recto)" },
+  { key: "id_card_verso", label: "Pièce d'identité (Verso)" },
   { key: "vtc_card", label: "Carte professionnelle VTC" },
   { key: "driving_license", label: "Permis de conduire" },
-  { key: "id_card", label: "Pièce d'identité" },
   { key: "vehicle_registration", label: "Carte grise" },
   { key: "insurance", label: "Attestation d'assurance" },
   { key: "kbis", label: "Extrait Kbis" },
