@@ -91,6 +91,13 @@ export type Database = {
             foreignKeyName: "assistant_requests_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -166,6 +173,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -302,6 +316,13 @@ export type Database = {
             foreignKeyName: "city_pricing_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -422,6 +443,13 @@ export type Database = {
             foreignKeyName: "client_first_orders_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -510,6 +538,13 @@ export type Database = {
             foreignKeyName: "clients_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -539,6 +574,13 @@ export type Database = {
             columns: ["favorite_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -835,6 +877,13 @@ export type Database = {
             foreignKeyName: "company_driver_agreements_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -896,6 +945,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -1167,6 +1223,13 @@ export type Database = {
             foreignKeyName: "company_payments_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -1351,6 +1414,13 @@ export type Database = {
             foreignKeyName: "courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -1481,6 +1551,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -1644,6 +1721,13 @@ export type Database = {
             foreignKeyName: "driver_feedback_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -1765,6 +1849,13 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_a_id_fkey"
             columns: ["driver_a_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -1800,6 +1891,13 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_b_id_fkey"
             columns: ["driver_b_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -1829,6 +1927,13 @@ export type Database = {
             columns: ["proposed_by"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -1911,6 +2016,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -2000,6 +2112,7 @@ export type Database = {
           vehicle_photos: string[] | null
           vehicle_plate: string | null
           vehicle_year: number | null
+          visible_to_fleet_managers: boolean | null
           weekend_surcharge: number | null
           working_sectors: string[] | null
         }
@@ -2080,6 +2193,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
@@ -2160,6 +2274,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
         }
@@ -2369,6 +2484,13 @@ export type Database = {
             foreignKeyName: "factures_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -2514,6 +2636,13 @@ export type Database = {
             foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
             columns: ["declined_by_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -2550,6 +2679,13 @@ export type Database = {
             columns: ["reassigned_to_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -2631,6 +2767,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -2735,6 +2878,13 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -2864,6 +3014,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -3039,6 +3196,13 @@ export type Database = {
             foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -3119,6 +3283,13 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -3549,6 +3720,13 @@ export type Database = {
             foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
             columns: ["used_by_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -3759,6 +3937,13 @@ export type Database = {
             foreignKeyName: "partner_course_pool_claimed_by_driver_id_fkey"
             columns: ["claimed_by_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_claimed_by_driver_id_fkey"
+            columns: ["claimed_by_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -3795,6 +3980,13 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -3963,6 +4155,13 @@ export type Database = {
             foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
             columns: ["reported_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -3992,6 +4191,13 @@ export type Database = {
             columns: ["reporter_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -4157,6 +4363,13 @@ export type Database = {
             foreignKeyName: "promotions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -4220,6 +4433,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -4340,6 +4560,13 @@ export type Database = {
             foreignKeyName: "shared_courses_receiver_driver_id_fkey"
             columns: ["receiver_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -4369,6 +4596,13 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -4579,6 +4813,13 @@ export type Database = {
             foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
             columns: ["sender_driver_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -4641,6 +4882,13 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_a_id_fkey"
             columns: ["driver_a_id"]
             isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
@@ -4670,6 +4918,13 @@ export type Database = {
             columns: ["driver_b_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -4732,6 +4987,48 @@ export type Database = {
           user_id: string | null
           vehicle_brand: string | null
           vehicle_model: string | null
+          working_sectors: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_searchable_drivers: {
+        Row: {
+          base_fare: number | null
+          bio: string | null
+          company_name: string | null
+          email: string | null
+          full_name: string | null
+          gallery_photos: string[] | null
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
+          hourly_rate: number | null
+          id: string | null
+          per_km_rate: number | null
+          phone: string | null
+          profile_photo_url: string | null
+          rating: number | null
+          service_description: string | null
+          services_offered: string[] | null
+          sharing_number: number | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          total_rides: number | null
+          user_id: string | null
+          vehicle_brand: string | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
+          vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_year: number | null
           working_sectors: string[] | null
         }
         Relationships: [

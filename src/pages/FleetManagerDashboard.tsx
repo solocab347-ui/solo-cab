@@ -44,6 +44,7 @@ import {
   Euro,
   Handshake,
   Tag,
+  Search,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
@@ -72,6 +73,7 @@ import { FleetDriversDocumentsReview } from "@/components/fleet-manager/FleetDri
 import { FleetDriverDocumentsArchive } from "@/components/fleet-manager/FleetDriverDocumentsArchive";
 import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
 import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
+import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -482,6 +484,14 @@ const FleetManagerDashboard = () => {
                 <span className="hidden sm:inline">Chauffeurs</span>
               </TabsTrigger>
               <TabsTrigger 
+                value="driver-search" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline">Recherche</span>
+              </TabsTrigger>
+              <TabsTrigger 
                 value="clients" 
                 disabled={isAccountRestricted}
                 className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
@@ -740,6 +750,11 @@ const FleetManagerDashboard = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Driver Search Tab */}
+          <TabsContent value="driver-search">
+            <FleetDriverSearch fleetManagerId={fleetManager.id} />
           </TabsContent>
 
 
