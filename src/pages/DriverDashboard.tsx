@@ -42,6 +42,7 @@ import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartners
 import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreements";
 import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
+import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Link } from "react-router-dom";
@@ -366,6 +367,11 @@ const DriverDashboard = () => {
             documentsDeadline={(driverProfile.driver as any).documents_deadline}
             onNavigateToDocuments={() => setActiveTab("documents")}
           />
+        )}
+
+        {/* Fleet Removal Notice - popup pour chauffeurs supprimés d'une flotte */}
+        {user?.id && driverProfile?.driver?.id && (
+          <FleetRemovalNotice userId={user.id} driverId={driverProfile.driver.id} />
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
