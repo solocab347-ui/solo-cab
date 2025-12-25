@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -26,7 +28,14 @@ import {
   Users,
   Percent,
   AlertTriangle,
-  Wallet
+  Wallet,
+  Eye,
+  Phone,
+  Mail,
+  Briefcase,
+  Euro,
+  ImageIcon,
+  Building2
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -40,13 +49,27 @@ interface IndependentDriver {
   user_id: string;
   vehicle_model: string;
   vehicle_brand: string | null;
+  vehicle_year?: number | null;
+  vehicle_color?: string | null;
+  vehicle_equipment?: string[] | null;
+  vehicle_photos?: string[] | null;
+  gallery_photos?: string[] | null;
+  services_offered?: string[] | null;
   rating: number | null;
   total_rides: number | null;
   working_sectors: string[] | null;
   bio: string | null;
+  service_description?: string | null;
+  base_fare?: number | null;
+  per_km_rate?: number | null;
+  hourly_rate?: number | null;
+  show_phone?: boolean | null;
+  show_email?: boolean | null;
   profile?: {
     full_name: string;
     profile_photo_url: string | null;
+    phone?: string | null;
+    email?: string | null;
   };
 }
 
@@ -76,6 +99,7 @@ export const FleetDriverPartnerships = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<IndependentDriver | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
   const [commissionRate, setCommissionRate] = useState(defaultCommission.toString());
   const [paymentSchedule, setPaymentSchedule] = useState("per_course");
@@ -102,14 +126,14 @@ export const FleetDriverPartnerships = ({
         const driverIds = partnershipsData.map(p => p.driver_id);
         const { data: driversData } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, vehicle_brand, rating, total_rides, working_sectors, bio")
+          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email")
           .in("id", driverIds);
 
         if (driversData) {
           const userIds = driversData.map(d => d.user_id);
           const { data: profilesData } = await supabase
             .from("profiles")
-            .select("id, full_name, profile_photo_url")
+            .select("id, full_name, profile_photo_url, phone, email")
             .in("id", userIds);
 
           const partnershipsWithDrivers = partnershipsData.map(p => ({
@@ -127,26 +151,35 @@ export const FleetDriverPartnerships = ({
         setPartnerships([]);
       }
 
-      // Fetch independent drivers (not in any fleet)
-      const { data: independentData } = await supabase
+      // Fetch independent drivers (not in any fleet) with complete data
+      const { data: independentData, error: indErr } = await supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, vehicle_brand, rating, total_rides, working_sectors, bio")
+        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email")
         .eq("status", "validated")
         .eq("public_profile_enabled", true)
         .is("fleet_manager_id", null);
 
+      console.log("Independent drivers query result:", { independentData, indErr });
+
       if (independentData && independentData.length > 0) {
         const userIds = independentData.map(d => d.user_id);
-        const { data: profiles } = await supabase
+        console.log("Fetching profiles for user IDs:", userIds);
+        
+        const { data: profiles, error: profilesErr } = await supabase
           .from("profiles")
-          .select("id, full_name, profile_photo_url")
+          .select("id, full_name, profile_photo_url, phone, email")
           .in("id", userIds);
+
+        console.log("Profiles query result:", { profiles, profilesErr });
 
         const driversWithProfiles = independentData.map(d => ({
           ...d,
           profile: profiles?.find(p => p.id === d.user_id)
         }));
+        console.log("Drivers with profiles:", driversWithProfiles);
         setIndependentDrivers(driversWithProfiles);
+      } else {
+        setIndependentDrivers([]);
       }
     } catch (error) {
       console.error("Error fetching partnerships:", error);
@@ -154,6 +187,11 @@ export const FleetDriverPartnerships = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewProfile = (driver: IndependentDriver) => {
+    setSelectedDriver(driver);
+    setShowProfileDialog(true);
   };
 
   const handleProposePartnership = (driver: IndependentDriver) => {
@@ -332,12 +370,16 @@ export const FleetDriverPartnerships = ({
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {availableDrivers.map((driver) => (
-                    <Card key={driver.id} className="border-border/50 hover:border-primary/50 transition-colors">
+                    <Card 
+                      key={driver.id} 
+                      className="border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => handleViewProfile(driver)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <Avatar className="w-14 h-14 border-2 border-border">
+                          <Avatar className="w-16 h-16 border-2 border-border">
                             <AvatarImage src={driver.profile?.profile_photo_url || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg">
                               {(driver.profile?.full_name || "C").slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -356,6 +398,7 @@ export const FleetDriverPartnerships = ({
                             <p className="text-sm text-muted-foreground mb-2">
                               <Car className="w-3 h-3 inline mr-1" />
                               {driver.vehicle_brand} {driver.vehicle_model}
+                              {driver.vehicle_year && ` (${driver.vehicle_year})`}
                             </p>
                             {driver.working_sectors && driver.working_sectors.length > 0 && (
                               <div className="flex flex-wrap gap-1 mb-2">
@@ -365,6 +408,11 @@ export const FleetDriverPartnerships = ({
                                     {sector}
                                   </Badge>
                                 ))}
+                                {driver.working_sectors.length > 3 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    +{driver.working_sectors.length - 3}
+                                  </span>
+                                )}
                               </div>
                             )}
                             <p className="text-xs text-muted-foreground">
@@ -372,13 +420,29 @@ export const FleetDriverPartnerships = ({
                             </p>
                           </div>
                         </div>
-                        <Button 
-                          className="w-full mt-4 gap-2"
-                          onClick={() => handleProposePartnership(driver)}
-                        >
-                          <Send className="w-4 h-4" />
-                          Proposer un partenariat
-                        </Button>
+                        <div className="flex gap-2 mt-4">
+                          <Button 
+                            variant="outline"
+                            className="flex-1 gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewProfile(driver);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Voir le profil
+                          </Button>
+                          <Button 
+                            className="flex-1 gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProposePartnership(driver);
+                            }}
+                          >
+                            <Send className="w-4 h-4" />
+                            Proposer
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -591,6 +655,299 @@ export const FleetDriverPartnerships = ({
               Envoyer la proposition
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile View Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <ScrollArea className="max-h-[80vh] pr-4">
+            {selectedDriver && (
+              <div className="space-y-6">
+                <DialogHeader>
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-20 w-20 border-2 border-primary">
+                      <AvatarImage src={selectedDriver.profile?.profile_photo_url || undefined} />
+                      <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                        {(selectedDriver.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <DialogTitle className="text-2xl">{selectedDriver.profile?.full_name || "Chauffeur"}</DialogTitle>
+                      <div className="flex items-center gap-4 mt-2">
+                        {selectedDriver.rating && (
+                          <Badge className="bg-yellow-500/10 text-yellow-600">
+                            <Star className="h-4 w-4 fill-current mr-1" />
+                            {selectedDriver.rating.toFixed(1)}/5
+                          </Badge>
+                        )}
+                        <Badge variant="outline">
+                          <Check className="h-4 w-4 mr-1 text-green-500" />
+                          {selectedDriver.total_rides || 0} courses
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <Tabs defaultValue="info" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="info">Infos</TabsTrigger>
+                    <TabsTrigger value="vehicle">Véhicule</TabsTrigger>
+                    <TabsTrigger value="services">Services</TabsTrigger>
+                    <TabsTrigger value="contact">Contact</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="info" className="space-y-4 mt-4">
+                    {selectedDriver.bio && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Biographie</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground">{selectedDriver.bio}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {selectedDriver.service_description && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Description des services</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground">{selectedDriver.service_description}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {selectedDriver.working_sectors && selectedDriver.working_sectors.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Zones d'intervention
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedDriver.working_sectors.map((sector, i) => (
+                              <Badge key={i} variant="secondary">{sector}</Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="vehicle" className="space-y-4 mt-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Car className="h-4 w-4" />
+                          Véhicule
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          {selectedDriver.vehicle_brand && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Marque</Label>
+                              <p className="font-medium">{selectedDriver.vehicle_brand}</p>
+                            </div>
+                          )}
+                          {selectedDriver.vehicle_model && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Modèle</Label>
+                              <p className="font-medium">{selectedDriver.vehicle_model}</p>
+                            </div>
+                          )}
+                          {selectedDriver.vehicle_year && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Année</Label>
+                              <p className="font-medium">{selectedDriver.vehicle_year}</p>
+                            </div>
+                          )}
+                          {selectedDriver.vehicle_color && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Couleur</Label>
+                              <p className="font-medium">{selectedDriver.vehicle_color}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {selectedDriver.vehicle_equipment && selectedDriver.vehicle_equipment.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Équipements</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedDriver.vehicle_equipment.map((equip, i) => (
+                              <Badge key={i} variant="outline">{equip}</Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {selectedDriver.vehicle_photos && selectedDriver.vehicle_photos.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Photos du véhicule
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Carousel className="w-full">
+                            <CarouselContent>
+                              {selectedDriver.vehicle_photos.map((photo, i) => (
+                                <CarouselItem key={i} className="md:basis-1/2 lg:basis-1/3">
+                                  <img 
+                                    src={photo} 
+                                    alt={`Véhicule ${i + 1}`}
+                                    className="w-full h-32 object-cover rounded-lg"
+                                  />
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                          </Carousel>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {selectedDriver.gallery_photos && selectedDriver.gallery_photos.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Galerie photos
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-3 gap-2">
+                            {selectedDriver.gallery_photos.slice(0, 6).map((photo, i) => (
+                              <img 
+                                key={i} 
+                                src={photo} 
+                                alt={`Photo ${i + 1}`}
+                                className="w-full h-24 object-cover rounded-lg"
+                              />
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="services" className="space-y-4 mt-4">
+                    {selectedDriver.services_offered && selectedDriver.services_offered.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" />
+                            Services proposés
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedDriver.services_offered.map((service, i) => (
+                              <Badge key={i} variant="secondary">{service}</Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Euro className="h-4 w-4" />
+                          Tarification indicative
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Prise en charge</p>
+                            <p className="font-bold text-lg">
+                              {selectedDriver.base_fare ? `${selectedDriver.base_fare.toFixed(2)}€` : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Par km</p>
+                            <p className="font-bold text-lg">
+                              {selectedDriver.per_km_rate ? `${selectedDriver.per_km_rate.toFixed(2)}€` : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Par heure</p>
+                            <p className="font-bold text-lg">
+                              {selectedDriver.hourly_rate ? `${selectedDriver.hourly_rate.toFixed(2)}€` : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="contact" className="space-y-4 mt-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Coordonnées</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {selectedDriver.show_phone && selectedDriver.profile?.phone && (
+                          <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
+                            <Phone className="h-5 w-5 text-primary" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Téléphone</p>
+                              <a href={`tel:${selectedDriver.profile.phone}`} className="font-medium hover:text-primary">
+                                {selectedDriver.profile.phone}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {selectedDriver.show_email && selectedDriver.profile?.email && (
+                          <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
+                            <Mail className="h-5 w-5 text-primary" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Email</p>
+                              <a href={`mailto:${selectedDriver.profile.email}`} className="font-medium hover:text-primary">
+                                {selectedDriver.profile.email}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {(!selectedDriver.show_phone && !selectedDriver.show_email) && (
+                          <p className="text-muted-foreground text-sm text-center py-4">
+                            Ce chauffeur n'a pas rendu ses coordonnées publiques
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      onClick={() => {
+                        setShowProfileDialog(false);
+                        handleProposePartnership(selectedDriver);
+                      }}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Proposer un partenariat
+                    </Button>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
