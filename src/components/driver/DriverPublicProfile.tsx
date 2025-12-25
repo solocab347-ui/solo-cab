@@ -36,6 +36,7 @@ interface DriverPublicProfileProps {
   vehicleYear: string;
   vehiclePhotos: string[];
   galleryPhotos: string[];
+  visibleToFleetManagers?: boolean;
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
   onCardPhotoUpdate: (url: string) => void;
@@ -53,6 +54,7 @@ interface DriverPublicProfileProps {
   onVehiclePlateChange: (plate: string) => void;
   onVehicleYearChange: (year: string) => void;
   onVehiclePhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
+  onVisibleToFleetManagersChange?: (visible: boolean) => void;
 }
 
 export const DriverPublicProfile = memo(({
@@ -77,6 +79,7 @@ export const DriverPublicProfile = memo(({
   vehicleYear,
   vehiclePhotos,
   galleryPhotos,
+  visibleToFleetManagers = false,
   onTogglePublicProfile,
   onPhotoUpdate,
   onCardPhotoUpdate,
@@ -94,6 +97,7 @@ export const DriverPublicProfile = memo(({
   onVehiclePlateChange,
   onVehicleYearChange,
   onVehiclePhotosUpdate,
+  onVisibleToFleetManagersChange,
 }: DriverPublicProfileProps) => {
   // Guard contre les données manquantes
   if (!driverProfile || !userId) {
@@ -153,6 +157,30 @@ export const DriverPublicProfile = memo(({
           <div className="mt-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
             <p className="text-sm text-primary font-medium">
               ✓ Votre profil est visible dans la vitrine publique
+            </p>
+          </div>
+        )}
+
+        {/* Visibilité pour gestionnaires de flotte */}
+        {onVisibleToFleetManagersChange && (
+          <div className="mt-4 flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+            <div>
+              <Label className="text-base font-medium">Visible par les gestionnaires de flotte</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Permettre aux gestionnaires de vous trouver et voir votre profil
+              </p>
+            </div>
+            <Switch
+              checked={visibleToFleetManagers}
+              onCheckedChange={onVisibleToFleetManagersChange}
+            />
+          </div>
+        )}
+
+        {visibleToFleetManagers && onVisibleToFleetManagersChange && (
+          <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <p className="text-sm text-blue-600 font-medium">
+              ✓ Les gestionnaires de flotte peuvent voir votre profil
             </p>
           </div>
         )}
