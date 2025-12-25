@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -37,7 +36,7 @@ import {
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isToday, isTomorrow, isPast, isThisWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   CheckCircle,
@@ -51,13 +50,28 @@ import {
   Settings,
   AlertTriangle,
   Plus,
-  List,
   User,
   Phone,
   Mail,
   AlertCircle,
   ArrowRight,
   Send,
+  Route,
+  TrendingUp,
+  Filter,
+  Search,
+  Eye,
+  ChevronRight,
+  Zap,
+  Timer,
+  CalendarCheck,
+  CalendarClock,
+  CheckCheck,
+  XOctagon,
+  RefreshCw,
+  LayoutGrid,
+  List,
+  FileText,
 } from "lucide-react";
 
 interface Course {
@@ -123,20 +137,28 @@ interface FleetCoursesManagerProps {
   onAutoValidateChange: (value: boolean) => void;
 }
 
+type ViewMode = "grid" | "list";
+type FilterStatus = "all" | "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
+
 export const FleetCoursesManager = ({
   fleetManagerId,
   autoValidate,
   onAutoValidateChange,
 }: FleetCoursesManagerProps) => {
   const [loading, setLoading] = useState(true);
-  const [pendingCourses, setPendingCourses] = useState<Course[]>([]);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
   const [clients, setClients] = useState<FleetClient[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeSection, setActiveSection] = useState<"overview" | "pending" | "today" | "upcoming" | "history" | "unassigned">("overview");
+  
+  // Filtres et recherche
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterDriver, setFilterDriver] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   
   // Courses non affectées
   const [unassignedCourses, setUnassignedCourses] = useState<any[]>([]);
@@ -164,11 +186,70 @@ export const FleetCoursesManager = ({
     scheduledTime: "",
     passengersCount: 1,
     notes: "",
-    // Client manuel
     guestName: "",
     guestPhone: "",
     guestEmail: "",
   });
+
+  // Détail course
+  const [showCourseDetail, setShowCourseDetail] = useState(false);
+  const [detailCourse, setDetailCourse] = useState<Course | null>(null);
+
+  // Stats calculées
+  const stats = useMemo(() => {
+    const pending = allCourses.filter(c => c.status === "pending").length;
+    const today = allCourses.filter(c => isToday(new Date(c.scheduled_date)) && ["accepted", "pending"].includes(c.status)).length;
+    const upcoming = allCourses.filter(c => !isPast(new Date(c.scheduled_date)) && !isToday(new Date(c.scheduled_date)) && ["accepted", "pending"].includes(c.status)).length;
+    const completed = allCourses.filter(c => c.status === "completed").length;
+    const inProgress = allCourses.filter(c => c.status === "in_progress").length;
+    const cancelled = allCourses.filter(c => c.status === "cancelled").length;
+    return { pending, today, upcoming, completed, inProgress, cancelled, unassigned: unassignedCourses.length };
+  }, [allCourses, unassignedCourses]);
+
+  // Filtrage des courses
+  const filteredCourses = useMemo(() => {
+    let filtered = [...allCourses];
+
+    // Filtre par section
+    switch (activeSection) {
+      case "pending":
+        filtered = filtered.filter(c => c.status === "pending");
+        break;
+      case "today":
+        filtered = filtered.filter(c => isToday(new Date(c.scheduled_date)) && ["accepted", "pending", "in_progress"].includes(c.status));
+        break;
+      case "upcoming":
+        filtered = filtered.filter(c => !isPast(new Date(c.scheduled_date)) && !isToday(new Date(c.scheduled_date)) && ["accepted", "pending"].includes(c.status));
+        break;
+      case "history":
+        filtered = filtered.filter(c => c.status === "completed" || c.status === "cancelled" || isPast(new Date(c.scheduled_date)));
+        break;
+    }
+
+    // Filtre par statut
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(c => c.status === filterStatus);
+    }
+
+    // Filtre par chauffeur
+    if (filterDriver !== "all") {
+      filtered = filtered.filter(c => c.driver?.id === filterDriver);
+    }
+
+    // Recherche
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.pickup_address.toLowerCase().includes(query) ||
+        c.destination_address.toLowerCase().includes(query) ||
+        c.client?.profile?.full_name?.toLowerCase().includes(query) ||
+        c.guest_name?.toLowerCase().includes(query) ||
+        c.driver?.profile?.full_name?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered.sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  }, [allCourses, activeSection, filterStatus, filterDriver, searchQuery]);
 
   useEffect(() => {
     fetchData();
@@ -193,7 +274,6 @@ export const FleetCoursesManager = ({
         .eq("status", "active");
 
       if (fleetDrivers && fleetDrivers.length > 0) {
-        // Récupérer les profils des chauffeurs
         const driverUserIds = fleetDrivers
           .filter(d => d.driver)
           .map(d => d.driver.user_id);
@@ -239,7 +319,6 @@ export const FleetCoursesManager = ({
           .order("scheduled_date", { ascending: false });
 
         if (courses) {
-          // Récupérer les profils
           const clientUserIds = courses
             .filter(c => c.client)
             .map(c => c.client.user_id);
@@ -267,15 +346,12 @@ export const FleetCoursesManager = ({
             }));
 
             setAllCourses(coursesWithProfiles);
-            setPendingCourses(coursesWithProfiles.filter(c => c.status === "pending"));
           } else {
             setAllCourses(courses);
-            setPendingCourses(courses.filter(c => c.status === "pending"));
           }
         }
       } else {
         setDrivers([]);
-        setPendingCourses([]);
         setAllCourses([]);
       }
 
@@ -294,7 +370,6 @@ export const FleetCoursesManager = ({
         .order("created_at", { ascending: false });
 
       if (unassigned && unassigned.length > 0) {
-        // Récupérer les profils des clients
         const clientUserIds = unassigned
           .filter(u => u.course?.client)
           .map(u => u.course.client.user_id);
@@ -382,7 +457,6 @@ export const FleetCoursesManager = ({
 
       if (error) throw error;
 
-      // Notifier le client
       if (selectedCourse.client?.user_id) {
         await supabase.from("notifications").insert({
           user_id: selectedCourse.client.user_id,
@@ -397,7 +471,6 @@ export const FleetCoursesManager = ({
         });
       }
 
-      // Notifier le chauffeur
       if (selectedCourse.driver?.user_id) {
         await supabase.from("notifications").insert({
           user_id: selectedCourse.driver.user_id,
@@ -450,13 +523,11 @@ export const FleetCoursesManager = ({
     }
   };
 
-  // Forcer l'assignation d'une course à un chauffeur
   const handleForceAssign = async () => {
     if (!selectedCourseForForce || !forceDriverId) return;
 
     setForceAssigning(true);
     try {
-      // Mettre à jour la course avec le chauffeur forcé
       const { error: courseError } = await supabase
         .from("courses")
         .update({ 
@@ -467,7 +538,6 @@ export const FleetCoursesManager = ({
 
       if (courseError) throw courseError;
 
-      // Marquer comme résolu dans unassigned_fleet_courses
       const unassignedEntry = unassignedCourses.find(
         u => u.course_id === selectedCourseForForce.id
       );
@@ -478,7 +548,6 @@ export const FleetCoursesManager = ({
           .eq("id", unassignedEntry.id);
       }
 
-      // Notifier le chauffeur
       const driver = drivers.find(d => d.driver_id === forceDriverId);
       if (driver?.driver?.user_id) {
         await supabase.from("notifications").insert({
@@ -595,20 +664,20 @@ export const FleetCoursesManager = ({
     setIsManualClient(false);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="secondary" className="bg-warning/20 text-warning">En attente</Badge>;
+        return { label: "En attente", color: "bg-warning/20 text-warning border-warning/30", icon: Clock };
       case "accepted":
-        return <Badge variant="secondary" className="bg-info/20 text-info">Confirmée</Badge>;
+        return { label: "Confirmée", color: "bg-info/20 text-info border-info/30", icon: CalendarCheck };
       case "in_progress":
-        return <Badge variant="secondary" className="bg-primary/20 text-primary">En cours</Badge>;
+        return { label: "En cours", color: "bg-primary/20 text-primary border-primary/30", icon: Route };
       case "completed":
-        return <Badge variant="secondary" className="bg-success/20 text-success">Terminée</Badge>;
+        return { label: "Terminée", color: "bg-success/20 text-success border-success/30", icon: CheckCheck };
       case "cancelled":
-        return <Badge variant="secondary" className="bg-destructive/20 text-destructive">Annulée</Badge>;
+        return { label: "Annulée", color: "bg-destructive/20 text-destructive border-destructive/30", icon: XOctagon };
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return { label: status, color: "bg-muted text-muted-foreground", icon: Clock };
     }
   };
 
@@ -622,182 +691,320 @@ export const FleetCoursesManager = ({
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec création */}
-      <div className="flex items-center justify-between">
+      {/* En-tête avec stats rapides */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Gestion des courses</h2>
-          <p className="text-muted-foreground">Créez et gérez les courses de votre flotte</p>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Route className="w-7 h-7 text-primary" />
+            Centre de Gestion des Courses
+          </h2>
+          <p className="text-muted-foreground mt-1">Pilotez toutes vos courses en temps réel</p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nouvelle course
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" size="sm" onClick={fetchData} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-2 bg-gradient-to-r from-primary to-accent text-white">
+            <Plus className="w-4 h-4" />
+            Nouvelle course
+          </Button>
+        </div>
       </div>
 
-      {/* Paramètres de validation */}
-      <Card className="border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Settings className="w-5 h-5" />
-            Paramètres de validation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div className="space-y-1">
-              <Label htmlFor="auto-validate" className="text-base font-medium">
-                Validation automatique
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                {autoValidate 
-                  ? "Les courses sont automatiquement confirmées"
-                  : "Vous devez approuver chaque course manuellement"
-                }
-              </p>
-            </div>
-            <Switch
-              id="auto-validate"
-              checked={autoValidate}
-              onCheckedChange={handleAutoValidateChange}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Cartes de navigation rapide */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <NavigationCard
+          title="Vue d'ensemble"
+          count={allCourses.length}
+          icon={LayoutGrid}
+          color="from-primary/20 to-primary/5"
+          iconColor="text-primary"
+          active={activeSection === "overview"}
+          onClick={() => setActiveSection("overview")}
+        />
+        <NavigationCard
+          title="En attente"
+          count={stats.pending}
+          icon={Clock}
+          color="from-warning/20 to-warning/5"
+          iconColor="text-warning"
+          active={activeSection === "pending"}
+          onClick={() => setActiveSection("pending")}
+          urgent={stats.pending > 0}
+        />
+        <NavigationCard
+          title="Aujourd'hui"
+          count={stats.today}
+          icon={CalendarCheck}
+          color="from-info/20 to-info/5"
+          iconColor="text-info"
+          active={activeSection === "today"}
+          onClick={() => setActiveSection("today")}
+        />
+        <NavigationCard
+          title="À venir"
+          count={stats.upcoming}
+          icon={CalendarClock}
+          color="from-accent/20 to-accent/5"
+          iconColor="text-accent"
+          active={activeSection === "upcoming"}
+          onClick={() => setActiveSection("upcoming")}
+        />
+        <NavigationCard
+          title="Non affectées"
+          count={stats.unassigned}
+          icon={AlertCircle}
+          color="from-destructive/20 to-destructive/5"
+          iconColor="text-destructive"
+          active={activeSection === "unassigned"}
+          onClick={() => setActiveSection("unassigned")}
+          urgent={stats.unassigned > 0}
+        />
+        <NavigationCard
+          title="Historique"
+          count={stats.completed + stats.cancelled}
+          icon={FileText}
+          color="from-muted to-muted/50"
+          iconColor="text-muted-foreground"
+          active={activeSection === "history"}
+          onClick={() => setActiveSection("history")}
+        />
+      </div>
 
-      {/* Onglets courses */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="pending" className="flex-1 gap-2">
-            <Clock className="w-4 h-4" />
-            En attente
-            {pendingCourses.length > 0 && (
-              <Badge variant="secondary" className="ml-1">{pendingCourses.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="unassigned" className="flex-1 gap-2">
-            <AlertCircle className="w-4 h-4" />
-            Non affectées
-            {unassignedCourses.length > 0 && (
-              <Badge variant="destructive" className="ml-1">{unassignedCourses.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="all" className="flex-1 gap-2">
-            <List className="w-4 h-4" />
-            Toutes
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Courses en attente */}
-        <TabsContent value="pending">
-          <Card>
+      {/* Section Vue d'ensemble */}
+      {activeSection === "overview" && (
+        <div className="space-y-6">
+          {/* Paramètres */}
+          <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
             <CardContent className="pt-6">
-              {pendingCourses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Aucune course en attente de validation</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-4">
-                    {pendingCourses.map(course => (
-                      <CourseCard 
-                        key={course.id}
-                        course={course}
-                        showActions
-                        onApprove={() => {
-                          setSelectedCourse(course);
-                          setActionType("approve");
-                        }}
-                        onReject={() => {
-                          setSelectedCourse(course);
-                          setActionType("reject");
-                        }}
-                        getStatusBadge={getStatusBadge}
-                      />
-                    ))}
+              <div className="flex items-center justify-between p-4 bg-background/50 backdrop-blur-sm rounded-xl border border-border/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-white" />
                   </div>
-                </ScrollArea>
-              )}
+                  <div>
+                    <Label className="text-base font-semibold">Mode de validation</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {autoValidate 
+                        ? "Les courses sont confirmées automatiquement"
+                        : "Validation manuelle requise pour chaque course"
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${!autoValidate ? "text-foreground" : "text-muted-foreground"}`}>Manuel</span>
+                  <Switch
+                    checked={autoValidate}
+                    onCheckedChange={handleAutoValidateChange}
+                  />
+                  <span className={`text-sm font-medium ${autoValidate ? "text-foreground" : "text-muted-foreground"}`}>Auto</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Courses non affectées */}
-        <TabsContent value="unassigned">
-          <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="w-5 h-5" />
-                Courses sans chauffeur disponible
-              </CardTitle>
-              <CardDescription>
-                Ces courses n'ont pas pu être assignées automatiquement. Assignez-les manuellement.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {unassignedCourses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-50 text-success" />
-                  <p>Toutes les courses sont bien assignées</p>
+          {/* Alertes urgentes */}
+          {(stats.pending > 0 || stats.unassigned > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stats.pending > 0 && (
+                <Card className="border-warning/30 bg-gradient-to-br from-warning/10 to-warning/5 cursor-pointer hover:shadow-lg transition-all" onClick={() => setActiveSection("pending")}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-warning/20 flex items-center justify-center">
+                        <Clock className="w-7 h-7 text-warning" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{stats.pending} course{stats.pending > 1 ? 's' : ''} en attente</h3>
+                        <p className="text-sm text-muted-foreground">Nécessitent votre validation</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-warning" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {stats.unassigned > 0 && (
+                <Card className="border-destructive/30 bg-gradient-to-br from-destructive/10 to-destructive/5 cursor-pointer hover:shadow-lg transition-all" onClick={() => setActiveSection("unassigned")}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-destructive/20 flex items-center justify-center">
+                        <AlertCircle className="w-7 h-7 text-destructive" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{stats.unassigned} course{stats.unassigned > 1 ? 's' : ''} non affectée{stats.unassigned > 1 ? 's' : ''}</h3>
+                        <p className="text-sm text-muted-foreground">Requièrent une assignation manuelle</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-destructive" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Courses du jour */}
+          {stats.today > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CalendarCheck className="w-5 h-5 text-info" />
+                    Courses d'aujourd'hui
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setActiveSection("today")} className="text-info">
+                    Voir tout <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
-              ) : (
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-4">
-                    {unassignedCourses.map(item => (
-                      <div 
-                        key={item.id}
-                        className="p-4 border border-destructive/30 rounded-lg bg-destructive/5"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-3">
-                            {/* Client */}
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-10 h-10">
-                                <AvatarImage src={item.course?.client?.profile?.profile_photo_url || ""} />
-                                <AvatarFallback>
-                                  {(item.course?.guest_name || item.course?.client?.profile?.full_name || "C").charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">
-                                  {item.course?.guest_name || item.course?.client?.profile?.full_name || "Client"}
-                                </p>
-                                <Badge variant="destructive" className="text-xs">
-                                  {item.reason === "no_available_driver" ? "Aucun chauffeur dispo" : item.reason}
-                                </Badge>
-                              </div>
-                            </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allCourses
+                    .filter(c => isToday(new Date(c.scheduled_date)) && ["accepted", "pending", "in_progress"].includes(c.status))
+                    .slice(0, 3)
+                    .map(course => (
+                      <CompactCourseCard 
+                        key={course.id} 
+                        course={course} 
+                        getStatusConfig={getStatusConfig}
+                        onView={() => {
+                          setDetailCourse(course);
+                          setShowCourseDetail(true);
+                        }}
+                      />
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
-                            {/* Itinéraire */}
-                            <div className="space-y-1">
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                                <span className="text-sm">{item.course?.pickup_address}</span>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                                <span className="text-sm">{item.course?.destination_address}</span>
-                              </div>
-                            </div>
+      {/* Section En attente */}
+      {activeSection === "pending" && (
+        <CoursesSection
+          title="Courses en attente de validation"
+          description="Ces courses nécessitent votre approbation"
+          icon={Clock}
+          iconColor="text-warning"
+          courses={allCourses.filter(c => c.status === "pending")}
+          emptyMessage="Aucune course en attente"
+          emptyIcon={CheckCircle}
+          getStatusConfig={getStatusConfig}
+          showActions
+          onApprove={(course) => {
+            setSelectedCourse(course);
+            setActionType("approve");
+          }}
+          onReject={(course) => {
+            setSelectedCourse(course);
+            setActionType("reject");
+          }}
+          onView={(course) => {
+            setDetailCourse(course);
+            setShowCourseDetail(true);
+          }}
+        />
+      )}
 
-                            {/* Détails */}
-                            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {item.course?.scheduled_date && format(new Date(item.course.scheduled_date), "d MMM à HH:mm", { locale: fr })}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="w-4 h-4" />
-                                {item.course?.passengers_count} passager(s)
-                              </span>
-                              <span className="text-xs">
-                                Tentatives: {item.attempts}
-                              </span>
-                            </div>
+      {/* Section Aujourd'hui */}
+      {activeSection === "today" && (
+        <CoursesSection
+          title="Courses d'aujourd'hui"
+          description="Toutes les courses programmées pour aujourd'hui"
+          icon={CalendarCheck}
+          iconColor="text-info"
+          courses={allCourses.filter(c => isToday(new Date(c.scheduled_date)) && ["accepted", "pending", "in_progress"].includes(c.status))}
+          emptyMessage="Aucune course aujourd'hui"
+          emptyIcon={Calendar}
+          getStatusConfig={getStatusConfig}
+          onView={(course) => {
+            setDetailCourse(course);
+            setShowCourseDetail(true);
+          }}
+        />
+      )}
+
+      {/* Section À venir */}
+      {activeSection === "upcoming" && (
+        <CoursesSection
+          title="Courses à venir"
+          description="Courses programmées pour les prochains jours"
+          icon={CalendarClock}
+          iconColor="text-accent"
+          courses={allCourses.filter(c => !isPast(new Date(c.scheduled_date)) && !isToday(new Date(c.scheduled_date)) && ["accepted", "pending"].includes(c.status))}
+          emptyMessage="Aucune course programmée"
+          emptyIcon={Calendar}
+          getStatusConfig={getStatusConfig}
+          onView={(course) => {
+            setDetailCourse(course);
+            setShowCourseDetail(true);
+          }}
+        />
+      )}
+
+      {/* Section Non affectées */}
+      {activeSection === "unassigned" && (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              Courses sans chauffeur
+            </CardTitle>
+            <CardDescription>
+              Ces courses n'ont pas pu être assignées automatiquement. Assignez-les manuellement.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {unassignedCourses.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-success/20 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                </div>
+                <p className="text-lg font-medium">Toutes les courses sont assignées</p>
+                <p className="text-muted-foreground">Excellent travail !</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {unassignedCourses.map(item => (
+                  <Card key={item.id} className="border-destructive/20 bg-destructive/5">
+                    <CardContent className="pt-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 border-2 border-destructive/30">
+                            <AvatarImage src={item.course?.client?.profile?.profile_photo_url || ""} />
+                            <AvatarFallback className="bg-destructive/20 text-destructive">
+                              {(item.course?.guest_name || item.course?.client?.profile?.full_name || "C").charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              {item.course?.guest_name || item.course?.client?.profile?.full_name || "Client"}
+                            </p>
+                            <Badge variant="destructive" className="text-xs">
+                              {item.reason === "no_available_driver" ? "Aucun chauffeur dispo" : item.reason}
+                            </Badge>
                           </div>
+                        </div>
 
-                          {/* Action forcer */}
+                        <div className="space-y-2 p-3 bg-background/50 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                            <span className="text-sm line-clamp-1">{item.course?.pickup_address}</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                            <span className="text-sm line-clamp-1">{item.course?.destination_address}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            {item.course?.scheduled_date && format(new Date(item.course.scheduled_date), "d MMM HH:mm", { locale: fr })}
+                          </div>
                           <Button
+                            size="sm"
                             onClick={() => {
                               setSelectedCourseForForce(item.course);
                               setShowForceAssignDialog(true);
@@ -809,81 +1016,116 @@ export const FleetCoursesManager = ({
                           </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Toutes les courses */}
-        <TabsContent value="all">
+      {/* Section Historique */}
+      {activeSection === "history" && (
+        <div className="space-y-4">
+          {/* Filtres */}
           <Card>
-            <CardContent className="pt-6">
-              {allCourses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Car className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Aucune course pour le moment</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[500px]">
-                  <div className="space-y-4">
-                    {allCourses.map(course => (
-                      <CourseCard 
-                        key={course.id}
-                        course={course}
-                        getStatusBadge={getStatusBadge}
-                        showForceButton={course.status === "pending"}
-                        onForce={() => {
-                          setSelectedCourseForForce(course);
-                          setShowForceAssignDialog(true);
-                        }}
-                        drivers={drivers}
-                      />
-                    ))}
+            <CardContent className="pt-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
-                </ScrollArea>
-              )}
+                </div>
+                <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="completed">Terminées</SelectItem>
+                    <SelectItem value="cancelled">Annulées</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterDriver} onValueChange={setFilterDriver}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Chauffeur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les chauffeurs</SelectItem>
+                    {drivers.map(d => (
+                      <SelectItem key={d.driver_id} value={d.driver?.id || d.driver_id}>
+                        {d.driver?.profile?.full_name || "Chauffeur"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
 
-      {/* Dialog création de course */}
+          <CoursesSection
+            title="Historique des courses"
+            description={`${filteredCourses.length} course(s) trouvée(s)`}
+            icon={FileText}
+            iconColor="text-muted-foreground"
+            courses={filteredCourses}
+            emptyMessage="Aucune course dans l'historique"
+            emptyIcon={FileText}
+            getStatusConfig={getStatusConfig}
+            onView={(course) => {
+              setDetailCourse(course);
+              setShowCourseDetail(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Dialog création */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Créer une course</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Créer une nouvelle course
+            </DialogTitle>
             <DialogDescription>
-              Créez une course pour un client existant ou un nouveau client
+              Planifiez une course pour un client existant ou nouveau
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             {/* Type de client */}
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-              <Label className="flex-1">Type de client</Label>
-              <div className="flex gap-2">
-                <Button
-                  variant={!isManualClient ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setIsManualClient(false)}
-                >
-                  Client existant
-                </Button>
-                <Button
-                  variant={isManualClient ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setIsManualClient(true)}
-                >
-                  Client manuel
-                </Button>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Card 
+                className={`cursor-pointer transition-all ${!isManualClient ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                onClick={() => setIsManualClient(false)}
+              >
+                <CardContent className="pt-4 text-center">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
+                  <p className="font-medium">Client existant</p>
+                  <p className="text-xs text-muted-foreground">Sélectionner un client</p>
+                </CardContent>
+              </Card>
+              <Card 
+                className={`cursor-pointer transition-all ${isManualClient ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                onClick={() => setIsManualClient(true)}
+              >
+                <CardContent className="pt-4 text-center">
+                  <User className="w-8 h-8 mx-auto mb-2 text-primary" />
+                  <p className="font-medium">Nouveau client</p>
+                  <p className="text-xs text-muted-foreground">Saisie manuelle</p>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Sélection client existant */}
-            {!isManualClient && (
+            {!isManualClient ? (
               <div className="space-y-2">
                 <Label>Client</Label>
                 <Select
@@ -901,21 +1143,12 @@ export const FleetCoursesManager = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {clients.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Aucun client enregistré. Utilisez un client manuel.
-                  </p>
-                )}
               </div>
-            )}
-
-            {/* Client manuel */}
-            {isManualClient && (
-              <div className="space-y-4 p-4 border border-dashed rounded-lg">
+            ) : (
+              <div className="space-y-4 p-4 border border-dashed rounded-xl bg-muted/30">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Nom du client *
+                    <User className="w-4 h-4" /> Nom *
                   </Label>
                   <Input
                     value={newCourse.guestName}
@@ -926,8 +1159,7 @@ export const FleetCoursesManager = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      Téléphone
+                      <Phone className="w-4 h-4" /> Téléphone
                     </Label>
                     <Input
                       value={newCourse.guestPhone}
@@ -937,8 +1169,7 @@ export const FleetCoursesManager = ({
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Email
+                      <Mail className="w-4 h-4" /> Email
                     </Label>
                     <Input
                       type="email"
@@ -948,13 +1179,9 @@ export const FleetCoursesManager = ({
                     />
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Ce client pourra s'inscrire via votre lien pour retrouver ses informations
-                </p>
               </div>
             )}
 
-            {/* Chauffeur */}
             <div className="space-y-2">
               <Label>Chauffeur *</Label>
               <Select
@@ -974,10 +1201,9 @@ export const FleetCoursesManager = ({
               </Select>
             </div>
 
-            {/* Adresses */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Adresse de prise en charge *</Label>
+                <Label>Prise en charge *</Label>
                 <AddressAutocomplete
                   value={newCourse.pickupAddress}
                   onChange={(address, coordinates) => setNewCourse({
@@ -990,7 +1216,7 @@ export const FleetCoursesManager = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Adresse de destination *</Label>
+                <Label>Destination *</Label>
                 <AddressAutocomplete
                   value={newCourse.destinationAddress}
                   onChange={(address, coordinates) => setNewCourse({
@@ -1004,8 +1230,7 @@ export const FleetCoursesManager = ({
               </div>
             </div>
 
-            {/* Date et heure */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Date *</Label>
                 <Input
@@ -1023,29 +1248,26 @@ export const FleetCoursesManager = ({
                   onChange={(e) => setNewCourse({ ...newCourse, scheduledTime: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Passagers</Label>
+                <Select
+                  value={newCourse.passengersCount.toString()}
+                  onValueChange={(v) => setNewCourse({ ...newCourse, passengersCount: parseInt(v) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                      <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Passagers */}
             <div className="space-y-2">
-              <Label>Nombre de passagers</Label>
-              <Select
-                value={newCourse.passengersCount.toString()}
-                onValueChange={(v) => setNewCourse({ ...newCourse, passengersCount: parseInt(v) })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label>Notes (optionnel)</Label>
+              <Label>Notes</Label>
               <Textarea
                 value={newCourse.notes}
                 onChange={(e) => setNewCourse({ ...newCourse, notes: e.target.value })}
@@ -1059,15 +1281,15 @@ export const FleetCoursesManager = ({
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               Annuler
             </Button>
-            <Button onClick={handleCreateCourse} disabled={creating}>
-              {creating && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+            <Button onClick={handleCreateCourse} disabled={creating} className="gap-2">
+              {creating && <Loader2 className="w-4 h-4 animate-spin" />}
               Créer la course
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de confirmation */}
+      {/* Dialog confirmation action */}
       <AlertDialog 
         open={!!selectedCourse && !!actionType}
         onOpenChange={() => {
@@ -1111,7 +1333,7 @@ export const FleetCoursesManager = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog forcer assignation */}
+      {/* Dialog force assign */}
       <Dialog open={showForceAssignDialog} onOpenChange={(open) => {
         setShowForceAssignDialog(open);
         if (!open) {
@@ -1126,27 +1348,29 @@ export const FleetCoursesManager = ({
               Assigner manuellement
             </DialogTitle>
             <DialogDescription>
-              Forcez l'assignation de cette course à un chauffeur, même si son planning est chargé.
+              Forcez l'assignation de cette course à un chauffeur
             </DialogDescription>
           </DialogHeader>
 
           {selectedCourseForForce && (
             <div className="space-y-4">
-              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                <div className="flex items-start gap-2 text-sm">
+              <div className="p-4 bg-muted/50 rounded-xl space-y-3">
+                <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                  <span>{selectedCourseForForce.pickup_address}</span>
+                  <span className="text-sm">{selectedCourseForForce.pickup_address}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <ArrowRight className="w-3 h-3" />
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <ArrowRight className="w-4 h-4" />
                 </div>
-                <div className="flex items-start gap-2 text-sm">
+                <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                  <span>{selectedCourseForForce.destination_address}</span>
+                  <span className="text-sm">{selectedCourseForForce.destination_address}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                  <Calendar className="w-4 h-4" />
-                  {format(new Date(selectedCourseForForce.scheduled_date), "EEEE d MMMM à HH:mm", { locale: fr })}
+                <div className="pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(selectedCourseForForce.scheduled_date), "EEEE d MMMM à HH:mm", { locale: fr })}
+                  </div>
                 </div>
               </div>
 
@@ -1164,9 +1388,6 @@ export const FleetCoursesManager = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-warning">
-                  ⚠️ Le chauffeur sera notifié et la course sera ajoutée à son planning.
-                </p>
               </div>
             </div>
           )}
@@ -1177,7 +1398,103 @@ export const FleetCoursesManager = ({
             </Button>
             <Button onClick={handleForceAssign} disabled={forceAssigning || !forceDriverId}>
               {forceAssigning && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Confirmer l'assignation
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog détail course */}
+      <Dialog open={showCourseDetail} onOpenChange={setShowCourseDetail}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Détail de la course
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailCourse && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={detailCourse.client?.profile?.profile_photo_url || ""} />
+                    <AvatarFallback>
+                      {(detailCourse.guest_name || detailCourse.client?.profile?.full_name || "C").charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{detailCourse.guest_name || detailCourse.client?.profile?.full_name || "Client"}</p>
+                    <p className="text-sm text-muted-foreground">{detailCourse.guest_name ? "Client manuel" : "Client enregistré"}</p>
+                  </div>
+                </div>
+                <Badge className={getStatusConfig(detailCourse.status).color}>
+                  {getStatusConfig(detailCourse.status).label}
+                </Badge>
+              </div>
+
+              <div className="space-y-3 p-4 bg-muted/50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Départ</p>
+                    <p className="text-sm">{detailCourse.pickup_address}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Arrivée</p>
+                    <p className="text-sm">{detailCourse.destination_address}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Calendar className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                  <p className="text-sm font-medium">{format(new Date(detailCourse.scheduled_date), "d MMM", { locale: fr })}</p>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Timer className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                  <p className="text-sm font-medium">{format(new Date(detailCourse.scheduled_date), "HH:mm", { locale: fr })}</p>
+                  <p className="text-xs text-muted-foreground">Heure</p>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Users className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                  <p className="text-sm font-medium">{detailCourse.passengers_count}</p>
+                  <p className="text-xs text-muted-foreground">Passager(s)</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                <Car className="w-5 h-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-medium">{detailCourse.driver?.profile?.full_name || "Non assigné"}</p>
+                  {detailCourse.driver && (
+                    <p className="text-sm text-muted-foreground">{detailCourse.driver.vehicle_brand} {detailCourse.driver.vehicle_model}</p>
+                  )}
+                </div>
+              </div>
+
+              {detailCourse.notes && (
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Notes</p>
+                  <p className="text-sm mt-1">{detailCourse.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCourseDetail(false)}>
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1186,114 +1503,241 @@ export const FleetCoursesManager = ({
   );
 };
 
-// Composant CourseCard
-interface CourseCardProps {
-  course: Course;
-  showActions?: boolean;
-  showForceButton?: boolean;
-  onApprove?: () => void;
-  onReject?: () => void;
-  onForce?: () => void;
-  getStatusBadge: (status: string) => JSX.Element;
-  drivers?: FleetDriver[];
+// Composant carte de navigation
+interface NavigationCardProps {
+  title: string;
+  count: number;
+  icon: any;
+  color: string;
+  iconColor: string;
+  active: boolean;
+  onClick: () => void;
+  urgent?: boolean;
 }
 
-const CourseCard = ({ 
-  course, 
-  showActions, 
-  showForceButton,
-  onApprove, 
-  onReject, 
-  onForce,
-  getStatusBadge 
-}: CourseCardProps) => {
-  const clientName = course.client?.profile?.full_name || course.guest_name || "Client";
-  const isGuest = !!course.guest_name;
+const NavigationCard = ({ title, count, icon: Icon, color, iconColor, active, onClick, urgent }: NavigationCardProps) => (
+  <Card 
+    className={`cursor-pointer transition-all hover:scale-[1.02] ${active ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"}`}
+    onClick={onClick}
+  >
+    <CardContent className={`pt-4 bg-gradient-to-br ${color} relative overflow-hidden`}>
+      {urgent && count > 0 && (
+        <div className="absolute top-2 right-2">
+          <span className="flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive"></span>
+          </span>
+        </div>
+      )}
+      <div className="flex flex-col items-center text-center">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${active ? "bg-primary text-white" : "bg-background/50"}`}>
+          <Icon className={`w-5 h-5 ${active ? "text-white" : iconColor}`} />
+        </div>
+        <p className="text-2xl font-bold">{count}</p>
+        <p className="text-xs text-muted-foreground truncate w-full">{title}</p>
+      </div>
+    </CardContent>
+  </Card>
+);
 
+// Composant section de courses
+interface CoursesSectionProps {
+  title: string;
+  description: string;
+  icon: any;
+  iconColor: string;
+  courses: Course[];
+  emptyMessage: string;
+  emptyIcon: any;
+  getStatusConfig: (status: string) => { label: string; color: string; icon: any };
+  showActions?: boolean;
+  onApprove?: (course: Course) => void;
+  onReject?: (course: Course) => void;
+  onView: (course: Course) => void;
+}
+
+const CoursesSection = ({ 
+  title, 
+  description, 
+  icon: Icon, 
+  iconColor, 
+  courses, 
+  emptyMessage, 
+  emptyIcon: EmptyIcon,
+  getStatusConfig,
+  showActions,
+  onApprove,
+  onReject,
+  onView
+}: CoursesSectionProps) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className={`flex items-center gap-2 ${iconColor}`}>
+        <Icon className="w-5 h-5" />
+        {title}
+      </CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {courses.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+            <EmptyIcon className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground">{emptyMessage}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {courses.map(course => (
+            <ModernCourseCard
+              key={course.id}
+              course={course}
+              getStatusConfig={getStatusConfig}
+              showActions={showActions}
+              onApprove={onApprove ? () => onApprove(course) : undefined}
+              onReject={onReject ? () => onReject(course) : undefined}
+              onView={() => onView(course)}
+            />
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
+
+// Carte de course compacte
+interface CompactCourseCardProps {
+  course: Course;
+  getStatusConfig: (status: string) => { label: string; color: string; icon: any };
+  onView: () => void;
+}
+
+const CompactCourseCard = ({ course, getStatusConfig, onView }: CompactCourseCardProps) => {
+  const statusConfig = getStatusConfig(course.status);
+  const StatusIcon = statusConfig.icon;
+  
   return (
-    <div className="p-4 border border-border rounded-lg bg-card hover:bg-muted/50 transition-colors">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 space-y-3">
-          {/* Client + Status */}
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
+    <Card className="hover:shadow-md transition-all cursor-pointer" onClick={onView}>
+      <CardContent className="pt-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Avatar className="w-8 h-8">
               <AvatarImage src={course.client?.profile?.profile_photo_url || ""} />
-              <AvatarFallback>
-                {clientName.charAt(0).toUpperCase()}
+              <AvatarFallback className="text-xs">
+                {(course.guest_name || course.client?.profile?.full_name || "C").charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <p className="font-medium">{clientName}</p>
-              <p className="text-xs text-muted-foreground">
-                {isGuest ? "Client manuel" : "Client"}
-              </p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">{course.guest_name || course.client?.profile?.full_name || "Client"}</p>
+              <p className="text-xs text-muted-foreground">{format(new Date(course.scheduled_date), "HH:mm", { locale: fr })}</p>
             </div>
-            {getStatusBadge(course.status)}
+          </div>
+          <Badge className={`text-xs ${statusConfig.color}`}>
+            <StatusIcon className="w-3 h-3 mr-1" />
+            {statusConfig.label}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+            <span className="text-xs line-clamp-1">{course.pickup_address}</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3 h-3 text-destructive mt-0.5 shrink-0" />
+            <span className="text-xs line-clamp-1">{course.destination_address}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Carte de course moderne
+interface ModernCourseCardProps {
+  course: Course;
+  getStatusConfig: (status: string) => { label: string; color: string; icon: any };
+  showActions?: boolean;
+  onApprove?: () => void;
+  onReject?: () => void;
+  onView: () => void;
+}
+
+const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onReject, onView }: ModernCourseCardProps) => {
+  const statusConfig = getStatusConfig(course.status);
+  const StatusIcon = statusConfig.icon;
+  const clientName = course.guest_name || course.client?.profile?.full_name || "Client";
+
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-all group">
+      <CardContent className="pt-4">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 border-2 border-border group-hover:border-primary/50 transition-colors">
+                <AvatarImage src={course.client?.profile?.profile_photo_url || ""} />
+                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                  {clientName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{clientName}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3" />
+                  {format(new Date(course.scheduled_date), "d MMM à HH:mm", { locale: fr })}
+                </div>
+              </div>
+            </div>
+            <Badge className={`${statusConfig.color} shrink-0`}>
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {statusConfig.label}
+            </Badge>
           </div>
 
           {/* Itinéraire */}
-          <div className="space-y-1">
+          <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
             <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              <span className="text-sm">{course.pickup_address}</span>
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+              </div>
+              <span className="text-sm line-clamp-1">{course.pickup_address}</span>
             </div>
             <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-              <span className="text-sm">{course.destination_address}</span>
+              <div className="w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center shrink-0">
+                <div className="w-2 h-2 rounded-full bg-destructive" />
+              </div>
+              <span className="text-sm line-clamp-1">{course.destination_address}</span>
             </div>
           </div>
 
-          {/* Détails */}
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {format(new Date(course.scheduled_date), "d MMM à HH:mm", { locale: fr })}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {course.passengers_count} passager(s)
-            </span>
-            <span className="flex items-center gap-1">
-              <Car className="w-4 h-4" />
-              {course.driver?.profile?.full_name || "Non assigné"}
-            </span>
+          {/* Info chauffeur */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Car className="w-4 h-4" />
+            <span className="truncate">{course.driver?.profile?.full_name || "Non assigné"}</span>
+            <span className="text-muted-foreground/50">•</span>
+            <Users className="w-4 h-4" />
+            <span>{course.passengers_count}</span>
           </div>
 
-          {course.notes && (
-            <p className="text-sm text-muted-foreground italic">"{course.notes}"</p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
-          {showActions && (
-            <>
-              <Button
-                size="sm"
-                onClick={onApprove}
-                className="bg-success hover:bg-success/90"
-              >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Approuver
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={onReject}
-              >
-                <XCircle className="w-4 h-4 mr-1" />
-                Refuser
-              </Button>
-            </>
-          )}
-          {showForceButton && onForce && (
-            <Button size="sm" variant="outline" onClick={onForce}>
-              <Send className="w-4 h-4 mr-1" />
-              Assigner
+          {/* Actions */}
+          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+            <Button variant="ghost" size="sm" className="flex-1" onClick={onView}>
+              <Eye className="w-4 h-4 mr-1" />
+              Détails
             </Button>
-          )}
+            {showActions && (
+              <>
+                <Button size="sm" className="bg-success hover:bg-success/90" onClick={onApprove}>
+                  <CheckCircle className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="destructive" onClick={onReject}>
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
