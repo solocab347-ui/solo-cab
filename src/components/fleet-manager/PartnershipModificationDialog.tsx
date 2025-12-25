@@ -79,6 +79,7 @@ export const PartnershipModificationDialog = ({
       if (fetchError) throw fetchError;
 
       // Update the partnership with modification request
+      // Cast to any to handle new columns not yet in generated types
       const { error: updateError } = await supabase
         .from("fleet_driver_partnerships")
         .update({
@@ -88,7 +89,7 @@ export const PartnershipModificationDialog = ({
           pending_new_payment_schedule: newPaymentSchedule,
           pending_modification_reason: reason,
           pending_modification_at: new Date().toISOString(),
-        })
+        } as any)
         .eq("id", partnershipId);
 
       if (updateError) throw updateError;
