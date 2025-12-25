@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Car, Calendar, LogOut, Building2, MessageSquare, Shield, Home, FileText, User, Lock } from "lucide-react";
+import { Car, Calendar, LogOut, Building2, MessageSquare, Shield, Home, FileText, User, Lock, Settings } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -12,6 +12,8 @@ import { DriverHome } from "@/components/driver/DriverHomeMemoized";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import DriverPlanning from "@/components/driver/DriverPlanning";
 import { FleetDriverDocuments } from "@/components/fleet-manager/FleetDriverDocuments";
+import { FleetDriverAutoAccept } from "@/components/fleet-manager/FleetDriverAutoAccept";
+import { FleetDriverDeclineCourse } from "@/components/fleet-manager/FleetDriverDeclineCourse";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { Link } from "react-router-dom";
@@ -327,67 +329,77 @@ const FleetDriverDashboard = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile">
-            <Card className="p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Mon Profil</h2>
-              
-              <div className="space-y-6">
-                {/* Info (read-only) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">Nom</Label>
-                    <p className="font-medium">{driverProfile?.full_name}</p>
+            <div className="space-y-6">
+              <Card className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-4">Mon Profil</h2>
+                
+                <div className="space-y-6">
+                  {/* Info (read-only) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Nom</Label>
+                      <p className="font-medium">{driverProfile?.full_name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Véhicule</Label>
+                      <p className="font-medium">
+                        {driverProfile?.driver?.vehicle_brand} {driverProfile?.driver?.vehicle_model}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="text-muted-foreground">Véhicule</Label>
-                    <p className="font-medium">
-                      {driverProfile?.driver?.vehicle_brand} {driverProfile?.driver?.vehicle_model}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Privacy settings */}
-                <div className="space-y-4">
-                  <h3 className="font-medium">Paramètres de confidentialité</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label>Afficher mon téléphone aux clients</Label>
-                    <Switch
-                      checked={showPhone}
-                      onCheckedChange={setShowPhone}
+                  {/* Privacy settings */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Paramètres de confidentialité</h3>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label>Afficher mon téléphone aux clients</Label>
+                      <Switch
+                        checked={showPhone}
+                        onCheckedChange={setShowPhone}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label>Afficher mon email aux clients</Label>
+                      <Switch
+                        checked={showEmail}
+                        onCheckedChange={setShowEmail}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <Label htmlFor="serviceDescription">Description de vos services</Label>
+                    <textarea
+                      id="serviceDescription"
+                      value={serviceDescription}
+                      onChange={(e) => setServiceDescription(e.target.value)}
+                      className="w-full mt-2 p-3 border rounded-lg bg-background"
+                      rows={3}
+                      placeholder="Décrivez vos services..."
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label>Afficher mon email aux clients</Label>
-                    <Switch
-                      checked={showEmail}
-                      onCheckedChange={setShowEmail}
-                    />
-                  </div>
+                  <Button 
+                    onClick={handleUpdateProfile} 
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+                  </Button>
                 </div>
+              </Card>
 
-                {/* Description */}
-                <div>
-                  <Label htmlFor="serviceDescription">Description de vos services</Label>
-                  <textarea
-                    id="serviceDescription"
-                    value={serviceDescription}
-                    onChange={(e) => setServiceDescription(e.target.value)}
-                    className="w-full mt-2 p-3 border rounded-lg bg-background"
-                    rows={3}
-                    placeholder="Décrivez vos services..."
-                  />
-                </div>
-
-                <Button 
-                  onClick={handleUpdateProfile} 
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-                </Button>
-              </div>
-            </Card>
+              {/* Auto-accept courses settings */}
+              {driverProfile?.driver?.id && driverProfile?.driver?.fleet_manager_id && (
+                <FleetDriverAutoAccept 
+                  driverId={driverProfile.driver.id}
+                  fleetManagerId={driverProfile.driver.fleet_manager_id}
+                />
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -66,6 +66,7 @@ import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
 import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/FleetDriverDocumentsValidation";
 import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
 import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCourses";
+import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -967,34 +968,45 @@ const FleetManagerDashboard = () => {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Card className="bg-card/50 backdrop-blur border-white/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Paramètres
-                </CardTitle>
-                <CardDescription>
-                  Configurez les options de votre flotte
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
-                  <div className="flex items-center gap-4">
-                    <Globe className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Visibilité publique</p>
-                      <p className="text-sm text-muted-foreground">
-                        Afficher vos chauffeurs dans la vitrine publique SoloCab
-                      </p>
+            <Tabs defaultValue="general" className="space-y-6">
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="general">Général</TabsTrigger>
+                <TabsTrigger value="dispatch">Dispatch automatique</TabsTrigger>
+              </TabsList>
+              <TabsContent value="general">
+                <Card className="bg-card/50 backdrop-blur border-white/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Paramètres généraux
+                    </CardTitle>
+                    <CardDescription>
+                      Configurez les options de votre flotte
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-4">
+                        <Globe className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Visibilité publique</p>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher vos chauffeurs dans la vitrine publique SoloCab
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={fleetManager.show_drivers_in_public_storefront}
+                        onCheckedChange={togglePublicStorefront}
+                      />
                     </div>
-                  </div>
-                  <Switch
-                    checked={fleetManager.show_drivers_in_public_storefront}
-                    onCheckedChange={togglePublicStorefront}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="dispatch">
+                <FleetDispatchSettings fleetManagerId={fleetManager.id} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Statistics Tab */}
