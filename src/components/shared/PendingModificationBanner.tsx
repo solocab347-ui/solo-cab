@@ -49,6 +49,7 @@ export const PendingModificationBanner = ({
   const handleAccept = async () => {
     setProcessing(true);
     try {
+      // Cast to any to handle new columns not yet in generated types
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .update({
@@ -61,7 +62,7 @@ export const PendingModificationBanner = ({
           pending_modification_reason: null,
           pending_modification_at: null,
           last_modified_at: new Date().toISOString(),
-        })
+        } as any)
         .eq("id", partnershipId);
 
       if (error) throw error;
@@ -115,6 +116,7 @@ export const PendingModificationBanner = ({
   const handleReject = async () => {
     setProcessing(true);
     try {
+      // Cast to any to handle new columns not yet in generated types
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .update({
@@ -124,7 +126,7 @@ export const PendingModificationBanner = ({
           pending_new_payment_schedule: null,
           pending_modification_reason: null,
           pending_modification_at: null,
-        })
+        } as any)
         .eq("id", partnershipId);
 
       if (error) throw error;
@@ -178,6 +180,7 @@ export const PendingModificationBanner = ({
   const handleCancel = async () => {
     setProcessing(true);
     try {
+      // Cast to any to handle new columns not yet in generated types
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .update({
@@ -187,7 +190,7 @@ export const PendingModificationBanner = ({
           pending_new_payment_schedule: null,
           pending_modification_reason: null,
           pending_modification_at: null,
-        })
+        } as any)
         .eq("id", partnershipId);
 
       if (error) throw error;

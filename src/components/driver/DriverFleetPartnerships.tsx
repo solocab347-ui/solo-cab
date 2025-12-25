@@ -25,8 +25,11 @@ import {
   Users,
   Percent,
   AlertTriangle,
-  Car
+  Car,
+  Edit
 } from "lucide-react";
+import { PartnershipModificationDialog } from "@/components/fleet-manager/PartnershipModificationDialog";
+import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 
 interface DriverFleetPartnershipsProps {
   driverId: string;
@@ -59,6 +62,12 @@ interface Partnership {
   proposal_message: string | null;
   rejection_reason: string | null;
   proposed_at: string;
+  payment_schedule?: string;
+  pending_modification?: boolean;
+  pending_modification_by?: string;
+  pending_new_commission?: number;
+  pending_new_payment_schedule?: string;
+  pending_modification_reason?: string;
   fleet_manager?: Partial<FleetManager>;
 }
 
@@ -71,6 +80,10 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Modification dialog state
+  const [showModificationDialog, setShowModificationDialog] = useState(false);
+  const [modifyingPartnership, setModifyingPartnership] = useState<Partnership | null>(null);
 
   useEffect(() => {
     if (driverId) {
@@ -428,10 +441,25 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                   <p className="text-muted-foreground">Aucun partenariat actif</p>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
                   {activePartnerships.map((partnership) => (
                     <Card key={partnership.id} className="border-success/30 bg-success/5">
-                      <CardContent className="p-4">
+                      <CardContent className="p-4 space-y-4">
+                        {/* Pending modification banner */}
+                        {partnership.pending_modification && (
+                          <PendingModificationBanner
+                            partnershipId={partnership.id}
+                            pendingCommission={partnership.pending_new_commission || partnership.commission_percentage}
+                            pendingPaymentSchedule={partnership.pending_new_payment_schedule || partnership.payment_schedule || "per_course"}
+                            currentCommission={partnership.commission_percentage}
+                            currentPaymentSchedule={partnership.payment_schedule || "per_course"}
+                            reason={partnership.pending_modification_reason || ""}
+                            initiatedBy={partnership.pending_modification_by as "fleet_manager" | "driver"}
+                            isInitiator={partnership.pending_modification_by === "driver"}
+                            onResponse={fetchData}
+                          />
+                        )}
+
                         <div className="flex items-center gap-4">
                           <Avatar className="w-14 h-14 border-2 border-success/30">
                             <AvatarImage src={partnership.fleet_manager?.logo_url || undefined} />
@@ -459,6 +487,21 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                               </Badge>
                             </div>
                           </div>
+                          
+                          {/* Modify button */}
+                          {!partnership.pending_modification && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setModifyingPartnership(partnership);
+                                setShowModificationDialog(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Modifier
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -536,6 +579,20 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Partnership Modification Dialog */}
+      {modifyingPartnership && (
+        <PartnershipModificationDialog
+          open={showModificationDialog}
+          onOpenChange={setShowModificationDialog}
+          partnershipId={modifyingPartnership.id}
+          currentCommission={modifyingPartnership.commission_percentage}
+          currentPaymentSchedule={modifyingPartnership.payment_schedule || "per_course"}
+          partnerName={modifyingPartnership.fleet_manager?.company_name || "Gestionnaire"}
+          initiatorType="driver"
+          onSuccess={fetchData}
+        />
+      )}
     </div>
   );
 };

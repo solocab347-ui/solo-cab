@@ -2913,11 +2913,18 @@ export type Database = {
           fleet_manager_signed_at: string | null
           id: string
           initiated_by: string
+          last_modified_at: string | null
           last_payment_date: string | null
           next_payment_date: string | null
           partnership_suspended: boolean | null
           payment_reminder_sent_at: string | null
           payment_schedule: string | null
+          pending_modification: boolean | null
+          pending_modification_at: string | null
+          pending_modification_by: string | null
+          pending_modification_reason: string | null
+          pending_new_commission: number | null
+          pending_new_payment_schedule: string | null
           proposal_message: string | null
           proposed_at: string | null
           rejected_at: string | null
@@ -2943,11 +2950,18 @@ export type Database = {
           fleet_manager_signed_at?: string | null
           id?: string
           initiated_by: string
+          last_modified_at?: string | null
           last_payment_date?: string | null
           next_payment_date?: string | null
           partnership_suspended?: boolean | null
           payment_reminder_sent_at?: string | null
           payment_schedule?: string | null
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_reason?: string | null
+          pending_new_commission?: number | null
+          pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
           rejected_at?: string | null
@@ -2973,11 +2987,18 @@ export type Database = {
           fleet_manager_signed_at?: string | null
           id?: string
           initiated_by?: string
+          last_modified_at?: string | null
           last_payment_date?: string | null
           next_payment_date?: string | null
           partnership_suspended?: boolean | null
           payment_reminder_sent_at?: string | null
           payment_schedule?: string | null
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_reason?: string | null
+          pending_new_commission?: number | null
+          pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
           rejected_at?: string | null
