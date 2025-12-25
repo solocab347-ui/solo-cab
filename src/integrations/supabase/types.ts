@@ -2498,6 +2498,94 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_documents_archive: {
+        Row: {
+          archived_at: string | null
+          created_at: string | null
+          document_key: string
+          document_label: string
+          document_url: string
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+          status: string | null
+          uploaded_at: string
+          validated_at: string | null
+          validated_by_user_id: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string | null
+          document_key: string
+          document_label: string
+          document_url: string
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+          status?: string | null
+          uploaded_at: string
+          validated_at?: string | null
+          validated_by_user_id?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string | null
+          document_key?: string
+          document_label?: string
+          document_url?: string
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          status?: string | null
+          uploaded_at?: string
+          validated_at?: string | null
+          validated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_invitations: {
         Row: {
           commission_accepted: boolean | null
@@ -2785,6 +2873,9 @@ export type Database = {
           payment_agreement_signed: boolean | null
           payment_agreement_signed_at: string | null
           payment_schedule: string | null
+          removed_at: string | null
+          removed_by_manager: boolean | null
+          removed_reason: string | null
           status: string
           storefront_display_order: number | null
           total_owed: number | null
@@ -2804,6 +2895,9 @@ export type Database = {
           payment_agreement_signed?: boolean | null
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
+          removed_at?: string | null
+          removed_by_manager?: boolean | null
+          removed_reason?: string | null
           status?: string
           storefront_display_order?: number | null
           total_owed?: number | null
@@ -2823,6 +2917,9 @@ export type Database = {
           payment_agreement_signed?: boolean | null
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
+          removed_at?: string | null
+          removed_by_manager?: boolean | null
+          removed_reason?: string | null
           status?: string
           storefront_display_order?: number | null
           total_owed?: number | null
@@ -3006,6 +3103,7 @@ export type Database = {
           contact_email: string
           contact_name: string
           contact_phone: string | null
+          course_buffer_minutes: number | null
           created_at: string
           default_commission_percentage: number | null
           default_partnership_commission: number | null
@@ -3067,6 +3165,7 @@ export type Database = {
           contact_email: string
           contact_name: string
           contact_phone?: string | null
+          course_buffer_minutes?: number | null
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null
@@ -3128,6 +3227,7 @@ export type Database = {
           contact_email?: string
           contact_name?: string
           contact_phone?: string | null
+          course_buffer_minutes?: number | null
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null

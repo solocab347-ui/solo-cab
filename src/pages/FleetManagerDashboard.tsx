@@ -69,6 +69,8 @@ import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCo
 import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
 import { FleetRequiredDocumentsManager } from "@/components/fleet-manager/FleetRequiredDocumentsManager";
 import { FleetDriversDocumentsReview } from "@/components/fleet-manager/FleetDriversDocumentsReview";
+import { FleetDriverDocumentsArchive } from "@/components/fleet-manager/FleetDriverDocumentsArchive";
+import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -728,6 +730,17 @@ const FleetManagerDashboard = () => {
                       <Globe className="w-4 h-4 mr-2" />
                       Voir profil public
                     </Button>
+                    {selectedDriver.driver?.id && (
+                      <FleetDriverRemoval
+                        driverId={selectedDriver.driver.id}
+                        driverName={selectedDriver.driver.profile?.full_name || "Ce chauffeur"}
+                        fleetManagerId={fleetManager.id}
+                        onRemoved={() => {
+                          fetchData();
+                          setActiveTab("drivers");
+                        }}
+                      />
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1068,6 +1081,9 @@ const FleetManagerDashboard = () => {
             
             {/* Documents des chauffeurs */}
             <FleetDriversDocumentsReview fleetManagerId={fleetManager.id} />
+            
+            {/* Archive des documents */}
+            <FleetDriverDocumentsArchive fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Promotions Tab */}

@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Save, MapPin, Zap, Users, Navigation } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock } from "lucide-react";
 
 interface FleetDispatchSettingsProps {
   fleetManagerId: string;
@@ -17,6 +19,7 @@ interface DispatchSettings {
   dispatch_priority: "proximity" | "availability" | "rating";
   favorite_driver_priority: boolean;
   assignment_mode: string;
+  course_buffer_minutes: number;
 }
 
 export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsProps) => {
@@ -27,6 +30,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
     dispatch_priority: "proximity",
     favorite_driver_priority: true,
     assignment_mode: "manual",
+    course_buffer_minutes: 60,
   });
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
     try {
       const { data, error } = await supabase
         .from("fleet_managers")
-        .select("auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode")
+        .select("auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode, course_buffer_minutes")
         .eq("id", fleetManagerId)
         .single();
 
@@ -48,6 +52,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
           dispatch_priority: (data.dispatch_priority as DispatchSettings["dispatch_priority"]) || "proximity",
           favorite_driver_priority: data.favorite_driver_priority !== false,
           assignment_mode: data.assignment_mode || "manual",
+          course_buffer_minutes: data.course_buffer_minutes || 60,
         });
       }
     } catch (error) {
@@ -67,6 +72,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
           dispatch_priority: settings.dispatch_priority,
           favorite_driver_priority: settings.favorite_driver_priority,
           assignment_mode: settings.auto_dispatch_enabled ? "automatic" : settings.assignment_mode,
+          course_buffer_minutes: settings.course_buffer_minutes,
         })
         .eq("id", fleetManagerId);
 
@@ -205,6 +211,44 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Buffer Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Temps de buffer entre les courses
+          </CardTitle>
+          <CardDescription>
+            Définissez le temps minimum entre deux courses pour vos chauffeurs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Label htmlFor="buffer" className="min-w-fit">Temps de buffer :</Label>
+            <Select
+              value={settings.course_buffer_minutes.toString()}
+              onValueChange={(value) => setSettings({ ...settings, course_buffer_minutes: parseInt(value) })}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15 minutes</SelectItem>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="45">45 minutes</SelectItem>
+                <SelectItem value="60">1 heure (recommandé)</SelectItem>
+                <SelectItem value="90">1h30</SelectItem>
+                <SelectItem value="120">2 heures</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Ce buffer sera appliqué avant et après chaque course lors de la recherche de disponibilité des chauffeurs.
+            Un buffer de 1 heure est recommandé pour permettre aux chauffeurs de se déplacer entre les courses.
+          </p>
         </CardContent>
       </Card>
 

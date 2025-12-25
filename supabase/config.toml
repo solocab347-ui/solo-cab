@@ -122,3 +122,6 @@ verify_jwt = true
 
 [functions.auto-reassign-course]
 verify_jwt = true
+
+[functions.send-driver-fleet-removal]
+verify_jwt = true
