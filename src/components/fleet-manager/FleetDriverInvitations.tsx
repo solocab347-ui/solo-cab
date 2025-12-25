@@ -4,11 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Copy, Trash2, Loader2, AlertTriangle, CheckCircle, Euro, Users, Percent, Briefcase, UserCheck } from "lucide-react";
+import { 
+  Send, 
+  Copy, 
+  Trash2, 
+  Loader2, 
+  CheckCircle, 
+  Euro, 
+  Users, 
+  Percent, 
+  Briefcase, 
+  UserCheck,
+  Link2,
+  Clock,
+  Plus,
+  Sparkles,
+} from "lucide-react";
 
 interface FleetDriverInvitationsProps {
   fleetManagerId: string;
@@ -48,6 +62,8 @@ export const FleetDriverInvitations = ({
   const pendingFreeInvitations = pendingInvitations.filter((i) => !i.is_paid);
   const effectiveFreeRemaining = Math.max(0, freeDriversRemaining - pendingFreeInvitations.length);
   const nextDriverIsPaid = effectiveFreeRemaining === 0;
+
+  const usedInvitations = invitations.filter((i) => i.used);
 
   useEffect(() => {
     fetchInvitations();
@@ -93,7 +109,7 @@ export const FleetDriverInvitations = ({
 
       if (error) throw error;
 
-      const typeLabel = driverType === "salaried" ? "salarié/équipement gestionnaire" : `indépendant (${commissionPercentage}% commission)`;
+      const typeLabel = driverType === "salaried" ? "salarié" : `indépendant (${commissionPercentage}%)`;
       toast.success(`Invitation créée pour chauffeur ${typeLabel}`);
       setNewEmail("");
       setDriverType("salaried");
@@ -133,109 +149,122 @@ export const FleetDriverInvitations = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Quota Info */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Chauffeurs gratuits restants</p>
-                <p className="text-2xl font-bold">
-                  {effectiveFreeRemaining} / {maxFreeDrivers}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Users className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Quota gratuit</p>
+              <p className="text-3xl font-bold text-foreground">
+                {effectiveFreeRemaining} <span className="text-lg text-muted-foreground">/ {maxFreeDrivers}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-success/10 via-success/5 to-transparent border border-success/20 p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <CheckCircle className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Utilisées</p>
+              <p className="text-3xl font-bold text-foreground">{usedInvitations.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warning/10 via-warning/5 to-transparent border border-warning/20 p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-warning to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Clock className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">En attente</p>
+              <p className="text-3xl font-bold text-foreground">{pendingInvitations.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Création d'invitation */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent" />
+        
+        <div className="relative p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
+              <Plus className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Nouvelle invitation</h3>
+              <p className="text-sm text-muted-foreground">Définissez le type de chauffeur à inviter</p>
+            </div>
+          </div>
+
+          {/* Type de chauffeur */}
+          <RadioGroup
+            value={driverType}
+            onValueChange={(value) => setDriverType(value as "salaried" | "independent")}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <Label
+              htmlFor="salaried"
+              className={`relative overflow-hidden flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all ${
+                driverType === "salaried"
+                  ? "bg-primary/10 border-2 border-primary"
+                  : "bg-muted/30 border-2 border-transparent hover:border-primary/30"
+              }`}
+            >
+              <RadioGroupItem value="salaried" id="salaried" className="mt-1 shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 font-semibold text-foreground">
+                  <Briefcase className="w-4 h-4 text-primary" />
+                  Salarié / Équipement
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Utilise votre matériel de paiement. Pas de commission.
                 </p>
               </div>
-            </div>
-            
-            {nextDriverIsPaid && (
-              <Alert className="max-w-md bg-yellow-500/10 border-yellow-500/30">
-                <Euro className="w-4 h-4 text-yellow-600" />
-                <AlertDescription className="text-yellow-700">
-                  Votre quota gratuit est atteint. Le prochain chauffeur coûtera <strong>10€/mois</strong> supplémentaires.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </Label>
 
-      {/* Create Invitation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Send className="w-5 h-5" />
-            Créer une invitation
-          </CardTitle>
-          <CardDescription>
-            Définissez le type de relation avec le chauffeur et générez un lien d'invitation
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Driver Type Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Type de relation avec le chauffeur</Label>
-            <RadioGroup
-              value={driverType}
-              onValueChange={(value) => setDriverType(value as "salaried" | "independent")}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            <Label
+              htmlFor="independent"
+              className={`relative overflow-hidden flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all ${
+                driverType === "independent"
+                  ? "bg-primary/10 border-2 border-primary"
+                  : "bg-muted/30 border-2 border-transparent hover:border-primary/30"
+              }`}
             >
-              <Label
-                htmlFor="salaried"
-                className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                  driverType === "salaried"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <RadioGroupItem value="salaried" id="salaried" className="mt-1" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Briefcase className="w-4 h-4 text-primary" />
-                    Salarié / Équipement gestionnaire
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Le chauffeur utilise votre matériel de paiement. Pas de commission à reverser.
-                  </p>
+              <RadioGroupItem value="independent" id="independent" className="mt-1 shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 font-semibold text-foreground">
+                  <UserCheck className="w-4 h-4 text-primary" />
+                  Indépendant
                 </div>
-              </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Encaisse directement. Commission reversée.
+                </p>
+              </div>
+            </Label>
+          </RadioGroup>
 
-              <Label
-                htmlFor="independent"
-                className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                  driverType === "independent"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <RadioGroupItem value="independent" id="independent" className="mt-1" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 font-medium">
-                    <UserCheck className="w-4 h-4 text-primary" />
-                    Chauffeur indépendant
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Le chauffeur encaisse directement. Une commission vous sera reversée.
-                  </p>
-                </div>
-              </Label>
-            </RadioGroup>
-          </div>
-
-          {/* Commission Settings (only for independent) */}
+          {/* Commission (indépendant) */}
           {driverType === "independent" && (
-            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-              <Label htmlFor="commission" className="flex items-center gap-2">
-                <Percent className="w-4 h-4" />
+            <div className="p-4 bg-accent/10 rounded-xl border border-accent/20 space-y-3">
+              <Label htmlFor="commission" className="flex items-center gap-2 font-medium">
+                <Percent className="w-4 h-4 text-accent" />
                 Taux de commission
               </Label>
               <div className="flex items-center gap-3">
@@ -246,134 +275,153 @@ export const FleetDriverInvitations = ({
                   max={50}
                   value={commissionPercentage}
                   onChange={(e) => setCommissionPercentage(Number(e.target.value))}
-                  className="w-24"
+                  className="w-24 bg-background"
                 />
                 <span className="text-muted-foreground">%</span>
+                <span className="text-sm text-muted-foreground ml-2">
+                  Le chauffeur devra accepter ce taux
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Le chauffeur devra accepter ce taux lors de son inscription pour pouvoir travailler avec vous.
-              </p>
             </div>
           )}
 
-          {/* Email Input */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email du chauffeur (optionnel)</Label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="jean@email.com"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                />
-              </div>
-              <Button onClick={createInvitation} disabled={creating}>
-                {creating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Créer l'invitation
-                  </>
-                )}
-              </Button>
+          {/* Email et bouton */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                type="email"
+                placeholder="Email du chauffeur (optionnel)"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="bg-background/50"
+              />
             </div>
+            <Button 
+              onClick={createInvitation} 
+              disabled={creating}
+              className="gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg"
+            >
+              {creating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Créer l'invitation
+                </>
+              )}
+            </Button>
           </div>
 
           {nextDriverIsPaid && (
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <Euro className="w-3 h-3" />
-              Cette invitation ajoutera 10€/mois à votre abonnement
-            </p>
+            <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg border border-warning/30">
+              <Euro className="w-4 h-4 text-warning shrink-0" />
+              <span className="text-sm text-warning">
+                Quota gratuit atteint. Cette invitation ajoutera <strong>10€/mois</strong> à votre abonnement.
+              </span>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Invitations List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Invitations envoyées</CardTitle>
-          <CardDescription>
-            {invitations.length} invitation(s) au total
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Liste des invitations */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
+        <div className="p-4 border-b border-border/50">
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-primary" />
+            Invitations envoyées
+            <Badge variant="secondary" className="ml-2">{invitations.length}</Badge>
+          </h3>
+        </div>
+
+        <div className="p-4">
           {invitations.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">
-              Aucune invitation pour le moment
-            </p>
+            <div className="text-center py-12">
+              <Send className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
+              <p className="text-muted-foreground">Aucune invitation pour le moment</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {invitations.map((invitation) => (
                 <div
                   key={invitation.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className={`relative overflow-hidden rounded-xl border p-4 transition-all ${
+                    invitation.used
+                      ? "bg-success/5 border-success/30"
+                      : "bg-muted/20 border-border/50 hover:border-primary/30"
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    {invitation.used ? (
-                      <CheckCircle className="w-5 h-5 text-success" />
-                    ) : (
-                      <Send className="w-5 h-5 text-muted-foreground" />
-                    )}
-                    <div>
-                      <p className="font-medium">
-                        {invitation.email || "Invitation générique"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {invitation.driver_type === "salaried" ? (
-                            <><Briefcase className="w-3 h-3 mr-1" /> Salarié</>
-                          ) : (
-                            <><UserCheck className="w-3 h-3 mr-1" /> Indépendant {invitation.commission_percentage}%</>
-                          )}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          Créée le {new Date(invitation.created_at).toLocaleDateString("fr-FR")}
-                        </span>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        invitation.used 
+                          ? "bg-success/20" 
+                          : "bg-muted"
+                      }`}>
+                        {invitation.used ? (
+                          <CheckCircle className="w-5 h-5 text-success" />
+                        ) : (
+                          <Send className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {invitation.email || "Invitation générique"}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {invitation.driver_type === "salaried" ? (
+                              <><Briefcase className="w-3 h-3 mr-1" /> Salarié</>
+                            ) : (
+                              <><UserCheck className="w-3 h-3 mr-1" /> Indép. {invitation.commission_percentage}%</>
+                            )}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(invitation.created_at).toLocaleDateString("fr-FR")}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {invitation.is_paid && (
-                      <Badge variant="outline" className="text-yellow-600 border-yellow-500/30">
-                        <Euro className="w-3 h-3 mr-1" />
-                        10€/mois
-                      </Badge>
-                    )}
-                    
-                    {invitation.used ? (
-                      <Badge variant="default" className="bg-success">
-                        Utilisée
-                      </Badge>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyInvitationLink(invitation.token)}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteInvitation(invitation.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {invitation.is_paid && (
+                        <Badge variant="outline" className="text-warning border-warning/30 bg-warning/10">
+                          <Euro className="w-3 h-3 mr-1" />
+                          10€
+                        </Badge>
+                      )}
+                      
+                      {invitation.used ? (
+                        <Badge className="bg-success text-success-foreground">
+                          Utilisée
+                        </Badge>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => copyInvitationLink(invitation.token)}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteInvitation(invitation.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
