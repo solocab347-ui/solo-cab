@@ -16,10 +16,10 @@ import {
   Star,
   ExternalLink,
   FileText,
-  CreditCard
+  CreditCard,
+  Route
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetDriver {
   id: string;
@@ -143,39 +143,29 @@ export const FleetHome = ({
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
         
-        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            {/* Logo */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-2xl blur-lg opacity-30" />
-              <div className="relative w-16 h-16 md:w-20 md:h-20 bg-card/80 backdrop-blur-xl rounded-2xl p-2 border border-border/50 shadow-2xl">
-                <img src={logoSolocab} alt="SoloCab" className="w-full h-full object-contain" />
-              </div>
-            </div>
-
-            {/* Manager Info */}
-            <div className="flex items-center gap-4">
-              <Avatar className="w-14 h-14 border-2 border-primary/30 shadow-xl">
-                <AvatarImage src={avatarUrl || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  Bienvenue, {userProfile?.full_name || fleetManager.contact_name}
-                </h1>
-                <p className="text-muted-foreground flex items-center gap-2">
-                  <span>{fleetManager.company_name}</span>
-                  {fleetManager.subscription_status === 'active' && (
-                    <Badge className="bg-success/20 text-success border-success/30">Premium</Badge>
-                  )}
-                </p>
-              </div>
+        <div className="relative flex flex-col items-center text-center gap-4">
+          {/* Manager Info */}
+          <div className="flex items-center gap-4">
+            <Avatar className="w-14 h-14 border-2 border-primary/30 shadow-xl">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-left">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                Bienvenue, {userProfile?.full_name || fleetManager.contact_name}
+              </h1>
+              <p className="text-muted-foreground flex items-center gap-2">
+                <span>{fleetManager.company_name}</span>
+                {fleetManager.subscription_status === 'active' && (
+                  <Badge className="bg-success/20 text-success border-success/30">Premium</Badge>
+                )}
+              </p>
             </div>
           </div>
 
-          {/* Quick Action */}
+          {/* Quick Action - Centered */}
           <Button 
             onClick={() => window.open(`/flotte/${fleetManager.id}`, '_blank')}
             className="gap-2"
@@ -193,7 +183,24 @@ export const FleetHome = ({
           <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+          {/* Gestion des Courses */}
+          <Card 
+            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            onClick={() => onTabChange("courses")}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-info/20 to-info/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-info to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Route className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-1">Gestion Courses</h3>
+                <p className="text-sm text-muted-foreground">Gérer les réservations</p>
+              </div>
+            </div>
+          </Card>
+
           {/* Inviter Chauffeur */}
           <Card 
             className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
@@ -211,7 +218,7 @@ export const FleetHome = ({
             </div>
           </Card>
 
-          {/* QR Code Clients */}
+          {/* QR Code Vitrine Publique */}
           <Card 
             className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
             onClick={() => onTabChange("qrcode")}
@@ -222,8 +229,8 @@ export const FleetHome = ({
                 <QrCode className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">QR Code Clients</h3>
-                <p className="text-sm text-muted-foreground">Recruter des clients</p>
+                <h3 className="text-lg font-bold text-foreground mb-1">QR Code Vitrine</h3>
+                <p className="text-sm text-muted-foreground">Partager ma vitrine</p>
               </div>
             </div>
           </Card>
