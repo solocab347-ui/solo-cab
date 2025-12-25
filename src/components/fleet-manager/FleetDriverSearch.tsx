@@ -285,12 +285,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                     <Car className="h-4 w-4" />
                     Catégorie de véhicule
                   </Label>
-                  <Select value={selectedVehicleType} onValueChange={setSelectedVehicleType}>
+                  <Select value={selectedVehicleType || "all"} onValueChange={(val) => setSelectedVehicleType(val === "all" ? "" : val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Toutes catégories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toutes catégories</SelectItem>
+                      <SelectItem value="all">Toutes catégories</SelectItem>
                       {VEHICLE_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
@@ -306,12 +306,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                     <MapPin className="h-4 w-4" />
                     Département
                   </Label>
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Tous les départements" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les départements</SelectItem>
+                      <SelectItem value="all">Tous les départements</SelectItem>
                       {FRENCH_DEPARTMENTS.map((dept) => (
                         <SelectItem key={dept.code} value={dept.name}>
                           {dept.code} - {dept.name}
@@ -327,12 +327,12 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                     <Building2 className="h-4 w-4" />
                     Région
                   </Label>
-                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <Select value={selectedRegion || "all"} onValueChange={(val) => setSelectedRegion(val === "all" ? "" : val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Toutes les régions" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toutes les régions</SelectItem>
+                      <SelectItem value="all">Toutes les régions</SelectItem>
                       {FRENCH_REGIONS.map((region) => (
                         <SelectItem key={region} value={region}>
                           {region}
