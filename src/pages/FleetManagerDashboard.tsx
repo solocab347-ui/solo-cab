@@ -70,6 +70,7 @@ import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCo
 import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
 import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
 import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
+import { FleetClientsList } from "@/components/fleet-manager/FleetClientsList";
 import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
 import logoSolocab from "@/assets/logo-solocab.png";
 
@@ -749,65 +750,14 @@ const FleetManagerDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Driver Search Tab */}
-          <TabsContent value="driver-search">
-            <FleetDriverSearch fleetManagerId={fleetManager.id} />
-          </TabsContent>
-
-
           {/* Clients Tab */}
           <TabsContent value="clients">
             <div className="space-y-6">
               {/* Section Invitations Clients */}
               <FleetClientInvitations fleetManagerId={fleetManager.id} />
 
-              {/* Liste des clients */}
-              <Card className="bg-card/50 backdrop-blur border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-success" />
-                    Mes Clients inscrits
-                  </CardTitle>
-                  <CardDescription>
-                    Clients déjà inscrits dans votre flotte
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {clients.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                      <p className="text-muted-foreground mb-4">Aucun client inscrit pour le moment</p>
-                      <p className="text-sm text-muted-foreground">
-                        Créez une invitation ci-dessus ou partagez votre vitrine publique
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {clients.map((client) => (
-                        <div
-                          key={client.id}
-                          className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50"
-                        >
-                          <div className="flex items-center gap-4">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-success/20 text-success">
-                                {(client.client?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{client.client?.profile?.full_name || "Client"}</p>
-                              <p className="text-sm text-muted-foreground">{client.client?.total_rides || 0} courses</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(client.registered_at).toLocaleDateString("fr-FR")}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              {/* Liste des clients avec filtres avancés */}
+              <FleetClientsList clients={clients} />
             </div>
           </TabsContent>
 
@@ -881,14 +831,14 @@ const FleetManagerDashboard = () => {
                 </CardHeader>
               </Card>
 
-              {/* Vitrine */}
-              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("public-profile")}>
+              {/* Vitrine - now in settings */}
+              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("settings")}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="w-5 h-5 text-purple-500" />
-                    Vitrine
+                    Vitrine & Paramètres
                   </CardTitle>
-                  <CardDescription>Configurez votre page publique</CardDescription>
+                  <CardDescription>Configurez votre profil public et vos paramètres</CardDescription>
                 </CardHeader>
               </Card>
 
@@ -982,11 +932,12 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab - Combined with Pricing */}
+          {/* Settings Tab - Combined with Pricing and Public Profile */}
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
-              <TabsList className="flex-wrap">
+              <TabsList className="flex-wrap h-auto gap-1 p-1">
                 <TabsTrigger value="general">Général</TabsTrigger>
+                <TabsTrigger value="public-profile">Profil public</TabsTrigger>
                 <TabsTrigger value="pricing">Tarification</TabsTrigger>
                 <TabsTrigger value="city-pricing">Tarifs par ville</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
@@ -1022,6 +973,14 @@ const FleetManagerDashboard = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="public-profile">
+                <FleetPublicProfileSettings
+                  fleetManagerId={fleetManager.id}
+                  companyName={fleetManager.company_name}
+                  showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+                  onUpdate={fetchData}
+                />
+              </TabsContent>
               <TabsContent value="pricing">
                 <FleetPricingSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
@@ -1045,14 +1004,18 @@ const FleetManagerDashboard = () => {
             <FleetStatisticsDashboard fleetManagerId={fleetManager.id} />
           </TabsContent>
 
-          {/* Partnerships Tab */}
+          {/* Partnerships Tab - Now includes driver search */}
           <TabsContent value="partnerships">
-            <Tabs defaultValue="explorer" className="space-y-6">
-              <TabsList>
-                <TabsTrigger value="explorer">Explorer / Gérer</TabsTrigger>
-                <TabsTrigger value="commissions">Suivi Commissions</TabsTrigger>
+            <Tabs defaultValue="search" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="search">Rechercher</TabsTrigger>
+                <TabsTrigger value="partnerships">Partenariats</TabsTrigger>
+                <TabsTrigger value="commissions">Commissions</TabsTrigger>
               </TabsList>
-              <TabsContent value="explorer">
+              <TabsContent value="search">
+                <FleetDriverSearch fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="partnerships">
                 <FleetDriverPartnerships 
                   fleetManagerId={fleetManager.id}
                   defaultCommission={10}
