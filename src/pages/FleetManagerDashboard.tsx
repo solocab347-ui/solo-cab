@@ -314,23 +314,11 @@ const FleetManagerDashboard = () => {
         .eq("fleet_manager_id", fmData.id)
         .single();
 
-      if (qrData) {
-        const registrationUrl = `${window.location.origin}/register-client-fleet?fm=${qrData.code}`;
-        setQrCodeData(registrationUrl);
-        const qr = await QRCode.toDataURL(registrationUrl, { width: 256 });
-        setQrCodeUrl(qr);
-      } else {
-        // Generate new QR code
-        const code = crypto.randomUUID();
-        await supabase.from("fleet_manager_qr_codes").insert({
-          fleet_manager_id: fmData.id,
-          code,
-        });
-        const registrationUrl = `${window.location.origin}/register-client-fleet?fm=${code}`;
-        setQrCodeData(registrationUrl);
-        const qr = await QRCode.toDataURL(registrationUrl, { width: 256 });
-        setQrCodeUrl(qr);
-      }
+      // QR code pointe maintenant vers la vitrine publique
+      const storefrontUrl = `${window.location.origin}/flotte/${fmData.id}`;
+      setQrCodeData(storefrontUrl);
+      const qr = await QRCode.toDataURL(storefrontUrl, { width: 256 });
+      setQrCodeUrl(qr);
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast.error("Erreur lors du chargement des données");
@@ -927,16 +915,16 @@ const FleetManagerDashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <QrCode className="w-5 h-5 text-accent" />
-                  QR Code Client
+                  QR Code Vitrine Publique
                 </CardTitle>
                 <CardDescription>
-                  Partagez ce QR code pour que vos clients s'inscrivent
+                  Partagez ce QR code ou lien pour promouvoir votre vitrine et acquérir de nouveaux clients
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-6">
                 {qrCodeUrl && (
                   <div className="p-4 bg-white rounded-2xl shadow-xl">
-                    <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+                    <img src={qrCodeUrl} alt="QR Code Vitrine" className="w-64 h-64" />
                   </div>
                 )}
 
@@ -949,7 +937,7 @@ const FleetManagerDashboard = () => {
                     variant="outline"
                     onClick={() => {
                       const link = document.createElement("a");
-                      link.download = "qr-code-clients.png";
+                      link.download = "qr-code-vitrine.png";
                       link.href = qrCodeUrl;
                       link.click();
                     }}
@@ -959,8 +947,9 @@ const FleetManagerDashboard = () => {
                 </div>
 
                 <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Les clients qui scannent ce QR code seront automatiquement
-                  associés à votre flotte et auront accès à vos chauffeurs.
+                  Ce QR code mène directement à votre vitrine publique. Utilisez-le pour votre publicité, 
+                  vos cartes de visite ou pour recruter de nouveaux clients. Les clients pourront y réserver 
+                  directement une course avec ou sans inscription.
                 </p>
               </CardContent>
             </Card>
