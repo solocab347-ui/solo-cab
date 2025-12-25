@@ -281,7 +281,8 @@ const FleetDriverDashboard = () => {
             {driverProfile?.driver?.id && user?.id && (
               <FleetDriverDocuments 
                 driverId={driverProfile.driver.id} 
-                userId={user.id} 
+                userId={user.id}
+                fleetManagerId={driverProfile.driver.fleet_manager_id || undefined}
               />
             )}
           </TabsContent>

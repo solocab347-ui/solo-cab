@@ -67,6 +67,8 @@ import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/Fleet
 import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
 import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCourses";
 import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
+import { FleetRequiredDocumentsManager } from "@/components/fleet-manager/FleetRequiredDocumentsManager";
+import { FleetDriversDocumentsReview } from "@/components/fleet-manager/FleetDriversDocumentsReview";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -1053,12 +1055,19 @@ const FleetManagerDashboard = () => {
           </TabsContent>
 
           {/* Documents Tab */}
-          <TabsContent value="documents">
+          <TabsContent value="documents" className="space-y-6">
+            {/* Documents du gestionnaire */}
             <FleetManagerDocuments 
               fleetManagerId={fleetManager.id}
               userId={user?.id || ""}
               onDocumentsSubmitted={fetchData}
             />
+            
+            {/* Gestion des documents requis pour les chauffeurs */}
+            <FleetRequiredDocumentsManager fleetManagerId={fleetManager.id} />
+            
+            {/* Documents des chauffeurs */}
+            <FleetDriversDocumentsReview fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Promotions Tab */}

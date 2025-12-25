@@ -299,7 +299,7 @@ const FleetPublicProfile = () => {
 
       // Rediriger vers la page de suivi si token existe
       if (course.guest_tracking_token) {
-        navigate(`/guest-booking/${course.guest_tracking_token}`);
+        navigate(`/reservation-suivi/${course.guest_tracking_token}`);
       }
     } catch (error: any) {
       console.error("Error creating booking:", error);
