@@ -37,15 +37,11 @@ import {
   Settings2,
   AlertTriangle,
   Zap,
-  Percent,
   Brain,
   Navigation,
   Save,
-  Briefcase,
   Info,
-  HelpCircle,
 } from "lucide-react";
-import { FleetCommissionTracker } from "./FleetCommissionTracker";
 
 interface FleetOperationsSettingsProps {
   fleetManagerId: string;
@@ -90,23 +86,6 @@ interface DispatchSettings {
   smart_buffer_fallback_action: "notify_manager" | "assign_available" | "auto_reject";
 }
 
-interface DriverCommission {
-  driver_id: string;
-  commission_type: string;
-  commission_percentage: number;
-  is_salaried: boolean;
-  driver?: {
-    id: string;
-    vehicle_model: string;
-    vehicle_brand: string | null;
-    user_id: string;
-    profile?: {
-      full_name: string;
-      profile_photo_url: string | null;
-    };
-  };
-}
-
 // Helper component for setting explanations
 const SettingExplanation = ({ children }: { children: React.ReactNode }) => (
   <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-muted">
@@ -123,9 +102,7 @@ export const FleetOperationsSettings = ({
   // Loading states
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingDispatch, setLoadingDispatch] = useState(true);
-  const [loadingCommissions, setLoadingCommissions] = useState(true);
   const [savingDispatch, setSavingDispatch] = useState(false);
-  const [savingCommission, setSavingCommission] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
   // Validation state
@@ -144,14 +121,9 @@ export const FleetOperationsSettings = ({
     smart_buffer_fallback_action: "notify_manager",
   });
 
-  // Commission state
-  const [drivers, setDrivers] = useState<DriverCommission[]>([]);
-  const [defaultCommission, setDefaultCommission] = useState(0);
-
   useEffect(() => {
     fetchPendingCourses();
     fetchDispatchSettings();
-    fetchCommissions();
   }, [fleetManagerId]);
 
   // ===== FETCH FUNCTIONS =====
@@ -232,45 +204,6 @@ export const FleetOperationsSettings = ({
       console.error("Error fetching dispatch settings:", error);
     } finally {
       setLoadingDispatch(false);
-    }
-  };
-
-  const fetchCommissions = async () => {
-    try {
-      const { data: fmData } = await supabase
-        .from("fleet_managers")
-        .select("default_commission_percentage")
-        .eq("id", fleetManagerId)
-        .single();
-
-      if (fmData) setDefaultCommission(fmData.default_commission_percentage || 0);
-
-      const { data: fmdData } = await supabase
-        .from("fleet_manager_drivers")
-        .select(`
-          driver_id, commission_type, commission_percentage, is_salaried,
-          driver:drivers(id, vehicle_model, vehicle_brand, user_id)
-        `)
-        .eq("fleet_manager_id", fleetManagerId)
-        .eq("status", "active");
-
-      if (fmdData && fmdData.length > 0) {
-        const driverUserIds = fmdData.filter(d => d.driver).map(d => (d.driver as any).user_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, profile_photo_url")
-          .in("id", driverUserIds);
-
-        const driversWithProfiles = fmdData.map(d => ({
-          ...d,
-          driver: d.driver ? { ...(d.driver as any), profile: profiles?.find(p => p.id === (d.driver as any).user_id) } : undefined
-        }));
-        setDrivers(driversWithProfiles);
-      }
-    } catch (error) {
-      console.error("Error fetching commissions:", error);
-    } finally {
-      setLoadingCommissions(false);
     }
   };
 
@@ -362,35 +295,7 @@ export const FleetOperationsSettings = ({
     }
   };
 
-  const handleSaveDriverCommission = async (driverId: string, updates: Partial<DriverCommission>) => {
-    setSavingCommission(driverId);
-    try {
-      const { error } = await supabase
-        .from("fleet_manager_drivers")
-        .update({
-          commission_type: updates.commission_type,
-          commission_percentage: updates.commission_percentage,
-          is_salaried: updates.is_salaried,
-        })
-        .eq("fleet_manager_id", fleetManagerId)
-        .eq("driver_id", driverId);
-
-      if (error) throw error;
-      setDrivers(drivers.map(d => d.driver_id === driverId ? { ...d, ...updates } : d));
-      toast.success("Commission mise à jour");
-    } catch (error) {
-      console.error("Error saving:", error);
-      toast.error("Erreur lors de la sauvegarde");
-    } finally {
-      setSavingCommission(null);
-    }
-  };
-
-  const updateDriver = (driverId: string, field: string, value: any) => {
-    setDrivers(drivers.map(d => d.driver_id === driverId ? { ...d, [field]: value } : d));
-  };
-
-  const isLoading = loadingCourses || loadingDispatch || loadingCommissions;
+  const isLoading = loadingCourses || loadingDispatch;
 
   if (isLoading) {
     return (
@@ -409,10 +314,10 @@ export const FleetOperationsSettings = ({
             <div className="p-2 rounded-xl bg-primary/10">
               <Settings2 className="w-6 h-6 text-primary" />
             </div>
-            Opérations & Gestion
+            Gestion Dispatch
           </CardTitle>
           <CardDescription>
-            Configurez la validation des courses, l'attribution automatique et les commissions de vos chauffeurs
+            Configurez la validation des courses et l'attribution automatique à vos chauffeurs
           </CardDescription>
         </CardHeader>
       </Card>
@@ -472,35 +377,39 @@ export const FleetOperationsSettings = ({
                               <AvatarImage src={course.client?.profile?.profile_photo_url || ""} />
                               <AvatarFallback>{course.client?.profile?.full_name?.charAt(0) || "C"}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{course.client?.profile?.full_name || "Client"}</span>
-                          </div>
-                          <div className="text-sm space-y-1">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3 text-primary" />
-                              <span className="truncate">{course.pickup_address}</span>
+                            <div>
+                              <p className="font-medium text-sm">{course.client?.profile?.full_name || "Client"}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(course.scheduled_date), "d MMM yyyy à HH:mm", { locale: fr })}
+                              </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                          </div>
+                          <div className="text-xs space-y-1">
+                            <p className="flex items-center gap-1 text-muted-foreground">
+                              <MapPin className="w-3 h-3 text-success" />
+                              {course.pickup_address.length > 40 ? course.pickup_address.slice(0, 40) + "..." : course.pickup_address}
+                            </p>
+                            <p className="flex items-center gap-1 text-muted-foreground">
                               <MapPin className="w-3 h-3 text-destructive" />
-                              <span className="truncate">{course.destination_address}</span>
-                            </div>
+                              {course.destination_address.length > 40 ? course.destination_address.slice(0, 40) + "..." : course.destination_address}
+                            </p>
                           </div>
-                          <div className="flex gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {format(new Date(course.scheduled_date), "d MMM HH:mm", { locale: fr })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Car className="w-3 h-3" />
-                              {course.driver?.profile?.full_name || "Non assigné"}
-                            </span>
-                          </div>
+                          {course.driver && (
+                            <Badge variant="outline" className="text-xs">
+                              <Car className="w-3 h-3 mr-1" />
+                              {course.driver.profile?.full_name}
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => { setSelectedCourse(course); setActionType("approve"); }}>
-                            <CheckCircle className="w-4 h-4" />
+                        <div className="flex flex-col gap-2">
+                          <Button size="sm" className="gap-1" onClick={() => { setSelectedCourse(course); setActionType("approve"); }}>
+                            <CheckCircle className="w-3 h-3" />
+                            Approuver
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => { setSelectedCourse(course); setActionType("reject"); }}>
-                            <XCircle className="w-4 h-4" />
+                          <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => { setSelectedCourse(course); setActionType("reject"); }}>
+                            <XCircle className="w-3 h-3" />
+                            Refuser
                           </Button>
                         </div>
                       </div>
@@ -513,328 +422,212 @@ export const FleetOperationsSettings = ({
         </CardContent>
       </Card>
 
-      <Separator />
-
       {/* ===== SECTION 2: DISPATCH ===== */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Zap className="w-5 h-5 text-primary" />
-            Attribution des courses
+            <Navigation className="w-5 h-5 text-info" />
+            Attribution automatique
           </CardTitle>
           <CardDescription>
-            Configurez comment les courses sont attribuées à vos chauffeurs
+            Configurez comment les courses sont assignées à vos chauffeurs
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Auto dispatch toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
-            <div>
-              <Label htmlFor="auto_dispatch" className="text-base font-medium">Dispatch automatique</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Attribuer automatiquement les courses aux chauffeurs
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+            <div className="space-y-1">
+              <Label className="text-base font-medium flex items-center gap-2">
+                <Zap className="w-4 h-4 text-warning" />
+                Dispatch automatique
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Attribuer automatiquement les courses aux chauffeurs disponibles
               </p>
             </div>
             <Switch
-              id="auto_dispatch"
               checked={dispatchSettings.auto_dispatch_enabled}
-              onCheckedChange={(checked) => setDispatchSettings({ ...dispatchSettings, auto_dispatch_enabled: checked })}
+              onCheckedChange={(v) => setDispatchSettings({ ...dispatchSettings, auto_dispatch_enabled: v })}
             />
           </div>
 
           <SettingExplanation>
-            <strong>Dispatch automatique :</strong> Le système analyse les disponibilités de vos chauffeurs et leur assigne automatiquement les courses 
-            selon vos critères de priorité. Désactivé, vous devez assigner manuellement chaque course.
+            <strong>Dispatch automatique :</strong> Le système assigne automatiquement les courses aux chauffeurs selon les critères ci-dessous. 
+            Désactivé, vous devrez manuellement attribuer chaque course à un chauffeur.
           </SettingExplanation>
 
           {dispatchSettings.auto_dispatch_enabled && (
-            <div className="space-y-6 p-4 rounded-lg border border-primary/20 bg-primary/5">
-              {/* Priority criteria */}
+            <>
+              <Separator />
+
+              {/* Priority */}
               <div className="space-y-3">
-                <Label className="font-medium">Critère de priorité</Label>
+                <Label className="text-base font-medium">Critère de priorité</Label>
                 <RadioGroup
                   value={dispatchSettings.dispatch_priority}
-                  onValueChange={(value) => setDispatchSettings({ ...dispatchSettings, dispatch_priority: value as DispatchSettings["dispatch_priority"] })}
-                  className="grid gap-2"
+                  onValueChange={(v) => setDispatchSettings({ ...dispatchSettings, dispatch_priority: v as DispatchSettings["dispatch_priority"] })}
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-3"
                 >
-                  <div className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer ${dispatchSettings.dispatch_priority === "proximity" ? "border-primary bg-background" : "border-border"}`}>
+                  <Label htmlFor="proximity" className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5">
                     <RadioGroupItem value="proximity" id="proximity" />
-                    <MapPin className="w-4 h-4 text-primary" />
                     <div>
-                      <Label htmlFor="proximity" className="cursor-pointer font-medium">Proximité</Label>
-                      <p className="text-xs text-muted-foreground">Chauffeur le plus proche du lieu de prise en charge</p>
+                      <p className="font-medium">Proximité</p>
+                      <p className="text-xs text-muted-foreground">Chauffeur le plus proche</p>
                     </div>
-                  </div>
-                  <div className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer ${dispatchSettings.dispatch_priority === "availability" ? "border-primary bg-background" : "border-border"}`}>
+                  </Label>
+                  <Label htmlFor="availability" className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5">
                     <RadioGroupItem value="availability" id="availability" />
-                    <Users className="w-4 h-4 text-primary" />
                     <div>
-                      <Label htmlFor="availability" className="cursor-pointer font-medium">Disponibilité</Label>
-                      <p className="text-xs text-muted-foreground">Chauffeur avec le moins de courses programmées</p>
+                      <p className="font-medium">Disponibilité</p>
+                      <p className="text-xs text-muted-foreground">Chauffeur le plus libre</p>
                     </div>
-                  </div>
-                  <div className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer ${dispatchSettings.dispatch_priority === "rating" ? "border-primary bg-background" : "border-border"}`}>
+                  </Label>
+                  <Label htmlFor="rating" className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/5">
                     <RadioGroupItem value="rating" id="rating" />
-                    <Navigation className="w-4 h-4 text-primary" />
                     <div>
-                      <Label htmlFor="rating" className="cursor-pointer font-medium">Note</Label>
-                      <p className="text-xs text-muted-foreground">Chauffeur avec la meilleure note client</p>
+                      <p className="font-medium">Note</p>
+                      <p className="text-xs text-muted-foreground">Meilleure note client</p>
                     </div>
-                  </div>
+                  </Label>
                 </RadioGroup>
               </div>
 
+              <SettingExplanation>
+                <strong>Proximité :</strong> Le chauffeur le plus proche du lieu de prise en charge sera assigné. 
+                <strong> Disponibilité :</strong> Le chauffeur avec le moins de courses planifiées sera priorisé. 
+                <strong> Note :</strong> Le chauffeur ayant la meilleure note client sera sélectionné en priorité.
+              </SettingExplanation>
+
               {/* Favorite driver priority */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                <div>
-                  <Label htmlFor="favorite_priority" className="font-medium">Priorité chauffeur favori</Label>
-                  <p className="text-xs text-muted-foreground">Si le client a un chauffeur favori disponible, il sera choisi en premier</p>
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="space-y-1">
+                  <Label className="text-base font-medium">Priorité au chauffeur favori</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Si le client a un chauffeur préféré, lui proposer en premier
+                  </p>
                 </div>
                 <Switch
-                  id="favorite_priority"
                   checked={dispatchSettings.favorite_driver_priority}
-                  onCheckedChange={(checked) => setDispatchSettings({ ...dispatchSettings, favorite_driver_priority: checked })}
+                  onCheckedChange={(v) => setDispatchSettings({ ...dispatchSettings, favorite_driver_priority: v })}
                 />
               </div>
-            </div>
+
+              <SettingExplanation>
+                <strong>Chauffeur favori :</strong> Lorsqu'un client a défini un chauffeur préféré, celui-ci sera sollicité en premier avant d'appliquer les autres critères de sélection.
+              </SettingExplanation>
+
+              <Separator />
+
+              {/* Buffer time */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-accent" />
+                      Buffer intelligent
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Calculer automatiquement le temps entre les courses
+                    </p>
+                  </div>
+                  <Switch
+                    checked={dispatchSettings.smart_buffer_enabled}
+                    onCheckedChange={(v) => setDispatchSettings({ ...dispatchSettings, smart_buffer_enabled: v })}
+                  />
+                </div>
+
+                {dispatchSettings.smart_buffer_enabled ? (
+                  <div className="space-y-4 p-4 bg-accent/5 rounded-lg border border-accent/20">
+                    <div className="space-y-2">
+                      <Label>Durée minimum (minutes)</Label>
+                      <Input
+                        type="number"
+                        value={dispatchSettings.smart_buffer_min_minutes}
+                        onChange={(e) => setDispatchSettings({ ...dispatchSettings, smart_buffer_min_minutes: parseInt(e.target.value) || 15 })}
+                        min={5}
+                        max={60}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Temps minimum entre deux courses, même si le calcul intelligent suggère moins
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Action si aucun chauffeur disponible</Label>
+                      <Select
+                        value={dispatchSettings.smart_buffer_fallback_action}
+                        onValueChange={(v) => setDispatchSettings({ ...dispatchSettings, smart_buffer_fallback_action: v as DispatchSettings["smart_buffer_fallback_action"] })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="notify_manager">Notifier le gestionnaire</SelectItem>
+                          <SelectItem value="assign_available">Assigner au premier disponible</SelectItem>
+                          <SelectItem value="auto_reject">Refuser automatiquement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Temps fixe entre les courses (minutes)</Label>
+                    <Input
+                      type="number"
+                      value={dispatchSettings.course_buffer_minutes}
+                      onChange={(e) => setDispatchSettings({ ...dispatchSettings, course_buffer_minutes: parseInt(e.target.value) || 60 })}
+                      min={15}
+                      max={180}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Un chauffeur ne sera pas assigné si une autre course est prévue dans ce délai
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <SettingExplanation>
+                <strong>Buffer intelligent :</strong> Calcule le temps nécessaire entre les courses en tenant compte de la distance, du trafic et du temps de préparation. 
+                Le buffer fixe impose un délai constant entre chaque course.
+              </SettingExplanation>
+            </>
           )}
 
-          {/* Buffer configuration */}
-          <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              <Label className="font-medium">Temps de buffer entre courses</Label>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-3">
-                <Brain className="w-5 h-5 text-primary" />
-                <div>
-                  <Label htmlFor="smart_buffer" className="font-medium">Buffer intelligent</Label>
-                  <p className="text-xs text-muted-foreground">Calcule automatiquement le temps nécessaire selon les trajets</p>
-                </div>
-              </div>
-              <Switch
-                id="smart_buffer"
-                checked={dispatchSettings.smart_buffer_enabled}
-                onCheckedChange={(checked) => setDispatchSettings({ ...dispatchSettings, smart_buffer_enabled: checked })}
-              />
-            </div>
-
-            <SettingExplanation>
-              <strong>Buffer :</strong> Temps minimum entre la fin d'une course et le début de la suivante. 
-              Le buffer intelligent analyse le trajet entre la dépose et le prochain lieu de prise en charge pour calculer un temps réaliste.
-            </SettingExplanation>
-
-            {dispatchSettings.smart_buffer_enabled ? (
-              <div className="p-4 rounded-lg border border-dashed space-y-4">
-                <div className="flex items-center gap-3">
-                  <Label>Buffer minimum :</Label>
-                  <Select
-                    value={dispatchSettings.smart_buffer_min_minutes.toString()}
-                    onValueChange={(value) => setDispatchSettings({ ...dispatchSettings, smart_buffer_min_minutes: parseInt(value) })}
-                  >
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5 min</SelectItem>
-                      <SelectItem value="10">10 min</SelectItem>
-                      <SelectItem value="15">15 min (recommandé)</SelectItem>
-                      <SelectItem value="20">20 min</SelectItem>
-                      <SelectItem value="30">30 min</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm">Si timing trop serré :</Label>
-                  <Select
-                    value={dispatchSettings.smart_buffer_fallback_action}
-                    onValueChange={(value) => setDispatchSettings({ ...dispatchSettings, smart_buffer_fallback_action: value as DispatchSettings["smart_buffer_fallback_action"] })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="notify_manager">Vous notifier pour décision manuelle</SelectItem>
-                      <SelectItem value="assign_available">Chercher un autre chauffeur</SelectItem>
-                      <SelectItem value="auto_reject">Mettre en attente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Label>Buffer fixe :</Label>
-                <Select
-                  value={dispatchSettings.course_buffer_minutes.toString()}
-                  onValueChange={(value) => setDispatchSettings({ ...dispatchSettings, course_buffer_minutes: parseInt(value) })}
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 min</SelectItem>
-                    <SelectItem value="30">30 min</SelectItem>
-                    <SelectItem value="45">45 min</SelectItem>
-                    <SelectItem value="60">1h (recommandé)</SelectItem>
-                    <SelectItem value="90">1h30</SelectItem>
-                    <SelectItem value="120">2h</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <Button onClick={handleSaveDispatch} disabled={savingDispatch} className="w-full">
-            {savingDispatch ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-            Sauvegarder les paramètres de dispatch
+          {/* Save button */}
+          <Button onClick={handleSaveDispatch} disabled={savingDispatch} className="w-full gap-2">
+            {savingDispatch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Sauvegarder les paramètres
           </Button>
         </CardContent>
       </Card>
 
-      <Separator />
+      {/* Note about commissions */}
+      <Alert>
+        <Info className="w-4 h-4" />
+        <AlertDescription>
+          <strong>Commissions :</strong> Les commissions sont définies lors de la création ou modification d'un partenariat avec chaque chauffeur.
+          Rendez-vous dans l'onglet <strong>Partenariats</strong> pour gérer les termes de vos collaborations.
+        </AlertDescription>
+      </Alert>
 
-      {/* ===== SECTION 3: COMMISSIONS ===== */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Percent className="w-5 h-5 text-primary" />
-            Commissions chauffeurs
-          </CardTitle>
-          <CardDescription>
-            Définissez la commission que vous prenez sur chaque course
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SettingExplanation>
-            <strong>Commission :</strong> Pourcentage du montant de chaque course que vous conservez. Le reste revient au chauffeur.
-            Les chauffeurs salariés n'ont pas de commission car vous gardez 100% des revenus et les payez par salaire.
-          </SettingExplanation>
-
-          {drivers.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-              <p className="text-muted-foreground">Aucun chauffeur dans votre flotte</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Commission par défaut : <strong>{defaultCommission}%</strong></p>
-              
-              {drivers.map((driver) => (
-                <div key={driver.driver_id} className="p-4 border rounded-lg bg-card">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={driver.driver?.profile?.profile_photo_url || ""} />
-                      <AvatarFallback>{(driver.driver?.profile?.full_name || "C").charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{driver.driver?.profile?.full_name || "Chauffeur"}</h4>
-                          <p className="text-xs text-muted-foreground">{driver.driver?.vehicle_brand} {driver.driver?.vehicle_model}</p>
-                        </div>
-                        {driver.is_salaried && (
-                          <Badge variant="secondary" className="bg-info/20 text-info">
-                            <Briefcase className="w-3 h-3 mr-1" />
-                            Salarié
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-end gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Type</Label>
-                          <Select
-                            value={driver.is_salaried ? "salaried" : driver.commission_type || "percentage"}
-                            onValueChange={(value) => {
-                              if (value === "salaried") {
-                                updateDriver(driver.driver_id, "is_salaried", true);
-                                updateDriver(driver.driver_id, "commission_type", "none");
-                              } else {
-                                updateDriver(driver.driver_id, "is_salaried", false);
-                                updateDriver(driver.driver_id, "commission_type", value);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-[140px] h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="percentage">Commission %</SelectItem>
-                              <SelectItem value="none">Pas de commission</SelectItem>
-                              <SelectItem value="salaried">Salarié</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {!driver.is_salaried && driver.commission_type === "percentage" && (
-                          <div className="space-y-1">
-                            <Label className="text-xs">%</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              className="w-20 h-9"
-                              value={driver.commission_percentage || defaultCommission}
-                              onChange={(e) => updateDriver(driver.driver_id, "commission_percentage", parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                        )}
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSaveDriverCommission(driver.driver_id, {
-                            commission_type: driver.commission_type,
-                            commission_percentage: driver.commission_percentage,
-                            is_salaried: driver.is_salaried,
-                          })}
-                          disabled={savingCommission === driver.driver_id}
-                        >
-                          {savingCommission === driver.driver_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Commission tracker */}
-      <FleetCommissionTracker fleetManagerId={fleetManagerId} />
-
-      {/* Confirmation dialog */}
+      {/* Confirmation Dialog */}
       <AlertDialog open={!!selectedCourse && !!actionType} onOpenChange={() => { setSelectedCourse(null); setActionType(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {actionType === "approve" ? (
-                <><CheckCircle className="w-5 h-5 text-success" /> Approuver cette course ?</>
-              ) : (
-                <><AlertTriangle className="w-5 h-5 text-destructive" /> Refuser cette course ?</>
-              )}
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Confirmer la course ?" : "Refuser la course ?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {actionType === "approve"
                 ? "La course sera confirmée et le chauffeur sera notifié."
-                : "La course sera annulée. Le client et le chauffeur seront notifiés."}
+                : "La course sera annulée et le client sera notifié du refus."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={processing}>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCourseAction}
-              disabled={processing}
-              className={actionType === "reject" ? "bg-destructive hover:bg-destructive/90" : ""}
-            >
-              {processing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Confirmer
+            <AlertDialogAction onClick={handleCourseAction} disabled={processing}>
+              {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {actionType === "approve" ? "Confirmer" : "Refuser"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -927,7 +927,7 @@ const FleetManagerDashboard = () => {
                     Tarification
                   </TabsTrigger>
                   <TabsTrigger value="operations" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
-                    Opérations
+                    Gestion Dispatch
                   </TabsTrigger>
                 </TabsList>
               </div>
