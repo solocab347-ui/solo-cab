@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
-import { FleetManagerDocuments } from "@/components/fleet-manager/FleetManagerDocuments";
+import { FleetDocumentsHub } from "@/components/fleet-manager/FleetDocumentsHub";
 import { DocumentWarningBanner } from "@/components/fleet-manager/DocumentWarningBanner";
 import { FleetSubscriptionManager } from "@/components/fleet-manager/FleetSubscriptionManager";
 import { FleetDriverInvitations } from "@/components/fleet-manager/FleetDriverInvitations";
@@ -68,9 +68,6 @@ import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/Fleet
 import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
 import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCourses";
 import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
-import { FleetRequiredDocumentsManager } from "@/components/fleet-manager/FleetRequiredDocumentsManager";
-import { FleetDriversDocumentsReview } from "@/components/fleet-manager/FleetDriversDocumentsReview";
-import { FleetDriverDocumentsArchive } from "@/components/fleet-manager/FleetDriverDocumentsArchive";
 import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
 import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
 import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
@@ -1076,21 +1073,11 @@ const FleetManagerDashboard = () => {
 
           {/* Documents Tab */}
           <TabsContent value="documents" className="space-y-6">
-            {/* Documents du gestionnaire */}
-            <FleetManagerDocuments 
+            <FleetDocumentsHub 
               fleetManagerId={fleetManager.id}
               userId={user?.id || ""}
               onDocumentsSubmitted={fetchData}
             />
-            
-            {/* Gestion des documents requis pour les chauffeurs */}
-            <FleetRequiredDocumentsManager fleetManagerId={fleetManager.id} />
-            
-            {/* Documents des chauffeurs */}
-            <FleetDriversDocumentsReview fleetManagerId={fleetManager.id} />
-            
-            {/* Archive des documents */}
-            <FleetDriverDocumentsArchive fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Promotions Tab */}
