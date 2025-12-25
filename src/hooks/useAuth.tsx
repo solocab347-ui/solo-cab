@@ -69,12 +69,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
     let timeoutCleared = false;
     let refreshRetryCount = 0;
+    let isInitializing = true; // Flag pour ignorer les événements pendant l'init
     const MAX_REFRESH_RETRIES = 3;
 
     // TIMEOUT DE SÉCURITÉ: garantir loading=false après 5 secondes MAX
     const safetyTimeout = setTimeout(() => {
       if (isMounted && !timeoutCleared) {
         logger.warn("SAFETY TIMEOUT - forcing loading to false");
+        isInitializing = false;
         setLoading(false);
       }
     }, 5000);
@@ -93,7 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const { data, error } = await supabase.auth.refreshSession();
           if (!error && data.session) {
             logger.info("Session refreshed successfully on retry");
-            refreshRetryCount = 0; // Reset counter on success
+            refreshRetryCount = 0;
             return true;
           }
         } catch (retryError) {
@@ -103,38 +105,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return await handleRefreshFailure();
       } else {
         logger.error("Max refresh retries reached, clearing session");
-        
-        // Nettoyage de la session locale
         setUser(null);
         setSession(null);
         setUserRole(null);
         setUserRoles([]);
-        
-        // Clear local storage to force fresh login
         localStorage.removeItem('sb-iyothopplhbwcfrpxryc-auth-token');
-        
         toast.error("Session expirée, veuillez vous reconnecter");
         navigate("/login");
         return false;
       }
     };
 
-    // Auth state listener - ne déclenche PAS de changement pendant l'init
+    // Auth state listener - IGNORE les événements pendant l'initialisation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
         
-        logger.info("Auth event", { event });
+        // IGNORER les événements pendant l'init pour éviter les doubles mises à jour
+        if (isInitializing && (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
+          logger.info("Auth event ignored during init", { event });
+          return;
+        }
+        
+        logger.info("Auth event processing", { event });
         
         // Gestion spécifique de l'erreur de refresh token
         if (event === "TOKEN_REFRESHED" && !session) {
           logger.warn("Token refresh failed, attempting recovery");
-          // Utiliser setTimeout pour éviter le deadlock
           setTimeout(() => handleRefreshFailure(), 0);
           return;
         }
         
-        // Gestion de l'expiration de session - mise à jour synchrone
+        // Gestion de l'expiration de session
         if (event === "SIGNED_OUT") {
           logger.info("User signed out");
           setUser(null);
@@ -149,20 +151,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           refreshRetryCount = 0;
         }
         
-        // Mise à jour synchrone pour éviter le flash
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch role de manière asynchrone avec setTimeout(0)
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id).catch(err => {
-              logger.error("Role fetch failed", { err });
-            });
-          }, 0);
-        } else {
-          setUserRole(null);
-          setUserRoles([]);
+        // Mise à jour synchrone uniquement pour SIGNED_IN post-init
+        if (event === "SIGNED_IN" && !isInitializing) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            setTimeout(() => {
+              fetchUserRole(session.user.id).catch(err => {
+                logger.error("Role fetch failed", { err });
+              });
+            }, 0);
+          }
         }
       }
     );
@@ -214,7 +214,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMounted) {
           timeoutCleared = true;
           clearTimeout(safetyTimeout);
-          // Marquer l'init terminée avant loading=false pour transition fluide
+          // Marquer l'init terminée AVANT de changer loading
+          isInitializing = false;
           setIsInitialized(true);
           setLoading(false);
           logger.info("Auth init complete");
@@ -226,6 +227,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       isMounted = false;
+      isInitializing = false;
       timeoutCleared = true;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
