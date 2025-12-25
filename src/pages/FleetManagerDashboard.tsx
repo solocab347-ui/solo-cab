@@ -56,24 +56,20 @@ import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlann
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
 import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesManager";
-import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSettings";
-import { CityPricingManager } from "@/components/shared/CityPricingManager";
-import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
 import { FleetStatisticsDashboard } from "@/components/fleet-manager/FleetStatisticsDashboard";
-import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
 import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
 import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/FleetDriverDocumentsValidation";
 import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
 import { FleetDeclinedCourses } from "@/components/fleet-manager/FleetDeclinedCourses";
-import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
 import { FleetDriverRemoval } from "@/components/fleet-manager/FleetDriverRemoval";
 import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientInvitations";
 import { FleetClientsList } from "@/components/fleet-manager/FleetClientsList";
 import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
 import { FleetClientsTab } from "@/components/fleet-manager/FleetClientsTab";
-import { FleetCourseValidation } from "@/components/fleet-manager/FleetCourseValidation";
+import { FleetOperationsSettings } from "@/components/fleet-manager/FleetOperationsSettings";
+import { FleetPricingHub } from "@/components/fleet-manager/FleetPricingHub";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -920,7 +916,7 @@ const FleetManagerDashboard = () => {
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
               <div className="glass-strong p-3 rounded-2xl">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 h-auto bg-transparent p-0">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 h-auto bg-transparent p-0">
                   <TabsTrigger value="general" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white">
                     Général
                   </TabsTrigger>
@@ -930,17 +926,8 @@ const FleetManagerDashboard = () => {
                   <TabsTrigger value="pricing" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
                     Tarification
                   </TabsTrigger>
-                  <TabsTrigger value="city-pricing" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white">
-                    Tarifs Ville
-                  </TabsTrigger>
-                  <TabsTrigger value="commissions" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
-                    Commissions
-                  </TabsTrigger>
-                  <TabsTrigger value="validation" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-rose-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                    Validation
-                  </TabsTrigger>
-                  <TabsTrigger value="dispatch" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-slate-500 data-[state=active]:to-slate-700 data-[state=active]:text-white">
-                    Dispatch
+                  <TabsTrigger value="operations" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+                    Opérations
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -963,26 +950,14 @@ const FleetManagerDashboard = () => {
                 />
               </TabsContent>
               <TabsContent value="pricing">
-                <FleetPricingSettings fleetManagerId={fleetManager.id} />
+                <FleetPricingHub fleetManagerId={fleetManager.id} />
               </TabsContent>
-              <TabsContent value="city-pricing">
-                <CityPricingManager fleetManagerId={fleetManager.id} />
-              </TabsContent>
-              <TabsContent value="commissions">
-                <div className="space-y-6">
-                  <FleetDriverCommissions fleetManagerId={fleetManager.id} />
-                  <FleetCommissionTracker fleetManagerId={fleetManager.id} />
-                </div>
-              </TabsContent>
-              <TabsContent value="validation">
-                <FleetCourseValidation 
+              <TabsContent value="operations">
+                <FleetOperationsSettings
                   fleetManagerId={fleetManager.id}
                   autoValidate={fleetManager.auto_validate_courses || false}
                   onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
                 />
-              </TabsContent>
-              <TabsContent value="dispatch">
-                <FleetDispatchSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
             </Tabs>
           </TabsContent>
