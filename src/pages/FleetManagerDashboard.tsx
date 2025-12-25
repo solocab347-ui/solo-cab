@@ -560,90 +560,101 @@ const FleetManagerDashboard = () => {
             />
           </TabsContent>
 
-          {/* Drivers Tab */}
+          {/* Drivers Tab - Now includes search */}
           <TabsContent value="drivers">
-            <div className="space-y-6">
-              {/* Documents Validation Section */}
-              <FleetDriverDocumentsValidation fleetManagerId={fleetManager.id} />
+            <Tabs defaultValue="my-drivers" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="my-drivers">Mes Chauffeurs</TabsTrigger>
+                <TabsTrigger value="search">Rechercher</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="my-drivers" className="space-y-6">
+                {/* Documents Validation Section */}
+                <FleetDriverDocumentsValidation fleetManagerId={fleetManager.id} />
 
-              <Card className="bg-card/50 backdrop-blur border-white/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Car className="w-5 h-5 text-primary" />
-                  Mes Chauffeurs
-                </CardTitle>
-                <CardDescription>
-                  Cliquez sur un chauffeur pour voir son profil complet
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {drivers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                    <p className="text-muted-foreground mb-4">Aucun chauffeur pour le moment</p>
-                    <Button onClick={() => setActiveTab("invitations")} className="gap-2">
-                      <Send className="w-4 h-4" />
-                      Inviter un chauffeur
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {drivers.map((driver) => (
-                      <Card 
-                        key={driver.id}
-                        className="overflow-hidden hover:border-primary/50 transition-all cursor-pointer group bg-card/50"
-                        onClick={() => driver.driver?.id && handleViewDriverProfile(driver.driver.id)}
-                      >
-                        {/* Photo */}
-                        <div className="relative h-32 bg-gradient-to-br from-muted to-muted/50">
-                          {driver.driver?.vehicle_photos?.[0] ? (
-                            <img 
-                              src={driver.driver.vehicle_photos[0]} 
-                              alt="Véhicule" 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Car className="w-12 h-12 text-muted-foreground/30" />
+                <Card className="bg-card/50 backdrop-blur border-white/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Car className="w-5 h-5 text-primary" />
+                      Mes Chauffeurs
+                    </CardTitle>
+                    <CardDescription>
+                      Cliquez sur un chauffeur pour voir son profil complet
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {drivers.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
+                        <p className="text-muted-foreground mb-4">Aucun chauffeur pour le moment</p>
+                        <Button onClick={() => setActiveTab("invitations")} className="gap-2">
+                          <Send className="w-4 h-4" />
+                          Inviter un chauffeur
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {drivers.map((driver) => (
+                          <Card 
+                            key={driver.id}
+                            className="overflow-hidden hover:border-primary/50 transition-all cursor-pointer group bg-card/50"
+                            onClick={() => driver.driver?.id && handleViewDriverProfile(driver.driver.id)}
+                          >
+                            {/* Photo */}
+                            <div className="relative h-32 bg-gradient-to-br from-muted to-muted/50">
+                              {driver.driver?.vehicle_photos?.[0] ? (
+                                <img 
+                                  src={driver.driver.vehicle_photos[0]} 
+                                  alt="Véhicule" 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Car className="w-12 h-12 text-muted-foreground/30" />
+                                </div>
+                              )}
+                              <div className="absolute bottom-3 left-3">
+                                <Avatar className="w-14 h-14 border-4 border-background shadow-xl">
+                                  <AvatarImage src={driver.driver?.profile?.profile_photo_url || undefined} />
+                                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
+                                    {(driver.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              {driver.driver?.rating && (
+                                <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                                  <Star className="w-3 h-3 text-warning fill-warning" />
+                                  <span className="text-sm font-semibold">{driver.driver.rating.toFixed(1)}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          <div className="absolute bottom-3 left-3">
-                            <Avatar className="w-14 h-14 border-4 border-background shadow-xl">
-                              <AvatarImage src={driver.driver?.profile?.profile_photo_url || undefined} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground font-bold">
-                                {(driver.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          </div>
-                          {driver.driver?.rating && (
-                            <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                              <Star className="w-3 h-3 text-warning fill-warning" />
-                              <span className="text-sm font-semibold">{driver.driver.rating.toFixed(1)}</span>
-                            </div>
-                          )}
-                        </div>
-                        <CardContent className="pt-3">
-                          <h3 className="font-semibold text-lg">{driver.driver?.profile?.full_name || "Chauffeur"}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {driver.driver?.vehicle_brand} {driver.driver?.vehicle_model}
-                          </p>
-                          <div className="flex items-center justify-between mt-3">
-                            <Badge variant={driver.driver?.status === "validated" ? "default" : "secondary"}>
-                              {driver.driver?.status === "validated" ? "Validé" : "En attente"}
-                            </Badge>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              <Eye className="w-4 h-4" />
-                              Voir
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            </div>
+                            <CardContent className="pt-3">
+                              <h3 className="font-semibold text-lg">{driver.driver?.profile?.full_name || "Chauffeur"}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {driver.driver?.vehicle_brand} {driver.driver?.vehicle_model}
+                              </p>
+                              <div className="flex items-center justify-between mt-3">
+                                <Badge variant={driver.driver?.status === "validated" ? "default" : "secondary"}>
+                                  {driver.driver?.status === "validated" ? "Validé" : "En attente"}
+                                </Badge>
+                                <Button variant="ghost" size="sm" className="gap-1">
+                                  <Eye className="w-4 h-4" />
+                                  Voir
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="search">
+                <FleetDriverSearch fleetManagerId={fleetManager.id} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Driver Profile Tab */}
@@ -951,17 +962,13 @@ const FleetManagerDashboard = () => {
             <FleetStatisticsDashboard fleetManagerId={fleetManager.id} />
           </TabsContent>
 
-          {/* Partnerships Tab - Now includes driver search */}
+          {/* Partnerships Tab */}
           <TabsContent value="partnerships">
-            <Tabs defaultValue="search" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="search">Rechercher</TabsTrigger>
+            <Tabs defaultValue="partnerships" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="partnerships">Partenariats</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
               </TabsList>
-              <TabsContent value="search">
-                <FleetDriverSearch fleetManagerId={fleetManager.id} />
-              </TabsContent>
               <TabsContent value="partnerships">
                 <FleetDriverPartnerships 
                   fleetManagerId={fleetManager.id}
