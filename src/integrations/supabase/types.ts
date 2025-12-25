@@ -3238,6 +3238,50 @@ export type Database = {
           },
         ]
       }
+      fleet_required_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          document_key: string
+          fleet_manager_id: string
+          id: string
+          is_required: boolean | null
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          document_key: string
+          fleet_manager_id: string
+          id?: string
+          is_required?: boolean | null
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          document_key?: string
+          fleet_manager_id?: string
+          id?: string
+          is_required?: boolean | null
+          label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_required_documents_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_tokens: {
         Row: {
           created_at: string

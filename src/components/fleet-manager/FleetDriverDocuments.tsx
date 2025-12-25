@@ -25,6 +25,7 @@ import { fr } from "date-fns/locale";
 interface FleetDriverDocumentsProps {
   driverId: string;
   userId: string;
+  fleetManagerId?: string;
 }
 
 interface DocumentInfo {
@@ -37,49 +38,91 @@ interface DocumentsData {
   [key: string]: DocumentInfo | null;
 }
 
-const REQUIRED_DOCUMENTS = [
+interface RequiredDocument {
+  key: string;
+  label: string;
+  description: string;
+  is_required: boolean;
+}
+
+const DEFAULT_REQUIRED_DOCUMENTS = [
   {
     key: "vtc_card",
     label: "Carte professionnelle VTC",
     description: "Carte VTC recto/verso en cours de validité",
+    is_required: true,
   },
   {
     key: "driving_license",
     label: "Permis de conduire",
     description: "Permis B recto/verso en cours de validité",
+    is_required: true,
   },
   {
     key: "id_card",
     label: "Pièce d'identité",
     description: "CNI ou passeport en cours de validité",
+    is_required: true,
   },
   {
     key: "vehicle_registration",
     label: "Carte grise du véhicule",
     description: "Carte grise au nom du titulaire ou location",
+    is_required: true,
   },
   {
     key: "insurance",
     label: "Attestation d'assurance",
     description: "Assurance RC Pro VTC en cours de validité",
+    is_required: true,
   },
   {
     key: "kbis",
     label: "Extrait Kbis ou INSEE",
     description: "Document de moins de 3 mois",
+    is_required: true,
   },
 ];
 
-export const FleetDriverDocuments = ({ driverId, userId }: FleetDriverDocumentsProps) => {
+export const FleetDriverDocuments = ({ driverId, userId, fleetManagerId }: FleetDriverDocumentsProps) => {
   const [documents, setDocuments] = useState<DocumentsData>({});
   const [documentsStatus, setDocumentsStatus] = useState<string>("pending");
   const [documentsDeadline, setDocumentsDeadline] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>(DEFAULT_REQUIRED_DOCUMENTS);
 
   useEffect(() => {
     fetchDocuments();
-  }, [driverId]);
+    if (fleetManagerId) {
+      fetchRequiredDocuments();
+    }
+  }, [driverId, fleetManagerId]);
+
+  const fetchRequiredDocuments = async () => {
+    if (!fleetManagerId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("fleet_required_documents")
+        .select("document_key, label, description, is_required")
+        .eq("fleet_manager_id", fleetManagerId)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setRequiredDocuments(data.map(d => ({
+          key: d.document_key,
+          label: d.label,
+          description: d.description || "",
+          is_required: d.is_required,
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching required documents:", error);
+    }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -153,10 +196,10 @@ export const FleetDriverDocuments = ({ driverId, userId }: FleetDriverDocumentsP
         },
       };
 
-      // Check if all documents are uploaded
-      const allUploaded = REQUIRED_DOCUMENTS.every(
-        (doc) => newDocuments[doc.key]?.url
-      );
+      // Check if all required documents are uploaded
+      const allUploaded = requiredDocuments
+        .filter(doc => doc.is_required)
+        .every((doc) => newDocuments[doc.key]?.url);
 
       const { error: updateError } = await supabase
         .from("drivers")
@@ -244,7 +287,7 @@ export const FleetDriverDocuments = ({ driverId, userId }: FleetDriverDocumentsP
   }
 
   const deadlineInfo = getDeadlineInfo();
-  const uploadedCount = REQUIRED_DOCUMENTS.filter((doc) => documents[doc.key]?.url).length;
+  const uploadedCount = requiredDocuments.filter((doc) => documents[doc.key]?.url).length;
 
   return (
     <Card>
@@ -274,7 +317,7 @@ export const FleetDriverDocuments = ({ driverId, userId }: FleetDriverDocumentsP
             {documentsStatus === "validated" && "Validés"}
             {documentsStatus === "submitted" && "En attente de validation"}
             {documentsStatus === "rejected" && "Rejetés"}
-            {documentsStatus === "pending" && `${uploadedCount}/${REQUIRED_DOCUMENTS.length} documents`}
+            {documentsStatus === "pending" && `${uploadedCount}/${requiredDocuments.length} documents`}
           </Badge>
         </div>
       </CardHeader>
@@ -317,7 +360,7 @@ export const FleetDriverDocuments = ({ driverId, userId }: FleetDriverDocumentsP
 
         {/* Documents List */}
         <div className="space-y-4">
-          {REQUIRED_DOCUMENTS.map((doc) => {
+          {requiredDocuments.map((doc) => {
             const uploadedDoc = documents[doc.key];
             const isUploading = uploading === doc.key;
 
