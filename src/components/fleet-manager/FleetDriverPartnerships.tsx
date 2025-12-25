@@ -35,9 +35,58 @@ import {
   Briefcase,
   Euro,
   ImageIcon,
-  Building2
+  Building2,
+  Filter
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+
+// Vehicle categories
+const VEHICLE_CATEGORIES = [
+  { value: 'berline_standard', label: 'Berline Standard' },
+  { value: 'berline_luxe', label: 'Berline Luxe' },
+  { value: 'berline_electrique', label: 'Berline Électrique' },
+  { value: 'electrique', label: 'Électrique' },
+  { value: 'hybrid', label: 'Hybride' },
+  { value: 'van', label: 'Van' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'minivan', label: 'Minivan' },
+  { value: 'tpmr', label: 'TPMR (Handicapés)' },
+];
+
+const FRENCH_DEPARTMENTS = [
+  { code: '75', name: 'Paris' },
+  { code: '77', name: 'Seine-et-Marne' },
+  { code: '78', name: 'Yvelines' },
+  { code: '91', name: 'Essonne' },
+  { code: '92', name: 'Hauts-de-Seine' },
+  { code: '93', name: 'Seine-Saint-Denis' },
+  { code: '94', name: 'Val-de-Marne' },
+  { code: '95', name: "Val-d'Oise" },
+  { code: '13', name: 'Bouches-du-Rhône' },
+  { code: '69', name: 'Rhône' },
+  { code: '31', name: 'Haute-Garonne' },
+  { code: '33', name: 'Gironde' },
+  { code: '59', name: 'Nord' },
+  { code: '06', name: 'Alpes-Maritimes' },
+  { code: '44', name: 'Loire-Atlantique' },
+  { code: '67', name: 'Bas-Rhin' },
+  { code: '34', name: 'Hérault' },
+  { code: '35', name: 'Ille-et-Vilaine' },
+];
+
+const FRENCH_REGIONS = [
+  'Île-de-France',
+  'Provence-Alpes-Côte d\'Azur',
+  'Auvergne-Rhône-Alpes',
+  'Occitanie',
+  'Nouvelle-Aquitaine',
+  'Hauts-de-France',
+  'Grand Est',
+  'Pays de la Loire',
+  'Bretagne',
+  'Normandie',
+];
 
 interface FleetDriverPartnershipsProps {
   fleetManagerId: string;
@@ -104,6 +153,14 @@ export const FleetDriverPartnerships = ({
   const [commissionRate, setCommissionRate] = useState(defaultCommission.toString());
   const [paymentSchedule, setPaymentSchedule] = useState("per_course");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
+  const [citySearch, setCitySearch] = useState('');
+  const [minRating, setMinRating] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -296,14 +353,67 @@ export const FleetDriverPartnerships = ({
     }
   };
 
+  const getCategoryLabel = (category: string | null) => {
+    if (!category) return null;
+    const found = VEHICLE_CATEGORIES.find(c => c.value === category);
+    return found ? found.label : category;
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedVehicleType('');
+    setSelectedDepartment('');
+    setSelectedRegion('');
+    setCitySearch('');
+    setMinRating(0);
+  };
+
   const filteredDrivers = independentDrivers.filter(d => {
-    if (!searchTerm) return true;
-    const name = d.profile?.full_name?.toLowerCase() || "";
-    const vehicle = `${d.vehicle_brand} ${d.vehicle_model}`.toLowerCase();
-    const sectors = d.working_sectors?.join(" ").toLowerCase() || "";
-    return name.includes(searchTerm.toLowerCase()) || 
-           vehicle.includes(searchTerm.toLowerCase()) ||
-           sectors.includes(searchTerm.toLowerCase());
+    // Text search
+    if (searchTerm) {
+      const name = d.profile?.full_name?.toLowerCase() || "";
+      const vehicle = `${d.vehicle_brand} ${d.vehicle_model}`.toLowerCase();
+      const sectors = d.working_sectors?.join(" ").toLowerCase() || "";
+      if (!name.includes(searchTerm.toLowerCase()) && 
+          !vehicle.includes(searchTerm.toLowerCase()) &&
+          !sectors.includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    // Vehicle type filter
+    if (selectedVehicleType) {
+      // TODO: Add vehicle_category to IndependentDriver interface when available
+      // For now, check working_sectors as fallback
+    }
+    
+    // Department filter
+    if (selectedDepartment && d.working_sectors) {
+      if (!d.working_sectors.some(s => s.toLowerCase().includes(selectedDepartment.toLowerCase()))) {
+        return false;
+      }
+    }
+    
+    // Region filter
+    if (selectedRegion && d.working_sectors) {
+      if (!d.working_sectors.some(s => s.toLowerCase().includes(selectedRegion.toLowerCase()))) {
+        return false;
+      }
+    }
+    
+    // City filter
+    if (citySearch && d.working_sectors) {
+      if (!d.working_sectors.some(s => s.toLowerCase().includes(citySearch.toLowerCase()))) {
+        return false;
+      }
+    }
+    
+    // Rating filter
+    if (minRating > 0 && (d.rating === null || d.rating < minRating)) {
+      return false;
+    }
+    
+    return true;
   });
 
   // Filter out drivers with existing partnerships
@@ -352,15 +462,165 @@ export const FleetDriverPartnerships = ({
 
             {/* Explore Tab */}
             <TabsContent value="explore" className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher par nom, véhicule ou secteur..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              {/* Search Bar */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher par nom, véhicule ou secteur..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtres
+                </Button>
               </div>
+
+              {/* Advanced Filters */}
+              {showFilters && (
+                <Card className="border-border/50">
+                  <CardContent className="pt-4 space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Chaque filtre fonctionne indépendamment.
+                    </p>
+                    
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {/* Vehicle Category Filter */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm">
+                          <Car className="h-4 w-4" />
+                          Catégorie
+                        </Label>
+                        <Select value={selectedVehicleType || "all"} onValueChange={(val) => setSelectedVehicleType(val === "all" ? "" : val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Toutes catégories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes catégories</SelectItem>
+                            {VEHICLE_CATEGORIES.map((cat) => (
+                              <SelectItem key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Department Filter */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4" />
+                          Département
+                        </Label>
+                        <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Tous les départements" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous les départements</SelectItem>
+                            {FRENCH_DEPARTMENTS.map((dept) => (
+                              <SelectItem key={dept.code} value={dept.name}>
+                                {dept.code} - {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Region Filter */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm">
+                          <Building2 className="h-4 w-4" />
+                          Région
+                        </Label>
+                        <Select value={selectedRegion || "all"} onValueChange={(val) => setSelectedRegion(val === "all" ? "" : val)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Toutes les régions" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toutes les régions</SelectItem>
+                            {FRENCH_REGIONS.map((region) => (
+                              <SelectItem key={region} value={region}>
+                                {region}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* City/Sector Filter */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4" />
+                          Ville / Secteur
+                        </Label>
+                        <Input
+                          placeholder="Paris, Lyon..."
+                          value={citySearch}
+                          onChange={(e) => setCitySearch(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Rating Filter */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 text-sm">
+                        <Star className="h-4 w-4" />
+                        Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}
+                      </Label>
+                      <Slider
+                        value={[minRating]}
+                        onValueChange={(v) => setMinRating(v[0])}
+                        max={5}
+                        step={0.5}
+                      />
+                    </div>
+
+                    {/* Reset button */}
+                    <Button variant="outline" onClick={resetFilters} className="w-full">
+                      Réinitialiser les filtres
+                    </Button>
+
+                    {/* Active filters display */}
+                    {(selectedVehicleType || selectedDepartment || selectedRegion || citySearch || minRating > 0) && (
+                      <div className="flex flex-wrap gap-2 pt-2 border-t">
+                        <span className="text-sm text-muted-foreground">Filtres actifs :</span>
+                        {selectedVehicleType && (
+                          <Badge variant="secondary" className="text-xs">
+                            {getCategoryLabel(selectedVehicleType)}
+                          </Badge>
+                        )}
+                        {selectedDepartment && (
+                          <Badge variant="secondary" className="text-xs">
+                            {selectedDepartment}
+                          </Badge>
+                        )}
+                        {selectedRegion && (
+                          <Badge variant="secondary" className="text-xs">
+                            {selectedRegion}
+                          </Badge>
+                        )}
+                        {citySearch && (
+                          <Badge variant="secondary" className="text-xs">
+                            {citySearch}
+                          </Badge>
+                        )}
+                        {minRating > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            ≥ {minRating}★
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {availableDrivers.length === 0 ? (
                 <div className="text-center py-8">
