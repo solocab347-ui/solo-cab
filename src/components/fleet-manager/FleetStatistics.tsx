@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Loader2,
@@ -16,6 +16,11 @@ import {
   Star,
   Route,
   BarChart3,
+  Trophy,
+  Target,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
 } from "lucide-react";
 
 interface FleetStatisticsProps {
@@ -85,7 +90,6 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Get fleet drivers
       const { data: fmdData } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -111,13 +115,11 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
       const driverIds = fmdData.map(d => d.driver_id);
       const driverUserIds = fmdData.filter(d => d.driver).map(d => (d.driver as any).user_id);
 
-      // Get profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, profile_photo_url")
         .in("id", driverUserIds);
 
-      // Get courses
       const dateRange = getDateRange();
       let coursesQuery = supabase
         .from("courses")
@@ -132,7 +134,6 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
 
       const { data: courses } = await coursesQuery;
 
-      // Get factures for revenue
       let facturesQuery = supabase
         .from("factures")
         .select("*")
@@ -147,19 +148,16 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
 
       const { data: factures } = await facturesQuery;
 
-      // Get clients count
       const { data: clients } = await supabase
         .from("fleet_manager_clients")
         .select("client_id")
         .eq("fleet_manager_id", fleetManagerId);
 
-      // Calculate global stats
       const completedCourses = courses?.filter(c => c.status === "completed") || [];
       const pendingCourses = courses?.filter(c => c.status === "pending") || [];
       const cancelledCourses = courses?.filter(c => c.status === "cancelled") || [];
       const totalRevenue = factures?.reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
 
-      // Calculate commissions
       let totalCommissions = 0;
       fmdData.forEach(fmd => {
         if (!fmd.is_salaried && fmd.commission_percentage > 0) {
@@ -183,7 +181,6 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
           : 0,
       });
 
-      // Calculate per-driver stats
       const stats: DriverStats[] = fmdData.map(fmd => {
         const driverCourses = courses?.filter(c => c.driver_id === fmd.driver_id) || [];
         const driverCompleted = driverCourses.filter(c => c.status === "completed");
@@ -214,7 +211,6 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
         };
       });
 
-      // Sort by revenue
       stats.sort((a, b) => b.total_revenue - a.total_revenue);
       setDriverStats(stats);
     } catch (error) {
@@ -232,170 +228,212 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
     );
   }
 
+  const periodLabels = {
+    week: "Cette semaine",
+    month: "Ce mois",
+    all: "Tout"
+  };
+
   return (
     <div className="space-y-6">
-      {/* Period selector */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          Statistiques
-        </h2>
-        <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
-          <TabsList>
-            <TabsTrigger value="week">Cette semaine</TabsTrigger>
-            <TabsTrigger value="month">Ce mois</TabsTrigger>
-            <TabsTrigger value="all">Tout</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Header avec sélecteur de période */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Statistiques</h2>
+            <p className="text-sm text-muted-foreground">Performance de votre flotte</p>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          {(["week", "month", "all"] as const).map((p) => (
+            <Button
+              key={p}
+              variant={period === p ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPeriod(p)}
+              className={period === p ? "bg-primary shadow-lg" : ""}
+            >
+              {periodLabels[p]}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* Global stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-primary/20 rounded-xl">
-                <Euro className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
-                <p className="text-2xl font-bold">{globalStats.total_revenue.toFixed(2)}€</p>
-              </div>
+      {/* Stats principales */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-success/10 via-emerald-500/5 to-transparent border border-success/20 p-5">
+          <div className="absolute top-3 right-3">
+            <ArrowUpRight className="w-5 h-5 text-success" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-success to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Euro className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.total_revenue.toFixed(0)}€</p>
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-success/20 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Commissions</p>
-                <p className="text-2xl font-bold">{globalStats.total_commissions.toFixed(2)}€</p>
-              </div>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-blue-500/5 to-transparent border border-primary/20 p-5">
+          <div className="absolute top-3 right-3">
+            <Wallet className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground">Commissions</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.total_commissions.toFixed(0)}€</p>
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-info/20 rounded-xl">
-                <Route className="w-6 h-6 text-info" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Courses terminées</p>
-                <p className="text-2xl font-bold">{globalStats.completed_courses}</p>
-              </div>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-info/10 via-cyan-500/5 to-transparent border border-info/20 p-5">
+          <div className="flex flex-col gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-info to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Route className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground">Courses terminées</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.completed_courses}</p>
+            </div>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-warning/20 rounded-xl">
-                <Euro className="w-6 h-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Valeur moyenne</p>
-                <p className="text-2xl font-bold">{globalStats.average_course_value.toFixed(2)}€</p>
-              </div>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-accent/10 via-purple-500/5 to-transparent border border-accent/20 p-5">
+          <div className="flex flex-col gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Target className="w-6 h-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm text-muted-foreground">Valeur moyenne</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.average_course_value.toFixed(0)}€</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Additional metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-3xl font-bold">{globalStats.total_clients}</p>
-            <p className="text-sm text-muted-foreground">Clients</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Car className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-3xl font-bold">{globalStats.total_drivers}</p>
-            <p className="text-sm text-muted-foreground">Chauffeurs</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Calendar className="w-8 h-8 mx-auto mb-2 text-warning" />
-            <p className="text-3xl font-bold">{globalStats.pending_courses}</p>
-            <p className="text-sm text-muted-foreground">En attente</p>
-          </CardContent>
-        </Card>
+      {/* Stats secondaires */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
+          <Users className="w-6 h-6 mx-auto mb-2 text-primary" />
+          <p className="text-2xl font-bold">{globalStats.total_clients}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Clients</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
+          <Car className="w-6 h-6 mx-auto mb-2 text-info" />
+          <p className="text-2xl font-bold">{globalStats.total_drivers}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Chauffeurs</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
+          <Calendar className="w-6 h-6 mx-auto mb-2 text-warning" />
+          <p className="text-2xl font-bold">{globalStats.pending_courses}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">En attente</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
+          <Route className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-2xl font-bold">{globalStats.total_courses}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Total courses</p>
+        </div>
       </div>
 
-      {/* Per-driver stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance par chauffeur</CardTitle>
-          <CardDescription>
-            Classement par chiffre d'affaires généré
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Classement des chauffeurs */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
+        <div className="p-5 border-b border-border/50 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-warning to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Trophy className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground">Classement des chauffeurs</h3>
+            <p className="text-sm text-muted-foreground">Par chiffre d'affaires généré</p>
+          </div>
+        </div>
+
+        <div className="p-5">
           {driverStats.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Aucune donnée disponible
-            </p>
+            <div className="text-center py-12">
+              <Car className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
+              <p className="text-muted-foreground">Aucune donnée disponible</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {driverStats.map((driver, index) => (
                 <div
                   key={driver.driver_id}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border"
+                  className={`relative overflow-hidden rounded-xl border p-4 transition-all hover:border-primary/30 ${
+                    index === 0 ? "bg-warning/5 border-warning/30" : 
+                    index === 1 ? "bg-muted/30 border-muted-foreground/20" :
+                    index === 2 ? "bg-orange-500/5 border-orange-500/20" :
+                    "bg-card/50 border-border/50"
+                  }`}
                 >
-                  <div className="text-2xl font-bold text-muted-foreground w-8">
-                    #{index + 1}
-                  </div>
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={driver.photo || ""} />
-                    <AvatarFallback>
-                      {driver.name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{driver.name}</h4>
-                    <p className="text-sm text-muted-foreground">{driver.vehicle}</p>
-                  </div>
-                  <div className="grid grid-cols-4 gap-6 text-center">
-                    <div>
-                      <p className="text-lg font-semibold">{driver.completed_courses}</p>
-                      <p className="text-xs text-muted-foreground">Courses</p>
+                  <div className="flex items-center gap-4">
+                    {/* Rang */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${
+                      index === 0 ? "bg-warning text-warning-foreground" :
+                      index === 1 ? "bg-muted-foreground/80 text-background" :
+                      index === 2 ? "bg-orange-600 text-white" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {index + 1}
                     </div>
-                    <div>
-                      <p className="text-lg font-semibold text-primary">
+
+                    {/* Avatar */}
+                    <Avatar className="w-12 h-12 border-2 border-border shrink-0">
+                      <AvatarImage src={driver.photo || ""} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                        {driver.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    {/* Infos */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate">{driver.name}</h4>
+                      <p className="text-sm text-muted-foreground truncate">{driver.vehicle}</p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="hidden sm:grid grid-cols-4 gap-6 text-center shrink-0">
+                      <div>
+                        <p className="text-lg font-bold">{driver.completed_courses}</p>
+                        <p className="text-xs text-muted-foreground">Courses</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-success">{driver.total_revenue.toFixed(0)}€</p>
+                        <p className="text-xs text-muted-foreground">CA</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-primary">{driver.commission_earned.toFixed(0)}€</p>
+                        <p className="text-xs text-muted-foreground">Commission</p>
+                      </div>
+                      <div className="flex items-center gap-1 justify-center">
+                        <Star className="w-4 h-4 text-warning fill-warning" />
+                        <span className="font-bold">
+                          {driver.average_rating > 0 ? driver.average_rating.toFixed(1) : "-"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Stats mobile */}
+                    <div className="sm:hidden flex items-center gap-2">
+                      <Badge variant="secondary" className="text-success">
                         {driver.total_revenue.toFixed(0)}€
-                      </p>
-                      <p className="text-xs text-muted-foreground">CA</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-semibold text-success">
-                        {driver.commission_earned.toFixed(0)}€
-                      </p>
-                      <p className="text-xs text-muted-foreground">Commission</p>
-                    </div>
-                    <div className="flex items-center gap-1 justify-center">
-                      <Star className="w-4 h-4 text-warning fill-warning" />
-                      <span className="font-semibold">
-                        {driver.average_rating > 0 ? driver.average_rating.toFixed(1) : "-"}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

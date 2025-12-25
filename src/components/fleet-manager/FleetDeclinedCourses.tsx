@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,11 +25,13 @@ import {
   MapPin,
   Calendar,
   Users,
-  Car,
   Loader2,
   RefreshCw,
   Zap,
   UserCheck,
+  Clock,
+  ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -94,7 +95,7 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
   const [selectedCourse, setSelectedCourse] = useState<DeclinedCourse | null>(null);
   const [selectedDriverId, setSelectedDriverId] = useState("");
   const [reassigning, setReassigning] = useState(false);
-  const [autoReassigning, setAutoReassigning] = useState(false);
+  const [autoReassigningId, setAutoReassigningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -102,7 +103,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
   const fetchData = async () => {
     try {
-      // Récupérer les courses refusées en attente
       const { data: declined, error: declinedError } = await supabase
         .from("fleet_driver_declined_courses")
         .select(`
@@ -125,14 +125,12 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
       if (declinedError) throw declinedError;
 
       if (declined && declined.length > 0) {
-        // Récupérer les profils des clients et chauffeurs
         const clientUserIds = declined
           .filter((d: any) => d.course?.client?.user_id)
           .map((d: any) => d.course.client.user_id);
 
         const driverIds = declined.map((d: any) => d.declined_by_driver_id);
 
-        // Récupérer chauffeurs pour avoir leur user_id
         const { data: declinedDrivers } = await supabase
           .from("drivers")
           .select("id, user_id")
@@ -179,7 +177,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
         setDeclinedCourses([]);
       }
 
-      // Récupérer les chauffeurs disponibles
       const { data: fleetDrivers } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -236,7 +233,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
     setReassigning(true);
     try {
-      // Mettre à jour la course avec le nouveau chauffeur
       const { error: courseError } = await supabase
         .from("courses")
         .update({
@@ -247,7 +243,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
       if (courseError) throw courseError;
 
-      // Mettre à jour le status du refus
       const { error: declinedError } = await supabase
         .from("fleet_driver_declined_courses")
         .update({
@@ -259,7 +254,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
       if (declinedError) throw declinedError;
 
-      // Notifier le nouveau chauffeur
       const driver = drivers.find((d) => d.driver_id === selectedDriverId);
       if (driver?.driver?.user_id) {
         await supabase.from("notifications").insert({
@@ -291,9 +285,8 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
   const handleAutoReassign = async (declinedCourse: DeclinedCourse) => {
     if (!declinedCourse.course) return;
 
-    setAutoReassigning(true);
+    setAutoReassigningId(declinedCourse.id);
     try {
-      // Appeler la fonction de dispatch intelligent
       const { data: availableDriverId, error: fnError } = await supabase.rpc(
         "find_nearest_available_fleet_driver",
         {
@@ -313,7 +306,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
         return;
       }
 
-      // Mettre à jour la course
       const { error: courseError } = await supabase
         .from("courses")
         .update({
@@ -324,7 +316,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
       if (courseError) throw courseError;
 
-      // Mettre à jour le status
       const { error: declinedError } = await supabase
         .from("fleet_driver_declined_courses")
         .update({
@@ -336,7 +327,6 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
 
       if (declinedError) throw declinedError;
 
-      // Notifier le nouveau chauffeur
       const driver = drivers.find((d) => d.driver_id === availableDriverId);
       if (driver?.driver?.user_id) {
         await supabase.from("notifications").insert({
@@ -358,117 +348,133 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
       console.error("Error auto reassigning:", error);
       toast.error(error.message || "Erreur lors de la réassignation");
     } finally {
-      setAutoReassigning(false);
+      setAutoReassigningId(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (declinedCourses.length === 0) {
+    return null;
+  }
+
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-warning" />
-            Courses à redistribuer
-            {declinedCourses.length > 0 && (
-              <Badge variant="destructive" className="ml-2">
+      {/* Section urgente - toujours visible */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warning/10 via-orange-500/5 to-red-500/5 border border-warning/30 backdrop-blur-xl mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-warning/20">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-warning to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                 {declinedCourses.length}
-              </Badge>
-            )}
-          </CardTitle>
-          <CardDescription>
-            Courses refusées ou repoussées par les chauffeurs
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {declinedCourses.length === 0 ? (
-            <div className="text-center py-12">
-              <RefreshCw className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-muted-foreground">Aucune course à redistribuer</p>
+              </span>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {declinedCourses.map((declined) => (
-                <div
-                  key={declined.id}
-                  className="p-4 bg-warning/5 border border-warning/30 rounded-xl space-y-3"
-                >
-                  {/* Header avec client */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage
-                          src={declined.course?.client?.profile?.profile_photo_url || undefined}
-                        />
-                        <AvatarFallback className="bg-primary/20 text-primary">
-                          {(declined.course?.client?.profile?.full_name || "C")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">
-                          {declined.course?.client?.profile?.full_name || "Client"}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="w-3 h-3" />
-                          {declined.course?.scheduled_date &&
-                            format(
-                              new Date(declined.course.scheduled_date),
-                              "d MMMM à HH:mm",
-                              { locale: fr }
-                            )}
-                        </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Courses à redistribuer</h3>
+              <p className="text-sm text-muted-foreground">
+                {declinedCourses.length} course{declinedCourses.length > 1 ? "s" : ""} en attente d'un nouveau chauffeur
+              </p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => fetchData()}
+            className="gap-2 border-warning/30 hover:bg-warning/10"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
+          </Button>
+        </div>
+
+        {/* Liste des courses */}
+        <div className="p-4 space-y-3">
+          {declinedCourses.map((declined) => (
+            <div
+              key={declined.id}
+              className="relative bg-card/80 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden hover:border-warning/50 transition-all group"
+            >
+              <div className="p-4">
+                <div className="flex items-start gap-4">
+                  {/* Avatar client */}
+                  <Avatar className="w-12 h-12 border-2 border-warning/30 shrink-0">
+                    <AvatarImage
+                      src={declined.course?.client?.profile?.profile_photo_url || undefined}
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-warning/20 to-orange-500/20 text-foreground font-bold">
+                      {(declined.course?.client?.profile?.full_name || "C")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Infos course */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold text-foreground truncate">
+                        {declined.course?.client?.profile?.full_name || "Client"}
+                      </h4>
+                      <Badge variant="outline" className="shrink-0 bg-warning/10 text-warning border-warning/30">
+                        <Users className="w-3 h-3 mr-1" />
+                        {declined.course?.passengers_count || 1}
+                      </Badge>
+                    </div>
+
+                    {/* Date et heure */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-warning" />
+                      <span className="font-medium">
+                        {declined.course?.scheduled_date &&
+                          format(
+                            new Date(declined.course.scheduled_date),
+                            "EEEE d MMMM à HH:mm",
+                            { locale: fr }
+                          )}
+                      </span>
+                    </div>
+
+                    {/* Trajet compact */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-success" />
+                        <span className="truncate max-w-[140px]">{declined.course?.pickup_address?.split(",")[0]}</span>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-destructive" />
+                        <span className="truncate max-w-[140px]">{declined.course?.destination_address?.split(",")[0]}</span>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-warning border-warning/50">
-                      <Users className="w-3 h-3 mr-1" />
-                      {declined.course?.passengers_count || 1} passager(s)
-                    </Badge>
-                  </div>
 
-                  {/* Adresses */}
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                      <span className="line-clamp-1">{declined.course?.pickup_address}</span>
+                    {/* Raison du refus */}
+                    <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-lg text-sm">
+                      <Clock className="w-4 h-4 text-destructive shrink-0" />
+                      <span className="text-muted-foreground">
+                        Refusé par <span className="font-medium text-foreground">{declined.declined_driver?.profile?.full_name || "Chauffeur"}</span>
+                        {declined.reason && <span> • {declined.reason}</span>}
+                      </span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                      <span className="line-clamp-1">{declined.course?.destination_address}</span>
-                    </div>
-                  </div>
-
-                  {/* Refus info */}
-                  <div className="p-3 bg-destructive/10 rounded-lg">
-                    <p className="text-sm">
-                      <span className="font-medium text-destructive">Refusé par :</span>{" "}
-                      {declined.declined_driver?.profile?.full_name || "Chauffeur"}
-                    </p>
-                    {declined.reason && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Raison : {declined.reason}
-                      </p>
-                    )}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col gap-2 shrink-0">
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="flex-1 gap-2"
+                      className="gap-2 bg-gradient-to-r from-warning to-orange-600 hover:from-warning/90 hover:to-orange-600/90 text-white shadow-lg"
                       onClick={() => handleAutoReassign(declined)}
-                      disabled={autoReassigning}
+                      disabled={autoReassigningId === declined.id}
                     >
-                      {autoReassigning ? (
+                      {autoReassigningId === declined.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Zap className="w-4 h-4" />
@@ -476,8 +482,9 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
                       Auto
                     </Button>
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="flex-1 gap-2"
+                      className="gap-2 border-border/50 hover:bg-muted/50"
                       onClick={() => {
                         setSelectedCourse(declined);
                         setShowReassignDialog(true);
@@ -488,26 +495,53 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
                     </Button>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Dialog réassignation manuelle */}
       <Dialog open={showReassignDialog} onOpenChange={setShowReassignDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Réassigner la course</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-primary" />
+              Réassigner la course
+            </DialogTitle>
             <DialogDescription>
-              Choisissez un chauffeur pour cette course
+              Choisissez un chauffeur disponible pour cette course
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          {selectedCourse?.course && (
+            <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                {format(
+                  new Date(selectedCourse.course.scheduled_date),
+                  "EEEE d MMMM à HH:mm",
+                  { locale: fr }
+                )}
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                  <span className="line-clamp-1">{selectedCourse.course.pickup_address}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                  <span className="line-clamp-1">{selectedCourse.course.destination_address}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Sélectionner un chauffeur</label>
             <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un chauffeur" />
+                <SelectValue placeholder="Choisir un chauffeur" />
               </SelectTrigger>
               <SelectContent>
                 {drivers
@@ -519,9 +553,10 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
                   .map((driver) => (
                     <SelectItem key={driver.driver_id} value={driver.driver_id}>
                       <div className="flex items-center gap-2">
-                        <Car className="w-4 h-4" />
-                        {driver.driver?.profile?.full_name || "Chauffeur"} -{" "}
-                        {driver.driver?.vehicle_model}
+                        <span>{driver.driver?.profile?.full_name || "Chauffeur"}</span>
+                        <span className="text-muted-foreground text-xs">
+                          ({driver.driver?.vehicle_model})
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
@@ -529,14 +564,27 @@ export const FleetDeclinedCourses = ({ fleetManagerId }: FleetDeclinedCoursesPro
             </Select>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReassignDialog(false)}>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReassignDialog(false);
+                setSelectedCourse(null);
+                setSelectedDriverId("");
+              }}
+            >
               Annuler
             </Button>
-            <Button onClick={handleManualReassign} disabled={!selectedDriverId || reassigning}>
+            <Button
+              onClick={handleManualReassign}
+              disabled={!selectedDriverId || reassigning}
+              className="gap-2"
+            >
               {reassigning ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserCheck className="w-4 h-4" />
+              )}
               Réassigner
             </Button>
           </DialogFooter>
