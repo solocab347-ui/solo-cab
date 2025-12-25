@@ -98,6 +98,7 @@ const DriverDashboard = () => {
   const [minimumPrice, setMinimumPrice] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+  const [visibleToFleetManagers, setVisibleToFleetManagers] = useState(false);
 
   // Callback stable pour les mises à jour de photos
   const handleVehiclePhotosUpdate = useCallback((newVehiclePhotos: string[], newGalleryPhotos: string[]) => {
@@ -153,6 +154,7 @@ const DriverDashboard = () => {
     setCardPhotoUrl(driver.card_photo_url || null);
     setVehiclePhotos(driver.vehicle_photos || []);
     setGalleryPhotos(driver.gallery_photos || []);
+    setVisibleToFleetManagers(driver.visible_to_fleet_managers || false);
   }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
   useEffect(() => {
@@ -259,7 +261,8 @@ const DriverDashboard = () => {
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
-        card_photo_url: cardPhotoUrl, // Ajouter la photo de carte ici aussi
+        card_photo_url: cardPhotoUrl,
+        visible_to_fleet_managers: visibleToFleetManagers,
       };
 
       logger.info("Mise à jour de la table drivers");
@@ -912,6 +915,8 @@ const DriverDashboard = () => {
                   vehiclePhotos={vehiclePhotos}
                   galleryPhotos={galleryPhotos}
                   onVehiclePhotosUpdate={handleVehiclePhotosUpdate}
+                  visibleToFleetManagers={visibleToFleetManagers}
+                  onVisibleToFleetManagersChange={!driverProfile?.driver?.is_fleet_driver && !driverProfile?.driver?.fleet_manager_id ? setVisibleToFleetManagers : undefined}
                 />
 
                 <div className="flex justify-end">
