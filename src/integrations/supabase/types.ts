@@ -2374,6 +2374,69 @@ export type Database = {
           },
         ]
       }
+      fleet_client_invitations: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          email: string | null
+          expires_at: string | null
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          email?: string | null
+          expires_at?: string | null
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_client_invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_client_invitations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_declined_courses: {
         Row: {
           course_id: string
