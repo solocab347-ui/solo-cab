@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 
 /**
  * Hook pour éviter les re-renders excessifs lors de mises à jour d'état fréquentes
@@ -7,7 +7,7 @@ export function useThrottledState<T>(
   initialValue: T,
   delay: number = 300
 ): [T, (value: T) => void] {
-  const [state, setState] = React.useState<T>(initialValue);
+  const [state, setState] = useState<T>(initialValue);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const setThrottledState = useCallback((value: T) => {
@@ -79,7 +79,7 @@ export function useCleanup() {
 export function useSafeState<T>(
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void] {
-  const [state, setState] = React.useState<T>(initialValue);
+  const [state, setState] = useState<T>(initialValue);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -97,5 +97,3 @@ export function useSafeState<T>(
 
   return [state, safeSetState];
 }
-
-import React from 'react';
