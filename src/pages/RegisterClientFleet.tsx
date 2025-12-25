@@ -53,12 +53,18 @@ const RegisterClientFleet = () => {
     try {
       const { data, error } = await supabase
         .from("fleet_managers")
-        .select("id, company_name, logo_url")
+        .select("id, company_name, logo_url, status")
         .eq("id", fleetManagerId)
-        .eq("status", "active")
         .single();
 
       if (error) throw error;
+      
+      // Accepter les gestionnaires pending, active ou validated
+      if (!data || (data.status !== "active" && data.status !== "pending" && data.status !== "validated")) {
+        toast.error("Gestionnaire de flotte non disponible");
+        return;
+      }
+      
       setFleetManager(data);
     } catch (error) {
       console.error("Error fetching fleet manager:", error);
