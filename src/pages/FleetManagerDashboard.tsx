@@ -463,77 +463,95 @@ const FleetManagerDashboard = () => {
           setActiveTab(tab);
         }} className="space-y-6">
           {/* Navigation Tabs - Design moderne sur 2 lignes de 4 */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent rounded-2xl blur-xl" />
-            <div className="relative bg-card/80 backdrop-blur-xl p-3 shadow-xl border border-white/10 rounded-2xl space-y-2">
+          <div className="relative animate-fade-in">
+            {/* Glow background effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-info/10 rounded-3xl blur-2xl opacity-50" />
+            
+            <div className="relative glass-strong p-4 rounded-3xl space-y-3">
               {/* Première ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-2 h-auto bg-transparent p-0">
+              <TabsList className="w-full grid grid-cols-4 gap-3 h-auto bg-transparent p-0 stagger-fade-in">
                 <TabsTrigger 
                   value="home" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-primary/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-primary data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-elegant data-[state=active]:scale-[1.03] data-[state=active]:border-primary/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-primary/20'}`}
                 >
-                  <Home className="w-5 h-5" />
-                  <span className="text-xs font-medium">Accueil</span>
+                  <div className="relative">
+                    <Home className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Accueil</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="drivers" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-primary/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-primary data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-primary/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-primary/20'}`}
                 >
-                  <Car className="w-5 h-5" />
-                  <span className="text-xs font-medium">Chauffeurs</span>
+                  <div className="relative">
+                    <Car className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Chauffeurs</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="clients" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-success/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-success data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-success data-[state=active]:scale-[1.03] data-[state=active]:border-success/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-success/20'}`}
                 >
-                  <Users className="w-5 h-5" />
-                  <span className="text-xs font-medium">Clients</span>
+                  <div className="relative">
+                    <Users className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Clients</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="courses" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-info/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-info data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-info/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-info/20'}`}
                 >
-                  <Route className="w-5 h-5" />
-                  <span className="text-xs font-medium">Courses</span>
+                  <div className="relative">
+                    <Route className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Courses</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* Deuxième ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-2 h-auto bg-transparent p-0">
+              <TabsList className="w-full grid grid-cols-4 gap-3 h-auto bg-transparent p-0 stagger-fade-in">
                 <TabsTrigger 
                   value="stats" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-accent/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-accent data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-premium data-[state=active]:scale-[1.03] data-[state=active]:border-accent/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-accent/20'}`}
                 >
-                  <BarChart3 className="w-5 h-5" />
-                  <span className="text-xs font-medium">Statistiques</span>
+                  <div className="relative">
+                    <BarChart3 className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Statistiques</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="tools" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-warning/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-warning data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-warning data-[state=active]:scale-[1.03] data-[state=active]:border-warning/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-warning/20'}`}
                 >
-                  <Wrench className="w-5 h-5" />
-                  <span className="text-xs font-medium">Outils</span>
+                  <div className="relative">
+                    <Wrench className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Outils</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-cyan-500/30 ${isAccountRestricted ? 'ring-2 ring-destructive ring-offset-2 ring-offset-background animate-pulse' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-info data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-cyan-500/50 ${isAccountRestricted ? 'ring-2 ring-destructive ring-offset-2 ring-offset-background animate-pulse' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-cyan-500/20'}`}
                 >
-                  <FileText className="w-5 h-5" />
-                  <span className="text-xs font-medium">Documents</span>
+                  <div className="relative">
+                    <FileText className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Documents</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
                   disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-300 bg-muted/30 border border-white/5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-600 data-[state=active]:to-gray-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] data-[state=active]:border-gray-500/30 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50 hover:scale-[1.01]'}`}
+                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 data-[state=active]:bg-gradient-to-br data-[state=active]:from-slate-600 data-[state=active]:to-slate-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.03] data-[state=active]:border-slate-500/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-slate-500/20'}`}
                 >
-                  <Settings className="w-5 h-5" />
-                  <span className="text-xs font-medium">Paramètres</span>
+                  <div className="relative">
+                    <Settings className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45 group-data-[state=active]:drop-shadow-glow" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Paramètres</span>
                 </TabsTrigger>
               </TabsList>
             </div>
