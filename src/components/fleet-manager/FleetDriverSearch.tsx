@@ -429,10 +429,16 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
 
         {drivers.length === 0 && !searching ? (
           <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Aucun chauffeur disponible avec ces critères</p>
-              <p className="text-sm mt-2">Essayez de modifier vos filtres de recherche</p>
+            <CardContent className="py-12 text-center">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="font-medium text-lg mb-2">Aucun chauffeur disponible</p>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                Les chauffeurs indépendants doivent activer l'option "Visible par les gestionnaires de flotte" 
+                dans leur profil pour apparaître dans cette recherche.
+              </p>
+              <p className="text-muted-foreground text-sm mt-4">
+                Vous pouvez également utiliser l'onglet "Invitations" pour inviter des chauffeurs spécifiques.
+              </p>
             </CardContent>
           </Card>
         ) : (
