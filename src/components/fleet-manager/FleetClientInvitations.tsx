@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   UserPlus,
@@ -24,6 +25,9 @@ import {
   ExternalLink,
   RefreshCw,
   AlertCircle,
+  Search,
+  Filter,
+  SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -59,6 +63,11 @@ export const FleetClientInvitations = ({ fleetManagerId }: FleetClientInvitation
     phone: "",
     notes: "",
   });
+  
+  // Advanced filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchInvitations();
@@ -164,10 +173,37 @@ export const FleetClientInvitations = ({ fleetManagerId }: FleetClientInvitation
     );
   };
 
+  // Filter invitations
+  const filteredInvitations = invitations.filter((inv) => {
+    // Text search
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      const nameMatch = inv.client_name?.toLowerCase().includes(searchLower);
+      const emailMatch = inv.email?.toLowerCase().includes(searchLower);
+      const phoneMatch = inv.phone?.includes(searchText);
+      if (!nameMatch && !emailMatch && !phoneMatch) return false;
+    }
+    
+    // Status filter
+    if (statusFilter !== "all") {
+      if (statusFilter === "pending" && inv.status !== "pending") return false;
+      if (statusFilter === "used" && inv.status !== "used") return false;
+      if (statusFilter === "expired") {
+        if (inv.status === "used") return false;
+        if (!inv.expires_at || new Date(inv.expires_at) >= new Date()) return false;
+      }
+    }
+    
+    return true;
+  });
+
   const pendingCount = invitations.filter(
     (inv) => inv.status === "pending" && (!inv.expires_at || new Date(inv.expires_at) > new Date())
   ).length;
   const usedCount = invitations.filter((inv) => inv.status === "used").length;
+  const expiredCount = invitations.filter(
+    (inv) => inv.status !== "used" && inv.expires_at && new Date(inv.expires_at) < new Date()
+  ).length;
 
   if (loading) {
     return (
@@ -330,7 +366,53 @@ export const FleetClientInvitations = ({ fleetManagerId }: FleetClientInvitation
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom, email ou téléphone..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="pending">En attente ({pendingCount})</SelectItem>
+                <SelectItem value="used">Inscrits ({usedCount})</SelectItem>
+                <SelectItem value="expired">Expirés ({expiredCount})</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Active filters */}
+          {(searchText || statusFilter !== "all") && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">Filtres :</span>
+              {searchText && (
+                <Badge variant="secondary" className="gap-1">
+                  "{searchText}"
+                  <button onClick={() => setSearchText("")} className="ml-1 hover:text-destructive">×</button>
+                </Badge>
+              )}
+              {statusFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  {statusFilter === "pending" ? "En attente" : statusFilter === "used" ? "Inscrits" : "Expirés"}
+                  <button onClick={() => setStatusFilter("all")} className="ml-1 hover:text-destructive">×</button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => { setSearchText(""); setStatusFilter("all"); }}>
+                Réinitialiser
+              </Button>
+            </div>
+          )}
+
           {invitations.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
@@ -345,9 +427,14 @@ export const FleetClientInvitations = ({ fleetManagerId }: FleetClientInvitation
                 Créer ma première invitation
               </Button>
             </div>
+          ) : filteredInvitations.length === 0 ? (
+            <div className="text-center py-8">
+              <Search className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
+              <p className="text-muted-foreground">Aucun résultat pour ces critères</p>
+            </div>
           ) : (
             <div className="space-y-3">
-              {invitations.map((invitation) => (
+              {filteredInvitations.map((invitation) => (
                 <div
                   key={invitation.id}
                   className={`p-4 rounded-xl border transition-all ${
