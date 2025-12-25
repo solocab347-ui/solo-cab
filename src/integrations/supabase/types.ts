@@ -3138,6 +3138,9 @@ export type Database = {
           show_phone: boolean | null
           siren: string | null
           siret: string
+          smart_buffer_enabled: boolean | null
+          smart_buffer_fallback_action: string | null
+          smart_buffer_min_minutes: number | null
           status: string
           stripe_customer_id: string | null
           subscription_end_date: string | null
@@ -3200,6 +3203,9 @@ export type Database = {
           show_phone?: boolean | null
           siren?: string | null
           siret: string
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
           status?: string
           stripe_customer_id?: string | null
           subscription_end_date?: string | null
@@ -3262,6 +3268,9 @@ export type Database = {
           show_phone?: boolean | null
           siren?: string | null
           siret?: string
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
           status?: string
           stripe_customer_id?: string | null
           subscription_end_date?: string | null

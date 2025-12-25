@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, MapPin, Zap, Users, Navigation } from "lucide-react";
+import { Loader2, Save, MapPin, Zap, Users, Navigation, Clock, Brain, AlertTriangle } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FleetDispatchSettingsProps {
   fleetManagerId: string;
@@ -20,6 +20,9 @@ interface DispatchSettings {
   favorite_driver_priority: boolean;
   assignment_mode: string;
   course_buffer_minutes: number;
+  smart_buffer_enabled: boolean;
+  smart_buffer_min_minutes: number;
+  smart_buffer_fallback_action: "notify_manager" | "assign_available" | "auto_reject";
 }
 
 export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsProps) => {
@@ -31,6 +34,9 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
     favorite_driver_priority: true,
     assignment_mode: "manual",
     course_buffer_minutes: 60,
+    smart_buffer_enabled: false,
+    smart_buffer_min_minutes: 15,
+    smart_buffer_fallback_action: "notify_manager",
   });
 
   useEffect(() => {
@@ -41,7 +47,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
     try {
       const { data, error } = await supabase
         .from("fleet_managers")
-        .select("auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode, course_buffer_minutes")
+        .select("auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode, course_buffer_minutes, smart_buffer_enabled, smart_buffer_min_minutes, smart_buffer_fallback_action")
         .eq("id", fleetManagerId)
         .single();
 
@@ -53,6 +59,9 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
           favorite_driver_priority: data.favorite_driver_priority !== false,
           assignment_mode: data.assignment_mode || "manual",
           course_buffer_minutes: data.course_buffer_minutes || 60,
+          smart_buffer_enabled: data.smart_buffer_enabled || false,
+          smart_buffer_min_minutes: data.smart_buffer_min_minutes || 15,
+          smart_buffer_fallback_action: (data.smart_buffer_fallback_action as DispatchSettings["smart_buffer_fallback_action"]) || "notify_manager",
         });
       }
     } catch (error) {
@@ -73,6 +82,9 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
           favorite_driver_priority: settings.favorite_driver_priority,
           assignment_mode: settings.auto_dispatch_enabled ? "automatic" : settings.assignment_mode,
           course_buffer_minutes: settings.course_buffer_minutes,
+          smart_buffer_enabled: settings.smart_buffer_enabled,
+          smart_buffer_min_minutes: settings.smart_buffer_min_minutes,
+          smart_buffer_fallback_action: settings.smart_buffer_fallback_action,
         })
         .eq("id", fleetManagerId);
 
@@ -222,33 +234,137 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
             Temps de buffer entre les courses
           </CardTitle>
           <CardDescription>
-            Définissez le temps minimum entre deux courses pour vos chauffeurs
+            Définissez le temps entre deux courses pour vos chauffeurs
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Label htmlFor="buffer" className="min-w-fit">Temps de buffer :</Label>
-            <Select
-              value={settings.course_buffer_minutes.toString()}
-              onValueChange={(value) => setSettings({ ...settings, course_buffer_minutes: parseInt(value) })}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="45">45 minutes</SelectItem>
-                <SelectItem value="60">1 heure (recommandé)</SelectItem>
-                <SelectItem value="90">1h30</SelectItem>
-                <SelectItem value="120">2 heures</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="space-y-6">
+          {/* Toggle Buffer Intelligent */}
+          <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Brain className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <Label htmlFor="smart_buffer" className="text-base font-medium">
+                  Buffer Intelligent
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Calcule automatiquement le temps nécessaire entre les courses en fonction des trajets
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="smart_buffer"
+              checked={settings.smart_buffer_enabled}
+              onCheckedChange={(checked) => setSettings({ ...settings, smart_buffer_enabled: checked })}
+            />
           </div>
-          <p className="text-sm text-muted-foreground">
-            Ce buffer sera appliqué avant et après chaque course lors de la recherche de disponibilité des chauffeurs.
-            Un buffer de 1 heure est recommandé pour permettre aux chauffeurs de se déplacer entre les courses.
-          </p>
+
+          {settings.smart_buffer_enabled ? (
+            <div className="space-y-4 p-4 rounded-lg border border-dashed border-primary/30 bg-primary/5">
+              <Alert className="bg-blue-50 border-blue-200">
+                <Brain className="w-4 h-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Mode Intelligent activé :</strong> Le système analyse la position de dépose de la course précédente 
+                  et calcule le temps de trajet vers le nouveau lieu de prise en charge pour déterminer si le chauffeur peut accepter.
+                </AlertDescription>
+              </Alert>
+
+              <div className="grid gap-4">
+                <div className="flex items-center gap-4">
+                  <Label htmlFor="min_buffer" className="min-w-fit">Buffer minimum :</Label>
+                  <Select
+                    value={settings.smart_buffer_min_minutes.toString()}
+                    onValueChange={(value) => setSettings({ ...settings, smart_buffer_min_minutes: parseInt(value) })}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 minutes</SelectItem>
+                      <SelectItem value="10">10 minutes</SelectItem>
+                      <SelectItem value="15">15 minutes (recommandé)</SelectItem>
+                      <SelectItem value="20">20 minutes</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Temps minimum ajouté au temps de trajet calculé pour tenir compte des imprévus.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Action si timing trop serré :</Label>
+                <RadioGroup
+                  value={settings.smart_buffer_fallback_action}
+                  onValueChange={(value) => setSettings({ ...settings, smart_buffer_fallback_action: value as DispatchSettings["smart_buffer_fallback_action"] })}
+                  className="space-y-2"
+                >
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    settings.smart_buffer_fallback_action === "notify_manager" 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  }`}>
+                    <RadioGroupItem value="notify_manager" id="notify_manager" />
+                    <div className="flex-1">
+                      <Label htmlFor="notify_manager" className="cursor-pointer font-medium">Notifier le gestionnaire</Label>
+                      <p className="text-xs text-muted-foreground">La course vous est envoyée pour attribution manuelle</p>
+                    </div>
+                  </div>
+
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    settings.smart_buffer_fallback_action === "assign_available" 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  }`}>
+                    <RadioGroupItem value="assign_available" id="assign_available" />
+                    <div className="flex-1">
+                      <Label htmlFor="assign_available" className="cursor-pointer font-medium">Attribuer à un autre chauffeur</Label>
+                      <p className="text-xs text-muted-foreground">Recherche automatique d'un autre chauffeur disponible</p>
+                    </div>
+                  </div>
+
+                  <div className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    settings.smart_buffer_fallback_action === "auto_reject" 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  }`}>
+                    <RadioGroupItem value="auto_reject" id="auto_reject" />
+                    <div className="flex-1">
+                      <Label htmlFor="auto_reject" className="cursor-pointer font-medium">Mettre en attente</Label>
+                      <p className="text-xs text-muted-foreground">La course reste en attente d'attribution</p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Label htmlFor="buffer" className="min-w-fit">Temps de buffer fixe :</Label>
+                <Select
+                  value={settings.course_buffer_minutes.toString()}
+                  onValueChange={(value) => setSettings({ ...settings, course_buffer_minutes: parseInt(value) })}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="45">45 minutes</SelectItem>
+                    <SelectItem value="60">1 heure (recommandé)</SelectItem>
+                    <SelectItem value="90">1h30</SelectItem>
+                    <SelectItem value="120">2 heures</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Ce buffer fixe sera appliqué avant et après chaque course lors de la recherche de disponibilité.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

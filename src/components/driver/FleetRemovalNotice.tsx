@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, UserCheck, Building2, CreditCard, ArrowRight } from "lucide-react";
+import { AlertTriangle, UserCheck, Building2, CreditCard, ArrowRight, FileCheck, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface FleetRemovalNoticeProps {
   userId: string;
@@ -26,6 +27,7 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
     fleetName: string;
   } | null>(null);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const [convertingToIndependent, setConvertingToIndependent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,6 +90,52 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
     navigate("/driver-dashboard?tab=subscription");
   };
 
+  const handleConvertToIndependent = async () => {
+    setConvertingToIndependent(true);
+    try {
+      // Mettre à jour le statut du chauffeur pour devenir indépendant
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          status: "pending", // En attente de validation admin
+          documents_status: "pending", // Documents à soumettre
+          documents_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 jours pour soumettre
+          subscription_paid: false,
+          subscription_status: "inactive",
+        })
+        .eq("id", driverId);
+
+      if (error) throw error;
+
+      // Créer une notification pour l'admin
+      const { data: adminProfiles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+
+      if (adminProfiles) {
+        for (const admin of adminProfiles) {
+          await supabase.from("notifications").insert({
+            user_id: admin.user_id,
+            title: "🔄 Nouveau chauffeur indépendant",
+            message: "Un chauffeur détaché d'une flotte souhaite devenir indépendant et attend la validation de ses documents.",
+            type: "info",
+            link: "/admin-dashboard?tab=drivers",
+          });
+        }
+      }
+
+      toast.success("Votre demande de conversion en chauffeur indépendant a été envoyée. Soumettez vos documents pour validation.");
+      handleDismiss();
+      navigate("/driver-dashboard?tab=documents");
+    } catch (error) {
+      console.error("Error converting to independent:", error);
+      toast.error("Erreur lors de la conversion");
+    } finally {
+      setConvertingToIndependent(false);
+    }
+  };
+
   if (!showNotice || !removalInfo) return null;
 
   return (
@@ -116,19 +164,27 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
             </p>
 
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 border rounded-lg hover:border-primary/50 transition-colors">
+              <button 
+                onClick={handleConvertToIndependent}
+                disabled={convertingToIndependent}
+                className="w-full flex items-start gap-3 p-4 border rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left"
+              >
                 <div className="p-2 bg-primary/10 rounded-lg">
-                  <UserCheck className="w-5 h-5 text-primary" />
+                  {convertingToIndependent ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ) : (
+                    <UserCheck className="w-5 h-5 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium">Continuer en indépendant</h4>
+                  <h4 className="font-medium">Devenir chauffeur indépendant</h4>
                   <p className="text-sm text-muted-foreground">
-                    Souscrivez à l'abonnement SoloCab (9,99€/mois) et gérez votre activité en toute autonomie
+                    Soumettez vos documents pour validation par l'administrateur SoloCab et souscrivez à l'abonnement (9,99€/mois)
                   </p>
                 </div>
-              </div>
+              </button>
 
-              <div className="flex items-start gap-3 p-3 border rounded-lg hover:border-primary/50 transition-colors">
+              <div className="flex items-start gap-3 p-4 border rounded-lg hover:border-primary/50 transition-colors">
                 <div className="p-2 bg-primary/10 rounded-lg">
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
@@ -143,17 +199,25 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
           </div>
 
           <Alert className="bg-blue-50 border-blue-200">
-            <CreditCard className="w-4 h-4 text-blue-600" />
+            <FileCheck className="w-4 h-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
-              <strong>Note :</strong> Pour continuer à recevoir des courses et utiliser toutes les fonctionnalités,
-              vous devez soit rejoindre une nouvelle flotte, soit souscrire à l'abonnement chauffeur indépendant.
+              <strong>Important :</strong> En tant que chauffeur indépendant, vos documents seront validés par l'administrateur SoloCab 
+              (et non plus par votre ancien gestionnaire de flotte). Une fois validé, vous pourrez gérer votre activité en toute autonomie.
+            </AlertDescription>
+          </Alert>
+
+          <Alert className="bg-green-50 border-green-200">
+            <CreditCard className="w-4 h-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              <strong>Abonnement :</strong> L'abonnement chauffeur indépendant est de 9,99€/mois et vous donne accès à toutes les fonctionnalités :
+              gestion des clients, courses, devis, factures, profil public et QR code personnalisé.
             </AlertDescription>
           </Alert>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleDismiss}>
-            J'ai compris
+            Je verrai plus tard
           </Button>
           <Button onClick={handleGoToSubscription} className="gap-2">
             Voir les abonnements
