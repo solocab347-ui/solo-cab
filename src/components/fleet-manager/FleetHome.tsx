@@ -137,258 +137,275 @@ export const FleetHome = ({
   }, [drivers]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8">
-      {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 p-6 md:p-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in">
+      {/* Welcome Header - Premium Glass Design */}
+      <div className="relative overflow-hidden rounded-3xl glass-strong p-8 md:p-10">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-info/5 opacity-60" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
         
-        <div className="relative flex flex-col items-center text-center gap-4">
+        <div className="relative flex flex-col items-center text-center gap-6">
           {/* Manager Info */}
-          <div className="flex items-center gap-4">
-            <Avatar className="w-14 h-14 border-2 border-primary/30 shadow-xl">
-              <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-lg font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-full blur-md opacity-50 animate-pulse-slow" />
+              <Avatar className="relative w-16 h-16 md:w-20 md:h-20 border-3 border-primary/50 shadow-elegant">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-xl font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             <div className="text-left">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+              <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text">
                 Bienvenue, {userProfile?.full_name || fleetManager.contact_name}
               </h1>
-              <p className="text-muted-foreground flex items-center gap-2">
-                <span>{fleetManager.company_name}</span>
+              <p className="text-muted-foreground flex items-center gap-3 mt-1">
+                <span className="text-lg">{fleetManager.company_name}</span>
                 {fleetManager.subscription_status === 'active' && (
-                  <Badge className="bg-success/20 text-success border-success/30">Premium</Badge>
+                  <Badge className="bg-gradient-premium text-white border-0 shadow-premium px-3">
+                    ✨ Premium
+                  </Badge>
                 )}
               </p>
             </div>
           </div>
 
-          {/* Quick Action - Centered */}
+          {/* Quick Action Button */}
           <Button 
             onClick={() => window.open(`/flotte/${fleetManager.id}`, '_blank')}
-            className="gap-2"
+            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity shadow-elegant px-6 py-2.5"
+            size="lg"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-5 h-5" />
             Voir ma vitrine
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Accès Rapide */}
+      {/* Accès Rapide - Modern Cards with Glow */}
       <div>
-        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-3">
+          <div className="w-1.5 h-7 bg-gradient-to-b from-primary to-accent rounded-full shadow-elegant"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 stagger-fade-in">
           {/* Gestion des Courses */}
           <Card 
-            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            className="card-modern p-5 cursor-pointer group hover-glow-info"
             onClick={() => onTabChange("courses")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-info/20 to-info/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-info to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Route className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-info to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-info/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <Route className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Gestion Courses</h3>
-                <p className="text-sm text-muted-foreground">Gérer les réservations</p>
+                <h3 className="text-sm font-bold text-foreground">Courses</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Gérer les réservations</p>
               </div>
             </div>
           </Card>
 
           {/* Inviter Chauffeur */}
           <Card 
-            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            className="card-modern p-5 cursor-pointer group hover-glow-success"
             onClick={() => onTabChange("invitations")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-success/20 to-success/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-success to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Plus className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-success/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <Plus className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Inviter Chauffeur</h3>
-                <p className="text-sm text-muted-foreground">Agrandir votre flotte</p>
+                <h3 className="text-sm font-bold text-foreground">Inviter</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Agrandir la flotte</p>
               </div>
             </div>
           </Card>
 
-          {/* QR Code Vitrine Publique */}
+          {/* QR Code Vitrine */}
           <Card 
-            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            className="card-modern p-5 cursor-pointer group hover-glow-accent"
             onClick={() => onTabChange("qrcode")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-accent/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-accent to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <QrCode className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-accent to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-accent/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <QrCode className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">QR Code Vitrine</h3>
-                <p className="text-sm text-muted-foreground">Partager ma vitrine</p>
+                <h3 className="text-sm font-bold text-foreground">QR Code</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Partager vitrine</p>
               </div>
             </div>
           </Card>
 
           {/* Profil Public */}
           <Card 
-            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            className="card-modern p-5 cursor-pointer group hover-glow-primary"
             onClick={() => onTabChange("public-profile")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Globe className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-primary/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <Globe className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Profil Public</h3>
-                <p className="text-sm text-muted-foreground">Gérer ma vitrine</p>
+                <h3 className="text-sm font-bold text-foreground">Profil</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Gérer vitrine</p>
               </div>
             </div>
           </Card>
 
           {/* Planning */}
           <Card 
-            className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 group"
+            className="card-modern p-5 cursor-pointer group hover-glow-info"
             onClick={() => onTabChange("planning")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-info/20 to-info/5 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-info to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Calendar className="w-8 h-8 text-white" />
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-info to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-info/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <Calendar className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Planning</h3>
-                <p className="text-sm text-muted-foreground">Gérer les disponibilités</p>
+                <h3 className="text-sm font-bold text-foreground">Planning</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Disponibilités</p>
               </div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Statistiques */}
+      {/* Statistiques - Animated Stat Cards */}
       <div>
-        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-          <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+        <h2 className="text-xl font-bold mb-6 text-foreground flex items-center gap-3">
+          <div className="w-1.5 h-7 bg-gradient-to-b from-accent to-primary rounded-full shadow-premium"></div>
           Statistiques
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
           {/* Chauffeurs */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 hover:scale-[1.02] transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Car className="w-7 h-7 text-white" />
+          <Card className="card-modern p-6 hover-glow-primary group">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-elegant group-hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-primary/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Car className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-foreground mb-1">{drivers.length}</h3>
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Chauffeurs</p>
+                <h3 className="text-4xl font-black text-foreground stat-number tabular-nums">{drivers.length}</h3>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mt-1">Chauffeurs</p>
               </div>
             </div>
           </Card>
 
           {/* Clients */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 hover:scale-[1.02] transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-success/10 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Users className="w-7 h-7 text-white" />
+          <Card className="card-modern p-6 hover-glow-success group">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-success to-emerald-600 rounded-2xl flex items-center justify-center shadow-success group-hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-success/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Users className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-foreground mb-1">{clientsCount}</h3>
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Clients</p>
+                <h3 className="text-4xl font-black text-foreground stat-number tabular-nums">{clientsCount}</h3>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mt-1">Clients</p>
               </div>
             </div>
           </Card>
 
           {/* Courses */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 hover:scale-[1.02] transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-accent to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-7 h-7 text-white" />
+          <Card className="card-modern p-6 hover-glow-accent group">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-accent to-purple-600 rounded-2xl flex items-center justify-center shadow-premium group-hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-accent/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <TrendingUp className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-foreground mb-1">
+                <h3 className="text-4xl font-black text-foreground stat-number tabular-nums">
                   {loading ? "..." : stats.totalCourses}
                 </h3>
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Courses</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mt-1">Courses</p>
               </div>
             </div>
           </Card>
 
           {/* Invitations */}
-          <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 hover:scale-[1.02] transition-all">
-            <div className="absolute inset-0 bg-gradient-to-br from-warning/10 to-transparent"></div>
-            <div className="relative z-10 flex flex-col items-center text-center space-y-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-warning to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Send className="w-7 h-7 text-white" />
+          <Card className="card-modern p-6 hover-glow-warning group">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-warning to-orange-600 rounded-2xl flex items-center justify-center shadow-warning group-hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-warning/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Send className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-4xl font-bold text-foreground mb-1">{pendingInvitationsCount}</h3>
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Invitations</p>
+                <h3 className="text-4xl font-black text-foreground stat-number tabular-nums">{pendingInvitationsCount}</h3>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mt-1">Invitations</p>
               </div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* Mes Chauffeurs */}
+      {/* Mes Chauffeurs - Modern Driver Cards */}
       {drivers.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-3">
+              <div className="w-1.5 h-7 bg-gradient-to-b from-primary to-accent rounded-full shadow-elegant"></div>
               Mes Chauffeurs
             </h2>
-            <Button variant="outline" size="sm" onClick={() => onTabChange("drivers")}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onTabChange("drivers")}
+              className="gap-2 hover:bg-primary/10 hover:border-primary/50 transition-colors"
+            >
               Voir tout
+              <Eye className="w-4 h-4" />
             </Button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-fade-in">
             {drivers.slice(0, 6).map((driver) => (
               <Card 
                 key={driver.id}
-                className="relative overflow-hidden p-4 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10 hover:border-primary/30 transition-all cursor-pointer group"
+                className="card-modern p-5 cursor-pointer group hover-glow-primary"
                 onClick={() => driver.driver?.id && onViewDriverProfile(driver.driver.id)}
               >
                 <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12 border-2 border-border/50 group-hover:border-primary/50 transition-colors">
-                    <AvatarImage src={driver.driver?.profile?.profile_photo_url || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-foreground font-semibold">
-                      {(driver.driver?.profile?.full_name || "C")
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent rounded-full blur-sm opacity-0 group-hover:opacity-50 transition-opacity" />
+                    <Avatar className="relative w-14 h-14 border-2 border-border/30 group-hover:border-primary/50 transition-all">
+                      <AvatarImage src={driver.driver?.profile?.profile_photo_url || undefined} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-foreground font-bold">
+                        {(driver.driver?.profile?.full_name || "C")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">
+                    <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
                       {driver.driver?.profile?.full_name || "Chauffeur"}
                     </h3>
                     <p className="text-sm text-muted-foreground truncate">
                       {driver.driver?.vehicle_brand} {driver.driver?.vehicle_model}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-2">
                     {driver.driver?.rating && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5 px-2 py-1 bg-warning/10 rounded-lg">
                         <Star className="w-4 h-4 text-warning fill-warning" />
-                        <span className="text-sm font-medium">{driver.driver.rating.toFixed(1)}</span>
+                        <span className="text-sm font-bold text-warning">{driver.driver.rating.toFixed(1)}</span>
                       </div>
                     )}
                     <Badge 
                       variant={driver.driver?.status === "validated" ? "default" : "secondary"}
-                      className={driver.driver?.status === "validated" ? "bg-success/20 text-success border-success/30" : ""}
+                      className={driver.driver?.status === "validated" ? "bg-success/20 text-success border-success/30 font-medium" : ""}
                     >
-                      {driver.driver?.status === "validated" ? "Actif" : "En attente"}
+                      {driver.driver?.status === "validated" ? "✓ Actif" : "En attente"}
                     </Badge>
                   </div>
                 </div>
@@ -398,16 +415,25 @@ export const FleetHome = ({
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Empty State - Modern Design */}
       {drivers.length === 0 && (
-        <Card className="p-12 text-center bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border border-white/10">
-          <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-          <h3 className="text-xl font-semibold mb-2">Aucun chauffeur</h3>
-          <p className="text-muted-foreground mb-6">
-            Commencez par inviter des chauffeurs à rejoindre votre flotte
+        <Card className="card-modern p-12 text-center">
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-xl" />
+            <div className="relative w-full h-full bg-muted/50 rounded-2xl flex items-center justify-center">
+              <Car className="w-10 h-10 text-muted-foreground/50" />
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold mb-3">Aucun chauffeur</h3>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            Commencez par inviter des chauffeurs à rejoindre votre flotte pour démarrer votre activité
           </p>
-          <Button onClick={() => onTabChange("invitations")} className="gap-2">
-            <Plus className="w-4 h-4" />
+          <Button 
+            onClick={() => onTabChange("invitations")} 
+            className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-elegant px-6"
+            size="lg"
+          >
+            <Plus className="w-5 h-5" />
             Inviter un chauffeur
           </Button>
         </Card>
