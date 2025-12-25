@@ -55,11 +55,13 @@ interface SearchableDriver {
   gallery_photos: string[] | null;
   show_phone: boolean | null;
   show_email: boolean | null;
-  sharing_number: number | null;
-  full_name: string;
-  profile_photo_url: string | null;
-  phone: string | null;
-  email: string | null;
+  sharing_number?: number | null;
+  profile?: {
+    full_name: string;
+    profile_photo_url: string | null;
+    phone: string | null;
+    email: string | null;
+  };
 }
 
 // Vehicle categories
@@ -138,44 +140,72 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const searchDrivers = async () => {
     setSearching(true);
     try {
-      // Query the view directly
+      // Query drivers directly (same logic as FleetDriverPartnerships)
       let query = supabase
-        .from('fleet_searchable_drivers')
-        .select('*');
+        .from('drivers')
+        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email')
+        .eq('status', 'validated')
+        .eq('public_profile_enabled', true)
+        .is('fleet_manager_id', null);
 
-      // Apply filters independently - each filter can work alone or combined
+      // Apply filters independently
       if (minRating > 0) {
         query = query.gte('rating', minRating);
       }
 
-      if (searchText.trim()) {
-        query = query.or(`full_name.ilike.%${searchText}%,company_name.ilike.%${searchText}%,vehicle_brand.ilike.%${searchText}%,vehicle_model.ilike.%${searchText}%`);
-      }
-
-      // Department filter (independent) - search in working_sectors array
+      // Department filter - search in working_sectors array
       if (selectedDepartment) {
         query = query.contains('working_sectors', [selectedDepartment]);
       }
 
-      // Region filter (independent) - search in working_sectors array
+      // Region filter - search in working_sectors array
       if (selectedRegion) {
         query = query.contains('working_sectors', [selectedRegion]);
       }
 
-      // City/sector filter (independent)
+      // City/sector filter
       if (citySearch.trim()) {
         query = query.contains('working_sectors', [citySearch.trim()]);
       }
 
-      // Vehicle category filter (independent) - uses array contains
+      // Vehicle category filter
       if (selectedVehicleType) {
         query = query.contains('vehicle_category', [selectedVehicleType]);
       }
 
-      const { data, error } = await query.order('rating', { ascending: false, nullsFirst: false });
+      const { data: driversData, error } = await query.order('rating', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      setDrivers(data || []);
+
+      if (driversData && driversData.length > 0) {
+        // Fetch profiles
+        const userIds = driversData.map(d => d.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, profile_photo_url, phone, email')
+          .in('id', userIds);
+
+        // Apply text search filter on combined data
+        let driversWithProfiles = driversData.map(d => ({
+          ...d,
+          profile: profiles?.find(p => p.id === d.user_id)
+        }));
+
+        // Text search filter (client-side after joining with profiles)
+        if (searchText.trim()) {
+          const searchLower = searchText.toLowerCase();
+          driversWithProfiles = driversWithProfiles.filter(d => 
+            d.profile?.full_name?.toLowerCase().includes(searchLower) ||
+            d.company_name?.toLowerCase().includes(searchLower) ||
+            d.vehicle_brand?.toLowerCase().includes(searchLower) ||
+            d.vehicle_model?.toLowerCase().includes(searchLower)
+          );
+        }
+
+        setDrivers(driversWithProfiles as SearchableDriver[]);
+      } else {
+        setDrivers([]);
+      }
     } catch (error) {
       console.error('Error searching drivers:', error);
       toast.error('Erreur lors de la recherche');
@@ -448,15 +478,15 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-16 w-16 border-2 border-primary/20">
-                      <AvatarImage src={driver.profile_photo_url || undefined} />
+                      <AvatarImage src={driver.profile?.profile_photo_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {getInitials(driver.full_name)}
+                        {getInitials(driver.profile?.full_name || 'CH')}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{driver.full_name}</h3>
+                        <h3 className="font-semibold truncate">{driver.profile?.full_name || 'Chauffeur'}</h3>
                         {driver.rating && driver.rating >= 4.5 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                             <Star className="h-3 w-3 fill-current mr-1" />
@@ -550,13 +580,13 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                 <DialogHeader>
                   <div className="flex items-start gap-4">
                     <Avatar className="h-20 w-20 border-2 border-primary">
-                      <AvatarImage src={selectedDriver.profile_photo_url || undefined} />
+                      <AvatarImage src={selectedDriver.profile?.profile_photo_url || undefined} />
                       <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                        {getInitials(selectedDriver.full_name)}
+                        {getInitials(selectedDriver.profile?.full_name || 'CH')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <DialogTitle className="text-2xl">{selectedDriver.full_name}</DialogTitle>
+                      <DialogTitle className="text-2xl">{selectedDriver.profile?.full_name || 'Chauffeur'}</DialogTitle>
                       {selectedDriver.company_name && (
                         <p className="text-muted-foreground flex items-center gap-2 mt-1">
                           <Building2 className="h-4 w-4" />
@@ -771,24 +801,24 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                         <CardTitle className="text-sm">Coordonnées</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {selectedDriver.show_phone && selectedDriver.phone && (
+                        {selectedDriver.show_phone && selectedDriver.profile?.phone && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Phone className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Téléphone</p>
-                              <a href={`tel:${selectedDriver.phone}`} className="font-medium hover:text-primary">
-                                {selectedDriver.phone}
+                              <a href={`tel:${selectedDriver.profile.phone}`} className="font-medium hover:text-primary">
+                                {selectedDriver.profile.phone}
                               </a>
                             </div>
                           </div>
                         )}
-                        {selectedDriver.show_email && selectedDriver.email && (
+                        {selectedDriver.show_email && selectedDriver.profile?.email && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Mail className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Email</p>
-                              <a href={`mailto:${selectedDriver.email}`} className="font-medium hover:text-primary">
-                                {selectedDriver.email}
+                              <a href={`mailto:${selectedDriver.profile.email}`} className="font-medium hover:text-primary">
+                                {selectedDriver.profile.email}
                               </a>
                             </div>
                           </div>

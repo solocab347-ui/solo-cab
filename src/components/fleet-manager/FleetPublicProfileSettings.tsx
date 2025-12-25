@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Globe, 
@@ -20,9 +21,15 @@ import {
   Upload,
   User,
   Camera,
-  FileText
+  FileText,
+  Briefcase,
+  Check,
+  Plus,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { DRIVER_SERVICES } from "@/lib/vehicleEquipment";
+import { cn } from "@/lib/utils";
 
 interface FleetPublicProfileSettingsProps {
   fleetManagerId: string;
@@ -34,6 +41,7 @@ interface FleetPublicProfileSettingsProps {
   showAddress?: boolean;
   showPhone?: boolean;
   showEmail?: boolean;
+  servicesOffered?: string[] | null;
   onUpdate: () => void;
 }
 
@@ -47,6 +55,7 @@ export const FleetPublicProfileSettings = ({
   showAddress: initialShowAddress = true,
   showPhone: initialShowPhone = true,
   showEmail: initialShowEmail = true,
+  servicesOffered: initialServicesOffered = [],
   onUpdate
 }: FleetPublicProfileSettingsProps) => {
   const [loading, setLoading] = useState(false);
@@ -58,6 +67,9 @@ export const FleetPublicProfileSettings = ({
   const [showAddress, setShowAddress] = useState(initialShowAddress);
   const [showPhone, setShowPhone] = useState(initialShowPhone);
   const [showEmail, setShowEmail] = useState(initialShowEmail);
+  const [selectedServices, setSelectedServices] = useState<string[]>(initialServicesOffered || []);
+  const [customService, setCustomService] = useState("");
+  const [customServices, setCustomServices] = useState<string[]>([]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -101,9 +113,40 @@ export const FleetPublicProfileSettings = ({
     }
   };
 
+  // Separate predefined services from custom ones on init
+  useEffect(() => {
+    const predefinedIds = DRIVER_SERVICES.map(s => s.id);
+    const predefined = (initialServicesOffered || []).filter(s => predefinedIds.includes(s));
+    const custom = (initialServicesOffered || []).filter(s => !predefinedIds.includes(s));
+    setSelectedServices(predefined);
+    setCustomServices(custom);
+  }, [initialServicesOffered]);
+
+  const handleServiceToggle = (serviceId: string) => {
+    if (selectedServices.includes(serviceId)) {
+      setSelectedServices(selectedServices.filter(s => s !== serviceId));
+    } else {
+      setSelectedServices([...selectedServices, serviceId]);
+    }
+  };
+
+  const addCustomService = () => {
+    if (customService.trim() && !customServices.includes(customService.trim())) {
+      setCustomServices([...customServices, customService.trim()]);
+      setCustomService("");
+    }
+  };
+
+  const removeCustomService = (service: string) => {
+    setCustomServices(customServices.filter(s => s !== service));
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Combine predefined and custom services
+      const allServices = [...selectedServices, ...customServices];
+      
       const { error } = await supabase
         .from("fleet_managers")
         .update({
@@ -114,6 +157,7 @@ export const FleetPublicProfileSettings = ({
           show_address: showAddress,
           show_phone: showPhone,
           show_email: showEmail,
+          services_offered: allServices.length > 0 ? allServices : null,
         })
         .eq("id", fleetManagerId);
 
@@ -285,6 +329,100 @@ export const FleetPublicProfileSettings = ({
               <Switch checked={showEmail} onCheckedChange={setShowEmail} />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Services Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5" />
+            Services proposés
+          </CardTitle>
+          <CardDescription>
+            Sélectionnez les services que vous proposez à vos clients
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Predefined Services */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {DRIVER_SERVICES.map((service) => {
+              const isSelected = selectedServices.includes(service.id);
+              return (
+                <div
+                  key={service.id}
+                  onClick={() => handleServiceToggle(service.id)}
+                  className={cn(
+                    "p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md relative",
+                    isSelected 
+                      ? "border-primary border-2 bg-primary/5" 
+                      : "border-border/50 bg-muted/30 hover:border-primary/30"
+                  )}
+                >
+                  {isSelected && (
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-primary-foreground" />
+                    </div>
+                  )}
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{service.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-medium">{service.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {service.description}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Custom Services */}
+          <div className="space-y-3 pt-4 border-t">
+            <Label className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Ajouter un service personnalisé
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ex: Service médical, Transport d'enfants..."
+                value={customService}
+                onChange={(e) => setCustomService(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCustomService()}
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={addCustomService}
+                disabled={!customService.trim()}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {customServices.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {customServices.map((service, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="secondary"
+                    className="px-3 py-1.5 gap-2"
+                  >
+                    {service}
+                    <X 
+                      className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => removeCustomService(service)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {selectedServices.length + customServices.length} service(s) sélectionné(s)
+          </p>
         </CardContent>
       </Card>
 
