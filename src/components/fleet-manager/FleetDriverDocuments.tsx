@@ -49,21 +49,27 @@ interface RequiredDocument {
 
 const DEFAULT_REQUIRED_DOCUMENTS = [
   {
+    key: "id_card_recto",
+    label: "Pièce d'identité (Recto)",
+    description: "Face avant de votre CNI ou passeport",
+    is_required: true,
+  },
+  {
+    key: "id_card_verso",
+    label: "Pièce d'identité (Verso)",
+    description: "Face arrière de votre CNI",
+    is_required: true,
+  },
+  {
     key: "vtc_card",
     label: "Carte professionnelle VTC",
-    description: "Carte VTC recto/verso en cours de validité",
+    description: "Carte VTC en cours de validité",
     is_required: true,
   },
   {
     key: "driving_license",
     label: "Permis de conduire",
-    description: "Permis B recto/verso en cours de validité",
-    is_required: true,
-  },
-  {
-    key: "id_card",
-    label: "Pièce d'identité",
-    description: "CNI ou passeport en cours de validité",
+    description: "Permis B en cours de validité",
     is_required: true,
   },
   {
