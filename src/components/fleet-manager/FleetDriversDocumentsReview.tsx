@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,11 @@ interface DriverWithDocuments {
   driver_id: string;
   status: string;
   joined_at: string;
+  temporary_access_granted: boolean | null;
+  temporary_access_reason: string | null;
+  temporary_access_expires_at: string | null;
+  rejected_documents: any | null;
+  documents_rejection_reason: string | null;
   driver: {
     id: string;
     vehicle_model: string;
@@ -82,6 +88,9 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [rejectedDocKeys, setRejectedDocKeys] = useState<string[]>([]);
+  const [temporaryAccessReason, setTemporaryAccessReason] = useState("");
+  const [temporaryAccessDays, setTemporaryAccessDays] = useState(7);
 
   useEffect(() => {
     fetchData();
@@ -106,6 +115,11 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
           driver_id,
           status,
           joined_at,
+          temporary_access_granted,
+          temporary_access_reason,
+          temporary_access_expires_at,
+          rejected_documents,
+          documents_rejection_reason,
           driver:drivers(
             id,
             vehicle_model,
@@ -185,7 +199,7 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
     }
   };
 
-  const handleRejectDocuments = async (driverId: string) => {
+  const handleRejectDocuments = async (driverId: string, fleetDriverId: string) => {
     if (!rejectionReason.trim()) {
       toast.error("Veuillez indiquer la raison du rejet");
       return;
@@ -193,14 +207,26 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
 
     setProcessing(true);
     try {
-      const { error } = await supabase
+      // Mettre à jour le statut des documents du chauffeur
+      const { error: driverError } = await supabase
         .from("drivers")
         .update({
           fleet_documents_status: "rejected",
         })
         .eq("id", driverId);
 
-      if (error) throw error;
+      if (driverError) throw driverError;
+
+      // Stocker les documents rejetés et la raison dans fleet_manager_drivers
+      const { error: fmdError } = await supabase
+        .from("fleet_manager_drivers")
+        .update({
+          rejected_documents: rejectedDocKeys,
+          documents_rejection_reason: rejectionReason
+        })
+        .eq("id", fleetDriverId);
+
+      if (fmdError) throw fmdError;
 
       // Send notification with reason
       const driver = drivers.find(d => d.driver_id === driverId);
@@ -208,7 +234,7 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
         await supabase.from("notifications").insert({
           user_id: driver.driver.user_id,
           title: "❌ Documents rejetés",
-          message: `Vos documents ont été rejetés. Motif : ${rejectionReason}`,
+          message: `Certains documents ont été rejetés. Motif : ${rejectionReason}`,
           type: "error",
         });
       }
@@ -216,10 +242,79 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
       toast.success("Documents rejetés");
       setShowReviewDialog(false);
       setRejectionReason("");
+      setRejectedDocKeys([]);
       fetchData();
     } catch (error) {
       console.error("Error rejecting documents:", error);
       toast.error("Erreur lors du rejet");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleGrantTemporaryAccess = async (fleetDriverId: string, driverUserId: string) => {
+    if (!temporaryAccessReason.trim()) {
+      toast.error("Veuillez indiquer la raison de l'accès temporaire");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + temporaryAccessDays);
+
+      const { error } = await supabase
+        .from("fleet_manager_drivers")
+        .update({
+          temporary_access_granted: true,
+          temporary_access_reason: temporaryAccessReason,
+          temporary_access_granted_at: new Date().toISOString(),
+          temporary_access_expires_at: expiresAt.toISOString()
+        })
+        .eq("id", fleetDriverId);
+
+      if (error) throw error;
+
+      // Notifier le chauffeur
+      await supabase.from("notifications").insert({
+        user_id: driverUserId,
+        title: "🔓 Accès temporaire accordé",
+        message: `Un accès temporaire de ${temporaryAccessDays} jours vous a été accordé pendant la validation de vos documents.`,
+        type: "info",
+      });
+
+      toast.success(`Accès temporaire de ${temporaryAccessDays} jours accordé`);
+      setTemporaryAccessReason("");
+      setTemporaryAccessDays(7);
+      fetchData();
+    } catch (error) {
+      console.error("Error granting temporary access:", error);
+      toast.error("Erreur lors de l'attribution de l'accès");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRevokeTemporaryAccess = async (fleetDriverId: string) => {
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("fleet_manager_drivers")
+        .update({
+          temporary_access_granted: false,
+          temporary_access_reason: null,
+          temporary_access_granted_at: null,
+          temporary_access_expires_at: null
+        })
+        .eq("id", fleetDriverId);
+
+      if (error) throw error;
+
+      toast.success("Accès temporaire révoqué");
+      fetchData();
+    } catch (error) {
+      console.error("Error revoking temporary access:", error);
+      toast.error("Erreur lors de la révocation");
     } finally {
       setProcessing(false);
     }
@@ -424,13 +519,27 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
                   {requiredDocs.map((reqDoc) => {
                     const docs = selectedDriver.driver.documents as Record<string, DocumentInfo> | null;
                     const uploadedDoc = docs?.[reqDoc.document_key];
+                    const isRejected = rejectedDocKeys.includes(reqDoc.document_key);
 
                     return (
                       <div
                         key={reqDoc.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
+                        className={`flex items-center justify-between p-3 border rounded-lg ${isRejected ? 'border-destructive bg-destructive/5' : ''}`}
                       >
                         <div className="flex items-center gap-3">
+                          {selectedDriver.driver.fleet_documents_status === "submitted" && (
+                            <Checkbox
+                              id={`reject-${reqDoc.document_key}`}
+                              checked={isRejected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setRejectedDocKeys([...rejectedDocKeys, reqDoc.document_key]);
+                                } else {
+                                  setRejectedDocKeys(rejectedDocKeys.filter(k => k !== reqDoc.document_key));
+                                }
+                              }}
+                            />
+                          )}
                           {uploadedDoc ? (
                             <CheckCircle className="w-5 h-5 text-success" />
                           ) : (
@@ -464,15 +573,95 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
                 </div>
 
                 {/* Rejection reason */}
-                {selectedDriver.driver.fleet_documents_status === "submitted" && (
+                {selectedDriver.driver.fleet_documents_status === "submitted" && rejectedDocKeys.length > 0 && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Motif de rejet (si applicable)</label>
+                    <label className="text-sm font-medium">Motif de rejet ({rejectedDocKeys.length} document(s) sélectionné(s))</label>
                     <Textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                       placeholder="Ex: La carte VTC est expirée..."
                       rows={3}
                     />
+                  </div>
+                )}
+
+                {/* Temporary Access Section */}
+                {(selectedDriver.driver.fleet_documents_status !== "validated") && (
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Accès temporaire
+                    </h4>
+                    
+                    {selectedDriver.temporary_access_granted ? (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                              Accès temporaire actif
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-500">
+                              Expire le {selectedDriver.temporary_access_expires_at ? format(new Date(selectedDriver.temporary_access_expires_at), "dd/MM/yyyy", { locale: fr }) : "N/A"}
+                            </p>
+                            {selectedDriver.temporary_access_reason && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Raison: {selectedDriver.temporary_access_reason}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRevokeTemporaryAccess(selectedDriver.id)}
+                            disabled={processing}
+                          >
+                            Révoquer
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Accordez un accès temporaire au chauffeur pendant la validation de ses documents.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-sm font-medium">Durée (jours)</label>
+                            <Select
+                              value={temporaryAccessDays.toString()}
+                              onValueChange={(v) => setTemporaryAccessDays(parseInt(v))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[3, 5, 7, 14, 30].map((d) => (
+                                  <SelectItem key={d} value={d.toString()}>{d} jours</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Raison</label>
+                          <Input
+                            value={temporaryAccessReason}
+                            onChange={(e) => setTemporaryAccessReason(e.target.value)}
+                            placeholder="Ex: En attente de réception du document original"
+                          />
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleGrantTemporaryAccess(selectedDriver.id, selectedDriver.driver.user_id)}
+                          disabled={processing || !temporaryAccessReason.trim()}
+                          className="w-full"
+                        >
+                          {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Accorder l'accès temporaire
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -486,11 +675,11 @@ export const FleetDriversDocumentsReview = ({ fleetManagerId }: FleetDriversDocu
                 <>
                   <Button
                     variant="destructive"
-                    onClick={() => handleRejectDocuments(selectedDriver.driver_id)}
-                    disabled={processing}
+                    onClick={() => handleRejectDocuments(selectedDriver.driver_id, selectedDriver.id)}
+                    disabled={processing || rejectedDocKeys.length === 0}
                   >
                     {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Rejeter
+                    Rejeter ({rejectedDocKeys.length})
                   </Button>
                   <Button
                     onClick={() => handleValidateDocuments(selectedDriver.driver_id)}

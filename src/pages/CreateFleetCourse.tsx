@@ -216,7 +216,40 @@ const CreateFleetCourse = () => {
       // Déterminer le chauffeur avec dispatch intelligent
       let assignedDriverId: string | null = null;
       const scheduledDateTime = new Date(scheduledDate);
-      const estimatedDuration = 60; // Durée estimée par défaut en minutes
+      let estimatedDuration = 60; // Durée estimée par défaut en minutes
+      
+      // Récupérer les paramètres de dispatch du gestionnaire
+      const { data: fleetSettings } = await supabase
+        .from("fleet_managers")
+        .select("smart_buffer_enabled, smart_buffer_min_minutes")
+        .eq("id", fleetManagerId)
+        .single();
+      
+      // Si buffer intelligent activé, calculer via edge function
+      if (fleetSettings?.smart_buffer_enabled && pickupCoordinates && destinationCoordinates) {
+        try {
+          const { data: bufferData } = await supabase.functions.invoke("calculate-smart-buffer", {
+            body: {
+              origin: pickupAddress,
+              destination: destinationAddress,
+              scheduledTime: scheduledDateTime.toISOString(),
+              originLat: pickupCoordinates.latitude,
+              originLng: pickupCoordinates.longitude,
+              destLat: destinationCoordinates.latitude,
+              destLng: destinationCoordinates.longitude,
+              minBuffer: fleetSettings.smart_buffer_min_minutes || 15
+            }
+          });
+          
+          if (bufferData?.totalDuration) {
+            estimatedDuration = bufferData.totalDuration;
+            console.log(`Buffer intelligent calculé: ${estimatedDuration} min`);
+          }
+        } catch (bufferError) {
+          console.error("Erreur calcul buffer intelligent:", bufferError);
+          // Continuer avec la durée par défaut
+        }
+      }
       
       // Fonction pour vérifier la disponibilité d'un chauffeur
       const checkDriverAvailability = async (driverId: string): Promise<boolean> => {
