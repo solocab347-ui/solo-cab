@@ -202,6 +202,25 @@ export const FleetManagerDocuments = ({ fleetManagerId, userId, onDocumentsSubmi
       setDocuments(newDocuments);
       if (allUploaded) {
         setDocumentsStatus("submitted");
+        
+        // Notifier les admins
+        const { data: admins } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin");
+        
+        if (admins && admins.length > 0) {
+          const notifications = admins.map(admin => ({
+            user_id: admin.user_id,
+            title: "📄 Nouveaux documents à vérifier",
+            message: "Un gestionnaire de flotte a soumis ses documents pour validation",
+            type: "info",
+            link: "/admin-dashboard"
+          }));
+          
+          await supabase.from("notifications").insert(notifications);
+        }
+        
         toast.success("Tous les documents ont été soumis pour validation !");
         onDocumentsSubmitted?.();
       } else {
