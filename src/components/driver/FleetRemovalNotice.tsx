@@ -179,7 +179,7 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
                 <div className="flex-1">
                   <h4 className="font-medium">Devenir chauffeur indépendant</h4>
                   <p className="text-sm text-muted-foreground">
-                    Soumettez vos documents pour validation par l'administrateur SoloCab et souscrivez à l'abonnement (9,99€/mois)
+                    Soumettez vos documents pour validation par l'administrateur SoloCab et souscrivez à l'abonnement (49,99€/mois)
                   </p>
                 </div>
               </button>
@@ -209,8 +209,9 @@ export const FleetRemovalNotice = ({ userId, driverId }: FleetRemovalNoticeProps
           <Alert className="bg-green-50 border-green-200">
             <CreditCard className="w-4 h-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              <strong>Abonnement :</strong> L'abonnement chauffeur indépendant est de 9,99€/mois et vous donne accès à toutes les fonctionnalités :
+              <strong>Abonnement :</strong> L'abonnement chauffeur indépendant est de 49,99€/mois et vous donne accès à toutes les fonctionnalités :
               gestion des clients, courses, devis, factures, profil public et QR code personnalisé.
+              {" "}Si une promotion est en cours, vous en bénéficierez automatiquement.
             </AlertDescription>
           </Alert>
         </div>
