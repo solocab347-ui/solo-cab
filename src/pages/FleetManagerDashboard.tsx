@@ -831,16 +831,6 @@ const FleetManagerDashboard = () => {
                 </CardHeader>
               </Card>
 
-              {/* Vitrine - now in settings */}
-              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("settings")}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-purple-500" />
-                    Vitrine & Paramètres
-                  </CardTitle>
-                  <CardDescription>Configurez votre profil public et vos paramètres</CardDescription>
-                </CardHeader>
-              </Card>
 
               {/* Promotions */}
               <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("promotions")}>
@@ -870,21 +860,6 @@ const FleetManagerDashboard = () => {
             <FleetDriverPlanning fleetManagerId={fleetManager.id} />
           </TabsContent>
 
-          {/* Public Profile Tab */}
-          <TabsContent value="public-profile">
-            <div className="space-y-6">
-              <FleetPublicProfileSettings
-                fleetManagerId={fleetManager.id}
-                companyName={fleetManager.company_name}
-                showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
-                onUpdate={fetchData}
-              />
-              <FleetStorefrontManager
-                fleetManagerId={fleetManager.id}
-                onUpdate={fetchData}
-              />
-            </div>
-          </TabsContent>
 
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
@@ -936,50 +911,22 @@ const FleetManagerDashboard = () => {
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
               <TabsList className="flex-wrap h-auto gap-1 p-1">
-                <TabsTrigger value="general">Général</TabsTrigger>
-                <TabsTrigger value="public-profile">Profil public</TabsTrigger>
+                <TabsTrigger value="general">Général & Profil</TabsTrigger>
                 <TabsTrigger value="pricing">Tarification</TabsTrigger>
                 <TabsTrigger value="city-pricing">Tarifs par ville</TabsTrigger>
                 <TabsTrigger value="commissions">Commissions</TabsTrigger>
                 <TabsTrigger value="dispatch">Dispatch auto</TabsTrigger>
               </TabsList>
               <TabsContent value="general">
-                <Card className="bg-card/50 backdrop-blur border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
-                      Paramètres généraux
-                    </CardTitle>
-                    <CardDescription>
-                      Configurez les options de votre flotte
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
-                      <div className="flex items-center gap-4">
-                        <Globe className="w-5 h-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Visibilité publique</p>
-                          <p className="text-sm text-muted-foreground">
-                            Afficher vos chauffeurs dans la vitrine publique SoloCab
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={fleetManager.show_drivers_in_public_storefront}
-                        onCheckedChange={togglePublicStorefront}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="public-profile">
-                <FleetPublicProfileSettings
-                  fleetManagerId={fleetManager.id}
-                  companyName={fleetManager.company_name}
-                  showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
-                  onUpdate={fetchData}
-                />
+                <div className="space-y-6">
+                  {/* Public Profile Settings - now merged with general */}
+                  <FleetPublicProfileSettings
+                    fleetManagerId={fleetManager.id}
+                    companyName={fleetManager.company_name}
+                    showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+                    onUpdate={fetchData}
+                  />
+                </div>
               </TabsContent>
               <TabsContent value="pricing">
                 <FleetPricingSettings fleetManagerId={fleetManager.id} />
