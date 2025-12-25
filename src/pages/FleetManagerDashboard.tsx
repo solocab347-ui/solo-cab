@@ -512,14 +512,6 @@ const FleetManagerDashboard = () => {
               <span>Stats</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="pricing" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Euro className="w-4 h-4" />
-              <span>Tarifs</span>
-            </TabsTrigger>
-            <TabsTrigger 
               value="subscription" 
               disabled={isAccountRestricted}
               className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -970,12 +962,15 @@ const FleetManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
+          {/* Settings Tab - Combined with Pricing */}
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
               <TabsList className="flex-wrap">
                 <TabsTrigger value="general">Général</TabsTrigger>
-                <TabsTrigger value="dispatch">Dispatch automatique</TabsTrigger>
+                <TabsTrigger value="pricing">Tarification</TabsTrigger>
+                <TabsTrigger value="city-pricing">Tarifs par ville</TabsTrigger>
+                <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                <TabsTrigger value="dispatch">Dispatch auto</TabsTrigger>
               </TabsList>
               <TabsContent value="general">
                 <Card className="bg-card/50 backdrop-blur border-white/10">
@@ -1007,6 +1002,18 @@ const FleetManagerDashboard = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="pricing">
+                <FleetPricingSettings fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="city-pricing">
+                <CityPricingManager fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              <TabsContent value="commissions">
+                <div className="space-y-6">
+                  <FleetDriverCommissions fleetManagerId={fleetManager.id} />
+                  <FleetCommissionTracker fleetManagerId={fleetManager.id} />
+                </div>
+              </TabsContent>
               <TabsContent value="dispatch">
                 <FleetDispatchSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
@@ -1037,29 +1044,6 @@ const FleetManagerDashboard = () => {
             </Tabs>
           </TabsContent>
 
-          {/* Pricing Tab */}
-          <TabsContent value="pricing">
-            <Tabs defaultValue="tarifs" className="space-y-6">
-              <TabsList className="flex-wrap">
-                <TabsTrigger value="tarifs">Tarification</TabsTrigger>
-                <TabsTrigger value="city-pricing">Par ville</TabsTrigger>
-                <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                <TabsTrigger value="suivi">Suivi commissions</TabsTrigger>
-              </TabsList>
-              <TabsContent value="tarifs">
-                <FleetPricingSettings fleetManagerId={fleetManager.id} />
-              </TabsContent>
-              <TabsContent value="city-pricing">
-                <CityPricingManager fleetManagerId={fleetManager.id} />
-              </TabsContent>
-              <TabsContent value="commissions">
-                <FleetDriverCommissions fleetManagerId={fleetManager.id} />
-              </TabsContent>
-              <TabsContent value="suivi">
-                <FleetCommissionTracker fleetManagerId={fleetManager.id} />
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
           <TabsContent value="subscription">
             <FleetSubscriptionManager 
               fleetManagerId={fleetManager.id}

@@ -33,6 +33,12 @@ const FleetDriverDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [fleetManager, setFleetManager] = useState<any>(null);
+  const [fleetDriverInfo, setFleetDriverInfo] = useState<{
+    temporaryAccessGranted: boolean;
+    temporaryAccessExpiresAt: string | null;
+    rejectedDocuments: Array<{ key: string; reason: string }>;
+    documentsRejectionReason: string | null;
+  } | null>(null);
 
   // Vérifier si le compte est restreint (documents non soumis après 7 jours)
   const isAccountRestricted = useMemo(() => {
@@ -47,13 +53,21 @@ const FleetDriverDashboard = () => {
       return false;
     }
     
+    // Si accès temporaire accordé et non expiré, pas de restriction
+    if (fleetDriverInfo?.temporaryAccessGranted && fleetDriverInfo?.temporaryAccessExpiresAt) {
+      const expiresAt = new Date(fleetDriverInfo.temporaryAccessExpiresAt);
+      if (expiresAt > new Date()) {
+        return false;
+      }
+    }
+    
     // Si deadline passée et documents non soumis, restriction
     if (documentsDeadline && isPast(new Date(documentsDeadline))) {
       return true;
     }
     
     return false;
-  }, [driverProfile?.driver]);
+  }, [driverProfile?.driver, fleetDriverInfo]);
 
   // Form states - only editable ones for fleet drivers
   const [showPhone, setShowPhone] = useState(false);
@@ -64,8 +78,9 @@ const FleetDriverDashboard = () => {
   useEffect(() => {
     if (driverProfile?.driver?.fleet_manager_id) {
       fetchFleetManager();
+      fetchFleetDriverInfo();
     }
-  }, [driverProfile?.driver?.fleet_manager_id]);
+  }, [driverProfile?.driver?.fleet_manager_id, driverProfile?.driver?.id]);
 
   const fetchFleetManager = async () => {
     if (!driverProfile?.driver?.fleet_manager_id) return;
@@ -77,6 +92,26 @@ const FleetDriverDashboard = () => {
       .single();
     
     if (data) setFleetManager(data);
+  };
+
+  const fetchFleetDriverInfo = async () => {
+    if (!driverProfile?.driver?.id || !driverProfile?.driver?.fleet_manager_id) return;
+    
+    const { data } = await supabase
+      .from("fleet_manager_drivers")
+      .select("temporary_access_granted, temporary_access_expires_at, rejected_documents, documents_rejection_reason")
+      .eq("driver_id", driverProfile.driver.id)
+      .eq("fleet_manager_id", driverProfile.driver.fleet_manager_id)
+      .maybeSingle();
+    
+    if (data) {
+      setFleetDriverInfo({
+        temporaryAccessGranted: data.temporary_access_granted || false,
+        temporaryAccessExpiresAt: data.temporary_access_expires_at,
+        rejectedDocuments: (data.rejected_documents as Array<{ key: string; reason: string }>) || [],
+        documentsRejectionReason: data.documents_rejection_reason,
+      });
+    }
   };
 
   useEffect(() => {
@@ -283,6 +318,8 @@ const FleetDriverDashboard = () => {
                 driverId={driverProfile.driver.id} 
                 userId={user.id}
                 fleetManagerId={driverProfile.driver.fleet_manager_id || undefined}
+                rejectedDocuments={fleetDriverInfo?.rejectedDocuments || []}
+                documentsRejectionReason={fleetDriverInfo?.documentsRejectionReason}
               />
             )}
           </TabsContent>

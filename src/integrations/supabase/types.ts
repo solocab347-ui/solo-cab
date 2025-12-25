@@ -2864,6 +2864,7 @@ export type Database = {
           commission_percentage: number | null
           commission_type: string | null
           created_at: string
+          documents_rejection_reason: string | null
           driver_id: string
           fleet_manager_id: string
           id: string
@@ -2873,11 +2874,16 @@ export type Database = {
           payment_agreement_signed: boolean | null
           payment_agreement_signed_at: string | null
           payment_schedule: string | null
+          rejected_documents: Json | null
           removed_at: string | null
           removed_by_manager: boolean | null
           removed_reason: string | null
           status: string
           storefront_display_order: number | null
+          temporary_access_expires_at: string | null
+          temporary_access_granted: boolean | null
+          temporary_access_granted_at: string | null
+          temporary_access_reason: string | null
           total_owed: number | null
           visible_in_storefront: boolean | null
         }
@@ -2886,6 +2892,7 @@ export type Database = {
           commission_percentage?: number | null
           commission_type?: string | null
           created_at?: string
+          documents_rejection_reason?: string | null
           driver_id: string
           fleet_manager_id: string
           id?: string
@@ -2895,11 +2902,16 @@ export type Database = {
           payment_agreement_signed?: boolean | null
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
+          rejected_documents?: Json | null
           removed_at?: string | null
           removed_by_manager?: boolean | null
           removed_reason?: string | null
           status?: string
           storefront_display_order?: number | null
+          temporary_access_expires_at?: string | null
+          temporary_access_granted?: boolean | null
+          temporary_access_granted_at?: string | null
+          temporary_access_reason?: string | null
           total_owed?: number | null
           visible_in_storefront?: boolean | null
         }
@@ -2908,6 +2920,7 @@ export type Database = {
           commission_percentage?: number | null
           commission_type?: string | null
           created_at?: string
+          documents_rejection_reason?: string | null
           driver_id?: string
           fleet_manager_id?: string
           id?: string
@@ -2917,11 +2930,16 @@ export type Database = {
           payment_agreement_signed?: boolean | null
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
+          rejected_documents?: Json | null
           removed_at?: string | null
           removed_by_manager?: boolean | null
           removed_reason?: string | null
           status?: string
           storefront_display_order?: number | null
+          temporary_access_expires_at?: string | null
+          temporary_access_granted?: boolean | null
+          temporary_access_granted_at?: string | null
+          temporary_access_reason?: string | null
           total_owed?: number | null
           visible_in_storefront?: boolean | null
         }

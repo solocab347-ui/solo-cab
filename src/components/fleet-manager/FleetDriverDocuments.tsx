@@ -26,6 +26,8 @@ interface FleetDriverDocumentsProps {
   driverId: string;
   userId: string;
   fleetManagerId?: string;
+  rejectedDocuments?: Array<{ key: string; reason: string }>;
+  documentsRejectionReason?: string | null;
 }
 
 interface DocumentInfo {
@@ -84,7 +86,13 @@ const DEFAULT_REQUIRED_DOCUMENTS = [
   },
 ];
 
-export const FleetDriverDocuments = ({ driverId, userId, fleetManagerId }: FleetDriverDocumentsProps) => {
+export const FleetDriverDocuments = ({ 
+  driverId, 
+  userId, 
+  fleetManagerId,
+  rejectedDocuments = [],
+  documentsRejectionReason 
+}: FleetDriverDocumentsProps) => {
   const [documents, setDocuments] = useState<DocumentsData>({});
   const [documentsStatus, setDocumentsStatus] = useState<string>("pending");
   const [documentsDeadline, setDocumentsDeadline] = useState<string | null>(null);
@@ -352,8 +360,26 @@ export const FleetDriverDocuments = ({ driverId, userId, fleetManagerId }: Fleet
         {documentsStatus === "rejected" && (
           <Alert variant="destructive">
             <AlertTriangle className="w-4 h-4" />
-            <AlertDescription>
-              Certains documents ont été rejetés. Veuillez les soumettre à nouveau.
+            <AlertDescription className="space-y-2">
+              <p>Certains documents ont été rejetés. Veuillez les soumettre à nouveau.</p>
+              {documentsRejectionReason && (
+                <p className="text-sm font-medium mt-2">
+                  Raison: {documentsRejectionReason}
+                </p>
+              )}
+              {rejectedDocuments.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm font-medium">Documents concernés:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {rejectedDocuments.map((doc) => (
+                      <li key={doc.key}>
+                        {requiredDocuments.find(rd => rd.key === doc.key)?.label || doc.key}
+                        {doc.reason && <span className="text-muted-foreground"> - {doc.reason}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
