@@ -223,6 +223,26 @@ export const FleetDriverDocuments = ({
       setDocuments(newDocuments);
       if (allUploaded) {
         setDocumentsStatus("submitted");
+        
+        // Notifier le gestionnaire de flotte
+        if (fleetManagerId) {
+          const { data: fmData } = await supabase
+            .from("fleet_managers")
+            .select("user_id")
+            .eq("id", fleetManagerId)
+            .single();
+          
+          if (fmData?.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: fmData.user_id,
+              title: "📄 Nouveaux documents à valider",
+              message: "Un chauffeur a soumis ses documents pour validation",
+              type: "info",
+              link: "/fleet-dashboard"
+            });
+          }
+        }
+        
         toast.success("Tous les documents ont été soumis pour validation !");
       } else {
         toast.success("Document téléchargé avec succès");

@@ -51,6 +51,7 @@ interface FleetManagerWithDocs {
 }
 
 const DOCUMENT_LABELS: Record<string, string> = {
+  piece_identite: "Pièce d'identité",
   kbis: "Extrait Kbis",
   capacite_transport: "Capacité de transport",
   attestation_assurance: "Attestation d'assurance",
@@ -281,7 +282,7 @@ export const AdminFleetManagersDocuments = () => {
                           <div className="flex items-center gap-2 mt-2">
                             <Badge variant="outline">
                               <FileText className="w-3 h-3 mr-1" />
-                              {docCount}/3 documents
+                              {docCount}/4 documents
                             </Badge>
                             {deadlineInfo && fm.documents_status === "pending" && (
                               <Badge
