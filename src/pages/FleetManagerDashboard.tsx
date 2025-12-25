@@ -58,7 +58,7 @@ import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesMana
 import { FleetPricingSettings } from "@/components/fleet-manager/FleetPricingSettings";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { FleetDriverCommissions } from "@/components/fleet-manager/FleetDriverCommissions";
-import { FleetStatistics } from "@/components/fleet-manager/FleetStatistics";
+import { FleetStatisticsDashboard } from "@/components/fleet-manager/FleetStatisticsDashboard";
 import { FleetCommissionTracker } from "@/components/fleet-manager/FleetCommissionTracker";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
@@ -460,81 +460,83 @@ const FleetManagerDashboard = () => {
           }
           setActiveTab(tab);
         }} className="space-y-6">
-          {/* Navigation Tabs */}
-          <TabsList className="w-full bg-card/50 backdrop-blur-sm flex flex-wrap gap-1 h-auto p-2 shadow-lg border border-white/10 rounded-xl">
-            <TabsTrigger 
-              value="home" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isAccountRestricted && <Lock className="w-3 h-3 absolute -top-1 -right-1" />}
-              <Home className="w-4 h-4" />
-              <span>Accueil</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="drivers" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Car className="w-4 h-4" />
-              <span>Chauffeurs</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="clients" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Clients</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="courses" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Route className="w-4 h-4" />
-              <span>Courses</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="tools" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Wrench className="w-4 h-4" />
-              <span>Outils</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="stats" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Stats</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="subscription" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Abo</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="documents" 
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white ${isAccountRestricted ? 'ring-2 ring-destructive animate-pulse' : ''}`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>Docs</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              disabled={isAccountRestricted}
-              className={`gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 px-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-gray-600 data-[state=active]:text-white ${isAccountRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Param.</span>
-            </TabsTrigger>
-          </TabsList>
+          {/* Navigation Tabs - Design moderne et fluide */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent rounded-2xl blur-xl" />
+            <TabsList className="relative w-full bg-card/80 backdrop-blur-xl flex flex-wrap justify-start gap-1 h-auto p-2 shadow-xl border border-white/10 rounded-2xl overflow-x-auto">
+              <TabsTrigger 
+                value="home" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline">Accueil</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="drivers" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Car className="w-4 h-4" />
+                <span className="hidden sm:inline">Chauffeurs</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="clients" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Clients</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="courses" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Route className="w-4 h-4" />
+                <span className="hidden sm:inline">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="stats" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Statistiques</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tools" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Wrench className="w-4 h-4" />
+                <span className="hidden sm:inline">Outils</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="subscription" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-premium data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span className="hidden sm:inline">Abonnement</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="documents" 
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'ring-2 ring-destructive ring-offset-2 ring-offset-background animate-pulse' : 'hover:bg-muted/50'}`}
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">Documents</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="settings" 
+                disabled={isAccountRestricted}
+                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-600 data-[state=active]:to-gray-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Paramètres</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Home Tab */}
           <TabsContent value="home">
@@ -1022,7 +1024,7 @@ const FleetManagerDashboard = () => {
 
           {/* Statistics Tab */}
           <TabsContent value="stats">
-            <FleetStatistics fleetManagerId={fleetManager.id} />
+            <FleetStatisticsDashboard fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Partnerships Tab */}
