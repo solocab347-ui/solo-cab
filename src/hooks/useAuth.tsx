@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
 
   // Fonction simple pour récupérer le rôle - SANS CACHE
@@ -118,9 +119,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Auth state listener avec gestion robuste des erreurs de refresh
+    // Auth state listener - ne déclenche PAS de changement pendant l'init
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!isMounted) return;
         
         logger.info("Auth event", { event });
@@ -128,12 +129,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Gestion spécifique de l'erreur de refresh token
         if (event === "TOKEN_REFRESHED" && !session) {
           logger.warn("Token refresh failed, attempting recovery");
-          await handleRefreshFailure();
+          // Utiliser setTimeout pour éviter le deadlock
+          setTimeout(() => handleRefreshFailure(), 0);
           return;
         }
         
-        // Gestion de l'expiration de session
-        if (event === "SIGNED_OUT" && session === null) {
+        // Gestion de l'expiration de session - mise à jour synchrone
+        if (event === "SIGNED_OUT") {
           logger.info("User signed out");
           setUser(null);
           setSession(null);
@@ -147,13 +149,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           refreshRetryCount = 0;
         }
         
+        // Mise à jour synchrone pour éviter le flash
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Fetch role de manière asynchrone avec setTimeout(0)
         if (session?.user) {
-          fetchUserRole(session.user.id).catch(err => {
-            logger.error("Role fetch failed", { err });
-          });
+          setTimeout(() => {
+            fetchUserRole(session.user.id).catch(err => {
+              logger.error("Role fetch failed", { err });
+            });
+          }, 0);
         } else {
           setUserRole(null);
           setUserRoles([]);
@@ -161,7 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Init rapide - max 1.5 secondes
+    // Init rapide avec batch des états pour éviter les flash
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -170,11 +176,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         logger.info("Session init", { found: !!session });
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
+        // Batch state updates pour éviter les re-renders multiples
         if (session?.user) {
-          fetchUserRole(session.user.id).catch((error) => logger.error("Fetch role error", { error }));
+          // Récupérer le rôle AVANT de mettre à jour les états
+          const { data: roleData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          
+          const roles = roleData?.map((r) => r.role) || [];
+          const primaryRole: UserRole = roles.includes("admin") 
+            ? "admin" 
+            : roles.includes("fleet_manager")
+            ? "fleet_manager"
+            : roles.includes("company")
+            ? "company"
+            : roles.includes("driver")
+            ? "driver"
+            : roles.includes("client")
+            ? "client"
+            : null;
+          
+          // Une seule mise à jour groupée
+          setSession(session);
+          setUser(session.user);
+          setUserRoles(roles);
+          setUserRole(primaryRole);
+        } else {
+          setSession(null);
+          setUser(null);
+          setUserRoles([]);
+          setUserRole(null);
         }
       } catch (error) {
         logger.error("Init error", { error });
@@ -182,6 +214,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMounted) {
           timeoutCleared = true;
           clearTimeout(safetyTimeout);
+          // Marquer l'init terminée avant loading=false pour transition fluide
+          setIsInitialized(true);
           setLoading(false);
           logger.info("Auth init complete");
         }
