@@ -152,9 +152,14 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
         query = query.or(`full_name.ilike.%${searchText}%,company_name.ilike.%${searchText}%,vehicle_brand.ilike.%${searchText}%,vehicle_model.ilike.%${searchText}%`);
       }
 
-      // Department filter (independent)
+      // Department filter (independent) - search in working_sectors array
       if (selectedDepartment) {
         query = query.contains('working_sectors', [selectedDepartment]);
+      }
+
+      // Region filter (independent) - search in working_sectors array
+      if (selectedRegion) {
+        query = query.contains('working_sectors', [selectedRegion]);
       }
 
       // City/sector filter (independent)
@@ -162,7 +167,7 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
         query = query.contains('working_sectors', [citySearch.trim()]);
       }
 
-      // Vehicle category filter (independent) - now uses array contains
+      // Vehicle category filter (independent) - uses array contains
       if (selectedVehicleType) {
         query = query.contains('vehicle_category', [selectedVehicleType]);
       }
