@@ -243,10 +243,10 @@ export const FleetHome = ({
             </div>
           </Card>
 
-          {/* Profil Public */}
+          {/* Paramètres & Vitrine */}
           <Card 
             className="card-modern p-5 cursor-pointer group hover-glow-primary"
-            onClick={() => onTabChange("public-profile")}
+            onClick={() => onTabChange("settings")}
           >
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative w-14 h-14 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
@@ -254,8 +254,8 @@ export const FleetHome = ({
                 <Globe className="relative w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Profil</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Gérer vitrine</p>
+                <h3 className="text-sm font-bold text-foreground">Vitrine</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Paramètres profil</p>
               </div>
             </div>
           </Card>

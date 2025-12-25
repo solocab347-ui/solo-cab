@@ -778,7 +778,6 @@ const FleetManagerDashboard = () => {
             <FleetClientsTab 
               fleetManagerId={fleetManager.id}
               clients={clients}
-              onNavigateToSettings={() => setActiveTab("settings")}
             />
           </TabsContent>
 
