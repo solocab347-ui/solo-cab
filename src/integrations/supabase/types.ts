@@ -2106,7 +2106,7 @@ export type Database = {
           user_id: string
           validation_date: string | null
           vehicle_brand: string | null
-          vehicle_category: string | null
+          vehicle_category: string[] | null
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string
@@ -2188,7 +2188,7 @@ export type Database = {
           user_id: string
           validation_date?: string | null
           vehicle_brand?: string | null
-          vehicle_category?: string | null
+          vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model: string
@@ -2270,7 +2270,7 @@ export type Database = {
           user_id?: string
           validation_date?: string | null
           vehicle_brand?: string | null
-          vehicle_category?: string | null
+          vehicle_category?: string[] | null
           vehicle_color?: string | null
           vehicle_equipment?: string[] | null
           vehicle_model?: string
@@ -5025,7 +5025,7 @@ export type Database = {
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
-          vehicle_category: string | null
+          vehicle_category: string[] | null
           vehicle_color: string | null
           vehicle_equipment: string[] | null
           vehicle_model: string | null
