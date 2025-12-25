@@ -482,14 +482,6 @@ const FleetManagerDashboard = () => {
                 <span className="hidden sm:inline">Chauffeurs</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="driver-search" 
-                disabled={isAccountRestricted}
-                className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
-              >
-                <Search className="w-4 h-4" />
-                <span className="hidden sm:inline">Recherche</span>
-              </TabsTrigger>
-              <TabsTrigger 
                 value="clients" 
                 disabled={isAccountRestricted}
                 className={`relative gap-2 text-xs sm:text-sm py-2.5 px-4 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/50'}`}
@@ -787,17 +779,6 @@ const FleetManagerDashboard = () => {
           {/* Tools Tab */}
           <TabsContent value="tools">
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Statistiques */}
-              <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("stats")}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-success" />
-                    Statistiques
-                  </CardTitle>
-                  <CardDescription>Analysez les performances de votre flotte</CardDescription>
-                </CardHeader>
-              </Card>
-
               {/* Partenariats */}
               <Card className="bg-card/50 backdrop-blur border-white/10 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setActiveTab("partnerships")}>
                 <CardHeader>
