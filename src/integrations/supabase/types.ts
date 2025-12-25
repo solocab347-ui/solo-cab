@@ -2374,6 +2374,130 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_declined_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          declined_at: string
+          declined_by_driver_id: string
+          fleet_manager_id: string
+          id: string
+          reason: string | null
+          reassigned_at: string | null
+          reassigned_to_driver_id: string | null
+          status: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          declined_at?: string
+          declined_by_driver_id: string
+          fleet_manager_id: string
+          id?: string
+          reason?: string | null
+          reassigned_at?: string | null
+          reassigned_to_driver_id?: string | null
+          status?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          declined_at?: string
+          declined_by_driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          reason?: string | null
+          reassigned_at?: string | null
+          reassigned_to_driver_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_declined_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_invitations: {
         Row: {
           commission_accepted: boolean | null
@@ -2648,6 +2772,7 @@ export type Database = {
       }
       fleet_manager_drivers: {
         Row: {
+          accept_auto_courses: boolean | null
           commission_percentage: number | null
           commission_type: string | null
           created_at: string
@@ -2661,9 +2786,12 @@ export type Database = {
           payment_agreement_signed_at: string | null
           payment_schedule: string | null
           status: string
+          storefront_display_order: number | null
           total_owed: number | null
+          visible_in_storefront: boolean | null
         }
         Insert: {
+          accept_auto_courses?: boolean | null
           commission_percentage?: number | null
           commission_type?: string | null
           created_at?: string
@@ -2677,9 +2805,12 @@ export type Database = {
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
           status?: string
+          storefront_display_order?: number | null
           total_owed?: number | null
+          visible_in_storefront?: boolean | null
         }
         Update: {
+          accept_auto_courses?: boolean | null
           commission_percentage?: number | null
           commission_type?: string | null
           created_at?: string
@@ -2693,7 +2824,9 @@ export type Database = {
           payment_agreement_signed_at?: string | null
           payment_schedule?: string | null
           status?: string
+          storefront_display_order?: number | null
           total_owed?: number | null
+          visible_in_storefront?: boolean | null
         }
         Relationships: [
           {
@@ -2864,6 +2997,7 @@ export type Database = {
         Row: {
           address: string
           assignment_mode: string | null
+          auto_dispatch_enabled: boolean | null
           auto_validate_courses: boolean | null
           base_fare: number | null
           base_subscription_cost: number | null
@@ -2877,6 +3011,7 @@ export type Database = {
           default_partnership_commission: number | null
           default_payment_schedule: string | null
           description: string | null
+          dispatch_priority: string | null
           documents: Json | null
           documents_deadline: string | null
           documents_status: string | null
@@ -2923,6 +3058,7 @@ export type Database = {
         Insert: {
           address: string
           assignment_mode?: string | null
+          auto_dispatch_enabled?: boolean | null
           auto_validate_courses?: boolean | null
           base_fare?: number | null
           base_subscription_cost?: number | null
@@ -2936,6 +3072,7 @@ export type Database = {
           default_partnership_commission?: number | null
           default_payment_schedule?: string | null
           description?: string | null
+          dispatch_priority?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
@@ -2982,6 +3119,7 @@ export type Database = {
         Update: {
           address?: string
           assignment_mode?: string | null
+          auto_dispatch_enabled?: boolean | null
           auto_validate_courses?: boolean | null
           base_fare?: number | null
           base_subscription_cost?: number | null
@@ -2995,6 +3133,7 @@ export type Database = {
           default_partnership_commission?: number | null
           default_payment_schedule?: string | null
           description?: string | null
+          dispatch_priority?: string | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
@@ -4709,6 +4848,17 @@ export type Database = {
           sharing_number: number
           total_rides: number
         }[]
+      }
+      find_nearest_available_fleet_driver: {
+        Args: {
+          p_duration_minutes?: number
+          p_excluded_driver_id?: string
+          p_fleet_manager_id: string
+          p_pickup_latitude: number
+          p_pickup_longitude: number
+          p_scheduled_date: string
+        }
+        Returns: string
       }
       format_sharing_number: { Args: { num: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
