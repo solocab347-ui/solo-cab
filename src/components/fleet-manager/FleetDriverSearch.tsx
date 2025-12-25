@@ -40,7 +40,7 @@ interface SearchableDriver {
   vehicle_year: number | null;
   vehicle_color: string | null;
   vehicle_equipment: string[] | null;
-  vehicle_category: string | null;
+  vehicle_category: string[] | null;
   services_offered: string[] | null;
   working_sectors: string[] | null;
   bio: string | null;
@@ -162,9 +162,9 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
         query = query.contains('working_sectors', [citySearch.trim()]);
       }
 
-      // Vehicle category filter (independent)
+      // Vehicle category filter (independent) - now uses array contains
       if (selectedVehicleType) {
-        query = query.eq('vehicle_category', selectedVehicleType);
+        query = query.contains('vehicle_category', [selectedVehicleType]);
       }
 
       const { data, error } = await query.order('rating', { ascending: false, nullsFirst: false });
@@ -194,6 +194,11 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
     if (!category) return null;
     const found = VEHICLE_CATEGORIES.find(c => c.value === category);
     return found ? found.label : category;
+  };
+
+  const getCategoryLabels = (categories: string[] | null) => {
+    if (!categories || categories.length === 0) return null;
+    return categories.map(cat => getCategoryLabel(cat)).filter(Boolean).join(', ');
   };
 
   const openDriverProfile = (driver: SearchableDriver) => {
@@ -464,10 +469,19 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                         </p>
                       )}
                       
-                      {driver.vehicle_category && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {getCategoryLabel(driver.vehicle_category)}
-                        </Badge>
+                      {driver.vehicle_category && driver.vehicle_category.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {driver.vehicle_category.slice(0, 2).map((cat, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {getCategoryLabel(cat)}
+                            </Badge>
+                          ))}
+                          {driver.vehicle_category.length > 2 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{driver.vehicle_category.length - 2}
+                            </span>
+                          )}
+                        </div>
                       )}
                       
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">

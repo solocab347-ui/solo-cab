@@ -13,6 +13,7 @@ import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
 import { VehiclePhotosManager } from "./VehiclePhotosManager";
+import { VehicleCategorySelector } from "./VehicleCategorySelector";
 
 interface DriverPublicProfileProps {
   driverProfile: any;
@@ -36,6 +37,7 @@ interface DriverPublicProfileProps {
   vehicleYear: string;
   vehiclePhotos: string[];
   galleryPhotos: string[];
+  vehicleCategories: string[];
   visibleToFleetManagers?: boolean;
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
@@ -54,6 +56,7 @@ interface DriverPublicProfileProps {
   onVehiclePlateChange: (plate: string) => void;
   onVehicleYearChange: (year: string) => void;
   onVehiclePhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
+  onVehicleCategoriesChange: (categories: string[]) => void;
   onVisibleToFleetManagersChange?: (visible: boolean) => void;
 }
 
@@ -79,6 +82,7 @@ export const DriverPublicProfile = memo(({
   vehicleYear,
   vehiclePhotos,
   galleryPhotos,
+  vehicleCategories,
   visibleToFleetManagers = false,
   onTogglePublicProfile,
   onPhotoUpdate,
@@ -97,6 +101,7 @@ export const DriverPublicProfile = memo(({
   onVehiclePlateChange,
   onVehicleYearChange,
   onVehiclePhotosUpdate,
+  onVehicleCategoriesChange,
   onVisibleToFleetManagersChange,
 }: DriverPublicProfileProps) => {
   // Guard contre les données manquantes
@@ -289,6 +294,12 @@ export const DriverPublicProfile = memo(({
           onChange={onServicesOfferedChange}
         />
       </Card>
+
+      {/* Catégories de véhicule */}
+      <VehicleCategorySelector
+        selectedCategories={vehicleCategories || []}
+        onChange={onVehicleCategoriesChange}
+      />
 
       {/* Équipements */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
