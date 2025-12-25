@@ -3386,6 +3386,7 @@ export type Database = {
           partnership_terms: string | null
           per_km_rate: number | null
           qr_code_id: string | null
+          services_offered: string[] | null
           show_address: boolean | null
           show_contact_name: boolean | null
           show_drivers_in_public_storefront: boolean | null
@@ -3451,6 +3452,7 @@ export type Database = {
           partnership_terms?: string | null
           per_km_rate?: number | null
           qr_code_id?: string | null
+          services_offered?: string[] | null
           show_address?: boolean | null
           show_contact_name?: boolean | null
           show_drivers_in_public_storefront?: boolean | null
@@ -3516,6 +3518,7 @@ export type Database = {
           partnership_terms?: string | null
           per_km_rate?: number | null
           qr_code_id?: string | null
+          services_offered?: string[] | null
           show_address?: boolean | null
           show_contact_name?: boolean | null
           show_drivers_in_public_storefront?: boolean | null

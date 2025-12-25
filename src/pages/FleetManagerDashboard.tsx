@@ -89,6 +89,7 @@ interface FleetManager {
   subscription_paid: boolean | null;
   max_free_drivers: number | null;
   auto_validate_courses: boolean | null;
+  services_offered: string[] | null;
 }
 
 interface UserProfile {
@@ -916,6 +917,7 @@ const FleetManagerDashboard = () => {
                     fleetManagerId={fleetManager.id}
                     companyName={fleetManager.company_name}
                     showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
+                    servicesOffered={fleetManager.services_offered}
                     onUpdate={fetchData}
                   />
                 </div>
