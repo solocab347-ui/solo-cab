@@ -743,12 +743,16 @@ export type Database = {
       company_driver_agreements: {
         Row: {
           accepted_at: string | null
+          company_confirmed_final_payment: boolean | null
+          company_confirmed_final_payment_at: string | null
           company_id: string
           company_signed: boolean | null
           company_signed_at: string | null
           created_at: string
           credit_limit: number | null
           discount_percentage: number | null
+          driver_confirmed_final_payment: boolean | null
+          driver_confirmed_final_payment_at: string | null
           driver_id: string
           driver_presentation: string | null
           driver_services_offered: string[] | null
@@ -768,19 +772,26 @@ export type Database = {
           rejection_reason: string | null
           status: string
           terminated_at: string | null
+          termination_pending_payment_validation: boolean | null
           termination_reason: string | null
+          termination_requested_at: string | null
+          termination_requested_by: string | null
           total_billed: number | null
           total_paid: number | null
           updated_at: string
         }
         Insert: {
           accepted_at?: string | null
+          company_confirmed_final_payment?: boolean | null
+          company_confirmed_final_payment_at?: string | null
           company_id: string
           company_signed?: boolean | null
           company_signed_at?: string | null
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
+          driver_confirmed_final_payment?: boolean | null
+          driver_confirmed_final_payment_at?: string | null
           driver_id: string
           driver_presentation?: string | null
           driver_services_offered?: string[] | null
@@ -800,19 +811,26 @@ export type Database = {
           rejection_reason?: string | null
           status?: string
           terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
           termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
           total_billed?: number | null
           total_paid?: number | null
           updated_at?: string
         }
         Update: {
           accepted_at?: string | null
+          company_confirmed_final_payment?: boolean | null
+          company_confirmed_final_payment_at?: string | null
           company_id?: string
           company_signed?: boolean | null
           company_signed_at?: string | null
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
+          driver_confirmed_final_payment?: boolean | null
+          driver_confirmed_final_payment_at?: string | null
           driver_id?: string
           driver_presentation?: string | null
           driver_services_offered?: string[] | null
@@ -832,7 +850,10 @@ export type Database = {
           rejection_reason?: string | null
           status?: string
           terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
           termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
           total_billed?: number | null
           total_paid?: number | null
           updated_at?: string
@@ -2905,9 +2926,13 @@ export type Database = {
           commission_percentage: number
           contract_signed: boolean | null
           created_at: string
+          driver_confirmed_final_payment: boolean | null
+          driver_confirmed_final_payment_at: string | null
           driver_id: string
           driver_signed: boolean | null
           driver_signed_at: string | null
+          fleet_manager_confirmed_final_payment: boolean | null
+          fleet_manager_confirmed_final_payment_at: string | null
           fleet_manager_id: string
           fleet_manager_signed: boolean | null
           fleet_manager_signed_at: string | null
@@ -2933,6 +2958,10 @@ export type Database = {
           suspended_at: string | null
           suspension_reason: string | null
           terminated_at: string | null
+          termination_pending_payment_validation: boolean | null
+          termination_reason: string | null
+          termination_requested_at: string | null
+          termination_requested_by: string | null
           total_owed: number | null
           total_paid: number | null
           updated_at: string
@@ -2942,9 +2971,13 @@ export type Database = {
           commission_percentage?: number
           contract_signed?: boolean | null
           created_at?: string
+          driver_confirmed_final_payment?: boolean | null
+          driver_confirmed_final_payment_at?: string | null
           driver_id: string
           driver_signed?: boolean | null
           driver_signed_at?: string | null
+          fleet_manager_confirmed_final_payment?: boolean | null
+          fleet_manager_confirmed_final_payment_at?: string | null
           fleet_manager_id: string
           fleet_manager_signed?: boolean | null
           fleet_manager_signed_at?: string | null
@@ -2970,6 +3003,10 @@ export type Database = {
           suspended_at?: string | null
           suspension_reason?: string | null
           terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
           total_owed?: number | null
           total_paid?: number | null
           updated_at?: string
@@ -2979,9 +3016,13 @@ export type Database = {
           commission_percentage?: number
           contract_signed?: boolean | null
           created_at?: string
+          driver_confirmed_final_payment?: boolean | null
+          driver_confirmed_final_payment_at?: string | null
           driver_id?: string
           driver_signed?: boolean | null
           driver_signed_at?: string | null
+          fleet_manager_confirmed_final_payment?: boolean | null
+          fleet_manager_confirmed_final_payment_at?: string | null
           fleet_manager_id?: string
           fleet_manager_signed?: boolean | null
           fleet_manager_signed_at?: string | null
@@ -3007,6 +3048,10 @@ export type Database = {
           suspended_at?: string | null
           suspension_reason?: string | null
           terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
           total_owed?: number | null
           total_paid?: number | null
           updated_at?: string
@@ -3566,6 +3611,132 @@ export type Database = {
           weekend_surcharge?: number | null
         }
         Relationships: []
+      }
+      fleet_partnership_payments: {
+        Row: {
+          amount: number
+          courses_count: number | null
+          created_at: string | null
+          dispute_created_at: string | null
+          dispute_reason: string | null
+          dispute_status: string | null
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          partnership_id: string
+          payment_method: string
+          payment_reference: string | null
+          period_end: string | null
+          period_start: string | null
+          received_at: string | null
+          received_confirmed_by_user_id: string | null
+          sent_at: string | null
+          sent_by_user_id: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          courses_count?: number | null
+          created_at?: string | null
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          partnership_id: string
+          payment_method: string
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          courses_count?: number | null
+          created_at?: string | null
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          partnership_id?: string
+          payment_method?: string
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_driver_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fleet_promotions: {
         Row: {
