@@ -1118,6 +1118,214 @@ export type Database = {
           },
         ]
       }
+      company_fleet_agreements: {
+        Row: {
+          accepted_at: string | null
+          company_confirmed_final_payment: boolean | null
+          company_confirmed_final_payment_at: string | null
+          company_id: string
+          company_signed: boolean | null
+          company_signed_at: string | null
+          created_at: string
+          fleet_confirmed_final_payment: boolean | null
+          fleet_confirmed_final_payment_at: string | null
+          fleet_manager_id: string
+          fleet_manager_signed: boolean | null
+          fleet_manager_signed_at: string | null
+          id: string
+          notes: string | null
+          payment_day: number | null
+          payment_frequency: string | null
+          payment_methods: string[] | null
+          proposal_message: string | null
+          proposed_by: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          terminated_at: string | null
+          termination_pending_payment_validation: boolean | null
+          termination_reason: string | null
+          termination_requested_at: string | null
+          termination_requested_by: string | null
+          total_amount: number | null
+          total_courses: number | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_confirmed_final_payment?: boolean | null
+          company_confirmed_final_payment_at?: string | null
+          company_id: string
+          company_signed?: boolean | null
+          company_signed_at?: string | null
+          created_at?: string
+          fleet_confirmed_final_payment?: boolean | null
+          fleet_confirmed_final_payment_at?: string | null
+          fleet_manager_id: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_day?: number | null
+          payment_frequency?: string | null
+          payment_methods?: string[] | null
+          proposal_message?: string | null
+          proposed_by?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
+          total_amount?: number | null
+          total_courses?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_confirmed_final_payment?: boolean | null
+          company_confirmed_final_payment_at?: string | null
+          company_id?: string
+          company_signed?: boolean | null
+          company_signed_at?: string | null
+          created_at?: string
+          fleet_confirmed_final_payment?: boolean | null
+          fleet_confirmed_final_payment_at?: string | null
+          fleet_manager_id?: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_day?: number | null
+          payment_frequency?: string | null
+          payment_methods?: string[] | null
+          proposal_message?: string | null
+          proposed_by?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          terminated_at?: string | null
+          termination_pending_payment_validation?: boolean | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          termination_requested_by?: string | null
+          total_amount?: number | null
+          total_courses?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_fleet_agreements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fleet_agreements_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_fleet_payments: {
+        Row: {
+          agreement_id: string
+          amount: number
+          company_id: string
+          course_ids: string[] | null
+          courses_count: number | null
+          created_at: string
+          dispute_created_at: string | null
+          dispute_reason: string | null
+          dispute_status: string | null
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          payment_method: string
+          payment_reference: string | null
+          period_end: string | null
+          period_start: string | null
+          received_at: string | null
+          received_confirmed_by_user_id: string | null
+          sent_at: string | null
+          sent_by_user_id: string | null
+          status: string
+        }
+        Insert: {
+          agreement_id: string
+          amount: number
+          company_id: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          payment_method: string
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          agreement_id?: string
+          amount?: number
+          company_id?: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_status?: string | null
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          received_at?: string | null
+          received_confirmed_by_user_id?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_fleet_payments_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "company_fleet_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fleet_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_fleet_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_payments: {
         Row: {
           agreement_id: string
