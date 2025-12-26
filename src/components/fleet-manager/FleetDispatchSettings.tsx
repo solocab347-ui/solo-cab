@@ -426,23 +426,76 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
         </CardContent>
       </Card>
 
-      {/* Info chauffeurs */}
-      <Card>
+      {/* Info fonctionnement global */}
+      <Card className="border-info/20 bg-info/5">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Configuration des chauffeurs
+          <CardTitle className="flex items-center gap-2 text-info">
+            <AlertTriangle className="w-5 h-5" />
+            Résumé du fonctionnement
           </CardTitle>
-          <CardDescription>
-            Chaque chauffeur peut choisir s'il accepte les courses automatiques
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="p-4 rounded-lg bg-info/10 border border-info/20">
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                Validation des courses
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {settings.auto_validate_courses 
+                  ? "✓ Les courses clients sont automatiquement confirmées"
+                  : "⚠ Vous devez approuver chaque course manuellement"
+                }
+              </p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                Attribution des chauffeurs
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {settings.auto_dispatch_enabled 
+                  ? `✓ Attribution automatique (priorité: ${
+                      settings.dispatch_priority === "proximity" ? "proximité" :
+                      settings.dispatch_priority === "availability" ? "disponibilité" : "note"
+                    })`
+                  : "⚠ Attribution manuelle des chauffeurs"
+                }
+              </p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                Buffer entre courses
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {settings.smart_buffer_enabled 
+                  ? `✓ Buffer intelligent (min: ${settings.smart_buffer_min_minutes} min)`
+                  : `✓ Buffer fixe de ${settings.course_buffer_minutes} minutes`
+                }
+              </p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-background/50 border border-border/50">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-primary" />
+                Chauffeur favori
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {settings.favorite_driver_priority 
+                  ? "✓ Le chauffeur favori du client est prioritaire"
+                  : "⚠ Pas de priorité au chauffeur favori"
+                }
+              </p>
+            </div>
+          </div>
+          
+          <div className="p-3 rounded-lg bg-info/10 border border-info/20">
             <p className="text-sm">
-              <strong>Note :</strong> Les chauffeurs indépendants peuvent activer/désactiver la réception 
-              automatique des courses dans leur espace. Si un chauffeur refuse une course, 
-              elle sera redirigée vers l'onglet "Courses à redistribuer".
+              <strong>Note :</strong> Les chauffeurs indépendants peuvent configurer la réception automatique 
+              dans leur espace. Si un chauffeur refuse une course, elle sera redirigée vers "Courses à redistribuer".
             </p>
           </div>
         </CardContent>

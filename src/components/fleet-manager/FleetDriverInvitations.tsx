@@ -79,7 +79,34 @@ export const FleetDriverInvitations = ({
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setInvitations(data || []);
+      
+      // Filtrer les invitations expirées non utilisées
+      const now = new Date();
+      const validInvitations = (data || []).filter(inv => {
+        // Garder les invitations utilisées
+        if (inv.used) return true;
+        // Garder les invitations sans date d'expiration
+        if (!inv.expires_at) return true;
+        // Garder les invitations non expirées
+        return new Date(inv.expires_at) > now;
+      });
+      
+      // Supprimer les invitations expirées de la base de données
+      const expiredInvitations = (data || []).filter(inv => {
+        if (inv.used) return false;
+        if (!inv.expires_at) return false;
+        return new Date(inv.expires_at) <= now;
+      });
+      
+      if (expiredInvitations.length > 0) {
+        const expiredIds = expiredInvitations.map(inv => inv.id);
+        await supabase
+          .from("fleet_driver_invitations")
+          .delete()
+          .in("id", expiredIds);
+      }
+      
+      setInvitations(validInvitations);
     } catch (error) {
       console.error("Error fetching invitations:", error);
     } finally {
@@ -424,6 +451,19 @@ export const FleetDriverInvitations = ({
                           <span className="text-xs text-muted-foreground">
                             {new Date(invitation.created_at).toLocaleDateString("fr-FR")}
                           </span>
+                          {!invitation.used && invitation.expires_at && (
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs ${
+                                new Date(invitation.expires_at) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                                  ? "bg-warning/20 text-warning border-warning/30"
+                                  : ""
+                              }`}
+                            >
+                              <Clock className="w-3 h-3 mr-1" />
+                              Expire le {new Date(invitation.expires_at).toLocaleDateString("fr-FR")}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
