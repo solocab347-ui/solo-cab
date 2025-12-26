@@ -242,26 +242,29 @@ export const DriverProfileDialog = ({
             <div className="flex flex-col items-center text-center gap-6">
               <div className="relative">
                 <div className="w-40 h-40 bg-gradient-premium rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl ring-4 ring-primary/20 overflow-hidden">
-                  {driver.profile_photo_url ? (
+                  {driver.profile_photo_url && driver.profile_photo_url.trim() !== "" ? (
                     <img
                       src={driver.profile_photo_url}
                       alt={driver.full_name}
                       className="w-full h-full object-cover object-center"
+                      loading="eager"
+                      style={{ display: 'block' }}
                       onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        const parent = e.currentTarget.parentElement;
-                        if (parent && !parent.querySelector("span")) {
-                          const initial = document.createElement("span");
-                          initial.className = "text-5xl font-bold";
-                          initial.textContent = driver.full_name
-                            .charAt(0)
-                            .toUpperCase();
-                          parent.appendChild(initial);
+                        console.log("Photo failed to load:", driver.profile_photo_url);
+                        const target = e.currentTarget;
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent) {
+                          // Remove broken image and add fallback
+                          const fallback = document.createElement("span");
+                          fallback.className = "text-5xl font-bold text-white";
+                          fallback.textContent = driver.full_name.charAt(0).toUpperCase();
+                          parent.appendChild(fallback);
                         }
                       }}
                     />
                   ) : (
-                    <span>{driver.full_name.charAt(0).toUpperCase()}</span>
+                    <span className="text-white">{driver.full_name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 {driver.total_rides > 0 && (

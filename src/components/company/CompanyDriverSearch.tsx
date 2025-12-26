@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone
+  Eye, Phone, Filter, Building2, RotateCcw
 } from "lucide-react";
 
 interface CompanyDriverSearchProps {
@@ -36,12 +38,65 @@ const PAYMENT_FREQUENCIES = [
   { value: "mixed", label: "Mixte", description: "Selon l'accord" },
 ];
 
+const VEHICLE_CATEGORIES = [
+  { value: 'berline_standard', label: 'Berline Standard' },
+  { value: 'berline_luxe', label: 'Berline Luxe' },
+  { value: 'berline_electrique', label: 'Berline Électrique' },
+  { value: 'electrique', label: 'Électrique' },
+  { value: 'hybrid', label: 'Hybride' },
+  { value: 'van', label: 'Van' },
+  { value: 'suv', label: 'SUV' },
+  { value: 'minivan', label: 'Minivan' },
+];
+
+const FRENCH_DEPARTMENTS = [
+  { code: '75', name: 'Paris' },
+  { code: '77', name: 'Seine-et-Marne' },
+  { code: '78', name: 'Yvelines' },
+  { code: '91', name: 'Essonne' },
+  { code: '92', name: 'Hauts-de-Seine' },
+  { code: '93', name: 'Seine-Saint-Denis' },
+  { code: '94', name: 'Val-de-Marne' },
+  { code: '95', name: "Val-d'Oise" },
+  { code: '13', name: 'Bouches-du-Rhône' },
+  { code: '69', name: 'Rhône' },
+  { code: '31', name: 'Haute-Garonne' },
+  { code: '33', name: 'Gironde' },
+  { code: '59', name: 'Nord' },
+  { code: '06', name: 'Alpes-Maritimes' },
+  { code: '44', name: 'Loire-Atlantique' },
+  { code: '67', name: 'Bas-Rhin' },
+  { code: '34', name: 'Hérault' },
+  { code: '35', name: 'Ille-et-Vilaine' },
+];
+
+const FRENCH_REGIONS = [
+  'Île-de-France',
+  'Provence-Alpes-Côte d\'Azur',
+  'Auvergne-Rhône-Alpes',
+  'Occitanie',
+  'Nouvelle-Aquitaine',
+  'Hauts-de-France',
+  'Grand Est',
+  'Pays de la Loire',
+  'Bretagne',
+  'Normandie',
+];
+
 export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  
+  // Advanced filters state
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [citySearch, setCitySearch] = useState("");
+  const [minRating, setMinRating] = useState(0);
+  const [selectedVehicleType, setSelectedVehicleType] = useState<string>("");
   
   // Proposal form state
   const [proposalMessage, setProposalMessage] = useState("");
@@ -66,8 +121,8 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   });
 
   // Fetch drivers with public profiles
-  const { data: drivers, isLoading } = useQuery({
-    queryKey: ["public-drivers", searchTerm],
+  const { data: drivers, isLoading, refetch } = useQuery({
+    queryKey: ["public-drivers-company", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
     queryFn: async () => {
       let query = supabase
         .from("drivers")
@@ -88,32 +143,58 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           service_description,
           languages,
           services_offered,
-          primary_sectors
+          primary_sectors,
+          working_sectors,
+          vehicle_photos,
+          gallery_photos,
+          show_phone,
+          show_email
         `)
         .eq("status", "validated")
         .eq("public_profile_enabled", true);
 
-      const { data, error } = await query.limit(50);
+      // Apply filters
+      if (minRating > 0) {
+        query = query.gte('rating', minRating);
+      }
+      if (selectedDepartment) {
+        query = query.or(`working_sectors.cs.{"${selectedDepartment}"},primary_sectors.cs.{"${selectedDepartment}"}`);
+      }
+      if (selectedRegion) {
+        query = query.or(`working_sectors.cs.{"${selectedRegion}"},primary_sectors.cs.{"${selectedRegion}"}`);
+      }
+      if (citySearch.trim()) {
+        query = query.or(`working_sectors.cs.{"${citySearch.trim()}"},primary_sectors.cs.{"${citySearch.trim()}"}`);
+      }
+      if (selectedVehicleType) {
+        query = query.contains('vehicle_category', [selectedVehicleType]);
+      }
+
+      const { data, error } = await query.order('rating', { ascending: false, nullsFirst: false }).limit(50);
       if (error) throw error;
 
       // Fetch profiles
       const userIds = data?.map((d: any) => d.user_id) || [];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, profile_photo_url, phone")
+        .select("id, full_name, profile_photo_url, phone, email")
         .in("id", userIds);
 
       // Filter by search term
-      const enrichedDrivers = data?.map((driver: any) => ({
+      let enrichedDrivers = data?.map((driver: any) => ({
         ...driver,
         profile: profiles?.find((p: any) => p.id === driver.user_id),
       }));
 
       if (searchTerm) {
-        return enrichedDrivers?.filter((d: any) =>
-          d.profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          d.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          d.primary_sectors?.some((s: string) => s.toLowerCase().includes(searchTerm.toLowerCase()))
+        const searchLower = searchTerm.toLowerCase();
+        enrichedDrivers = enrichedDrivers?.filter((d: any) =>
+          d.profile?.full_name?.toLowerCase().includes(searchLower) ||
+          d.company_name?.toLowerCase().includes(searchLower) ||
+          d.vehicle_brand?.toLowerCase().includes(searchLower) ||
+          d.vehicle_model?.toLowerCase().includes(searchLower) ||
+          d.primary_sectors?.some((s: string) => s.toLowerCase().includes(searchLower)) ||
+          d.working_sectors?.some((s: string) => s.toLowerCase().includes(searchLower))
         );
       }
 
@@ -176,6 +257,15 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     setNotes("");
   };
 
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedDepartment("");
+    setSelectedRegion("");
+    setCitySearch("");
+    setMinRating(0);
+    setSelectedVehicleType("");
+  };
+
   const getProposalStatus = (driverId: string) => {
     return existingProposals?.find((p) => p.driver_id === driverId)?.status;
   };
@@ -211,28 +301,169 @@ ${company?.company_name || ""}`;
     setShowProfileDialog(true);
   };
 
+  const activeFiltersCount = [
+    selectedDepartment,
+    selectedRegion,
+    citySearch,
+    minRating > 0,
+    selectedVehicleType,
+  ].filter(Boolean).length;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Search className="w-5 h-5" />
-          Rechercher des chauffeurs
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Trouvez des chauffeurs VTC et proposez-leur un partenariat
-        </p>
-      </div>
+      {/* Header */}
+      <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            Rechercher des chauffeurs
+          </CardTitle>
+          <CardDescription>
+            Trouvez des chauffeurs VTC professionnels et proposez-leur un partenariat
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          placeholder="Rechercher par nom, entreprise, secteur..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Search & Filters */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Rechercher par nom, entreprise, véhicule..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtres
+              {activeFiltersCount > 0 && (
+                <Badge className="h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="space-y-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Chaque filtre fonctionne indépendamment. Vous pouvez les combiner ou utiliser un seul critère.
+              </p>
+              
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Vehicle Category Filter */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Car className="h-4 w-4" />
+                    Catégorie de véhicule
+                  </Label>
+                  <Select value={selectedVehicleType || "all"} onValueChange={(val) => setSelectedVehicleType(val === "all" ? "" : val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes catégories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes catégories</SelectItem>
+                      {VEHICLE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Department Filter */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Département
+                  </Label>
+                  <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les départements" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les départements</SelectItem>
+                      {FRENCH_DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept.code} value={dept.name}>
+                          {dept.code} - {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Region Filter */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Région
+                  </Label>
+                  <Select value={selectedRegion || "all"} onValueChange={(val) => setSelectedRegion(val === "all" ? "" : val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les régions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les régions</SelectItem>
+                      {FRENCH_REGIONS.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* City/Sector Filter */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Ville / Secteur
+                  </Label>
+                  <Input
+                    placeholder="Paris, Lyon, Marseille..."
+                    value={citySearch}
+                    onChange={(e) => setCitySearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Rating Filter */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Note minimale: {minRating > 0 ? `${minRating}/5` : "Toutes"}
+                </Label>
+                <Slider
+                  value={[minRating]}
+                  onValueChange={(vals) => setMinRating(vals[0])}
+                  min={0}
+                  max={5}
+                  step={0.5}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Reset Filters */}
+              {activeFiltersCount > 0 && (
+                <Button variant="ghost" onClick={resetFilters} className="gap-2">
+                  <RotateCcw className="h-4 w-4" />
+                  Réinitialiser les filtres
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Results */}
       {isLoading ? (
@@ -391,22 +622,31 @@ ${company?.company_name || ""}`;
           </DialogHeader>
 
           {selectedDriver && (
-            <div className="space-y-6 py-4">
-              {/* Header */}
-              <div className="flex gap-4">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={selectedDriver.profile?.profile_photo_url} />
-                  <AvatarFallback>
-                    <User className="w-10 h-10" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
+            <ScrollArea className="max-h-[70vh]">
+            <div className="space-y-6 py-4 pr-4">
+              {/* Header with Photo */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-4 ring-primary/20">
+                  {selectedDriver.profile?.profile_photo_url ? (
+                    <img
+                      src={selectedDriver.profile.profile_photo_url}
+                      alt={selectedDriver.profile?.full_name || "Chauffeur"}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
+                </div>
+                <div className="text-center">
                   <h3 className="text-xl font-semibold">
                     {selectedDriver.profile?.full_name || "Chauffeur VTC"}
                   </h3>
                   <p className="text-muted-foreground">{selectedDriver.company_name}</p>
                   {selectedDriver.rating && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center justify-center gap-2 mt-2">
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-medium">{selectedDriver.rating.toFixed(1)}/5</span>
                       {selectedDriver.total_rides && (
@@ -542,6 +782,7 @@ ${company?.company_name || ""}`;
                 </Button>
               </div>
             </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
