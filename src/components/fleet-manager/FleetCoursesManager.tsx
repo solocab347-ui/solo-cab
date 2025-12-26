@@ -775,36 +775,6 @@ export const FleetCoursesManager = ({
       {/* Section Vue d'ensemble */}
       {activeSection === "overview" && (
         <div className="space-y-6">
-          {/* Paramètres */}
-          <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between p-4 bg-background/50 backdrop-blur-sm rounded-xl border border-border/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Zap className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <Label className="text-base font-semibold">Mode de validation</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {autoValidate 
-                        ? "Les courses sont confirmées automatiquement"
-                        : "Validation manuelle requise pour chaque course"
-                      }
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${!autoValidate ? "text-foreground" : "text-muted-foreground"}`}>Manuel</span>
-                  <Switch
-                    checked={autoValidate}
-                    onCheckedChange={handleAutoValidateChange}
-                  />
-                  <span className={`text-sm font-medium ${autoValidate ? "text-foreground" : "text-muted-foreground"}`}>Auto</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Alertes urgentes */}
           {(stats.pending > 0 || stats.unassigned > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
