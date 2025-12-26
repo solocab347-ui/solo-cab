@@ -634,14 +634,31 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                     </div>
                   </div>
 
-                  <Button 
-                    className="w-full mt-4" 
-                    variant="outline"
-                    onClick={() => openDriverProfile(driver)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Voir le profil complet
-                  </Button>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <Button 
+                      variant="outline"
+                      onClick={() => openDriverProfile(driver)}
+                      className="w-full"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Voir le profil complet
+                    </Button>
+                    
+                    {existingPartnerships.includes(driver.id) ? (
+                      <Badge variant="secondary" className="w-full justify-center py-2">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Partenariat en cours
+                      </Badge>
+                    ) : (
+                      <Button 
+                        onClick={() => openPartnershipDialog(driver)}
+                        className="w-full"
+                      >
+                        <Handshake className="h-4 w-4 mr-2" />
+                        Proposer un partenariat
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
