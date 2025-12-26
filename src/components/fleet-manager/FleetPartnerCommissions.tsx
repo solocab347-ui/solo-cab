@@ -211,12 +211,16 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
         <AlertTitle>Comment fonctionnent les commissions ?</AlertTitle>
         <AlertDescription className="mt-2 space-y-2">
           <p>
-            <strong>Chauffeurs partenaires (avec leur propre véhicule) :</strong> Ils encaissent directement 
+            <strong>Chauffeurs indépendants :</strong> Ils encaissent directement 
             leurs clients et vous doivent un pourcentage (commission) sur chaque course.
           </p>
           <p>
-            <strong>Suivi :</strong> Cette page vous permet de voir ce que chaque chauffeur vous doit, 
-            et d'enregistrer les paiements reçus.
+            <strong>Partenaires avec matériel du gestionnaire :</strong> Si vous avez défini une commission, 
+            elle sera également suivie ici.
+          </p>
+          <p>
+            <strong>Suivi :</strong> Cette page vous permet de voir ce que chaque collaborateur vous doit, 
+            d'enregistrer les paiements reçus, et d'accéder aux contrats de partenariat.
           </p>
         </AlertDescription>
       </Alert>
@@ -271,10 +275,10 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Euro className="w-5 h-5 text-primary" />
-            Suivi des Commissions par Partenaire
+            Suivi des Commissions par Collaborateur
           </CardTitle>
           <CardDescription>
-            Les chauffeurs partenaires utilisant leur propre véhicule vous doivent une commission sur chaque course
+            Tous les partenaires (indépendants et avec matériel) avec commission définie
           </CardDescription>
         </CardHeader>
         <CardContent>

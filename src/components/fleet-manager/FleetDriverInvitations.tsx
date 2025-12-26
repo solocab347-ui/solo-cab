@@ -54,8 +54,9 @@ export const FleetDriverInvitations = ({
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newEmail, setNewEmail] = useState("");
-  const [driverType, setDriverType] = useState<"salaried" | "independent">("salaried");
-  const [commissionPercentage, setCommissionPercentage] = useState(10);
+  const [driverType, setDriverType] = useState<"partner_with_equipment" | "independent">("partner_with_equipment");
+  const [commissionPercentage, setCommissionPercentage] = useState(0);
+  const [enableCommission, setEnableCommission] = useState(false);
 
   const freeDriversRemaining = Math.max(0, maxFreeDrivers - currentDriversCount);
   const pendingInvitations = invitations.filter((i) => !i.used);
@@ -96,6 +97,10 @@ export const FleetDriverInvitations = ({
       const isPaid = nextDriverIsPaid;
       const driverCost = isPaid ? 10 : 0;
 
+      const effectiveCommission = driverType === "independent" 
+        ? commissionPercentage 
+        : (enableCommission ? commissionPercentage : 0);
+
       const { error } = await supabase.from("fleet_driver_invitations").insert({
         fleet_manager_id: fleetManagerId,
         token,
@@ -104,16 +109,19 @@ export const FleetDriverInvitations = ({
         is_paid: isPaid,
         driver_cost: driverCost,
         driver_type: driverType,
-        commission_percentage: driverType === "independent" ? commissionPercentage : 0,
+        commission_percentage: effectiveCommission,
       });
 
       if (error) throw error;
 
-      const typeLabel = driverType === "salaried" ? "salarié" : `indépendant (${commissionPercentage}%)`;
+      const typeLabel = driverType === "partner_with_equipment" 
+        ? `partenaire avec équipement${enableCommission ? ` (${commissionPercentage}%)` : ''}` 
+        : `indépendant (${commissionPercentage}%)`;
       toast.success(`Invitation créée pour chauffeur ${typeLabel}`);
       setNewEmail("");
-      setDriverType("salaried");
-      setCommissionPercentage(10);
+      setDriverType("partner_with_equipment");
+      setCommissionPercentage(0);
+      setEnableCommission(false);
       fetchInvitations();
       onInvitationCreated?.();
     } catch (error: any) {
@@ -216,25 +224,31 @@ export const FleetDriverInvitations = ({
           {/* Type de chauffeur */}
           <RadioGroup
             value={driverType}
-            onValueChange={(value) => setDriverType(value as "salaried" | "independent")}
+            onValueChange={(value) => {
+              setDriverType(value as "partner_with_equipment" | "independent");
+              if (value === "independent") {
+                setEnableCommission(true);
+                if (commissionPercentage === 0) setCommissionPercentage(10);
+              }
+            }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
             <Label
-              htmlFor="salaried"
+              htmlFor="partner_with_equipment"
               className={`relative overflow-hidden flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all ${
-                driverType === "salaried"
+                driverType === "partner_with_equipment"
                   ? "bg-primary/10 border-2 border-primary"
                   : "bg-muted/30 border-2 border-transparent hover:border-primary/30"
               }`}
             >
-              <RadioGroupItem value="salaried" id="salaried" className="mt-1 shrink-0" />
+              <RadioGroupItem value="partner_with_equipment" id="partner_with_equipment" className="mt-1 shrink-0" />
               <div className="flex-1">
                 <div className="flex items-center gap-2 font-semibold text-foreground">
                   <Briefcase className="w-4 h-4 text-primary" />
-                  Salarié / Équipement
+                  Partenaire avec matériel
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Utilise votre matériel de paiement. Pas de commission.
+                  Utilise votre matériel de paiement. Commission optionnelle.
                 </p>
               </div>
             </Label>
@@ -260,30 +274,58 @@ export const FleetDriverInvitations = ({
             </Label>
           </RadioGroup>
 
-          {/* Commission (indépendant) */}
-          {driverType === "independent" && (
-            <div className="p-4 bg-accent/10 rounded-xl border border-accent/20 space-y-3">
-              <Label htmlFor="commission" className="flex items-center gap-2 font-medium">
-                <Percent className="w-4 h-4 text-accent" />
-                Taux de commission
-              </Label>
+          {/* Commission settings */}
+          <div className="p-4 bg-accent/10 rounded-xl border border-accent/20 space-y-4">
+            {driverType === "partner_with_equipment" && (
               <div className="flex items-center gap-3">
-                <Input
-                  id="commission"
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={commissionPercentage}
-                  onChange={(e) => setCommissionPercentage(Number(e.target.value))}
-                  className="w-24 bg-background"
+                <input
+                  type="checkbox"
+                  id="enable-commission"
+                  checked={enableCommission}
+                  onChange={(e) => {
+                    setEnableCommission(e.target.checked);
+                    if (e.target.checked && commissionPercentage === 0) {
+                      setCommissionPercentage(10);
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-border"
                 />
-                <span className="text-muted-foreground">%</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  Le chauffeur devra accepter ce taux
-                </span>
+                <Label htmlFor="enable-commission" className="cursor-pointer">
+                  Définir une commission pour ce partenaire
+                </Label>
               </div>
-            </div>
-          )}
+            )}
+
+            {(driverType === "independent" || enableCommission) && (
+              <div className="space-y-3">
+                <Label htmlFor="commission" className="flex items-center gap-2 font-medium">
+                  <Percent className="w-4 h-4 text-accent" />
+                  Taux de commission
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="commission"
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={commissionPercentage}
+                    onChange={(e) => setCommissionPercentage(Number(e.target.value))}
+                    className="w-24 bg-background"
+                  />
+                  <span className="text-muted-foreground">%</span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    Le chauffeur devra accepter ce taux
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {!enableCommission && driverType === "partner_with_equipment" && (
+              <p className="text-sm text-muted-foreground">
+                Pas de commission définie. Le partenaire utilise votre matériel sans frais supplémentaires.
+              </p>
+            )}
+          </div>
 
           {/* Email et bouton */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -369,8 +411,12 @@ export const FleetDriverInvitations = ({
                         </p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant="outline" className="text-xs shrink-0">
-                            {invitation.driver_type === "salaried" ? (
-                              <><Briefcase className="w-3 h-3 mr-1" /> Salarié</>
+                            {invitation.driver_type === "partner_with_equipment" || invitation.driver_type === "salaried" ? (
+                              <>
+                                <Briefcase className="w-3 h-3 mr-1" /> 
+                                Partenaire
+                                {invitation.commission_percentage > 0 && ` ${invitation.commission_percentage}%`}
+                              </>
                             ) : (
                               <><UserCheck className="w-3 h-3 mr-1" /> Indép. {invitation.commission_percentage}%</>
                             )}
