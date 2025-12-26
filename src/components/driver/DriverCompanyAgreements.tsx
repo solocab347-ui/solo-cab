@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search } from "lucide-react";
+import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { DriverCompanySearch } from "./DriverCompanySearch";
+import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
+import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 
 interface DriverCompanyAgreementsProps {
   driverId: string;
@@ -28,6 +31,61 @@ const PAYMENT_FREQUENCIES = [
   { value: "monthly", label: "Mensuel", description: "Paiement chaque mois" },
   { value: "mixed", label: "Mixte", description: "Selon l'accord" },
 ];
+
+// Active Driver Agreement Card Component
+function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreement: any; driverId: string; onRefresh: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const fetchPayments = async () => {
+    if (payments.length > 0) return;
+    setLoadingPayments(true);
+    try {
+      const { data } = await supabase.from("company_payments").select("*").eq("agreement_id", agreement.id).order("created_at", { ascending: false });
+      setPayments(data || []);
+    } catch (error) { console.error(error); }
+    finally { setLoadingPayments(false); }
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-semibold">{agreement.company?.company_name}</h4>
+            <p className="text-sm text-muted-foreground">{agreement.company?.contact_name} • {agreement.company?.contact_phone}</p>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {agreement.payment_methods?.map((method: string) => (
+                <Badge key={method} variant="secondary" className="text-xs">
+                  {PAYMENT_METHODS.find((m) => m.value === method)?.icon} {PAYMENT_METHODS.find((m) => m.value === method)?.label}
+                </Badge>
+              ))}
+              <Badge variant="outline" className="text-xs"><Clock className="w-3 h-3 mr-1" />{PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}</Badge>
+            </div>
+          </div>
+          <div className="text-right">
+            <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Actif</Badge>
+            {agreement.outstanding_balance > 0 && <p className="text-sm font-medium text-yellow-600 mt-1">À recevoir: {agreement.outstanding_balance.toFixed(2)}€</p>}
+          </div>
+        </div>
+        <Collapsible open={expanded} onOpenChange={(o) => { setExpanded(o); if (o) fetchPayments(); }} className="mt-4">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full">{expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}Gérer le partenariat</Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4 space-y-4">
+            {loadingPayments ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
+              <>
+                <PartnershipPaymentManager payments={payments} partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} onRefresh={() => { fetchPayments(); onRefresh(); }} />
+                <PartnershipTerminationManager partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} terminationPending={agreement.termination_pending_payment_validation || false} terminationRequestedBy={agreement.termination_requested_by} ownConfirmedFinalPayment={agreement.driver_confirmed_final_payment || false} partnerConfirmedFinalPayment={agreement.company_confirmed_final_payment || false} onRefresh={onRefresh} />
+              </>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsProps) {
   const queryClient = useQueryClient();
@@ -293,38 +351,12 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
             Partenariats actifs ({activeAgreements.length})
           </h3>
           {activeAgreements.map((agreement: any) => (
-            <Card key={agreement.id}>
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-semibold">{agreement.company?.company_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {agreement.company?.contact_name} • {agreement.company?.contact_phone}
-                    </p>
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      {agreement.payment_methods?.map((method: string) => (
-                        <Badge key={method} variant="secondary" className="text-xs">
-                          {PAYMENT_METHODS.find((m) => m.value === method)?.icon}{" "}
-                          {PAYMENT_METHODS.find((m) => m.value === method)?.label}
-                        </Badge>
-                      ))}
-                      <Badge variant="outline" className="text-xs">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {getStatusBadge(agreement.status)}
-                    {agreement.outstanding_balance > 0 && (
-                      <p className="text-sm font-medium text-yellow-600 mt-1">
-                        À recevoir: {agreement.outstanding_balance.toFixed(2)}€
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ActiveDriverAgreementCard 
+              key={agreement.id}
+              agreement={agreement}
+              driverId={driverId}
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] })}
+            />
           ))}
         </div>
       )}
