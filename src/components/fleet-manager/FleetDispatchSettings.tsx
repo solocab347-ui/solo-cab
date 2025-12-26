@@ -5,13 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, MapPin, Zap, Users, Navigation, Clock, Brain, AlertTriangle } from "lucide-react";
+import { Loader2, Save, MapPin, Zap, Users, Navigation, Clock, Brain, AlertTriangle, ArrowLeft, Settings2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FleetDispatchSettingsProps {
   fleetManagerId: string;
+  onBack?: () => void;
 }
 
 interface DispatchSettings {
@@ -26,7 +27,7 @@ interface DispatchSettings {
   smart_buffer_fallback_action: "notify_manager" | "assign_available" | "auto_reject";
 }
 
-export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsProps) => {
+export const FleetDispatchSettings = ({ fleetManagerId, onBack }: FleetDispatchSettingsProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<DispatchSettings>({
@@ -111,6 +112,96 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
 
   return (
     <div className="space-y-6">
+      {/* Header avec bouton retour */}
+      {onBack && (
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Retour
+          </Button>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Settings2 className="w-5 h-5 text-primary" />
+            Dispatch & Attribution
+          </h2>
+        </div>
+      )}
+
+      {/* Mode d'assignation des courses */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Navigation className="w-5 h-5 text-primary" />
+            Mode d'assignation des courses
+          </CardTitle>
+          <CardDescription>
+            Choisissez comment les courses sont assignées aux chauffeurs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RadioGroup
+            value={settings.auto_dispatch_enabled ? "automatic" : "manual"}
+            onValueChange={(value) => setSettings({ ...settings, auto_dispatch_enabled: value === "automatic" })}
+            className="space-y-3"
+          >
+            <div 
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                !settings.auto_dispatch_enabled
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <RadioGroupItem value="manual" id="manual-mode" />
+                <div className="flex-1">
+                  <Label htmlFor="manual-mode" className="cursor-pointer font-medium text-base">
+                    Manuel
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Vous validez et assignez manuellement chaque course
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div 
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                settings.auto_dispatch_enabled
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <RadioGroupItem value="automatic" id="automatic-mode" />
+                <div className="flex-1">
+                  <Label htmlFor="automatic-mode" className="cursor-pointer font-medium text-base">
+                    Automatique
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Les courses sont automatiquement assignées aux chauffeurs disponibles
+                  </p>
+                </div>
+              </div>
+            </div>
+          </RadioGroup>
+
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 mt-4">
+            <div>
+              <Label htmlFor="favorite_priority_main" className="text-base font-medium">
+                Priorité au chauffeur favori du client
+              </Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Si le client a un chauffeur favori disponible, il sera privilégié
+              </p>
+            </div>
+            <Switch
+              id="favorite_priority_main"
+              checked={settings.favorite_driver_priority}
+              onCheckedChange={(checked) => setSettings({ ...settings, favorite_driver_priority: checked })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Mode de validation des courses */}
       <Card className="border-primary/20">
         <CardHeader>
