@@ -70,6 +70,7 @@ import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch"
 import { FleetClientsTab } from "@/components/fleet-manager/FleetClientsTab";
 import { FleetOperationsSettings } from "@/components/fleet-manager/FleetOperationsSettings";
 import { FleetPricingHub } from "@/components/fleet-manager/FleetPricingHub";
+import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -851,64 +852,82 @@ const FleetManagerDashboard = () => {
 
           {/* Invitations Tab */}
           <TabsContent value="invitations">
-            <FleetDriverInvitations 
-              fleetManagerId={fleetManager.id}
-              currentDriversCount={drivers.length}
-              maxFreeDrivers={fleetManager.max_free_drivers || 10}
-              onInvitationCreated={fetchData}
-            />
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("tools")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux outils
+              </Button>
+              <FleetDriverInvitations 
+                fleetManagerId={fleetManager.id}
+                currentDriversCount={drivers.length}
+                maxFreeDrivers={fleetManager.max_free_drivers || 10}
+                onInvitationCreated={fetchData}
+              />
+            </div>
           </TabsContent>
 
           {/* Planning Tab */}
           <TabsContent value="planning">
-            <FleetDriverPlanning fleetManagerId={fleetManager.id} />
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("tools")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux outils
+              </Button>
+              <FleetDriverPlanning fleetManagerId={fleetManager.id} />
+            </div>
           </TabsContent>
 
 
           {/* QR Code Tab */}
           <TabsContent value="qrcode">
-            <Card className="bg-card/50 backdrop-blur border-white/10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="w-5 h-5 text-accent" />
-                  QR Code Vitrine Publique
-                </CardTitle>
-                <CardDescription>
-                  Partagez ce QR code ou lien pour promouvoir votre vitrine et acquérir de nouveaux clients
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center space-y-6">
-                {qrCodeUrl && (
-                  <div className="p-4 bg-white rounded-2xl shadow-xl">
-                    <img src={qrCodeUrl} alt="QR Code Vitrine" className="w-64 h-64" />
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("tools")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux outils
+              </Button>
+              <Card className="bg-card/50 backdrop-blur border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5 text-accent" />
+                    QR Code Vitrine Publique
+                  </CardTitle>
+                  <CardDescription>
+                    Partagez ce QR code ou lien pour promouvoir votre vitrine et acquérir de nouveaux clients
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center space-y-6">
+                  {qrCodeUrl && (
+                    <div className="p-4 bg-white rounded-2xl shadow-xl">
+                      <img src={qrCodeUrl} alt="QR Code Vitrine" className="w-64 h-64" />
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <Button variant="outline" onClick={copyQrLink} className="gap-2">
+                      <Copy className="w-4 h-4" />
+                      Copier le lien
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.download = "qr-code-vitrine.png";
+                        link.href = qrCodeUrl;
+                        link.click();
+                      }}
+                    >
+                      Télécharger
+                    </Button>
                   </div>
-                )}
 
-                <div className="flex gap-4">
-                  <Button variant="outline" onClick={copyQrLink} className="gap-2">
-                    <Copy className="w-4 h-4" />
-                    Copier le lien
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.download = "qr-code-vitrine.png";
-                      link.href = qrCodeUrl;
-                      link.click();
-                    }}
-                  >
-                    Télécharger
-                  </Button>
-                </div>
-
-                <p className="text-sm text-muted-foreground text-center max-w-md">
-                  Ce QR code mène directement à votre vitrine publique. Utilisez-le pour votre publicité, 
-                  vos cartes de visite ou pour recruter de nouveaux clients. Les clients pourront y réserver 
-                  directement une course avec ou sans inscription.
-                </p>
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-muted-foreground text-center max-w-md">
+                    Ce QR code mène directement à votre vitrine publique. Utilisez-le pour votre publicité, 
+                    vos cartes de visite ou pour recruter de nouveaux clients. Les clients pourront y réserver 
+                    directement une course avec ou sans inscription.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Settings Tab - Combined with Pricing, Public Profile and Subscription */}
@@ -952,11 +971,7 @@ const FleetManagerDashboard = () => {
                 <FleetPricingHub fleetManagerId={fleetManager.id} />
               </TabsContent>
               <TabsContent value="operations">
-                <FleetOperationsSettings
-                  fleetManagerId={fleetManager.id}
-                  autoValidate={fleetManager.auto_validate_courses || false}
-                  onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
-                />
+                <FleetDispatchSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -968,21 +983,27 @@ const FleetManagerDashboard = () => {
 
           {/* Partnerships Tab */}
           <TabsContent value="partnerships">
-            <Tabs defaultValue="partnerships" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="partnerships">Partenariats</TabsTrigger>
-                <TabsTrigger value="commissions">Commissions</TabsTrigger>
-              </TabsList>
-              <TabsContent value="partnerships">
-                <FleetDriverPartnerships 
-                  fleetManagerId={fleetManager.id}
-                  defaultCommission={10}
-                />
-              </TabsContent>
-              <TabsContent value="commissions">
-                <FleetPartnerCommissions fleetManagerId={fleetManager.id} />
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("tools")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux outils
+              </Button>
+              <Tabs defaultValue="partnerships" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="partnerships">Partenariats</TabsTrigger>
+                  <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="partnerships">
+                  <FleetDriverPartnerships 
+                    fleetManagerId={fleetManager.id}
+                    defaultCommission={10}
+                  />
+                </TabsContent>
+                <TabsContent value="commissions">
+                  <FleetPartnerCommissions fleetManagerId={fleetManager.id} />
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
 
           {/* Documents Tab */}
@@ -996,7 +1017,13 @@ const FleetManagerDashboard = () => {
 
           {/* Promotions Tab */}
           <TabsContent value="promotions">
-            <FleetPromotions fleetManagerId={fleetManager.id} />
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" onClick={() => setActiveTab("tools")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Retour aux outils
+              </Button>
+              <FleetPromotions fleetManagerId={fleetManager.id} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
