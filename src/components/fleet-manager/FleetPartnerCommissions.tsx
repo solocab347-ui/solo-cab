@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -17,9 +20,15 @@ import {
   Euro,
   Loader2,
   TrendingUp,
-  Car
+  Car,
+  Info,
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle2,
+  XCircle,
+  FileText
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PartnershipContractDocument } from "./PartnershipContractDocument";
 
 interface FleetPartnerCommissionsProps {
   fleetManagerId: string;
@@ -36,11 +45,19 @@ interface PartnerCommission {
   total_paid: number;
   next_payment_date: string | null;
   partnership_suspended: boolean;
+  fleet_manager_signed_at: string | null;
+  driver_signed_at: string | null;
+  created_at: string;
+  // For contracts
+  fleet_manager_name?: string;
+  fleet_manager_company?: string;
 }
 
 export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissionsProps) => {
   const [loading, setLoading] = useState(true);
   const [commissions, setCommissions] = useState<PartnerCommission[]>([]);
+  const [fleetManagerInfo, setFleetManagerInfo] = useState<{ name: string; company: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<"a_recevoir" | "a_payer">("a_recevoir");
 
   useEffect(() => {
     if (fleetManagerId) {
@@ -51,6 +68,27 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
   const fetchCommissions = async () => {
     setLoading(true);
     try {
+      // Get fleet manager info
+      const { data: fmData } = await supabase
+        .from("fleet_managers")
+        .select("company_name, contact_name, user_id")
+        .eq("id", fleetManagerId)
+        .single();
+
+      if (fmData) {
+        // Get profile for name
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", fmData.user_id)
+          .single();
+
+        setFleetManagerInfo({
+          name: profile?.full_name || fmData.contact_name,
+          company: fmData.company_name
+        });
+      }
+
       // Get active partnerships with drivers
       const { data: partnerships, error } = await supabase
         .from("fleet_driver_partnerships")
@@ -62,7 +100,10 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
           total_owed,
           total_paid,
           next_payment_date,
-          partnership_suspended
+          partnership_suspended,
+          fleet_manager_signed_at,
+          driver_signed_at,
+          created_at
         `)
         .eq("fleet_manager_id", fleetManagerId)
         .eq("status", "accepted")
@@ -98,7 +139,10 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
               total_owed: p.total_owed || 0,
               total_paid: p.total_paid || 0,
               next_payment_date: p.next_payment_date,
-              partnership_suspended: p.partnership_suspended || false
+              partnership_suspended: p.partnership_suspended || false,
+              fleet_manager_signed_at: p.fleet_manager_signed_at,
+              driver_signed_at: p.driver_signed_at,
+              created_at: p.created_at
             };
           });
           setCommissions(commissionsData);
@@ -114,6 +158,31 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
     }
   };
 
+  const handleMarkPaid = async (partnershipId: string, amount: number) => {
+    try {
+      // Update total_paid and reset total_owed
+      const partnership = commissions.find(c => c.partnership_id === partnershipId);
+      if (!partnership) return;
+
+      const { error } = await supabase
+        .from("fleet_driver_partnerships")
+        .update({
+          total_paid: (partnership.total_paid || 0) + amount,
+          total_owed: 0,
+          last_payment_date: new Date().toISOString()
+        })
+        .eq("id", partnershipId);
+
+      if (error) throw error;
+
+      toast.success("Paiement enregistré");
+      fetchCommissions();
+    } catch (error) {
+      console.error("Error marking paid:", error);
+      toast.error("Erreur lors de l'enregistrement");
+    }
+  };
+
   const getPaymentScheduleLabel = (schedule: string) => {
     switch (schedule) {
       case "per_course": return "Par course";
@@ -123,7 +192,7 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
     }
   };
 
-  const totalOwed = commissions.reduce((sum, c) => sum + (c.total_owed || 0), 0);
+  const totalToReceive = commissions.reduce((sum, c) => sum + (c.total_owed || 0), 0);
   const totalReceived = commissions.reduce((sum, c) => sum + (c.total_paid || 0), 0);
 
   if (loading) {
@@ -136,17 +205,33 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
 
   return (
     <div className="space-y-6">
+      {/* Explications */}
+      <Alert className="border-info/50 bg-info/10">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Comment fonctionnent les commissions ?</AlertTitle>
+        <AlertDescription className="mt-2 space-y-2">
+          <p>
+            <strong>Chauffeurs partenaires (avec leur propre véhicule) :</strong> Ils encaissent directement 
+            leurs clients et vous doivent un pourcentage (commission) sur chaque course.
+          </p>
+          <p>
+            <strong>Suivi :</strong> Cette page vous permet de voir ce que chaque chauffeur vous doit, 
+            et d'enregistrer les paiements reçus.
+          </p>
+        </AlertDescription>
+      </Alert>
+
       {/* Résumé global */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-full bg-warning/20">
-                <Wallet className="w-5 h-5 text-warning" />
+                <ArrowDownRight className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">À recevoir</p>
-                <p className="text-2xl font-bold">{totalOwed.toFixed(2)} €</p>
+                <p className="text-sm text-muted-foreground">Commissions à recevoir</p>
+                <p className="text-2xl font-bold">{totalToReceive.toFixed(2)} €</p>
               </div>
             </div>
           </CardContent>
@@ -156,7 +241,7 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-full bg-success/20">
-                <TrendingUp className="w-5 h-5 text-success" />
+                <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total reçu</p>
@@ -186,10 +271,10 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Euro className="w-5 h-5 text-primary" />
-            Commissions par Partenaire
+            Suivi des Commissions par Partenaire
           </CardTitle>
           <CardDescription>
-            Suivez les commissions dues par vos chauffeurs partenaires
+            Les chauffeurs partenaires utilisant leur propre véhicule vous doivent une commission sur chaque course
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,6 +282,9 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
             <div className="text-center py-8">
               <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
               <p className="text-muted-foreground">Aucun partenariat actif avec commission</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Proposez des partenariats aux chauffeurs indépendants dans l'onglet "Partenariats"
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -253,6 +341,39 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
                             Prochain paiement: {format(new Date(commission.next_payment_date), "dd MMM yyyy", { locale: fr })}
                           </div>
                         )}
+
+                        <Separator className="my-3" />
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-between">
+                          {/* Document de partenariat */}
+                          {fleetManagerInfo && (
+                            <PartnershipContractDocument
+                              partnershipId={commission.partnership_id}
+                              fleetManagerName={fleetManagerInfo.name}
+                              fleetManagerCompany={fleetManagerInfo.company}
+                              driverName={commission.driver_name}
+                              commissionPercentage={commission.commission_percentage}
+                              paymentSchedule={commission.payment_schedule}
+                              signedAt={commission.created_at}
+                              fleetManagerSignedAt={commission.fleet_manager_signed_at || undefined}
+                              driverSignedAt={commission.driver_signed_at || undefined}
+                              contractType="partner"
+                            />
+                          )}
+
+                          {/* Marquer comme payé */}
+                          {commission.total_owed > 0 && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleMarkPaid(commission.partnership_id, commission.total_owed)}
+                              className="gap-1"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Marquer payé ({commission.total_owed.toFixed(2)}€)
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -262,6 +383,16 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
           )}
         </CardContent>
       </Card>
+
+      {/* Note explicative */}
+      <Alert className="border-muted">
+        <FileText className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Document de partenariat :</strong> Chaque partenariat génère un contrat que vous 
+          et le chauffeur pouvez consulter et télécharger. Ce document fait foi des engagements 
+          de chaque partie concernant les commissions et les délais de paiement.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };
