@@ -577,8 +577,7 @@ const FleetManagerDashboard = () => {
               </TabsList>
               
               <TabsContent value="my-drivers" className="space-y-6">
-                {/* Documents Validation Section */}
-                <FleetDriverDocumentsValidation fleetManagerId={fleetManager.id} />
+                {/* Note: Documents validation moved to Documents tab */}
 
                 <Card className="bg-card/50 backdrop-blur border-white/10">
                   <CardHeader>
