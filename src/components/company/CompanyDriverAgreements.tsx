@@ -16,9 +16,10 @@ import { toast } from "sonner";
 import { 
   Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, 
   AlertCircle, Eye, EyeOff, Car, Star, Settings, Search,
-  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp
+  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp, Users
 } from "lucide-react";
 import { CompanyDriverSearch } from "./CompanyDriverSearch";
+import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 
@@ -377,6 +378,21 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const rejectedAgreements = agreements?.filter((a: any) => a.status === "rejected") || [];
   const terminatedAgreements = agreements?.filter((a: any) => a.status === "terminated" || a.status === "suspended") || [];
 
+  // Fetch company full info for fleet search
+  const { data: companyFull } = useQuery({
+    queryKey: ["company-full-info", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("company_name, contact_name, employee_count, preferred_vehicle_types")
+        .eq("id", companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <div className="space-y-6">
       {/* Visibility Settings */}
@@ -422,18 +438,33 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         </CardContent>
       </Card>
 
-      <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Handshake className="w-5 h-5" />
-          Partenariats Chauffeurs
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Gérez vos partenariats avec les chauffeurs VTC
-        </p>
-      </div>
+      {/* Main Partnership Type Tabs */}
+      <Tabs defaultValue="drivers" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="drivers" className="flex items-center gap-2">
+            <Car className="w-4 h-4" />
+            Chauffeurs
+          </TabsTrigger>
+          <TabsTrigger value="fleets" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Gestionnaires de flotte
+          </TabsTrigger>
+        </TabsList>
 
-      <Tabs defaultValue="search" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        {/* Drivers Tab Content */}
+        <TabsContent value="drivers" className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Handshake className="w-5 h-5" />
+              Partenariats Chauffeurs
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Gérez vos partenariats avec les chauffeurs VTC
+            </p>
+          </div>
+
+          <Tabs defaultValue="search" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="w-4 h-4" />
             Rechercher
@@ -702,6 +733,23 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                 </div>
               )}
             </>
+          )}
+        </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Fleet Managers Tab Content */}
+        <TabsContent value="fleets" className="space-y-6">
+          {companyFull && (
+            <CompanyFleetSearch 
+              companyId={companyId} 
+              companyProfile={{
+                company_name: companyFull.company_name,
+                contact_name: companyFull.contact_name || undefined,
+                employee_count: companyFull.employee_count || undefined,
+                preferred_vehicle_types: companyFull.preferred_vehicle_types || undefined,
+              }}
+            />
           )}
         </TabsContent>
       </Tabs>

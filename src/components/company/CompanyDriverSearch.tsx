@@ -124,7 +124,8 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   const { data: drivers, isLoading, refetch } = useQuery({
     queryKey: ["public-drivers-company", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
     queryFn: async () => {
-      let query = supabase
+      // Base query - fetch all public validated drivers
+      const { data, error } = await supabase
         .from("drivers")
         .select(`
           id,
@@ -151,27 +152,42 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           show_email
         `)
         .eq("status", "validated")
-        .eq("public_profile_enabled", true);
+        .eq("public_profile_enabled", true)
+        .order('rating', { ascending: false, nullsFirst: false })
+        .limit(100);
 
-      // Apply filters
+      if (error) throw error;
+      
+      // Apply filters in JavaScript for more flexibility
+      let filteredData = data || [];
+      
       if (minRating > 0) {
-        query = query.gte('rating', minRating);
+        filteredData = filteredData.filter((d: any) => (d.rating || 0) >= minRating);
       }
       if (selectedDepartment) {
-        query = query.or(`working_sectors.cs.{"${selectedDepartment}"},primary_sectors.cs.{"${selectedDepartment}"}`);
+        filteredData = filteredData.filter((d: any) => 
+          d.working_sectors?.includes(selectedDepartment) || 
+          d.primary_sectors?.includes(selectedDepartment)
+        );
       }
       if (selectedRegion) {
-        query = query.or(`working_sectors.cs.{"${selectedRegion}"},primary_sectors.cs.{"${selectedRegion}"}`);
+        filteredData = filteredData.filter((d: any) => 
+          d.working_sectors?.includes(selectedRegion) || 
+          d.primary_sectors?.includes(selectedRegion)
+        );
       }
       if (citySearch.trim()) {
-        query = query.or(`working_sectors.cs.{"${citySearch.trim()}"},primary_sectors.cs.{"${citySearch.trim()}"}`);
+        const search = citySearch.trim().toLowerCase();
+        filteredData = filteredData.filter((d: any) => 
+          d.working_sectors?.some((s: string) => s.toLowerCase().includes(search)) || 
+          d.primary_sectors?.some((s: string) => s.toLowerCase().includes(search))
+        );
       }
       if (selectedVehicleType) {
-        query = query.contains('vehicle_category', [selectedVehicleType]);
+        filteredData = filteredData.filter((d: any) => 
+          d.vehicle_category?.includes(selectedVehicleType)
+        );
       }
-
-      const { data, error } = await query.order('rating', { ascending: false, nullsFirst: false }).limit(50);
-      if (error) throw error;
 
       // Fetch profiles
       const userIds = data?.map((d: any) => d.user_id) || [];

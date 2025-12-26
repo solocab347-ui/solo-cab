@@ -82,20 +82,34 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
     queryFn: async () => {
       const { data: fleetData, error } = await supabase
         .from("fleet_managers")
-        .select("id, user_id, company_name, siret, address, contact_email, contact_phone, logo_url, description, commission_percentage, public_profile_enabled, show_drivers_publicly, auto_dispatch_enabled")
-        .eq("public_profile_enabled", true)
+        .select(`
+          id, 
+          user_id, 
+          company_name, 
+          siret, 
+          address, 
+          contact_email, 
+          contact_phone, 
+          logo_url, 
+          description, 
+          visible_to_drivers,
+          show_drivers_in_public_storefront, 
+          auto_dispatch_enabled,
+          default_commission_percentage
+        `)
+        .eq("visible_to_drivers", true)
         .eq("status", "validated")
         .order('company_name')
         .limit(50);
 
       if (error) throw error;
 
-      let result = (fleetData || []) as any[];
+      let result = fleetData || [];
 
       // Filter by search term
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        result = result.filter((f: any) =>
+        result = result.filter((f) =>
           f.company_name?.toLowerCase().includes(searchLower) ||
           f.address?.toLowerCase().includes(searchLower)
         );
@@ -103,7 +117,7 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
 
       // Filter by department
       if (selectedDepartment) {
-        result = result.filter((f: any) => 
+        result = result.filter((f) => 
           f.address?.toLowerCase().includes(selectedDepartment.toLowerCase())
         );
       }
@@ -341,7 +355,7 @@ ${companyProfile.company_name}`;
                         <span className="truncate">{fleet.address}</span>
                       </div>
                     )}
-                    {fleet.show_drivers_publicly && (
+                    {fleet.show_drivers_in_public_storefront && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Car className="w-4 h-4" />
                         <span>Chauffeurs visibles publiquement</span>
@@ -473,7 +487,7 @@ ${companyProfile.company_name}`;
                   {selectedFleet.auto_dispatch_enabled && (
                     <Badge variant="outline">Dispatch automatique</Badge>
                   )}
-                  {selectedFleet.show_drivers_publicly && (
+                  {selectedFleet.show_drivers_in_public_storefront && (
                     <Badge variant="outline">Chauffeurs visibles</Badge>
                   )}
                 </div>
