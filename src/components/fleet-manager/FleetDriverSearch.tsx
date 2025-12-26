@@ -166,11 +166,23 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
     }
   };
 
+  const getDefaultPartnershipMessage = (driverName: string) => {
+    return `Bonjour ${driverName},
+
+J'ai découvert votre profil et je suis impressionné par votre expérience et la qualité de vos services. Je gère une flotte de VTC et je recherche des chauffeurs professionnels comme vous pour collaborer sur des courses.
+
+Ce partenariat vous permettrait d'accéder à des clients supplémentaires sans effort de prospection, tout en conservant votre indépendance.
+
+N'hésitez pas à me contacter si vous souhaitez en discuter.
+
+Cordialement`;
+  };
+
   const openPartnershipDialog = (driver: SearchableDriver) => {
     setPartnershipDriver(driver);
     setPartnershipCommission(10);
     setPartnershipPaymentSchedule('per_course');
-    setPartnershipMessage('');
+    setPartnershipMessage(getDefaultPartnershipMessage(driver.profile?.full_name || 'Cher chauffeur'));
     setPartnershipDialogOpen(true);
   };
 
@@ -1024,13 +1036,17 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
 
             {/* Message */}
             <div className="space-y-2">
-              <Label>Message personnalisé (optionnel)</Label>
+              <Label>Message personnalisé</Label>
               <Textarea
                 placeholder="Présentez-vous et expliquez les avantages de ce partenariat..."
                 value={partnershipMessage}
                 onChange={(e) => setPartnershipMessage(e.target.value)}
-                rows={3}
+                rows={6}
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                Ce message sera envoyé au chauffeur avec votre demande de partenariat
+              </p>
             </div>
           </div>
 

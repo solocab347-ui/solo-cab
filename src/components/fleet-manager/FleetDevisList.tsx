@@ -1,88 +1,92 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, MapPin, Calendar, Euro, User, Car, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { FileText, Download, MapPin, Calendar, Euro, User, Car, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
+import { AdvancedFilters } from "./AdvancedFilters";
 
 interface FleetDevisListProps {
   fleetManagerId: string;
 }
 
+const DEVIS_STATUSES = [
+  { value: "pending", label: "En attente" },
+  { value: "accepted", label: "Accepté" },
+  { value: "rejected", label: "Refusé" },
+];
+
 const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
   const [devisList, setDevisList] = useState<any[]>([]);
-  const [filteredDevis, setFilteredDevis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [driverFilter, setDriverFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<{ id: string; name: string }[]>([]);
   const [fleetInfo, setFleetInfo] = useState<any>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Filtres avancés
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null }>({ from: null, to: null });
 
   useEffect(() => {
     fetchDevis();
     fetchFleetInfo();
   }, [fleetManagerId]);
 
-  useEffect(() => {
+  // Filtrage avec useMemo pour performance
+  const filteredDevis = useMemo(() => {
     let filtered = devisList;
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((devis) => devis.status === statusFilter);
+    // Filtre par statuts (multi-sélection)
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter((devis) => selectedStatuses.includes(devis.status));
     }
 
-    if (driverFilter !== "all") {
-      filtered = filtered.filter((devis) => devis.driver_id === driverFilter);
+    // Filtre par chauffeurs (multi-sélection)
+    if (selectedDrivers.length > 0) {
+      filtered = filtered.filter((devis) => selectedDrivers.includes(devis.driver_id));
     }
 
-    if (dateFilter !== "all") {
-      const now = new Date();
-      let startDate: Date;
-      let endDate: Date = now;
-
-      switch (dateFilter) {
-        case "this_week":
-          startDate = startOfWeek(now, { weekStartsOn: 1 });
-          endDate = endOfWeek(now, { weekStartsOn: 1 });
-          break;
-        case "this_month":
-          startDate = startOfMonth(now);
-          endDate = endOfMonth(now);
-          break;
-        case "last_month":
-          startDate = startOfMonth(subMonths(now, 1));
-          endDate = endOfMonth(subMonths(now, 1));
-          break;
-        default:
-          startDate = new Date(0);
-      }
-
+    // Filtre par période
+    if (dateRange.from) {
       filtered = filtered.filter((devis) => {
         const devisDate = new Date(devis.created_at);
-        return devisDate >= startDate && devisDate <= endDate;
+        if (dateRange.to) {
+          return isWithinInterval(devisDate, { 
+            start: startOfDay(dateRange.from!), 
+            end: endOfDay(dateRange.to) 
+          });
+        }
+        return devisDate >= startOfDay(dateRange.from!);
       });
     }
 
+    // Recherche textuelle
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (devis) =>
-          devis.quote_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          devis.clientProfile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          devis.driverProfile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+          devis.quote_number?.toLowerCase().includes(searchLower) ||
+          devis.clientProfile?.full_name?.toLowerCase().includes(searchLower) ||
+          devis.driverProfile?.full_name?.toLowerCase().includes(searchLower)
       );
     }
 
-    setFilteredDevis(filtered);
-  }, [searchTerm, statusFilter, driverFilter, dateFilter, devisList]);
+    return filtered;
+  }, [searchTerm, selectedStatuses, selectedDrivers, dateRange, devisList]);
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedStatuses([]);
+    setSelectedDrivers([]);
+    setDateRange({ from: null, to: null });
+  };
 
   const fetchFleetInfo = async () => {
     try {
@@ -109,7 +113,6 @@ const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
 
       if (!fleetDrivers || fleetDrivers.length === 0) {
         setDevisList([]);
-        setFilteredDevis([]);
         setLoading(false);
         return;
       }
@@ -155,7 +158,6 @@ const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
         }));
 
         setDevisList(devisWithProfiles);
-        setFilteredDevis(devisWithProfiles);
 
         // Extract unique drivers
         const uniqueDrivers = Array.from(
@@ -169,7 +171,6 @@ const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
         setDrivers(uniqueDrivers);
       } else {
         setDevisList([]);
-        setFilteredDevis([]);
       }
     } catch (error: any) {
       console.error("Error fetching devis:", error);
@@ -406,55 +407,20 @@ const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="pending">En attente</SelectItem>
-              <SelectItem value="accepted">Accepté</SelectItem>
-              <SelectItem value="rejected">Refusé</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={driverFilter} onValueChange={setDriverFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chauffeur" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les chauffeurs</SelectItem>
-              {drivers.map((driver) => (
-                <SelectItem key={driver.id} value={driver.id}>
-                  {driver.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Période" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les dates</SelectItem>
-              <SelectItem value="this_week">Cette semaine</SelectItem>
-              <SelectItem value="this_month">Ce mois</SelectItem>
-              <SelectItem value="last_month">Mois dernier</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
+      {/* Filtres avancés */}
+      <AdvancedFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedStatuses={selectedStatuses}
+        onStatusChange={setSelectedStatuses}
+        availableStatuses={DEVIS_STATUSES}
+        selectedDrivers={selectedDrivers}
+        onDriversChange={setSelectedDrivers}
+        drivers={drivers}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onReset={resetFilters}
+      />
 
       {/* Devis List */}
       {filteredDevis.length === 0 ? (

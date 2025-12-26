@@ -34,7 +34,10 @@ import {
   ExternalLink,
   Clock,
   Zap,
+  UserPlus,
+  Info,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -543,21 +546,30 @@ const FleetPublicProfile = () => {
         </div>
       )}
 
-      {/* CTA Section */}
+      {/* CTA Section - Inscription invité */}
       <div className="container mx-auto px-4 py-12">
         <div className="text-center">
-          <Card className="inline-block p-8 md:p-12 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/20">
+          <Card className="inline-block p-8 md:p-12 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/20 max-w-2xl">
             <Route className="w-12 h-12 mx-auto mb-4 text-primary" />
             <h3 className="text-2xl font-bold mb-2">Planifier un trajet</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Pour tous vos déplacements professionnels et personnels, inscrivez-vous et réservez en quelques clics
+              Réservez directement ou créez un compte pour gérer vos réservations
             </p>
-            <Link to={`/register-client-fleet?fm=${id}`}>
-              <Button size="lg" className="gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={handleBookAvailable} size="lg" variant="outline" className="gap-2">
                 <Calendar className="w-5 h-5" />
-                S'inscrire et réserver
+                Réserver sans compte
               </Button>
-            </Link>
+              <Link to={`/register-client-fleet?fm=${id}`}>
+                <Button size="lg" className="gap-2 w-full">
+                  <UserPlus className="w-5 h-5" />
+                  Créer un compte
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              En réservant sans compte, vos informations seront enregistrées et vous pourrez créer un compte ultérieurement
+            </p>
           </Card>
         </div>
       </div>
@@ -644,7 +656,16 @@ const FleetPublicProfile = () => {
 
             {/* Infos contact */}
             <div className="border-t border-border pt-4 space-y-3">
-              <p className="text-sm font-medium text-muted-foreground">Vos coordonnées</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">Vos coordonnées</p>
+                <Badge variant="secondary" className="text-xs">Réservation invité</Badge>
+              </div>
+              <Alert className="bg-primary/5 border-primary/20">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Vos informations seront enregistrées. Vous pourrez créer un compte ultérieurement pour accéder à l'historique de vos réservations.
+                </AlertDescription>
+              </Alert>
               <div>
                 <Label>Nom complet *</Label>
                 <Input
@@ -663,13 +684,16 @@ const FleetPublicProfile = () => {
                 />
               </div>
               <div>
-                <Label>Email (optionnel)</Label>
+                <Label>Email (recommandé pour le suivi)</Label>
                 <Input
                   type="email"
                   value={bookingData.guestEmail}
                   onChange={(e) => setBookingData(prev => ({ ...prev, guestEmail: e.target.value }))}
                   placeholder="email@exemple.com"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Permet de recevoir les confirmations et de créer un compte facilement
+                </p>
               </div>
             </div>
 
