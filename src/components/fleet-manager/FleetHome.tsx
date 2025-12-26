@@ -17,7 +17,8 @@ import {
   ExternalLink,
   FileText,
   CreditCard,
-  Route
+  Route,
+  Handshake
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -191,7 +192,7 @@ export const FleetHome = ({
           <div className="w-1.5 h-7 bg-gradient-to-b from-primary to-accent rounded-full shadow-elegant"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 stagger-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 stagger-fade-in">
           {/* Gestion des Courses */}
           <Card 
             className="card-modern p-5 cursor-pointer group hover-glow-info"
@@ -222,6 +223,23 @@ export const FleetHome = ({
               <div>
                 <h3 className="text-sm font-bold text-foreground">Inviter</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Agrandir la flotte</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Partenariats */}
+          <Card 
+            className="card-modern p-5 cursor-pointer group hover-glow-warning"
+            onClick={() => onTabChange("partnerships")}
+          >
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-14 h-14 bg-gradient-to-br from-warning to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                <div className="absolute inset-0 bg-warning/50 rounded-2xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity" />
+                <Handshake className="relative w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Partenariats</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Gérer les contrats</p>
               </div>
             </div>
           </Card>

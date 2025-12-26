@@ -148,6 +148,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
   const fetchStats = async () => {
     setLoading(true);
     try {
+      // Get fleet manager drivers with their commissions
       const { data: fmdData } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -178,6 +179,14 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
         .select("id, full_name, profile_photo_url")
         .in("id", driverUserIds);
 
+      // Get partnerships to include their commissions too
+      const { data: partnerships } = await supabase
+        .from("fleet_driver_partnerships")
+        .select("driver_id, commission_percentage, total_owed, total_paid, status, contract_signed")
+        .eq("fleet_manager_id", fleetManagerId)
+        .eq("status", "accepted")
+        .eq("contract_signed", true);
+
       const dateRange = getDateRange(period);
       let coursesQuery = supabase.from("courses").select("*").in("driver_id", driverIds);
       if (dateRange.start && dateRange.end) {
@@ -205,7 +214,10 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
       const cancelledCourses = courses?.filter(c => c.status === "cancelled") || [];
       const totalRevenue = factures?.reduce((sum, f) => sum + (f.amount || 0), 0) || 0;
 
+      // Calculate commissions from both fleet_manager_drivers AND fleet_driver_partnerships
       let totalCommissions = 0;
+      
+      // Commissions from fleet_manager_drivers (drivers with is_salaried = false and commission > 0)
       fmdData.forEach(fmd => {
         if (!fmd.is_salaried && fmd.commission_percentage > 0) {
           const driverFactures = factures?.filter(f => f.driver_id === fmd.driver_id) || [];
@@ -213,6 +225,13 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
           totalCommissions += driverRevenue * (fmd.commission_percentage / 100);
         }
       });
+
+      // Add commissions from partnerships (total_owed)
+      if (partnerships) {
+        partnerships.forEach(p => {
+          totalCommissions += p.total_owed || 0;
+        });
+      }
 
       const completionRate = courses && courses.length > 0 
         ? (completedCourses.length / courses.length) * 100 
@@ -263,7 +282,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
         });
       }
 
-      // Driver stats
+      // Driver stats - include partnership commission data
       const stats: DriverStats[] = fmdData.map(fmd => {
         const driverCourses = courses?.filter(c => c.driver_id === fmd.driver_id) || [];
         const driverCompleted = driverCourses.filter(c => c.status === "completed");
@@ -272,9 +291,17 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
         const driverFactures = factures?.filter(f => f.driver_id === fmd.driver_id) || [];
         const driverRevenue = driverFactures.reduce((sum, f) => sum + (f.amount || 0), 0);
         
-        let commission = 0;
-        if (!fmd.is_salaried && fmd.commission_percentage > 0) {
-          commission = driverRevenue * (fmd.commission_percentage / 100);
+        // Get commission from either fleet_manager_drivers or partnerships
+        let commissionPercentage = fmd.commission_percentage || 0;
+        let commissionEarned = 0;
+        
+        // Check if there's a partnership with commission
+        const partnership = partnerships?.find(p => p.driver_id === fmd.driver_id);
+        if (partnership) {
+          commissionPercentage = partnership.commission_percentage || commissionPercentage;
+          commissionEarned = partnership.total_owed || 0;
+        } else if (!fmd.is_salaried && fmd.commission_percentage > 0) {
+          commissionEarned = driverRevenue * (fmd.commission_percentage / 100);
         }
 
         const profile = profiles?.find(p => p.id === (fmd.driver as any)?.user_id);
@@ -291,8 +318,8 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
           cancelled_courses: driverCancelled.length,
           pending_courses: driverPending.length,
           total_revenue: driverRevenue,
-          commission_percentage: fmd.commission_percentage || 0,
-          commission_earned: commission,
+          commission_percentage: commissionPercentage,
+          commission_earned: commissionEarned,
           average_rating: avgRating,
           is_salaried: fmd.is_salaried || false,
         };
