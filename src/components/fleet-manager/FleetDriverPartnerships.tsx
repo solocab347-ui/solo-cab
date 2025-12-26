@@ -43,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { PartnershipModificationDialog } from "./PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
+import { PartnershipContractDocument } from "./PartnershipContractDocument";
 
 // Vehicle categories
 const VEHICLE_CATEGORIES = [
@@ -144,8 +145,17 @@ interface Partnership {
   pending_new_commission?: number;
   pending_new_payment_schedule?: string;
   pending_modification_reason?: string;
+  fleet_manager_signed_at?: string;
+  driver_signed_at?: string;
+  created_at?: string;
   driver?: IndependentDriver;
 }
+
+interface FleetManagerInfo {
+  name: string;
+  company: string;
+}
+
 
 export const FleetDriverPartnerships = ({ 
   fleetManagerId, 
@@ -162,6 +172,9 @@ export const FleetDriverPartnerships = ({
   const [commissionRate, setCommissionRate] = useState(defaultCommission.toString());
   const [paymentSchedule, setPaymentSchedule] = useState("per_course");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Fleet manager info for contracts
+  const [fleetManagerInfo, setFleetManagerInfo] = useState<FleetManagerInfo | null>(null);
   
   // Modification dialog state
   const [showModificationDialog, setShowModificationDialog] = useState(false);
@@ -182,6 +195,26 @@ export const FleetDriverPartnerships = ({
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fetch fleet manager info for contracts
+      const { data: fmData } = await supabase
+        .from("fleet_managers")
+        .select("company_name, contact_name, user_id")
+        .eq("id", fleetManagerId)
+        .single();
+
+      if (fmData) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", fmData.user_id)
+          .single();
+
+        setFleetManagerInfo({
+          name: profile?.full_name || fmData.contact_name,
+          company: fmData.company_name
+        });
+      }
+
       // Fetch existing partnerships
       const { data: partnershipsData, error: partErr } = await supabase
         .from("fleet_driver_partnerships")
@@ -835,7 +868,31 @@ export const FleetDriverPartnerships = ({
                                 <Percent className="w-3 h-3 mr-1" />
                                 {partnership.commission_percentage}% commission
                               </Badge>
+                              {partnership.payment_schedule && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {partnership.payment_schedule === "per_course" ? "Par course" : 
+                                   partnership.payment_schedule === "weekly" ? "Hebdo" : "Mensuel"}
+                                </Badge>
+                              )}
                             </div>
+                            {/* Contract document */}
+                            {fleetManagerInfo && (
+                              <div className="mt-3">
+                                <PartnershipContractDocument
+                                  partnershipId={partnership.id}
+                                  fleetManagerName={fleetManagerInfo.name}
+                                  fleetManagerCompany={fleetManagerInfo.company}
+                                  driverName={partnership.driver?.profile?.full_name || "Chauffeur"}
+                                  commissionPercentage={partnership.commission_percentage}
+                                  paymentSchedule={partnership.payment_schedule || "per_course"}
+                                  signedAt={partnership.created_at}
+                                  fleetManagerSignedAt={partnership.fleet_manager_signed_at}
+                                  driverSignedAt={partnership.driver_signed_at}
+                                  contractType="partner"
+                                />
+                              </div>
+                            )}
                           </div>
                           
                           {/* Modify button */}
