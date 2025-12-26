@@ -40,10 +40,27 @@ const AdminOverview = () => {
         .from("profiles")
         .select("*", { count: "exact", head: true });
 
-      // Compter les clients
-      const { count: totalClients } = await supabase
+      // Récupérer les IDs des chauffeurs démo pour les exclure
+      const { data: demoDrivers } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("is_demo_account", true);
+      
+      const demoDriverIds = demoDrivers?.map(d => d.id) || [];
+
+      // Compter les clients HORS ceux liés aux chauffeurs démo
+      let clientsQuery = supabase
         .from("clients")
         .select("*", { count: "exact", head: true });
+      
+      // Exclure les clients des chauffeurs démo
+      if (demoDriverIds.length > 0) {
+        clientsQuery = clientsQuery
+          .not("driver_id", "in", `(${demoDriverIds.join(",")})`)
+          .or(`driver_id.is.null`);
+      }
+      
+      const { count: totalClients } = await clientsQuery;
 
       const totalDrivers = driversData?.length || 0;
 
