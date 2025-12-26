@@ -28,8 +28,11 @@ import {
   CheckCircle,
   Euro,
   ImageIcon,
-  Send
+  Send,
+  Handshake,
+  Percent
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface SearchableDriver {
   id: string;
@@ -131,11 +134,86 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   // Profil détaillé
   const [selectedDriver, setSelectedDriver] = useState<SearchableDriver | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  
+  // Demande de partenariat
+  const [partnershipDialogOpen, setPartnershipDialogOpen] = useState(false);
+  const [partnershipDriver, setPartnershipDriver] = useState<SearchableDriver | null>(null);
+  const [partnershipCommission, setPartnershipCommission] = useState(10);
+  const [partnershipPaymentSchedule, setPartnershipPaymentSchedule] = useState('per_course');
+  const [partnershipMessage, setPartnershipMessage] = useState('');
+  const [sendingPartnership, setSendingPartnership] = useState(false);
+  const [existingPartnerships, setExistingPartnerships] = useState<string[]>([]);
 
   // Initial load only - filters are applied independently with the search button
   useEffect(() => {
     searchDrivers();
+    fetchExistingPartnerships();
   }, []);
+
+  const fetchExistingPartnerships = async () => {
+    try {
+      const { data } = await supabase
+        .from('fleet_driver_partnerships')
+        .select('driver_id')
+        .eq('fleet_manager_id', fleetManagerId)
+        .in('status', ['pending', 'active']);
+      
+      if (data) {
+        setExistingPartnerships(data.map(p => p.driver_id));
+      }
+    } catch (error) {
+      console.error('Error fetching partnerships:', error);
+    }
+  };
+
+  const openPartnershipDialog = (driver: SearchableDriver) => {
+    setPartnershipDriver(driver);
+    setPartnershipCommission(10);
+    setPartnershipPaymentSchedule('per_course');
+    setPartnershipMessage('');
+    setPartnershipDialogOpen(true);
+  };
+
+  const sendPartnershipRequest = async () => {
+    if (!partnershipDriver) return;
+    
+    setSendingPartnership(true);
+    try {
+      const { error } = await supabase
+        .from('fleet_driver_partnerships')
+        .insert({
+          fleet_manager_id: fleetManagerId,
+          driver_id: partnershipDriver.id,
+          initiated_by: 'fleet_manager',
+          commission_percentage: partnershipCommission,
+          payment_schedule: partnershipPaymentSchedule,
+          proposal_message: partnershipMessage || null,
+          status: 'pending',
+          fleet_manager_signed: true,
+          fleet_manager_signed_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Notify driver
+      await supabase.from('notifications').insert({
+        user_id: partnershipDriver.user_id,
+        title: 'Nouvelle demande de partenariat',
+        message: `Un gestionnaire de flotte souhaite établir un partenariat avec vous (${partnershipCommission}% de commission)`,
+        type: 'info',
+        link: '/driver-dashboard?tab=partnerships'
+      });
+
+      toast.success('Demande de partenariat envoyée avec succès');
+      setPartnershipDialogOpen(false);
+      setExistingPartnerships([...existingPartnerships, partnershipDriver.id]);
+    } catch (error) {
+      console.error('Error sending partnership request:', error);
+      toast.error('Erreur lors de l\'envoi de la demande');
+    } finally {
+      setSendingPartnership(false);
+    }
+  };
 
   const searchDrivers = async () => {
     setSearching(true);
@@ -831,15 +909,127 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
                       </CardContent>
                     </Card>
 
-                    <Button className="w-full" size="lg">
-                      <Send className="h-4 w-4 mr-2" />
-                      Contacter ce chauffeur
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button className="flex-1" size="lg" variant="outline">
+                        <Send className="h-4 w-4 mr-2" />
+                        Contacter
+                      </Button>
+                      {existingPartnerships.includes(selectedDriver.id) ? (
+                        <Button className="flex-1" size="lg" disabled variant="secondary">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Partenariat existant
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="flex-1" 
+                          size="lg"
+                          onClick={() => {
+                            setProfileDialogOpen(false);
+                            openPartnershipDialog(selectedDriver);
+                          }}
+                        >
+                          <Handshake className="h-4 w-4 mr-2" />
+                          Demander un partenariat
+                        </Button>
+                      )}
+                    </div>
                   </TabsContent>
                 </Tabs>
               </div>
             )}
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de demande de partenariat */}
+      <Dialog open={partnershipDialogOpen} onOpenChange={setPartnershipDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5 text-primary" />
+              Demande de Partenariat
+            </DialogTitle>
+            <DialogDescription>
+              Proposer un partenariat à {partnershipDriver?.profile?.full_name || 'ce chauffeur'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Info chauffeur */}
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Avatar>
+                <AvatarImage src={partnershipDriver?.profile?.profile_photo_url || undefined} />
+                <AvatarFallback>
+                  {getInitials(partnershipDriver?.profile?.full_name || 'CH')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{partnershipDriver?.profile?.full_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {partnershipDriver?.vehicle_brand} {partnershipDriver?.vehicle_model}
+                </p>
+              </div>
+            </div>
+
+            {/* Commission */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Commission sur les courses ({partnershipCommission}%)
+              </Label>
+              <Slider
+                value={[partnershipCommission]}
+                onValueChange={(v) => setPartnershipCommission(v[0])}
+                min={0}
+                max={30}
+                step={1}
+              />
+              <p className="text-xs text-muted-foreground">
+                Pourcentage que le chauffeur vous reverse sur chaque course effectuée pour la flotte
+              </p>
+            </div>
+
+            {/* Calendrier de paiement */}
+            <div className="space-y-2">
+              <Label>Fréquence de versement</Label>
+              <Select value={partnershipPaymentSchedule} onValueChange={setPartnershipPaymentSchedule}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per_course">Par course</SelectItem>
+                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                  <SelectItem value="biweekly">Bi-mensuel</SelectItem>
+                  <SelectItem value="monthly">Mensuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Message */}
+            <div className="space-y-2">
+              <Label>Message personnalisé (optionnel)</Label>
+              <Textarea
+                placeholder="Présentez-vous et expliquez les avantages de ce partenariat..."
+                value={partnershipMessage}
+                onChange={(e) => setPartnershipMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPartnershipDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={sendPartnershipRequest} disabled={sendingPartnership}>
+              {sendingPartnership ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Envoyer la demande
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
