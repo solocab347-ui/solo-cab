@@ -71,6 +71,8 @@ import { FleetClientsTab } from "@/components/fleet-manager/FleetClientsTab";
 import { FleetOperationsSettings } from "@/components/fleet-manager/FleetOperationsSettings";
 import { FleetPricingHub } from "@/components/fleet-manager/FleetPricingHub";
 import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
+import FleetDevisList from "@/components/fleet-manager/FleetDevisList";
+import FleetFacturesList from "@/components/fleet-manager/FleetFacturesList";
 import logoSolocab from "@/assets/logo-solocab.png";
 
 interface FleetManager {
@@ -779,14 +781,41 @@ const FleetManagerDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses">
-            <div className="space-y-6">
-              <FleetDeclinedCourses fleetManagerId={fleetManager.id} />
-              <FleetCoursesManager
-                fleetManagerId={fleetManager.id}
-                autoValidate={fleetManager.auto_validate_courses || false}
-                onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
-              />
-            </div>
+            <Tabs defaultValue="courses" className="space-y-6">
+              <div className="glass-strong p-3 rounded-2xl">
+                <TabsList className="grid w-full grid-cols-3 gap-2 h-auto bg-transparent p-0">
+                  <TabsTrigger value="courses" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+                    <Route className="w-4 h-4 mr-2" />
+                    Courses
+                  </TabsTrigger>
+                  <TabsTrigger value="devis" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Devis
+                  </TabsTrigger>
+                  <TabsTrigger value="factures" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Factures
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="courses" className="space-y-6">
+                <FleetDeclinedCourses fleetManagerId={fleetManager.id} />
+                <FleetCoursesManager
+                  fleetManagerId={fleetManager.id}
+                  autoValidate={fleetManager.auto_validate_courses || false}
+                  onAutoValidateChange={(value) => setFleetManager({ ...fleetManager, auto_validate_courses: value })}
+                />
+              </TabsContent>
+              
+              <TabsContent value="devis">
+                <FleetDevisList fleetManagerId={fleetManager.id} />
+              </TabsContent>
+              
+              <TabsContent value="factures">
+                <FleetFacturesList fleetManagerId={fleetManager.id} />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Tools Tab */}
