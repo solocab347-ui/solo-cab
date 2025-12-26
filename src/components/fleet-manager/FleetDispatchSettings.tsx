@@ -15,6 +15,7 @@ interface FleetDispatchSettingsProps {
 }
 
 interface DispatchSettings {
+  auto_validate_courses: boolean;
   auto_dispatch_enabled: boolean;
   dispatch_priority: "proximity" | "availability" | "rating";
   favorite_driver_priority: boolean;
@@ -29,6 +30,7 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<DispatchSettings>({
+    auto_validate_courses: true,
     auto_dispatch_enabled: false,
     dispatch_priority: "proximity",
     favorite_driver_priority: true,
@@ -47,13 +49,14 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
     try {
       const { data, error } = await supabase
         .from("fleet_managers")
-        .select("auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode, course_buffer_minutes, smart_buffer_enabled, smart_buffer_min_minutes, smart_buffer_fallback_action")
+        .select("auto_validate_courses, auto_dispatch_enabled, dispatch_priority, favorite_driver_priority, assignment_mode, course_buffer_minutes, smart_buffer_enabled, smart_buffer_min_minutes, smart_buffer_fallback_action")
         .eq("id", fleetManagerId)
         .single();
 
       if (error) throw error;
       if (data) {
         setSettings({
+          auto_validate_courses: data.auto_validate_courses !== false,
           auto_dispatch_enabled: data.auto_dispatch_enabled || false,
           dispatch_priority: (data.dispatch_priority as DispatchSettings["dispatch_priority"]) || "proximity",
           favorite_driver_priority: data.favorite_driver_priority !== false,
@@ -108,6 +111,61 @@ export const FleetDispatchSettings = ({ fleetManagerId }: FleetDispatchSettingsP
 
   return (
     <div className="space-y-6">
+      {/* Mode de validation des courses */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            Mode de Validation des Courses
+          </CardTitle>
+          <CardDescription>
+            Choisissez comment les nouvelles courses sont validées
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Zap className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <Label className="text-base font-medium">
+                  Validation automatique
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {settings.auto_validate_courses 
+                    ? "Les courses sont automatiquement confirmées dès leur création"
+                    : "Vous devez approuver chaque course manuellement avant confirmation"
+                  }
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`text-sm font-medium ${!settings.auto_validate_courses ? "text-foreground" : "text-muted-foreground"}`}>Manuel</span>
+              <Switch
+                checked={settings.auto_validate_courses}
+                onCheckedChange={async (checked) => {
+                  try {
+                    const { error } = await supabase
+                      .from("fleet_managers")
+                      .update({ auto_validate_courses: checked })
+                      .eq("id", fleetManagerId);
+                    
+                    if (error) throw error;
+                    setSettings({ ...settings, auto_validate_courses: checked });
+                    toast.success(checked ? "Validation automatique activée" : "Validation manuelle activée");
+                  } catch (error) {
+                    console.error("Error updating validation mode:", error);
+                    toast.error("Erreur lors de la mise à jour");
+                  }
+                }}
+              />
+              <span className={`text-sm font-medium ${settings.auto_validate_courses ? "text-foreground" : "text-muted-foreground"}`}>Auto</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Dispatch automatique */}
       <Card>
         <CardHeader>
