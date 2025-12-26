@@ -48,8 +48,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   const [paymentMethods, setPaymentMethods] = useState<string[]>(["card"]);
   const [paymentFrequency, setPaymentFrequency] = useState("per_course");
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
-  const [creditLimit, setCreditLimit] = useState(0);
-  const [discountPercentage, setDiscountPercentage] = useState(0);
   const [notes, setNotes] = useState("");
 
   // Fetch company info for message
@@ -152,8 +150,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           payment_methods: paymentMethods,
           payment_frequency: paymentFrequency,
           payment_day: paymentDay,
-          credit_limit: creditLimit,
-          discount_percentage: discountPercentage,
           notes: `${proposalMessage}${notes ? `\n\nConditions: ${notes}` : ""}`,
         });
 
@@ -177,8 +173,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     setPaymentMethods(["card"]);
     setPaymentFrequency("per_course");
     setPaymentDay(null);
-    setCreditLimit(0);
-    setDiscountPercentage(0);
     setNotes("");
   };
 
@@ -678,32 +672,6 @@ ${company?.company_name || ""}`;
                 </Select>
               </div>
             )}
-
-            {/* Credit Limit */}
-            <div className="space-y-2">
-              <Label>Limite de crédit (€)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={creditLimit}
-                onChange={(e) => setCreditLimit(parseFloat(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Montant maximum accumulable avant paiement obligatoire
-              </p>
-            </div>
-
-            {/* Discount */}
-            <div className="space-y-2">
-              <Label>Remise demandée (%)</Label>
-              <Input
-                type="number"
-                min={0}
-                max={50}
-                value={discountPercentage}
-                onChange={(e) => setDiscountPercentage(parseFloat(e.target.value) || 0)}
-              />
-            </div>
 
             {/* Additional Notes */}
             <div className="space-y-2">

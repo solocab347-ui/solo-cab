@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 
 interface EmployeeData {
   id: string;
@@ -413,21 +414,10 @@ export default function CompanyEmployeeDashboard() {
           {/* Invoices Tab */}
           {employee.can_view_invoices && (
             <TabsContent value="invoices">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Factures de l'entreprise</CardTitle>
-                  <CardDescription>
-                    Toutes les factures sont éditées au nom de {employee.company.company_name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center py-12">
-                  <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2">Aucune facture</h3>
-                  <p className="text-muted-foreground">
-                    Les factures apparaîtront ici après vos premières courses.
-                  </p>
-                </CardContent>
-              </Card>
+              <CompanyEmployeeFactures 
+                employeeId={employee.id} 
+                companyName={employee.company.company_name} 
+              />
             </TabsContent>
           )}
 
