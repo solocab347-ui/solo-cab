@@ -198,6 +198,56 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     },
   });
 
+  // Accept driver proposal - MUST be before any return statement
+  const acceptProposal = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          status: "accepted",
+          company_signed: true,
+          company_signed_at: new Date().toISOString(),
+          accepted_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Partenariat accepté !");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      setShowProposalDetails(false);
+      setSelectedProposal(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'acceptation");
+    },
+  });
+
+  // Reject driver proposal - MUST be before any return statement
+  const rejectProposal = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          status: "rejected",
+          rejected_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Proposition refusée");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      setShowProposalDetails(false);
+      setSelectedProposal(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors du refus");
+    },
+  });
+
   const resetForm = () => {
     setSelectedDriver(null);
     setSelectedPaymentMethods(["card"]);
@@ -243,56 +293,6 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const companyProposals = agreements?.filter((a: any) => a.status === "pending" && a.proposed_by === "company") || [];
   const activeAgreements = agreements?.filter((a: any) => a.status === "accepted") || [];
   const otherAgreements = agreements?.filter((a: any) => !["pending", "accepted"].includes(a.status)) || [];
-
-  // Accept driver proposal
-  const acceptProposal = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          status: "accepted",
-          company_signed: true,
-          company_signed_at: new Date().toISOString(),
-          accepted_at: new Date().toISOString(),
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Partenariat accepté !");
-      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
-      setShowProposalDetails(false);
-      setSelectedProposal(null);
-    },
-    onError: () => {
-      toast.error("Erreur lors de l'acceptation");
-    },
-  });
-
-  // Reject driver proposal
-  const rejectProposal = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          status: "rejected",
-          rejected_at: new Date().toISOString(),
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Proposition refusée");
-      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
-      setShowProposalDetails(false);
-      setSelectedProposal(null);
-    },
-    onError: () => {
-      toast.error("Erreur lors du refus");
-    },
-  });
 
   return (
     <div className="space-y-6">
