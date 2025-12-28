@@ -92,7 +92,7 @@ export function PushCourseToPartners() {
         devis!inner(amount, status)
       `)
       .eq('driver_id', driver.id)
-      .in('status', ['pending', 'accepted'])
+      .eq('status', 'accepted') // Seulement les courses confirmées peuvent être partagées
       .gte('scheduled_date', new Date().toISOString())
       .order('scheduled_date', { ascending: true });
 
