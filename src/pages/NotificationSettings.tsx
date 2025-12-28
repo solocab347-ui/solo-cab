@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Bell, BellOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { usePushNotificationsV2 } from '@/hooks/usePushNotificationsV2';
 import { toast } from 'sonner';
 import { logger } from '@/lib/productionLogger';
 
@@ -24,7 +24,7 @@ interface NotificationPreferences {
 export default function NotificationSettings() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { permission, isSupported, requestPermission, disableNotifications } = usePushNotifications();
+  const { permission, isSupported, requestPermissionAndSubscribe, unsubscribe, isSubscribed } = usePushNotificationsV2();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
     push_enabled: false,
     email_enabled: true,
@@ -103,14 +103,12 @@ export default function NotificationSettings() {
   };
 
   const handleTogglePushNotifications = async () => {
-    if (preferences.push_enabled) {
-      // Désactiver les notifications push
-      await disableNotifications();
+    if (isSubscribed) {
+      await unsubscribe();
       setPreferences(prev => ({ ...prev, push_enabled: false }));
     } else {
-      // Demander la permission et activer
-      const granted = await requestPermission();
-      if (granted) {
+      const success = await requestPermissionAndSubscribe();
+      if (success) {
         setPreferences(prev => ({ ...prev, push_enabled: true }));
       }
     }

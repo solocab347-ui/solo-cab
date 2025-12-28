@@ -4625,6 +4625,8 @@ export type Database = {
           id: string
           phone: string | null
           profile_photo_url: string | null
+          push_enabled: boolean | null
+          push_subscription: Json | null
           roles: string[] | null
           updated_at: string
         }
@@ -4637,6 +4639,8 @@ export type Database = {
           id: string
           phone?: string | null
           profile_photo_url?: string | null
+          push_enabled?: boolean | null
+          push_subscription?: Json | null
           roles?: string[] | null
           updated_at?: string
         }
@@ -4649,6 +4653,8 @@ export type Database = {
           id?: string
           phone?: string | null
           profile_photo_url?: string | null
+          push_enabled?: boolean | null
+          push_subscription?: Json | null
           roles?: string[] | null
           updated_at?: string
         }
@@ -4777,6 +4783,47 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          subscription: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          subscription: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          subscription?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

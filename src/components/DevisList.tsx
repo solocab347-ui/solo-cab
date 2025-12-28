@@ -39,11 +39,13 @@ const DevisList = ({ clientId }: DevisListProps) => {
         .select(`
           *,
           courses!inner(
+            id,
             pickup_address,
             destination_address,
             scheduled_date,
             distance_km,
-            duration_minutes
+            duration_minutes,
+            status
           ),
           drivers!inner(
             company_name,
@@ -59,7 +61,20 @@ const DevisList = ({ clientId }: DevisListProps) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDevisList(data || []);
+      
+      // CORRECTION: Synchroniser le statut du devis avec celui de la course
+      const synchronizedDevis = (data || []).map(devis => {
+        const courseStatus = devis.courses?.status;
+        
+        // Si la course est annulée, le devis doit aussi être considéré comme annulé
+        if (courseStatus === 'cancelled' && devis.status === 'pending') {
+          return { ...devis, status: 'cancelled', _courseStatus: courseStatus };
+        }
+        
+        return { ...devis, _courseStatus: courseStatus };
+      });
+      
+      setDevisList(synchronizedDevis);
     } catch (error: any) {
       console.error("Error fetching devis:", error);
       toast.error("Erreur lors du chargement des devis");
@@ -231,8 +246,17 @@ const DevisList = ({ clientId }: DevisListProps) => {
     }
   };
 
-  const getStatusBadge = (status: string, validUntil: string) => {
+  const getStatusBadge = (status: string, validUntil: string, courseStatus?: string) => {
     const isExpired = new Date(validUntil) < new Date();
+    
+    // CORRECTION: Si la course est annulée, afficher "Annulé"
+    if (courseStatus === 'cancelled') {
+      return (
+        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+          Annulé
+        </Badge>
+      );
+    }
     
     if (isExpired && status === "pending") {
       return (
@@ -242,23 +266,25 @@ const DevisList = ({ clientId }: DevisListProps) => {
       );
     }
 
-    const styles = {
+    const styles: Record<string, string> = {
       pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
       accepted: "bg-green-500/10 text-green-500 border-green-500/20",
       rejected: "bg-destructive/10 text-destructive border-destructive/20",
       expired: "bg-muted text-muted-foreground border-border",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
     };
 
-    const labels = {
+    const labels: Record<string, string> = {
       pending: "En attente",
       accepted: "Accepté",
       rejected: "Refusé",
       expired: "Expiré",
+      cancelled: "Annulé",
     };
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
-        {labels[status as keyof typeof labels]}
+      <Badge variant="outline" className={styles[status] || styles.pending}>
+        {labels[status] || status}
       </Badge>
     );
   };
@@ -540,14 +566,19 @@ const DevisList = ({ clientId }: DevisListProps) => {
     );
   }
 
-  // Filtrer les devis par statut
-  const pendingDevis = devisList.filter(d => d.status === "pending" && new Date(d.valid_until) >= new Date());
+  // Filtrer les devis par statut - exclure ceux liés à des courses annulées des "en attente"
+  const pendingDevis = devisList.filter(d => 
+    d.status === "pending" && 
+    new Date(d.valid_until) >= new Date() &&
+    d.courses?.status !== 'cancelled'
+  );
   const acceptedDevis = devisList.filter(d => d.status === "accepted");
-  const rejectedDevis = devisList.filter(d => d.status === "rejected");
+  const rejectedDevis = devisList.filter(d => d.status === "rejected" || d.courses?.status === 'cancelled');
 
   const renderDevisCard = (devis: any) => {
     const isExpired = new Date(devis.valid_until) < new Date();
-    const canAccept = devis.status === "pending" && !isExpired;
+    const isCourseAnnuled = devis.courses?.status === 'cancelled';
+    const canAccept = devis.status === "pending" && !isExpired && !isCourseAnnuled;
 
     return (
       <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
@@ -555,7 +586,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-bold text-lg">Devis {devis.quote_number}</h3>
-              {getStatusBadge(devis.status, devis.valid_until)}
+              {getStatusBadge(devis.status, devis.valid_until, devis.courses?.status)}
             </div>
             <p className="text-sm text-muted-foreground">
               Chauffeur : {devis.drivers?.profiles?.full_name}
