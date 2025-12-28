@@ -94,6 +94,8 @@ const getEmailTemplate = (type: string, data: any) => {
               .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
               .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
               .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+              .info-box { background: #e0f2fe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px; }
+              .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px; }
             </style>
           </head>
           <body>
@@ -114,6 +116,21 @@ const getEmailTemplate = (type: string, data: any) => {
                   <li>💬 Communiquer directement avec votre chauffeur</li>
                   <li>📊 Suivre l'historique de vos courses</li>
                 </ul>
+                
+                <div class="info-box">
+                  <p><strong>📋 Comment réserver une course ?</strong></p>
+                  <ol style="margin: 10px 0; padding-left: 20px;">
+                    <li>Créez une demande de course depuis votre espace</li>
+                    <li>Un devis sera automatiquement généré</li>
+                    <li><strong>Acceptez le devis</strong> pour confirmer votre réservation</li>
+                    <li>Votre chauffeur pourra alors valider la course</li>
+                  </ol>
+                </div>
+                
+                <div class="warning-box">
+                  <p><strong>⚠️ Important :</strong></p>
+                  <p>Lorsque vous faites une demande de course, <strong>pensez à accepter le devis</strong> dans votre espace client. Sans cette confirmation, le chauffeur ne peut pas valider votre course.</p>
+                </div>
                 
                 <p>Pour toute question, n'hésitez pas à contacter votre chauffeur via la messagerie intégrée.</p>
                 

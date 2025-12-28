@@ -134,3 +134,9 @@ verify_jwt = true
 
 [functions.complete-course-invitation]
 verify_jwt = false
+
+[functions.send-driver-welcome-new]
+verify_jwt = true
+
+[functions.send-driver-document-reminder]
+verify_jwt = true
