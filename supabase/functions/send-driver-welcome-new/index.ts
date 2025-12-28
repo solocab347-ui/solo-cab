@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TRIAL_DAYS = 7; // Nombre de jours d'essai pour soumettre les documents
+const TRIAL_DAYS = 30; // Nombre de jours pour soumettre les documents (1 mois)
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
