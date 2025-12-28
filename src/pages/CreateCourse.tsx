@@ -18,6 +18,7 @@ import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
+import { CourseCreatedInfoDialog } from "@/components/client/CourseCreatedInfoDialog";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -39,6 +40,12 @@ const CreateCourse = () => {
   const [clientAddress, setClientAddress] = useState("");
   const [useAddressPickup, setUseAddressPickup] = useState(false);
   const [useAddressDestination, setUseAddressDestination] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [createdCourseInfo, setCreatedCourseInfo] = useState<{
+    pickupAddress: string;
+    destinationAddress: string;
+    scheduledDate: string;
+  } | null>(null);
 
   // Fetch client address on mount
   useEffect(() => {
@@ -293,8 +300,13 @@ const CreateCourse = () => {
           link: "/client-dashboard?tab=devis",
         });
 
-        toast.info("Consultez votre devis dans 'Devis et Factures'", { duration: 5000 });
-        setTimeout(() => navigate("/client-dashboard"), 1500);
+        // Afficher le dialog d'information au lieu de naviguer immédiatement
+        setCreatedCourseInfo({
+          pickupAddress: sanitizedPickup,
+          destinationAddress: sanitizedDestination,
+          scheduledDate: scheduledDate,
+        });
+        setShowInfoDialog(true);
       }
     } catch (error: any) {
       console.error("❌ Unexpected error:", error);
@@ -538,6 +550,18 @@ const CreateCourse = () => {
         </Card>
       </div>
     </div>
+    
+    {/* Dialog d'information après création de course */}
+    <CourseCreatedInfoDialog
+      open={showInfoDialog}
+      onClose={() => {
+        setShowInfoDialog(false);
+        navigate("/client-dashboard?tab=devis");
+      }}
+      pickupAddress={createdCourseInfo?.pickupAddress}
+      destinationAddress={createdCourseInfo?.destinationAddress}
+      scheduledDate={createdCourseInfo?.scheduledDate}
+    />
     </ErrorBoundary>
   );
 };
