@@ -1626,19 +1626,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCourseToShareWithPartner(course);
-                      setSharePartnerDialogOpen(true);
-                    }}
-                    className="w-full border-primary/50 text-primary hover:bg-primary/10"
-                  >
-                    <Handshake className="w-4 h-4 mr-2" />
-                    Partager avec un partenaire
-                  </Button>
+                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées (accepted) */}
+                  {course.status === 'accepted' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCourseToShareWithPartner(course);
+                        setSharePartnerDialogOpen(true);
+                      }}
+                      className="w-full border-primary/50 text-primary hover:bg-primary/10"
+                    >
+                      <Handshake className="w-4 h-4 mr-2" />
+                      Partager avec un partenaire
+                    </Button>
+                  )}
                   
                   <Button
                     variant="outline"
@@ -1812,19 +1814,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setCourseToShareWithPartner(course);
-                      setSharePartnerDialogOpen(true);
-                    }}
-                    className="w-full border-primary/50 text-primary hover:bg-primary/10"
-                  >
-                    <Handshake className="w-4 h-4 mr-2" />
-                    Partager avec un partenaire
-                  </Button>
+                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées (accepted) */}
+                  {course.status === 'accepted' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCourseToShareWithPartner(course);
+                        setSharePartnerDialogOpen(true);
+                      }}
+                      className="w-full border-primary/50 text-primary hover:bg-primary/10"
+                    >
+                      <Handshake className="w-4 h-4 mr-2" />
+                      Partager avec un partenaire
+                    </Button>
+                  )}
                   
                   <Button
                     variant="outline"

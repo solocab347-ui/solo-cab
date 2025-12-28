@@ -466,14 +466,18 @@ const RegisterClientQR = () => {
                 )}
               </div>
               <div>
-                <Label htmlFor="phone">{t('register.phone')}</Label>
+                <Label htmlFor="phone">{t('register.phone')} *</Label>
                 <Input
                   id="phone"
                   type="tel"
+                  required
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+33 6 12 34 56 78"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Obligatoire pour communiquer avec votre chauffeur
+                </p>
               </div>
               <div>
                 <Label htmlFor="address">{t('register.address')}</Label>

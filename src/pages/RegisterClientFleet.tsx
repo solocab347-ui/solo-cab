@@ -273,7 +273,7 @@ const RegisterClientFleet = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">Téléphone *</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -286,6 +286,9 @@ const RegisterClientFleet = () => {
                     required
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Obligatoire pour communiquer avec vos chauffeurs
+                </p>
               </div>
 
               <div className="space-y-2">
