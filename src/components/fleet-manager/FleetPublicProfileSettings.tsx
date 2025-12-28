@@ -70,6 +70,33 @@ export const FleetPublicProfileSettings = ({
   const [selectedServices, setSelectedServices] = useState<string[]>(initialServicesOffered || []);
   const [customService, setCustomService] = useState("");
   const [customServices, setCustomServices] = useState<string[]>([]);
+  
+  // Champs d'entreprise
+  const [siret, setSiret] = useState("");
+  const [siren, setSiren] = useState("");
+  const [tvaNumber, setTvaNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+
+  // Charger les données d'entreprise au montage
+  useEffect(() => {
+    const loadFleetData = async () => {
+      const { data } = await supabase
+        .from("fleet_managers")
+        .select("siret, siren, tva_number, address, contact_phone")
+        .eq("id", fleetManagerId)
+        .single();
+      
+      if (data) {
+        setSiret(data.siret || "");
+        setSiren(data.siren || "");
+        setTvaNumber((data as any).tva_number || "");
+        setAddress(data.address || "");
+        setContactPhone(data.contact_phone || "");
+      }
+    };
+    loadFleetData();
+  }, [fleetManagerId]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -158,7 +185,12 @@ export const FleetPublicProfileSettings = ({
           show_phone: showPhone,
           show_email: showEmail,
           services_offered: allServices.length > 0 ? allServices : null,
-        })
+          siret: siret || null,
+          siren: siren || null,
+          tva_number: tvaNumber || null,
+          address: address || null,
+          contact_phone: contactPhone || null,
+        } as any)
         .eq("id", fleetManagerId);
 
       if (error) throw error;
@@ -267,6 +299,69 @@ export const FleetPublicProfileSettings = ({
             <p className="text-xs text-muted-foreground">
               Cette présentation apparaîtra sur votre page publique
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informations Entreprise */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Informations Entreprise
+          </CardTitle>
+          <CardDescription>
+            Ces informations apparaîtront sur vos devis et factures
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>SIRET (14 chiffres)</Label>
+              <Input
+                value={siret}
+                onChange={(e) => setSiret(e.target.value)}
+                placeholder="123 456 789 00012"
+                maxLength={14}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>SIREN (9 chiffres)</Label>
+              <Input
+                value={siren}
+                onChange={(e) => setSiren(e.target.value)}
+                placeholder="123 456 789"
+                maxLength={9}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>N° TVA Intracommunautaire</Label>
+            <Input
+              value={tvaNumber}
+              onChange={(e) => setTvaNumber(e.target.value)}
+              placeholder="FR12345678901"
+              maxLength={15}
+            />
+            <p className="text-xs text-muted-foreground">Ce numéro apparaîtra sur vos devis et factures</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Adresse de l'entreprise</Label>
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="123 Rue de la République, 75001 Paris"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Téléphone</Label>
+              <Input
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="06 12 34 56 78"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

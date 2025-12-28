@@ -197,16 +197,23 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     if (driverInfo.company_name && driverInfo.company_name !== driverName) {
       doc.text(driverInfo.company_name, 20, 76);
     }
+    let infoY = 81;
     if (driverInfo.siret) {
-      doc.text(`SIRET: ${driverInfo.siret}`, 20, 81);
+      doc.text(`SIRET: ${driverInfo.siret}`, 20, infoY);
+      infoY += 5;
     } else if (driverInfo.siren) {
-      doc.text(`SIREN: ${driverInfo.siren}`, 20, 81);
+      doc.text(`SIREN: ${driverInfo.siren}`, 20, infoY);
+      infoY += 5;
     }
-    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, 86);
+    if (driverInfo.tva_number) {
+      doc.text(`TVA: ${driverInfo.tva_number}`, 20, infoY);
+      infoY += 5;
+    }
+    doc.text(`Tél: ${driverInfo.profiles?.phone || 'N/A'}`, 20, infoY);
     
     if (driverInfo.company_address) {
       const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
-      doc.text(addressLines, 20, 91);
+      doc.text(addressLines, 20, infoY + 5);
     }
 
     // Client info (right side)

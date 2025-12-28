@@ -287,29 +287,7 @@ export const DriverPublicProfile = memo(({
         />
       </Card>
 
-      {/* Services */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <ServicesSelector
-          selectedServices={servicesOffered || []}
-          onChange={onServicesOfferedChange}
-        />
-      </Card>
-
-      {/* Catégories de véhicule */}
-      <VehicleCategorySelector
-        selectedCategories={vehicleCategories || []}
-        onChange={onVehicleCategoriesChange}
-      />
-
-      {/* Équipements */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <EquipmentSelector
-          selectedEquipment={vehicleEquipment || []}
-          onChange={onVehicleEquipmentChange}
-        />
-      </Card>
-
-      {/* Description */}
+      {/* Description du service - DÉPLACÉ plus haut */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <h3 className="text-lg font-semibold mb-4">Description du service</h3>
         <Textarea
@@ -321,7 +299,7 @@ export const DriverPublicProfile = memo(({
         />
       </Card>
 
-      {/* Adresse */}
+      {/* Adresse - DÉPLACÉ plus haut */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="w-5 h-5 text-primary" />
@@ -354,6 +332,28 @@ export const DriverPublicProfile = memo(({
             </div>
           </div>
         </div>
+      </Card>
+
+      {/* Services */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <ServicesSelector
+          selectedServices={servicesOffered || []}
+          onChange={onServicesOfferedChange}
+        />
+      </Card>
+
+      {/* Catégories de véhicule */}
+      <VehicleCategorySelector
+        selectedCategories={vehicleCategories || []}
+        onChange={onVehicleCategoriesChange}
+      />
+
+      {/* Équipements */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <EquipmentSelector
+          selectedEquipment={vehicleEquipment || []}
+          onChange={onVehicleEquipmentChange}
+        />
       </Card>
 
       {/* Véhicule */}
