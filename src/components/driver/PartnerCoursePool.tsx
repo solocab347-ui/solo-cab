@@ -391,7 +391,7 @@ export function PartnerCoursePool() {
 
   const formatSharingNumber = (num: number | null) => {
     if (!num) return null;
-    return `#${String(num).padStart(5, '0')}`;
+    return `#${String(num).padStart(6, '0')}`;
   };
 
   if (loading) {
