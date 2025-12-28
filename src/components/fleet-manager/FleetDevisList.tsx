@@ -269,6 +269,17 @@ const FleetDevisList = ({ fleetManagerId }: FleetDevisListProps) => {
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
     doc.text(fleetInfo?.company_name || "N/A", 20, 71);
+    let fleetInfoY = 76;
+    if (fleetInfo?.siret) {
+      doc.text(`SIRET: ${fleetInfo.siret}`, 20, fleetInfoY);
+      fleetInfoY += 5;
+    } else if (fleetInfo?.siren) {
+      doc.text(`SIREN: ${fleetInfo.siren}`, 20, fleetInfoY);
+      fleetInfoY += 5;
+    }
+    if (fleetInfo?.tva_number) {
+      doc.text(`TVA: ${fleetInfo.tva_number}`, 20, fleetInfoY);
+    }
 
     // Driver info
     doc.setFontSize(11);

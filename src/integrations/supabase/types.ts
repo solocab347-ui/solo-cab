@@ -2444,6 +2444,7 @@ export type Database = {
           subscription_stripe_id: string | null
           total_rides: number | null
           tva_included: boolean
+          tva_number: string | null
           tva_rate: number | null
           updated_at: string
           user_id: string
@@ -2526,6 +2527,7 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_rides?: number | null
           tva_included?: boolean
+          tva_number?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id: string
@@ -2608,6 +2610,7 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_rides?: number | null
           tva_included?: boolean
+          tva_number?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id?: string
@@ -3794,6 +3797,7 @@ export type Database = {
           total_clients: number | null
           total_drivers: number | null
           tva_included: boolean | null
+          tva_number: string | null
           tva_rate: number | null
           updated_at: string
           user_id: string
@@ -3860,6 +3864,7 @@ export type Database = {
           total_clients?: number | null
           total_drivers?: number | null
           tva_included?: boolean | null
+          tva_number?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id: string
@@ -3926,6 +3931,7 @@ export type Database = {
           total_clients?: number | null
           total_drivers?: number | null
           tva_included?: boolean | null
+          tva_number?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id?: string

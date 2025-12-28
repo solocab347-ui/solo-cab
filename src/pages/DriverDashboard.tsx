@@ -83,6 +83,7 @@ const DriverDashboard = () => {
   const [companyAddress, setCompanyAddress] = useState("");
   const [siret, setSiret] = useState("");
   const [siren, setSiren] = useState("");
+  const [tvaNumber, setTvaNumber] = useState("");
   const [maxPassengers, setMaxPassengers] = useState("4");
   const [tvaIncluded, setTvaIncluded] = useState(false);
   const [displayDriverName, setDisplayDriverName] = useState(true);
@@ -140,6 +141,7 @@ const DriverDashboard = () => {
     setCompanyAddress(driver.company_address || "");
     setSiret(driver.siret || "");
     setSiren(driver.siren || "");
+    setTvaNumber((driver as any).tva_number || "");
     setMaxPassengers(driver.max_passengers?.toString() || "4");
     setTvaIncluded(driver.tva_included || false);
     setDisplayDriverName(driver.display_driver_name !== false);
@@ -252,6 +254,7 @@ const DriverDashboard = () => {
         company_address: companyAddress,
         siret: siret,
         siren: siren,
+        tva_number: tvaNumber,
         max_passengers: maxPassengers ? parseInt(maxPassengers) : 4,
         tva_included: tvaIncluded,
         display_driver_name: displayDriverName,
@@ -807,6 +810,18 @@ const DriverDashboard = () => {
                       maxLength={9}
                     />
                     <p className="text-xs text-white/70">Alternative au SIRET (9 premiers chiffres)</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tvaNumber" className="text-white">N° TVA Intracommunautaire</Label>
+                    <Input
+                      id="tvaNumber"
+                      value={tvaNumber}
+                      onChange={(e) => setTvaNumber(e.target.value)}
+                      placeholder="FR12345678901"
+                      maxLength={15}
+                    />
+                    <p className="text-xs text-white/70">Apparaîtra sur vos devis et factures</p>
                   </div>
                 </div>
 
