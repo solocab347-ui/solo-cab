@@ -122,12 +122,13 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
       console.log("Clients fetched:", data?.length || 0);
 
-      // Optimisation: Batch count queries
+      // Optimisation: Batch count queries - ONLY count completed courses
       const clientIds = (data || []).map(c => c.id);
       const { data: coursesCounts } = await supabase
         .from("courses")
         .select("client_id")
         .in("client_id", clientIds)
+        .eq("status", "completed") // Only count actually completed courses
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
 
       // Map counts
@@ -138,7 +139,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
 
       const clientsWithCourses = (data || []).map(client => ({
         ...client,
-        courses_count: countsMap.get(client.id) || 0,
+        completed_courses_count: countsMap.get(client.id) || 0,
       }));
 
       console.log("Clients with courses:", clientsWithCourses.length);
@@ -256,7 +257,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
     total: clients.length,
     exclusive: clients.filter((c) => c.is_exclusive).length,
     free: clients.filter((c) => !c.is_exclusive).length,
-    totalCourses: clients.reduce((sum, c) => sum + c.courses_count, 0),
+    completedCourses: clients.reduce((sum, c) => sum + (c.completed_courses_count || 0), 0),
   };
 
   return (
@@ -293,8 +294,8 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-white">{stats.totalCourses}</h3>
-              <p className="text-sm text-white/80">Courses ce mois</p>
+              <h3 className="text-2xl font-bold text-white">{stats.completedCourses}</h3>
+              <p className="text-sm text-white/80">Courses effectuées</p>
             </div>
           </div>
         </Card>
@@ -497,7 +498,7 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                     <p>📧 {client.profiles?.email || "Email non renseigné"}</p>
                     <p>📞 {client.profiles?.phone || "Téléphone non renseigné"}</p>
                     <p className="text-white font-medium mt-2">
-                      {client.courses_count} course{client.courses_count !== 1 ? "s" : ""} effectuée{client.courses_count !== 1 ? "s" : ""}
+                      {client.completed_courses_count || 0} course{(client.completed_courses_count || 0) !== 1 ? "s" : ""} effectuée{(client.completed_courses_count || 0) !== 1 ? "s" : ""}
                     </p>
                   </div>
 
