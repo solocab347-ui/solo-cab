@@ -1506,6 +1506,120 @@ export type Database = {
           },
         ]
       }
+      course_invitations: {
+        Row: {
+          client_id: string | null
+          completed_at: string | null
+          course_id: string
+          created_at: string
+          destination_address: string
+          distance_km: number | null
+          driver_id: string
+          duration_minutes: number | null
+          estimated_price: number
+          expires_at: string
+          id: string
+          pickup_address: string
+          price_details: Json | null
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          completed_at?: string | null
+          course_id: string
+          created_at?: string
+          destination_address: string
+          distance_km?: number | null
+          driver_id: string
+          duration_minutes?: number | null
+          estimated_price: number
+          expires_at?: string
+          id?: string
+          pickup_address: string
+          price_details?: Json | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          completed_at?: string | null
+          course_id?: string
+          created_at?: string
+          destination_address?: string
+          distance_km?: number | null
+          driver_id?: string
+          duration_minutes?: number | null
+          estimated_price?: number
+          expires_at?: string
+          id?: string
+          pickup_address?: string
+          price_details?: Json | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           client_id: string | null
@@ -5921,6 +6035,26 @@ export type Database = {
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_company_id: { Args: { _user_id: string }; Returns: string }
+      get_course_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          course_id: string
+          destination_address: string
+          distance_km: number
+          driver_company: string
+          driver_id: string
+          driver_name: string
+          driver_photo: string
+          duration_minutes: number
+          estimated_price: number
+          expires_at: string
+          id: string
+          pickup_address: string
+          price_details: Json
+          status: string
+          token: string
+        }[]
+      }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Calculator, MapPin, Navigation, Plus } from "lucide-react";
+import { Calculator, MapPin, Navigation, Plus, UserPlus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { calculateRoute } from "@/lib/geocoding";
 import { logger } from "@/lib/productionLogger";
+import { CourseInvitationLink } from "./CourseInvitationLink";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PriceCalculatorProps {
   driverProfile: any;
@@ -29,6 +31,15 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  
+  // État pour l'invitation nouveau client
+  const [creatingInvitation, setCreatingInvitation] = useState(false);
+  const [invitationData, setInvitationData] = useState<{
+    token: string;
+    estimatedPrice: number;
+    pickupAddress: string;
+    destinationAddress: string;
+  } | null>(null);
 
   const handleCalculate = async () => {
     // Validation stricte des entrées
@@ -303,6 +314,101 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
     }
   };
 
+  // Créer une course pour un nouveau client (invitation)
+  const handleCreateCourseInvitation = async () => {
+    if (!result) {
+      toast.error("Veuillez d'abord calculer le prix");
+      return;
+    }
+
+    setCreatingInvitation(true);
+    logger.info("Création d'invitation course pour nouveau client", {
+      driverId: driverProfile.driver.id
+    });
+
+    try {
+      // 1. Créer la course sans client_id (en attente d'inscription)
+      const { data: courseData, error: courseError } = await supabase
+        .from("courses")
+        .insert({
+          driver_id: driverProfile.driver.id,
+          client_id: null, // Sera rempli après inscription
+          pickup_address: pickupAddress,
+          pickup_latitude: pickupCoordinates?.latitude,
+          pickup_longitude: pickupCoordinates?.longitude,
+          destination_address: destinationAddress,
+          destination_latitude: destinationCoordinates?.latitude,
+          destination_longitude: destinationCoordinates?.longitude,
+          distance_km: parseFloat(result.distance),
+          duration_minutes: result.duration,
+          scheduled_date: new Date().toISOString(),
+          passengers_count: 1,
+          status: "pending",
+          notes: "En attente d'inscription client via lien d'invitation"
+        })
+        .select()
+        .single();
+
+      if (courseError) {
+        logger.error("Erreur création course invitation", { error: courseError });
+        throw courseError;
+      }
+
+      // 2. Créer l'invitation avec token unique
+      const { data: invitationData, error: invitationError } = await supabase
+        .from("course_invitations")
+        .insert({
+          driver_id: driverProfile.driver.id,
+          course_id: courseData.id,
+          pickup_address: pickupAddress,
+          destination_address: destinationAddress,
+          distance_km: parseFloat(result.distance),
+          duration_minutes: result.duration,
+          estimated_price: result.price.total_price,
+          price_details: result.price,
+          status: "pending"
+        })
+        .select()
+        .single();
+
+      if (invitationError) {
+        logger.error("Erreur création invitation", { error: invitationError });
+        throw invitationError;
+      }
+
+      // 3. Afficher le dialog de partage
+      setInvitationData({
+        token: invitationData.token,
+        estimatedPrice: result.price.total_price,
+        pickupAddress: pickupAddress,
+        destinationAddress: destinationAddress
+      });
+
+      toast.success("Invitation créée ! Partagez le lien avec votre client.");
+      logger.info("Invitation créée avec succès", { 
+        invitationId: invitationData.id,
+        courseId: courseData.id 
+      });
+
+    } catch (error: any) {
+      logger.exception(error, { context: "PriceCalculator.handleCreateCourseInvitation" });
+      toast.error("Erreur lors de la création de l'invitation");
+    } finally {
+      setCreatingInvitation(false);
+    }
+  };
+
+  const handleCloseInvitationDialog = () => {
+    setInvitationData(null);
+    // Réinitialiser le formulaire
+    setPickupAddress("");
+    setPickupCoordinates(null);
+    setDestinationAddress("");
+    setDestinationCoordinates(null);
+    setResult(null);
+    setSelectedClientId("");
+  };
+
   return (
     <div className="space-y-6">
       <Card className="p-8 bg-gradient-to-br from-card to-card/50 border-border/50">
@@ -312,7 +418,7 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           </div>
           <div>
             <h3 className="text-xl font-bold">Calculatrice Rapide</h3>
-            <p className="text-sm text-muted-foreground">Calculez un trajet sans créer de course</p>
+            <p className="text-sm text-muted-foreground">Calculez un trajet et créez une course</p>
           </div>
         </div>
 
@@ -432,65 +538,116 @@ export const PriceCalculator = ({ driverProfile }: PriceCalculatorProps) => {
           {/* Créer une course avec ce calcul */}
           <div className="space-y-4 pt-6 border-t border-premium-foreground/20">
             <h5 className="font-semibold text-premium-foreground">Créer une course avec ce calcul</h5>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Sélectionner un client</Label>
-              <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={clientSearchOpen}
-                    className="w-full justify-between bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20"
-                  >
-                    {selectedClientId
-                      ? clients.find((client) => client.id === selectedClientId)?.profiles?.full_name || "Client sélectionné"
-                      : "Rechercher un client..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0 bg-card border-border z-[100000]" align="start">
-                  <Command className="bg-card">
-                    <CommandInput placeholder="Taper le nom du client..." className="h-9" />
-                    <CommandEmpty>Aucun client trouvé.</CommandEmpty>
-                    <CommandGroup className="max-h-80 overflow-auto">
-                      {clients.filter(client => client.profiles).map((client) => (
-                        <CommandItem
-                          key={client.id}
-                          value={`${client.profiles?.full_name || ""} ${client.profiles?.email || ""}`}
-                          onSelect={() => {
-                            setSelectedClientId(client.id);
-                            setClientSearchOpen(false);
-                          }}
-                          className="cursor-pointer"
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${
-                              selectedClientId === client.id ? "opacity-100" : "opacity-0"
-                            }`}
-                          />
-                          <div className="flex flex-col">
-                            <span className="font-medium">{client.profiles?.full_name || "Client sans nom"}</span>
-                            <span className="text-xs text-muted-foreground">{client.profiles?.email || ""}</span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+            
+            <Tabs defaultValue="existing" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-premium-foreground/10">
+                <TabsTrigger value="existing" className="data-[state=active]:bg-premium-foreground data-[state=active]:text-premium">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Client existant
+                </TabsTrigger>
+                <TabsTrigger value="new" className="data-[state=active]:bg-premium-foreground data-[state=active]:text-premium">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Nouveau client
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="existing" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-premium-foreground">Sélectionner un client</Label>
+                  <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={clientSearchOpen}
+                        className="w-full justify-between bg-premium-foreground/10 border-premium-foreground/20 text-premium-foreground hover:bg-premium-foreground/20"
+                      >
+                        {selectedClientId
+                          ? clients.find((client) => client.id === selectedClientId)?.profiles?.full_name || "Client sélectionné"
+                          : "Rechercher un client..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0 bg-card border-border z-[100000]" align="start">
+                      <Command className="bg-card">
+                        <CommandInput placeholder="Taper le nom du client..." className="h-9" />
+                        <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                        <CommandGroup className="max-h-80 overflow-auto">
+                          {clients.filter(client => client.profiles).map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              value={`${client.profiles?.full_name || ""} ${client.profiles?.email || ""}`}
+                              onSelect={() => {
+                                setSelectedClientId(client.id);
+                                setClientSearchOpen(false);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{client.profiles?.full_name || "Client sans nom"}</span>
+                                <span className="text-xs text-muted-foreground">{client.profiles?.email || ""}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-            <Button
-              onClick={handleCreateCourse}
-              disabled={creatingCourse || !selectedClientId}
-              className="w-full bg-premium-foreground text-premium hover:bg-premium-foreground/90"
-              size="lg"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              {creatingCourse ? "Création en cours..." : "Créer une course"}
-            </Button>
+                <Button
+                  onClick={handleCreateCourse}
+                  disabled={creatingCourse || !selectedClientId}
+                  className="w-full bg-premium-foreground text-premium hover:bg-premium-foreground/90"
+                  size="lg"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  {creatingCourse ? "Création en cours..." : "Créer la course"}
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="new" className="space-y-4 mt-4">
+                <div className="bg-premium-foreground/5 rounded-lg p-4 text-sm text-premium-foreground/80">
+                  <p className="mb-2">
+                    <strong>Comment ça marche ?</strong>
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-xs">
+                    <li>Cliquez sur "Envoyer un lien d'inscription"</li>
+                    <li>Partagez le lien avec votre client (SMS, WhatsApp, Email...)</li>
+                    <li>Le client s'inscrit via le lien</li>
+                    <li>La course et le devis apparaissent dans son espace automatiquement</li>
+                  </ol>
+                </div>
+
+                <Button
+                  onClick={handleCreateCourseInvitation}
+                  disabled={creatingInvitation}
+                  className="w-full bg-gradient-to-r from-success to-trust text-white hover:opacity-90"
+                  size="lg"
+                >
+                  <Send className="w-5 h-5 mr-2" />
+                  {creatingInvitation ? "Création en cours..." : "Envoyer un lien d'inscription"}
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
         </Card>
+      )}
+
+      {/* Dialog de partage du lien */}
+      {invitationData && (
+        <CourseInvitationLink
+          token={invitationData.token}
+          estimatedPrice={invitationData.estimatedPrice}
+          pickupAddress={invitationData.pickupAddress}
+          destinationAddress={invitationData.destinationAddress}
+          onClose={handleCloseInvitationDialog}
+        />
       )}
     </div>
   );
