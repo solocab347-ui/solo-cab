@@ -44,8 +44,8 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
       setIsFleetDriver(isFleet);
 
       if (data.sharing_number) {
-        // Formater le numéro
-        const formatted = `SOL-${String(data.sharing_number).padStart(4, '0')}`;
+        // Formater le numéro (6 chiffres pour sécurité)
+        const formatted = `SOL-${String(data.sharing_number).padStart(6, '0')}`;
         setSharingNumber(formatted);
       }
       setSharingAvailable(data.sharing_available || false);

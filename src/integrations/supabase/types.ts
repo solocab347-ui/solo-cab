@@ -5551,6 +5551,7 @@ export type Database = {
           company_name: string | null
           full_name: string | null
           id: string | null
+          partnerships_suspended: boolean | null
           phone: string | null
           profile_photo_url: string | null
           rating: number | null
@@ -5558,8 +5559,6 @@ export type Database = {
           show_phone_for_sharing: boolean | null
           total_rides: number | null
           user_id: string | null
-          vehicle_brand: string | null
-          vehicle_model: string | null
           working_sectors: string[] | null
         }
         Relationships: [

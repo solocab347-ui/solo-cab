@@ -110,9 +110,9 @@ export function DriverCourseSharing() {
     setAvailableCoursesCount(poolCount || 0);
   };
 
-  // Format sharing number
+  // Format sharing number (6 chiffres pour sécurité)
   const formattedSharingNumber = driverInfo?.sharing_number 
-    ? `SOL-${String(driverInfo.sharing_number).padStart(4, '0')}` 
+    ? `SOL-${String(driverInfo.sharing_number).padStart(6, '0')}` 
     : null;
 
   const copyToClipboard = () => {
