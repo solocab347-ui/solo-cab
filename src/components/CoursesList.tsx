@@ -24,6 +24,7 @@ import { ShareCourseWithPartnerDialog } from "@/components/driver/ShareCourseWit
 import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
+import { notificationService } from "@/lib/notificationService";
 
 interface CoursesListProps {
   driverId: string;
@@ -179,6 +180,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         c.id === courseId ? { ...c, status: "accepted" as const } : c
       ));
 
+      // Récupérer les infos du client pour la notification
+      const course = courses.find(c => c.id === courseId);
+
       // Chauffeur accepte une course créée par le client
       const { error } = await supabase
         .from("courses")
@@ -186,6 +190,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .eq("id", courseId);
 
       if (error) throw error;
+
+      // Notifier le client que la course est acceptée
+      if (course?.clients?.user_id && driverInfo) {
+        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
+        await notificationService.notifyCourseAccepted(course.clients.user_id, driverName);
+      }
 
       toast.success("Course acceptée et confirmée !");
       
@@ -207,12 +217,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         c.id === courseId ? { ...c, status: "in_progress" as const } : c
       ));
 
+      // Récupérer les infos du client pour la notification
+      const course = courses.find(c => c.id === courseId);
+
       const { error } = await supabase
         .from("courses")
         .update({ status: "in_progress" })
         .eq("id", courseId);
 
       if (error) throw error;
+
+      // Notifier le client que la course a démarré
+      if (course?.clients?.user_id && driverInfo) {
+        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
+        await notificationService.notifyCourseStarted(course.clients.user_id, driverName);
+      }
 
       toast.success("Course commencée !");
     } catch (error: any) {
@@ -253,7 +272,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       // First, get the course to find the most recent devis
       const { data: courseData } = await supabase
         .from("courses")
-        .select("*, devis(*)")
+        .select("*, devis(*), clients(user_id)")
         .eq("id", selectedCourseId)
         .single();
 
@@ -280,6 +299,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       });
 
       if (factureError) throw factureError;
+
+      // Notifier le client que la course est terminée
+      if (courseData?.clients?.user_id) {
+        await notificationService.notifyCourseCompleted(courseData.clients.user_id);
+      }
 
       toast.success("Course terminée ! Facture générée automatiquement.");
       setShowPaymentDialog(false);
@@ -311,6 +335,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
 
     try {
+      // Récupérer les infos du client pour la notification
+      const course = courses.find(c => c.id === courseToReject);
+
       // Optimistic update - keep course in place
       setCourses(prev => prev.map(c => 
         c.id === courseToReject 
@@ -331,6 +358,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .eq("id", courseToReject);
 
       if (error) throw error;
+
+      // Notifier le client que la course est refusée
+      if (course?.clients?.user_id && driverInfo) {
+        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
+        await notificationService.notifyCourseRejected(course.clients.user_id, driverName);
+      }
 
       toast.success("Course annulée");
       setRejectDialogOpen(false);
