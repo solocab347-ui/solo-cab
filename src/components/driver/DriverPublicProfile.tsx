@@ -14,6 +14,7 @@ import { EquipmentSelector } from "./EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
 import { VehiclePhotosManager } from "./VehiclePhotosManager";
 import { VehicleCategorySelector } from "./VehicleCategorySelector";
+import { DriverVehiclesManager } from "./DriverVehiclesManager";
 
 interface DriverPublicProfileProps {
   driverProfile: any;
@@ -334,11 +335,17 @@ export const DriverPublicProfile = memo(({
         </div>
       </Card>
 
-      {/* Véhicule - DÉPLACÉ après l'adresse */}
+      {/* Gestionnaire Multi-Véhicules - NOUVEAU SYSTÈME */}
+      {driverId && (
+        <DriverVehiclesManager driverId={driverId} />
+      )}
+
+      {/* Ancien système véhicule unique (conservé pour rétrocompatibilité) */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <div className="flex items-center gap-2 mb-4">
           <Car className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Informations du véhicule</h3>
+          <h3 className="text-lg font-semibold">Véhicule principal (ancien système)</h3>
+          <span className="text-xs text-muted-foreground">(sera migré vers multi-véhicules)</span>
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
@@ -386,11 +393,11 @@ export const DriverPublicProfile = memo(({
         </div>
       </Card>
 
-      {/* Photos véhicule - DÉPLACÉ après les infos véhicule */}
+      {/* Photos véhicule - ancien système */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Photos du véhicule</h3>
+          <h3 className="text-lg font-semibold">Photos du véhicule (ancien système)</h3>
         </div>
         {driverId && (
           <VehiclePhotosManager
