@@ -334,29 +334,7 @@ export const DriverPublicProfile = memo(({
         </div>
       </Card>
 
-      {/* Services */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <ServicesSelector
-          selectedServices={servicesOffered || []}
-          onChange={onServicesOfferedChange}
-        />
-      </Card>
-
-      {/* Catégories de véhicule */}
-      <VehicleCategorySelector
-        selectedCategories={vehicleCategories || []}
-        onChange={onVehicleCategoriesChange}
-      />
-
-      {/* Équipements */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <EquipmentSelector
-          selectedEquipment={vehicleEquipment || []}
-          onChange={onVehicleEquipmentChange}
-        />
-      </Card>
-
-      {/* Véhicule */}
+      {/* Véhicule - DÉPLACÉ après l'adresse */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <div className="flex items-center gap-2 mb-4">
           <Car className="w-5 h-5 text-primary" />
@@ -408,7 +386,7 @@ export const DriverPublicProfile = memo(({
         </div>
       </Card>
 
-      {/* Photos véhicule */}
+      {/* Photos véhicule - DÉPLACÉ après les infos véhicule */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-5 h-5 text-primary" />
@@ -422,6 +400,28 @@ export const DriverPublicProfile = memo(({
             onPhotosUpdate={onVehiclePhotosUpdate}
           />
         )}
+      </Card>
+
+      {/* Services */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <ServicesSelector
+          selectedServices={servicesOffered || []}
+          onChange={onServicesOfferedChange}
+        />
+      </Card>
+
+      {/* Catégories de véhicule */}
+      <VehicleCategorySelector
+        selectedCategories={vehicleCategories || []}
+        onChange={onVehicleCategoriesChange}
+      />
+
+      {/* Équipements */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <EquipmentSelector
+          selectedEquipment={vehicleEquipment || []}
+          onChange={onVehicleEquipmentChange}
+        />
       </Card>
     </div>
   );
