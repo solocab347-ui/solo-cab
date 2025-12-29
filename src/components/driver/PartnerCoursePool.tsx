@@ -391,7 +391,7 @@ export function PartnerCoursePool() {
 
   const formatSharingNumber = (num: number | null) => {
     if (!num) return null;
-    return `#${String(num).padStart(6, '0')}`;
+    return `SOLO-${String(num).padStart(6, '0')}`;
   };
 
   if (loading) {

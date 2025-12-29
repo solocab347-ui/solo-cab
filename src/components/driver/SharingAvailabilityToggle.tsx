@@ -45,7 +45,7 @@ export function SharingAvailabilityToggle({ onAvailabilityChange }: SharingAvail
 
       if (data.sharing_number) {
         // Formater le numéro (6 chiffres pour sécurité)
-        const formatted = `SOL-${String(data.sharing_number).padStart(6, '0')}`;
+        const formatted = `SOLO-${String(data.sharing_number).padStart(6, '0')}`;
         setSharingNumber(formatted);
       }
       setSharingAvailable(data.sharing_available || false);

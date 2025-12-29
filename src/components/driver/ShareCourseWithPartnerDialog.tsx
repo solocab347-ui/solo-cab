@@ -141,7 +141,7 @@ export function ShareCourseWithPartnerDialog({
 
   const formatSharingNumber = (num: number | null) => {
     if (!num) return 'N/A';
-    return `#${String(num).padStart(6, '0')}`;
+    return `SOLO-${String(num).padStart(6, '0')}`;
   };
 
   const handleSendCourse = async () => {

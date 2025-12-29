@@ -5549,16 +5549,17 @@ export type Database = {
       drivers_available_for_sharing: {
         Row: {
           company_name: string | null
+          formatted_sharing_number: string | null
           full_name: string | null
           id: string | null
-          partnerships_suspended: boolean | null
           phone: string | null
           profile_photo_url: string | null
           rating: number | null
           sharing_number: number | null
-          show_phone_for_sharing: boolean | null
           total_rides: number | null
           user_id: string | null
+          vehicle_brand: string | null
+          vehicle_model: string | null
           working_sectors: string[] | null
         }
         Relationships: [
@@ -5962,7 +5963,7 @@ export type Database = {
         }
         Returns: string
       }
-      format_sharing_number: { Args: { num: number }; Returns: string }
+      format_sharing_number: { Args: { _number: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
