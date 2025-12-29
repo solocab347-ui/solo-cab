@@ -48,16 +48,38 @@ export const usePushNotificationsV2 = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Vérifier si les notifications sont supportées
+  // Vérifier si les notifications sont supportées et la permission actuelle
   useEffect(() => {
-    const supported = 'Notification' in window && 
-                      'serviceWorker' in navigator && 
-                      'PushManager' in window;
-    setIsSupported(supported);
+    const checkSupport = async () => {
+      const supported = 'Notification' in window && 
+                        'serviceWorker' in navigator && 
+                        'PushManager' in window;
+      setIsSupported(supported);
+      
+      if (supported) {
+        // Obtenir la permission actuelle
+        const currentPermission = Notification.permission;
+        setPermission(currentPermission);
+        logger.info('État permission notifications:', { permission: currentPermission });
+        
+        // Si permission est 'default', on peut la demander
+        // Si permission est 'granted', on vérifie la subscription
+        // Si permission est 'denied', l'UI affichera le message d'erreur
+      }
+    };
     
-    if (supported) {
-      setPermission(Notification.permission);
-    }
+    checkSupport();
+    
+    // Re-vérifier la permission quand la fenêtre revient au premier plan
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && 'Notification' in window) {
+        const currentPermission = Notification.permission;
+        setPermission(currentPermission);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   // Vérifier si l'utilisateur est déjà inscrit
