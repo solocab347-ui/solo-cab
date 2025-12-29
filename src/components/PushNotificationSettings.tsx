@@ -58,7 +58,7 @@ export const PushNotificationSettings = ({ compact = false }: PushNotificationSe
         <Switch
           checked={isSubscribed}
           onCheckedChange={handleToggle}
-          disabled={isLoading || permission === 'denied'}
+          disabled={isLoading}
         />
       </div>
     );
@@ -99,18 +99,26 @@ export const PushNotificationSettings = ({ compact = false }: PushNotificationSe
           <li>Vous recevez un message</li>
         </ul>
 
-        {permission === 'denied' && (
-          <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-            <p className="text-sm text-destructive">
-              Les notifications sont bloquées par votre navigateur. 
+        {permission === 'denied' && !isSubscribed && (
+          <div className="p-3 bg-warning/10 rounded-lg border border-warning/20">
+            <p className="text-sm text-warning-foreground">
+              ⚠️ Les notifications sont bloquées dans votre navigateur. 
               Veuillez les autoriser dans les paramètres de votre navigateur.
+            </p>
+          </div>
+        )}
+
+        {permission === 'default' && (
+          <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+            <p className="text-sm text-primary">
+              Cliquez sur le bouton ci-dessous pour activer les notifications push.
             </p>
           </div>
         )}
 
         <Button
           onClick={handleToggle}
-          disabled={isLoading || permission === 'denied'}
+          disabled={isLoading}
           variant={isSubscribed ? "outline" : "default"}
           className="w-full"
         >
