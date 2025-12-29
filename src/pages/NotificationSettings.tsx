@@ -150,7 +150,7 @@ export default function NotificationSettings() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {preferences.push_enabled ? (
+                {isSubscribed ? (
                   <Bell className="h-5 w-5 text-primary" />
                 ) : (
                   <BellOff className="h-5 w-5" />
@@ -159,26 +159,30 @@ export default function NotificationSettings() {
               </CardTitle>
               <CardDescription>
                 Recevez des notifications en temps réel même quand l'application est fermée
-                {permission === 'denied' && (
-                  <span className="block mt-2 text-destructive">
-                    ⚠️ Les notifications sont bloquées dans votre navigateur. 
-                    Veuillez les autoriser dans les paramètres de votre navigateur.
-                  </span>
-                )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              {/* Afficher l'état actuel pour debug */}
+              <p className="text-xs text-muted-foreground">
+                État navigateur: {permission} | Abonné: {isSubscribed ? 'Oui' : 'Non'}
+              </p>
+              
               <div className="flex items-center justify-between">
                 <Label htmlFor="push-enabled">
                   Activer les notifications push
                 </Label>
                 <Switch
                   id="push-enabled"
-                  checked={preferences.push_enabled && permission === 'granted'}
+                  checked={isSubscribed}
                   onCheckedChange={handleTogglePushNotifications}
-                  disabled={permission === 'denied'}
                 />
               </div>
+              
+              {permission === 'default' && !isSubscribed && (
+                <p className="text-sm text-primary">
+                  Cliquez pour autoriser les notifications push.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
