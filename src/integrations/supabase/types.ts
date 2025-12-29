@@ -2377,6 +2377,115 @@ export type Database = {
           },
         ]
       }
+      driver_vehicles: {
+        Row: {
+          brand: string
+          category: string
+          color: string | null
+          created_at: string
+          custom_base_fare: number | null
+          custom_hourly_rate: number | null
+          custom_minimum_price: number | null
+          custom_per_km_rate: number | null
+          driver_id: string
+          equipment: string[] | null
+          id: string
+          is_active: boolean | null
+          is_favorite: boolean | null
+          max_passengers: number | null
+          model: string
+          photos: string[] | null
+          plate: string | null
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          category?: string
+          color?: string | null
+          created_at?: string
+          custom_base_fare?: number | null
+          custom_hourly_rate?: number | null
+          custom_minimum_price?: number | null
+          custom_per_km_rate?: number | null
+          driver_id: string
+          equipment?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_favorite?: boolean | null
+          max_passengers?: number | null
+          model: string
+          photos?: string[] | null
+          plate?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          category?: string
+          color?: string | null
+          created_at?: string
+          custom_base_fare?: number | null
+          custom_hourly_rate?: number | null
+          custom_minimum_price?: number | null
+          custom_per_km_rate?: number | null
+          driver_id?: string
+          equipment?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_favorite?: boolean | null
+          max_passengers?: number | null
+          model?: string
+          photos?: string[] | null
+          plate?: string | null
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           base_fare: number | null
@@ -6321,6 +6430,10 @@ export type Database = {
           vehicle_model: string
           working_sectors: string[]
         }[]
+      }
+      set_favorite_vehicle: {
+        Args: { _driver_id: string; _vehicle_id: string }
+        Returns: boolean
       }
       validate_invitation_token: {
         Args: { token_value: string }
