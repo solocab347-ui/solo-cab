@@ -55,6 +55,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
 const CreateFleetCourse = lazy(() => import("./pages/CreateFleetCourse"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
 const RGPDData = lazy(() => import("./pages/RGPDData"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
@@ -244,9 +245,19 @@ const App = () => (
               <Route
                 path="/notifications"
                 element={
-                  <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin", "fleet_manager", "company"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <Notifications />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notification-settings"
+                element={
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin", "fleet_manager", "company"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <NotificationSettings />
                     </Suspense>
                   </ProtectedRoute>
                 }
