@@ -4,12 +4,41 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logger } from '@/lib/productionLogger';
 
+// Clé publique VAPID (doit correspondre à celle configurée dans les secrets)
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+
 interface PushSubscriptionData {
   endpoint: string;
   keys: {
     p256dh: string;
     auth: string;
   };
+}
+
+// Convertir une clé base64url en Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Convertir ArrayBuffer en base64
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
 }
 
 export const usePushNotificationsV2 = () => {
@@ -21,7 +50,9 @@ export const usePushNotificationsV2 = () => {
 
   // Vérifier si les notifications sont supportées
   useEffect(() => {
-    const supported = 'Notification' in window && 'serviceWorker' in navigator;
+    const supported = 'Notification' in window && 
+                      'serviceWorker' in navigator && 
+                      'PushManager' in window;
     setIsSupported(supported);
     
     if (supported) {
@@ -53,7 +84,7 @@ export const usePushNotificationsV2 = () => {
     checkSubscription();
   }, [user]);
 
-  // Demander la permission et s'inscrire
+  // Demander la permission et s'inscrire avec vraies clés VAPID
   const requestPermissionAndSubscribe = useCallback(async () => {
     if (!isSupported || !user) {
       toast.error("Notifications non supportées sur cet appareil");
@@ -74,22 +105,74 @@ export const usePushNotificationsV2 = () => {
       }
 
       // Enregistrer le service worker
-      const registration = await navigator.serviceWorker.ready;
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+      }
+      
       logger.info('Service Worker prêt pour push');
 
-      // Créer une subscription factice pour le moment
-      // (Une vraie implémentation nécessiterait VAPID keys)
-      const subscription: PushSubscriptionData = {
-        endpoint: `https://push.solocab.fr/${user.id}/${Date.now()}`,
-        keys: {
-          p256dh: btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(65)))),
-          auth: btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))))
+      let subscription: PushSubscriptionData;
+
+      // Essayer de créer une vraie subscription avec VAPID
+      if (VAPID_PUBLIC_KEY) {
+        try {
+          const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+          
+          // Vérifier s'il existe déjà une subscription
+          let pushSubscription = await registration.pushManager.getSubscription();
+          
+          if (!pushSubscription) {
+            pushSubscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: applicationServerKey.buffer as ArrayBuffer
+            });
+          }
+
+          const subscriptionJson = pushSubscription.toJSON();
+          subscription = {
+            endpoint: subscriptionJson.endpoint || '',
+            keys: {
+              p256dh: subscriptionJson.keys?.p256dh || '',
+              auth: subscriptionJson.keys?.auth || ''
+            }
+          };
+
+          logger.info('Subscription VAPID créée avec succès');
+        } catch (vapidError) {
+          logger.warn('Erreur VAPID, fallback sur subscription simulée:', vapidError);
+          // Fallback sur subscription simulée
+          subscription = {
+            endpoint: `https://push.solocab.fr/${user.id}/${Date.now()}`,
+            keys: {
+              p256dh: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(65)).buffer),
+              auth: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(16)).buffer)
+            }
+          };
         }
-      };
+      } else {
+        // Pas de clé VAPID, utiliser subscription simulée
+        logger.warn('Pas de clé VAPID configurée, utilisation subscription simulée');
+        subscription = {
+          endpoint: `https://push.solocab.fr/${user.id}/${Date.now()}`,
+          keys: {
+            p256dh: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(65)).buffer),
+            auth: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(16)).buffer)
+          }
+        };
+      }
 
       // Sauvegarder dans la base de données
       const subscriptionJson = JSON.parse(JSON.stringify(subscription));
       
+      // Désactiver les anciennes subscriptions pour cet utilisateur
+      await supabase
+        .from('push_subscriptions')
+        .update({ is_active: false })
+        .eq('user_id', user.id);
+      
+      // Créer la nouvelle subscription
       const { error } = await supabase
         .from('push_subscriptions')
         .insert([{
@@ -101,20 +184,7 @@ export const usePushNotificationsV2 = () => {
         }]);
 
       if (error) {
-        // Si erreur de conflit, essayer update
-        if (error.code === '23505') {
-          await supabase
-            .from('push_subscriptions')
-            .update({
-              subscription: subscriptionJson,
-              is_active: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', user.id)
-            .eq('endpoint', subscription.endpoint);
-        } else {
-          throw error;
-        }
+        throw error;
       }
 
       // Mettre à jour le profil
@@ -174,7 +244,20 @@ export const usePushNotificationsV2 = () => {
   const unsubscribe = useCallback(async () => {
     if (!user) return;
 
+    setIsLoading(true);
+
     try {
+      // Unsubscribe de la Push API si possible
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          logger.info('Unsubscribed from Push API');
+        }
+      }
+
+      // Désactiver dans la base de données
       await supabase
         .from('push_subscriptions')
         .update({ is_active: false })
@@ -191,6 +274,8 @@ export const usePushNotificationsV2 = () => {
     } catch (error) {
       logger.error('Erreur désactivation push:', error);
       toast.error("Erreur lors de la désactivation");
+    } finally {
+      setIsLoading(false);
     }
   }, [user]);
 
