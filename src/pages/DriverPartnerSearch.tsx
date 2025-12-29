@@ -286,17 +286,23 @@ export default function DriverPartnerSearch() {
               Rechercher un chauffeur
             </CardTitle>
             <CardDescription>
-              Entrez le numéro de partage d'un chauffeur (ex: SOL-0001) ou utilisez les filtres
+              Entrez le numéro de partage d'un chauffeur (ex: SOLO-123456) ou utilisez les filtres
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Input
-                placeholder="SOL-0001"
-                value={searchNumber}
-                onChange={(e) => setSearchNumber(e.target.value.toUpperCase())}
-                className="flex-1"
-              />
+              <div className="flex-1 flex items-center">
+                <span className="bg-muted px-3 py-2 rounded-l-md border border-r-0 text-sm font-medium text-muted-foreground">
+                  SOLO-
+                </span>
+                <Input
+                  placeholder="123456"
+                  value={searchNumber}
+                  onChange={(e) => setSearchNumber(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="rounded-l-none flex-1"
+                  maxLength={6}
+                />
+              </div>
               <Button onClick={searchByNumber} disabled={searching}>
                 {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
