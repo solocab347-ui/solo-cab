@@ -308,6 +308,17 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              {/* Alias route for driver-partner-search */}
+              <Route
+                path="/driver-partner-search"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <DriverPartnerSearch />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
