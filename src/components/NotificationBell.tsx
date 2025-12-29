@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, CheckCircle2, AlertTriangle, XCircle, Info, Calendar, MessageSquare, DollarSign } from "lucide-react";
+import { Bell, CheckCircle2, AlertTriangle, XCircle, Info, Calendar, MessageSquare, DollarSign, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -168,8 +168,8 @@ export const NotificationBell = () => {
           )}
         </ScrollArea>
 
-        {hasMore && (
-          <div className="p-3 border-t bg-muted/20">
+        <div className="p-3 border-t bg-muted/20 space-y-2">
+          {hasMore && (
             <Button
               variant="ghost"
               className="w-full hover:bg-primary/10 font-medium"
@@ -180,8 +180,20 @@ export const NotificationBell = () => {
             >
               Voir toutes les notifications ({notifications.length})
             </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              navigate("/notification-settings");
+              setOpen(false);
+            }}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Paramètres des notifications
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
