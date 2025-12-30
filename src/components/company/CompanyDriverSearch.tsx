@@ -144,7 +144,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           bio,
           service_description,
           services_offered,
-          primary_sectors,
           working_sectors,
           vehicle_photos,
           gallery_photos,
@@ -169,21 +168,18 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
       }
       if (selectedDepartment) {
         filteredData = filteredData.filter((d: any) => 
-          d.working_sectors?.includes(selectedDepartment) || 
-          d.primary_sectors?.includes(selectedDepartment)
+          d.working_sectors?.includes(selectedDepartment)
         );
       }
       if (selectedRegion) {
         filteredData = filteredData.filter((d: any) => 
-          d.working_sectors?.includes(selectedRegion) || 
-          d.primary_sectors?.includes(selectedRegion)
+          d.working_sectors?.includes(selectedRegion)
         );
       }
       if (citySearch.trim()) {
         const search = citySearch.trim().toLowerCase();
         filteredData = filteredData.filter((d: any) => 
-          d.working_sectors?.some((s: string) => s.toLowerCase().includes(search)) || 
-          d.primary_sectors?.some((s: string) => s.toLowerCase().includes(search))
+          d.working_sectors?.some((s: string) => s.toLowerCase().includes(search))
         );
       }
       if (selectedVehicleType) {
@@ -218,7 +214,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           d.company_name?.toLowerCase().includes(searchLower) ||
           d.vehicle_brand?.toLowerCase().includes(searchLower) ||
           d.vehicle_model?.toLowerCase().includes(searchLower) ||
-          d.primary_sectors?.some((s: string) => s.toLowerCase().includes(searchLower)) ||
           d.working_sectors?.some((s: string) => s.toLowerCase().includes(searchLower))
         );
       }
@@ -557,20 +552,12 @@ ${company?.company_name || ""}`;
                         {driver.max_passengers && ` • ${driver.max_passengers} places`}
                       </span>
                     </div>
-                    {driver.primary_sectors?.length > 0 && (
+                    {driver.working_sectors?.length > 0 && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="w-4 h-4" />
                         <span className="truncate">
-                          {driver.primary_sectors.slice(0, 2).join(", ")}
-                          {driver.primary_sectors.length > 2 && " ..."}
-                        </span>
-                      </div>
-                    )}
-                    {driver.languages?.length > 0 && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Languages className="w-4 h-4" />
-                        <span className="truncate">
-                          {driver.languages.join(", ")}
+                          {driver.working_sectors.slice(0, 2).join(", ")}
+                          {driver.working_sectors.length > 2 && " ..."}
                         </span>
                       </div>
                     )}
@@ -757,33 +744,16 @@ ${company?.company_name || ""}`;
               )}
 
               {/* Sectors */}
-              {selectedDriver.primary_sectors?.length > 0 && (
+              {selectedDriver.working_sectors?.length > 0 && (
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     Secteurs d'intervention
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedDriver.primary_sectors.map((sector: string) => (
+                    {selectedDriver.working_sectors.map((sector: string) => (
                       <Badge key={sector} variant="secondary">
                         {sector}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Languages */}
-              {selectedDriver.languages?.length > 0 && (
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Languages className="w-4 h-4" />
-                    Langues parlées
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedDriver.languages.map((lang: string) => (
-                      <Badge key={lang} variant="outline">
-                        {lang}
                       </Badge>
                     ))}
                   </div>
