@@ -71,6 +71,8 @@ const DriverDashboard = () => {
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false); // Désactivé par défaut
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [workingSectors, setWorkingSectors] = useState<string[]>([]);
   const [serviceDescription, setServiceDescription] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
@@ -125,6 +127,8 @@ const DriverDashboard = () => {
     setPublicProfileEnabled(driver.public_profile_enabled || false);
     setShowPhone(driver.show_phone || false);
     setShowEmail(driver.show_email || false);
+    setContactPhone((driver as any).contact_phone || driverProfile.phone || "");
+    setContactEmail((driver as any).contact_email || driverProfile.email || "");
     setWorkingSectors(driver.working_sectors || []);
     setServiceDescription(driver.service_description || "");
     setHomeAddress(driver.home_address || "");
@@ -249,6 +253,8 @@ const DriverDashboard = () => {
         public_profile_enabled: publicProfileEnabled,
         show_phone: showPhone,
         show_email: showEmail,
+        contact_phone: contactPhone || null,
+        contact_email: contactEmail || null,
         working_sectors: workingSectors,
         service_description: serviceDescription,
         home_address: homeAddress,
@@ -893,6 +899,8 @@ const DriverDashboard = () => {
                   publicProfileEnabled={publicProfileEnabled}
                   showPhone={showPhone}
                   showEmail={showEmail}
+                  contactPhone={contactPhone}
+                  contactEmail={contactEmail}
                   workingSectors={workingSectors}
                   serviceDescription={serviceDescription}
                   homeAddress={homeAddress}
@@ -908,6 +916,8 @@ const DriverDashboard = () => {
                   onCardPhotoUpdate={setCardPhotoUrl}
                   onShowPhoneChange={setShowPhone}
                   onShowEmailChange={setShowEmail}
+                  onContactPhoneChange={setContactPhone}
+                  onContactEmailChange={setContactEmail}
                   onWorkingSectorsChange={setWorkingSectors}
                   onServiceDescriptionChange={setServiceDescription}
                   onHomeAddressChange={(address, coords) => {

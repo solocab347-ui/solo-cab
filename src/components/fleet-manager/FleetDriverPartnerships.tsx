@@ -118,6 +118,8 @@ interface IndependentDriver {
   hourly_rate?: number | null;
   show_phone?: boolean | null;
   show_email?: boolean | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
   profile?: {
     full_name: string;
     profile_photo_url: string | null;
@@ -229,7 +231,7 @@ export const FleetDriverPartnerships = ({
         const driverIds = partnershipsData.map(p => p.driver_id);
         const { data: driversData } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email")
+          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, contact_phone, contact_email")
           .in("id", driverIds);
 
         if (driversData) {
@@ -257,7 +259,7 @@ export const FleetDriverPartnerships = ({
       // Fetch independent drivers (not in any fleet) with complete data
       const { data: independentData, error: indErr } = await supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email")
+        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, contact_phone, contact_email")
         .eq("status", "validated")
         .eq("public_profile_enabled", true)
         .is("fleet_manager_id", null);
@@ -1262,24 +1264,24 @@ export const FleetDriverPartnerships = ({
                         <CardTitle className="text-sm">Coordonnées</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {selectedDriver.show_phone && selectedDriver.profile?.phone && (
+                        {selectedDriver.show_phone && (selectedDriver.contact_phone || selectedDriver.profile?.phone) && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Phone className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Téléphone</p>
-                              <a href={`tel:${selectedDriver.profile.phone}`} className="font-medium hover:text-primary">
-                                {selectedDriver.profile.phone}
+                              <a href={`tel:${selectedDriver.contact_phone || selectedDriver.profile?.phone}`} className="font-medium hover:text-primary">
+                                {selectedDriver.contact_phone || selectedDriver.profile?.phone}
                               </a>
                             </div>
                           </div>
                         )}
-                        {selectedDriver.show_email && selectedDriver.profile?.email && (
+                        {selectedDriver.show_email && (selectedDriver.contact_email || selectedDriver.profile?.email) && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Mail className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Email</p>
-                              <a href={`mailto:${selectedDriver.profile.email}`} className="font-medium hover:text-primary">
-                                {selectedDriver.profile.email}
+                              <a href={`mailto:${selectedDriver.contact_email || selectedDriver.profile?.email}`} className="font-medium hover:text-primary">
+                                {selectedDriver.contact_email || selectedDriver.profile?.email}
                               </a>
                             </div>
                           </div>

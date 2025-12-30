@@ -2550,6 +2550,8 @@ export type Database = {
           card_photo_url: string | null
           company_address: string | null
           company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
           course_counter: number | null
           created_at: string
           display_company_name: boolean | null
@@ -2638,6 +2640,8 @@ export type Database = {
           card_photo_url?: string | null
           company_address?: string | null
           company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           course_counter?: number | null
           created_at?: string
           display_company_name?: boolean | null
@@ -2726,6 +2730,8 @@ export type Database = {
           card_photo_url?: string | null
           company_address?: string | null
           company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           course_counter?: number | null
           created_at?: string
           display_company_name?: boolean | null
