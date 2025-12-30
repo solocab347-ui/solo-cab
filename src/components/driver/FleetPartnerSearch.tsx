@@ -72,8 +72,8 @@ export function FleetPartnerSearch({ driverId }: Props) {
     try {
       let query = supabase
         .from('fleet_managers')
-        .select('id, user_id, company_name, description, address, public_profile_enabled')
-        .eq('public_profile_enabled', true)
+        .select('id, user_id, company_name, description, address, visible_to_drivers')
+        .eq('visible_to_drivers', true)
         .eq('status', 'active');
 
       if (searchTerm) {
@@ -107,7 +107,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
           service_area: null,
           partner_commission_percentage: null,
           partner_payment_schedule: null,
-          public_profile_enabled: fleet.public_profile_enabled,
+          public_profile_enabled: fleet.visible_to_drivers ?? false,
           full_name: profile?.full_name || fleet.company_name,
           profile_photo_url: profile?.profile_photo_url || null,
           driver_count: count || 0,
