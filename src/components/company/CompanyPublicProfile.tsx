@@ -41,6 +41,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
   const [preferredVehicleTypes, setPreferredVehicleTypes] = useState<string[]>([]);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
   const [acceptingProposals, setAcceptingProposals] = useState(false);
+  const [sirenNumber, setSirenNumber] = useState("");
+  const [tvaNumber, setTvaNumber] = useState("");
 
   // Fetch company data
   const { data: company, isLoading } = useQuery({
@@ -65,6 +67,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
       setPreferredVehicleTypes(company.preferred_vehicle_types || []);
       setVisibleToDrivers(company.visible_to_drivers || false);
       setAcceptingProposals(company.accepting_proposals || false);
+      setSirenNumber(company.siren || "");
+      setTvaNumber((company as any).tva_number || "");
     }
   }, [company]);
 
@@ -78,7 +82,9 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           preferred_vehicle_types: servicesNeeded,
           visible_to_drivers: visibleToDrivers,
           accepting_proposals: acceptingProposals,
-        })
+          siren: sirenNumber,
+          tva_number: tvaNumber,
+        } as any)
         .eq("id", companyId);
 
       if (error) throw error;
@@ -257,6 +263,35 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
               <span className="text-sm">{company.employee_count} collaborateurs</span>
             </div>
           )}
+
+          {/* SIREN & TVA */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="siren">Numéro SIREN</Label>
+              <Input
+                id="siren"
+                placeholder="123 456 789"
+                value={sirenNumber}
+                onChange={(e) => setSirenNumber(e.target.value)}
+                maxLength={11}
+              />
+              <p className="text-xs text-muted-foreground">
+                9 chiffres identifiant votre entreprise
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tva">Numéro de TVA intracommunautaire</Label>
+              <Input
+                id="tva"
+                placeholder="FR12 345678901"
+                value={tvaNumber}
+                onChange={(e) => setTvaNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Utilisé pour la facturation
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -363,6 +398,24 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
                   )}
                 </div>
               </div>
+
+              {/* Legal info preview */}
+              {(sirenNumber || tvaNumber) && (
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {sirenNumber && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Briefcase className="w-3 h-3" />
+                      <span>SIREN: {sirenNumber}</span>
+                    </div>
+                  )}
+                  {tvaNumber && (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Building2 className="w-3 h-3" />
+                      <span>TVA: {tvaNumber}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {publicDescription && (
                 <p className="text-sm text-muted-foreground">{publicDescription}</p>

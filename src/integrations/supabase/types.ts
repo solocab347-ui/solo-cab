@@ -632,6 +632,7 @@ export type Database = {
           siren: string | null
           siret: string
           status: string
+          tva_number: string | null
           updated_at: string
           user_id: string
           visible_to_drivers: boolean | null
@@ -654,6 +655,7 @@ export type Database = {
           siren?: string | null
           siret: string
           status?: string
+          tva_number?: string | null
           updated_at?: string
           user_id: string
           visible_to_drivers?: boolean | null
@@ -676,6 +678,7 @@ export type Database = {
           siren?: string | null
           siret?: string
           status?: string
+          tva_number?: string | null
           updated_at?: string
           user_id?: string
           visible_to_drivers?: boolean | null
