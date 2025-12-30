@@ -37,6 +37,7 @@ import DriverPlanning from "@/components/driver/DriverPlanning";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
+import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
 import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreements";
@@ -964,12 +965,13 @@ const DriverDashboard = () => {
             <UnifiedPartnershipHub />
           </TabsContent>
 
-          {/* Documents Tab - seulement pour chauffeurs indépendants */}
+          {/* Documents Tab - Hub unifié */}
           <TabsContent value="documents" className="space-y-6">
-            {driverProfile?.driver?.id && user?.id && !driverProfile.driver.is_fleet_driver && (
-              <DriverDocuments 
+            {driverProfile?.driver?.id && user?.id && (
+              <UnifiedDocumentsHub 
                 driverId={driverProfile.driver.id} 
-                userId={user.id} 
+                userId={user.id}
+                isFleetDriver={driverProfile.driver.is_fleet_driver || false}
               />
             )}
           </TabsContent>
