@@ -377,12 +377,6 @@ ${companyProfile.company_name}`;
                         <span className="truncate">{fleet.address}</span>
                       </div>
                     )}
-                    {fleet.show_drivers_in_public_storefront && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Car className="w-4 h-4" />
-                        <span>Chauffeurs visibles publiquement</span>
-                      </div>
-                    )}
                   </div>
 
                   {fleet.description && (
