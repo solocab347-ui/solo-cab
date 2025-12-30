@@ -78,7 +78,7 @@ export function PushCourseToPartners() {
     
     setDriverId(driver.id);
 
-    // Load available courses
+    // Load available courses - UNIQUEMENT les courses avec devis ACCEPTÉ
     const { data: courses } = await supabase
       .from('courses')
       .select(`
@@ -92,21 +92,27 @@ export function PushCourseToPartners() {
         devis!inner(amount, status)
       `)
       .eq('driver_id', driver.id)
-      .eq('status', 'accepted') // Seulement les courses confirmées peuvent être partagées
+      .eq('status', 'accepted') // Course confirmée
       .gte('scheduled_date', new Date().toISOString())
       .order('scheduled_date', { ascending: true });
 
     if (courses) {
-      const enrichedCourses: AvailableCourse[] = courses.map(c => ({
-        id: c.id,
-        pickup_address: c.pickup_address,
-        destination_address: c.destination_address,
-        scheduled_date: c.scheduled_date,
-        passengers_count: c.passengers_count,
-        distance_km: c.distance_km,
-        status: c.status,
-        devis_amount: (c.devis as any[])?.find(d => d.status === 'accepted' || d.status === 'pending')?.amount || null,
-      }));
+      // FILTRE CRITIQUE: Seules les courses avec devis ACCEPTÉ peuvent être partagées
+      const enrichedCourses: AvailableCourse[] = courses
+        .filter(c => {
+          const acceptedDevis = (c.devis as any[])?.find(d => d.status === 'accepted');
+          return !!acceptedDevis; // Doit avoir un devis accepté
+        })
+        .map(c => ({
+          id: c.id,
+          pickup_address: c.pickup_address,
+          destination_address: c.destination_address,
+          scheduled_date: c.scheduled_date,
+          passengers_count: c.passengers_count,
+          distance_km: c.distance_km,
+          status: c.status,
+          devis_amount: (c.devis as any[])?.find(d => d.status === 'accepted')?.amount || null,
+        }));
       setAvailableCourses(enrichedCourses);
     }
 

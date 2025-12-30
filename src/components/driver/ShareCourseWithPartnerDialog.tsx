@@ -150,6 +150,13 @@ export function ShareCourseWithPartnerDialog({
       return;
     }
     if (!course) return;
+    
+    // VÉRIFICATION CRITIQUE: Seules les courses avec devis accepté peuvent être partagées
+    const acceptedDevis = course.devis?.find(d => (d as any).status === 'accepted');
+    if (!acceptedDevis) {
+      toast.error('Le devis doit être accepté avant de partager la course');
+      return;
+    }
 
     setSending(true);
     try {

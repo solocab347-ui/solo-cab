@@ -1,0 +1,355 @@
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  CheckCircle, 
+  Handshake, 
+  Building2, 
+  Truck, 
+  Euro,
+  ArrowRight,
+  Info
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+interface CommissionInfo {
+  type: 'partner' | 'company' | 'fleet';
+  partnerName: string;
+  commissionPercentage: number;
+  commissionAmount: number;
+  courseAmount: number;
+  netAmount: number;
+}
+
+interface CourseCompletionCommissionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  courseId: string;
+  driverId: string;
+  courseAmount: number;
+  pickupAddress: string;
+  destinationAddress: string;
+  scheduledDate: string;
+  onConfirm: () => void;
+}
+
+export function CourseCompletionCommissionDialog({
+  open,
+  onOpenChange,
+  courseId,
+  driverId,
+  courseAmount,
+  pickupAddress,
+  destinationAddress,
+  scheduledDate,
+  onConfirm,
+}: CourseCompletionCommissionDialogProps) {
+  const [loading, setLoading] = useState(true);
+  const [commissionInfo, setCommissionInfo] = useState<CommissionInfo | null>(null);
+
+  useEffect(() => {
+    if (open && courseId && driverId) {
+      loadCommissionInfo();
+    }
+  }, [open, courseId, driverId]);
+
+  const loadCommissionInfo = async () => {
+    setLoading(true);
+    try {
+      // Vérifier si c'est une course partagée (reçue d'un partenaire)
+      const { data: sharedCourse } = await supabase
+        .from('shared_courses')
+        .select(`
+          *,
+          partnership:driver_partnerships(
+            driver_a_id,
+            driver_b_id,
+            commission_percentage
+          )
+        `)
+        .eq('course_id', courseId)
+        .eq('receiver_driver_id', driverId)
+        .eq('status', 'accepted')
+        .maybeSingle();
+
+      if (sharedCourse) {
+        // Récupérer le nom du partenaire émetteur
+        const { data: senderDriver } = await supabase
+          .from('drivers')
+          .select('user_id')
+          .eq('id', sharedCourse.sender_driver_id)
+          .single();
+
+        let partnerName = 'Partenaire';
+        if (senderDriver) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', senderDriver.user_id)
+            .single();
+          partnerName = profile?.full_name || 'Partenaire';
+        }
+
+        const commission = sharedCourse.commission_amount || (courseAmount * (sharedCourse.commission_percentage || 0)) / 100;
+        setCommissionInfo({
+          type: 'partner',
+          partnerName,
+          commissionPercentage: sharedCourse.commission_percentage || 0,
+          commissionAmount: commission,
+          courseAmount,
+          netAmount: courseAmount - commission,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Vérifier si c'est une course entreprise via company_driver_agreements
+      const { data: companyCourse } = await supabase
+        .from('company_courses')
+        .select(`
+          *,
+          company:companies(company_name)
+        `)
+        .eq('course_id', courseId)
+        .maybeSingle();
+
+      if (companyCourse) {
+        // Récupérer l'accord entreprise-chauffeur
+        const { data: agreement } = await supabase
+          .from('company_driver_agreements')
+          .select('*')
+          .eq('company_id', companyCourse.company_id)
+          .eq('driver_id', driverId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (agreement) {
+          // Les entreprises ont généralement des réductions, pas de commissions
+          setCommissionInfo({
+            type: 'company',
+            partnerName: companyCourse.company?.company_name || 'Entreprise',
+            commissionPercentage: agreement.discount_percentage || 0,
+            commissionAmount: 0, // Pas de commission à reverser pour les entreprises
+            courseAmount,
+            netAmount: courseAmount, // Le chauffeur garde tout
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Vérifier si c'est une course gestionnaire de flotte
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('fleet_manager_id')
+        .eq('id', driverId)
+        .single();
+
+      if (driver?.fleet_manager_id) {
+        const { data: fleetManager } = await supabase
+          .from('fleet_managers')
+          .select('company_name')
+          .eq('id', driver.fleet_manager_id)
+          .single();
+
+        const { data: fleetDriver } = await supabase
+          .from('fleet_manager_drivers')
+          .select('commission_percentage')
+          .eq('fleet_manager_id', driver.fleet_manager_id)
+          .eq('driver_id', driverId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (fleetDriver) {
+          const commissionPct = fleetDriver.commission_percentage || 0;
+          const commission = (courseAmount * commissionPct) / 100;
+          setCommissionInfo({
+            type: 'fleet',
+            partnerName: fleetManager?.company_name || 'Gestionnaire de flotte',
+            commissionPercentage: commissionPct,
+            commissionAmount: commission,
+            courseAmount,
+            netAmount: courseAmount - commission,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Pas de commission partenaire - course personnelle
+      setCommissionInfo(null);
+    } catch (error) {
+      console.error('Error loading commission info:', error);
+      setCommissionInfo(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIcon = () => {
+    if (!commissionInfo) return <CheckCircle className="w-6 h-6 text-green-500" />;
+    switch (commissionInfo.type) {
+      case 'partner':
+        return <Handshake className="w-6 h-6 text-blue-500" />;
+      case 'company':
+        return <Building2 className="w-6 h-6 text-purple-500" />;
+      case 'fleet':
+        return <Truck className="w-6 h-6 text-orange-500" />;
+    }
+  };
+
+  const getTypeLabel = () => {
+    if (!commissionInfo) return 'Course personnelle';
+    switch (commissionInfo.type) {
+      case 'partner':
+        return 'Course partenaire';
+      case 'company':
+        return 'Course entreprise';
+      case 'fleet':
+        return 'Course gestionnaire';
+    }
+  };
+
+  const getTypeBadgeVariant = () => {
+    if (!commissionInfo) return 'secondary' as const;
+    switch (commissionInfo.type) {
+      case 'partner':
+        return 'default' as const;
+      case 'company':
+        return 'secondary' as const;
+      case 'fleet':
+        return 'outline' as const;
+    }
+  };
+
+  const handleConfirm = () => {
+    onConfirm();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {getIcon()}
+            Course terminée !
+          </DialogTitle>
+          <DialogDescription>
+            Récapitulatif de votre course
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Type de course */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Type de course</span>
+            <Badge variant={getTypeBadgeVariant()}>
+              {getTypeLabel()}
+            </Badge>
+          </div>
+
+          {/* Résumé trajet */}
+          <div className="p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(scheduledDate), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+              <span className="text-xs truncate">{pickupAddress}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+              <span className="text-xs truncate">{destinationAddress}</span>
+            </div>
+          </div>
+
+          {/* Détails financiers */}
+          <div className="space-y-3 p-4 border rounded-lg bg-card">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Montant encaissé</span>
+              <span className="text-lg font-bold text-foreground flex items-center gap-1">
+                <Euro className="w-4 h-4" />
+                {courseAmount.toFixed(2)} €
+              </span>
+            </div>
+
+            {commissionInfo && commissionInfo.commissionAmount > 0 && (
+              <>
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <ArrowRight className="w-3 h-3" />
+                      Commission à reverser
+                    </span>
+                    <span className="text-orange-500 font-medium">
+                      -{commissionInfo.commissionAmount.toFixed(2)} €
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Partenaire</span>
+                    <span className="font-medium">{commissionInfo.partnerName}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Taux</span>
+                    <span className="font-medium">{commissionInfo.commissionPercentage}%</span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-green-600">Votre net</span>
+                    <span className="text-lg font-bold text-green-600 flex items-center gap-1">
+                      <Euro className="w-4 h-4" />
+                      {commissionInfo.netAmount.toFixed(2)} €
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {commissionInfo && commissionInfo.type === 'company' && (
+              <Alert className="bg-purple-50 border-purple-200">
+                <Info className="w-4 h-4 text-purple-500" />
+                <AlertDescription className="text-xs text-purple-700">
+                  Course effectuée pour <strong>{commissionInfo.partnerName}</strong>. 
+                  Le paiement sera géré selon votre accord de partenariat.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {commissionInfo && commissionInfo.commissionAmount > 0 && (
+            <Alert>
+              <Info className="w-4 h-4" />
+              <AlertDescription className="text-xs">
+                Cette commission sera automatiquement ajoutée à votre solde partenariat. 
+                Consultez l'onglet "Partage et Partenariat" pour voir les détails et gérer les règlements.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {!loading && !commissionInfo && (
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <AlertDescription className="text-xs text-green-700">
+                C'est votre course personnelle - vous conservez 100% du montant.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button onClick={handleConfirm} className="w-full">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Compris !
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
