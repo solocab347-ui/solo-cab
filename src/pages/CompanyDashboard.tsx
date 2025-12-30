@@ -21,6 +21,11 @@ import {
   Receipt,
   CreditCard,
   Globe,
+  Search,
+  Truck,
+  UserPlus,
+  ExternalLink,
+  Handshake,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
@@ -32,6 +37,8 @@ import { CompanyBillingSettings } from "@/components/company/CompanyBillingSetti
 import { CompanyPaymentsDue } from "@/components/company/CompanyPaymentsDue";
 import { CompanyPublicProfile } from "@/components/company/CompanyPublicProfile";
 import { CompanyStatisticsComplete } from "@/components/company/CompanyStatisticsComplete";
+import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
+import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
 import { BarChart3 } from "lucide-react";
 
 interface Company {
@@ -155,13 +162,15 @@ export default function CompanyDashboard() {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-10 mb-6">
+          <TabsList className="grid w-full grid-cols-12 mb-6">
             <TabsTrigger value="overview"><Building2 className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="reservations"><Calendar className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="devis"><FileText className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="invoices"><Receipt className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="payments"><CreditCard className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="partnerships"><Handshake className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="drivers"><Car className="w-4 h-4" /></TabsTrigger>
+            <TabsTrigger value="fleets"><Truck className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="employees"><Users className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="stats"><BarChart3 className="w-4 h-4" /></TabsTrigger>
             <TabsTrigger value="public"><Globe className="w-4 h-4" /></TabsTrigger>
@@ -212,14 +221,22 @@ export default function CompanyDashboard() {
               <CardHeader>
                 <CardTitle>Actions rapides</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
+              <CardContent className="grid gap-4 md:grid-cols-4">
                 <Button className="h-24 flex-col" onClick={handleCreateCourse}>
                   <Plus className="w-6 h-6 mb-2" />
                   Nouvelle réservation
                 </Button>
+                <Button variant="outline" className="h-24 flex-col" onClick={() => setActiveTab("employees")}>
+                  <UserPlus className="w-6 h-6 mb-2" />
+                  Ajouter un collaborateur
+                </Button>
+                <Button variant="outline" className="h-24 flex-col" onClick={() => setActiveTab("public")}>
+                  <Globe className="w-6 h-6 mb-2" />
+                  Mon profil public
+                </Button>
                 <Button variant="outline" className="h-24 flex-col" onClick={() => setActiveTab("drivers")}>
-                  <Car className="w-6 h-6 mb-2" />
-                  Gérer les chauffeurs
+                  <Search className="w-6 h-6 mb-2" />
+                  Rechercher des partenaires
                 </Button>
               </CardContent>
             </Card>
@@ -241,8 +258,22 @@ export default function CompanyDashboard() {
             <CompanyPaymentsDue companyId={company.id} />
           </TabsContent>
 
-          <TabsContent value="drivers">
+          <TabsContent value="partnerships">
             <CompanyDriverAgreements companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="drivers">
+            <CompanyDriverSearch companyId={company.id} />
+          </TabsContent>
+
+          <TabsContent value="fleets">
+            <CompanyFleetSearch 
+              companyId={company.id} 
+              companyProfile={{
+                company_name: company.company_name,
+                contact_name: company.contact_name,
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="employees">
