@@ -1,28 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import logo from "@/assets/logo-solocab.png";
-import {
-  Building2,
-  Car,
-  FileText,
-  Calendar,
-  LogOut,
-  MapPin,
-  Euro,
-  Plus,
+import { 
+  Building2, 
+  Car, 
+  LogOut, 
+  User, 
   Clock,
-  User,
+  MapPin,
+  Calendar,
+  Receipt,
+  Euro,
+  FileText,
+  Plus,
   Loader2,
   XCircle,
 } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import logo from "@/assets/logo-solocab.png";
 import { NotificationBell } from "@/components/NotificationBell";
+import { EmployeeExpenseReports } from "@/components/company/EmployeeExpenseReports";
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 
 interface EmployeeData {
@@ -198,14 +202,18 @@ export default function CompanyEmployeeDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Accueil</span>
             </TabsTrigger>
             <TabsTrigger value="courses" className="flex items-center gap-2">
               <Car className="w-4 h-4" />
-              <span className="hidden sm:inline">Mes courses</span>
+              <span className="hidden sm:inline">Courses</span>
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="flex items-center gap-2">
+              <Receipt className="w-4 h-4" />
+              <span className="hidden sm:inline">Notes de frais</span>
             </TabsTrigger>
             {employee.can_view_invoices && (
               <TabsTrigger value="invoices" className="flex items-center gap-2">
@@ -409,6 +417,11 @@ export default function CompanyEmployeeDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Expenses Tab */}
+          <TabsContent value="expenses">
+            <EmployeeExpenseReports employeeId={employee.id} />
           </TabsContent>
 
           {/* Invoices Tab */}
