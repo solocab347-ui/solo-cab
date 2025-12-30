@@ -15,7 +15,10 @@ import {
   Eye,
   Loader2,
   Copy,
-  Check
+  Check,
+  Star,
+  DollarSign,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -38,6 +41,11 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
   const [visibleToCompanies, setVisibleToCompanies] = useState(false);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
   const [isFleetDriver, setIsFleetDriver] = useState(false);
+  
+  // New visibility settings
+  const [showRatingPublic, setShowRatingPublic] = useState(false);
+  const [showRatingPartners, setShowRatingPartners] = useState(false);
+  const [showPricingPartners, setShowPricingPartners] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -54,6 +62,10 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
           sharing_available, 
           show_phone_for_sharing,
           visible_to_fleet_managers,
+          visible_to_companies,
+          show_rating_public,
+          show_rating_partners,
+          show_pricing_partners,
           is_fleet_driver,
           fleet_manager_id
         `)
@@ -70,10 +82,13 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
       setSharingAvailable(data.sharing_available || false);
       setShowPhoneForSharing(data.show_phone_for_sharing || false);
       setVisibleToFleetManagers(data.visible_to_fleet_managers || false);
-      // Default: if sharing is available, visible to drivers
+      setVisibleToCompanies(data.visible_to_companies || false);
       setVisibleToDrivers(data.sharing_available || false);
-      // Companies can see if visible to fleet
-      setVisibleToCompanies(data.visible_to_fleet_managers || false);
+      
+      // New visibility settings
+      setShowRatingPublic(data.show_rating_public || false);
+      setShowRatingPartners(data.show_rating_partners || false);
+      setShowPricingPartners(data.show_pricing_partners || false);
     } catch (error) {
       console.error('Error loading settings:', error);
     } finally {
@@ -114,7 +129,18 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
           break;
         case 'visible_to_fleet_managers':
           setVisibleToFleetManagers(value);
+          break;
+        case 'visible_to_companies':
           setVisibleToCompanies(value);
+          break;
+        case 'show_rating_public':
+          setShowRatingPublic(value);
+          break;
+        case 'show_rating_partners':
+          setShowRatingPartners(value);
+          break;
+        case 'show_pricing_partners':
+          setShowPricingPartners(value);
           break;
       }
 
@@ -199,15 +225,15 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Visibility Settings */}
+      {/* Partner Visibility Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Visibilité & Disponibilité
+            <Users className="h-5 w-5" />
+            Visibilité aux Partenaires
           </CardTitle>
           <CardDescription>
-            Configurez qui peut vous trouver et vous contacter
+            Choisissez qui peut vous trouver pour des partenariats
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -240,7 +266,7 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
             </div>
           </div>
 
-          {/* Visibility for Companies */}
+          {/* Visibility for Companies - INDEPENDENT */}
           <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
@@ -251,7 +277,7 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
                   Visible aux Entreprises
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Les entreprises peuvent vous découvrir pour des accords
+                  Les entreprises peuvent vous découvrir pour des accords B2B
                 </p>
               </div>
             </div>
@@ -262,14 +288,14 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
                 </Badge>
               )}
               <Switch
-                checked={visibleToFleetManagers}
-                onCheckedChange={(checked) => updateSetting('visible_to_fleet_managers', checked)}
+                checked={visibleToCompanies}
+                onCheckedChange={(checked) => updateSetting('visible_to_companies', checked)}
                 disabled={updating}
               />
             </div>
           </div>
 
-          {/* Visibility for Fleet Managers */}
+          {/* Visibility for Fleet Managers - INDEPENDENT */}
           <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/10">
@@ -326,6 +352,121 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
                 onCheckedChange={(checked) => updateSetting('show_phone_for_sharing', checked)}
                 disabled={updating}
               />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Information Privacy Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Confidentialité des Informations
+          </CardTitle>
+          <CardDescription>
+            Contrôlez quelles informations sont visibles par les autres
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Rating on Public Profile */}
+          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/10">
+                <Star className="h-5 w-5 text-yellow-500" />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">
+                  Note sur le Profil Public
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Afficher votre note moyenne aux clients sur la vitrine publique
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {showRatingPublic && (
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                  Visible
+                </Badge>
+              )}
+              <Switch
+                checked={showRatingPublic}
+                onCheckedChange={(checked) => updateSetting('show_rating_public', checked)}
+                disabled={updating}
+              />
+            </div>
+          </div>
+
+          {/* Rating for Partners */}
+          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <Star className="h-5 w-5 text-orange-500" />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">
+                  Note pour les Partenaires
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Afficher votre note aux chauffeurs, entreprises et gestionnaires
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {showRatingPartners && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                  Visible
+                </Badge>
+              )}
+              <Switch
+                checked={showRatingPartners}
+                onCheckedChange={(checked) => updateSetting('show_rating_partners', checked)}
+                disabled={updating}
+              />
+            </div>
+          </div>
+
+          {/* Pricing for Partners */}
+          <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <DollarSign className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">
+                  Tarifs pour les Partenaires
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Afficher vos tarifs aux gestionnaires et entreprises partenaires
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {showPricingPartners && (
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                  Visible
+                </Badge>
+              )}
+              <Switch
+                checked={showPricingPartners}
+                onCheckedChange={(checked) => updateSetting('show_pricing_partners', checked)}
+                disabled={updating}
+              />
+            </div>
+          </div>
+
+          {/* Privacy Notice */}
+          <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-start gap-2">
+              <Shield className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="space-y-1 text-sm">
+                <p className="font-medium text-muted-foreground">Note sur la confidentialité</p>
+                <p className="text-muted-foreground">
+                  Par défaut, toutes les informations sensibles (notes, tarifs) sont masquées. 
+                  Vous pouvez choisir de les rendre visibles selon vos préférences.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

@@ -2544,6 +2544,9 @@ export type Database = {
           show_email: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
+          show_pricing_partners: boolean | null
+          show_rating_partners: boolean | null
+          show_rating_public: boolean | null
           siren: string | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
@@ -2566,6 +2569,7 @@ export type Database = {
           vehicle_photos: string[] | null
           vehicle_plate: string | null
           vehicle_year: number | null
+          visible_to_companies: boolean | null
           visible_to_fleet_managers: boolean | null
           weekend_surcharge: number | null
           working_sectors: string[] | null
@@ -2627,6 +2631,9 @@ export type Database = {
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
@@ -2649,6 +2656,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          visible_to_companies?: boolean | null
           visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
@@ -2710,6 +2718,9 @@ export type Database = {
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
@@ -2732,6 +2743,7 @@ export type Database = {
           vehicle_photos?: string[] | null
           vehicle_plate?: string | null
           vehicle_year?: number | null
+          visible_to_companies?: boolean | null
           visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
