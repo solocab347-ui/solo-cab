@@ -23,9 +23,14 @@ import {
   Phone,
   MapPin,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Eye,
+  Briefcase,
+  Package,
+  ExternalLink
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { getEquipmentIcon, getEquipmentLabel, getServiceLabel, getServiceIcon } from '@/lib/vehicleEquipmentDisplay';
 
 interface AvailableDriver {
   id: string;
@@ -43,6 +48,8 @@ interface AvailableDriver {
   display_company_name?: boolean;
   show_phone?: boolean;
   show_email?: boolean;
+  vehicle_brand?: string | null;
+  vehicle_model?: string | null;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -95,6 +102,12 @@ export function DriverPartnerSearch({ driverId }: Props) {
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
   const [proposalMessage, setProposalMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Driver profile dialog
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [viewingDriver, setViewingDriver] = useState<AvailableDriver | null>(null);
+  const [driverDetails, setDriverDetails] = useState<any>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Fetch driver profile for default message
   const { data: driverProfile } = useQuery({
@@ -239,6 +252,41 @@ Cordialement.`;
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Load full driver details for profile dialog
+  const loadDriverDetails = async (driver: AvailableDriver) => {
+    setViewingDriver(driver);
+    setProfileDialogOpen(true);
+    setLoadingDetails(true);
+
+    try {
+      // Fetch full driver data including vehicles, services, equipment
+      const { data, error } = await supabase
+        .from('drivers')
+        .select(`
+          *,
+          profile:profiles!drivers_user_id_fkey(
+            full_name,
+            phone,
+            email,
+            profile_photo_url
+          ),
+          vehicles:driver_vehicles(
+            id, brand, model, color, year, category, max_passengers, equipment, photos, is_favorite
+          )
+        `)
+        .eq('id', driver.id)
+        .single();
+
+      if (error) throw error;
+      setDriverDetails(data);
+    } catch (error) {
+      console.error('Error loading driver details:', error);
+      toast.error('Erreur lors du chargement du profil');
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -418,15 +466,24 @@ Cordialement.`;
                       </div>
                     </div>
 
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedDriver(driver);
-                        setProposalDialogOpen(true);
-                      }}
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => loadDriverDetails(driver)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDriver(driver);
+                          setProposalDialogOpen(true);
+                        }}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -504,6 +561,218 @@ Cordialement.`;
               Envoyer la demande
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Driver Public Profile Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Profil du chauffeur
+            </DialogTitle>
+            <DialogDescription>
+              Informations complètes sur {viewingDriver?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingDetails ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : viewingDriver && driverDetails ? (
+            <div className="space-y-6 py-4">
+              {/* En-tête chauffeur avec photo */}
+              <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={driverDetails.profile?.profile_photo_url || viewingDriver.profile_photo_url || undefined} />
+                    <AvatarFallback className="text-lg">
+                      {viewingDriver.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'CH'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-xl font-bold text-foreground">
+                        {viewingDriver.display_driver_name !== false ? viewingDriver.full_name : ''}
+                        {viewingDriver.display_driver_name !== false && viewingDriver.company_name ? ' - ' : ''}
+                        {viewingDriver.display_company_name !== false ? viewingDriver.company_name : ''}
+                      </h3>
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {viewingDriver.formatted_sharing_number}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                        <span className="font-medium">{viewingDriver.rating?.toFixed(1) || 'N/A'}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Car className="h-4 w-4" />
+                        {viewingDriver.total_rides || 0} courses
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Coordonnées */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  Contact
+                </h4>
+                <div className="grid gap-2 text-sm">
+                  {viewingDriver.show_phone !== false && viewingDriver.phone && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <a href={`tel:${viewingDriver.phone}`} className="text-primary hover:underline font-medium">
+                        {viewingDriver.phone}
+                      </a>
+                    </div>
+                  )}
+                  {viewingDriver.show_email !== false && viewingDriver.email && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <a href={`mailto:${viewingDriver.email}`} className="text-primary hover:underline">
+                        {viewingDriver.email}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Secteurs d'activité */}
+              {viewingDriver.working_sectors && viewingDriver.working_sectors.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Zones d'activité
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingDriver.working_sectors.map((sector: string, index: number) => (
+                      <Badge key={index} variant="secondary">
+                        {sector}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description du service */}
+              {driverDetails.service_description && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    À propos
+                  </h4>
+                  <div className="p-4 bg-muted rounded-lg text-sm">
+                    {driverDetails.service_description}
+                  </div>
+                </div>
+              )}
+
+              {/* Véhicules */}
+              {driverDetails.vehicles && driverDetails.vehicles.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Car className="w-4 h-4" />
+                    Véhicule{driverDetails.vehicles.length > 1 ? 's' : ''}
+                  </h4>
+                  <div className="space-y-2">
+                    {driverDetails.vehicles.filter((v: any) => v.is_favorite !== false).slice(0, 2).map((vehicle: any) => (
+                      <div key={vehicle.id} className="p-3 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium">
+                            {vehicle.brand} {vehicle.model}
+                          </span>
+                          {vehicle.year && (
+                            <Badge variant="outline" className="text-xs">
+                              {vehicle.year}
+                            </Badge>
+                          )}
+                          {vehicle.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {vehicle.category}
+                            </Badge>
+                          )}
+                        </div>
+                        {vehicle.max_passengers && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Jusqu'à {vehicle.max_passengers} passagers
+                          </p>
+                        )}
+                        {vehicle.equipment && vehicle.equipment.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {vehicle.equipment.slice(0, 5).map((eq: string) => (
+                              <Badge key={eq} variant="outline" className="text-xs">
+                                <span className="mr-1">{getEquipmentIcon(eq)}</span>
+                                {getEquipmentLabel(eq)}
+                              </Badge>
+                            ))}
+                            {vehicle.equipment.length > 5 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{vehicle.equipment.length - 5}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Services proposés */}
+              {driverDetails.services_offered && driverDetails.services_offered.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Services proposés
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {driverDetails.services_offered.map((service: string) => (
+                      <Badge key={service} variant="secondary">
+                        <span className="mr-1">{getServiceIcon(service)}</span>
+                        {getServiceLabel(service)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setProfileDialogOpen(false)} className="flex-1">
+                  Fermer
+                </Button>
+                {viewingDriver.show_phone !== false && viewingDriver.phone && (
+                  <Button variant="secondary" asChild className="flex-1">
+                    <a href={`tel:${viewingDriver.phone}`}>
+                      <Phone className="w-4 h-4 mr-2" />
+                      Appeler
+                    </a>
+                  </Button>
+                )}
+                <Button 
+                  className="flex-1"
+                  onClick={() => {
+                    setProfileDialogOpen(false);
+                    setSelectedDriver(viewingDriver);
+                    setProposalDialogOpen(true);
+                  }}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Proposer un partenariat
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              Impossible de charger les informations du chauffeur
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
