@@ -25,7 +25,10 @@ import {
   Briefcase,
   Check,
   Plus,
-  X
+  X,
+  Handshake,
+  Car,
+  Euro
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DRIVER_SERVICES } from "@/lib/vehicleEquipment";
@@ -44,6 +47,11 @@ interface FleetPublicProfileSettingsProps {
   showPhone?: boolean;
   showEmail?: boolean;
   servicesOffered?: string[] | null;
+  visibleToDrivers?: boolean;
+  visibleToCompanies?: boolean;
+  driverProfileDescription?: string | null;
+  defaultPartnershipCommission?: number | null;
+  partnershipTerms?: string | null;
   onUpdate: () => void;
 }
 
@@ -58,6 +66,11 @@ export const FleetPublicProfileSettings = ({
   showPhone: initialShowPhone = true,
   showEmail: initialShowEmail = true,
   servicesOffered: initialServicesOffered = [],
+  visibleToDrivers: initialVisibleToDrivers = false,
+  visibleToCompanies: initialVisibleToCompanies = false,
+  driverProfileDescription: initialDriverProfileDescription = "",
+  defaultPartnershipCommission: initialDefaultCommission = 10,
+  partnershipTerms: initialPartnershipTerms = "",
   onUpdate
 }: FleetPublicProfileSettingsProps) => {
   const queryClient = useQueryClient();
@@ -74,6 +87,13 @@ export const FleetPublicProfileSettings = ({
   const [customService, setCustomService] = useState("");
   const [customServices, setCustomServices] = useState<string[]>([]);
   
+  // Champs visibilité partenaires
+  const [visibleToDrivers, setVisibleToDrivers] = useState(initialVisibleToDrivers);
+  const [visibleToCompanies, setVisibleToCompanies] = useState(initialVisibleToCompanies);
+  const [driverProfileDescription, setDriverProfileDescription] = useState(initialDriverProfileDescription || "");
+  const [defaultCommission, setDefaultCommission] = useState(initialDefaultCommission || 10);
+  const [partnershipTerms, setPartnershipTerms] = useState(initialPartnershipTerms || "");
+  
   // Champs d'entreprise
   const [siret, setSiret] = useState("");
   const [siren, setSiren] = useState("");
@@ -86,7 +106,7 @@ export const FleetPublicProfileSettings = ({
     const loadFleetData = async () => {
       const { data } = await supabase
         .from("fleet_managers")
-        .select("siret, siren, tva_number, address, contact_phone")
+        .select("siret, siren, tva_number, address, contact_phone, visible_to_drivers, visible_to_companies, driver_profile_description, default_partnership_commission, partnership_terms")
         .eq("id", fleetManagerId)
         .single();
       
@@ -96,6 +116,11 @@ export const FleetPublicProfileSettings = ({
         setTvaNumber((data as any).tva_number || "");
         setAddress(data.address || "");
         setContactPhone(data.contact_phone || "");
+        setVisibleToDrivers(data.visible_to_drivers || false);
+        setVisibleToCompanies(data.visible_to_companies || false);
+        setDriverProfileDescription(data.driver_profile_description || "");
+        setDefaultCommission(data.default_partnership_commission || 10);
+        setPartnershipTerms(data.partnership_terms || "");
       }
     };
     loadFleetData();
@@ -193,6 +218,11 @@ export const FleetPublicProfileSettings = ({
           tva_number: tvaNumber || null,
           address: address || null,
           contact_phone: contactPhone || null,
+          visible_to_drivers: visibleToDrivers,
+          visible_to_companies: visibleToCompanies,
+          driver_profile_description: driverProfileDescription || null,
+          default_partnership_commission: defaultCommission,
+          partnership_terms: partnershipTerms || null,
         } as any)
         .eq("id", fleetManagerId);
 
@@ -527,7 +557,7 @@ export const FleetPublicProfileSettings = ({
         </CardContent>
       </Card>
 
-      {/* Drivers Visibility */}
+      {/* Drivers Visibility on Storefront */}
       <Card>
         <CardHeader>
           <CardTitle>Visibilité des chauffeurs</CardTitle>
@@ -556,6 +586,134 @@ export const FleetPublicProfileSettings = ({
           )}
         </CardContent>
       </Card>
+
+      {/* B2B Visibility - Drivers & Companies */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Handshake className="w-5 h-5 text-primary" />
+            Visibilité Partenaires B2B
+          </CardTitle>
+          <CardDescription>
+            Permettez aux chauffeurs indépendants et entreprises de vous trouver pour des collaborations
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Visible to Drivers */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Car className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-base font-medium">Visible par les chauffeurs</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Les chauffeurs indépendants pourront vous trouver et proposer des partenariats
+                </p>
+              </div>
+            </div>
+            <Switch checked={visibleToDrivers} onCheckedChange={setVisibleToDrivers} />
+          </div>
+
+          {/* Visible to Companies */}
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-accent/5 to-transparent rounded-xl border border-accent/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Building2 className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-base font-medium">Visible par les entreprises</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Les entreprises pourront vous trouver et proposer des contrats de transport
+                </p>
+              </div>
+            </div>
+            <Switch checked={visibleToCompanies} onCheckedChange={setVisibleToCompanies} />
+          </div>
+
+          {(visibleToDrivers || visibleToCompanies) && (
+            <div className="p-4 bg-success/10 rounded-xl border border-success/20">
+              <p className="text-sm text-success flex items-center gap-2">
+                <span className="text-lg">✓</span>
+                Votre flotte est visible pour les partenariats B2B
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Partnership Settings */}
+      {(visibleToDrivers || visibleToCompanies) && (
+        <Card className="border-accent/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-accent" />
+              Paramètres de partenariat
+            </CardTitle>
+            <CardDescription>
+              Configurez les conditions par défaut pour vos partenariats
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Description for drivers */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Présentation pour les partenaires
+              </Label>
+              <Textarea
+                placeholder="Présentez votre flotte aux chauffeurs et entreprises qui souhaitent collaborer avec vous..."
+                value={driverProfileDescription}
+                onChange={(e) => setDriverProfileDescription(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Cette présentation sera visible par les chauffeurs et entreprises qui vous recherchent
+              </p>
+            </div>
+
+            {/* Default Commission */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Euro className="w-4 h-4" />
+                Commission par défaut (%)
+              </Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min={5}
+                  max={30}
+                  value={defaultCommission}
+                  onChange={(e) => setDefaultCommission(Number(e.target.value))}
+                  className="w-24"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Entre 5% et 30% - applicable aux partenariats chauffeurs
+                </p>
+              </div>
+            </div>
+
+            {/* Partnership Terms */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Conditions de partenariat
+              </Label>
+              <Textarea
+                placeholder="Décrivez vos conditions de collaboration : délais de paiement, exigences qualité, règles de commission..."
+                value={partnershipTerms}
+                onChange={(e) => setPartnershipTerms(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ces conditions seront présentées lors des propositions de partenariat
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Save Button */}
       <div className="flex justify-end">
