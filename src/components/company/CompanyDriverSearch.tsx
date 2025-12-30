@@ -585,8 +585,8 @@ ${company?.company_name || ""}`;
                         {driver.profile.full_name}
                       </p>
                     )}
-                    {/* Note visible uniquement si show_rating_partners = true (contexte B2B partenaires) */}
-                    {driver.rating && driver.show_rating_partners === true && (
+                    {/* Note visible uniquement si show_rating_public = true (contexte recherche publique, pas encore partenaires) */}
+                    {driver.rating && driver.show_rating_public === true && (
                       <div className="flex items-center gap-1 mt-1">
                           <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                           <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
@@ -766,8 +766,8 @@ ${company?.company_name || ""}`;
                       {selectedDriver.profile.full_name}
                     </p>
                   )}
-                  {/* Note visible uniquement si show_rating_partners = true (contexte B2B) */}
-                  {selectedDriver.rating && selectedDriver.show_rating_partners === true && (
+                  {/* Note visible uniquement si show_rating_public = true (contexte recherche, pas encore partenaires) */}
+                  {selectedDriver.rating && selectedDriver.show_rating_public === true && (
                     <div className="flex items-center gap-2 mt-2">
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-semibold">{selectedDriver.rating.toFixed(1)}/5</span>
