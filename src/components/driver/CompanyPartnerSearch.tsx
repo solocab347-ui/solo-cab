@@ -29,10 +29,13 @@ interface Company {
   contact_name: string;
   contact_email: string;
   contact_phone: string | null;
+  show_phone?: boolean;
   employee_count: number | null;
   preferred_vehicle_types: string[] | null;
   accepting_proposals: boolean;
   visible_to_drivers: boolean;
+  logo_url?: string | null;
+  notes?: string | null;
 }
 
 const PAYMENT_FREQUENCIES = [
@@ -78,7 +81,7 @@ export function CompanyPartnerSearch({ driverId }: Props) {
     try {
       let query = supabase
         .from('companies')
-        .select('*')
+        .select('id, company_name, address, contact_name, contact_email, contact_phone, show_phone, employee_count, preferred_vehicle_types, accepting_proposals, visible_to_drivers, logo_url, notes')
         .eq('visible_to_drivers', true)
         .eq('accepting_proposals', true)
         .eq('status', 'active');
@@ -218,21 +221,26 @@ export function CompanyPartnerSearch({ driverId }: Props) {
             {companies.map((company) => (
               <Card key={company.id} className="overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
-                      <Building2 className="h-5 w-5 text-primary" />
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    {/* Logo / Icône */}
+                    <div className="p-2.5 rounded-xl bg-primary/10 shrink-0 self-start">
+                      {company.logo_url ? (
+                        <img src={company.logo_url} alt={company.company_name} className="w-8 h-8 rounded-lg object-cover" />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-primary" />
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold truncate">{company.company_name}</span>
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="secondary" className="text-[10px] whitespace-nowrap">
                           Accepte les propositions
                         </Badge>
                       </div>
                       
                       <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{company.address}</span>
                       </div>
 
@@ -243,24 +251,37 @@ export function CompanyPartnerSearch({ driverId }: Props) {
                         </div>
                       )}
 
+                      {/* Description */}
+                      {company.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {company.notes}
+                        </p>
+                      )}
+
                       {company.preferred_vehicle_types && company.preferred_vehicle_types.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {company.preferred_vehicle_types.map((type, i) => (
+                          {company.preferred_vehicle_types.slice(0, 3).map((type, i) => (
                             <Badge key={i} variant="outline" className="text-[10px]">
                               {type}
                             </Badge>
                           ))}
+                          {company.preferred_vehicle_types.length > 3 && (
+                            <Badge variant="outline" className="text-[10px]">
+                              +{company.preferred_vehicle_types.length - 3}
+                            </Badge>
+                          )}
                         </div>
                       )}
 
-                      <div className="flex gap-2 mt-3">
-                        {company.contact_phone && (
-                          <a href={`tel:${company.contact_phone}`} className="text-xs text-primary flex items-center gap-1">
+                      {/* Actions de contact */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {company.show_phone && company.contact_phone && (
+                          <a href={`tel:${company.contact_phone}`} className="text-xs text-primary flex items-center gap-1 hover:underline">
                             <Phone className="h-3 w-3" />
-                            Appeler
+                            {company.contact_phone}
                           </a>
                         )}
-                        <a href={`mailto:${company.contact_email}`} className="text-xs text-primary flex items-center gap-1">
+                        <a href={`mailto:${company.contact_email}`} className="text-xs text-primary flex items-center gap-1 hover:underline">
                           <Mail className="h-3 w-3" />
                           Email
                         </a>
@@ -269,12 +290,15 @@ export function CompanyPartnerSearch({ driverId }: Props) {
 
                     <Button 
                       size="sm"
+                      className="w-full sm:w-auto mt-2 sm:mt-0"
                       onClick={() => {
                         setSelectedCompany(company);
                         setProposalDialogOpen(true);
                       }}
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-4 w-4 mr-1" />
+                      <span className="sm:hidden">Proposer mes services</span>
+                      <span className="hidden sm:inline">Proposer</span>
                     </Button>
                   </div>
                 </CardContent>

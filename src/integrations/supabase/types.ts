@@ -630,6 +630,7 @@ export type Database = {
           monthly_budget: number | null
           notes: string | null
           preferred_vehicle_types: string[] | null
+          show_phone: boolean | null
           siren: string | null
           siret: string
           status: string
@@ -654,6 +655,7 @@ export type Database = {
           monthly_budget?: number | null
           notes?: string | null
           preferred_vehicle_types?: string[] | null
+          show_phone?: boolean | null
           siren?: string | null
           siret: string
           status?: string
@@ -678,6 +680,7 @@ export type Database = {
           monthly_budget?: number | null
           notes?: string | null
           preferred_vehicle_types?: string[] | null
+          show_phone?: boolean | null
           siren?: string | null
           siret?: string
           status?: string
