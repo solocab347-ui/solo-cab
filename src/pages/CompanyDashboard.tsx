@@ -41,10 +41,12 @@ import { CompanyDevisList } from "@/components/company/CompanyDevisList";
 import { CompanyFacturesList } from "@/components/company/CompanyFacturesList";
 import { CompanyBillingSettings } from "@/components/company/CompanyBillingSettings";
 import { CompanyPaymentsDue } from "@/components/company/CompanyPaymentsDue";
+import { CompanyPaymentAlerts } from "@/components/company/CompanyPaymentAlerts";
 import { CompanyPublicProfile } from "@/components/company/CompanyPublicProfile";
 import { CompanyStatisticsComplete } from "@/components/company/CompanyStatisticsComplete";
 import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
 import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
+import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { cn } from "@/lib/utils";
 
 interface Company {
@@ -137,7 +139,7 @@ export default function CompanyDashboard() {
   };
 
   const handleCreateCourse = () => {
-    navigate("/chauffeurs");
+    handleTabChange("new-course");
   };
 
   const handleTabChange = (tabId: string) => {
@@ -181,7 +183,9 @@ export default function CompanyDashboard() {
       case "overview":
         return <DashboardOverview stats={stats} company={company} onNavigate={handleTabChange} onCreateCourse={handleCreateCourse} />;
       case "reservations":
-        return <CompanyCoursesList companyId={company.id} onCreateCourse={handleCreateCourse} />;
+        return <CompanyCoursesList companyId={company.id} onCreateCourse={() => handleTabChange("new-course")} />;
+      case "new-course":
+        return <CompanyInlineCourseCreation companyId={company.id} onSuccess={() => handleTabChange("reservations")} onSearchNewDriver={() => handleTabChange("drivers")} />;
       case "devis":
         return <CompanyDevisList companyId={company.id} />;
       case "invoices":
@@ -391,6 +395,7 @@ function DashboardOverview({
   onNavigate: (tab: string) => void;
   onCreateCourse: () => void;
 }) {
+  const companyId = company.id;
   const statCards = [
     { label: "Courses", value: stats.courses, icon: Calendar, gradient: "from-blue-500 to-indigo-600", bgColor: "bg-blue-500/20", iconColor: "text-blue-400" },
     { label: "Chauffeurs", value: stats.drivers, icon: Car, gradient: "from-violet-500 to-purple-600", bgColor: "bg-violet-500/20", iconColor: "text-violet-400" },
@@ -407,6 +412,12 @@ function DashboardOverview({
 
   return (
     <div className="space-y-6">
+      {/* Payment Alerts - Priority */}
+      <CompanyPaymentAlerts 
+        companyId={companyId} 
+        onNavigateToPayments={() => onNavigate("payments")} 
+      />
+
       {/* Welcome Banner with gradient */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-violet-500/20 to-indigo-500/10 border border-primary/20 p-6">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-violet-500/10 to-pink-500/5" />

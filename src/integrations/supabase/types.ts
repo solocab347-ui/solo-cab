@@ -3928,6 +3928,7 @@ export type Database = {
           tva_rate: number | null
           updated_at: string
           user_id: string
+          visible_to_companies: boolean | null
           visible_to_drivers: boolean | null
           weekend_surcharge: number | null
         }
@@ -3995,6 +3996,7 @@ export type Database = {
           tva_rate?: number | null
           updated_at?: string
           user_id: string
+          visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
           weekend_surcharge?: number | null
         }
@@ -4062,6 +4064,7 @@ export type Database = {
           tva_rate?: number | null
           updated_at?: string
           user_id?: string
+          visible_to_companies?: boolean | null
           visible_to_drivers?: boolean | null
           weekend_surcharge?: number | null
         }

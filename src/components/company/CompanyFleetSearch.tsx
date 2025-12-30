@@ -76,9 +76,9 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
-  // Fetch fleet managers with public profiles
+  // Fetch fleet managers visible to companies
   const { data: fleetManagers, isLoading } = useQuery({
-    queryKey: ["public-fleet-managers", searchTerm, selectedDepartment],
+    queryKey: ["public-fleet-managers-for-companies", searchTerm, selectedDepartment],
     queryFn: async () => {
       const { data: fleetData, error } = await supabase
         .from("fleet_managers")
@@ -92,12 +92,14 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
           contact_phone, 
           logo_url, 
           description, 
+          visible_to_companies,
           visible_to_drivers,
           show_drivers_in_public_storefront, 
           auto_dispatch_enabled,
-          default_commission_percentage
+          default_commission_percentage,
+          total_drivers
         `)
-        .eq("visible_to_drivers", true)
+        .or("visible_to_companies.eq.true,visible_to_drivers.eq.true")
         .eq("status", "validated")
         .order('company_name')
         .limit(50);
