@@ -664,22 +664,25 @@ ${company?.company_name || ""}`;
         </Card>
       )}
 
-      {/* Profile Dialog */}
+      {/* Profile Dialog - Profil complet du chauffeur */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Profil du chauffeur
+              Profil complet du chauffeur
             </DialogTitle>
+            <DialogDescription>
+              Consultez toutes les informations du chauffeur avant de le contacter
+            </DialogDescription>
           </DialogHeader>
 
           {selectedDriver && (
             <ScrollArea className="max-h-[70vh]">
             <div className="space-y-6 py-4 pr-4">
               {/* Header with Photo */}
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-4 ring-primary/20">
+              <div className="flex items-start gap-4">
+                <div className="w-24 h-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-4 ring-primary/20 flex-shrink-0">
                   {(selectedDriver.card_photo_url || selectedDriver.profile?.profile_photo_url) ? (
                     <img
                       src={selectedDriver.card_photo_url || selectedDriver.profile?.profile_photo_url}
@@ -690,11 +693,11 @@ ${company?.company_name || ""}`;
                       }}
                     />
                   ) : (
-                    <User className="w-16 h-16 text-white" />
+                    <User className="w-12 h-12 text-white" />
                   )}
                 </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold">
                     {(() => {
                       const showName = selectedDriver.display_driver_name && selectedDriver.profile?.full_name;
                       const showCompany = selectedDriver.display_company_name && selectedDriver.company_name;
@@ -705,14 +708,17 @@ ${company?.company_name || ""}`;
                     })()}
                   </h3>
                   {selectedDriver.display_driver_name && selectedDriver.display_company_name && selectedDriver.company_name && selectedDriver.profile?.full_name && (
-                    <p className="text-muted-foreground">{selectedDriver.company_name}</p>
+                    <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
+                      <Building2 className="w-3 h-3" />
+                      {selectedDriver.company_name}
+                    </p>
                   )}
                   {selectedDriver.rating && (selectedDriver.show_rating_public !== false || selectedDriver.show_rating_partners !== false) && (
-                    <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2">
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                      <span className="font-medium">{selectedDriver.rating.toFixed(1)}/5</span>
+                      <span className="font-semibold">{selectedDriver.rating.toFixed(1)}/5</span>
                       {selectedDriver.total_rides && (
-                        <span className="text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                           ({selectedDriver.total_rides} courses)
                         </span>
                       )}
@@ -721,52 +727,114 @@ ${company?.company_name || ""}`;
                 </div>
               </div>
 
-              {/* Bio */}
+              {/* Bio / À propos */}
               {selectedDriver.bio && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">À propos</h4>
-                  <p className="text-sm whitespace-pre-wrap">{selectedDriver.bio}</p>
+                <div className="p-4 bg-muted/50 rounded-xl">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    À propos
+                  </h4>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{selectedDriver.bio}</p>
                 </div>
               )}
 
-              {/* Vehicle */}
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-3 flex items-center gap-2">
+              {/* Description du service */}
+              {selectedDriver.service_description && (
+                <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" />
+                    Mon service
+                  </h4>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{selectedDriver.service_description}</p>
+                </div>
+              )}
+
+              {/* Contact - Section mise en avant */}
+              {(selectedDriver.show_phone || selectedDriver.show_email) && selectedDriver.profile && (
+                <div className="p-4 border-2 border-green-500/30 rounded-xl bg-green-500/5">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-700">
+                    <Phone className="w-4 h-4" />
+                    Contact direct
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedDriver.show_phone && selectedDriver.profile.phone && (
+                      <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg">
+                        <Phone className="w-5 h-5 text-green-600" />
+                        <a href={`tel:${selectedDriver.profile.phone}`} className="text-green-700 font-semibold hover:underline text-lg">
+                          {selectedDriver.profile.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedDriver.show_email && selectedDriver.profile.email && (
+                      <div className="flex items-center gap-3 p-3 bg-blue-500/10 rounded-lg">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <a href={`mailto:${selectedDriver.profile.email}`} className="text-blue-700 hover:underline">
+                          {selectedDriver.profile.email}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Véhicule */}
+              <div className="p-4 border rounded-xl">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Car className="w-4 h-4" />
                   Véhicule
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Modèle:</span>{" "}
-                    {selectedDriver.vehicle_brand} {selectedDriver.vehicle_model}
+                
+                {/* Photos du véhicule */}
+                {selectedDriver.vehicle_photos?.length > 0 && (
+                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                    {selectedDriver.vehicle_photos.slice(0, 4).map((photo: string, idx: number) => (
+                      <img 
+                        key={idx}
+                        src={photo} 
+                        alt={`Véhicule ${idx + 1}`}
+                        className="w-24 h-18 object-cover rounded-lg flex-shrink-0 border"
+                      />
+                    ))}
                   </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {(selectedDriver.vehicle_brand || selectedDriver.vehicle_model) && (
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs">Modèle</span>
+                      <span className="font-medium">{selectedDriver.vehicle_brand} {selectedDriver.vehicle_model}</span>
+                    </div>
+                  )}
                   {selectedDriver.vehicle_year && (
-                    <div>
-                      <span className="text-muted-foreground">Année:</span>{" "}
-                      {selectedDriver.vehicle_year}
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs">Année</span>
+                      <span className="font-medium">{selectedDriver.vehicle_year}</span>
                     </div>
                   )}
                   {selectedDriver.vehicle_color && (
-                    <div>
-                      <span className="text-muted-foreground">Couleur:</span>{" "}
-                      {selectedDriver.vehicle_color}
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs">Couleur</span>
+                      <span className="font-medium">{selectedDriver.vehicle_color}</span>
                     </div>
                   )}
                   {selectedDriver.max_passengers && (
-                    <div>
-                      <span className="text-muted-foreground">Passagers max:</span>{" "}
-                      {selectedDriver.max_passengers}
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground text-xs">Passagers max</span>
+                      <span className="font-medium">{selectedDriver.max_passengers}</span>
                     </div>
                   )}
                   {selectedDriver.vehicle_category && (
-                    <div>
-                      <span className="text-muted-foreground">Catégorie:</span>{" "}
-                      {selectedDriver.vehicle_category}
+                    <div className="flex flex-col col-span-2">
+                      <span className="text-muted-foreground text-xs">Catégorie</span>
+                      <span className="font-medium capitalize">{selectedDriver.vehicle_category.replace(/_/g, ' ')}</span>
                     </div>
                   )}
                 </div>
+                
                 {selectedDriver.vehicle_equipment?.length > 0 && (
-                  <div className="mt-4">
+                  <div className="mt-4 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Équipements:</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {selectedDriver.vehicle_equipment.map((eq: string) => (
@@ -783,36 +851,36 @@ ${company?.company_name || ""}`;
                 )}
               </div>
 
-              {/* Pricing - only if driver allows */}
+              {/* Tarifs - uniquement si chauffeur autorise */}
               {selectedDriver.show_pricing_partners && (
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                <div className="p-4 border rounded-xl bg-amber-500/5 border-amber-500/20">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-amber-700">
                     <Euro className="w-4 h-4" />
                     Tarifs indicatifs
                   </h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {selectedDriver.base_rate && (
-                      <div>
-                        <span className="text-muted-foreground">Prise en charge:</span>{" "}
-                        {selectedDriver.base_rate.toFixed(2)}€
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs">Prise en charge</span>
+                        <span className="font-semibold text-amber-700">{selectedDriver.base_rate.toFixed(2)}€</span>
                       </div>
                     )}
                     {selectedDriver.per_km_rate && (
-                      <div>
-                        <span className="text-muted-foreground">Par km:</span>{" "}
-                        {selectedDriver.per_km_rate.toFixed(2)}€
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs">Par km</span>
+                        <span className="font-semibold text-amber-700">{selectedDriver.per_km_rate.toFixed(2)}€</span>
                       </div>
                     )}
                     {selectedDriver.hourly_rate && (
-                      <div>
-                        <span className="text-muted-foreground">Taux horaire:</span>{" "}
-                        {selectedDriver.hourly_rate.toFixed(2)}€/h
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs">Taux horaire</span>
+                        <span className="font-semibold text-amber-700">{selectedDriver.hourly_rate.toFixed(2)}€/h</span>
                       </div>
                     )}
                     {selectedDriver.minimum_price && (
-                      <div>
-                        <span className="text-muted-foreground">Minimum:</span>{" "}
-                        {selectedDriver.minimum_price.toFixed(2)}€
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground text-xs">Minimum</span>
+                        <span className="font-semibold text-amber-700">{selectedDriver.minimum_price.toFixed(2)}€</span>
                       </div>
                     )}
                   </div>
@@ -821,8 +889,8 @@ ${company?.company_name || ""}`;
 
               {/* Services */}
               {selectedDriver.services_offered?.length > 0 && (
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                <div className="p-4 border rounded-xl">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <Briefcase className="w-4 h-4" />
                     Services proposés
                   </h4>
@@ -840,10 +908,10 @@ ${company?.company_name || ""}`;
                 </div>
               )}
 
-              {/* Sectors */}
+              {/* Secteurs */}
               {selectedDriver.working_sectors?.length > 0 && (
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                <div className="p-4 border rounded-xl">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
                     Secteurs d'intervention
                   </h4>
@@ -857,42 +925,13 @@ ${company?.company_name || ""}`;
                 </div>
               )}
 
-              {/* Contact information */}
-              {(selectedDriver.show_phone || selectedDriver.show_email) && (
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Contact
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedDriver.show_phone && selectedDriver.profile?.phone && (
-                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <a href={`tel:${selectedDriver.profile.phone}`} className="text-primary hover:underline font-medium">
-                          {selectedDriver.profile.phone}
-                        </a>
-                      </div>
-                    )}
-                    {selectedDriver.show_email && selectedDriver.profile?.email && (
-                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <a href={`mailto:${selectedDriver.profile.email}`} className="text-primary hover:underline">
-                          {selectedDriver.profile.email}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" className="flex-1" onClick={() => setShowProfileDialog(false)}>
+              {/* Actions */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1 min-w-[100px]" onClick={() => setShowProfileDialog(false)}>
                   Fermer
                 </Button>
                 {selectedDriver.show_phone && selectedDriver.profile?.phone && (
-                  <Button variant="secondary" asChild className="flex-1">
+                  <Button variant="secondary" asChild className="flex-1 min-w-[100px]">
                     <a href={`tel:${selectedDriver.profile.phone}`}>
                       <Phone className="w-4 h-4 mr-2" />
                       Appeler
@@ -900,7 +939,7 @@ ${company?.company_name || ""}`;
                   </Button>
                 )}
                 <Button 
-                  className="flex-1" 
+                  className="flex-1 min-w-[100px]" 
                   onClick={() => {
                     setShowProfileDialog(false);
                     handleOpenProposal(selectedDriver);
