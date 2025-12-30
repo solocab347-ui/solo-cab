@@ -168,9 +168,12 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
     },
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, proposedBy?: string) => {
     switch (status) {
       case "pending":
+        if (proposedBy === "driver") {
+          return <Badge className="bg-blue-500"><Clock className="w-3 h-3 mr-1" />En attente de réponse</Badge>;
+        }
         return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />En attente de votre réponse</Badge>;
       case "accepted":
         return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Actif</Badge>;
@@ -199,9 +202,15 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
     );
   }
 
-  const pendingAgreements = agreements?.filter((a) => a.status === "pending") || [];
+  // Demandes reçues de l'entreprise (le chauffeur peut accepter/refuser)
+  const receivedRequests = agreements?.filter((a) => a.status === "pending" && a.proposed_by === "company") || [];
+  // Demandes envoyées par le chauffeur (en attente de réponse de l'entreprise)
+  const sentRequests = agreements?.filter((a) => a.status === "pending" && a.proposed_by === "driver") || [];
   const activeAgreements = agreements?.filter((a) => a.status === "accepted") || [];
-  const otherAgreements = agreements?.filter((a) => !["pending", "accepted"].includes(a.status)) || [];
+  const rejectedAgreements = agreements?.filter((a) => a.status === "rejected") || [];
+  const otherAgreements = agreements?.filter((a) => !["pending", "accepted", "rejected"].includes(a.status)) || [];
+  
+  const totalPending = receivedRequests.length + sentRequests.length;
 
   return (
     <div className="space-y-6">
@@ -219,9 +228,10 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="agreements" className="flex items-center gap-2">
             <Handshake className="w-4 h-4" />
-            Mes partenariats
-            {pendingAgreements.length > 0 && (
-              <Badge className="bg-yellow-500 ml-1">{pendingAgreements.length}</Badge>
+            <span className="hidden sm:inline">Mes partenariats</span>
+            <span className="sm:hidden">Partenariats</span>
+            {totalPending > 0 && (
+              <Badge className="bg-yellow-500 ml-1">{totalPending}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="search" className="flex items-center gap-2">
@@ -235,155 +245,270 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         </TabsContent>
 
         <TabsContent value="agreements" className="mt-6 space-y-6">
-          {/* Pending Agreements - Highlighted */}
-          {pendingAgreements.length > 0 && (
+          {/* Demandes reçues de l'entreprise - Le chauffeur peut accepter/refuser */}
+          {receivedRequests.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-medium text-yellow-600 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
-            Propositions en attente ({pendingAgreements.length})
-          </h3>
-          {pendingAgreements.map((agreement: any) => (
-            <Card key={agreement.id} className="border-yellow-500 border-2">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="text-lg font-semibold">{agreement.company?.company_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Contact: {agreement.company?.contact_name}
-                    </p>
-                  </div>
-                  {getStatusBadge(agreement.status)}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h5 className="font-medium mb-2 flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Modes de paiement proposés
-                    </h5>
-                    <div className="flex flex-wrap gap-2">
-                      {agreement.payment_methods?.map((method: string) => (
-                        <Badge key={method} variant="secondary">
-                          {PAYMENT_METHODS.find((m) => m.value === method)?.icon}{" "}
-                          {PAYMENT_METHODS.find((m) => m.value === method)?.label}
-                        </Badge>
-                      ))}
+                Propositions reçues ({receivedRequests.length})
+              </h3>
+              {receivedRequests.map((agreement: any) => (
+                <Card key={agreement.id} className="border-yellow-500 border-2">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold">{agreement.company?.company_name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Contact: {agreement.company?.contact_name}
+                        </p>
+                      </div>
+                      {getStatusBadge(agreement.status, agreement.proposed_by)}
                     </div>
-                  </div>
 
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h5 className="font-medium mb-2 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Fréquence de paiement
-                    </h5>
-                    <p className="font-semibold">
-                      {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}
-                    </p>
-                    {agreement.payment_day && (
-                      <p className="text-sm text-muted-foreground">
-                        Paiement {getDayLabel(agreement.payment_day, agreement.payment_frequency)}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2 text-sm sm:text-base">
+                          <CreditCard className="w-4 h-4" />
+                          Modes de paiement proposés
+                        </h5>
+                        <div className="flex flex-wrap gap-2">
+                          {agreement.payment_methods?.map((method: string) => (
+                            <Badge key={method} variant="secondary" className="text-xs sm:text-sm">
+                              {PAYMENT_METHODS.find((m) => m.value === method)?.icon}{" "}
+                              {PAYMENT_METHODS.find((m) => m.value === method)?.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
 
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  {agreement.credit_limit > 0 && (
-                    <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                      <h5 className="font-medium mb-1 flex items-center gap-2">
-                        <Euro className="w-4 h-4" />
-                        Limite de crédit
-                      </h5>
-                      <p className="text-lg font-bold">{agreement.credit_limit.toFixed(2)}€</p>
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2 text-sm sm:text-base">
+                          <Clock className="w-4 h-4" />
+                          Fréquence de paiement
+                        </h5>
+                        <p className="font-semibold">
+                          {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}
+                        </p>
+                        {agreement.payment_day && (
+                          <p className="text-sm text-muted-foreground">
+                            Paiement {getDayLabel(agreement.payment_day, agreement.payment_frequency)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {agreement.discount_percentage > 0 && (
-                    <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                      <h5 className="font-medium mb-1">Remise accordée</h5>
-                      <p className="text-lg font-bold text-green-600">
-                        -{agreement.discount_percentage}%
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {agreement.credit_limit > 0 && (
+                        <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                          <h5 className="font-medium mb-1 flex items-center gap-2 text-sm sm:text-base">
+                            <Euro className="w-4 h-4" />
+                            Limite de crédit
+                          </h5>
+                          <p className="text-lg font-bold">{agreement.credit_limit.toFixed(2)}€</p>
+                        </div>
+                      )}
+                      {agreement.discount_percentage > 0 && (
+                        <div className="p-3 sm:p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                          <h5 className="font-medium mb-1 text-sm sm:text-base">Remise accordée</h5>
+                          <p className="text-lg font-bold text-green-600">
+                            -{agreement.discount_percentage}%
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {agreement.notes && (
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg mb-4">
+                        <h5 className="font-medium mb-1 text-sm sm:text-base">Notes et conditions</h5>
+                        <p className="text-sm">{agreement.notes}</p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                      <Button
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                        onClick={() => {
+                          setSelectedAgreement(agreement);
+                          setShowRejectDialog(true);
+                        }}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Refuser
+                      </Button>
+                      <Button
+                        className="w-full sm:w-auto"
+                        onClick={() => acceptAgreement.mutate(agreement.id)}
+                        disabled={acceptAgreement.isPending}
+                      >
+                        {acceptAgreement.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Accepter le partenariat
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Demandes envoyées par le chauffeur - En attente de réponse de l'entreprise */}
+          {sentRequests.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium text-blue-600 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Demandes envoyées ({sentRequests.length})
+              </h3>
+              {sentRequests.map((agreement: any) => (
+                <Card key={agreement.id} className="border-blue-500 border-2">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4">
+                      <div>
+                        <h4 className="text-lg font-semibold">{agreement.company?.company_name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Contact: {agreement.company?.contact_name}
+                        </p>
+                      </div>
+                      {getStatusBadge(agreement.status, agreement.proposed_by)}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2 text-sm sm:text-base">
+                          <CreditCard className="w-4 h-4" />
+                          Modes de paiement proposés
+                        </h5>
+                        <div className="flex flex-wrap gap-2">
+                          {agreement.payment_methods?.map((method: string) => (
+                            <Badge key={method} variant="secondary" className="text-xs sm:text-sm">
+                              {PAYMENT_METHODS.find((m) => m.value === method)?.icon}{" "}
+                              {PAYMENT_METHODS.find((m) => m.value === method)?.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2 text-sm sm:text-base">
+                          <Clock className="w-4 h-4" />
+                          Fréquence de paiement
+                        </h5>
+                        <p className="font-semibold">
+                          {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}
+                        </p>
+                      </div>
+                    </div>
+
+                    {agreement.driver_presentation && (
+                      <div className="p-3 sm:p-4 bg-muted rounded-lg mb-4">
+                        <h5 className="font-medium mb-1 text-sm sm:text-base">Votre présentation</h5>
+                        <p className="text-sm">{agreement.driver_presentation}</p>
+                      </div>
+                    )}
+
+                    <div className="p-3 sm:p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                      <p className="text-sm text-center text-blue-700 dark:text-blue-300">
+                        <Clock className="w-4 h-4 inline mr-2" />
+                        Votre demande est en cours d'examen par l'entreprise
                       </p>
                     </div>
-                  )}
-                </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                {agreement.notes && (
-                  <div className="p-4 bg-muted rounded-lg mb-4">
-                    <h5 className="font-medium mb-1">Notes et conditions</h5>
-                    <p className="text-sm">{agreement.notes}</p>
-                  </div>
-                )}
+          {/* Active Agreements */}
+          {activeAgreements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium text-green-600 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Partenariats actifs ({activeAgreements.length})
+              </h3>
+              {activeAgreements.map((agreement: any) => (
+                <ActiveDriverAgreementCard 
+                  key={agreement.id}
+                  agreement={agreement}
+                  driverId={driverId}
+                  onRefresh={() => queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] })}
+                />
+              ))}
+            </div>
+          )}
 
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedAgreement(agreement);
-                      setShowRejectDialog(true);
-                    }}
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Refuser
-                  </Button>
-                  <Button
-                    onClick={() => acceptAgreement.mutate(agreement.id)}
-                    disabled={acceptAgreement.isPending}
-                  >
-                    {acceptAgreement.isPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                    )}
-                    Accepter le partenariat
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+          {/* Rejected Agreements - Avec possibilité de refaire une demande */}
+          {rejectedAgreements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium text-red-600 flex items-center gap-2">
+                <XCircle className="w-4 h-4" />
+                Demandes refusées ({rejectedAgreements.length})
+              </h3>
+              {rejectedAgreements.map((agreement: any) => (
+                <Card key={agreement.id} className="border-destructive/50">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div>
+                        <h4 className="font-medium">{agreement.company?.company_name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {agreement.proposed_by === "driver" ? "Votre demande a été refusée" : "Vous avez refusé cette proposition"}
+                        </p>
+                        {agreement.rejection_reason && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Raison: {agreement.rejection_reason}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Le {new Date(agreement.rejected_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 items-start sm:items-end">
+                        {getStatusBadge(agreement.status)}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() => {
+                            const tabTrigger = document.querySelector('[data-state="inactive"][value="search"]') as HTMLElement;
+                            tabTrigger?.click();
+                          }}
+                        >
+                          <Search className="w-4 h-4 mr-2" />
+                          Refaire une demande
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-      {/* Active Agreements */}
-      {activeAgreements.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-medium text-green-600 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Partenariats actifs ({activeAgreements.length})
-          </h3>
-          {activeAgreements.map((agreement: any) => (
-            <ActiveDriverAgreementCard 
-              key={agreement.id}
-              agreement={agreement}
-              driverId={driverId}
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] })}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Other Agreements */}
-      {otherAgreements.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-medium text-muted-foreground">Historique</h3>
-          {otherAgreements.map((agreement: any) => (
-            <Card key={agreement.id} className="opacity-70">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">{agreement.company?.company_name}</h4>
-                    {agreement.rejection_reason && (
-                      <p className="text-sm text-muted-foreground">
-                        Raison: {agreement.rejection_reason}
-                      </p>
-                    )}
-                  </div>
-                  {getStatusBadge(agreement.status)}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+          {/* Other Agreements (suspended, terminated, etc.) */}
+          {otherAgreements.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-medium text-muted-foreground">Historique</h3>
+              {otherAgreements.map((agreement: any) => (
+                <Card key={agreement.id} className="opacity-70">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <div>
+                        <h4 className="font-medium">{agreement.company?.company_name}</h4>
+                        {agreement.termination_reason && (
+                          <p className="text-sm text-muted-foreground">
+                            Raison: {agreement.termination_reason}
+                          </p>
+                        )}
+                      </div>
+                      {getStatusBadge(agreement.status)}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {agreements?.length === 0 && (
             <Card>
