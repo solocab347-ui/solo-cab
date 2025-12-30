@@ -17,8 +17,10 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone, Filter, Building2, RotateCcw, Euro
+  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase
 } from "lucide-react";
+import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
+import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
 
 interface CompanyDriverSearchProps {
   companyId: string;
@@ -736,10 +738,11 @@ ${company?.company_name || ""}`;
                 {selectedDriver.vehicle_equipment?.length > 0 && (
                   <div className="mt-3">
                     <span className="text-sm text-muted-foreground">Équipements:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {selectedDriver.vehicle_equipment.map((eq: string) => (
-                        <Badge key={eq} variant="secondary" className="text-xs">
-                          {eq}
+                        <Badge key={eq} variant="secondary" className="text-xs flex items-center gap-1 px-2 py-1">
+                          <span>{getEquipmentIcon(eq)}</span>
+                          <span>{getEquipmentLabel(eq)}</span>
                         </Badge>
                       ))}
                     </div>
@@ -786,11 +789,15 @@ ${company?.company_name || ""}`;
               {/* Services */}
               {selectedDriver.services_offered?.length > 0 && (
                 <div className="p-4 border rounded-lg">
-                  <h4 className="font-medium mb-2">Services proposés</h4>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    Services proposés
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedDriver.services_offered.map((service: string) => (
-                      <Badge key={service} variant="outline">
-                        {service}
+                      <Badge key={service} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                        <span className="text-base">{getServiceIcon(service)}</span>
+                        <span>{getServiceLabel(service)}</span>
                       </Badge>
                     ))}
                   </div>

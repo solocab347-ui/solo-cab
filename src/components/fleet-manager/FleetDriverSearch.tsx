@@ -33,6 +33,8 @@ import {
   Percent
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
+import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
 
 interface SearchableDriver {
   id: string;
@@ -834,7 +836,10 @@ Cordialement`;
                         <CardContent>
                           <div className="flex flex-wrap gap-2">
                             {selectedDriver.vehicle_equipment.map((equip, i) => (
-                              <Badge key={i} variant="outline">{equip}</Badge>
+                              <Badge key={i} variant="secondary" className="flex items-center gap-1.5 px-2 py-1">
+                                <span>{getEquipmentIcon(equip)}</span>
+                                <span>{getEquipmentLabel(equip)}</span>
+                              </Badge>
                             ))}
                           </div>
                         </CardContent>
@@ -877,7 +882,10 @@ Cordialement`;
                         <CardContent>
                           <div className="flex flex-wrap gap-2">
                             {selectedDriver.services_offered.map((service, i) => (
-                              <Badge key={i} variant="secondary">{service}</Badge>
+                              <Badge key={i} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                                <span className="text-base">{getServiceIcon(service)}</span>
+                                <span>{getServiceLabel(service)}</span>
+                              </Badge>
                             ))}
                           </div>
                         </CardContent>
