@@ -581,6 +581,8 @@ Cordialement`;
                         <h3 className="font-semibold truncate">
                           {(driver as any).display_driver_name && driver.profile?.full_name 
                             ? driver.profile.full_name 
+                            : (driver as any).display_company_name && driver.company_name
+                            ? driver.company_name
                             : 'Chauffeur VTC'}
                         </h3>
                         {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && driver.rating >= 4.5 && (
@@ -591,7 +593,7 @@ Cordialement`;
                         )}
                       </div>
                       
-                      {(driver as any).display_company_name && driver.company_name && (
+                      {(driver as any).display_driver_name && (driver as any).display_company_name && driver.company_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <Building2 className="h-3 w-3" />
                           {driver.company_name}

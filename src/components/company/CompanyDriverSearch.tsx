@@ -536,13 +536,15 @@ ${company?.company_name || ""}`;
                       <h4 className="font-semibold truncate">
                         {driver.display_driver_name && driver.profile?.full_name 
                           ? driver.profile.full_name 
+                          : driver.display_company_name && driver.company_name
+                          ? driver.company_name
                           : "Chauffeur VTC"}
                       </h4>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {driver.display_company_name && driver.company_name 
-                          ? driver.company_name 
-                          : null}
-                      </p>
+                      {driver.display_driver_name && driver.display_company_name && driver.company_name && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {driver.company_name}
+                        </p>
+                      )}
                       {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
                         <div className="flex items-center gap-1 mt-1">
                           <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
