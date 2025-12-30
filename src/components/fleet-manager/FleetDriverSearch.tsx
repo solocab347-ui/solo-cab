@@ -836,8 +836,11 @@ Cordialement`;
                         <CardContent>
                           <div className="flex flex-wrap gap-2">
                             {selectedDriver.vehicle_equipment.map((equip, i) => (
-                              <Badge key={i} variant="secondary" className="flex items-center gap-1.5 px-2 py-1">
-                                <span>{getEquipmentIcon(equip)}</span>
+                              <Badge 
+                                key={i} 
+                                className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                              >
+                                <span className="text-base">{getEquipmentIcon(equip)}</span>
                                 <span>{getEquipmentLabel(equip)}</span>
                               </Badge>
                             ))}
@@ -882,7 +885,10 @@ Cordialement`;
                         <CardContent>
                           <div className="flex flex-wrap gap-2">
                             {selectedDriver.services_offered.map((service, i) => (
-                              <Badge key={i} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                              <Badge 
+                                key={i} 
+                                className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                              >
                                 <span className="text-base">{getServiceIcon(service)}</span>
                                 <span>{getServiceLabel(service)}</span>
                               </Badge>
