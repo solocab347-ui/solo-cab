@@ -540,16 +540,21 @@ ${company?.company_name || ""}`;
                     <div className="flex-1 min-w-0">
                     <h4 className="font-semibold truncate">
                       {(() => {
-                        const hasProfile = driver.profile && driver.profile.full_name;
-                        const showName = driver.display_driver_name !== false && hasProfile;
-                        const showCompany = driver.display_company_name && driver.company_name;
-                        if (showName && hasProfile) return driver.profile.full_name;
-                        if (showCompany) return driver.company_name;
-                        if (hasProfile) return driver.profile.full_name;
+                        const fullName = driver.profile?.full_name;
+                        const companyName = driver.company_name?.trim();
+                        const showName = driver.display_driver_name !== false;
+                        const showCompany = driver.display_company_name === true;
+                        
+                        // Priorité: nom si autorisé et disponible, sinon entreprise si autorisée
+                        if (showName && fullName) return fullName;
+                        if (showCompany && companyName) return companyName;
+                        // Fallback: afficher ce qui est disponible
+                        if (fullName) return fullName;
+                        if (companyName) return companyName;
                         return "Chauffeur VTC";
                       })()}
                     </h4>
-                    {driver.display_driver_name !== false && driver.display_company_name && driver.company_name && driver.profile?.full_name && (
+                    {driver.display_driver_name !== false && driver.display_company_name === true && driver.company_name?.trim() && driver.profile?.full_name && (
                       <p className="text-sm text-muted-foreground truncate">
                         {driver.company_name}
                       </p>
@@ -700,16 +705,21 @@ ${company?.company_name || ""}`;
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold">
                     {(() => {
-                      const hasProfile = selectedDriver.profile && selectedDriver.profile.full_name;
-                      const showName = selectedDriver.display_driver_name !== false && hasProfile;
-                      const showCompany = selectedDriver.display_company_name && selectedDriver.company_name;
-                      if (showName && hasProfile) return selectedDriver.profile.full_name;
-                      if (showCompany) return selectedDriver.company_name;
-                      if (hasProfile) return selectedDriver.profile.full_name;
+                      const fullName = selectedDriver.profile?.full_name;
+                      const companyName = selectedDriver.company_name?.trim();
+                      const showName = selectedDriver.display_driver_name !== false;
+                      const showCompany = selectedDriver.display_company_name === true;
+                      
+                      // Priorité: nom si autorisé et disponible, sinon entreprise si autorisée
+                      if (showName && fullName) return fullName;
+                      if (showCompany && companyName) return companyName;
+                      // Fallback: afficher ce qui est disponible
+                      if (fullName) return fullName;
+                      if (companyName) return companyName;
                       return "Chauffeur VTC";
                     })()}
                   </h3>
-                  {selectedDriver.display_driver_name !== false && selectedDriver.display_company_name && selectedDriver.company_name && selectedDriver.profile?.full_name && (
+                  {selectedDriver.display_driver_name !== false && selectedDriver.display_company_name === true && selectedDriver.company_name?.trim() && selectedDriver.profile?.full_name && (
                     <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
                       <Building2 className="w-3 h-3" />
                       {selectedDriver.company_name}
