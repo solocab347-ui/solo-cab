@@ -504,15 +504,22 @@ ${companyProfile.company_name}`;
                   </div>
                 )}
 
-                {/* Features */}
-                <div className="flex flex-wrap gap-2">
-                  {selectedFleet.auto_dispatch_enabled && (
-                    <Badge variant="outline">Dispatch automatique</Badge>
-                  )}
-                  {selectedFleet.show_drivers_in_public_storefront && (
-                    <Badge variant="outline">Chauffeurs visibles</Badge>
-                  )}
-                </div>
+                {/* Services proposés */}
+                {selectedFleet.services_offered && selectedFleet.services_offered.length > 0 && (
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      Services proposés
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedFleet.services_offered.map((service: string) => (
+                        <Badge key={service} variant="secondary">
+                          {getServiceLabel(service)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-4 border-t">
                   <Button variant="outline" className="flex-1" onClick={() => setShowProfileDialog(false)}>
