@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake, Building2, Truck, User } from "lucide-react";
 import { CourseNavigationButtons } from "@/components/course/CourseNavigationButtons";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
 import { notificationService } from "@/lib/notificationService";
+import { CourseType, CourseTypeInfo, getCourseType, getCourseTypeFilters, COURSE_TYPE_CONFIG } from "@/lib/courseTypeUtils";
+import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
 
 interface CoursesListProps {
   driverId: string;
@@ -54,7 +56,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [minAmount, setMinAmount] = useState<string>("");
   const [maxAmount, setMaxAmount] = useState<string>("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  const [courseTypeFilter, setCourseTypeFilter] = useState<CourseType | "all">("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // État pour les informations de type de course
+  const [sharedCoursesData, setSharedCoursesData] = useState<any[]>([]);
+  const [companyCoursesData, setCompanyCoursesData] = useState<any[]>([]);
+  const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
   // État pour le signalement
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -99,12 +107,29 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .from("drivers")
         .select(`
           *,
-          profiles:user_id(full_name, phone)
+          profiles:user_id(full_name, phone),
+          fleet_manager_id
         `)
         .eq("id", driverId)
         .single();
       
       setDriverInfo(driverData);
+
+      // Fetch fleet info if driver belongs to a fleet
+      if (driverData?.fleet_manager_id) {
+        const { data: fleetData } = await supabase
+          .from("fleet_managers")
+          .select("id, company_name")
+          .eq("id", driverData.fleet_manager_id)
+          .single();
+        
+        if (fleetData) {
+          setFleetDriverInfo({
+            fleet_manager_id: fleetData.id,
+            fleet_name: fleetData.company_name
+          });
+        }
+      }
 
       const { data: coursesData, error } = await supabase
         .from("courses")
@@ -148,6 +173,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
       setCourses(coursesData || []);
+
+      // Fetch shared courses data (courses partagées entre chauffeurs)
+      const courseIds = (coursesData || []).map(c => c.id);
+      if (courseIds.length > 0) {
+        const { data: sharedData } = await supabase
+          .from("shared_courses")
+          .select(`
+            course_id,
+            sender_driver_id,
+            receiver_driver_id,
+            status
+          `)
+          .in("course_id", courseIds);
+        
+        setSharedCoursesData(sharedData || []);
+
+        // Fetch company courses data
+        const { data: companyData } = await supabase
+          .from("company_courses")
+          .select(`
+            course_id,
+            company_id,
+            company:companies(company_name)
+          `)
+          .in("course_id", courseIds);
+        
+        setCompanyCoursesData(companyData || []);
+      }
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -155,6 +208,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       setLoading(false);
     }
   };
+
+  // Helper function to get course type info
+  const getCourseTypeInfo = useMemo(() => {
+    return (course: any): CourseTypeInfo => {
+      const sharedCourse = sharedCoursesData.find(sc => sc.course_id === course.id);
+      const companyCourse = companyCoursesData.find(cc => cc.course_id === course.id);
+      
+      return getCourseType(course, driverId, {
+        sharedCourses: sharedCourse ? [sharedCourse] : [],
+        companyCourses: companyCourse ? [companyCourse] : [],
+        fleetDriverInfo: fleetDriverInfo
+      });
+    };
+  }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
 
   const setupRealtimeSubscription = () => {
     if (!driverId) return () => {};
@@ -1137,6 +1204,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       });
     }
 
+    // Filtre par type de course (personnel, partenaire, entreprise, flotte)
+    if (courseTypeFilter !== "all") {
+      filtered = filtered.filter(course => {
+        const typeInfo = getCourseTypeInfo(course);
+        return typeInfo.type === courseTypeFilter;
+      });
+    }
+
     return filtered;
   };
 
@@ -1148,6 +1223,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setMinAmount("");
     setMaxAmount("");
     setPaymentStatusFilter("all");
+    setCourseTypeFilter("all");
   };
 
   // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN)
@@ -1170,7 +1246,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
-  const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all";
+  const hasActiveFilters = dateFilter !== "all" || searchQuery.trim() !== "" || minAmount !== "" || maxAmount !== "" || paymentStatusFilter !== "all" || courseTypeFilter !== "all";
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -1357,6 +1433,39 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* FILTRES PAR TYPE DE COURSE */}
+              <div className="space-y-3">
+                <Label className="text-xs font-medium">Filtrer par type de course</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {getCourseTypeFilters().map(filter => {
+                    const isActive = courseTypeFilter === filter.value;
+                    const config = filter.value !== 'all' ? COURSE_TYPE_CONFIG[filter.value as CourseType] : null;
+                    
+                    return (
+                      <Button
+                        key={filter.value}
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCourseTypeFilter(filter.value as CourseType | "all")}
+                        className={cn(
+                          "text-xs flex items-center gap-1",
+                          isActive && config && config.bgColor,
+                          isActive && config && config.color
+                        )}
+                      >
+                        {filter.value === 'all' && <Filter className="w-3 h-3" />}
+                        {filter.value === 'personal' && <User className="w-3 h-3" />}
+                        {filter.value === 'partner' && <Handshake className="w-3 h-3" />}
+                        {filter.value === 'company' && <Building2 className="w-3 h-3" />}
+                        {filter.value === 'fleet' && <Truck className="w-3 h-3" />}
+                        <span className="hidden sm:inline">{filter.label.replace('Courses ', '')}</span>
+                        <span className="sm:hidden">{filter.value === 'all' ? 'Toutes' : filter.label.replace('Courses ', '').substring(0, 6)}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1387,6 +1496,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 {paymentStatusFilter !== "all" && (
                   <Badge variant="secondary" className="text-xs">
                     Paiement: {paymentStatusFilter === "paid" ? "Payé" : paymentStatusFilter === "pending" ? "En attente" : "Échoué"}
+                  </Badge>
+                )}
+                {courseTypeFilter !== "all" && (
+                  <Badge variant="secondary" className={cn("text-xs", COURSE_TYPE_CONFIG[courseTypeFilter].bgColor, COURSE_TYPE_CONFIG[courseTypeFilter].color)}>
+                    {COURSE_TYPE_CONFIG[courseTypeFilter].label}
                   </Badge>
                 )}
               </p>
@@ -1436,14 +1550,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : (
             pendingCourses.map((course) => {
+              const courseTypeInfo = getCourseTypeInfo(course);
               return (
-              <Card key={course.id} className="p-3 sm:p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
-                <div className="space-y-3">
+              <Card key={course.id} className={cn(
+                "relative overflow-hidden p-3 sm:p-4 backdrop-blur-sm border bg-card/95 hover:shadow-lg transition-all",
+                courseTypeInfo.borderColor
+              )}>
+                {/* Indicateur de type de course - barre latérale colorée */}
+                <CourseTypeIndicator type={courseTypeInfo.type} className="absolute left-0 top-0 bottom-0 w-1" />
+                
+                <div className="space-y-3 pl-2">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="space-y-1 w-full">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-sm sm:text-base text-foreground">{course.clients?.profiles?.full_name}</h3>
                           {getStatusBadge(course.status)}
+                          <CourseTypeBadge typeInfo={courseTypeInfo} size="sm" />
                         </div>
                         <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
