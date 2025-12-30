@@ -162,7 +162,14 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           base_rate,
           per_km_rate,
           hourly_rate,
-          minimum_price
+          minimum_price,
+          profile:profiles!drivers_user_id_fkey(
+            id,
+            full_name,
+            profile_photo_url,
+            phone,
+            email
+          )
         `)
         .eq("status", "validated")
         .eq("visible_to_companies", true)
