@@ -201,7 +201,8 @@ const Login = () => {
                 onChange={(e) => setLoginEmail(e.target.value)}
                 disabled={loading}
                 className="transition-all focus:shadow-sm"
-                autoComplete="email"
+                autoComplete="email username"
+                name="email"
               />
             </div>
             <div className="space-y-2">
@@ -215,6 +216,7 @@ const Login = () => {
                 disabled={loading}
                 className="transition-all focus:shadow-sm"
                 autoComplete="current-password"
+                name="password"
               />
             </div>
             <div className="flex items-center justify-between text-sm">

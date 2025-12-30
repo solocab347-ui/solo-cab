@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
@@ -15,7 +13,6 @@ import {
   Handshake, 
   Copy,
   AlertTriangle,
-  ExternalLink,
   Car,
   Send,
   Wallet,
@@ -27,11 +24,11 @@ import {
 import { MyPartnersList } from './MyPartnersList';
 import { PartnerCoursePool } from './PartnerCoursePool';
 import { PushCourseToPartners } from './PushCourseToPartners';
+import { PartnerSearchInline } from './PartnerSearchInline';
 
-type TabType = 'partners' | 'available' | 'propose' | 'balances';
+type TabType = 'partners' | 'search' | 'available' | 'propose' | 'balances';
 
 export function DriverCourseSharing() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +129,7 @@ export function DriverCourseSharing() {
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'partners', label: 'Partenaires', icon: <Users className="h-4 w-4" />, count: activePartnersCount },
+    { id: 'search', label: 'Rechercher', icon: <Search className="h-4 w-4" /> },
     { id: 'available', label: 'Courses', icon: <Car className="h-4 w-4" />, count: availableCoursesCount },
     { id: 'propose', label: 'Proposer', icon: <Send className="h-4 w-4" /> },
     { id: 'balances', label: 'Soldes', icon: <Wallet className="h-4 w-4" /> },
@@ -177,18 +175,6 @@ export function DriverCourseSharing() {
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-
-          <Button 
-            variant="ghost" 
-            className="w-full mt-3 justify-between text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/driver-partner-search')}
-          >
-            <span className="flex items-center gap-2 text-sm">
-              <Search className="h-4 w-4" />
-              Rechercher des partenaires
-            </span>
-            <ExternalLink className="h-4 w-4" />
-          </Button>
         </CardContent>
       </Card>
 
@@ -246,6 +232,7 @@ export function DriverCourseSharing() {
       {/* Tab Content */}
       <div className="mx-1">
         {activeTab === 'partners' && <MyPartnersList />}
+        {activeTab === 'search' && <PartnerSearchInline driverId={driverInfo?.id || ''} />}
         {activeTab === 'available' && <PartnerCoursePool />}
         {activeTab === 'propose' && <PushCourseToPartners />}
         {activeTab === 'balances' && <BalancesSummary driverId={driverInfo?.id || null} />}
