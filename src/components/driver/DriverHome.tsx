@@ -146,16 +146,16 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       {/* Welcome Header */}
-      <div className="text-left animate-fade-in">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
+      <div className="text-center animate-fade-in">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
               Bienvenue, {driverProfile?.full_name || 'Chauffeur'}
             </h1>
             <p className="text-muted-foreground text-lg">Tableau de bord professionnel</p>
           </div>
           {driverProfile?.driver?.rating && driverProfile.driver.rating > 0 && (
-            <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-premium">
+            <div className="flex items-center gap-3 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-premium mt-2">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 fill-warning text-warning" />
                 <span className="text-2xl font-bold text-foreground">

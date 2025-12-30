@@ -39,6 +39,8 @@ interface AvailableDriver {
   full_name: string;
   profile_photo_url: string | null;
   phone: string | null;
+  display_driver_name?: boolean;
+  display_company_name?: boolean;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -334,7 +336,16 @@ export function PartnerSearchInline({ driverId }: Props) {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{driver.full_name}</span>
+                        <span className="font-medium text-sm truncate">
+                          {/* Afficher selon les préférences */}
+                          {driver.display_driver_name !== false && driver.display_company_name !== false
+                            ? `${driver.full_name}${driver.company_name ? ` - ${driver.company_name}` : ''}`
+                            : driver.display_driver_name !== false
+                            ? driver.full_name
+                            : driver.display_company_name !== false && driver.company_name
+                            ? driver.company_name
+                            : driver.full_name}
+                        </span>
                         <Badge variant="outline" className="font-mono text-[10px]">
                           {driver.formatted_sharing_number}
                         </Badge>
@@ -349,12 +360,6 @@ export function PartnerSearchInline({ driverId }: Props) {
                           <Car className="h-3 w-3" />
                           {driver.total_rides || 0}
                         </span>
-                        {driver.company_name && (
-                          <span className="flex items-center gap-1 truncate">
-                            <Building2 className="h-3 w-3" />
-                            {driver.company_name}
-                          </span>
-                        )}
                       </div>
 
                       {driver.phone && (
