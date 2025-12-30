@@ -35,27 +35,39 @@ const Login = () => {
   }, [authLoading, user]);
 
   // Redirection automatique si déjà connecté - AVEC PROTECTION BOUCLE
+  const [hasRedirected, setHasRedirected] = useState(false);
+  
   useEffect(() => {
-    logger.debug("Login check", { authLoading, hasUser: !!user, userRole });
+    // Si déjà redirigé, ne rien faire
+    if (hasRedirected) return;
     
-    // NE PAS rediriger si on vient déjà d'une tentative de redirection (évite boucle)
-    if (!authLoading && user && userRole && !loading) {
+    // NE PAS rediriger pendant le chargement initial ou si loading local
+    if (authLoading || loading) return;
+    
+    // Rediriger seulement si user ET userRole sont définis
+    if (user && userRole) {
       logger.info("Redirecting to dashboard", { userRole });
+      setHasRedirected(true);
       
-      const path = userRole === "admin" 
-        ? "/admin-dashboard" 
-        : userRole === "driver"
-        ? "/driver-dashboard"
-        : "/client-dashboard";
+      let path: string;
+      if (userRole === "admin") {
+        path = "/admin-dashboard";
+      } else if (userRole === "driver") {
+        path = "/driver-dashboard";
+      } else if (userRole === "fleet_manager") {
+        path = "/fleet-manager-dashboard";
+      } else if (userRole === "company") {
+        path = "/company-dashboard";
+      } else if (userRole === "client") {
+        path = "/client-dashboard";
+      } else {
+        // Fallback pour autres rôles (company_employee, fleet_driver, fleet_client, etc.)
+        path = "/client-dashboard";
+      }
       
-      // Timeout pour éviter boucle de redirection immédiate
-      const redirectTimer = setTimeout(() => {
-        navigate(path, { replace: true });
-      }, 100);
-      
-      return () => clearTimeout(redirectTimer);
+      navigate(path, { replace: true });
     }
-  }, [user, userRole, authLoading, navigate, loading]);
+  }, [user, userRole, authLoading, navigate, loading, hasRedirected]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
