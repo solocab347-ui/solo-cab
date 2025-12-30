@@ -41,6 +41,7 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
   const [preferredVehicleTypes, setPreferredVehicleTypes] = useState<string[]>([]);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
   const [acceptingProposals, setAcceptingProposals] = useState(false);
+  const [siretNumber, setSiretNumber] = useState("");
   const [sirenNumber, setSirenNumber] = useState("");
   const [tvaNumber, setTvaNumber] = useState("");
 
@@ -67,8 +68,9 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
       setPreferredVehicleTypes(company.preferred_vehicle_types || []);
       setVisibleToDrivers(company.visible_to_drivers || false);
       setAcceptingProposals(company.accepting_proposals || false);
+      setSiretNumber(company.siret || "");
       setSirenNumber(company.siren || "");
-      setTvaNumber((company as any).tva_number || "");
+      setTvaNumber(company.tva_number || "");
     }
   }, [company]);
 
@@ -82,9 +84,10 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           preferred_vehicle_types: servicesNeeded,
           visible_to_drivers: visibleToDrivers,
           accepting_proposals: acceptingProposals,
+          siret: siretNumber,
           siren: sirenNumber,
           tva_number: tvaNumber,
-        } as any)
+        })
         .eq("id", companyId);
 
       if (error) throw error;
@@ -264,8 +267,21 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
             </div>
           )}
 
-          {/* SIREN & TVA */}
+          {/* SIRET, SIREN & TVA */}
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="siret">Numéro SIRET</Label>
+              <Input
+                id="siret"
+                placeholder="123 456 789 00012"
+                value={siretNumber}
+                onChange={(e) => setSiretNumber(e.target.value)}
+                maxLength={17}
+              />
+              <p className="text-xs text-muted-foreground">
+                14 chiffres identifiant votre établissement
+              </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="siren">Numéro SIREN</Label>
               <Input
@@ -279,18 +295,19 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
                 9 chiffres identifiant votre entreprise
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tva">Numéro de TVA intracommunautaire</Label>
-              <Input
-                id="tva"
-                placeholder="FR12 345678901"
-                value={tvaNumber}
-                onChange={(e) => setTvaNumber(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Utilisé pour la facturation
-              </p>
-            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="tva">Numéro de TVA intracommunautaire</Label>
+            <Input
+              id="tva"
+              placeholder="FR12 345678901"
+              value={tvaNumber}
+              onChange={(e) => setTvaNumber(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Utilisé pour la facturation
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -400,18 +417,27 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
               </div>
 
               {/* Legal info preview */}
-              {(sirenNumber || tvaNumber) && (
-                <div className="flex flex-wrap gap-4 text-sm">
+              {(siretNumber || sirenNumber || tvaNumber) && (
+                <div className="flex flex-wrap gap-4 text-sm border-t pt-3">
+                  {siretNumber && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      <span className="font-medium">SIRET:</span>
+                      <span>{siretNumber}</span>
+                    </div>
+                  )}
                   {sirenNumber && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Briefcase className="w-3 h-3" />
-                      <span>SIREN: {sirenNumber}</span>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span className="font-medium">SIREN:</span>
+                      <span>{sirenNumber}</span>
                     </div>
                   )}
                   {tvaNumber && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Building2 className="w-3 h-3" />
-                      <span>TVA: {tvaNumber}</span>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span className="font-medium">TVA:</span>
+                      <span>{tvaNumber}</span>
                     </div>
                   )}
                 </div>
