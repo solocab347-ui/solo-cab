@@ -162,14 +162,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           base_rate,
           per_km_rate,
           hourly_rate,
-          minimum_price,
-          profile:profiles!drivers_user_id_fkey(
-            id,
-            full_name,
-            profile_photo_url,
-            phone,
-            email
-          )
+          minimum_price
         `)
         .eq("status", "validated")
         .eq("visible_to_companies", true)
@@ -177,11 +170,34 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
         .limit(100);
 
       if (error) throw error;
-
-      // Récupérer les données non nulles
-      let filteredData = data || [];
       
+      // Récupérer les profils séparément pour éviter les problèmes de jointure
+      const userIds = (data || []).map((d: any) => d.user_id).filter(Boolean);
+      
+      let profilesMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, profile_photo_url, phone, email")
+          .in("id", userIds);
+        
+        if (profiles) {
+          profilesMap = profiles.reduce((acc: Record<string, any>, p: any) => {
+            acc[p.id] = p;
+            return acc;
+          }, {});
+        }
+      }
+      
+      // Attacher les profils aux chauffeurs
+      const dataWithProfiles = (data || []).map((driver: any) => ({
+        ...driver,
+        profile: profilesMap[driver.user_id] || null
+      }));
+
       // Apply filters in JavaScript for more flexibility
+      let filteredData = dataWithProfiles;
+      
       if (minRating > 0) {
         filteredData = filteredData.filter((d: any) => (d.rating || 0) >= minRating);
       }
@@ -207,28 +223,10 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
         );
       }
 
-      // Fetch profiles pour les chauffeurs filtrés
-      const userIds = filteredData.map((d: any) => d.user_id);
-      
-      if (userIds.length === 0) {
-        return [];
-      }
-      
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, profile_photo_url, phone, email")
-        .in("id", userIds);
-
-      // Enrichir les chauffeurs avec les profils
-      let enrichedDrivers = filteredData.map((driver: any) => ({
-        ...driver,
-        profile: profiles?.find((p: any) => p.id === driver.user_id),
-      }));
-
       // Filter by search term
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        enrichedDrivers = enrichedDrivers.filter((d: any) =>
+        filteredData = filteredData.filter((d: any) =>
           d.profile?.full_name?.toLowerCase().includes(searchLower) ||
           d.company_name?.toLowerCase().includes(searchLower) ||
           d.vehicle_brand?.toLowerCase().includes(searchLower) ||
@@ -237,7 +235,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
         );
       }
 
-      return enrichedDrivers;
+      return filteredData;
     },
   });
 
