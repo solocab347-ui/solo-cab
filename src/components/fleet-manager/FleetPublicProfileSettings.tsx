@@ -105,7 +105,7 @@ export const FleetPublicProfileSettings = ({
     const loadFleetData = async () => {
       const { data } = await supabase
         .from("fleet_managers")
-        .select("siret, siren, tva_number, address, contact_phone, visible_to_drivers, visible_to_companies, driver_profile_description, default_partnership_commission, partnership_terms")
+        .select("siret, siren, tva_number, address, contact_phone, visible_to_drivers, visible_to_companies, driver_profile_description, default_partnership_commission, partnership_terms, logo_url, description, services_offered, show_contact_name, show_address, show_phone, show_email, show_drivers_in_public_storefront")
         .eq("id", fleetManagerId)
         .single();
       
@@ -119,6 +119,24 @@ export const FleetPublicProfileSettings = ({
         setVisibleToCompanies(data.visible_to_companies || false);
         setDefaultCommission(data.default_partnership_commission || 10);
         setPartnershipTerms(data.partnership_terms || "");
+        // Charger logo et description depuis la DB
+        setLogoUrl(data.logo_url || "");
+        setDescription(data.description || "");
+        setShowContactName(data.show_contact_name ?? true);
+        setShowAddress(data.show_address ?? true);
+        setShowPhone(data.show_phone ?? true);
+        setShowEmail(data.show_email ?? true);
+        setShowDrivers(data.show_drivers_in_public_storefront ?? false);
+        
+        // Charger les services et les dédoublonner
+        const predefinedIds = DRIVER_SERVICES.map(s => s.id);
+        const servicesFromDb = data.services_offered || [];
+        // Utiliser un Set pour éliminer les doublons
+        const uniqueServices = [...new Set(servicesFromDb)] as string[];
+        const predefined = uniqueServices.filter(s => predefinedIds.includes(s));
+        const custom = uniqueServices.filter(s => !predefinedIds.includes(s));
+        setSelectedServices(predefined);
+        setCustomServices(custom);
       }
     };
     loadFleetData();
@@ -166,14 +184,7 @@ export const FleetPublicProfileSettings = ({
     }
   };
 
-  // Separate predefined services from custom ones on init
-  useEffect(() => {
-    const predefinedIds = DRIVER_SERVICES.map(s => s.id);
-    const predefined = (initialServicesOffered || []).filter(s => predefinedIds.includes(s));
-    const custom = (initialServicesOffered || []).filter(s => !predefinedIds.includes(s));
-    setSelectedServices(predefined);
-    setCustomServices(custom);
-  }, [initialServicesOffered]);
+  // Ce useEffect est remplacé par le chargement dans loadFleetData
 
   const handleServiceToggle = (serviceId: string) => {
     if (selectedServices.includes(serviceId)) {
@@ -209,8 +220,8 @@ export const FleetPublicProfileSettings = ({
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Combine predefined and custom services
-      const allServices = [...selectedServices, ...customServices];
+      // Combine predefined and custom services et dédoublonner
+      const allServices = [...new Set([...selectedServices, ...customServices])];
       
       const { error } = await supabase
         .from("fleet_managers")
