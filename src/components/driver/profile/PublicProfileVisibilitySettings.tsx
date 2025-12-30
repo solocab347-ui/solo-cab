@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -6,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Users, Building2, Truck, Star, Euro, Globe, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PUBLIC_DRIVERS_QUERY_KEY, PUBLIC_DRIVER_PROFILE_KEY } from '@/hooks/usePublicDriverProfile';
 
 interface PublicProfileVisibilitySettingsProps {
   userId: string;
@@ -18,6 +20,7 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
   driverProfile,
   onUpdate
 }) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   
   // Visibility states synced with driverProfile
@@ -87,6 +90,10 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
           setPublicProfileEnabled(value);
           break;
       }
+
+      // Invalider les caches pour synchronisation instantanée
+      queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVERS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PUBLIC_DRIVER_PROFILE_KEY] });
 
       toast.success('Paramètre mis à jour');
       onUpdate?.();

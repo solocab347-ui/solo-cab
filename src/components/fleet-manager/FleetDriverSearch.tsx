@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useDriverProfileRealtime, PUBLIC_DRIVERS_QUERY_KEY } from '@/hooks/usePublicDriverProfile';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,6 +122,11 @@ const FRENCH_REGIONS = [
 ];
 
 export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
+  const queryClient = useQueryClient();
+  
+  // Active realtime pour synchronisation instantanée
+  useDriverProfileRealtime();
+  
   const [drivers, setDrivers] = useState<SearchableDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { PUBLIC_DRIVERS_QUERY_KEY, useDriverProfileRealtime } from "@/hooks/usePublicDriverProfile";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,10 @@ const FRENCH_REGIONS = [
 
 export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   const queryClient = useQueryClient();
+  
+  // Active realtime pour synchronisation instantanée
+  useDriverProfileRealtime();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
@@ -122,9 +127,12 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     },
   });
 
-  // Fetch drivers with public profiles visible to companies
+  // Fetch drivers with public profiles visible to companies - staleTime: 0 pour données fraîches
   const { data: drivers, isLoading, refetch } = useQuery({
-    queryKey: ["public-drivers-company", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
+    queryKey: [PUBLIC_DRIVERS_QUERY_KEY, "companies", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
+    staleTime: 0, // Toujours refetch pour données instantanées
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     queryFn: async () => {
       // Base query - fetch all validated drivers visible to companies
       // IMPORTANT: On filtre par visible_to_companies = true explicitement
