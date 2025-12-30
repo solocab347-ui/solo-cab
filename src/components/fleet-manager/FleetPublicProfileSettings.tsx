@@ -90,7 +90,6 @@ export const FleetPublicProfileSettings = ({
   // Champs visibilité partenaires
   const [visibleToDrivers, setVisibleToDrivers] = useState(initialVisibleToDrivers);
   const [visibleToCompanies, setVisibleToCompanies] = useState(initialVisibleToCompanies);
-  const [driverProfileDescription, setDriverProfileDescription] = useState(initialDriverProfileDescription || "");
   const [defaultCommission, setDefaultCommission] = useState(initialDefaultCommission || 10);
   const [partnershipTerms, setPartnershipTerms] = useState(initialPartnershipTerms || "");
   
@@ -118,7 +117,6 @@ export const FleetPublicProfileSettings = ({
         setContactPhone(data.contact_phone || "");
         setVisibleToDrivers(data.visible_to_drivers || false);
         setVisibleToCompanies(data.visible_to_companies || false);
-        setDriverProfileDescription(data.driver_profile_description || "");
         setDefaultCommission(data.default_partnership_commission || 10);
         setPartnershipTerms(data.partnership_terms || "");
       }
@@ -180,15 +178,27 @@ export const FleetPublicProfileSettings = ({
   const handleServiceToggle = (serviceId: string) => {
     if (selectedServices.includes(serviceId)) {
       setSelectedServices(selectedServices.filter(s => s !== serviceId));
-    } else {
+    } else if (!customServices.includes(serviceId)) {
+      // Éviter les doublons entre services prédéfinis et personnalisés
       setSelectedServices([...selectedServices, serviceId]);
     }
   };
 
   const addCustomService = () => {
-    if (customService.trim() && !customServices.includes(customService.trim())) {
-      setCustomServices([...customServices, customService.trim()]);
+    const trimmed = customService.trim();
+    const predefinedLabels = DRIVER_SERVICES.map(s => s.label.toLowerCase());
+    const predefinedIds = DRIVER_SERVICES.map(s => s.id.toLowerCase());
+    
+    // Éviter les doublons avec les services prédéfinis ou déjà ajoutés
+    if (trimmed && 
+        !customServices.map(s => s.toLowerCase()).includes(trimmed.toLowerCase()) &&
+        !predefinedLabels.includes(trimmed.toLowerCase()) &&
+        !predefinedIds.includes(trimmed.toLowerCase()) &&
+        !selectedServices.includes(trimmed)) {
+      setCustomServices([...customServices, trimmed]);
       setCustomService("");
+    } else if (trimmed) {
+      toast.error("Ce service existe déjà");
     }
   };
 
@@ -220,7 +230,7 @@ export const FleetPublicProfileSettings = ({
           contact_phone: contactPhone || null,
           visible_to_drivers: visibleToDrivers,
           visible_to_companies: visibleToCompanies,
-          driver_profile_description: driverProfileDescription || null,
+          driver_profile_description: description || null, // Utilise la même description
           default_partnership_commission: defaultCommission,
           partnership_terms: partnershipTerms || null,
         } as any)
@@ -655,21 +665,11 @@ export const FleetPublicProfileSettings = ({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Description for drivers */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Présentation pour les partenaires
-              </Label>
-              <Textarea
-                placeholder="Présentez votre flotte aux chauffeurs et entreprises qui souhaitent collaborer avec vous..."
-                value={driverProfileDescription}
-                onChange={(e) => setDriverProfileDescription(e.target.value)}
-                rows={4}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                Cette présentation sera visible par les chauffeurs et entreprises qui vous recherchent
+            {/* Info about shared description */}
+            <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                La présentation de votre entreprise (section "Logo & Présentation") sera également utilisée pour les partenariats B2B.
               </p>
             </div>
 
