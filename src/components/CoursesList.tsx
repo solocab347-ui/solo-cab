@@ -21,6 +21,7 @@ import jsPDF from "jspdf";
 import CourseShareButtons from "@/components/CourseShareButtons";
 import CourseReportDialog from "@/components/CourseReportDialog";
 import { ShareCourseWithPartnerDialog } from "@/components/driver/ShareCourseWithPartnerDialog";
+import { CourseCompletionCommissionDialog } from "@/components/driver/CourseCompletionCommissionDialog";
 import { cn } from "@/lib/utils";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
@@ -71,6 +72,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   // État pour le partage avec partenaire
   const [sharePartnerDialogOpen, setSharePartnerDialogOpen] = useState(false);
   const [courseToShareWithPartner, setCourseToShareWithPartner] = useState<any>(null);
+  
+  // État pour le rappel de commission après complétion
+  const [showCommissionDialog, setShowCommissionDialog] = useState(false);
+  const [completedCourseInfo, setCompletedCourseInfo] = useState<{
+    courseId: string;
+    courseAmount: number;
+    pickupAddress: string;
+    destinationAddress: string;
+    scheduledDate: string;
+  } | null>(null);
   
   // SYSTÈME DE FIGEMENT: Capture l'ordre initial des courses pour maintenir leur position
   const [confirmedCoursesOrder, setConfirmedCoursesOrder] = useState<Map<string, number>>(new Map());
@@ -322,6 +333,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       return;
     }
 
+    // Récupérer les infos de la course AVANT de la compléter
+    const courseToComplete = courses.find(c => c.id === selectedCourseId);
+    const courseAmount = courseToComplete?.devis?.find((d: any) => d.status === 'accepted')?.amount || 
+                         courseToComplete?.devis?.[0]?.amount || 0;
+
     try {
       // Optimistic update - keep course in place
       setCourses(prev => prev.map(c => 
@@ -372,12 +388,24 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         await notificationService.notifyCourseCompleted(courseData.clients.user_id);
       }
 
-      toast.success("Course terminée ! Facture générée automatiquement.");
+      // Fermer le dialog de paiement
       setShowPaymentDialog(false);
       setPaymentMethod("");
+
+      // AFFICHER LE RAPPEL DE COMMISSION
+      if (courseToComplete) {
+        setCompletedCourseInfo({
+          courseId: selectedCourseId,
+          courseAmount: courseAmount,
+          pickupAddress: courseToComplete.pickup_address,
+          destinationAddress: courseToComplete.destination_address,
+          scheduledDate: courseToComplete.scheduled_date,
+        });
+        setShowCommissionDialog(true);
+      } else {
+        toast.success("Course terminée ! Facture générée automatiquement.");
+      }
       
-      // Ne PAS recharger pour garder la course à sa place
-      // await fetchCourses();
     } catch (error: any) {
       console.error("Error completing course:", error);
       toast.error("Erreur lors de la finalisation: " + error.message);
@@ -2374,6 +2402,24 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         driverId={driverId}
         onSuccess={fetchCourses}
       />
+
+      {/* Commission Reminder Dialog après complétion */}
+      {completedCourseInfo && (
+        <CourseCompletionCommissionDialog
+          open={showCommissionDialog}
+          onOpenChange={setShowCommissionDialog}
+          courseId={completedCourseInfo.courseId}
+          driverId={driverId}
+          courseAmount={completedCourseInfo.courseAmount}
+          pickupAddress={completedCourseInfo.pickupAddress}
+          destinationAddress={completedCourseInfo.destinationAddress}
+          scheduledDate={completedCourseInfo.scheduledDate}
+          onConfirm={() => {
+            setCompletedCourseInfo(null);
+            toast.success("Course terminée ! Facture générée automatiquement.");
+          }}
+        />
+      )}
     </div>
   );
 };
