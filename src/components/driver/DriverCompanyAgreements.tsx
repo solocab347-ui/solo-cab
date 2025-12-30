@@ -92,6 +92,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("agreements");
 
   // Fetch agreements
   const { data: agreements, isLoading } = useQuery({
@@ -224,7 +225,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         </p>
       </div>
 
-      <Tabs defaultValue="agreements" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="agreements" className="flex items-center gap-2">
             <Handshake className="w-4 h-4" />
@@ -470,10 +471,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
                           variant="outline" 
                           size="sm"
                           className="w-full sm:w-auto"
-                          onClick={() => {
-                            const tabTrigger = document.querySelector('[data-state="inactive"][value="search"]') as HTMLElement;
-                            tabTrigger?.click();
-                          }}
+                          onClick={() => setActiveTab("search")}
                         >
                           <Search className="w-4 h-4 mr-2" />
                           Refaire une demande
@@ -518,10 +516,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
                 <p className="text-muted-foreground mb-4">
                   Les entreprises peuvent vous proposer des partenariats, ou vous pouvez les rechercher
                 </p>
-                <Button variant="outline" onClick={() => {
-                  const tabTrigger = document.querySelector('[data-state="inactive"][value="search"]') as HTMLElement;
-                  tabTrigger?.click();
-                }}>
+                <Button variant="outline" onClick={() => setActiveTab("search")}>
                   <Search className="w-4 h-4 mr-2" />
                   Rechercher des entreprises
                 </Button>
