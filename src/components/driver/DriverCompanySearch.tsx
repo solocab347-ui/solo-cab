@@ -76,7 +76,7 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
       // Recherche les entreprises visibles aux chauffeurs (validated OU active)
       let query = supabase
         .from("companies")
-        .select("*")
+        .select("*, logo_url")
         .eq("visible_to_drivers", true)
         .eq("accepting_proposals", true)
         .or("status.eq.validated,status.eq.active");
@@ -219,14 +219,32 @@ Cordialement.`;
               <Card key={company.id} className={hasProposal ? "opacity-75" : ""}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-primary" />
-                        {company.company_name}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        Contact: {company.contact_name}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      {/* Logo entreprise */}
+                      {company.logo_url ? (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                          <img 
+                            src={company.logo_url} 
+                            alt={company.company_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="w-6 h-6 text-primary" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-semibold flex items-center gap-2">
+                          {company.company_name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Contact: {company.contact_name}
+                        </p>
+                      </div>
                     </div>
                     {hasProposal && (
                       <Badge 
@@ -254,12 +272,6 @@ Cordialement.`;
                         {company.address}
                       </p>
                     )}
-                    {company.contact_phone && (
-                      <p className="flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        {company.contact_phone}
-                      </p>
-                    )}
                     {company.contact_email && (
                       <p className="flex items-center gap-2">
                         <Mail className="w-4 h-4" />
@@ -268,12 +280,40 @@ Cordialement.`;
                     )}
                   </div>
 
-                  {company.employee_count && (
-                    <Badge variant="secondary" className="mb-4">
-                      <Users className="w-3 h-3 mr-1" />
-                      {company.employee_count} employés
-                    </Badge>
+                  {/* Types de véhicules recherchés */}
+                  {company.preferred_vehicle_types && company.preferred_vehicle_types.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-muted-foreground mb-1">Véhicules recherchés:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {company.preferred_vehicle_types.slice(0, 3).map((type: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            <Car className="w-3 h-3 mr-1" />
+                            {type}
+                          </Badge>
+                        ))}
+                        {company.preferred_vehicle_types.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{company.preferred_vehicle_types.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   )}
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {company.employee_count && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Users className="w-3 h-3 mr-1" />
+                        {company.employee_count} employés
+                      </Badge>
+                    )}
+                    {company.monthly_budget && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Euro className="w-3 h-3 mr-1" />
+                        ~{company.monthly_budget}€/mois
+                      </Badge>
+                    )}
+                  </div>
 
                   <div className="flex gap-2">
                     <Button
@@ -529,14 +569,31 @@ Cordialement.`;
 
           {viewingCompany && (
             <div className="space-y-6 py-4">
-              {/* En-tête entreprise */}
+              {/* En-tête entreprise avec logo */}
               <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
-                <h3 className="text-xl font-bold text-foreground mb-2">
-                  {viewingCompany.company_name}
-                </h3>
-                <p className="text-muted-foreground">
-                  Contact: {viewingCompany.contact_name}
-                </p>
+                <div className="flex items-center gap-4">
+                  {viewingCompany.logo_url ? (
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      <img 
+                        src={viewingCompany.logo_url} 
+                        alt={viewingCompany.company_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-8 h-8 text-primary" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">
+                      {viewingCompany.company_name}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Contact: {viewingCompany.contact_name}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Coordonnées */}
