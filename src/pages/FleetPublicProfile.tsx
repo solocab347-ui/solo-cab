@@ -44,6 +44,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import logoSolocab from "@/assets/logo-solocab.png";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { useFleetProfileRealtime } from "@/hooks/usePublicFleetProfile";
 
 interface FleetDriver {
   id: string;
@@ -83,6 +84,10 @@ interface FleetManagerPublic {
 const FleetPublicProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  // Activer l'écoute temps réel pour les changements de profil flotte
+  useFleetProfileRealtime();
+  
   const [loading, setLoading] = useState(true);
   const [fleetManager, setFleetManager] = useState<FleetManagerPublic | null>(null);
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);

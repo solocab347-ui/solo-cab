@@ -30,6 +30,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { PUBLIC_FLEETS_QUERY_KEY, PUBLIC_FLEET_PROFILE_KEY } from "@/hooks/usePublicFleetProfile";
 
 interface FleetPublicProfileSettingsProps {
   fleetManagerId: string;
@@ -58,6 +60,7 @@ export const FleetPublicProfileSettings = ({
   servicesOffered: initialServicesOffered = [],
   onUpdate
 }: FleetPublicProfileSettingsProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showDrivers, setShowDrivers] = useState(showDriversInPublic);
@@ -196,6 +199,9 @@ export const FleetPublicProfileSettings = ({
       if (error) throw error;
 
       toast.success("Paramètres mis à jour");
+      // Invalider les caches pour synchronisation instantanée
+      queryClient.invalidateQueries({ queryKey: PUBLIC_FLEETS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_FLEET_PROFILE_KEY });
       onUpdate();
     } catch (error: any) {
       console.error("Error updating settings:", error);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +21,8 @@ import {
   Mail
 } from 'lucide-react';
 import { notificationService } from '@/lib/notificationService';
+import { useCompanyProfileRealtime, PUBLIC_COMPANIES_QUERY_KEY } from '@/hooks/usePublicCompanyProfile';
+import { useQuery } from '@tanstack/react-query';
 
 interface Company {
   id: string;
@@ -55,13 +57,10 @@ interface Props {
 }
 
 export function CompanyPartnerSearch({ driverId }: Props) {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  
-  // Filters
+  // Activer l'écoute temps réel des changements de profils entreprises
+  useCompanyProfileRealtime();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   
   // Partnership proposal
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -72,13 +71,10 @@ export function CompanyPartnerSearch({ driverId }: Props) {
   const [servicesOffered, setServicesOffered] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    searchCompanies();
-  }, []);
-
-  const searchCompanies = async () => {
-    setSearching(true);
-    try {
+  // Utiliser useQuery pour le cache et la synchronisation temps réel
+  const { data: companies = [], isLoading: loading, isFetching: searching, refetch: searchCompanies } = useQuery({
+    queryKey: [...PUBLIC_COMPANIES_QUERY_KEY, 'partner-search', searchTerm],
+    queryFn: async () => {
       let query = supabase
         .from('companies')
         .select('id, company_name, address, contact_name, contact_email, contact_phone, show_phone, employee_count, preferred_vehicle_types, accepting_proposals, visible_to_drivers, logo_url, notes')
@@ -93,15 +89,13 @@ export function CompanyPartnerSearch({ driverId }: Props) {
       const { data, error } = await query.order('company_name');
 
       if (error) throw error;
-      setCompanies(data || []);
-    } catch (error) {
-      console.error('Error searching companies:', error);
-      toast.error('Erreur lors de la recherche');
-    } finally {
-      setSearching(false);
-      setLoading(false);
-    }
-  };
+      return data || [];
+    },
+    staleTime: 0,
+    gcTime: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
 
   const proposePartnership = async () => {
     if (!selectedCompany || !driverId) return;
@@ -188,7 +182,7 @@ export function CompanyPartnerSearch({ driverId }: Props) {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={searchCompanies} disabled={searching}>
+            <Button onClick={() => searchCompanies()} disabled={searching}>
               {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PUBLIC_COMPANIES_QUERY_KEY, PUBLIC_COMPANY_PROFILE_KEY } from "@/hooks/usePublicCompanyProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,10 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
     onSuccess: () => {
       toast.success("Profil public mis à jour avec succès");
       setLogoFile(null); // Reset file after successful upload
+      // Invalider toutes les requêtes liées au profil entreprise pour synchronisation instantanée
       queryClient.invalidateQueries({ queryKey: ["company-profile", companyId] });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_COMPANIES_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_COMPANY_PROFILE_KEY });
     },
     onError: (error: any) => {
       toast.error("Erreur: " + error.message);
