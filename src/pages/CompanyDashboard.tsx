@@ -48,12 +48,15 @@ import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
 import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReports";
+import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
 import { cn } from "@/lib/utils";
 
 interface Company {
   id: string;
   company_name: string;
   siret: string;
+  siren?: string | null;
+  tva_number?: string | null;
   address: string;
   billing_address: string | null;
   contact_name: string;
@@ -416,6 +419,12 @@ function DashboardOverview({
 
   return (
     <div className="space-y-6">
+      {/* Billing Warning - Priority */}
+      <BillingWarningBanner 
+        company={company} 
+        onNavigateToSettings={() => onNavigate("settings")} 
+      />
+      
       {/* Payment Alerts - Priority */}
       <CompanyPaymentAlerts 
         companyId={companyId} 
