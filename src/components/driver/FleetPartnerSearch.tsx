@@ -101,7 +101,9 @@ export function FleetPartnerSearch({ driverId }: Props) {
   const [selectedFleet, setSelectedFleet] = useState<FleetManagerPublic | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
+  const [proposedCommissionType, setProposedCommissionType] = useState<"percentage" | "fixed">("percentage");
   const [proposedCommission, setProposedCommission] = useState(15);
+  const [proposedFixedAmount, setProposedFixedAmount] = useState("");
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('weekly');
   const [proposalMessage, setProposalMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -151,7 +153,9 @@ export function FleetPartnerSearch({ driverId }: Props) {
 
   const openProposal = () => {
     if (!selectedFleet) return;
+    setProposedCommissionType("percentage");
     setProposedCommission(selectedFleet.default_partnership_commission || 15);
+    setProposedFixedAmount("");
     setProposalMessage(`Bonjour,\n\nJe souhaite proposer un partenariat avec ${selectedFleet.company_name}. Je suis disponible pour discuter des conditions de collaboration.\n\nCordialement`);
     setProfileDialogOpen(false);
     setProposalDialogOpen(true);
@@ -184,7 +188,9 @@ export function FleetPartnerSearch({ driverId }: Props) {
         .insert({
           fleet_manager_id: selectedFleet.id,
           driver_id: driverId,
-          commission_percentage: proposedCommission,
+          commission_type: proposedCommissionType,
+          commission_percentage: proposedCommissionType === "percentage" ? proposedCommission : 0,
+          commission_fixed_amount: proposedCommissionType === "fixed" ? parseFloat(proposedFixedAmount) : null,
           payment_schedule: proposedPaymentSchedule,
           proposal_message: proposalMessage,
           initiated_by: 'driver',
@@ -555,19 +561,54 @@ export function FleetPartnerSearch({ driverId }: Props) {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Type de commission */}
             <div className="space-y-2">
-              <Label>Commission proposée : {proposedCommission}%</Label>
-              <Slider
-                value={[proposedCommission]}
-                onValueChange={(v) => setProposedCommission(v[0])}
-                min={5}
-                max={30}
-                step={1}
-              />
-              <p className="text-xs text-muted-foreground">
-                Commission que vous reverserez pour chaque course reçue
-              </p>
+              <Label>Type de commission</Label>
+              <Select value={proposedCommissionType} onValueChange={(v) => setProposedCommissionType(v as "percentage" | "fixed")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Pourcentage (%)</SelectItem>
+                  <SelectItem value="fixed">Montant fixe (€)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {proposedCommissionType === "percentage" ? (
+              <div className="space-y-2">
+                <Label>Commission proposée : {proposedCommission}%</Label>
+                <Slider
+                  value={[proposedCommission]}
+                  onValueChange={(v) => setProposedCommission(v[0])}
+                  min={5}
+                  max={30}
+                  step={1}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Commission que vous reverserez pour chaque course reçue
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Montant fixe par course (€)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={proposedFixedAmount}
+                    onChange={(e) => setProposedFixedAmount(e.target.value)}
+                    className="w-24"
+                    placeholder="Ex: 5"
+                  />
+                  <span className="text-muted-foreground">€</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Montant fixe que vous reverserez pour chaque course, quel que soit le prix
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Fréquence de paiement</Label>

@@ -3531,7 +3531,9 @@ export type Database = {
       fleet_driver_partnerships: {
         Row: {
           accepted_at: string | null
+          commission_fixed_amount: number | null
           commission_percentage: number
+          commission_type: string
           contract_signed: boolean | null
           created_at: string
           driver_confirmed_final_payment: boolean | null
@@ -3557,6 +3559,8 @@ export type Database = {
           pending_modification_by: string | null
           pending_modification_reason: string | null
           pending_new_commission: number | null
+          pending_new_commission_fixed_amount: number | null
+          pending_new_commission_type: string | null
           pending_new_payment_schedule: string | null
           proposal_message: string | null
           proposed_at: string | null
@@ -3576,7 +3580,9 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          commission_fixed_amount?: number | null
           commission_percentage?: number
+          commission_type?: string
           contract_signed?: boolean | null
           created_at?: string
           driver_confirmed_final_payment?: boolean | null
@@ -3602,6 +3608,8 @@ export type Database = {
           pending_modification_by?: string | null
           pending_modification_reason?: string | null
           pending_new_commission?: number | null
+          pending_new_commission_fixed_amount?: number | null
+          pending_new_commission_type?: string | null
           pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
@@ -3621,7 +3629,9 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          commission_fixed_amount?: number | null
           commission_percentage?: number
+          commission_type?: string
           contract_signed?: boolean | null
           created_at?: string
           driver_confirmed_final_payment?: boolean | null
@@ -3647,6 +3657,8 @@ export type Database = {
           pending_modification_by?: string | null
           pending_modification_reason?: string | null
           pending_new_commission?: number | null
+          pending_new_commission_fixed_amount?: number | null
+          pending_new_commission_type?: string | null
           pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_at?: string | null
@@ -4036,6 +4048,8 @@ export type Database = {
           created_at: string
           default_commission_percentage: number | null
           default_partnership_commission: number | null
+          default_partnership_commission_fixed_amount: number | null
+          default_partnership_commission_type: string
           default_payment_schedule: string | null
           description: string | null
           dispatch_priority: string | null
@@ -4106,6 +4120,8 @@ export type Database = {
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null
+          default_partnership_commission_fixed_amount?: number | null
+          default_partnership_commission_type?: string
           default_payment_schedule?: string | null
           description?: string | null
           dispatch_priority?: string | null
@@ -4176,6 +4192,8 @@ export type Database = {
           created_at?: string
           default_commission_percentage?: number | null
           default_partnership_commission?: number | null
+          default_partnership_commission_fixed_amount?: number | null
+          default_partnership_commission_type?: string
           default_payment_schedule?: string | null
           description?: string | null
           dispatch_priority?: string | null

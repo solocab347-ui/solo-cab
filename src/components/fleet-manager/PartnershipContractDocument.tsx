@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   Building2,
   User,
-  Wallet
+  Wallet,
+  Euro
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -27,7 +28,9 @@ interface PartnershipContractDocumentProps {
   fleetManagerName: string;
   fleetManagerCompany: string;
   driverName: string;
+  commissionType?: string;
   commissionPercentage: number;
+  commissionFixedAmount?: number | null;
   paymentSchedule: string;
   signedAt?: string;
   fleetManagerSignedAt?: string;
@@ -40,7 +43,9 @@ export const PartnershipContractDocument = ({
   fleetManagerName,
   fleetManagerCompany,
   driverName,
+  commissionType = "percentage",
   commissionPercentage,
+  commissionFixedAmount,
   paymentSchedule,
   signedAt,
   fleetManagerSignedAt,
@@ -62,6 +67,17 @@ export const PartnershipContractDocument = ({
     return contractType === "fleet_driver" 
       ? "Chauffeur Associé avec Matériel du Gestionnaire" 
       : "Partenariat Chauffeur Indépendant";
+  };
+
+  const getCommissionDisplay = () => {
+    if (commissionType === "fixed" && commissionFixedAmount) {
+      return `${commissionFixedAmount}€ par course`;
+    }
+    return `${commissionPercentage}%`;
+  };
+
+  const getCommissionTypeLabel = () => {
+    return commissionType === "fixed" ? "Montant fixe" : "Pourcentage";
   };
 
   const generatePDF = () => {
@@ -120,7 +136,10 @@ export const PartnershipContractDocument = ({
       y += 8;
       doc.text("3. Le Chauffeur est rémunéré selon les conditions convenues séparément.", margin, y);
     } else {
-      doc.text(`1. Taux de commission: ${commissionPercentage}% sur chaque course effectuée.`, margin, y);
+      const commissionText = commissionType === "fixed" 
+        ? `1. Commission fixe: ${commissionFixedAmount}€ par course effectuée.`
+        : `1. Taux de commission: ${commissionPercentage}% sur chaque course effectuée.`;
+      doc.text(commissionText, margin, y);
       y += 8;
       doc.text(`2. Période de versement: ${getPaymentScheduleLabel(paymentSchedule)}`, margin, y);
       y += 8;
@@ -293,11 +312,17 @@ export const PartnershipContractDocument = ({
                     <Card>
                       <CardContent className="pt-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Percent className="w-4 h-4 text-primary" />
-                          <span className="text-sm">Taux de commission</span>
+                          {commissionType === "fixed" ? (
+                            <Euro className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Percent className="w-4 h-4 text-primary" />
+                          )}
+                          <span className="text-sm">
+                            {getCommissionTypeLabel()}
+                          </span>
                         </div>
                         <Badge variant="outline" className="text-lg font-bold">
-                          {commissionPercentage}%
+                          {getCommissionDisplay()}
                         </Badge>
                       </CardContent>
                     </Card>
@@ -321,7 +346,7 @@ export const PartnershipContractDocument = ({
                           <div className="text-sm">
                             <p className="font-medium text-warning">Engagement du Chauffeur</p>
                             <p className="text-muted-foreground mt-1">
-                              Le chauffeur s'engage à reverser {commissionPercentage}% du montant de chaque course 
+                              Le chauffeur s'engage à reverser {getCommissionDisplay()} {commissionType === "fixed" ? "" : "du montant"} de chaque course 
                               au gestionnaire selon la période convenue. Le non-respect répété des délais 
                               peut entraîner la suspension du partenariat.
                             </p>
