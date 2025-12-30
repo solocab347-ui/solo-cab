@@ -36,6 +36,7 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [newService, setNewService] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Form state
   const [publicDescription, setPublicDescription] = useState("");
@@ -65,12 +66,60 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
       setServicesNeeded(company.preferred_vehicle_types || []);
       setVisibleToDrivers(company.visible_to_drivers || false);
       setAcceptingProposals(company.accepting_proposals || false);
+      if (company.logo_url) {
+        setLogoPreview(company.logo_url);
+      }
     }
   }, [company]);
+
+  // Upload logo function
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile) return company?.logo_url || null;
+
+    try {
+      setIsUploading(true);
+      const fileExt = logoFile.name.split('.').pop();
+      const fileName = `${companyId}-${Date.now()}.${fileExt}`;
+      const filePath = `company-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-documents')
+        .upload(filePath, logoFile, { upsert: true });
+
+      if (uploadError) {
+        // Essayer de créer le bucket si nécessaire
+        const { error: createError } = await supabase.storage
+          .from('company-logos')
+          .upload(filePath, logoFile, { upsert: true });
+        
+        if (createError) throw createError;
+        
+        const { data: urlData } = supabase.storage
+          .from('company-logos')
+          .getPublicUrl(filePath);
+        return urlData.publicUrl;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('company-documents')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Erreur upload logo:', error);
+      toast.error("Erreur lors de l'upload du logo");
+      return company?.logo_url || null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Update mutation
   const updateProfile = useMutation({
     mutationFn: async () => {
+      // Upload logo if new one selected
+      const logoUrl = await uploadLogo();
+
       const { error } = await supabase
         .from("companies")
         .update({
@@ -78,13 +127,15 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           preferred_vehicle_types: servicesNeeded,
           visible_to_drivers: visibleToDrivers,
           accepting_proposals: acceptingProposals,
+          logo_url: logoUrl,
         })
         .eq("id", companyId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Profil public mis à jour");
+      toast.success("Profil public mis à jour avec succès");
+      setLogoFile(null); // Reset file after successful upload
       queryClient.invalidateQueries({ queryKey: ["company-profile", companyId] });
     },
     onError: (error: any) => {
@@ -423,15 +474,15 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
       <div className="flex justify-end">
         <Button
           onClick={() => updateProfile.mutate()}
-          disabled={updateProfile.isPending}
+          disabled={updateProfile.isPending || isUploading}
           size="lg"
         >
-          {updateProfile.isPending ? (
+          {updateProfile.isPending || isUploading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
             <Save className="w-4 h-4 mr-2" />
           )}
-          Enregistrer le profil
+          {isUploading ? "Upload en cours..." : "Enregistrer le profil"}
         </Button>
       </div>
     </div>
