@@ -47,6 +47,7 @@ import { CompanyStatisticsComplete } from "@/components/company/CompanyStatistic
 import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
 import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
+import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReports";
 import { cn } from "@/lib/utils";
 
 interface Company {
@@ -68,6 +69,7 @@ const menuItems = [
   { id: "divider1", type: "divider", label: "Finances" },
   { id: "devis", icon: FileText, label: "Devis", color: "text-amber-400" },
   { id: "invoices", icon: Receipt, label: "Factures", color: "text-orange-400" },
+  { id: "expenses", icon: Euro, label: "Notes de frais", color: "text-lime-400" },
   { id: "payments", icon: CreditCard, label: "Paiements", color: "text-pink-400" },
   { id: "divider2", type: "divider", label: "Partenaires" },
   { id: "partnerships", icon: Handshake, label: "Mes accords", color: "text-cyan-400" },
@@ -190,6 +192,8 @@ export default function CompanyDashboard() {
         return <CompanyDevisList companyId={company.id} />;
       case "invoices":
         return <CompanyFacturesList companyId={company.id} />;
+      case "expenses":
+        return <CompanyExpenseReports companyId={company.id} />;
       case "payments":
         return <CompanyPaymentsDue companyId={company.id} />;
       case "partnerships":
