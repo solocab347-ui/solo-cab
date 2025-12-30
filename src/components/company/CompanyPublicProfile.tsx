@@ -78,36 +78,31 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
 
     try {
       setIsUploading(true);
-      const fileExt = logoFile.name.split('.').pop();
-      const fileName = `${companyId}-${Date.now()}.${fileExt}`;
-      const filePath = `company-logos/${fileName}`;
+      const fileExt = logoFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `company-logos/${companyId}-${Date.now()}.${fileExt}`;
 
+      // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('company-documents')
-        .upload(filePath, logoFile, { upsert: true });
+        .upload(fileName, logoFile, { 
+          upsert: true,
+          contentType: logoFile.type 
+        });
 
       if (uploadError) {
-        // Essayer de créer le bucket si nécessaire
-        const { error: createError } = await supabase.storage
-          .from('company-logos')
-          .upload(filePath, logoFile, { upsert: true });
-        
-        if (createError) throw createError;
-        
-        const { data: urlData } = supabase.storage
-          .from('company-logos')
-          .getPublicUrl(filePath);
-        return urlData.publicUrl;
+        console.error('Erreur upload:', uploadError);
+        throw uploadError;
       }
 
+      // Get the public URL
       const { data: urlData } = supabase.storage
         .from('company-documents')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       return urlData.publicUrl;
     } catch (error: any) {
       console.error('Erreur upload logo:', error);
-      toast.error("Erreur lors de l'upload du logo");
+      toast.error("Erreur lors de l'upload du logo: " + error.message);
       return company?.logo_url || null;
     } finally {
       setIsUploading(false);
