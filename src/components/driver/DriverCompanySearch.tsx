@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet } from "lucide-react";
+import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet, Package } from "lucide-react";
 
 interface DriverCompanySearchProps {
   driverId: string;
@@ -560,7 +560,7 @@ Cordialement.`;
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
-              Profil de l'entreprise
+              Profil public de l'entreprise
             </DialogTitle>
             <DialogDescription>
               Informations complètes sur {viewingCompany?.company_name}
@@ -573,7 +573,7 @@ Cordialement.`;
               <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
                 <div className="flex items-center gap-4">
                   {viewingCompany.logo_url ? (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                       <img 
                         src={viewingCompany.logo_url} 
                         alt={viewingCompany.company_name}
@@ -581,25 +581,63 @@ Cordialement.`;
                       />
                     </div>
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-8 h-8 text-primary" />
+                    <div className="w-20 h-20 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-10 h-10 text-primary" />
                     </div>
                   )}
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-xl font-bold text-foreground">
                       {viewingCompany.company_name}
                     </h3>
-                    <p className="text-muted-foreground">
-                      Contact: {viewingCompany.contact_name}
-                    </p>
+                    {viewingCompany.contact_name && (
+                      <p className="text-muted-foreground">
+                        Contact: {viewingCompany.contact_name}
+                      </p>
+                    )}
+                    {viewingCompany.address && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{viewingCompany.address}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
+              {/* Description publique */}
+              {viewingCompany.notes && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    À propos de l'entreprise
+                  </h4>
+                  <div className="p-4 bg-muted rounded-lg text-sm leading-relaxed">
+                    {viewingCompany.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Services recherchés (preferred_vehicle_types) */}
+              {viewingCompany.preferred_vehicle_types && viewingCompany.preferred_vehicle_types.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    Services recherchés
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingCompany.preferred_vehicle_types.map((service: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-sm py-1">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Coordonnées */}
               <div className="space-y-3">
                 <h4 className="font-semibold flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
+                  <Phone className="w-4 h-4" />
                   Coordonnées
                 </h4>
                 <div className="grid gap-2 text-sm">
@@ -612,7 +650,7 @@ Cordialement.`;
                   {viewingCompany.contact_phone && (
                     <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                       <Phone className="w-4 h-4 text-muted-foreground" />
-                      <a href={`tel:${viewingCompany.contact_phone}`} className="text-primary hover:underline">
+                      <a href={`tel:${viewingCompany.contact_phone}`} className="text-primary hover:underline font-medium">
                         {viewingCompany.contact_phone}
                       </a>
                     </div>
@@ -638,7 +676,7 @@ Cordialement.`;
               <div className="space-y-3">
                 <h4 className="font-semibold flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  À propos
+                  Informations
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {viewingCompany.employee_count && (
@@ -650,47 +688,31 @@ Cordialement.`;
                   {viewingCompany.monthly_budget && (
                     <Badge variant="secondary" className="text-sm py-1">
                       <Euro className="w-3 h-3 mr-1" />
-                      Budget: {viewingCompany.monthly_budget}€/mois
+                      Budget: ~{viewingCompany.monthly_budget}€/mois
+                    </Badge>
+                  )}
+                  {viewingCompany.accepting_proposals && (
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-sm py-1">
+                      <Star className="w-3 h-3 mr-1" />
+                      Accepte les propositions
                     </Badge>
                   )}
                 </div>
               </div>
-
-              {/* Types de véhicules préférés */}
-              {viewingCompany.preferred_vehicle_types && viewingCompany.preferred_vehicle_types.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Car className="w-4 h-4" />
-                    Types de véhicules recherchés
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {viewingCompany.preferred_vehicle_types.map((type: string, index: number) => (
-                      <Badge key={index} variant="outline" className="text-sm">
-                        {type}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes / Besoins */}
-              {viewingCompany.notes && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Briefcase className="w-4 h-4" />
-                    Besoins et remarques
-                  </h4>
-                  <div className="p-4 bg-muted rounded-lg text-sm">
-                    {viewingCompany.notes}
-                  </div>
-                </div>
-              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowProfileDialog(false)} className="flex-1">
                   Fermer
                 </Button>
+                {viewingCompany.contact_phone && (
+                  <Button variant="secondary" asChild className="flex-1">
+                    <a href={`tel:${viewingCompany.contact_phone}`}>
+                      <Phone className="w-4 h-4 mr-2" />
+                      Appeler
+                    </a>
+                  </Button>
+                )}
                 {!getProposalStatus(viewingCompany.id) && (
                   <Button 
                     className="flex-1"
