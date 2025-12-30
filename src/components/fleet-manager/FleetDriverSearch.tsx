@@ -649,6 +649,23 @@ Cordialement`;
                           )}
                         </div>
                       )}
+
+                      {/* Vehicle Equipment with icons */}
+                      {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {driver.vehicle_equipment.slice(0, 3).map((eq, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs gap-1">
+                              <span>{getEquipmentIcon(eq)}</span>
+                              {getEquipmentLabel(eq)}
+                            </Badge>
+                          ))}
+                          {driver.vehicle_equipment.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{driver.vehicle_equipment.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

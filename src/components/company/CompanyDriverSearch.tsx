@@ -596,8 +596,9 @@ ${company?.company_name || ""}`;
                   {driver.vehicle_equipment?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-4">
                       {driver.vehicle_equipment.slice(0, 3).map((eq: string) => (
-                        <Badge key={eq} variant="secondary" className="text-xs">
-                          {eq}
+                        <Badge key={eq} variant="secondary" className="text-xs gap-1">
+                          <span>{getEquipmentIcon(eq)}</span>
+                          {getEquipmentLabel(eq)}
                         </Badge>
                       ))}
                       {driver.vehicle_equipment.length > 3 && (
