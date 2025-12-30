@@ -966,20 +966,28 @@ ${company?.company_name || ""}`;
               )}
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-4 border-t">
-                <Button variant="outline" className="flex-1 min-w-[100px]" onClick={() => setShowProfileDialog(false)}>
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full sm:flex-1 order-2 sm:order-1" 
+                  onClick={() => setShowProfileDialog(false)}
+                >
                   Fermer
                 </Button>
-                {selectedDriver.show_phone && selectedDriver.profile?.phone && (
-                  <Button variant="secondary" asChild className="flex-1 min-w-[100px]">
-                    <a href={`tel:${selectedDriver.profile.phone}`}>
+                {selectedDriver.show_phone && (selectedDriver.contact_phone || selectedDriver.profile?.phone) && (
+                  <Button 
+                    variant="secondary" 
+                    asChild 
+                    className="w-full sm:flex-1 order-3 sm:order-2"
+                  >
+                    <a href={`tel:${selectedDriver.contact_phone || selectedDriver.profile?.phone}`}>
                       <Phone className="w-4 h-4 mr-2" />
                       Appeler
                     </a>
                   </Button>
                 )}
                 <Button 
-                  className="flex-1 min-w-[100px]" 
+                  className="w-full sm:flex-1 order-1 sm:order-3" 
                   onClick={() => {
                     setShowProfileDialog(false);
                     handleOpenProposal(selectedDriver);
