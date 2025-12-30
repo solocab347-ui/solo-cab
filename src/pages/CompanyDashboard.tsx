@@ -30,6 +30,8 @@ import {
   Clock,
   Menu,
   X,
+  Sparkles,
+  ArrowUpRight,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
@@ -58,21 +60,21 @@ interface Company {
 }
 
 const menuItems = [
-  { id: "overview", icon: Home, label: "Tableau de bord" },
-  { id: "reservations", icon: Calendar, label: "Courses" },
-  { id: "employees", icon: Users, label: "Collaborateurs" },
+  { id: "overview", icon: Home, label: "Tableau de bord", color: "text-blue-400" },
+  { id: "reservations", icon: Calendar, label: "Courses", color: "text-violet-400" },
+  { id: "employees", icon: Users, label: "Collaborateurs", color: "text-emerald-400" },
   { id: "divider1", type: "divider", label: "Finances" },
-  { id: "devis", icon: FileText, label: "Devis" },
-  { id: "invoices", icon: Receipt, label: "Factures" },
-  { id: "payments", icon: CreditCard, label: "Paiements" },
+  { id: "devis", icon: FileText, label: "Devis", color: "text-amber-400" },
+  { id: "invoices", icon: Receipt, label: "Factures", color: "text-orange-400" },
+  { id: "payments", icon: CreditCard, label: "Paiements", color: "text-pink-400" },
   { id: "divider2", type: "divider", label: "Partenaires" },
-  { id: "partnerships", icon: Handshake, label: "Mes accords" },
-  { id: "drivers", icon: Car, label: "Chauffeurs VTC" },
-  { id: "fleets", icon: Truck, label: "Flottes" },
+  { id: "partnerships", icon: Handshake, label: "Mes accords", color: "text-cyan-400" },
+  { id: "drivers", icon: Car, label: "Chauffeurs VTC", color: "text-indigo-400" },
+  { id: "fleets", icon: Truck, label: "Flottes", color: "text-rose-400" },
   { id: "divider3", type: "divider", label: "Paramètres" },
-  { id: "stats", icon: BarChart3, label: "Statistiques" },
-  { id: "public", icon: Globe, label: "Profil public" },
-  { id: "settings", icon: Settings, label: "Configuration" },
+  { id: "stats", icon: BarChart3, label: "Statistiques", color: "text-teal-400" },
+  { id: "public", icon: Globe, label: "Profil public", color: "text-sky-400" },
+  { id: "settings", icon: Settings, label: "Configuration", color: "text-slate-400" },
 ];
 
 export default function CompanyDashboard() {
@@ -210,14 +212,17 @@ export default function CompanyDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <Menu className="w-5 h-5 text-white" />
+          <button 
+            onClick={() => setSidebarOpen(true)} 
+            className="flex items-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors border border-primary/30"
+          >
+            <Menu className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Menu</span>
           </button>
           <div className="flex items-center gap-2">
             <img src={logo} alt="SoloCab" className="w-8 h-8" />
-            <span className="font-semibold text-white text-sm">{company.company_name}</span>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -338,6 +343,7 @@ function SidebarContent({
 
             const Icon = item.icon!;
             const isActive = activeTab === item.id;
+            const itemColor = (item as any).color || "text-muted-foreground";
 
             return (
               <button
@@ -346,11 +352,11 @@ function SidebarContent({
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                    ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25"
                     : "text-muted-foreground hover:text-white hover:bg-white/10"
                 )}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary-foreground" : itemColor)} />
                 <span className="truncate">{item.label}</span>
                 {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
               </button>
@@ -386,58 +392,51 @@ function DashboardOverview({
   onCreateCourse: () => void;
 }) {
   const statCards = [
-    { label: "Courses", value: stats.courses, icon: Calendar, color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10" },
-    { label: "Chauffeurs", value: stats.drivers, icon: Car, color: "from-violet-500 to-violet-600", bgColor: "bg-violet-500/10" },
-    { label: "Collaborateurs", value: stats.employees, icon: Users, color: "from-emerald-500 to-emerald-600", bgColor: "bg-emerald-500/10" },
-    { label: "Dépenses", value: `${stats.spent}€`, icon: Euro, color: "from-amber-500 to-amber-600", bgColor: "bg-amber-500/10" },
+    { label: "Courses", value: stats.courses, icon: Calendar, gradient: "from-blue-500 to-indigo-600", bgColor: "bg-blue-500/20", iconColor: "text-blue-400" },
+    { label: "Chauffeurs", value: stats.drivers, icon: Car, gradient: "from-violet-500 to-purple-600", bgColor: "bg-violet-500/20", iconColor: "text-violet-400" },
+    { label: "Collaborateurs", value: stats.employees, icon: Users, gradient: "from-emerald-500 to-teal-600", bgColor: "bg-emerald-500/20", iconColor: "text-emerald-400" },
+    { label: "Dépenses", value: `${stats.spent}€`, icon: Euro, gradient: "from-amber-500 to-orange-600", bgColor: "bg-amber-500/20", iconColor: "text-amber-400" },
   ];
 
   const quickActions = [
-    { label: "Nouvelle course", icon: Plus, action: onCreateCourse, primary: true },
-    { label: "Trouver un chauffeur", icon: Search, action: () => onNavigate("drivers") },
-    { label: "Mes collaborateurs", icon: Users, action: () => onNavigate("employees") },
-    { label: "Statistiques", icon: BarChart3, action: () => onNavigate("stats") },
+    { label: "Nouvelle course", icon: Plus, action: onCreateCourse, primary: true, gradient: "from-primary to-primary/80" },
+    { label: "Trouver un chauffeur", icon: Search, action: () => onNavigate("drivers"), gradient: "from-indigo-500 to-violet-500", iconColor: "text-indigo-400" },
+    { label: "Mes collaborateurs", icon: Users, action: () => onNavigate("employees"), gradient: "from-emerald-500 to-teal-500", iconColor: "text-emerald-400" },
+    { label: "Statistiques", icon: BarChart3, action: () => onNavigate("stats"), gradient: "from-amber-500 to-orange-500", iconColor: "text-amber-400" },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/20 p-6">
-        <div className="relative z-10">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Bienvenue, {company.contact_name}
-          </h2>
-          <p className="text-muted-foreground max-w-xl">
-            Gérez vos réservations VTC, vos collaborateurs et vos partenaires depuis votre espace entreprise.
-          </p>
+      {/* Welcome Banner with gradient */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-violet-500/20 to-indigo-500/10 border border-primary/20 p-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-violet-500/10 to-pink-500/5" />
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <span className="text-sm text-amber-400 font-medium">Espace Entreprise</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Bonjour, {company.contact_name} 👋
+            </h2>
+            <p className="text-muted-foreground max-w-xl">
+              Gérez vos réservations VTC, vos collaborateurs et vos partenaires depuis votre tableau de bord.
+            </p>
+          </div>
+          <div className="hidden lg:block">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/40 to-violet-500/30 flex items-center justify-center border border-white/10">
+              <Building2 className="w-12 h-12 text-white/80" />
+            </div>
+          </div>
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-primary/10 to-transparent" />
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={i} className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={cn("p-2 rounded-lg", stat.bgColor)}>
-                    <Icon className={cn("w-4 h-4 bg-gradient-to-r bg-clip-text", stat.color.replace("from-", "text-").split(" ")[0])} />
-                  </div>
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
-                </div>
-                <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
+      {/* Quick Actions - FIRST */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-4">Actions rapides</h3>
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <ArrowUpRight className="w-5 h-5 text-primary" />
+          Actions rapides
+        </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActions.map((action, i) => {
             const Icon = action.icon;
@@ -446,20 +445,22 @@ function DashboardOverview({
                 key={i}
                 onClick={action.action}
                 className={cn(
-                  "group relative overflow-hidden rounded-xl p-4 transition-all duration-300 hover:scale-[1.02]",
+                  "group relative overflow-hidden rounded-xl p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg",
                   action.primary
-                    ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25"
-                    : "bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-white/10"
+                    ? `bg-gradient-to-br ${action.gradient} text-primary-foreground shadow-lg shadow-primary/25`
+                    : "bg-white/5 border border-white/10 hover:border-white/20"
                 )}
               >
                 <div className="flex flex-col items-center gap-3 text-center">
                   <div className={cn(
-                    "p-3 rounded-xl transition-colors",
-                    action.primary ? "bg-white/20" : "bg-white/10 group-hover:bg-primary/20"
+                    "p-3 rounded-xl transition-all duration-300",
+                    action.primary 
+                      ? "bg-white/20" 
+                      : `bg-gradient-to-br ${action.gradient} bg-opacity-10 group-hover:scale-110`
                   )}>
-                    <Icon className={cn("w-5 h-5", action.primary ? "" : "text-muted-foreground group-hover:text-primary")} />
+                    <Icon className={cn("w-5 h-5", action.primary ? "text-white" : "text-white")} />
                   </div>
-                  <span className={cn("text-sm font-medium", !action.primary && "text-white")}>{action.label}</span>
+                  <span className={cn("text-sm font-medium", action.primary ? "text-white" : "text-white")}>{action.label}</span>
                 </div>
               </button>
             );
@@ -467,53 +468,99 @@ function DashboardOverview({
         </div>
       </div>
 
-      {/* Recent Activity Placeholder */}
+      {/* Stats Grid - AFTER Quick Actions */}
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-violet-400" />
+          Statistiques
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={i} className={cn(
+                "relative overflow-hidden bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 backdrop-blur-sm hover:scale-[1.02] transition-all duration-300 cursor-pointer group",
+              )}>
+                <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300", stat.gradient)} style={{ opacity: 0.1 }} />
+                <CardContent className="p-4 relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={cn("p-2.5 rounded-xl", stat.bgColor)}>
+                      <Icon className={cn("w-5 h-5", stat.iconColor)} />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Activity Cards */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 hover:border-blue-500/30 transition-colors">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Prochaines courses</h3>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("reservations")} className="text-primary hover:text-primary">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-500/20">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                </div>
+                <h3 className="font-semibold text-white">Prochaines courses</h3>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => onNavigate("reservations")} className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10">
                 Voir tout
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Clock className="w-12 h-12 text-muted-foreground/50 mb-3" />
-              <p className="text-muted-foreground">Aucune course planifiée</p>
-              <Button variant="link" onClick={onCreateCourse} className="mt-2 text-primary">
+              <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-3">
+                <Clock className="w-8 h-8 text-blue-400" />
+              </div>
+              <p className="text-muted-foreground mb-2">Aucune course planifiée</p>
+              <Button onClick={onCreateCourse} className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Plus className="w-4 h-4 mr-2" />
                 Réserver maintenant
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent border-violet-500/20 hover:border-violet-500/30 transition-colors">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-white">Partenaires actifs</h3>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("partnerships")} className="text-primary hover:text-primary">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-violet-500/20">
+                  <Handshake className="w-4 h-4 text-violet-400" />
+                </div>
+                <h3 className="font-semibold text-white">Partenaires actifs</h3>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => onNavigate("partnerships")} className="text-violet-400 hover:text-violet-300 hover:bg-violet-500/10">
                 Voir tout
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
             {stats.drivers > 0 ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center">
-                    <Car className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500/20 to-purple-500/10 border border-violet-500/20">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                    <Car className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">{stats.drivers} chauffeur{stats.drivers > 1 ? 's' : ''}</p>
-                    <p className="text-sm text-muted-foreground">Partenaires actifs</p>
+                    <p className="text-xl font-bold text-white">{stats.drivers}</p>
+                    <p className="text-sm text-muted-foreground">Chauffeur{stats.drivers > 1 ? 's' : ''} partenaire{stats.drivers > 1 ? 's' : ''}</p>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Handshake className="w-12 h-12 text-muted-foreground/50 mb-3" />
-                <p className="text-muted-foreground">Aucun partenaire</p>
-                <Button variant="link" onClick={() => onNavigate("drivers")} className="mt-2 text-primary">
+                <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-3">
+                  <Handshake className="w-8 h-8 text-violet-400" />
+                </div>
+                <p className="text-muted-foreground mb-2">Aucun partenaire pour le moment</p>
+                <Button onClick={() => onNavigate("drivers")} className="bg-violet-500 hover:bg-violet-600 text-white">
+                  <Search className="w-4 h-4 mr-2" />
                   Trouver des chauffeurs
                 </Button>
               </div>

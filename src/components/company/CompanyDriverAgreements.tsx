@@ -241,6 +241,21 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     },
   });
 
+  // Fetch company full info for fleet search - MUST BE BEFORE ANY CONDITIONAL RETURNS
+  const { data: companyFull } = useQuery({
+    queryKey: ["company-full-info", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("companies")
+        .select("company_name, contact_name, employee_count, preferred_vehicle_types")
+        .eq("id", companyId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch existing agreements
   const { data: agreements, isLoading: loadingAgreements } = useQuery({
     queryKey: ["company-agreements", companyId],
@@ -378,20 +393,6 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const rejectedAgreements = agreements?.filter((a: any) => a.status === "rejected") || [];
   const terminatedAgreements = agreements?.filter((a: any) => a.status === "terminated" || a.status === "suspended") || [];
 
-  // Fetch company full info for fleet search
-  const { data: companyFull } = useQuery({
-    queryKey: ["company-full-info", companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("company_name, contact_name, employee_count, preferred_vehicle_types")
-        .eq("id", companyId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-  });
 
   return (
     <div className="space-y-6">
