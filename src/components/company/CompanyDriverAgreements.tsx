@@ -22,6 +22,7 @@ import { CompanyDriverSearch } from "./CompanyDriverSearch";
 import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
+import { notificationService } from "@/lib/notificationService";
 
 interface CompanyDriverAgreementsProps {
   companyId: string;
@@ -300,6 +301,9 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   // Accept driver proposal
   const acceptProposal = useMutation({
     mutationFn: async (agreementId: string) => {
+      // Get agreement info for notification
+      const agreement = agreements?.find((a: any) => a.id === agreementId);
+      
       const { error } = await supabase
         .from("company_driver_agreements")
         .update({
@@ -311,6 +315,20 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         .eq("id", agreementId);
 
       if (error) throw error;
+
+      // Notify driver that company accepted
+      if (agreement?.driver?.user_id) {
+        const { data: companyData } = await supabase
+          .from("companies")
+          .select("company_name")
+          .eq("id", companyId)
+          .single();
+        
+        await notificationService.notifyCompanyAgreementAccepted(
+          agreement.driver.user_id,
+          companyData?.company_name || 'L\'entreprise'
+        );
+      }
     },
     onSuccess: () => {
       toast.success("Partenariat accepté !");

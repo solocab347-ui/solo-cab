@@ -257,6 +257,44 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     );
   };
 
+  // Helper pour notifier l'entreprise liée à une course
+  const notifyCompanyForCourse = async (courseId: string, action: 'accepted' | 'started' | 'completed' | 'cancelled', amount?: number) => {
+    try {
+      // Récupérer les infos de la course et de l'entreprise
+      const companyCourse = companyCoursesData.find(cc => cc.course_id === courseId);
+      if (!companyCourse?.company_id) return;
+
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("user_id")
+        .eq("id", companyCourse.company_id)
+        .single();
+
+      if (!companyData?.user_id) return;
+
+      const course = courses.find(c => c.id === courseId);
+      const courseDate = course?.scheduled_date 
+        ? format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })
+        : '';
+      const clientName = course?.clients?.profiles?.full_name || 'Collaborateur';
+      const driverName = driverInfo?.profiles?.full_name || driverInfo?.company_name || 'Votre chauffeur';
+
+      switch (action) {
+        case 'accepted':
+          await notificationService.notifyCompanyCourseAccepted(companyData.user_id, driverName, courseDate);
+          break;
+        case 'completed':
+          await notificationService.notifyCompanyCourseCompleted(companyData.user_id, clientName, amount || 0);
+          break;
+        case 'cancelled':
+          await notificationService.notifyCompanyCourseCancelled(companyData.user_id, clientName, courseDate);
+          break;
+      }
+    } catch (error) {
+      console.error("Error notifying company:", error);
+    }
+  };
+
   const handleAcceptCourse = async (courseId: string) => {
     try {
       // Optimistic update - keep course in place
@@ -280,6 +318,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
         await notificationService.notifyCourseAccepted(course.clients.user_id, driverName);
       }
+
+      // Notifier l'entreprise si la course est liée à une entreprise
+      await notifyCompanyForCourse(courseId, 'accepted');
 
       toast.success("Course acceptée et confirmée !");
       
@@ -394,6 +435,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         await notificationService.notifyCourseCompleted(courseData.clients.user_id);
       }
 
+      // Notifier l'entreprise si la course est liée à une entreprise
+      await notifyCompanyForCourse(selectedCourseId, 'completed', courseAmount);
+
       // Fermer le dialog de paiement
       setShowPaymentDialog(false);
       setPaymentMethod("");
@@ -465,6 +509,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
         await notificationService.notifyCourseRejected(course.clients.user_id, driverName);
       }
+
+      // Notifier l'entreprise si la course est liée à une entreprise
+      await notifyCompanyForCourse(courseToReject, 'cancelled');
 
       toast.success("Course annulée");
       setRejectDialogOpen(false);

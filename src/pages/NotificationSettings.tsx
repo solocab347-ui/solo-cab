@@ -162,10 +162,14 @@ export default function NotificationSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Afficher l'état actuel pour debug */}
-              <p className="text-xs text-muted-foreground">
-                État navigateur: {permission} | Abonné: {isSubscribed ? 'Oui' : 'Non'}
-              </p>
+              {/* État actuel */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className={`w-2 h-2 rounded-full ${
+                  isSubscribed ? 'bg-green-500' : 
+                  permission === 'denied' ? 'bg-red-500' : 'bg-yellow-500'
+                }`}></span>
+                {isSubscribed ? 'Actif' : permission === 'denied' ? 'Bloqué par le navigateur' : 'Non activé'}
+              </div>
               
               <div className="flex items-center justify-between">
                 <Label htmlFor="push-enabled">
@@ -175,6 +179,7 @@ export default function NotificationSettings() {
                   id="push-enabled"
                   checked={isSubscribed}
                   onCheckedChange={handleTogglePushNotifications}
+                  disabled={permission === 'denied'}
                 />
               </div>
               
@@ -182,6 +187,17 @@ export default function NotificationSettings() {
                 <p className="text-sm text-primary">
                   Cliquez pour autoriser les notifications push.
                 </p>
+              )}
+
+              {permission === 'denied' && (
+                <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <p className="text-sm text-destructive font-medium">
+                    Les notifications sont bloquées par votre navigateur.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pour les activer : ouvrez les paramètres de votre navigateur → Site → Notifications → Autoriser
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
