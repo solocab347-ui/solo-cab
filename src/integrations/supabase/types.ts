@@ -626,6 +626,7 @@ export type Database = {
           department: string | null
           employee_count: number | null
           id: string
+          logo_url: string | null
           monthly_budget: number | null
           notes: string | null
           preferred_vehicle_types: string[] | null
@@ -649,6 +650,7 @@ export type Database = {
           department?: string | null
           employee_count?: number | null
           id?: string
+          logo_url?: string | null
           monthly_budget?: number | null
           notes?: string | null
           preferred_vehicle_types?: string[] | null
@@ -672,6 +674,7 @@ export type Database = {
           department?: string | null
           employee_count?: number | null
           id?: string
+          logo_url?: string | null
           monthly_budget?: number | null
           notes?: string | null
           preferred_vehicle_types?: string[] | null

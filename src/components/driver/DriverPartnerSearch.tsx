@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,8 +20,12 @@ import {
   Loader2,
   Users,
   Building2,
-  Phone
+  Phone,
+  MapPin,
+  Mail,
+  MessageSquare
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface AvailableDriver {
   id: string;
@@ -33,8 +38,11 @@ interface AvailableDriver {
   full_name: string;
   profile_photo_url: string | null;
   phone: string | null;
+  email?: string | null;
   display_driver_name?: boolean;
   display_company_name?: boolean;
+  show_phone?: boolean;
+  show_email?: boolean;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -85,7 +93,38 @@ export function DriverPartnerSearch({ driverId }: Props) {
   const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
   const [proposedCommission, setProposedCommission] = useState(10);
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
+  const [proposalMessage, setProposalMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch driver profile for default message
+  const { data: driverProfile } = useQuery({
+    queryKey: ["my-driver-profile", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select(`*, profile:profiles!drivers_user_id_fkey(full_name)`)
+        .eq("id", driverId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!driverId,
+  });
+
+  // Generate default message when driver profile is available
+  const generateDefaultMessage = () => {
+    const name = driverProfile?.profile?.full_name || "Chauffeur VTC";
+    const company = driverProfile?.company_name ? ` de ${driverProfile.company_name}` : "";
+    return `Bonjour,
+
+Je suis ${name}${company}, chauffeur VTC indépendant.
+
+Je vous propose un partenariat pour échanger des courses lorsque l'un de nous n'est pas disponible. Cela nous permettra de mieux servir nos clients respectifs tout en développant nos activités.
+
+Seriez-vous intéressé pour en discuter ?
+
+Cordialement.`;
+  };
 
   useEffect(() => {
     if (driverId) {
@@ -345,15 +384,38 @@ export function DriverPartnerSearch({ driverId }: Props) {
                         </span>
                       </div>
 
-                      {driver.phone && (
-                        <a 
-                          href={`tel:${driver.phone}`} 
-                          className="flex items-center gap-1 mt-1 text-xs text-blue-600"
-                        >
-                          <Phone className="h-3 w-3" />
-                          {driver.phone}
-                        </a>
+                      {/* Secteurs de travail */}
+                      {driver.working_sectors && driver.working_sectors.length > 0 && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {driver.working_sectors.slice(0, 2).join(', ')}
+                            {driver.working_sectors.length > 2 && ` +${driver.working_sectors.length - 2}`}
+                          </span>
+                        </div>
                       )}
+
+                      {/* Contact info */}
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {driver.show_phone !== false && driver.phone && (
+                          <a 
+                            href={`tel:${driver.phone}`} 
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          >
+                            <Phone className="h-3 w-3" />
+                            {driver.phone}
+                          </a>
+                        )}
+                        {driver.show_email !== false && driver.email && (
+                          <a 
+                            href={`mailto:${driver.email}`} 
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          >
+                            <Mail className="h-3 w-3" />
+                            {driver.email}
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     <Button 
@@ -384,6 +446,24 @@ export function DriverPartnerSearch({ driverId }: Props) {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Message personnalisable */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Message d'introduction
+              </Label>
+              <Textarea
+                placeholder="Présentez-vous et expliquez pourquoi vous souhaitez ce partenariat..."
+                value={proposalMessage || generateDefaultMessage()}
+                onChange={(e) => setProposalMessage(e.target.value)}
+                rows={6}
+                className="text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ce message sera envoyé avec votre demande de partenariat
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Commission : {proposedCommission}%</Label>
               <Slider
