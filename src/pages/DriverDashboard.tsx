@@ -420,7 +420,16 @@ const DriverDashboard = () => {
             </div>
             
             {/* Deuxième ligne */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
+            <div className="grid grid-cols-3 sm:grid-cols-7 gap-1 w-full">
+              {/* Documents - Onglet dédié */}
+              {!driverProfile?.driver?.is_fleet_driver && (
+                <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
+                  <FolderOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Documents</span>
+                  <span className="sm:hidden">Docs</span>
+                </TabsTrigger>
+              )}
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white flex-col sm:flex-row">
@@ -443,36 +452,6 @@ const DriverDashboard = () => {
                     <QrCode className="w-4 h-4" />
                     Mon QR Code
                   </DropdownMenuItem>
-                  {!driverProfile?.driver?.is_fleet_driver && (
-                    <DropdownMenuItem onClick={() => setActiveTab("documents")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-600 hover:text-white">
-                      <FolderOpen className="w-4 h-4" />
-                      Mes Documents
-                    </DropdownMenuItem>
-                  )}
-                  {!driverProfile?.driver?.is_fleet_driver && (
-                    <DropdownMenuItem onClick={() => setActiveTab("fleet-partnerships")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
-                      <Building2 className="w-4 h-4" />
-                      Partenariats Flottes
-                    </DropdownMenuItem>
-                  )}
-                  {!driverProfile?.driver?.is_fleet_driver && (
-                    <DropdownMenuItem onClick={() => setActiveTab("fleet-commissions")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-yellow-600 hover:text-white">
-                      <CreditCard className="w-4 h-4" />
-                      Mes Commissions
-                    </DropdownMenuItem>
-                  )}
-                  {!driverProfile?.driver?.is_fleet_driver && (
-                    <DropdownMenuItem onClick={() => setActiveTab("company-agreements")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-600 hover:text-white">
-                      <Building2 className="w-4 h-4" />
-                      Partenariats Entreprises
-                    </DropdownMenuItem>
-                  )}
-                  {!driverProfile?.driver?.is_fleet_driver && (
-                    <DropdownMenuItem onClick={() => setActiveTab("company-payments")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
-                      <CreditCard className="w-4 h-4" />
-                      Paiements Entreprises
-                    </DropdownMenuItem>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
               
@@ -523,7 +502,7 @@ const DriverDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
-                <span className="hidden sm:inline">Partage & Partenariats</span>
+                <span className="hidden sm:inline">Partenariats</span>
                 <span className="sm:hidden">Partenariats</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
@@ -995,33 +974,10 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Fleet Partnerships Tab - seulement pour chauffeurs indépendants */}
-          <TabsContent value="fleet-partnerships" className="space-y-6">
-            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
-              <DriverFleetPartnerships driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Fleet Commissions Tab - seulement pour chauffeurs indépendants */}
-          <TabsContent value="fleet-commissions" className="space-y-6">
-            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
-              <DriverFleetCommissions driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Company Agreements Tab - Partenariats avec entreprises */}
-          <TabsContent value="company-agreements" className="space-y-6">
-            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
-              <DriverCompanyAgreements driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
-
-          {/* Company Payments Tab - Paiements entreprises */}
-          <TabsContent value="company-payments" className="space-y-6">
-            {driverProfile?.driver?.id && !driverProfile.driver.is_fleet_driver && (
-              <DriverCompanyPayments driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
+          {/* Fleet Partnerships Tab - supprimé, intégré dans UnifiedPartnershipHub */}
+          {/* Fleet Commissions Tab - supprimé, intégré dans UnifiedPartnershipHub */}
+          {/* Company Agreements Tab - supprimé, intégré dans UnifiedPartnershipHub */}
+          {/* Company Payments Tab - supprimé, intégré dans UnifiedPartnershipHub */}
 
         </Tabs>
       </div>
