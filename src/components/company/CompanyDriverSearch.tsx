@@ -857,10 +857,48 @@ ${company?.company_name || ""}`;
                 </div>
               )}
 
+              {/* Contact information */}
+              {(selectedDriver.show_phone || selectedDriver.show_email) && (
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Contact
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedDriver.show_phone && selectedDriver.profile?.phone && (
+                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                        <Phone className="w-4 h-4 text-muted-foreground" />
+                        <a href={`tel:${selectedDriver.profile.phone}`} className="text-primary hover:underline font-medium">
+                          {selectedDriver.profile.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedDriver.show_email && selectedDriver.profile?.email && (
+                      <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <a href={`mailto:${selectedDriver.profile.email}`} className="text-primary hover:underline">
+                          {selectedDriver.profile.email}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-4 border-t">
                 <Button variant="outline" className="flex-1" onClick={() => setShowProfileDialog(false)}>
                   Fermer
                 </Button>
+                {selectedDriver.show_phone && selectedDriver.profile?.phone && (
+                  <Button variant="secondary" asChild className="flex-1">
+                    <a href={`tel:${selectedDriver.profile.phone}`}>
+                      <Phone className="w-4 h-4 mr-2" />
+                      Appeler
+                    </a>
+                  </Button>
+                )}
                 <Button 
                   className="flex-1" 
                   onClick={() => {
