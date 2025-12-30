@@ -14,8 +14,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { 
   Loader2, Search, Users, MapPin, Send, 
-  Eye, Phone, Mail, Building2, Filter, RotateCcw, Car
+  Eye, Phone, Mail, Building2, Filter, RotateCcw, Car, Briefcase
 } from "lucide-react";
+
+const SERVICES_OPTIONS = [
+  { id: 'airport', label: 'Transferts aéroport' },
+  { id: 'business', label: 'Affaires' },
+  { id: 'events', label: 'Événements' },
+  { id: 'wedding', label: 'Mariages' },
+  { id: 'tourism', label: 'Tourisme' },
+  { id: 'medical', label: 'Transport médical' },
+  { id: 'long_distance', label: 'Longue distance' },
+  { id: 'hourly', label: 'Mise à disposition' },
+];
+
+const getServiceLabel = (serviceId: string): string => {
+  return SERVICES_OPTIONS.find(s => s.id === serviceId)?.label || serviceId;
+};
 
 interface CompanyFleetSearchProps {
   companyId: string;
@@ -86,18 +101,14 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
           id, 
           user_id, 
           company_name, 
-          siret, 
           address, 
           contact_email, 
           contact_phone, 
           logo_url, 
           description, 
           visible_to_companies,
-          visible_to_drivers,
           show_drivers_in_public_storefront, 
-          auto_dispatch_enabled,
-          default_commission_percentage,
-          total_drivers
+          services_offered
         `)
         .eq("visible_to_companies", true)
         .in("status", ["validated", "active", "pending"])
@@ -325,10 +336,19 @@ ${companyProfile.company_name}`;
                       <p className="text-sm text-muted-foreground truncate">
                         {fleet.profiles?.full_name}
                       </p>
-                      {fleet.auto_dispatch_enabled && (
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          Dispatch auto
-                        </Badge>
+                      {fleet.services_offered && fleet.services_offered.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {fleet.services_offered.slice(0, 2).map((service: string) => (
+                            <Badge key={service} variant="secondary" className="text-xs">
+                              {getServiceLabel(service)}
+                            </Badge>
+                          ))}
+                          {fleet.services_offered.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{fleet.services_offered.length - 2}
+                            </Badge>
+                          )}
+                        </div>
                       )}
                     </div>
                     {hasAgreement && (
