@@ -2387,6 +2387,7 @@ export type Database = {
           custom_hourly_rate: number | null
           custom_minimum_price: number | null
           custom_per_km_rate: number | null
+          documents_validated: boolean | null
           driver_id: string
           equipment: string[] | null
           id: string
@@ -2408,6 +2409,7 @@ export type Database = {
           custom_hourly_rate?: number | null
           custom_minimum_price?: number | null
           custom_per_km_rate?: number | null
+          documents_validated?: boolean | null
           driver_id: string
           equipment?: string[] | null
           id?: string
@@ -2429,6 +2431,7 @@ export type Database = {
           custom_hourly_rate?: number | null
           custom_minimum_price?: number | null
           custom_per_km_rate?: number | null
+          documents_validated?: boolean | null
           driver_id?: string
           equipment?: string[] | null
           id?: string
@@ -5420,6 +5423,111 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          document_url: string | null
+          driver_id: string
+          expires_at: string | null
+          file_name: string | null
+          id: string
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          document_url?: string | null
+          driver_id: string
+          expires_at?: string | null
+          file_name?: string | null
+          id?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          document_url?: string | null
+          driver_id?: string
+          expires_at?: string | null
+          file_name?: string | null
+          id?: string
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "driver_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vtc_vehicles: {
         Row: {
           brand: string
@@ -5997,6 +6105,10 @@ export type Database = {
           p_duration_minutes?: number
           p_scheduled_date: string
         }
+        Returns: boolean
+      }
+      check_vehicle_documents_status: {
+        Args: { _vehicle_id: string }
         Returns: boolean
       }
       claim_pooled_course: {
