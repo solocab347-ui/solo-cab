@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { 
   Building2, Upload, Save, Loader2, Eye, EyeOff, 
-  Users, Car, MapPin, Globe, Star, Briefcase, X, Plus
+  Users, MapPin, Globe, Star, Briefcase, X, Plus
 } from "lucide-react";
 
 interface CompanyPublicProfileProps {
@@ -34,16 +35,13 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [newService, setNewService] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   
   // Form state
   const [publicDescription, setPublicDescription] = useState("");
   const [servicesNeeded, setServicesNeeded] = useState<string[]>([]);
-  const [preferredVehicleTypes, setPreferredVehicleTypes] = useState<string[]>([]);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
   const [acceptingProposals, setAcceptingProposals] = useState(false);
-  const [siretNumber, setSiretNumber] = useState("");
-  const [sirenNumber, setSirenNumber] = useState("");
-  const [tvaNumber, setTvaNumber] = useState("");
 
   // Fetch company data
   const { data: company, isLoading } = useQuery({
@@ -65,12 +63,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
     if (company) {
       setPublicDescription(company.notes || "");
       setServicesNeeded(company.preferred_vehicle_types || []);
-      setPreferredVehicleTypes(company.preferred_vehicle_types || []);
       setVisibleToDrivers(company.visible_to_drivers || false);
       setAcceptingProposals(company.accepting_proposals || false);
-      setSiretNumber(company.siret || "");
-      setSirenNumber(company.siren || "");
-      setTvaNumber(company.tva_number || "");
     }
   }, [company]);
 
@@ -84,9 +78,6 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           preferred_vehicle_types: servicesNeeded,
           visible_to_drivers: visibleToDrivers,
           accepting_proposals: acceptingProposals,
-          siret: siretNumber,
-          siren: sirenNumber,
-          tva_number: tvaNumber,
         })
         .eq("id", companyId);
 
@@ -140,16 +131,110 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
     );
   }
 
+  // Render public profile preview (same as what drivers see)
+  const renderPublicProfilePreview = () => (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+          {logoPreview ? (
+            <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-10 h-10 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-xl">{company?.company_name}</h3>
+          {company?.address && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+              <MapPin className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{company.address}</span>
+            </p>
+          )}
+          {company?.employee_count && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+              <Users className="w-4 h-4" />
+              {company.employee_count} collaborateurs
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Description */}
+      {publicDescription && (
+        <div className="bg-muted/50 rounded-lg p-4">
+          <p className="text-sm leading-relaxed">{publicDescription}</p>
+        </div>
+      )}
+
+      {/* Services */}
+      {servicesNeeded.length > 0 && (
+        <div>
+          <h4 className="font-medium mb-3 flex items-center gap-2">
+            <Briefcase className="w-4 h-4" />
+            Services recherchés
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {servicesNeeded.map((service) => (
+              <Badge key={service} variant="secondary">
+                {service}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Status badges */}
+      <div className="flex flex-wrap gap-2 pt-2 border-t">
+        {acceptingProposals && (
+          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+            <Star className="w-3 h-3 mr-1" />
+            Accepte les propositions
+          </Badge>
+        )}
+        {visibleToDrivers && (
+          <Badge variant="outline" className="text-muted-foreground">
+            <Eye className="w-3 h-3 mr-1" />
+            Profil visible
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Globe className="w-5 h-5" />
-          Profil public de l'entreprise
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Présentez votre entreprise aux chauffeurs VTC
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Profil public de l'entreprise
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Présentez votre entreprise aux chauffeurs VTC
+          </p>
+        </div>
+        
+        {/* Preview button */}
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Eye className="w-4 h-4" />
+              Voir mon profil
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Aperçu du profil public
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              {renderPublicProfilePreview()}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Visibility Settings */}
@@ -266,49 +351,6 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
               <span className="text-sm">{company.employee_count} collaborateurs</span>
             </div>
           )}
-
-          {/* SIRET, SIREN & TVA */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="siret">Numéro SIRET</Label>
-              <Input
-                id="siret"
-                placeholder="123 456 789 00012"
-                value={siretNumber}
-                onChange={(e) => setSiretNumber(e.target.value)}
-                maxLength={17}
-              />
-              <p className="text-xs text-muted-foreground">
-                14 chiffres identifiant votre établissement
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="siren">Numéro SIREN</Label>
-              <Input
-                id="siren"
-                placeholder="123 456 789"
-                value={sirenNumber}
-                onChange={(e) => setSirenNumber(e.target.value)}
-                maxLength={11}
-              />
-              <p className="text-xs text-muted-foreground">
-                9 chiffres identifiant votre entreprise
-              </p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tva">Numéro de TVA intracommunautaire</Label>
-            <Input
-              id="tva"
-              placeholder="FR12 345678901"
-              value={tvaNumber}
-              onChange={(e) => setTvaNumber(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Utilisé pour la facturation
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -376,97 +418,6 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Preview */}
-      {visibleToDrivers && (
-        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              Aperçu du profil
-            </CardTitle>
-            <CardDescription>
-              Voici comment les chauffeurs verront votre profil
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-background rounded-lg space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="Logo" className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <Building2 className="w-8 h-8 text-muted-foreground" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{company?.company_name}</h3>
-                  {company?.address && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {company.address}
-                    </p>
-                  )}
-                  {company?.employee_count && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      {company.employee_count} collaborateurs
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Legal info preview */}
-              {(siretNumber || sirenNumber || tvaNumber) && (
-                <div className="flex flex-wrap gap-4 text-sm border-t pt-3">
-                  {siretNumber && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Briefcase className="w-3.5 h-3.5" />
-                      <span className="font-medium">SIRET:</span>
-                      <span>{siretNumber}</span>
-                    </div>
-                  )}
-                  {sirenNumber && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span className="font-medium">SIREN:</span>
-                      <span>{sirenNumber}</span>
-                    </div>
-                  )}
-                  {tvaNumber && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Globe className="w-3.5 h-3.5" />
-                      <span className="font-medium">TVA:</span>
-                      <span>{tvaNumber}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {publicDescription && (
-                <p className="text-sm text-muted-foreground">{publicDescription}</p>
-              )}
-
-              {servicesNeeded.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {servicesNeeded.map((service) => (
-                    <Badge key={service} variant="secondary" className="text-xs">
-                      {service}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {acceptingProposals && (
-                <Badge className="bg-green-500">
-                  <Star className="w-3 h-3 mr-1" />
-                  Accepte les propositions
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Save Button */}
       <div className="flex justify-end">

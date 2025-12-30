@@ -13,6 +13,8 @@ interface CompanyBillingSettingsProps {
   initialData: {
     company_name: string;
     siret: string;
+    siren?: string | null;
+    tva_number?: string | null;
     address: string;
     billing_address: string | null;
     contact_name: string;
@@ -26,6 +28,8 @@ export const CompanyBillingSettings = ({ companyId, initialData }: CompanyBillin
   const [formData, setFormData] = useState({
     company_name: initialData.company_name || "",
     siret: initialData.siret || "",
+    siren: initialData.siren || "",
+    tva_number: initialData.tva_number || "",
     address: initialData.address || "",
     billing_address: initialData.billing_address || "",
     contact_name: initialData.contact_name || "",
@@ -47,6 +51,8 @@ export const CompanyBillingSettings = ({ companyId, initialData }: CompanyBillin
         .update({
           company_name: formData.company_name,
           siret: formData.siret,
+          siren: formData.siren || null,
+          tva_number: formData.tva_number || null,
           address: formData.address,
           billing_address: formData.billing_address || null,
           contact_name: formData.contact_name,
@@ -105,8 +111,34 @@ export const CompanyBillingSettings = ({ companyId, initialData }: CompanyBillin
                   value={formData.siret}
                   onChange={(e) => handleChange("siret", e.target.value)}
                   placeholder="12345678901234"
+                  maxLength={17}
                   required
                 />
+                <p className="text-xs text-muted-foreground">14 chiffres</p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="siren">SIREN</Label>
+                <Input
+                  id="siren"
+                  value={formData.siren}
+                  onChange={(e) => handleChange("siren", e.target.value)}
+                  placeholder="123456789"
+                  maxLength={11}
+                />
+                <p className="text-xs text-muted-foreground">9 chiffres (optionnel)</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tva_number">N° TVA intracommunautaire</Label>
+                <Input
+                  id="tva_number"
+                  value={formData.tva_number}
+                  onChange={(e) => handleChange("tva_number", e.target.value)}
+                  placeholder="FR12345678901"
+                />
+                <p className="text-xs text-muted-foreground">Pour la facturation</p>
               </div>
             </div>
           </CardContent>
