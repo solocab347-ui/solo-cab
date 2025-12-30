@@ -24,6 +24,8 @@ interface DriverPublicProfileProps {
   publicProfileEnabled: boolean;
   showPhone: boolean;
   showEmail: boolean;
+  contactPhone?: string;
+  contactEmail?: string;
   workingSectors: string[];
   serviceDescription: string;
   homeAddress: string;
@@ -46,6 +48,8 @@ interface DriverPublicProfileProps {
   onCardPhotoUpdate: (url: string) => void;
   onShowPhoneChange: (checked: boolean) => void;
   onShowEmailChange: (checked: boolean) => void;
+  onContactPhoneChange?: (phone: string) => void;
+  onContactEmailChange?: (email: string) => void;
   onWorkingSectorsChange: (sectors: string[]) => void;
   onServiceDescriptionChange: (description: string) => void;
   onHomeAddressChange: (address: string, coords?: { latitude: number; longitude: number }) => void;
@@ -68,6 +72,8 @@ export const DriverPublicProfile = memo(({
   publicProfileEnabled,
   showPhone,
   showEmail,
+  contactPhone = "",
+  contactEmail = "",
   workingSectors,
   serviceDescription,
   homeAddress,
@@ -90,6 +96,8 @@ export const DriverPublicProfile = memo(({
   onCardPhotoUpdate,
   onShowPhoneChange,
   onShowEmailChange,
+  onContactPhoneChange,
+  onContactEmailChange,
   onWorkingSectorsChange,
   onServiceDescriptionChange,
   onHomeAddressChange,
@@ -437,30 +445,64 @@ export const DriverPublicProfile = memo(({
           <h3 className="text-lg font-semibold">Informations de contact</h3>
         </div>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-            <div className="flex-1">
-              <Label className="font-medium">Afficher mon téléphone</Label>
-              <p className="text-sm text-muted-foreground">
-                {driverProfile?.phone || "Non renseigné"}
-              </p>
+          {/* Téléphone */}
+          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+            <div className="space-y-2">
+              <Label htmlFor="contact-phone" className="flex items-center gap-2 font-medium">
+                <Phone className="w-4 h-4" />
+                Numéro de téléphone
+              </Label>
+              <Input
+                id="contact-phone"
+                type="tel"
+                placeholder="06 12 34 56 78"
+                value={contactPhone}
+                onChange={(e) => onContactPhoneChange?.(e.target.value)}
+              />
             </div>
-            <Switch
-              checked={showPhone}
-              onCheckedChange={onShowPhoneChange}
-            />
+            <div className="flex items-center justify-between pt-2 border-t border-border/30">
+              <div>
+                <Label className="font-medium">Afficher sur le profil</Label>
+                <p className="text-sm text-muted-foreground">
+                  Les partenaires pourront vous appeler
+                </p>
+              </div>
+              <Switch
+                checked={showPhone}
+                onCheckedChange={onShowPhoneChange}
+                disabled={!contactPhone}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-            <div className="flex-1">
-              <Label className="font-medium">Afficher mon email</Label>
-              <p className="text-sm text-muted-foreground">
-                {driverProfile?.email || "Non renseigné"}
-              </p>
+          {/* Email */}
+          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border border-border/50">
+            <div className="space-y-2">
+              <Label htmlFor="contact-email" className="flex items-center gap-2 font-medium">
+                <Mail className="w-4 h-4" />
+                Adresse email
+              </Label>
+              <Input
+                id="contact-email"
+                type="email"
+                placeholder="votre@email.com"
+                value={contactEmail}
+                onChange={(e) => onContactEmailChange?.(e.target.value)}
+              />
             </div>
-            <Switch
-              checked={showEmail}
-              onCheckedChange={onShowEmailChange}
-            />
+            <div className="flex items-center justify-between pt-2 border-t border-border/30">
+              <div>
+                <Label className="font-medium">Afficher sur le profil</Label>
+                <p className="text-sm text-muted-foreground">
+                  Les partenaires pourront vous contacter par email
+                </p>
+              </div>
+              <Switch
+                checked={showEmail}
+                onCheckedChange={onShowEmailChange}
+                disabled={!contactEmail}
+              />
+            </div>
           </div>
         </div>
       </Card>
