@@ -381,6 +381,79 @@ export const notificationService = {
   },
 
   /**
+   * Notifications pour la SUPERVISION DES COLLABORATEURS
+   */
+  async notifyCompanyEmployeeCourseCreated(companyUserId: string, employeeName: string, courseInfo: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '🚗 Course créée par collaborateur',
+      message: `${employeeName} a créé une course: ${courseInfo}`,
+      type: 'course',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyEmployeeCourseCompleted(companyUserId: string, employeeName: string, amount: number) {
+    return this.create({
+      userId: companyUserId,
+      title: '✅ Course collaborateur terminée',
+      message: `${employeeName} a terminé une course (${amount.toFixed(2)}€)`,
+      type: 'success',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyEmployeeCourseCancelled(companyUserId: string, employeeName: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '🚫 Course collaborateur annulée',
+      message: `${employeeName} a annulé une course`,
+      type: 'warning',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyEmployeeBudgetAlert(companyUserId: string, employeeName: string, percentage: number) {
+    return this.create({
+      userId: companyUserId,
+      title: '⚠️ Alerte budget collaborateur',
+      message: `${employeeName} a atteint ${percentage}% de son budget mensuel`,
+      type: 'warning',
+      link: '/company-dashboard?tab=employees'
+    });
+  },
+
+  async notifyCompanyEmployeeLimitReached(companyUserId: string, employeeName: string, limitType: 'budget' | 'courses') {
+    return this.create({
+      userId: companyUserId,
+      title: '🛑 Limite atteinte',
+      message: `${employeeName} a atteint sa limite de ${limitType === 'budget' ? 'budget' : 'courses'} mensuelle`,
+      type: 'error',
+      link: '/company-dashboard?tab=employees'
+    });
+  },
+
+  async notifyEmployeeSuspended(employeeUserId: string, reason?: string) {
+    return this.create({
+      userId: employeeUserId,
+      title: '⚠️ Compte suspendu',
+      message: reason ? `Votre compte a été suspendu: ${reason}` : 'Votre compte collaborateur a été suspendu',
+      type: 'warning',
+      link: '/company-employee-dashboard'
+    });
+  },
+
+  async notifyEmployeeReactivated(employeeUserId: string) {
+    return this.create({
+      userId: employeeUserId,
+      title: '✅ Compte réactivé',
+      message: 'Votre compte collaborateur a été réactivé',
+      type: 'success',
+      link: '/company-employee-dashboard'
+    });
+  },
+
+  /**
    * Notifications pour les MESSAGES
    */
   async notifyNewMessage(userId: string, senderName: string) {
