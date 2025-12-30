@@ -540,21 +540,21 @@ ${company?.company_name || ""}`;
                     <div className="flex-1 min-w-0">
                     <h4 className="font-semibold truncate">
                       {(() => {
-                        const fullName = driver.profile?.full_name;
+                        const fullName = driver.profile?.full_name?.trim();
                         const companyName = driver.company_name?.trim();
-                        const showName = driver.display_driver_name !== false;
-                        const showCompany = driver.display_company_name === true;
+                        const showDriverName = driver.display_driver_name === true;
+                        const showCompanyName = driver.display_company_name === true;
                         
-                        // Priorité: nom si autorisé et disponible, sinon entreprise si autorisée
-                        if (showName && fullName) return fullName;
-                        if (showCompany && companyName) return companyName;
-                        // Fallback: afficher ce qui est disponible
+                        // Si les deux sont cochés, on affiche le nom du chauffeur
+                        if (showDriverName && fullName) return fullName;
+                        if (showCompanyName && companyName) return companyName;
+                        // Fallback
                         if (fullName) return fullName;
                         if (companyName) return companyName;
                         return "Chauffeur VTC";
                       })()}
                     </h4>
-                    {driver.display_driver_name !== false && driver.display_company_name === true && driver.company_name?.trim() && driver.profile?.full_name && (
+                    {driver.display_driver_name === true && driver.display_company_name === true && driver.company_name?.trim() && driver.profile?.full_name && (
                       <p className="text-sm text-muted-foreground truncate">
                         {driver.company_name}
                       </p>
@@ -705,21 +705,21 @@ ${company?.company_name || ""}`;
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold">
                     {(() => {
-                      const fullName = selectedDriver.profile?.full_name;
+                      const fullName = selectedDriver.profile?.full_name?.trim();
                       const companyName = selectedDriver.company_name?.trim();
-                      const showName = selectedDriver.display_driver_name !== false;
-                      const showCompany = selectedDriver.display_company_name === true;
+                      const showDriverName = selectedDriver.display_driver_name === true;
+                      const showCompanyName = selectedDriver.display_company_name === true;
                       
-                      // Priorité: nom si autorisé et disponible, sinon entreprise si autorisée
-                      if (showName && fullName) return fullName;
-                      if (showCompany && companyName) return companyName;
-                      // Fallback: afficher ce qui est disponible
+                      // Si les deux sont cochés, on affiche le nom du chauffeur
+                      if (showDriverName && fullName) return fullName;
+                      if (showCompanyName && companyName) return companyName;
+                      // Fallback
                       if (fullName) return fullName;
                       if (companyName) return companyName;
                       return "Chauffeur VTC";
                     })()}
                   </h3>
-                  {selectedDriver.display_driver_name !== false && selectedDriver.display_company_name === true && selectedDriver.company_name?.trim() && selectedDriver.profile?.full_name && (
+                  {selectedDriver.display_driver_name === true && selectedDriver.display_company_name === true && selectedDriver.company_name?.trim() && selectedDriver.profile?.full_name && (
                     <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
                       <Building2 className="w-3 h-3" />
                       {selectedDriver.company_name}
