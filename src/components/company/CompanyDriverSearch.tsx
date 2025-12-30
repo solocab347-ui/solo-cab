@@ -125,6 +125,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     queryKey: ["public-drivers-company", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
     queryFn: async () => {
       // Base query - fetch all validated drivers visible to companies
+      // IMPORTANT: On filtre par visible_to_companies = true explicitement
       const { data, error } = await supabase
         .from("drivers")
         .select(`
@@ -154,15 +155,16 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           public_profile_enabled
         `)
         .eq("status", "validated")
-        .or("visible_to_companies.eq.true,public_profile_enabled.eq.true")
+        .eq("visible_to_companies", true)
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(100);
 
       if (error) throw error;
-      
-      // Apply filters in JavaScript for more flexibility
+
+      // Récupérer les données non nulles
       let filteredData = data || [];
       
+      // Apply filters in JavaScript for more flexibility
       if (minRating > 0) {
         filteredData = filteredData.filter((d: any) => (d.rating || 0) >= minRating);
       }
@@ -191,22 +193,28 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
         );
       }
 
-      // Fetch profiles
-      const userIds = data?.map((d: any) => d.user_id) || [];
+      // Fetch profiles pour les chauffeurs filtrés
+      const userIds = filteredData.map((d: any) => d.user_id);
+      
+      if (userIds.length === 0) {
+        return [];
+      }
+      
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name, profile_photo_url, phone, email")
         .in("id", userIds);
 
-      // Filter by search term
-      let enrichedDrivers = data?.map((driver: any) => ({
+      // Enrichir les chauffeurs avec les profils
+      let enrichedDrivers = filteredData.map((driver: any) => ({
         ...driver,
         profile: profiles?.find((p: any) => p.id === driver.user_id),
       }));
 
+      // Filter by search term
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        enrichedDrivers = enrichedDrivers?.filter((d: any) =>
+        enrichedDrivers = enrichedDrivers.filter((d: any) =>
           d.profile?.full_name?.toLowerCase().includes(searchLower) ||
           d.company_name?.toLowerCase().includes(searchLower) ||
           d.vehicle_brand?.toLowerCase().includes(searchLower) ||

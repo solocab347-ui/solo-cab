@@ -99,7 +99,7 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
           default_commission_percentage,
           total_drivers
         `)
-        .or("visible_to_companies.eq.true,visible_to_drivers.eq.true")
+        .eq("visible_to_companies", true)
         .eq("status", "validated")
         .order('company_name')
         .limit(50);
