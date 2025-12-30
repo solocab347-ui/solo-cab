@@ -207,6 +207,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
   const [showProposalDetails, setShowProposalDetails] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [activeTab, setActiveTab] = useState("search");
 
   // Fetch company settings
   const { data: company } = useQuery({
@@ -482,7 +483,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
             </p>
           </div>
 
-          <Tabs defaultValue="search" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="w-4 h-4" />
@@ -694,9 +695,9 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                 <div className="space-y-3">
                   <h3 className="font-medium text-muted-foreground">Refusés</h3>
                   {rejectedAgreements.map((agreement: any) => (
-                    <Card key={agreement.id} className="opacity-70">
+                    <Card key={agreement.id} className="opacity-80">
                       <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                           <div className="flex gap-3">
                             <Avatar className="w-10 h-10">
                               <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
@@ -716,7 +717,18 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                               )}
                             </div>
                           </div>
-                          {getStatusBadge(agreement.status, agreement.proposed_by)}
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            {getStatusBadge(agreement.status, agreement.proposed_by)}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setActiveTab("search")}
+                              className="flex-1 sm:flex-none"
+                            >
+                              <Send className="w-4 h-4 mr-1" />
+                              Refaire une demande
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
