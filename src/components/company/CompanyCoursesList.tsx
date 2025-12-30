@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import jsPDF from "jspdf";
 import { useNavigate } from "react-router-dom";
+import { notificationService } from "@/lib/notificationService";
 
 interface CompanyCoursesListProps {
   companyId: string;

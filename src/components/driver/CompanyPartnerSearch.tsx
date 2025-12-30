@@ -20,6 +20,7 @@ import {
   Phone,
   Mail
 } from 'lucide-react';
+import { notificationService } from '@/lib/notificationService';
 
 interface Company {
   id: string;
@@ -130,6 +131,26 @@ export function CompanyPartnerSearch({ driverId }: Props) {
       });
 
       if (error) throw error;
+
+      // Notifier l'entreprise de la demande de partenariat
+      const { data: companyUser } = await supabase
+        .from("companies")
+        .select("user_id")
+        .eq("id", selectedCompany.id)
+        .single();
+
+      if (companyUser?.user_id) {
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("profiles:user_id(full_name)")
+          .eq("id", driverId)
+          .single();
+        
+        await notificationService.notifyCompanyAgreementRequest(
+          companyUser.user_id,
+          driverData?.profiles?.full_name || 'Un chauffeur'
+        );
+      }
 
       toast.success(`Proposition envoyée à ${selectedCompany.company_name} !`);
       setProposalDialogOpen(false);

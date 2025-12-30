@@ -285,7 +285,7 @@ export const notificationService = {
       title: '📋 Demande de partenariat',
       message: `${driverName} propose un partenariat commercial`,
       type: 'partnership',
-      link: '/company-dashboard'
+      link: '/company-dashboard?tab=partnerships'
     });
   },
 
@@ -296,6 +296,87 @@ export const notificationService = {
       message: `${companyName} a accepté votre proposition`,
       type: 'success',
       link: '/driver-dashboard'
+    });
+  },
+
+  // Notifications courses entreprise
+  async notifyCompanyNewCourse(companyUserId: string, employeeName: string, courseDate: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '🚗 Nouvelle réservation',
+      message: `${employeeName} a créé une réservation pour le ${courseDate}`,
+      type: 'course',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyCourseAccepted(companyUserId: string, driverName: string, courseDate: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '✅ Réservation confirmée',
+      message: `${driverName} a accepté la course du ${courseDate}`,
+      type: 'success',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyCourseCompleted(companyUserId: string, employeeName: string, amount: number) {
+    return this.create({
+      userId: companyUserId,
+      title: '🏁 Course terminée',
+      message: `Course de ${employeeName} effectuée (${amount.toFixed(2)}€)`,
+      type: 'success',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyCourseCancelled(companyUserId: string, employeeName: string, courseDate: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '🚫 Réservation annulée',
+      message: `La course de ${employeeName} du ${courseDate} a été annulée`,
+      type: 'warning',
+      link: '/company-dashboard?tab=courses'
+    });
+  },
+
+  async notifyCompanyNewEmployee(companyUserId: string, employeeName: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '👤 Nouveau collaborateur',
+      message: `${employeeName} a rejoint votre entreprise`,
+      type: 'info',
+      link: '/company-dashboard?tab=employees'
+    });
+  },
+
+  async notifyCompanyNewInvoice(companyUserId: string, driverName: string, amount: number, invoiceNumber: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '📄 Nouvelle facture',
+      message: `Facture ${invoiceNumber} de ${amount.toFixed(2)}€ de ${driverName}`,
+      type: 'facture',
+      link: '/company-dashboard?tab=invoices'
+    });
+  },
+
+  async notifyCompanyFleetPartnershipRequest(companyUserId: string, fleetName: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '🚐 Demande de partenariat flotte',
+      message: `${fleetName} propose un partenariat`,
+      type: 'partnership',
+      link: '/company-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyCompanyFleetPartnershipAccepted(companyUserId: string, fleetName: string) {
+    return this.create({
+      userId: companyUserId,
+      title: '✅ Partenariat flotte accepté',
+      message: `${fleetName} a accepté votre demande de partenariat`,
+      type: 'success',
+      link: '/company-dashboard?tab=partnerships'
     });
   },
 
