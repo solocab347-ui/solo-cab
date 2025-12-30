@@ -79,6 +79,9 @@ interface FleetManagerPublic {
   show_phone: boolean;
   show_email: boolean;
   auto_dispatch_enabled: boolean;
+  services_offered: string[] | null;
+  default_partnership_commission: number | null;
+  partnership_terms: string | null;
 }
 
 const FleetPublicProfile = () => {
@@ -138,7 +141,10 @@ const FleetPublicProfile = () => {
           show_address,
           show_phone,
           show_email,
-          auto_dispatch_enabled
+          auto_dispatch_enabled,
+          services_offered,
+          default_partnership_commission,
+          partnership_terms
         `)
         .eq("id", id)
         .single();
@@ -443,6 +449,43 @@ const FleetPublicProfile = () => {
           {fleetManager.description && (
             <div className="mt-8 p-6 bg-card/50 backdrop-blur-xl rounded-2xl border border-border/30">
               <p className="text-muted-foreground leading-relaxed">{fleetManager.description}</p>
+            </div>
+          )}
+
+          {/* Services proposés */}
+          {fleetManager.services_offered && fleetManager.services_offered.length > 0 && (
+            <div className="mt-6 p-6 bg-card/50 backdrop-blur-xl rounded-2xl border border-border/30">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-primary" />
+                Services proposés
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {fleetManager.services_offered.map((service, index) => (
+                  <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    {service}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Conditions partenariat */}
+          {(fleetManager.default_partnership_commission || fleetManager.partnership_terms) && (
+            <div className="mt-6 p-6 bg-card/50 backdrop-blur-xl rounded-2xl border border-border/30">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Conditions de partenariat
+              </h3>
+              <div className="space-y-3">
+                {fleetManager.default_partnership_commission && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Badge variant="outline">Commission : {fleetManager.default_partnership_commission}%</Badge>
+                  </div>
+                )}
+                {fleetManager.partnership_terms && (
+                  <p className="text-muted-foreground text-sm">{fleetManager.partnership_terms}</p>
+                )}
+              </div>
             </div>
           )}
         </div>
