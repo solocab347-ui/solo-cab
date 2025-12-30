@@ -1,17 +1,38 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Calendar as CalendarIcon, MapPin, Clock, Users, ChevronLeft, ChevronRight, Search, Filter, X } from "lucide-react";
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO } from "date-fns";
+import { 
+  Calendar as CalendarIcon, 
+  MapPin, 
+  Clock, 
+  Users, 
+  ChevronLeft, 
+  ChevronRight, 
+  Search, 
+  Filter, 
+  X,
+  Euro,
+  Phone,
+  Navigation,
+  Route,
+  ExternalLink,
+  Info,
+  MessageSquare
+} from "lucide-react";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, differenceInMinutes } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { subscriptionManager } from "@/lib/subscriptionManager";
+import { getCourseType, getCourseTypeFilters, CourseType, CourseTypeInfo } from "@/lib/courseTypeUtils";
+import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DriverPlanningProps {
   driverId: string;
@@ -20,51 +41,61 @@ interface DriverPlanningProps {
 type ViewMode = "day" | "week" | "month";
 type CourseStatus = "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
 
+interface EnrichedCourse {
+  id: string;
+  scheduled_date: string;
+  status: CourseStatus;
+  pickup_address: string;
+  destination_address: string;
+  distance_km: number | null;
+  duration_minutes: number | null;
+  passengers_count: number;
+  notes: string | null;
+  course_number: string | null;
+  driver_id: string | null;
+  driver_ids: string[] | null;
+  clients?: {
+    user_id: string;
+    is_exclusive: boolean;
+    profiles?: {
+      full_name: string;
+      phone: string | null;
+      profile_photo_url: string | null;
+    };
+  };
+  devis?: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    quote_number: string | null;
+  }>;
+  shared_courses?: any[];
+  company_courses?: any[];
+  courseType?: CourseTypeInfo;
+}
+
 const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
-  const [courses, setCourses] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState<EnrichedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [selectedCourse, setSelectedCourse] = useState<EnrichedCourse | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<CourseStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<CourseType | "all">("all");
 
-  useEffect(() => {
-    fetchCourses();
-    const unsubscribe = setupRealtimeSubscription();
-    return () => unsubscribe();
-  }, [driverId]);
-
-  // Auto-naviguer vers la première course à venir
-  useEffect(() => {
-    if (courses.length > 0) {
-      const now = new Date();
-      const upcomingCourses = courses
-        .filter(c => parseISO(c.scheduled_date) >= now)
-        .sort((a, b) => parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime());
-      
-      if (upcomingCourses.length > 0) {
-        setCurrentDate(parseISO(upcomingCourses[0].scheduled_date));
-      } else if (courses.length > 0) {
-        // Si pas de courses à venir, naviguer vers la plus récente
-        const sorted = [...courses].sort((a, b) => 
-          parseISO(b.scheduled_date).getTime() - parseISO(a.scheduled_date).getTime()
-        );
-        setCurrentDate(parseISO(sorted[0].scheduled_date));
-      }
-    }
-  }, [courses.length]);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       console.log('Planning - Fetching courses for driver:', driverId);
       
-      const { data, error } = await supabase
+      // Fetch courses with basic relations
+      const { data: coursesData, error: coursesError } = await supabase
         .from("courses")
         .select(`
           *,
-          clients!inner(
+          clients(
             user_id,
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
@@ -77,39 +108,152 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           )
         `)
         .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .in('status', ['accepted', 'in_progress', 'completed'])
         .order("scheduled_date", { ascending: true });
 
-      if (error) {
-        console.error("Planning - Error fetching courses:", error);
-        throw error;
+      if (coursesError) throw coursesError;
+
+      if (!coursesData || coursesData.length === 0) {
+        setCourses([]);
+        setLoading(false);
+        return;
       }
+
+      const courseIds = coursesData.map(c => c.id);
+
+      // Fetch shared courses - simplified query
+      const { data: sharedData } = await supabase
+        .from("shared_courses")
+        .select("id, course_id, sender_driver_id, receiver_driver_id, status")
+        .in("course_id", courseIds);
+
+      // Get sender/receiver driver names separately
+      const driverIds = new Set<string>();
+      sharedData?.forEach(sc => {
+        driverIds.add(sc.sender_driver_id);
+        driverIds.add(sc.receiver_driver_id);
+      });
       
-      console.log('Planning - Fetched courses:', data?.length || 0, 'courses');
-      setCourses(data || []);
+      let driverProfiles: Record<string, string> = {};
+      if (driverIds.size > 0) {
+        const { data: drivers } = await supabase
+          .from("drivers")
+          .select("id, user_id, profiles:user_id(full_name)")
+          .in("id", Array.from(driverIds));
+        
+        drivers?.forEach((d: any) => {
+          driverProfiles[d.id] = d.profiles?.full_name || 'Chauffeur';
+        });
+      }
+
+      // Fetch company courses
+      const { data: companyData } = await supabase
+        .from("company_courses")
+        .select("id, course_id, company_id")
+        .in("course_id", courseIds);
+
+      // Get company names
+      const companyIds = [...new Set(companyData?.map(cc => cc.company_id) || [])];
+      let companyNames: Record<string, string> = {};
+      if (companyIds.length > 0) {
+        const { data: companies } = await supabase
+          .from("companies")
+          .select("id, company_name")
+          .in("id", companyIds);
+        
+        companies?.forEach(c => {
+          companyNames[c.id] = c.company_name;
+        });
+      }
+
+      // Fetch fleet driver partnerships
+      const { data: fleetData } = await supabase
+        .from("fleet_driver_partnerships")
+        .select("id, fleet_manager_id, driver_id, status")
+        .eq("driver_id", driverId)
+        .eq("status", "active");
+
+      // Get fleet manager names
+      const fleetManagerIds = [...new Set(fleetData?.map(f => f.fleet_manager_id) || [])];
+      let fleetManagerNames: Record<string, string> = {};
+      if (fleetManagerIds.length > 0) {
+        const { data: fleetManagers } = await supabase
+          .from("fleet_managers")
+          .select("id, company_name")
+          .in("id", fleetManagerIds);
+        
+        fleetManagers?.forEach(fm => {
+          fleetManagerNames[fm.id] = fm.company_name;
+        });
+      }
+
+      // Enrich courses with type info
+      const enrichedCourses: EnrichedCourse[] = coursesData.map(course => {
+        const courseSharedData = sharedData?.filter(sc => sc.course_id === course.id) || [];
+        const courseCompanyData = companyData?.filter(cc => cc.course_id === course.id) || [];
+        
+        // Enrich shared courses with driver names
+        const enrichedSharedCourses = courseSharedData.map(sc => ({
+          ...sc,
+          sender_driver: { profiles: { full_name: driverProfiles[sc.sender_driver_id] || 'Chauffeur' } },
+          receiver_driver: { profiles: { full_name: driverProfiles[sc.receiver_driver_id] || 'Chauffeur' } }
+        }));
+
+        // Enrich company courses with company names
+        const enrichedCompanyCourses = courseCompanyData.map(cc => ({
+          ...cc,
+          company: { company_name: companyNames[cc.company_id] || 'Entreprise' }
+        }));
+
+        // Check if this is a fleet course (driver has active fleet partnership and course was created by fleet)
+        const activeFleetPartnership = fleetData?.[0];
+        const isFleetCourse = activeFleetPartnership && course.driver_ids?.includes(driverId);
+
+        const courseType = getCourseType(
+          { ...course, shared_courses: enrichedSharedCourses, company_courses: enrichedCompanyCourses },
+          driverId,
+          {
+            sharedCourses: enrichedSharedCourses,
+            companyCourses: enrichedCompanyCourses,
+            fleetDriverInfo: isFleetCourse && activeFleetPartnership ? {
+              fleet_manager_id: activeFleetPartnership.fleet_manager_id,
+              fleet_name: fleetManagerNames[activeFleetPartnership.fleet_manager_id]
+            } : undefined
+          }
+        );
+
+        return {
+          ...course,
+          shared_courses: enrichedSharedCourses,
+          company_courses: enrichedCompanyCourses,
+          courseType
+        };
+      });
+      
+      console.log('Planning - Fetched courses:', enrichedCourses.length);
+      setCourses(enrichedCourses);
     } catch (error: any) {
       console.error("Planning - Error:", error);
       toast.error("Erreur lors du chargement du planning");
     } finally {
       setLoading(false);
     }
-  };
+  }, [driverId]);
 
-  const setupRealtimeSubscription = () => {
-    // Subscribe to courses changes - listen to ALL events for this driver
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
+  useEffect(() => {
     const channel = supabase
       .channel(`planning-driver-${driverId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'courses'
         },
         (payload) => {
-          console.log('Planning - Course change detected:', payload);
-          
-          // Check if this course concerns this driver
           const course = payload.new as any || payload.old as any;
           if (course) {
             const concernsDriver = 
@@ -117,7 +261,6 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
               (course.driver_ids && Array.isArray(course.driver_ids) && course.driver_ids.includes(driverId));
             
             if (concernsDriver) {
-              console.log('Planning - Refreshing courses for driver:', driverId);
               fetchCourses();
             }
           }
@@ -126,10 +269,23 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
       .subscribe();
 
     return () => {
-      console.log('Planning - Unsubscribing from realtime');
       supabase.removeChannel(channel);
     };
-  };
+  }, [driverId, fetchCourses]);
+
+  // Auto-navigate to first upcoming course
+  useEffect(() => {
+    if (courses.length > 0 && !loading) {
+      const now = new Date();
+      const upcomingCourses = courses
+        .filter(c => parseISO(c.scheduled_date) >= now && c.status !== 'cancelled' && c.status !== 'completed')
+        .sort((a, b) => parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime());
+      
+      if (upcomingCourses.length > 0) {
+        setCurrentDate(parseISO(upcomingCourses[0].scheduled_date));
+      }
+    }
+  }, [courses.length, loading]);
 
   const getDateRange = () => {
     switch (viewMode) {
@@ -152,16 +308,17 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
       const matchesSearch = !searchQuery || 
         course.clients?.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.pickup_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.destination_address?.toLowerCase().includes(searchQuery.toLowerCase());
+        course.destination_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.course_number?.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesStatus = statusFilter === "all" || course.status === statusFilter;
+      const matchesType = typeFilter === "all" || course.courseType?.type === typeFilter;
       
-      return inDateRange && matchesSearch && matchesStatus;
+      return inDateRange && matchesSearch && matchesStatus && matchesType;
     });
-  }, [courses, currentDate, viewMode, searchQuery, statusFilter]);
+  }, [courses, currentDate, viewMode, searchQuery, statusFilter, typeFilter]);
 
   const navigatePeriod = (direction: "prev" | "next") => {
-    const amount = direction === "prev" ? -1 : 1;
     switch (viewMode) {
       case "day":
         setCurrentDate(direction === "prev" ? subDays(currentDate, 1) : addDays(currentDate, 1));
@@ -175,15 +332,19 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     }
   };
 
-  const getStatusBadge = (status: CourseStatus) => {
+  const getStatusConfig = (status: CourseStatus) => {
     const config = {
-      pending: { label: "En attente", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-      accepted: { label: "Confirmée", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-      in_progress: { label: "En cours", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-      completed: { label: "Terminée", className: "bg-green-500/10 text-green-600 border-green-500/20" },
-      cancelled: { label: "Annulée", className: "bg-red-500/10 text-red-600 border-red-500/20" },
+      pending: { label: "En attente", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20", dotColor: "bg-yellow-500" },
+      accepted: { label: "Confirmée", className: "bg-blue-500/10 text-blue-600 border-blue-500/20", dotColor: "bg-blue-500" },
+      in_progress: { label: "En cours", className: "bg-purple-500/10 text-purple-600 border-purple-500/20", dotColor: "bg-purple-500" },
+      completed: { label: "Terminée", className: "bg-green-500/10 text-green-600 border-green-500/20", dotColor: "bg-green-500" },
+      cancelled: { label: "Annulée", className: "bg-red-500/10 text-red-600 border-red-500/20", dotColor: "bg-red-500" },
     };
-    const { label, className } = config[status] || config.pending;
+    return config[status] || config.pending;
+  };
+
+  const getStatusBadge = (status: CourseStatus) => {
+    const { label, className } = getStatusConfig(status);
     return <Badge variant="outline" className={cn("text-xs", className)}>{label}</Badge>;
   };
 
@@ -201,7 +362,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
   };
 
   const groupCoursesByDay = () => {
-    const grouped = new Map<string, any[]>();
+    const grouped = new Map<string, EnrichedCourse[]>();
     filteredCourses.forEach(course => {
       const dateKey = format(parseISO(course.scheduled_date), "yyyy-MM-dd");
       if (!grouped.has(dateKey)) {
@@ -209,7 +370,226 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
       }
       grouped.get(dateKey)!.push(course);
     });
+    // Sort courses within each day by time
+    grouped.forEach((dayCourses, key) => {
+      grouped.set(key, dayCourses.sort((a, b) => 
+        parseISO(a.scheduled_date).getTime() - parseISO(b.scheduled_date).getTime()
+      ));
+    });
     return grouped;
+  };
+
+  const goToCourse = (courseId: string) => {
+    // Navigate to courses tab with the course selected
+    navigate(`/driver-dashboard?tab=courses&course=${courseId}`);
+  };
+
+  const formatDuration = (minutes: number | null) => {
+    if (!minutes) return null;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h${mins > 0 ? mins.toString().padStart(2, '0') : ''}`;
+    }
+    return `${mins}min`;
+  };
+
+  const isUpcoming = (date: string) => {
+    const courseDate = parseISO(date);
+    const now = new Date();
+    return courseDate > now && differenceInMinutes(courseDate, now) <= 60;
+  };
+
+  // Compact Course Card for week/month view
+  const CompactCourseCard = ({ course }: { course: EnrichedCourse }) => {
+    const statusConfig = getStatusConfig(course.status);
+    const upcoming = isUpcoming(course.scheduled_date);
+    
+    return (
+      <div
+        onClick={() => setSelectedCourse(course)}
+        className={cn(
+          "relative flex items-stretch rounded-lg overflow-hidden cursor-pointer transition-all hover:shadow-md border",
+          "bg-card/80 backdrop-blur-sm",
+          upcoming && "ring-2 ring-primary animate-pulse",
+          course.courseType?.borderColor || "border-border/50"
+        )}
+      >
+        {/* Type indicator bar */}
+        <CourseTypeIndicator type={course.courseType?.type || 'personal'} className="w-1.5 min-h-full" />
+        
+        <div className="flex-1 p-2 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+              <span className="font-semibold text-sm text-foreground">
+                {format(parseISO(course.scheduled_date), "HH:mm")}
+              </span>
+            </div>
+            <div className={cn("w-2 h-2 rounded-full flex-shrink-0", statusConfig.dotColor)} />
+          </div>
+          
+          <div className="text-xs text-muted-foreground truncate mb-1">
+            {course.clients?.profiles?.full_name || "Client"}
+          </div>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            {course.courseType && (
+              <CourseTypeBadge 
+                typeInfo={course.courseType} 
+                showLabel={false}
+                size="sm"
+              />
+            )}
+            {course.devis?.[0] && (
+              <span className="text-xs font-semibold text-primary">
+                {course.devis[0].amount.toFixed(0)}€
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Full Course Card for day view
+  const FullCourseCard = ({ course }: { course: EnrichedCourse }) => {
+    const statusConfig = getStatusConfig(course.status);
+    const upcoming = isUpcoming(course.scheduled_date);
+    
+    return (
+      <Card 
+        onClick={() => setSelectedCourse(course)}
+        className={cn(
+          "relative overflow-hidden cursor-pointer transition-all hover:shadow-lg",
+          "bg-card/80 backdrop-blur-sm",
+          upcoming && "ring-2 ring-primary",
+          course.courseType?.borderColor || "border-border/50"
+        )}
+      >
+        {/* Top colored bar based on type */}
+        <div className={cn("h-1 w-full", course.courseType?.type === 'personal' ? 'bg-primary' : 
+          course.courseType?.type === 'partner' ? 'bg-purple-500' :
+          course.courseType?.type === 'company' ? 'bg-blue-500' : 'bg-amber-500'
+        )} />
+        
+        <div className="p-4">
+          {/* Header with time, status, and type */}
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="font-bold text-lg text-foreground">
+                {format(parseISO(course.scheduled_date), "HH:mm")}
+              </span>
+              {upcoming && (
+                <Badge variant="secondary" className="text-xs animate-pulse bg-primary/20 text-primary">
+                  Bientôt
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {course.courseType && (
+                <CourseTypeBadge 
+                  typeInfo={course.courseType} 
+                  showLabel={true}
+                  showPartnerName={true}
+                  size="sm"
+                />
+              )}
+              {getStatusBadge(course.status)}
+            </div>
+          </div>
+
+          {/* Client info */}
+          <div className="flex items-center gap-3 mb-3 p-2 rounded-lg bg-muted/30">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-foreground truncate">
+                {course.clients?.profiles?.full_name || "Client"}
+              </div>
+              {course.clients?.profiles?.phone && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Phone className="w-3 h-3" />
+                  {course.clients.profiles.phone}
+                </div>
+              )}
+            </div>
+            {course.passengers_count > 1 && (
+              <Badge variant="outline" className="text-xs">
+                {course.passengers_count} pass.
+              </Badge>
+            )}
+          </div>
+
+          {/* Addresses */}
+          <div className="space-y-2 mb-3">
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MapPin className="w-3 h-3 text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-muted-foreground">Départ</div>
+                <div className="text-sm text-foreground truncate">{course.pickup_address}</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <MapPin className="w-3 h-3 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-muted-foreground">Arrivée</div>
+                <div className="text-sm text-foreground truncate">{course.destination_address}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Course details */}
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-border/50">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {course.distance_km && (
+                <div className="flex items-center gap-1">
+                  <Route className="w-4 h-4" />
+                  <span>{course.distance_km} km</span>
+                </div>
+              )}
+              {course.duration_minutes && (
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{formatDuration(course.duration_minutes)}</span>
+                </div>
+              )}
+            </div>
+            {course.devis?.[0] && (
+              <div className="flex items-center gap-1">
+                <Euro className="w-4 h-4 text-primary" />
+                <span className="text-lg font-bold text-primary">
+                  {course.devis[0].amount.toFixed(2)}€
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Notes indicator */}
+          {course.notes && (
+            <div className="mt-2 pt-2 border-t border-border/50">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MessageSquare className="w-3 h-3" />
+                <span className="truncate">{course.notes}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Course number */}
+          {course.course_number && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              N° {course.course_number}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
   };
 
   const renderDayView = () => {
@@ -229,45 +609,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     return (
       <div className="space-y-3">
         {dayCourses.map(course => (
-          <Card 
-            key={course.id}
-            onClick={() => setSelectedCourse(course)}
-            className="p-4 hover:shadow-lg transition-all cursor-pointer border-border/50 bg-card/50 backdrop-blur-sm"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="font-semibold text-foreground">
-                    {format(parseISO(course.scheduled_date), "HH:mm")}
-                  </span>
-                  {getStatusBadge(course.status)}
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <span className="font-medium text-foreground truncate">
-                      {course.clients?.profiles?.full_name}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground truncate">{course.pickup_address}</p>
-                      <p className="text-xs text-muted-foreground truncate">→ {course.destination_address}</p>
-                    </div>
-                  </div>
-                </div>
-                {course.devis?.[0] && (
-                  <div className="mt-2 pt-2 border-t border-border/50">
-                    <span className="text-sm font-semibold text-primary">
-                      {course.devis[0].amount.toFixed(2)}€
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
+          <FullCourseCard key={course.id} course={course} />
         ))}
       </div>
     );
@@ -289,41 +631,39 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             <div 
               key={dateKey}
               className={cn(
-                "border rounded-lg p-3 min-h-[200px] bg-card/30 backdrop-blur-sm",
+                "border rounded-lg overflow-hidden min-h-[200px] bg-card/30 backdrop-blur-sm",
                 isToday && "border-primary/50 bg-primary/5"
               )}
             >
-              <div className="text-center mb-3 pb-2 border-b border-border/50">
+              <div className={cn(
+                "text-center py-2 border-b",
+                isToday ? "bg-primary/10 border-primary/20" : "bg-muted/30 border-border/50"
+              )}>
                 <div className={cn(
-                  "text-xs font-medium uppercase text-muted-foreground",
-                  isToday && "text-primary"
+                  "text-xs font-medium uppercase",
+                  isToday ? "text-primary" : "text-muted-foreground"
                 )}>
                   {format(day, "EEE", { locale: fr })}
                 </div>
                 <div className={cn(
-                  "text-lg font-bold",
+                  "text-xl font-bold",
                   isToday ? "text-primary" : "text-foreground"
                 )}>
                   {format(day, "d")}
                 </div>
+                {dayCourses.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] mt-1">
+                    {dayCourses.length} course{dayCourses.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
               </div>
-              <div className="space-y-2">
-                {dayCourses.map(course => (
-                  <div
-                    key={course.id}
-                    onClick={() => setSelectedCourse(course)}
-                    className="p-2 rounded bg-card hover:bg-accent cursor-pointer transition-colors text-xs border border-border/50"
-                  >
-                    <div className="font-medium text-foreground truncate mb-1">
-                      {format(parseISO(course.scheduled_date), "HH:mm")}
-                    </div>
-                    <div className="text-muted-foreground truncate mb-1">
-                      {course.clients?.profiles?.full_name}
-                    </div>
-                    {getStatusBadge(course.status)}
-                  </div>
-                ))}
-              </div>
+              <ScrollArea className="h-[200px] p-2">
+                <div className="space-y-2">
+                  {dayCourses.map(course => (
+                    <CompactCourseCard key={course.id} course={course} />
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
           );
         })}
@@ -346,10 +686,10 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     }
 
     return (
-      <div className="grid grid-cols-7 gap-2">
-        {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(day => (
-          <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-            {day}
+      <div className="grid grid-cols-7 gap-1 md:gap-2">
+        {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map(d => (
+          <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">
+            {d}
           </div>
         ))}
         {days.map(day => {
@@ -361,45 +701,52 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           return (
             <div
               key={dateKey}
+              onClick={() => {
+                if (dayCourses.length > 0) {
+                  setCurrentDate(day);
+                  setViewMode("day");
+                }
+              }}
               className={cn(
-                "border rounded-lg p-2 min-h-[80px] text-center transition-colors",
+                "border rounded-lg p-1 md:p-2 min-h-[60px] md:min-h-[80px] transition-colors",
                 !isCurrentMonth && "opacity-40 bg-muted/20",
                 isCurrentMonth && "bg-card/30 backdrop-blur-sm",
-                isToday && "border-primary/50 bg-primary/5"
+                isToday && "border-primary/50 bg-primary/5",
+                dayCourses.length > 0 && "cursor-pointer hover:bg-accent/50"
               )}
             >
               <div className={cn(
-                "text-sm font-medium mb-1",
+                "text-xs md:text-sm font-medium mb-1",
                 isToday ? "text-primary font-bold" : "text-foreground"
               )}>
                 {format(day, "d")}
               </div>
               {dayCourses.length > 0 && (
-                <div className="space-y-1">
-                  {dayCourses.slice(0, 2).map(course => (
+                <div className="space-y-0.5">
+                  {dayCourses.slice(0, 3).map(course => (
                     <div
                       key={course.id}
-                      onClick={() => setSelectedCourse(course)}
-                      className="w-full h-5 rounded text-[10px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                      style={{
-                        backgroundColor: course.status === "accepted" ? "hsl(var(--primary) / 0.2)" :
-                                       course.status === "in_progress" ? "hsl(var(--purple-500) / 0.2)" :
-                                       course.status === "completed" ? "hsl(var(--success) / 0.2)" :
-                                       course.status === "cancelled" ? "hsl(var(--destructive) / 0.2)" :
-                                       "hsl(var(--yellow-500) / 0.2)",
-                        color: course.status === "accepted" ? "hsl(var(--primary))" :
-                              course.status === "in_progress" ? "hsl(var(--purple-500))" :
-                              course.status === "completed" ? "hsl(var(--success))" :
-                              course.status === "cancelled" ? "hsl(var(--destructive))" :
-                              "hsl(var(--yellow-600))"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCourse(course);
                       }}
+                      className={cn(
+                        "w-full rounded text-[9px] md:text-[10px] px-1 py-0.5 flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity",
+                        course.courseType?.bgColor || "bg-primary/10",
+                        course.courseType?.color || "text-primary"
+                      )}
                     >
-                      {format(parseISO(course.scheduled_date), "HH:mm")}
+                      <span className="font-medium">
+                        {format(parseISO(course.scheduled_date), "HH:mm")}
+                      </span>
+                      <span className="hidden md:inline truncate flex-1">
+                        {course.clients?.profiles?.full_name?.split(' ')[0] || ''}
+                      </span>
                     </div>
                   ))}
-                  {dayCourses.length > 2 && (
-                    <div className="text-[10px] text-muted-foreground">
-                      +{dayCourses.length - 2}
+                  {dayCourses.length > 3 && (
+                    <div className="text-[9px] md:text-[10px] text-muted-foreground text-center">
+                      +{dayCourses.length - 3}
                     </div>
                   )}
                 </div>
@@ -419,9 +766,11 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
     );
   }
 
+  const courseTypeFilters = getCourseTypeFilters();
+
   return (
     <div className="space-y-4">
-      {/* Header avec navigation et filtres */}
+      {/* Header with navigation and filters */}
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
@@ -433,7 +782,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <h2 className="text-lg font-semibold text-foreground capitalize">
+            <h2 className="text-base md:text-lg font-semibold text-foreground capitalize">
               {getPeriodLabel()}
             </h2>
             <Button
@@ -461,7 +810,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           >
             <Filter className="w-4 h-4" />
             Filtres
-            {(searchQuery || statusFilter !== "all") && (
+            {(searchQuery || statusFilter !== "all" || typeFilter !== "all") && (
               <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                 !
               </Badge>
@@ -469,7 +818,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           </Button>
         </div>
 
-        {/* Vue Tabs */}
+        {/* View Tabs */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-muted/50">
             <TabsTrigger value="day">Jour</TabsTrigger>
@@ -478,7 +827,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           </TabsList>
         </Tabs>
 
-        {/* Filtres */}
+        {/* Filters */}
         {showFilters && (
           <Card className="p-4 space-y-3 bg-card/50 backdrop-blur-sm border-border/50">
             <div className="flex items-center justify-between">
@@ -489,143 +838,261 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
                 onClick={() => {
                   setSearchQuery("");
                   setStatusFilter("all");
+                  setTypeFilter("all");
                 }}
               >
                 <X className="w-4 h-4 mr-1" />
                 Réinitialiser
               </Button>
             </div>
-            <div className="space-y-2">
+            
+            <div className="space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher un client, adresse..."
+                  placeholder="Rechercher client, adresse, n° course..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {(["all", "pending", "accepted", "in_progress", "completed", "cancelled"] as const).map(status => (
-                  <Button
-                    key={status}
-                    variant={statusFilter === status ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setStatusFilter(status)}
-                    className="text-xs"
-                  >
-                    {status === "all" ? "Tous" :
-                     status === "pending" ? "En attente" :
-                     status === "accepted" ? "Confirmées" :
-                     status === "in_progress" ? "En cours" :
-                     status === "completed" ? "Terminées" :
-                     "Annulées"}
-                  </Button>
-                ))}
+              
+              {/* Type filter */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Type de course</label>
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as CourseType | "all")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Tous les types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courseTypeFilters.map(filter => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Status filter */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Statut</label>
+                <div className="flex gap-2 flex-wrap">
+                  {(["all", "accepted", "in_progress", "completed", "cancelled"] as const).map(status => (
+                    <Button
+                      key={status}
+                      variant={statusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter(status)}
+                      className="text-xs"
+                    >
+                      {status === "all" ? "Tous" :
+                       status === "accepted" ? "Confirmées" :
+                       status === "in_progress" ? "En cours" :
+                       status === "completed" ? "Terminées" :
+                       "Annulées"}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
         )}
       </div>
 
-      {/* Contenu du planning */}
+      {/* Planning stats */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: "Total", value: filteredCourses.length, color: "text-foreground" },
+          { label: "Confirmées", value: filteredCourses.filter(c => c.status === 'accepted').length, color: "text-blue-600" },
+          { label: "En cours", value: filteredCourses.filter(c => c.status === 'in_progress').length, color: "text-purple-600" },
+          { label: "Terminées", value: filteredCourses.filter(c => c.status === 'completed').length, color: "text-green-600" }
+        ].map((stat, i) => (
+          <Card key={i} className="p-2 text-center bg-card/50">
+            <div className={cn("text-xl font-bold", stat.color)}>{stat.value}</div>
+            <div className="text-xs text-muted-foreground">{stat.label}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Planning content */}
       <div>
         {viewMode === "day" && renderDayView()}
         {viewMode === "week" && renderWeekView()}
         {viewMode === "month" && renderMonthView()}
       </div>
 
-      {/* Dialog détails course */}
+      {/* Course detail dialog */}
       <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-primary" />
               Détails de la course
+              {selectedCourse?.course_number && (
+                <Badge variant="outline" className="text-xs ml-2">
+                  N° {selectedCourse.course_number}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedCourse && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Date et heure</div>
-                  <div className="font-semibold text-foreground">
-                    {format(parseISO(selectedCourse.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                  </div>
-                </div>
+              {/* Course type and status */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {selectedCourse.courseType && (
+                  <CourseTypeBadge 
+                    typeInfo={selectedCourse.courseType} 
+                    showLabel={true}
+                    showPartnerName={true}
+                    size="md"
+                  />
+                )}
                 {getStatusBadge(selectedCourse.status)}
               </div>
-              
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Client</div>
-                <div className="font-medium text-foreground">
-                  {selectedCourse.clients?.profiles?.full_name}
+
+              {/* Date and time */}
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-primary" />
+                  <div>
+                    <div className="font-semibold text-foreground">
+                      {format(parseISO(selectedCourse.scheduled_date), "EEEE d MMMM yyyy", { locale: fr })}
+                    </div>
+                    <div className="text-lg font-bold text-primary">
+                      {format(parseISO(selectedCourse.scheduled_date), "HH:mm")}
+                    </div>
+                  </div>
                 </div>
-                {selectedCourse.clients?.profiles?.phone && (
-                  <div className="text-sm text-muted-foreground">
-                    {selectedCourse.clients.profiles.phone}
+              </div>
+              
+              {/* Client */}
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">Client</div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-foreground">
+                      {selectedCourse.clients?.profiles?.full_name || "Client"}
+                    </div>
+                    {selectedCourse.clients?.profiles?.phone && (
+                      <a 
+                        href={`tel:${selectedCourse.clients.profiles.phone}`}
+                        className="text-sm text-primary flex items-center gap-1 hover:underline"
+                      >
+                        <Phone className="w-3 h-3" />
+                        {selectedCourse.clients.profiles.phone}
+                      </a>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedCourse.passengers_count} pass.
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Addresses */}
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">Trajet</div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-green-600 font-medium">Départ</div>
+                      <div className="text-sm text-foreground">{selectedCourse.pickup_address}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-red-600 font-medium">Arrivée</div>
+                      <div className="text-sm text-foreground">{selectedCourse.destination_address}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Course details */}
+              <div className="grid grid-cols-2 gap-3">
+                {selectedCourse.distance_km && (
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <Route className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <div className="font-semibold text-foreground">{selectedCourse.distance_km} km</div>
+                    <div className="text-xs text-muted-foreground">Distance</div>
+                  </div>
+                )}
+                {selectedCourse.duration_minutes && (
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <Clock className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                    <div className="font-semibold text-foreground">{formatDuration(selectedCourse.duration_minutes)}</div>
+                    <div className="text-xs text-muted-foreground">Durée estimée</div>
                   </div>
                 )}
               </div>
 
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Trajet</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-medium text-foreground">Départ</div>
-                      <div className="text-muted-foreground">{selectedCourse.pickup_address}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-medium text-foreground">Arrivée</div>
-                      <div className="text-muted-foreground">{selectedCourse.destination_address}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {selectedCourse.distance_km && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Distance</span>
-                  <span className="font-medium text-foreground">{selectedCourse.distance_km} km</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Passagers</span>
-                <span className="font-medium text-foreground">{selectedCourse.passengers_count}</span>
-              </div>
-
+              {/* Price */}
               {selectedCourse.devis?.[0] && (
-                <div className="pt-3 border-t border-border">
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Montant</span>
-                    <span className="text-xl font-bold text-primary">
-                      {selectedCourse.devis[0].amount.toFixed(2)}€
-                    </span>
-                  </div>
-                  {selectedCourse.devis[0].quote_number && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Devis {selectedCourse.devis[0].quote_number}
+                    <div>
+                      <div className="text-sm text-muted-foreground">Montant</div>
+                      {selectedCourse.devis[0].quote_number && (
+                        <div className="text-xs text-muted-foreground">
+                          Devis {selectedCourse.devis[0].quote_number}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex items-center gap-1">
+                      <Euro className="w-5 h-5 text-primary" />
+                      <span className="text-2xl font-bold text-primary">
+                        {selectedCourse.devis[0].amount.toFixed(2)}€
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
 
+              {/* Notes */}
               {selectedCourse.notes && (
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Notes</div>
-                  <div className="text-sm text-foreground bg-muted/50 rounded p-2">
+                  <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                    <MessageSquare className="w-4 h-4" />
+                    Notes
+                  </div>
+                  <div className="text-sm text-foreground bg-muted/30 rounded-lg p-3">
                     {selectedCourse.notes}
                   </div>
                 </div>
               )}
             </div>
           )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedCourse(null)}
+              className="flex-1"
+            >
+              Fermer
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedCourse) {
+                  goToCourse(selectedCourse.id);
+                  setSelectedCourse(null);
+                }
+              }}
+              className="flex-1 gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Voir la course
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
