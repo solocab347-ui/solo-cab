@@ -62,6 +62,8 @@ interface SearchableDriver {
   gallery_photos: string[] | null;
   show_phone: boolean | null;
   show_email: boolean | null;
+  contact_phone: string | null;
+  contact_email: string | null;
   sharing_number?: number | null;
   profile?: {
     full_name: string;
@@ -242,7 +244,7 @@ Cordialement`;
       // Query drivers directly (same logic as FleetDriverPartnerships)
       let query = supabase
         .from('drivers')
-        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, visible_to_drivers, display_driver_name, display_company_name, show_rating_public, show_rating_partners, show_pricing_partners, card_photo_url, minimum_price')
+        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, contact_phone, contact_email, visible_to_drivers, display_driver_name, display_company_name, show_rating_public, show_rating_partners, show_pricing_partners, card_photo_url, minimum_price')
         .eq('status', 'validated')
         .or('visible_to_drivers.eq.true,public_profile_enabled.eq.true')
         .is('fleet_manager_id', null);
@@ -956,24 +958,24 @@ Cordialement`;
                         <CardTitle className="text-sm">Coordonnées</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {selectedDriver.show_phone && selectedDriver.profile?.phone && (
+                        {selectedDriver.show_phone && (selectedDriver.contact_phone || selectedDriver.profile?.phone) && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Phone className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Téléphone</p>
-                              <a href={`tel:${selectedDriver.profile.phone}`} className="font-medium hover:text-primary">
-                                {selectedDriver.profile.phone}
+                              <a href={`tel:${selectedDriver.contact_phone || selectedDriver.profile?.phone}`} className="font-medium hover:text-primary">
+                                {selectedDriver.contact_phone || selectedDriver.profile?.phone}
                               </a>
                             </div>
                           </div>
                         )}
-                        {selectedDriver.show_email && selectedDriver.profile?.email && (
+                        {selectedDriver.show_email && (selectedDriver.contact_email || selectedDriver.profile?.email) && (
                           <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
                             <Mail className="h-5 w-5 text-primary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Email</p>
-                              <a href={`mailto:${selectedDriver.profile.email}`} className="font-medium hover:text-primary">
-                                {selectedDriver.profile.email}
+                              <a href={`mailto:${selectedDriver.contact_email || selectedDriver.profile?.email}`} className="font-medium hover:text-primary">
+                                {selectedDriver.contact_email || selectedDriver.profile?.email}
                               </a>
                             </div>
                           </div>

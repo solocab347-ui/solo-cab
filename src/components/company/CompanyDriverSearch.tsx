@@ -159,6 +159,8 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           gallery_photos,
           show_phone,
           show_email,
+          contact_phone,
+          contact_email,
           visible_to_companies,
           public_profile_enabled,
           display_driver_name,
@@ -788,28 +790,28 @@ ${company?.company_name || ""}`;
               )}
 
               {/* Contact - Section mise en avant */}
-              {(selectedDriver.show_phone || selectedDriver.show_email) && selectedDriver.profile && (
+              {(selectedDriver.show_phone || selectedDriver.show_email) && (selectedDriver.contact_phone || selectedDriver.contact_email || selectedDriver.profile) && (
                 <div className="p-4 border-2 border-green-500/30 rounded-xl bg-green-500/5">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-700">
                     <Phone className="w-4 h-4" />
                     Contact direct
                   </h4>
                   <div className="space-y-2">
-                    {selectedDriver.show_phone && selectedDriver.profile.phone && (
+                    {selectedDriver.show_phone && (selectedDriver.contact_phone || selectedDriver.profile?.phone) && (
                       <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-lg">
                         <Phone className="w-5 h-5 text-green-600" />
-                        <a href={`tel:${selectedDriver.profile.phone}`} className="text-green-700 font-semibold hover:underline text-lg">
-                          {selectedDriver.profile.phone}
+                        <a href={`tel:${selectedDriver.contact_phone || selectedDriver.profile?.phone}`} className="text-green-700 font-semibold hover:underline text-lg">
+                          {selectedDriver.contact_phone || selectedDriver.profile?.phone}
                         </a>
                       </div>
                     )}
-                    {selectedDriver.show_email && selectedDriver.profile.email && (
+                    {selectedDriver.show_email && (selectedDriver.contact_email || selectedDriver.profile?.email) && (
                       <div className="flex items-center gap-3 p-3 bg-blue-500/10 rounded-lg">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <a href={`mailto:${selectedDriver.profile.email}`} className="text-blue-700 hover:underline">
-                          {selectedDriver.profile.email}
+                        <a href={`mailto:${selectedDriver.contact_email || selectedDriver.profile?.email}`} className="text-blue-700 hover:underline">
+                          {selectedDriver.contact_email || selectedDriver.profile?.email}
                         </a>
                       </div>
                     )}

@@ -32,6 +32,8 @@ interface DriverProfile {
   full_name: string;
   email: string;
   phone: string;
+  contact_phone?: string | null;
+  contact_email?: string | null;
   profile_photo_url: string | null;
   vehicle_model: string;
   vehicle_brand?: string | null;
@@ -134,8 +136,10 @@ const ChauffeurProfile = () => {
         const profile: DriverProfile = {
           ...driverData,
           full_name: driverData.profiles?.full_name || "Chauffeur",
-          email: driverData.profiles?.email || "",
-          phone: driverData.profiles?.phone || "",
+          email: (driverData as any).contact_email || driverData.profiles?.email || "",
+          phone: (driverData as any).contact_phone || driverData.profiles?.phone || "",
+          contact_phone: (driverData as any).contact_phone,
+          contact_email: (driverData as any).contact_email,
           profile_photo_url: driverData.profiles?.profile_photo_url || null,
           rating: averageRating,
           total_rides: totalRides,
