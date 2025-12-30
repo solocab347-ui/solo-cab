@@ -34,7 +34,7 @@ import { VehiclePhotosManager } from "@/components/driver/VehiclePhotosManager";
 import { DriverPublicProfile } from "@/components/driver/DriverPublicProfile";
 import DriverProspectionFlyer from "@/components/driver/DriverProspectionFlyer";
 import DriverPlanning from "@/components/driver/DriverPlanning";
-import { DriverCourseSharing } from "@/components/driver/DriverCourseSharing";
+import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
@@ -523,8 +523,8 @@ const DriverDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
-                <span className="hidden sm:inline">Partage</span>
-                <span className="sm:hidden">Partage</span>
+                <span className="hidden sm:inline">Partage & Partenariats</span>
+                <span className="sm:hidden">Partenariats</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
@@ -980,9 +980,9 @@ const DriverDashboard = () => {
             />
           </TabsContent>
 
-          {/* Course Sharing Tab */}
+          {/* Partage & Partenariats Tab */}
           <TabsContent value="sharing" className="space-y-6">
-            <DriverCourseSharing />
+            <UnifiedPartnershipHub />
           </TabsContent>
 
           {/* Documents Tab - seulement pour chauffeurs indépendants */}
