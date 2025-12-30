@@ -28,6 +28,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Filter,
+  Eye,
   X
 } from 'lucide-react';
 import { useVisibleFleets, useFleetProfileRealtime } from '@/hooks/usePublicFleetProfile';
@@ -367,6 +368,19 @@ export function FleetPartnerSearch({ driverId }: Props) {
                             </Badge>
                           )}
                         </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openProfile(fleet as FleetManagerPublic);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir profil
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
