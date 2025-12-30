@@ -903,10 +903,6 @@ const DriverDashboard = () => {
                   cardPhotoUrl={cardPhotoUrl}
                   vehicleEquipment={vehicleEquipment}
                   servicesOffered={servicesOffered}
-                  vehicleBrand={vehicleBrand}
-                  vehicleColor={vehicleColor}
-                  vehiclePlate={vehiclePlate}
-                  vehicleYear={vehicleYear}
                   onTogglePublicProfile={handleTogglePublicProfile}
                   onPhotoUpdate={setProfilePhotoUrl}
                   onCardPhotoUpdate={setCardPhotoUrl}
@@ -922,13 +918,6 @@ const DriverDashboard = () => {
                   onDisplayCompanyNameChange={setDisplayCompanyName}
                   onVehicleEquipmentChange={setVehicleEquipment}
                   onServicesOfferedChange={setServicesOffered}
-                  onVehicleBrandChange={setVehicleBrand}
-                  onVehicleColorChange={setVehicleColor}
-                  onVehiclePlateChange={setVehiclePlate}
-                  onVehicleYearChange={setVehicleYear}
-                  vehiclePhotos={vehiclePhotos}
-                  galleryPhotos={galleryPhotos}
-                  onVehiclePhotosUpdate={handleVehiclePhotosUpdate}
                   vehicleCategories={vehicleCategories}
                   onVehicleCategoriesChange={setVehicleCategories}
                   visibleToFleetManagers={visibleToFleetManagers}
