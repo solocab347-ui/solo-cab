@@ -6621,11 +6621,18 @@ export type Database = {
           company_name: string
           contact_email: string
           contact_name: string
+          contact_phone: string
           default_partnership_commission: number
           description: string
           driver_profile_description: string
           id: string
           logo_url: string
+          partnership_terms: string
+          services_offered: string[]
+          show_address: boolean
+          show_contact_name: boolean
+          show_email: boolean
+          show_phone: boolean
           total_clients: number
           total_drivers: number
         }[]
