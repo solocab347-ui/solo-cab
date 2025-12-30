@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package, Users, Star, DollarSign, Eye, Shield } from "lucide-react";
 import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
@@ -40,6 +42,11 @@ interface DriverPublicProfileProps {
   galleryPhotos: string[];
   vehicleCategories: string[];
   visibleToFleetManagers?: boolean;
+  visibleToCompanies?: boolean;
+  visibleToDrivers?: boolean;
+  showRatingPublic?: boolean;
+  showRatingPartners?: boolean;
+  showPricingPartners?: boolean;
   onTogglePublicProfile: (enabled: boolean) => void;
   onPhotoUpdate: (url: string) => void;
   onCardPhotoUpdate: (url: string) => void;
@@ -59,6 +66,11 @@ interface DriverPublicProfileProps {
   onVehiclePhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
   onVehicleCategoriesChange: (categories: string[]) => void;
   onVisibleToFleetManagersChange?: (visible: boolean) => void;
+  onVisibleToCompaniesChange?: (visible: boolean) => void;
+  onVisibleToDriversChange?: (visible: boolean) => void;
+  onShowRatingPublicChange?: (visible: boolean) => void;
+  onShowRatingPartnersChange?: (visible: boolean) => void;
+  onShowPricingPartnersChange?: (visible: boolean) => void;
 }
 
 export const DriverPublicProfile = memo(({
@@ -85,6 +97,11 @@ export const DriverPublicProfile = memo(({
   galleryPhotos,
   vehicleCategories,
   visibleToFleetManagers = false,
+  visibleToCompanies = false,
+  visibleToDrivers = false,
+  showRatingPublic = false,
+  showRatingPartners = false,
+  showPricingPartners = false,
   onTogglePublicProfile,
   onPhotoUpdate,
   onCardPhotoUpdate,
@@ -104,6 +121,11 @@ export const DriverPublicProfile = memo(({
   onVehiclePhotosUpdate,
   onVehicleCategoriesChange,
   onVisibleToFleetManagersChange,
+  onVisibleToCompaniesChange,
+  onVisibleToDriversChange,
+  onShowRatingPublicChange,
+  onShowRatingPartnersChange,
+  onShowPricingPartnersChange,
 }: DriverPublicProfileProps) => {
   // Guard contre les données manquantes
   if (!driverProfile || !userId) {
@@ -167,29 +189,214 @@ export const DriverPublicProfile = memo(({
           </div>
         )}
 
-        {/* Visibilité pour gestionnaires de flotte */}
-        {onVisibleToFleetManagersChange && (
-          <div className="mt-4 flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
-            <div>
-              <Label className="text-base font-medium">Visible par les gestionnaires de flotte</Label>
-              <p className="text-sm text-muted-foreground mt-1">
-                Permettre aux gestionnaires de vous trouver et voir votre profil
+      </Card>
+
+      {/* Visibilité par type de partenaire */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Eye className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Visibilité aux partenaires</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Choisissez qui peut vous trouver pour des partenariats
+        </p>
+
+        <div className="space-y-3">
+          {/* Visible aux chauffeurs */}
+          {onVisibleToDriversChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <Users className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Visible aux chauffeurs</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Les autres chauffeurs peuvent vous proposer des partenariats
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {visibleToDrivers && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={visibleToDrivers}
+                  onCheckedChange={onVisibleToDriversChange}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Visible aux entreprises */}
+          {onVisibleToCompaniesChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Building2 className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Visible aux entreprises</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Les entreprises peuvent vous proposer des contrats B2B
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {visibleToCompanies && (
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={visibleToCompanies}
+                  onCheckedChange={onVisibleToCompaniesChange}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Visible aux gestionnaires de flotte */}
+          {onVisibleToFleetManagersChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Car className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Visible aux gestionnaires de flotte</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Les gestionnaires peuvent vous proposer de rejoindre leur réseau
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {visibleToFleetManagers && (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={visibleToFleetManagers}
+                  onCheckedChange={onVisibleToFleetManagersChange}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Confidentialité des informations */}
+      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Confidentialité des informations</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Contrôlez quelles informations sont visibles par les autres
+        </p>
+
+        <div className="space-y-3">
+          {/* Note sur le profil public */}
+          {onShowRatingPublicChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-yellow-500/10">
+                  <Star className="h-5 w-5 text-yellow-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Note sur le profil public</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Afficher votre note moyenne aux clients sur la vitrine publique
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {showRatingPublic && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={showRatingPublic}
+                  onCheckedChange={onShowRatingPublicChange}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Note pour les partenaires */}
+          {onShowRatingPartnersChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10">
+                  <Star className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Note pour les partenaires</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Afficher votre note aux chauffeurs, entreprises et gestionnaires
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {showRatingPartners && (
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={showRatingPartners}
+                  onCheckedChange={onShowRatingPartnersChange}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tarifs pour les partenaires */}
+          {onShowPricingPartnersChange && (
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10">
+                  <DollarSign className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div>
+                  <Label className="font-medium">Tarifs pour les partenaires</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Afficher vos tarifs aux gestionnaires et entreprises partenaires
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {showPricingPartners && (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                    Visible
+                  </Badge>
+                )}
+                <Switch
+                  checked={showPricingPartners}
+                  onCheckedChange={onShowPricingPartnersChange}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Note de confidentialité */}
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+          <div className="flex items-start gap-2">
+            <Shield className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+            <div className="space-y-1 text-sm">
+              <p className="font-medium text-muted-foreground">Note sur la confidentialité</p>
+              <p className="text-muted-foreground">
+                Ces paramètres sont synchronisés avec les paramètres de partenariat. 
+                Modifier un paramètre ici le modifiera également dans l'onglet Partenariats.
               </p>
             </div>
-            <Switch
-              checked={visibleToFleetManagers}
-              onCheckedChange={onVisibleToFleetManagersChange}
-            />
           </div>
-        )}
-
-        {visibleToFleetManagers && onVisibleToFleetManagersChange && (
-          <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-            <p className="text-sm text-blue-600 font-medium">
-              ✓ Les gestionnaires de flotte peuvent voir votre profil
-            </p>
-          </div>
-        )}
+        </div>
       </Card>
 
       {/* Photos */}
