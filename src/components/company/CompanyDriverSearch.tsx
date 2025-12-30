@@ -538,23 +538,24 @@ ${company?.company_name || ""}`;
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold truncate">
-                        {(() => {
-                          const showName = driver.display_driver_name && driver.profile?.full_name;
-                          const showCompany = driver.display_company_name && driver.company_name;
-                          if (showName && showCompany) return driver.profile.full_name;
-                          if (showName) return driver.profile.full_name;
-                          if (showCompany) return driver.company_name;
-                          return "Chauffeur VTC";
-                        })()}
-                      </h4>
-                      {driver.display_driver_name && driver.display_company_name && driver.company_name && driver.profile?.full_name && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {driver.company_name}
-                        </p>
-                      )}
-                      {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
-                        <div className="flex items-center gap-1 mt-1">
+                    <h4 className="font-semibold truncate">
+                      {(() => {
+                        const hasProfile = driver.profile && driver.profile.full_name;
+                        const showName = driver.display_driver_name !== false && hasProfile;
+                        const showCompany = driver.display_company_name && driver.company_name;
+                        if (showName && hasProfile) return driver.profile.full_name;
+                        if (showCompany) return driver.company_name;
+                        if (hasProfile) return driver.profile.full_name;
+                        return "Chauffeur VTC";
+                      })()}
+                    </h4>
+                    {driver.display_driver_name !== false && driver.display_company_name && driver.company_name && driver.profile?.full_name && (
+                      <p className="text-sm text-muted-foreground truncate">
+                        {driver.company_name}
+                      </p>
+                    )}
+                    {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
+                      <div className="flex items-center gap-1 mt-1">
                           <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                           <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
                           {driver.total_rides && (
@@ -699,15 +700,16 @@ ${company?.company_name || ""}`;
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold">
                     {(() => {
-                      const showName = selectedDriver.display_driver_name && selectedDriver.profile?.full_name;
+                      const hasProfile = selectedDriver.profile && selectedDriver.profile.full_name;
+                      const showName = selectedDriver.display_driver_name !== false && hasProfile;
                       const showCompany = selectedDriver.display_company_name && selectedDriver.company_name;
-                      if (showName && showCompany) return selectedDriver.profile.full_name;
-                      if (showName) return selectedDriver.profile.full_name;
+                      if (showName && hasProfile) return selectedDriver.profile.full_name;
                       if (showCompany) return selectedDriver.company_name;
+                      if (hasProfile) return selectedDriver.profile.full_name;
                       return "Chauffeur VTC";
                     })()}
                   </h3>
-                  {selectedDriver.display_driver_name && selectedDriver.display_company_name && selectedDriver.company_name && selectedDriver.profile?.full_name && (
+                  {selectedDriver.display_driver_name !== false && selectedDriver.display_company_name && selectedDriver.company_name && selectedDriver.profile?.full_name && (
                     <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
                       <Building2 className="w-3 h-3" />
                       {selectedDriver.company_name}
@@ -825,7 +827,7 @@ ${company?.company_name || ""}`;
                       <span className="font-medium">{selectedDriver.max_passengers}</span>
                     </div>
                   )}
-                  {selectedDriver.vehicle_category && (
+                  {selectedDriver.vehicle_category && typeof selectedDriver.vehicle_category === 'string' && (
                     <div className="flex flex-col col-span-2">
                       <span className="text-muted-foreground text-xs">Catégorie</span>
                       <span className="font-medium capitalize">{selectedDriver.vehicle_category.replace(/_/g, ' ')}</span>

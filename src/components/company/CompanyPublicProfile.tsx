@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { 
   Building2, Upload, Save, Loader2, Eye, EyeOff, 
-  Users, MapPin, Globe, Star, Briefcase, X, Plus
+  Users, MapPin, Globe, Star, Briefcase, X, Plus, Phone
 } from "lucide-react";
 
 interface CompanyPublicProfileProps {
@@ -43,6 +43,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
   const [servicesNeeded, setServicesNeeded] = useState<string[]>([]);
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
   const [acceptingProposals, setAcceptingProposals] = useState(false);
+  const [contactPhone, setContactPhone] = useState("");
+  const [showPhone, setShowPhone] = useState(false);
 
   // Fetch company data
   const { data: company, isLoading } = useQuery({
@@ -66,6 +68,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
       setServicesNeeded(company.preferred_vehicle_types || []);
       setVisibleToDrivers(company.visible_to_drivers || false);
       setAcceptingProposals(company.accepting_proposals || false);
+      setContactPhone(company.contact_phone || "");
+      setShowPhone((company as any).show_phone || false);
       if (company.logo_url) {
         setLogoPreview(company.logo_url);
       }
@@ -123,6 +127,8 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
           visible_to_drivers: visibleToDrivers,
           accepting_proposals: acceptingProposals,
           logo_url: logoUrl,
+          contact_phone: contactPhone || null,
+          show_phone: showPhone,
         })
         .eq("id", companyId);
 
@@ -230,6 +236,38 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
         </div>
       )}
 
+      {/* Contact - Téléphone */}
+      {showPhone && contactPhone && (
+        <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+          <h4 className="font-medium mb-2 flex items-center gap-2 text-green-700">
+            <Phone className="w-4 h-4" />
+            Contact direct
+          </h4>
+          <a href={`tel:${contactPhone}`} className="text-green-700 font-semibold hover:underline">
+            {contactPhone}
+          </a>
+        </div>
+      )}
+
+      {/* Coordonnées */}
+      <div className="space-y-2">
+        <h4 className="font-medium mb-2 flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          Coordonnées
+        </h4>
+        {company?.address && (
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <MapPin className="w-3 h-3 flex-shrink-0" />
+            <span>{company.address}</span>
+          </p>
+        )}
+        {company?.contact_email && (
+          <p className="text-sm text-muted-foreground flex items-center gap-1">
+            <span className="text-primary">{company.contact_email}</span>
+          </p>
+        )}
+      </div>
+
       {/* Status badges */}
       <div className="flex flex-wrap gap-2 pt-2 border-t">
         {acceptingProposals && (
@@ -321,6 +359,36 @@ export function CompanyPublicProfile({ companyId }: CompanyPublicProfileProps) {
               onCheckedChange={setAcceptingProposals}
               disabled={!visibleToDrivers}
             />
+          </div>
+
+          {/* Phone visibility */}
+          <div className="pt-4 border-t space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone" className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                Numéro de téléphone
+              </Label>
+              <Input
+                id="contactPhone"
+                type="tel"
+                placeholder="06 12 34 56 78"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Afficher le téléphone aux chauffeurs</Label>
+                <p className="text-sm text-muted-foreground">
+                  Les chauffeurs pourront vous appeler directement
+                </p>
+              </div>
+              <Switch
+                checked={showPhone}
+                onCheckedChange={setShowPhone}
+                disabled={!contactPhone || !visibleToDrivers}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
