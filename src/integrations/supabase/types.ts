@@ -5933,12 +5933,14 @@ export type Database = {
           company_name: string | null
           display_company_name: boolean | null
           display_driver_name: boolean | null
+          email: string | null
           full_name: string | null
           id: string | null
           phone: string | null
           profile_photo_url: string | null
           rating: number | null
           sharing_number: number | null
+          show_email: boolean | null
           show_phone_for_sharing: boolean | null
           total_rides: number | null
           user_id: string | null
@@ -6656,6 +6658,7 @@ export type Database = {
           company_name: string
           display_company_name: boolean
           display_driver_name: boolean
+          email: string
           formatted_sharing_number: string
           full_name: string
           id: string
@@ -6663,6 +6666,8 @@ export type Database = {
           profile_photo_url: string
           rating: number
           sharing_number: number
+          show_email: boolean
+          show_phone: boolean
           total_rides: number
           user_id: string
           vehicle_brand: string
