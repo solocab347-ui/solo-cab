@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,34 +9,47 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Search, 
   Briefcase,
   MapPin,
   Users,
-  Filter,
   Loader2,
   Send,
-  Star,
-  Car
+  Phone,
+  Mail,
+  Euro,
+  FileText,
+  Building2,
+  CheckCircle2,
+  X
 } from 'lucide-react';
-import { useFleetProfileRealtime, PUBLIC_FLEETS_QUERY_KEY } from '@/hooks/usePublicFleetProfile';
-import { useQuery } from '@tanstack/react-query';
+import { useVisibleFleets, useFleetProfileRealtime } from '@/hooks/usePublicFleetProfile';
+import { DRIVER_SERVICES } from '@/lib/vehicleEquipment';
 
-interface FleetManager {
+interface FleetManagerPublic {
   id: string;
   user_id: string;
   company_name: string;
+  contact_name: string | null;
   description: string | null;
   address: string | null;
-  service_area: string[] | null;
-  partner_commission_percentage: number | null;
-  partner_payment_schedule: string | null;
-  public_profile_enabled: boolean;
-  full_name: string;
-  profile_photo_url: string | null;
-  driver_count: number;
+  contact_phone: string | null;
+  contact_email: string | null;
+  visible_to_drivers: boolean;
+  visible_to_companies: boolean;
+  logo_url: string | null;
+  show_contact_name: boolean;
+  show_address: boolean;
+  show_phone: boolean;
+  show_email: boolean;
+  show_drivers_in_public_storefront: boolean;
+  default_partnership_commission: number | null;
+  partnership_terms: string | null;
+  services_offered: string[] | null;
 }
 
 const PAYMENT_SCHEDULES = [
@@ -49,81 +62,104 @@ interface Props {
   driverId: string;
 }
 
+// Extraire le département d'une adresse
+const extractDepartment = (address: string | null): string | null => {
+  if (!address) return null;
+  // Chercher un code postal français (5 chiffres)
+  const match = address.match(/\b(\d{2})\d{3}\b/);
+  if (match) {
+    return match[1];
+  }
+  return null;
+};
+
+// Obtenir le label d'un service
+const getServiceLabel = (serviceId: string): string => {
+  const service = DRIVER_SERVICES.find(s => s.id === serviceId);
+  return service?.label || serviceId;
+};
+
 export function FleetPartnerSearch({ driverId }: Props) {
-  // Activer l'écoute temps réel des changements de profils flottes
   useFleetProfileRealtime();
 
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Partnership proposal
-  const [selectedFleet, setSelectedFleet] = useState<FleetManager | null>(null);
+  const [selectedFleet, setSelectedFleet] = useState<FleetManagerPublic | null>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [proposalDialogOpen, setProposalDialogOpen] = useState(false);
   const [proposedCommission, setProposedCommission] = useState(15);
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('weekly');
+  const [proposalMessage, setProposalMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [driverCount, setDriverCount] = useState<Record<string, number>>({});
 
-  // Utiliser useQuery pour le cache et la synchronisation temps réel
-  const { data: fleets = [], isLoading: loading, isFetching: searching, refetch: searchFleets } = useQuery({
-    queryKey: [...PUBLIC_FLEETS_QUERY_KEY, 'partner-search', searchTerm],
-    queryFn: async () => {
-      let query = supabase
-        .from('fleet_managers')
-        .select('id, user_id, company_name, description, address, visible_to_drivers, logo_url, driver_profile_description, default_partnership_commission, services_offered')
-        .eq('visible_to_drivers', true)
-        .in('status', ['active', 'validated', 'pending']);
-
-      if (searchTerm) {
-        query = query.or(`company_name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.order('company_name');
-
-      if (error) throw error;
-
-      const enrichedFleets: FleetManager[] = [];
-      for (const fleet of data || []) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, profile_photo_url')
-          .eq('id', fleet.user_id)
-          .single();
-
-        const { count } = await supabase
-          .from('fleet_manager_drivers')
-          .select('*', { count: 'exact', head: true })
-          .eq('fleet_manager_id', fleet.id)
-          .eq('status', 'active');
-
-        enrichedFleets.push({
-          id: fleet.id,
-          user_id: fleet.user_id,
-          company_name: fleet.company_name,
-          description: fleet.description,
-          address: fleet.address,
-          service_area: null,
-          partner_commission_percentage: null,
-          partner_payment_schedule: null,
-          public_profile_enabled: fleet.visible_to_drivers ?? false,
-          full_name: profile?.full_name || fleet.company_name,
-          profile_photo_url: profile?.profile_photo_url || null,
-          driver_count: count || 0,
-        });
-      }
-
-      return enrichedFleets;
-    },
-    staleTime: 0,
-    gcTime: 30000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+  const { data: fleets = [], isLoading: loading, isFetching: searching } = useVisibleFleets({
+    searchTerm: searchTerm || undefined
   });
+
+  // Charger le nombre de chauffeurs pour chaque flotte
+  const loadDriverCount = async (fleetId: string) => {
+    if (driverCount[fleetId] !== undefined) return;
+    
+    const { count } = await supabase
+      .from('fleet_manager_drivers')
+      .select('*', { count: 'exact', head: true })
+      .eq('fleet_manager_id', fleetId)
+      .eq('status', 'active');
+    
+    setDriverCount(prev => ({ ...prev, [fleetId]: count || 0 }));
+  };
+
+  const openProfile = (fleet: FleetManagerPublic) => {
+    setSelectedFleet(fleet);
+    loadDriverCount(fleet.id);
+    setProfileDialogOpen(true);
+  };
+
+  const openProposal = () => {
+    if (!selectedFleet) return;
+    setProposedCommission(selectedFleet.default_partnership_commission || 15);
+    setProposalMessage(`Bonjour,\n\nJe souhaite proposer un partenariat avec ${selectedFleet.company_name}. Je suis disponible pour discuter des conditions de collaboration.\n\nCordialement`);
+    setProfileDialogOpen(false);
+    setProposalDialogOpen(true);
+  };
+
   const proposePartnership = async () => {
     if (!selectedFleet || !driverId) return;
 
     setSubmitting(true);
     try {
-      // For now, show a message that fleet partnerships are coming soon
-      toast.info('Les partenariats avec les flottes seront bientôt disponibles');
+      // Vérifier si un partenariat existe déjà
+      const { data: existing } = await supabase
+        .from('fleet_driver_partnerships')
+        .select('id, status')
+        .eq('fleet_manager_id', selectedFleet.id)
+        .eq('driver_id', driverId)
+        .in('status', ['pending', 'accepted'])
+        .maybeSingle();
+
+      if (existing) {
+        toast.error(existing.status === 'pending' 
+          ? 'Une demande de partenariat est déjà en attente'
+          : 'Vous avez déjà un partenariat actif avec cette flotte');
+        return;
+      }
+
+      // Créer la proposition de partenariat
+      const { error } = await supabase
+        .from('fleet_driver_partnerships')
+        .insert({
+          fleet_manager_id: selectedFleet.id,
+          driver_id: driverId,
+          commission_percentage: proposedCommission,
+          payment_schedule: proposedPaymentSchedule,
+          proposal_message: proposalMessage,
+          initiated_by: 'driver',
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast.success('Proposition de partenariat envoyée');
       setProposalDialogOpen(false);
       setSelectedFleet(null);
     } catch (error: any) {
@@ -134,30 +170,19 @@ export function FleetPartnerSearch({ driverId }: Props) {
     }
   };
 
-  const getPaymentScheduleLabel = (schedule: string | null) => {
-    switch (schedule) {
-      case 'per_course': return 'Par course';
-      case 'weekly': return 'Hebdomadaire';
-      case 'monthly': return 'Mensuel';
-      default: return 'À définir';
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Search */}
       <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex gap-2">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher une flotte..."
+              placeholder="Rechercher par nom ou ville..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
+              className="pl-10"
             />
-            <Button onClick={() => searchFleets()} disabled={searching}>
-              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -166,7 +191,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            {fleets.length} flotte{fleets.length !== 1 ? 's' : ''} trouvée{fleets.length !== 1 ? 's' : ''}
+            {fleets.length} gestionnaire{fleets.length !== 1 ? 's' : ''} disponible{fleets.length !== 1 ? 's' : ''}
           </span>
           {searching && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
@@ -178,94 +203,224 @@ export function FleetPartnerSearch({ driverId }: Props) {
         ) : fleets.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">Aucune flotte disponible</p>
-              <p className="text-xs mt-1">Les gestionnaires de flotte avec profil public apparaîtront ici</p>
+              <Building2 className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Aucun gestionnaire disponible</p>
+              <p className="text-xs mt-1">Les gestionnaires doivent activer leur profil pour les chauffeurs</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {fleets.map((fleet) => (
-              <Card key={fleet.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12 shrink-0">
-                      <AvatarImage src={fleet.profile_photo_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {fleet.company_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold truncate">{fleet.company_name}</span>
-                      </div>
+          <div className="space-y-3">
+            {fleets.map((fleet) => {
+              const dept = extractDepartment(fleet.address);
+              return (
+                <Card 
+                  key={fleet.id} 
+                  className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => openProfile(fleet as FleetManagerPublic)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-14 w-14 shrink-0 border-2 border-border">
+                        <AvatarImage src={fleet.logo_url || undefined} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {fleet.company_name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       
-                      {fleet.address && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">{fleet.address}</span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {fleet.driver_count} chauffeurs
-                        </span>
-                        {fleet.partner_commission_percentage && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {fleet.partner_commission_percentage}% commission
-                          </Badge>
-                        )}
-                      </div>
-
-                      {fleet.description && (
-                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                          {fleet.description}
-                        </p>
-                      )}
-
-                      {fleet.service_area && fleet.service_area.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {fleet.service_area.slice(0, 3).map((area, i) => (
-                            <Badge key={i} variant="secondary" className="text-[10px]">
-                              {area}
-                            </Badge>
-                          ))}
-                          {fleet.service_area.length > 3 && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              +{fleet.service_area.length - 3}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{fleet.company_name}</span>
+                          {dept && (
+                            <Badge variant="outline" className="text-xs">
+                              Dept. {dept}
                             </Badge>
                           )}
                         </div>
-                      )}
-                    </div>
+                        
+                        {fleet.show_address && fleet.address && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{fleet.address}</span>
+                          </div>
+                        )}
 
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedFleet(fleet);
-                        setProposedCommission(fleet.partner_commission_percentage || 15);
-                        setProposedPaymentSchedule(fleet.partner_payment_schedule || 'weekly');
-                        setProposalDialogOpen(true);
-                      }}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        {fleet.description && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {fleet.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                          {fleet.default_partnership_commission && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Euro className="h-3 w-3 mr-1" />
+                              {fleet.default_partnership_commission}% commission
+                            </Badge>
+                          )}
+                          {fleet.services_offered && fleet.services_offered.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {fleet.services_offered.length} service{fleet.services_offered.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
+      {/* Fleet Profile Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh]">
+          <ScrollArea className="max-h-[calc(90vh-100px)]">
+            {selectedFleet && (
+              <div className="space-y-6 pr-4">
+                {/* Header */}
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-20 w-20 border-4 border-border">
+                    <AvatarImage src={selectedFleet.logo_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                      {selectedFleet.company_name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold">{selectedFleet.company_name}</h2>
+                    {selectedFleet.show_contact_name && selectedFleet.contact_name && (
+                      <p className="text-sm text-muted-foreground">{selectedFleet.contact_name}</p>
+                    )}
+                    {extractDepartment(selectedFleet.address) && (
+                      <Badge variant="outline" className="mt-2">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        Département {extractDepartment(selectedFleet.address)}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedFleet.description && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Présentation
+                    </h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedFleet.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Address */}
+                {selectedFleet.show_address && selectedFleet.address && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Adresse
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{selectedFleet.address}</p>
+                  </div>
+                )}
+
+                {/* Contact */}
+                {(selectedFleet.show_phone || selectedFleet.show_email) && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold">Contact</h3>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {selectedFleet.show_phone && selectedFleet.contact_phone && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`tel:${selectedFleet.contact_phone}`);
+                          }}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Appeler
+                        </Button>
+                      )}
+                      {selectedFleet.show_email && selectedFleet.contact_email && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`mailto:${selectedFleet.contact_email}`);
+                          }}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Email
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Services */}
+                {selectedFleet.services_offered && selectedFleet.services_offered.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Services proposés
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedFleet.services_offered.map((service, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {getServiceLabel(service)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Partnership Info */}
+                <div className="space-y-2 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Euro className="h-4 w-4 text-primary" />
+                    Conditions de partenariat
+                  </h3>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Commission par défaut</span>
+                      <span className="font-medium">{selectedFleet.default_partnership_commission || 10}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Chauffeurs actifs</span>
+                      <span className="font-medium">{driverCount[selectedFleet.id] ?? '...'}</span>
+                    </div>
+                  </div>
+                  {selectedFleet.partnership_terms && (
+                    <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-primary/10">
+                      {selectedFleet.partnership_terms}
+                    </p>
+                  )}
+                </div>
+
+                {/* Action Button */}
+                <Button onClick={openProposal} className="w-full" size="lg">
+                  <Send className="h-4 w-4 mr-2" />
+                  Proposer un partenariat
+                </Button>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       {/* Partnership proposal dialog */}
       <Dialog open={proposalDialogOpen} onOpenChange={setProposalDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Proposer un partenariat</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-primary" />
+              Proposer un partenariat
+            </DialogTitle>
             <DialogDescription>
               Envoyez une proposition à {selectedFleet?.company_name}
             </DialogDescription>
@@ -282,7 +437,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
                 step={1}
               />
               <p className="text-xs text-muted-foreground">
-                La commission que vous reverserez à la flotte pour chaque course reçue
+                Commission que vous reverserez pour chaque course reçue
               </p>
             </div>
 
@@ -302,22 +457,34 @@ export function FleetPartnerSearch({ driverId }: Props) {
               </Select>
             </div>
 
-            {selectedFleet?.partner_commission_percentage && (
+            <div className="space-y-2">
+              <Label>Message de proposition</Label>
+              <Textarea
+                value={proposalMessage}
+                onChange={(e) => setProposalMessage(e.target.value)}
+                rows={4}
+                placeholder="Présentez-vous et expliquez pourquoi vous souhaitez collaborer..."
+              />
+            </div>
+
+            {selectedFleet?.default_partnership_commission && (
               <div className="p-3 bg-muted/50 rounded-lg text-xs">
-                <p className="font-medium">Conditions suggérées par la flotte :</p>
-                <p className="mt-1">Commission : {selectedFleet.partner_commission_percentage}%</p>
-                <p>Paiement : {getPaymentScheduleLabel(selectedFleet.partner_payment_schedule)}</p>
+                <p className="font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  Conditions suggérées par le gestionnaire :
+                </p>
+                <p className="mt-1">Commission : {selectedFleet.default_partnership_commission}%</p>
               </div>
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProposalDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setProposalDialogOpen(false)} className="flex-1">
               Annuler
             </Button>
-            <Button onClick={proposePartnership} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Envoyer la proposition
+            <Button onClick={proposePartnership} disabled={submitting} className="flex-1">
+              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              Envoyer
             </Button>
           </DialogFooter>
         </DialogContent>

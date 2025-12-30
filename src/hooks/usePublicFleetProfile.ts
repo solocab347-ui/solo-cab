@@ -54,11 +54,13 @@ export const useVisibleFleets = (filters?: {
           id,
           user_id,
           company_name,
+          contact_name,
           description,
           address,
           contact_phone,
           contact_email,
           visible_to_drivers,
+          visible_to_companies,
           logo_url,
           show_contact_name,
           show_address,
@@ -66,10 +68,10 @@ export const useVisibleFleets = (filters?: {
           show_email,
           show_drivers_in_public_storefront,
           default_partnership_commission,
+          partnership_terms,
           services_offered
         `)
-        .eq('visible_to_drivers', true)
-        .eq('status', 'active');
+        .eq('visible_to_drivers', true);
 
       if (filters?.searchTerm) {
         query = query.or(`company_name.ilike.%${filters.searchTerm}%,address.ilike.%${filters.searchTerm}%`);
