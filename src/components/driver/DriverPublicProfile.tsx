@@ -14,7 +14,7 @@ import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
-import { VehiclePhotosManager } from "./VehiclePhotosManager";
+
 import { VehicleCategorySelector } from "./VehicleCategorySelector";
 import { DriverVehiclesManager } from "./DriverVehiclesManager";
 
@@ -34,12 +34,6 @@ interface DriverPublicProfileProps {
   cardPhotoUrl: string | null;
   vehicleEquipment: string[];
   servicesOffered: string[];
-  vehicleBrand: string;
-  vehicleColor: string;
-  vehiclePlate: string;
-  vehicleYear: string;
-  vehiclePhotos: string[];
-  galleryPhotos: string[];
   vehicleCategories: string[];
   visibleToFleetManagers?: boolean;
   visibleToCompanies?: boolean;
@@ -59,11 +53,6 @@ interface DriverPublicProfileProps {
   onDisplayCompanyNameChange: (checked: boolean) => void;
   onVehicleEquipmentChange: (equipment: string[]) => void;
   onServicesOfferedChange: (services: string[]) => void;
-  onVehicleBrandChange: (brand: string) => void;
-  onVehicleColorChange: (color: string) => void;
-  onVehiclePlateChange: (plate: string) => void;
-  onVehicleYearChange: (year: string) => void;
-  onVehiclePhotosUpdate: (vehiclePhotos: string[], galleryPhotos: string[]) => void;
   onVehicleCategoriesChange: (categories: string[]) => void;
   onVisibleToFleetManagersChange?: (visible: boolean) => void;
   onVisibleToCompaniesChange?: (visible: boolean) => void;
@@ -89,12 +78,6 @@ export const DriverPublicProfile = memo(({
   cardPhotoUrl,
   vehicleEquipment,
   servicesOffered,
-  vehicleBrand,
-  vehicleColor,
-  vehiclePlate,
-  vehicleYear,
-  vehiclePhotos,
-  galleryPhotos,
   vehicleCategories,
   visibleToFleetManagers = false,
   visibleToCompanies = false,
@@ -114,11 +97,6 @@ export const DriverPublicProfile = memo(({
   onDisplayCompanyNameChange,
   onVehicleEquipmentChange,
   onServicesOfferedChange,
-  onVehicleBrandChange,
-  onVehicleColorChange,
-  onVehiclePlateChange,
-  onVehicleYearChange,
-  onVehiclePhotosUpdate,
   onVehicleCategoriesChange,
   onVisibleToFleetManagersChange,
   onVisibleToCompaniesChange,
@@ -547,74 +525,6 @@ export const DriverPublicProfile = memo(({
         <DriverVehiclesManager driverId={driverId} />
       )}
 
-      {/* Ancien système véhicule unique (conservé pour rétrocompatibilité) */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <div className="flex items-center gap-2 mb-4">
-          <Car className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Véhicule principal (ancien système)</h3>
-          <span className="text-xs text-muted-foreground">(sera migré vers multi-véhicules)</span>
-        </div>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="vehicleBrand">Marque</Label>
-            <Input
-              id="vehicleBrand"
-              value={vehicleBrand || ""}
-              onChange={(e) => onVehicleBrandChange(e.target.value)}
-              placeholder="Mercedes, BMW, Tesla..."
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="vehicleColor">Couleur</Label>
-            <Input
-              id="vehicleColor"
-              value={vehicleColor || ""}
-              onChange={(e) => onVehicleColorChange(e.target.value)}
-              placeholder="Noir, Blanc, Gris..."
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="vehiclePlate">Immatriculation</Label>
-            <Input
-              id="vehiclePlate"
-              value={vehiclePlate || ""}
-              onChange={(e) => onVehiclePlateChange(e.target.value)}
-              placeholder="AB-123-CD"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="vehicleYear">Année</Label>
-            <Input
-              id="vehicleYear"
-              type="number"
-              value={vehicleYear || ""}
-              onChange={(e) => onVehicleYearChange(e.target.value)}
-              placeholder="2023"
-              min="1990"
-              max="2030"
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Photos véhicule - ancien système */}
-      <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
-        <div className="flex items-center gap-2 mb-4">
-          <Package className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Photos du véhicule (ancien système)</h3>
-        </div>
-        {driverId && (
-          <VehiclePhotosManager
-            driverId={driverId}
-            currentVehiclePhotos={vehiclePhotos || []}
-            currentGalleryPhotos={galleryPhotos || []}
-            onPhotosUpdate={onVehiclePhotosUpdate}
-          />
-        )}
-      </Card>
 
       {/* Services */}
       <Card className="p-6 bg-card/50 backdrop-blur border-border/50">
