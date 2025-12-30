@@ -25,7 +25,7 @@ import { DualProfilePhotoUpload } from "@/components/driver/DualProfilePhotoUplo
 import { SectorSelector } from "@/components/driver/SectorSelector";
 import { EquipmentSelector } from "@/components/driver/EquipmentSelector";
 import { ServicesSelector } from "@/components/driver/ServicesSelector";
-import { DriverStatistics } from "@/components/driver/stats/DriverStatistics";
+import { DriverStatisticsComplete } from "@/components/driver/stats/DriverStatisticsComplete";
 import { DriverCampaigns } from "@/components/driver/promo/DriverCampaigns";
 import { ProfitabilityCalculator } from "@/components/driver/profitability/ProfitabilityCalculator";
 import { DriverAssistant } from "@/components/driver/DriverAssistant";
@@ -459,17 +459,13 @@ const DriverDashboard = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-600 hover:text-white flex-col sm:flex-row">
-                    <BarChart3 className="w-4 h-4" />
+                    <Wrench className="w-4 h-4" />
                     <span className="hidden sm:inline">Développement</span>
                     <span className="sm:hidden">Dev</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-[#1a2942] border border-white/10 z-50">
-                  <DropdownMenuItem onClick={() => setActiveTab("statistics")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-blue-600 hover:text-white">
-                    <TrendingUp className="w-4 h-4" />
-                    Statistique
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-blue-600 hover:text-white">
                     <Megaphone className="w-4 h-4" />
                     Campagne
@@ -501,12 +497,17 @@ const DriverDashboard = () => {
                 <span className="hidden sm:inline">Profil Public</span>
                 <span className="sm:hidden">Profil</span>
               </TabsTrigger>
+              <TabsTrigger value="statistics" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Statistiques</span>
+                <span className="sm:hidden">Stats</span>
+              </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
                 <span className="hidden sm:inline">Partenariats</span>
                 <span className="sm:hidden">Partenariats</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
+              <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-slate-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
                 <span>Paramètres</span>
               </TabsTrigger>
@@ -934,7 +935,7 @@ const DriverDashboard = () => {
 
           {/* Statistics Tab */}
           <TabsContent value="statistics" className="space-y-6">
-            <DriverStatistics driverProfile={driverProfile} />
+            <DriverStatisticsComplete driverProfile={driverProfile} />
           </TabsContent>
 
           {/* Campaigns Tab */}
