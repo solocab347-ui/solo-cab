@@ -67,6 +67,8 @@ export const useVisibleFleets = (filters?: {
           show_phone,
           show_email,
           show_drivers_in_public_storefront,
+          show_driver_count_public,
+          show_client_count_public,
           default_partnership_commission,
           partnership_terms,
           services_offered
