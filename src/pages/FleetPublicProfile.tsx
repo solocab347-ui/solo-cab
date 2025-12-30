@@ -366,10 +366,13 @@ const FleetPublicProfile = () => {
         <div className="relative container mx-auto px-4 py-12 md:py-20">
           {/* Back button + Share */}
           <div className="flex items-center justify-between mb-8">
-            <Link to="/chauffeurs" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ArrowLeft className="w-4 h-4" />
-              <span>Retour aux chauffeurs</span>
-            </Link>
+              <span>Retour</span>
+            </button>
             <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
               <Copy className="w-4 h-4" />
               Partager
