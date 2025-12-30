@@ -101,6 +101,11 @@ const DriverDashboard = () => {
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [visibleToFleetManagers, setVisibleToFleetManagers] = useState(false);
+  const [visibleToCompanies, setVisibleToCompanies] = useState(false);
+  const [visibleToDrivers, setVisibleToDrivers] = useState(false);
+  const [showRatingPublic, setShowRatingPublic] = useState(false);
+  const [showRatingPartners, setShowRatingPartners] = useState(false);
+  const [showPricingPartners, setShowPricingPartners] = useState(false);
   const [vehicleCategories, setVehicleCategories] = useState<string[]>([]);
 
   // Callback stable pour les mises à jour de photos
@@ -159,6 +164,11 @@ const DriverDashboard = () => {
     setVehiclePhotos(driver.vehicle_photos || []);
     setGalleryPhotos(driver.gallery_photos || []);
     setVisibleToFleetManagers(driver.visible_to_fleet_managers || false);
+    setVisibleToCompanies(driver.visible_to_companies || false);
+    setVisibleToDrivers(driver.visible_to_drivers || false);
+    setShowRatingPublic(driver.show_rating_public || false);
+    setShowRatingPartners(driver.show_rating_partners || false);
+    setShowPricingPartners(driver.show_pricing_partners || false);
     setVehicleCategories(driver.vehicle_category || []);
   }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
