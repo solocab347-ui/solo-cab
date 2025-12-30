@@ -233,9 +233,9 @@ Cordialement`;
       // Query drivers directly (same logic as FleetDriverPartnerships)
       let query = supabase
         .from('drivers')
-        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email')
+        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, visible_to_drivers')
         .eq('status', 'validated')
-        .eq('public_profile_enabled', true)
+        .or('visible_to_drivers.eq.true,public_profile_enabled.eq.true')
         .is('fleet_manager_id', null);
 
       // Apply filters independently
