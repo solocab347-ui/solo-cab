@@ -323,10 +323,10 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
                               <Users className="w-4 h-4" />
                               {course.passengers_count} passager(s)
                             </span>
-                            {course.distance_km && (
+                            {course.distance_km != null && (
                               <span className="flex items-center gap-1">
                                 <Car className="w-4 h-4" />
-                                {course.distance_km.toFixed(1)} km
+                                {Number(course.distance_km).toFixed(1)} km
                               </span>
                             )}
                           </div>
@@ -367,14 +367,16 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
 
                         <div className="flex flex-col gap-2 shrink-0">
                           {/* Devis */}
-                          {course.devis && course.devis.length > 0 && (
+                          {course.devis && course.devis.length > 0 && course.devis[0]?.amount != null && (
                             <div className="text-right">
                               <p className="text-lg font-bold">
-                                {course.devis[0].amount.toFixed(2)} €
+                                {Number(course.devis[0].amount).toFixed(2)} €
                               </p>
-                              <Badge variant="outline" className="text-xs">
-                                Devis n°{course.devis[0].quote_number}
-                              </Badge>
+                              {course.devis[0]?.quote_number && (
+                                <Badge variant="outline" className="text-xs">
+                                  Devis n°{course.devis[0].quote_number}
+                                </Badge>
+                              )}
                             </div>
                           )}
 
