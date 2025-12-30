@@ -4062,7 +4062,9 @@ export type Database = {
           qr_code_id: string | null
           services_offered: string[] | null
           show_address: boolean | null
+          show_client_count_public: boolean | null
           show_contact_name: boolean | null
+          show_driver_count_public: boolean | null
           show_drivers_in_public_storefront: boolean | null
           show_email: boolean | null
           show_phone: boolean | null
@@ -4130,7 +4132,9 @@ export type Database = {
           qr_code_id?: string | null
           services_offered?: string[] | null
           show_address?: boolean | null
+          show_client_count_public?: boolean | null
           show_contact_name?: boolean | null
+          show_driver_count_public?: boolean | null
           show_drivers_in_public_storefront?: boolean | null
           show_email?: boolean | null
           show_phone?: boolean | null
@@ -4198,7 +4202,9 @@ export type Database = {
           qr_code_id?: string | null
           services_offered?: string[] | null
           show_address?: boolean | null
+          show_client_count_public?: boolean | null
           show_contact_name?: boolean | null
+          show_driver_count_public?: boolean | null
           show_drivers_in_public_storefront?: boolean | null
           show_email?: boolean | null
           show_phone?: boolean | null
