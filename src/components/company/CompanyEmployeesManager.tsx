@@ -44,7 +44,12 @@ import {
   FileText,
   Loader2,
   RefreshCw,
+  Settings2,
+  AlertTriangle,
+  Target,
+  Euro,
 } from "lucide-react";
+import { EmployeeSupervisionDialog } from "./EmployeeSupervisionDialog";
 
 interface Employee {
   id: string;
@@ -54,9 +59,20 @@ interface Employee {
   job_title: string | null;
   can_create_courses: boolean;
   can_view_invoices: boolean;
+  can_view_all_company_courses?: boolean;
   is_active: boolean;
+  is_suspended?: boolean;
+  suspended_reason?: string | null;
+  suspended_at?: string | null;
+  max_monthly_budget?: number | null;
+  current_month_spent?: number;
+  max_monthly_courses?: number | null;
+  monthly_courses_count?: number;
+  monthly_objective_amount?: number | null;
+  monthly_objective_courses?: number | null;
+  restrictions_notes?: string | null;
+  last_activity_at?: string | null;
   joined_at: string;
-  current_month_spent: number;
   profile: {
     full_name: string;
     email: string;
@@ -88,6 +104,8 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [creatingInvitation, setCreatingInvitation] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [showSupervisionDialog, setShowSupervisionDialog] = useState(false);
   
   const [inviteForm, setInviteForm] = useState({
     email: "",
@@ -440,18 +458,17 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
                 <TableRow>
                   <TableHead>Collaborateur</TableHead>
                   <TableHead>Service</TableHead>
-                  <TableHead className="text-center">Courses</TableHead>
-                  <TableHead className="text-center">Factures</TableHead>
+                  <TableHead className="text-center">Limites</TableHead>
                   <TableHead className="text-center">Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees.map((emp) => (
-                  <TableRow key={emp.id}>
+                  <TableRow key={emp.id} className={emp.is_suspended ? "opacity-60" : ""}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden relative">
                           {emp.profile?.profile_photo_url ? (
                             <img
                               src={emp.profile.profile_photo_url}
@@ -463,9 +480,21 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
                               {emp.profile?.full_name?.charAt(0) || "?"}
                             </span>
                           )}
+                          {emp.is_suspended && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center">
+                              <AlertTriangle className="w-3 h-3 text-white" />
+                            </div>
+                          )}
                         </div>
                         <div>
-                          <p className="font-medium">{emp.profile?.full_name || "N/A"}</p>
+                          <p className="font-medium flex items-center gap-2">
+                            {emp.profile?.full_name || "N/A"}
+                            {emp.is_suspended && (
+                              <Badge variant="destructive" className="text-[10px] py-0 h-4">
+                                Suspendu
+                              </Badge>
+                            )}
+                          </p>
                           <p className="text-xs text-muted-foreground">{emp.profile?.email}</p>
                         </div>
                       </div>
@@ -479,39 +508,74 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={emp.can_create_courses}
-                        onCheckedChange={(checked) => toggleEmployeePermission(emp.id, "can_create_courses", checked)}
-                      />
+                      <div className="flex flex-col items-center gap-1">
+                        {emp.max_monthly_budget && (
+                          <div className="flex items-center gap-1 text-xs">
+                            <Euro className="w-3 h-3" />
+                            <span>{emp.current_month_spent || 0}/{emp.max_monthly_budget}€</span>
+                          </div>
+                        )}
+                        {emp.max_monthly_courses && (
+                          <div className="flex items-center gap-1 text-xs">
+                            <Car className="w-3 h-3" />
+                            <span>{emp.monthly_courses_count || 0}/{emp.max_monthly_courses}</span>
+                          </div>
+                        )}
+                        {!emp.max_monthly_budget && !emp.max_monthly_courses && (
+                          <span className="text-xs text-muted-foreground">Illimité</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Switch
-                        checked={emp.can_view_invoices}
-                        onCheckedChange={(checked) => toggleEmployeePermission(emp.id, "can_view_invoices", checked)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={emp.is_active ? "default" : "secondary"}>
-                        {emp.is_active ? "Actif" : "Inactif"}
-                      </Badge>
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant={emp.is_active && !emp.is_suspended ? "default" : "secondary"}>
+                          {emp.is_suspended ? "Suspendu" : emp.is_active ? "Actif" : "Inactif"}
+                        </Badge>
+                        {emp.monthly_objective_courses && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Target className="w-3 h-3" />
+                            <span>Obj: {emp.monthly_objective_courses}</span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => toggleEmployeeStatus(emp.id, !emp.is_active)}>
-                            {emp.is_active ? "Désactiver" : "Réactiver"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEmployee(emp);
+                            setShowSupervisionDialog(true);
+                          }}
+                        >
+                          <Settings2 className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedEmployee(emp);
+                              setShowSupervisionDialog(true);
+                            }}>
+                              <Settings2 className="w-4 h-4 mr-2" />
+                              Superviser
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => toggleEmployeeStatus(emp.id, !emp.is_active)}>
+                              {emp.is_active ? "Désactiver" : "Réactiver"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive">
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -520,6 +584,15 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de supervision */}
+      <EmployeeSupervisionDialog
+        employee={selectedEmployee}
+        open={showSupervisionDialog}
+        onOpenChange={setShowSupervisionDialog}
+        onUpdate={fetchData}
+        companyId={companyId}
+      />
     </div>
   );
 }

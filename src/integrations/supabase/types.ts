@@ -1062,9 +1062,18 @@ export type Database = {
           id: string
           invitation_id: string | null
           is_active: boolean | null
+          is_suspended: boolean | null
           job_title: string | null
           joined_at: string | null
+          last_activity_at: string | null
           max_monthly_budget: number | null
+          max_monthly_courses: number | null
+          monthly_courses_count: number | null
+          monthly_objective_amount: number | null
+          monthly_objective_courses: number | null
+          restrictions_notes: string | null
+          suspended_at: string | null
+          suspended_reason: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1080,9 +1089,18 @@ export type Database = {
           id?: string
           invitation_id?: string | null
           is_active?: boolean | null
+          is_suspended?: boolean | null
           job_title?: string | null
           joined_at?: string | null
+          last_activity_at?: string | null
           max_monthly_budget?: number | null
+          max_monthly_courses?: number | null
+          monthly_courses_count?: number | null
+          monthly_objective_amount?: number | null
+          monthly_objective_courses?: number | null
+          restrictions_notes?: string | null
+          suspended_at?: string | null
+          suspended_reason?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1098,9 +1116,18 @@ export type Database = {
           id?: string
           invitation_id?: string | null
           is_active?: boolean | null
+          is_suspended?: boolean | null
           job_title?: string | null
           joined_at?: string | null
+          last_activity_at?: string | null
           max_monthly_budget?: number | null
+          max_monthly_courses?: number | null
+          monthly_courses_count?: number | null
+          monthly_objective_amount?: number | null
+          monthly_objective_courses?: number | null
+          restrictions_notes?: string | null
+          suspended_at?: string | null
+          suspended_reason?: string | null
           updated_at?: string | null
           user_id?: string
         }
