@@ -545,18 +545,27 @@ ${company?.company_name || ""}`;
                         const showDriverName = driver.display_driver_name === true;
                         const showCompanyName = driver.display_company_name === true;
                         
-                        // Si les deux sont cochés, on affiche le nom du chauffeur
+                        // Afficher les deux si les deux sont cochés
+                        if (showDriverName && showCompanyName && fullName && companyName) {
+                          return fullName;
+                        }
+                        // Sinon afficher celui qui est coché
                         if (showDriverName && fullName) return fullName;
                         if (showCompanyName && companyName) return companyName;
                         // Fallback
-                        if (fullName) return fullName;
-                        if (companyName) return companyName;
                         return "Chauffeur VTC";
                       })()}
                     </h4>
-                    {driver.display_driver_name === true && driver.display_company_name === true && driver.company_name?.trim() && driver.profile?.full_name && (
+                    {/* Afficher le nom de l'entreprise en dessous si les deux sont activés */}
+                    {driver.display_driver_name === true && driver.display_company_name === true && driver.company_name?.trim() && driver.profile?.full_name?.trim() && (
                       <p className="text-sm text-muted-foreground truncate">
                         {driver.company_name}
+                      </p>
+                    )}
+                    {/* Ou afficher le nom du chauffeur en dessous si seule l'entreprise est en titre */}
+                    {driver.display_driver_name !== true && driver.display_company_name === true && driver.profile?.full_name?.trim() && (
+                      <p className="text-sm text-muted-foreground truncate">
+                        {driver.profile.full_name}
                       </p>
                     )}
                     {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
@@ -710,19 +719,28 @@ ${company?.company_name || ""}`;
                       const showDriverName = selectedDriver.display_driver_name === true;
                       const showCompanyName = selectedDriver.display_company_name === true;
                       
-                      // Si les deux sont cochés, on affiche le nom du chauffeur
+                      // Afficher les deux si les deux sont cochés
+                      if (showDriverName && showCompanyName && fullName && companyName) {
+                        return fullName;
+                      }
+                      // Sinon afficher celui qui est coché
                       if (showDriverName && fullName) return fullName;
                       if (showCompanyName && companyName) return companyName;
                       // Fallback
-                      if (fullName) return fullName;
-                      if (companyName) return companyName;
                       return "Chauffeur VTC";
                     })()}
                   </h3>
-                  {selectedDriver.display_driver_name === true && selectedDriver.display_company_name === true && selectedDriver.company_name?.trim() && selectedDriver.profile?.full_name && (
+                  {/* Afficher le nom de l'entreprise en dessous si les deux sont activés */}
+                  {selectedDriver.display_driver_name === true && selectedDriver.display_company_name === true && selectedDriver.company_name?.trim() && selectedDriver.profile?.full_name?.trim() && (
                     <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
                       <Building2 className="w-3 h-3" />
                       {selectedDriver.company_name}
+                    </p>
+                  )}
+                  {/* Ou afficher le nom du chauffeur en dessous si seule l'entreprise est en titre */}
+                  {selectedDriver.display_driver_name !== true && selectedDriver.display_company_name === true && selectedDriver.profile?.full_name?.trim() && (
+                    <p className="text-muted-foreground text-sm flex items-center gap-1 mt-1">
+                      {selectedDriver.profile.full_name}
                     </p>
                   )}
                   {selectedDriver.rating && (selectedDriver.show_rating_public !== false || selectedDriver.show_rating_partners !== false) && (
