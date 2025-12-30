@@ -134,7 +134,7 @@ export default function DriverPartnerSearch() {
     try {
       const { data, error } = await supabase.rpc('search_available_partners', {
         _driver_id: driverInfo.id,
-        _department: selectedDepartment || null,
+        _department: selectedDepartment === 'all' ? null : (selectedDepartment || null),
         _city: citySearch || null,
         _min_rating: minRating > 0 ? minRating : null,
       });
@@ -327,7 +327,7 @@ export default function DriverPartnerSearch() {
                         <SelectValue placeholder="Tous les départements" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Tous les départements</SelectItem>
+                        <SelectItem value="all">Tous les départements</SelectItem>
                         {FRENCH_DEPARTMENTS.map((dept) => (
                           <SelectItem key={dept.code} value={dept.code}>
                             {dept.code} - {dept.name}
