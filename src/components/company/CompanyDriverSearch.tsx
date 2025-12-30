@@ -750,12 +750,15 @@ ${company?.company_name || ""}`;
                   )}
                 </div>
                 {selectedDriver.vehicle_equipment?.length > 0 && (
-                  <div className="mt-3">
-                    <span className="text-sm text-muted-foreground">Équipements:</span>
+                  <div className="mt-4">
+                    <span className="text-sm font-medium text-muted-foreground">Équipements:</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {selectedDriver.vehicle_equipment.map((eq: string) => (
-                        <Badge key={eq} variant="secondary" className="text-xs flex items-center gap-1 px-2 py-1">
-                          <span>{getEquipmentIcon(eq)}</span>
+                        <Badge 
+                          key={eq} 
+                          className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                        >
+                          <span className="text-base">{getEquipmentIcon(eq)}</span>
                           <span>{getEquipmentLabel(eq)}</span>
                         </Badge>
                       ))}
@@ -809,7 +812,10 @@ ${company?.company_name || ""}`;
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedDriver.services_offered.map((service: string) => (
-                      <Badge key={service} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                      <Badge 
+                        key={service} 
+                        className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                      >
                         <span className="text-base">{getServiceIcon(service)}</span>
                         <span>{getServiceLabel(service)}</span>
                       </Badge>
