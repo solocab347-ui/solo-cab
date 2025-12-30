@@ -41,6 +41,8 @@ interface AvailableDriver {
   full_name: string;
   profile_photo_url: string | null;
   phone: string | null;
+  display_driver_name?: boolean;
+  display_company_name?: boolean;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -398,13 +400,22 @@ export default function DriverPartnerSearch() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold truncate">{driver.full_name}</h3>
+                          <h3 className="font-semibold truncate">
+                            {/* Afficher selon les préférences du chauffeur */}
+                            {driver.display_driver_name !== false && driver.display_company_name !== false
+                              ? `${driver.full_name}${driver.company_name ? ` - ${driver.company_name}` : ''}`
+                              : driver.display_driver_name !== false
+                              ? driver.full_name
+                              : driver.display_company_name !== false && driver.company_name
+                              ? driver.company_name
+                              : driver.full_name}
+                          </h3>
                           <Badge variant="outline" className="font-mono text-xs">
                             {driver.formatted_sharing_number}
                           </Badge>
                         </div>
                         
-                        {driver.company_name && (
+                        {driver.display_company_name !== false && driver.company_name && driver.display_driver_name !== false && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <Building2 className="h-3 w-3" />
                             {driver.company_name}

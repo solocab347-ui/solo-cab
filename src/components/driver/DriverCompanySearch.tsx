@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase } from "lucide-react";
+import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet } from "lucide-react";
 
 interface DriverCompanySearchProps {
   driverId: string;
@@ -36,6 +36,8 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [viewingCompany, setViewingCompany] = useState<any>(null);
   
   // Proposal form state
   const [presentation, setPresentation] = useState("");
@@ -273,20 +275,33 @@ Cordialement.`;
                     </Badge>
                   )}
 
-                  <Button
-                    className="w-full"
-                    onClick={() => handleOpenProposal(company)}
-                    disabled={hasProposal}
-                  >
-                    {hasProposal ? (
-                      proposalStatus === "accepted" ? "Partenariat actif" : "Proposition envoyée"
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Proposer mes services
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setViewingCompany(company);
+                        setShowProfileDialog(true);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Voir profil
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={() => handleOpenProposal(company)}
+                      disabled={hasProposal}
+                    >
+                      {hasProposal ? (
+                        proposalStatus === "accepted" ? "Partenaire" : "Envoyé"
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Proposer
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -496,6 +511,144 @@ Cordialement.`;
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Company Profile Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Profil de l'entreprise
+            </DialogTitle>
+            <DialogDescription>
+              Informations complètes sur {viewingCompany?.company_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingCompany && (
+            <div className="space-y-6 py-4">
+              {/* En-tête entreprise */}
+              <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {viewingCompany.company_name}
+                </h3>
+                <p className="text-muted-foreground">
+                  Contact: {viewingCompany.contact_name}
+                </p>
+              </div>
+
+              {/* Coordonnées */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Coordonnées
+                </h4>
+                <div className="grid gap-2 text-sm">
+                  {viewingCompany.address && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>{viewingCompany.address}</span>
+                    </div>
+                  )}
+                  {viewingCompany.contact_phone && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <a href={`tel:${viewingCompany.contact_phone}`} className="text-primary hover:underline">
+                        {viewingCompany.contact_phone}
+                      </a>
+                    </div>
+                  )}
+                  {viewingCompany.contact_email && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <a href={`mailto:${viewingCompany.contact_email}`} className="text-primary hover:underline">
+                        {viewingCompany.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  {viewingCompany.department && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>Département: {viewingCompany.department}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Informations sur l'entreprise */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  À propos
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {viewingCompany.employee_count && (
+                    <Badge variant="secondary" className="text-sm py-1">
+                      <Users className="w-3 h-3 mr-1" />
+                      {viewingCompany.employee_count} employés
+                    </Badge>
+                  )}
+                  {viewingCompany.monthly_budget && (
+                    <Badge variant="secondary" className="text-sm py-1">
+                      <Euro className="w-3 h-3 mr-1" />
+                      Budget: {viewingCompany.monthly_budget}€/mois
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Types de véhicules préférés */}
+              {viewingCompany.preferred_vehicle_types && viewingCompany.preferred_vehicle_types.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Car className="w-4 h-4" />
+                    Types de véhicules recherchés
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingCompany.preferred_vehicle_types.map((type: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-sm">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes / Besoins */}
+              {viewingCompany.notes && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    Besoins et remarques
+                  </h4>
+                  <div className="p-4 bg-muted rounded-lg text-sm">
+                    {viewingCompany.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowProfileDialog(false)} className="flex-1">
+                  Fermer
+                </Button>
+                {!getProposalStatus(viewingCompany.id) && (
+                  <Button 
+                    className="flex-1"
+                    onClick={() => {
+                      setShowProfileDialog(false);
+                      handleOpenProposal(viewingCompany);
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Proposer mes services
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

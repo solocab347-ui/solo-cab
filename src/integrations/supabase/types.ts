@@ -5928,13 +5928,15 @@ export type Database = {
       drivers_available_for_sharing: {
         Row: {
           company_name: string | null
-          formatted_sharing_number: string | null
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
           full_name: string | null
           id: string | null
           phone: string | null
           profile_photo_url: string | null
           rating: number | null
           sharing_number: number | null
+          show_phone_for_sharing: boolean | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
@@ -6325,6 +6327,8 @@ export type Database = {
         Args: { _number: string }
         Returns: {
           company_name: string
+          display_company_name: boolean
+          display_driver_name: boolean
           formatted_sharing_number: string
           full_name: string
           id: string
@@ -6647,6 +6651,8 @@ export type Database = {
         }
         Returns: {
           company_name: string
+          display_company_name: boolean
+          display_driver_name: boolean
           formatted_sharing_number: string
           full_name: string
           id: string
