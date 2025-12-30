@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone, Filter, Building2, RotateCcw
+  Eye, Phone, Filter, Building2, RotateCcw, Euro
 } from "lucide-react";
 
 interface CompanyDriverSearchProps {
@@ -150,7 +150,17 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           show_phone,
           show_email,
           visible_to_companies,
-          public_profile_enabled
+          public_profile_enabled,
+          display_driver_name,
+          display_company_name,
+          show_rating_public,
+          show_rating_partners,
+          show_pricing_partners,
+          card_photo_url,
+          base_rate,
+          per_km_rate,
+          hourly_rate,
+          minimum_price
         `)
         .eq("status", "validated")
         .eq("visible_to_companies", true)
@@ -501,19 +511,23 @@ ${company?.company_name || ""}`;
                 <CardContent className="p-4">
                   <div className="flex gap-3 mb-4">
                     <Avatar className="w-14 h-14">
-                      <AvatarImage src={driver.profile?.profile_photo_url} />
+                      <AvatarImage src={driver.card_photo_url || driver.profile?.profile_photo_url} />
                       <AvatarFallback>
                         <User className="w-6 h-6" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold truncate">
-                        {driver.profile?.full_name || "Chauffeur VTC"}
+                        {driver.display_driver_name && driver.profile?.full_name 
+                          ? driver.profile.full_name 
+                          : "Chauffeur VTC"}
                       </h4>
                       <p className="text-sm text-muted-foreground truncate">
-                        {driver.company_name}
+                        {driver.display_company_name && driver.company_name 
+                          ? driver.company_name 
+                          : null}
                       </p>
-                      {driver.rating && (
+                      {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
                         <div className="flex items-center gap-1 mt-1">
                           <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                           <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
@@ -639,10 +653,10 @@ ${company?.company_name || ""}`;
               {/* Header with Photo */}
               <div className="flex flex-col items-center gap-4">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-4 ring-primary/20">
-                  {selectedDriver.profile?.profile_photo_url ? (
+                  {(selectedDriver.card_photo_url || selectedDriver.profile?.profile_photo_url) ? (
                     <img
-                      src={selectedDriver.profile.profile_photo_url}
-                      alt={selectedDriver.profile?.full_name || "Chauffeur"}
+                      src={selectedDriver.card_photo_url || selectedDriver.profile?.profile_photo_url}
+                      alt={selectedDriver.display_driver_name ? selectedDriver.profile?.full_name : "Chauffeur"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -654,10 +668,14 @@ ${company?.company_name || ""}`;
                 </div>
                 <div className="text-center">
                   <h3 className="text-xl font-semibold">
-                    {selectedDriver.profile?.full_name || "Chauffeur VTC"}
+                    {selectedDriver.display_driver_name && selectedDriver.profile?.full_name 
+                      ? selectedDriver.profile.full_name 
+                      : "Chauffeur VTC"}
                   </h3>
-                  <p className="text-muted-foreground">{selectedDriver.company_name}</p>
-                  {selectedDriver.rating && (
+                  {selectedDriver.display_company_name && selectedDriver.company_name && (
+                    <p className="text-muted-foreground">{selectedDriver.company_name}</p>
+                  )}
+                  {selectedDriver.rating && (selectedDriver.show_rating_public !== false || selectedDriver.show_rating_partners !== false) && (
                     <div className="flex items-center justify-center gap-2 mt-2">
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-medium">{selectedDriver.rating.toFixed(1)}/5</span>
@@ -728,6 +746,42 @@ ${company?.company_name || ""}`;
                   </div>
                 )}
               </div>
+
+              {/* Pricing - only if driver allows */}
+              {selectedDriver.show_pricing_partners && (
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Euro className="w-4 h-4" />
+                    Tarifs indicatifs
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {selectedDriver.base_rate && (
+                      <div>
+                        <span className="text-muted-foreground">Prise en charge:</span>{" "}
+                        {selectedDriver.base_rate.toFixed(2)}€
+                      </div>
+                    )}
+                    {selectedDriver.per_km_rate && (
+                      <div>
+                        <span className="text-muted-foreground">Par km:</span>{" "}
+                        {selectedDriver.per_km_rate.toFixed(2)}€
+                      </div>
+                    )}
+                    {selectedDriver.hourly_rate && (
+                      <div>
+                        <span className="text-muted-foreground">Taux horaire:</span>{" "}
+                        {selectedDriver.hourly_rate.toFixed(2)}€/h
+                      </div>
+                    )}
+                    {selectedDriver.minimum_price && (
+                      <div>
+                        <span className="text-muted-foreground">Minimum:</span>{" "}
+                        {selectedDriver.minimum_price.toFixed(2)}€
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Services */}
               {selectedDriver.services_offered?.length > 0 && (
