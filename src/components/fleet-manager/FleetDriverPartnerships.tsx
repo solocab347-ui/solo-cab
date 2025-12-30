@@ -133,7 +133,9 @@ interface Partnership {
   driver_id: string;
   fleet_manager_id: string;
   initiated_by: string;
+  commission_type?: string;
   commission_percentage: number;
+  commission_fixed_amount?: number | null;
   status: string;
   fleet_manager_signed: boolean;
   driver_signed: boolean;
@@ -145,6 +147,8 @@ interface Partnership {
   pending_modification?: boolean;
   pending_modification_by?: string;
   pending_new_commission?: number;
+  pending_new_commission_type?: string;
+  pending_new_commission_fixed_amount?: number | null;
   pending_new_payment_schedule?: string;
   pending_modification_reason?: string;
   fleet_manager_signed_at?: string;
@@ -172,6 +176,8 @@ export const FleetDriverPartnerships = ({
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
   const [commissionRate, setCommissionRate] = useState(defaultCommission.toString());
+  const [commissionType, setCommissionType] = useState<"percentage" | "fixed">("percentage");
+  const [commissionFixedAmount, setCommissionFixedAmount] = useState("");
   const [paymentSchedule, setPaymentSchedule] = useState("per_course");
   const [submitting, setSubmitting] = useState(false);
   
@@ -302,6 +308,8 @@ export const FleetDriverPartnerships = ({
   const handleProposePartnership = (driver: IndependentDriver) => {
     setSelectedDriver(driver);
     setCommissionRate(defaultCommission.toString());
+    setCommissionType("percentage");
+    setCommissionFixedAmount("");
     setPaymentSchedule("per_course");
     setProposalMessage("");
     setShowProposalDialog(true);
@@ -318,7 +326,9 @@ export const FleetDriverPartnerships = ({
           fleet_manager_id: fleetManagerId,
           driver_id: selectedDriver.id,
           initiated_by: "fleet_manager",
-          commission_percentage: parseFloat(commissionRate),
+          commission_type: commissionType,
+          commission_percentage: commissionType === "percentage" ? parseFloat(commissionRate) : 0,
+          commission_fixed_amount: commissionType === "fixed" ? parseFloat(commissionFixedAmount) : null,
           payment_schedule: paymentSchedule,
           proposal_message: proposalMessage || null,
           fleet_manager_signed: true,
@@ -342,10 +352,13 @@ export const FleetDriverPartnerships = ({
         .single();
 
       if (driverData) {
+        const commissionInfo = commissionType === "percentage" 
+          ? `${commissionRate}% de commission` 
+          : `${commissionFixedAmount}€ par course`;
         await supabase.from("notifications").insert({
           user_id: driverData.user_id,
           title: "Proposition de partenariat",
-          message: `Un gestionnaire de flotte vous propose un partenariat avec ${commissionRate}% de commission`,
+          message: `Un gestionnaire de flotte vous propose un partenariat avec ${commissionInfo}`,
           type: "partnership",
           link: "/driver-dashboard?tab=partnerships"
         });
@@ -783,7 +796,9 @@ export const FleetDriverPartnerships = ({
                                 {partnership.driver?.profile?.full_name || "Chauffeur"}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                Commission: {partnership.commission_percentage}%
+                                Commission: {partnership.commission_type === "fixed" 
+                                  ? `${partnership.commission_fixed_amount}€/course` 
+                                  : `${partnership.commission_percentage}%`}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant={partnership.fleet_manager_signed ? "default" : "secondary"}>
@@ -865,10 +880,19 @@ export const FleetDriverPartnerships = ({
                             <p className="text-sm text-muted-foreground">
                               {partnership.driver?.vehicle_brand} {partnership.driver?.vehicle_model}
                             </p>
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <Badge variant="outline">
-                                <Percent className="w-3 h-3 mr-1" />
-                                {partnership.commission_percentage}% commission
+                                {partnership.commission_type === "fixed" ? (
+                                  <>
+                                    <Euro className="w-3 h-3 mr-1" />
+                                    {partnership.commission_fixed_amount}€/course
+                                  </>
+                                ) : (
+                                  <>
+                                    <Percent className="w-3 h-3 mr-1" />
+                                    {partnership.commission_percentage}% commission
+                                  </>
+                                )}
                               </Badge>
                               {partnership.payment_schedule && (
                                 <Badge variant="secondary" className="text-xs">
@@ -945,23 +969,58 @@ export const FleetDriverPartnerships = ({
               </AlertDescription>
             </Alert>
 
+            {/* Type de commission */}
             <div className="space-y-2">
-              <Label>Commission (%)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={commissionRate}
-                  onChange={(e) => setCommissionRate(e.target.value)}
-                  className="w-24"
-                />
-                <span className="text-muted-foreground">%</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Pourcentage prélevé sur chaque course effectuée par le chauffeur
-              </p>
+              <Label>Type de commission</Label>
+              <Select value={commissionType} onValueChange={(v) => setCommissionType(v as "percentage" | "fixed")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Pourcentage (%)</SelectItem>
+                  <SelectItem value="fixed">Montant fixe (€)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {commissionType === "percentage" ? (
+              <div className="space-y-2">
+                <Label>Commission (%)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={commissionRate}
+                    onChange={(e) => setCommissionRate(e.target.value)}
+                    className="w-24"
+                  />
+                  <span className="text-muted-foreground">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pourcentage prélevé sur chaque course effectuée par le chauffeur
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Montant fixe par course (€)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={commissionFixedAmount}
+                    onChange={(e) => setCommissionFixedAmount(e.target.value)}
+                    className="w-24"
+                    placeholder="Ex: 5"
+                  />
+                  <span className="text-muted-foreground">€</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Montant fixe prélevé sur chaque course, quel que soit le prix
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -996,7 +1055,7 @@ export const FleetDriverPartnerships = ({
             <Alert className="bg-info/10 border-info/30">
               <Wallet className="w-4 h-4 text-info" />
               <AlertDescription className="text-sm">
-                En signant ce contrat, le chauffeur s'engage à verser {commissionRate}% de chaque course 
+                En signant ce contrat, le chauffeur s'engage à verser {commissionType === "percentage" ? `${commissionRate}%` : `${commissionFixedAmount}€`} {commissionType === "percentage" ? "de chaque course" : "par course"}
                 {paymentSchedule === "per_course" && " dans les 48h suivant chaque course."}
                 {paymentSchedule === "weekly" && " de façon hebdomadaire."}
                 {paymentSchedule === "monthly" && " de façon mensuelle."}
