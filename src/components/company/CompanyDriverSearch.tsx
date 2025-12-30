@@ -314,7 +314,14 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   };
 
   const getProposalStatus = (driverId: string) => {
-    return existingProposals?.find((p) => p.driver_id === driverId)?.status;
+    const proposal = existingProposals?.find((p) => p.driver_id === driverId);
+    // Si le statut est "rejected", on permet de refaire une demande
+    if (proposal?.status === 'rejected') return null;
+    return proposal?.status;
+  };
+
+  const wasRejected = (driverId: string) => {
+    return existingProposals?.find((p) => p.driver_id === driverId)?.status === 'rejected';
   };
 
   const handleOpenProposal = (driver: any) => {
@@ -578,7 +585,8 @@ ${company?.company_name || ""}`;
                         {driver.profile.full_name}
                       </p>
                     )}
-                    {driver.rating && (driver.show_rating_public !== false || driver.show_rating_partners !== false) && (
+                    {/* Note visible uniquement si show_rating_partners = true (contexte B2B partenaires) */}
+                    {driver.rating && driver.show_rating_partners === true && (
                       <div className="flex items-center gap-1 mt-1">
                           <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                           <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
@@ -660,6 +668,11 @@ ${company?.company_name || ""}`;
                     >
                       {hasProposal ? (
                         "Proposition envoyée"
+                      ) : wasRejected(driver.id) ? (
+                        <>
+                          <Send className="w-4 h-4 mr-1" />
+                          Relancer
+                        </>
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-1" />
@@ -753,7 +766,8 @@ ${company?.company_name || ""}`;
                       {selectedDriver.profile.full_name}
                     </p>
                   )}
-                  {selectedDriver.rating && (selectedDriver.show_rating_public !== false || selectedDriver.show_rating_partners !== false) && (
+                  {/* Note visible uniquement si show_rating_partners = true (contexte B2B) */}
+                  {selectedDriver.rating && selectedDriver.show_rating_partners === true && (
                     <div className="flex items-center gap-2 mt-2">
                       <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-semibold">{selectedDriver.rating.toFixed(1)}/5</span>
