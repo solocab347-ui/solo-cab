@@ -120,11 +120,11 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     },
   });
 
-  // Fetch drivers with public profiles
+  // Fetch drivers with public profiles visible to companies
   const { data: drivers, isLoading, refetch } = useQuery({
     queryKey: ["public-drivers-company", searchTerm, selectedDepartment, selectedRegion, citySearch, minRating, selectedVehicleType],
     queryFn: async () => {
-      // Base query - fetch all public validated drivers
+      // Base query - fetch all validated drivers visible to companies
       const { data, error } = await supabase
         .from("drivers")
         .select(`
@@ -149,10 +149,12 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           vehicle_photos,
           gallery_photos,
           show_phone,
-          show_email
+          show_email,
+          visible_to_companies,
+          public_profile_enabled
         `)
         .eq("status", "validated")
-        .eq("public_profile_enabled", true)
+        .or("visible_to_companies.eq.true,public_profile_enabled.eq.true")
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(100);
 
