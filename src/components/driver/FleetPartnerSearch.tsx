@@ -68,9 +68,9 @@ export function FleetPartnerSearch({ driverId }: Props) {
     queryFn: async () => {
       let query = supabase
         .from('fleet_managers')
-        .select('id, user_id, company_name, description, address, visible_to_drivers')
+        .select('id, user_id, company_name, description, address, visible_to_drivers, logo_url, driver_profile_description, default_partnership_commission, services_offered')
         .eq('visible_to_drivers', true)
-        .eq('status', 'active');
+        .in('status', ['active', 'validated', 'pending']);
 
       if (searchTerm) {
         query = query.or(`company_name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`);

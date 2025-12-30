@@ -100,7 +100,7 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
           total_drivers
         `)
         .eq("visible_to_companies", true)
-        .eq("status", "validated")
+        .in("status", ["validated", "active", "pending"])
         .order('company_name')
         .limit(50);
 
