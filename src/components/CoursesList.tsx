@@ -48,6 +48,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [customReason, setCustomReason] = useState<string>("");
   const [courseToReject, setCourseToReject] = useState<string | null>(null);
   
+  // État pour l'annulation des courses en attente (devis non accepté)
+  const [cancelPendingDialogOpen, setCancelPendingDialogOpen] = useState(false);
+  const [pendingCancellationReason, setPendingCancellationReason] = useState<string>("");
+  const [customPendingReason, setCustomPendingReason] = useState<string>("");
+  const [courseToCancelPending, setCourseToCancelPending] = useState<string | null>(null);
+  
   // États pour les filtres avancés
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customStartDate, setCustomStartDate] = useState<string>("");
@@ -472,6 +478,81 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       console.error("Error rejecting course:", error);
       toast.error("Erreur lors de l'annulation");
       // Revert on error
+      await fetchCourses();
+    }
+  };
+
+  // Fonction pour annuler une course en attente (devis non accepté)
+  const handleCancelPendingCourse = (courseId: string) => {
+    setCourseToCancelPending(courseId);
+    setCancelPendingDialogOpen(true);
+  };
+
+  const handleConfirmCancelPendingCourse = async () => {
+    if (!courseToCancelPending) return;
+
+    const finalReason = pendingCancellationReason === "custom" ? customPendingReason : pendingCancellationReason;
+    
+    if (!finalReason) {
+      toast.error("Veuillez sélectionner ou saisir un motif d'annulation");
+      return;
+    }
+
+    try {
+      const course = courses.find(c => c.id === courseToCancelPending);
+
+      // Optimistic update
+      setCourses(prev => prev.map(c => 
+        c.id === courseToCancelPending 
+          ? { 
+              ...c, 
+              status: "cancelled" as const,
+              notes: `Annulé par le chauffeur - ${finalReason}\n\n${c.notes || ''}`
+            } 
+          : c
+      ));
+
+      // Annuler la course
+      const { error: courseError } = await supabase
+        .from("courses")
+        .update({ 
+          status: "cancelled",
+          notes: `Annulé par le chauffeur - ${finalReason}\n\n${course?.notes || ''}`
+        })
+        .eq("id", courseToCancelPending);
+
+      if (courseError) throw courseError;
+
+      // Annuler le devis associé
+      const { error: devisError } = await supabase
+        .from("devis")
+        .update({ status: "rejected" })
+        .eq("course_id", courseToCancelPending);
+
+      if (devisError) {
+        console.error("Error cancelling devis:", devisError);
+      }
+
+      // Notifier le client si c'est une course client
+      if (course?.clients?.user_id && driverInfo) {
+        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
+        await supabase.from('notifications').insert({
+          user_id: course.clients.user_id,
+          title: '❌ Course annulée',
+          message: `${driverName} a annulé votre demande de course. Motif: ${finalReason}`,
+          type: 'warning',
+          link: '/client-dashboard',
+        });
+      }
+
+      toast.success("Course annulée avec succès");
+      setCancelPendingDialogOpen(false);
+      setPendingCancellationReason("");
+      setCustomPendingReason("");
+      setCourseToCancelPending(null);
+    } catch (error: any) {
+      console.error("Error cancelling pending course:", error);
+      toast.error("Erreur lors de l'annulation de la course");
       await fetchCourses();
     }
   };
@@ -1686,9 +1767,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     if (isDriverCreated) {
                       if (devis.status === "pending") {
                         return (
-                        <div className="text-sm text-muted-foreground italic">
-                          ⏳ En attente de l'acceptation du client
-                        </div>
+                          <div className="space-y-2">
+                            <div className="text-sm text-muted-foreground italic">
+                              ⏳ En attente de l'acceptation du client
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelPendingCourse(course.id)}
+                              className="w-full border-destructive/30 hover:bg-destructive/10 text-destructive"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              Annuler cette course
+                            </Button>
+                          </div>
                         );
                       }
                       // Si devis accepté et course encore pending, c'est anormal
@@ -1702,13 +1794,24 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     // Client n'a pas encore accepté le devis
                     if (devis.status === "pending") {
                       return (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                          <p className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">
-                            ⏳ En attente de l'acceptation du devis par le client
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Le client doit d'abord accepter le devis avant que vous puissiez accepter la course.
-                          </p>
+                        <div className="space-y-2">
+                          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                            <p className="text-sm text-yellow-600 dark:text-yellow-500 font-medium">
+                              ⏳ En attente de l'acceptation du devis par le client
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Le client doit d'abord accepter le devis avant que vous puissiez accepter la course.
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelPendingCourse(course.id)}
+                            className="w-full border-destructive/30 hover:bg-destructive/10 text-destructive"
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Annuler (devis non accepté)
+                          </Button>
                         </div>
                       );
                     }
@@ -2376,6 +2479,67 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               Annuler
             </Button>
             <Button variant="destructive" onClick={handleRejectCourse}>
+              Confirmer l'annulation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog d'annulation pour course en attente (devis non accepté) */}
+      <Dialog open={cancelPendingDialogOpen} onOpenChange={setCancelPendingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-destructive" />
+              Annuler la course en attente
+            </DialogTitle>
+            <DialogDescription>
+              Le client n'a pas encore accepté le devis. Sélectionnez un motif pour annuler cette demande.
+            </DialogDescription>
+          </DialogHeader>
+          <RadioGroup value={pendingCancellationReason} onValueChange={setPendingCancellationReason}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Délai d'acceptation dépassé" id="pending-timeout" />
+              <Label htmlFor="pending-timeout">Délai d'acceptation dépassé</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Client non réactif" id="pending-unresponsive" />
+              <Label htmlFor="pending-unresponsive">Client non réactif</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Indisponibilité imprévue" id="pending-unavailable" />
+              <Label htmlFor="pending-unavailable">Indisponibilité imprévue</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Erreur dans la demande" id="pending-error" />
+              <Label htmlFor="pending-error">Erreur dans la demande</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Demande de tarif inacceptable" id="pending-price" />
+              <Label htmlFor="pending-price">Demande de tarif inacceptable</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="custom" id="pending-custom" />
+              <Label htmlFor="pending-custom">Autre raison</Label>
+            </div>
+          </RadioGroup>
+          {pendingCancellationReason === "custom" && (
+            <Textarea
+              placeholder="Précisez la raison d'annulation..."
+              value={customPendingReason}
+              onChange={(e) => setCustomPendingReason(e.target.value)}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setCancelPendingDialogOpen(false);
+              setPendingCancellationReason("");
+              setCustomPendingReason("");
+              setCourseToCancelPending(null);
+            }}>
+              Retour
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmCancelPendingCourse}>
               Confirmer l'annulation
             </Button>
           </DialogFooter>
