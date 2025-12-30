@@ -378,7 +378,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
     // Company agreements
     const { data: companyAgreements } = await supabase
       .from('company_driver_agreements')
-      .select('id, company_id, discount_percentage')
+      .select('id, company_id, discount_percentage, total_billed')
       .eq('driver_id', driverId)
       .eq('status', 'accepted');
 
@@ -391,18 +391,26 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
         .single();
 
       if (company) {
-        // Get courses count
+        // Get courses count from company_courses
         const { data: companyCourses } = await supabase
           .from('company_courses')
-          .select('course_id')
+          .select('course_id, course:courses(price, status)')
           .eq('company_id', ca.company_id);
+
+        const completedCourses = companyCourses?.filter(
+          (cc: any) => cc.course?.status === 'completed'
+        ) || [];
+        
+        const totalRevenue = completedCourses.reduce(
+          (sum: number, cc: any) => sum + (Number(cc.course?.price) || 0), 0
+        );
 
         companyRankings.push({
           id: ca.company_id,
           name: company.company_name || 'Entreprise',
           type: 'company',
-          coursesCount: companyCourses?.length || 0,
-          revenue: 0, // Would need to calculate
+          coursesCount: completedCourses.length,
+          revenue: totalRevenue || Number(ca.total_billed) || 0,
           commissionPercentage: ca.discount_percentage
         });
       }
@@ -950,12 +958,12 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
 
         {/* Rankings Tab */}
         <TabsContent value="rankings" className="space-y-4">
-          <div className="grid lg:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-3 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-500" />
-                  Top 5 Partenaires Chauffeurs
+                  Top 5 Chauffeurs Partenaires
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">Par volume de courses</p>
               </CardHeader>
@@ -977,7 +985,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
+                  <Star className="w-5 h-5 text-purple-500" />
                   Top 5 Gestionnaires de Flotte
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">Par chiffre d'affaires</p>
@@ -991,6 +999,29 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
                   <div className="space-y-2">
                     {topFleets.map((f, i) => (
                       <PartnerCard key={f.id} partner={f} rank={i + 1} />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="w-5 h-5 text-green-500" />
+                  Top 5 Entreprises
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Par volume de courses</p>
+              </CardHeader>
+              <CardContent>
+                {topCompanies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Aucune donnée disponible
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {topCompanies.map((c, i) => (
+                      <PartnerCard key={c.id} partner={c} rank={i + 1} />
                     ))}
                   </div>
                 )}
