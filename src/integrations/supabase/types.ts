@@ -696,6 +696,7 @@ export type Database = {
           employee_id: string | null
           id: string
           invoice_to_company: boolean | null
+          payment_handled_by: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -707,6 +708,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           invoice_to_company?: boolean | null
+          payment_handled_by?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -718,6 +720,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           invoice_to_company?: boolean | null
+          payment_handled_by?: string | null
         }
         Relationships: [
           {
@@ -1675,6 +1678,10 @@ export type Database = {
           is_guest_booking: boolean | null
           notes: string | null
           passengers_count: number
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
+          payment_method_requested: string | null
+          payment_method_used: string | null
           pickup_address: string
           pickup_latitude: number | null
           pickup_longitude: number | null
@@ -1707,6 +1714,10 @@ export type Database = {
           is_guest_booking?: boolean | null
           notes?: string | null
           passengers_count?: number
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_method_requested?: string | null
+          payment_method_used?: string | null
           pickup_address: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -1739,6 +1750,10 @@ export type Database = {
           is_guest_booking?: boolean | null
           notes?: string | null
           passengers_count?: number
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
+          payment_method_requested?: string | null
+          payment_method_used?: string | null
           pickup_address?: string
           pickup_latitude?: number | null
           pickup_longitude?: number | null
@@ -2860,6 +2875,105 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      expense_reports: {
+        Row: {
+          amount: number
+          company_id: string
+          course_id: string
+          created_at: string | null
+          description: string | null
+          employee_id: string
+          facture_id: string | null
+          id: string
+          notes: string | null
+          payment_method: string
+          receipt_url: string | null
+          reimbursed_at: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          employee_id: string
+          facture_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_method: string
+          receipt_url?: string | null
+          reimbursed_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string
+          facture_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          receipt_url?: string | null
+          reimbursed_at?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_reports_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_reports_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_reports_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       factures: {
         Row: {
