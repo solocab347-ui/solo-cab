@@ -63,6 +63,7 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
           show_phone_for_sharing,
           visible_to_fleet_managers,
           visible_to_companies,
+          visible_to_drivers,
           show_rating_public,
           show_rating_partners,
           show_pricing_partners,
@@ -82,13 +83,13 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
       setSharingAvailable(data.sharing_available || false);
       setShowPhoneForSharing(data.show_phone_for_sharing || false);
       setVisibleToFleetManagers(data.visible_to_fleet_managers || false);
-      setVisibleToCompanies(data.visible_to_companies || false);
-      setVisibleToDrivers(data.sharing_available || false);
+      setVisibleToCompanies((data as any).visible_to_companies || false);
+      setVisibleToDrivers((data as any).visible_to_drivers || false);
       
       // New visibility settings
-      setShowRatingPublic(data.show_rating_public || false);
-      setShowRatingPartners(data.show_rating_partners || false);
-      setShowPricingPartners(data.show_pricing_partners || false);
+      setShowRatingPublic((data as any).show_rating_public || false);
+      setShowRatingPartners((data as any).show_rating_partners || false);
+      setShowPricingPartners((data as any).show_pricing_partners || false);
     } catch (error) {
       console.error('Error loading settings:', error);
     } finally {
@@ -122,6 +123,8 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
       switch (field) {
         case 'sharing_available':
           setSharingAvailable(value);
+          break;
+        case 'visible_to_drivers':
           setVisibleToDrivers(value);
           break;
         case 'show_phone_for_sharing':
@@ -253,14 +256,14 @@ export function PartnershipSettings({ driverId }: PartnershipSettingsProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {sharingAvailable && (
+              {visibleToDrivers && (
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
                   Visible
                 </Badge>
               )}
               <Switch
-                checked={sharingAvailable}
-                onCheckedChange={(checked) => updateSetting('sharing_available', checked)}
+                checked={visibleToDrivers}
+                onCheckedChange={(checked) => updateSetting('visible_to_drivers', checked)}
                 disabled={updating}
               />
             </div>

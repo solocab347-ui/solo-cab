@@ -164,11 +164,11 @@ const DriverDashboard = () => {
     setVehiclePhotos(driver.vehicle_photos || []);
     setGalleryPhotos(driver.gallery_photos || []);
     setVisibleToFleetManagers(driver.visible_to_fleet_managers || false);
-    setVisibleToCompanies(driver.visible_to_companies || false);
-    setVisibleToDrivers(driver.visible_to_drivers || false);
-    setShowRatingPublic(driver.show_rating_public || false);
-    setShowRatingPartners(driver.show_rating_partners || false);
-    setShowPricingPartners(driver.show_pricing_partners || false);
+    setVisibleToCompanies((driver as any).visible_to_companies || false);
+    setVisibleToDrivers((driver as any).visible_to_drivers || false);
+    setShowRatingPublic((driver as any).show_rating_public || false);
+    setShowRatingPartners((driver as any).show_rating_partners || false);
+    setShowPricingPartners((driver as any).show_pricing_partners || false);
     setVehicleCategories(driver.vehicle_category || []);
   }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
@@ -279,6 +279,11 @@ const DriverDashboard = () => {
         gallery_photos: galleryPhotos,
         card_photo_url: cardPhotoUrl,
         visible_to_fleet_managers: visibleToFleetManagers,
+        visible_to_companies: visibleToCompanies,
+        visible_to_drivers: visibleToDrivers,
+        show_rating_public: showRatingPublic,
+        show_rating_partners: showRatingPartners,
+        show_pricing_partners: showPricingPartners,
         vehicle_category: vehicleCategories,
       };
 
@@ -928,6 +933,16 @@ const DriverDashboard = () => {
                   onVehicleCategoriesChange={setVehicleCategories}
                   visibleToFleetManagers={visibleToFleetManagers}
                   onVisibleToFleetManagersChange={!driverProfile?.driver?.is_fleet_driver && !driverProfile?.driver?.fleet_manager_id ? setVisibleToFleetManagers : undefined}
+                  visibleToCompanies={visibleToCompanies}
+                  onVisibleToCompaniesChange={setVisibleToCompanies}
+                  visibleToDrivers={visibleToDrivers}
+                  onVisibleToDriversChange={setVisibleToDrivers}
+                  showRatingPublic={showRatingPublic}
+                  onShowRatingPublicChange={setShowRatingPublic}
+                  showRatingPartners={showRatingPartners}
+                  onShowRatingPartnersChange={setShowRatingPartners}
+                  showPricingPartners={showPricingPartners}
+                  onShowPricingPartnersChange={setShowPricingPartners}
                 />
 
                 <div className="flex justify-end">
