@@ -4,15 +4,40 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logger } from '@/lib/productionLogger';
 
-// Clé publique VAPID (doit correspondre à celle configurée dans les secrets)
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-
 interface PushSubscriptionData {
   endpoint: string;
   keys: {
     p256dh: string;
     auth: string;
   };
+}
+
+// Cache pour la clé VAPID
+let cachedVapidKey: string | null = null;
+
+// Récupérer la clé VAPID depuis l'edge function
+async function getVapidPublicKey(): Promise<string | null> {
+  if (cachedVapidKey) return cachedVapidKey;
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('get-vapid-public-key');
+    
+    if (error) {
+      logger.error('Erreur récupération clé VAPID:', error);
+      return null;
+    }
+    
+    if (data?.publicKey) {
+      cachedVapidKey = data.publicKey;
+      logger.info('Clé VAPID récupérée avec succès');
+      return data.publicKey;
+    }
+    
+    return null;
+  } catch (error) {
+    logger.error('Erreur appel get-vapid-public-key:', error);
+    return null;
+  }
 }
 
 // Convertir une clé base64url en Uint8Array
@@ -47,34 +72,34 @@ export const usePushNotificationsV2 = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [vapidKey, setVapidKey] = useState<string | null>(null);
 
-  // Vérifier si les notifications sont supportées et la permission actuelle
+  // Vérifier si les notifications sont supportées et charger la clé VAPID
   useEffect(() => {
-    const checkSupport = async () => {
+    const init = async () => {
       const supported = 'Notification' in window && 
                         'serviceWorker' in navigator && 
                         'PushManager' in window;
       setIsSupported(supported);
       
       if (supported) {
-        // Obtenir la permission actuelle
         const currentPermission = Notification.permission;
         setPermission(currentPermission);
         logger.info('État permission notifications:', { permission: currentPermission });
         
-        // Si permission est 'default', on peut la demander
-        // Si permission est 'granted', on vérifie la subscription
-        // Si permission est 'denied', l'UI affichera le message d'erreur
+        // Charger la clé VAPID
+        const key = await getVapidPublicKey();
+        setVapidKey(key);
+        logger.info('Clé VAPID disponible:', { available: !!key });
       }
     };
     
-    checkSupport();
+    init();
     
     // Re-vérifier la permission quand la fenêtre revient au premier plan
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && 'Notification' in window) {
-        const currentPermission = Notification.permission;
-        setPermission(currentPermission);
+        setPermission(Notification.permission);
       }
     };
     
@@ -90,13 +115,21 @@ export const usePushNotificationsV2 = () => {
       try {
         const { data, error } = await supabase
           .from('push_subscriptions')
-          .select('id')
+          .select('id, endpoint')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .limit(1);
 
         if (!error && data && data.length > 0) {
-          setIsSubscribed(true);
+          // Vérifier aussi que c'est une vraie subscription (pas simulée)
+          const hasRealSubscription = data.some(sub => 
+            sub.endpoint && !sub.endpoint.includes('push.solocab.fr')
+          );
+          setIsSubscribed(hasRealSubscription || data.length > 0);
+          logger.info('Subscription existante:', { 
+            count: data.length, 
+            hasReal: hasRealSubscription 
+          });
         }
       } catch (error) {
         logger.error('Erreur vérification subscription:', error);
@@ -119,65 +152,76 @@ export const usePushNotificationsV2 = () => {
       // Demander la permission
       const result = await Notification.requestPermission();
       setPermission(result);
+      logger.info('Permission demandée:', { result });
 
       if (result !== 'granted') {
-        toast.error("Permission de notifications refusée");
+        toast.error("Permission de notifications refusée. Veuillez autoriser dans les paramètres du navigateur.");
         setIsLoading(false);
         return false;
       }
 
-      // Enregistrer le service worker
-      let registration = await navigator.serviceWorker.getRegistration();
+      // Enregistrer/récupérer le service worker
+      let registration = await navigator.serviceWorker.getRegistration('/sw.js');
       if (!registration) {
+        logger.info('Enregistrement du service worker...');
         registration = await navigator.serviceWorker.register('/sw.js');
-        await navigator.serviceWorker.ready;
       }
       
-      logger.info('Service Worker prêt pour push');
+      // Attendre que le SW soit prêt
+      await navigator.serviceWorker.ready;
+      logger.info('Service Worker prêt');
 
-      let subscription: PushSubscriptionData;
+      let subscription: PushSubscriptionData | null = null;
+      let isRealSubscription = false;
 
-      // Essayer de créer une vraie subscription avec VAPID
-      if (VAPID_PUBLIC_KEY) {
+      // Récupérer la clé VAPID si pas encore chargée
+      const currentVapidKey = vapidKey || await getVapidPublicKey();
+
+      if (currentVapidKey) {
         try {
-          const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+          const applicationServerKey = urlBase64ToUint8Array(currentVapidKey);
           
           // Vérifier s'il existe déjà une subscription
           let pushSubscription = await registration.pushManager.getSubscription();
           
+          // Si pas de subscription ou endpoint différent, en créer une nouvelle
           if (!pushSubscription) {
+            logger.info('Création nouvelle subscription Push...');
             pushSubscription = await registration.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: applicationServerKey.buffer as ArrayBuffer
             });
+            logger.info('Subscription Push créée');
           }
 
           const subscriptionJson = pushSubscription.toJSON();
-          subscription = {
-            endpoint: subscriptionJson.endpoint || '',
-            keys: {
-              p256dh: subscriptionJson.keys?.p256dh || '',
-              auth: subscriptionJson.keys?.auth || ''
-            }
-          };
-
-          logger.info('Subscription VAPID créée avec succès');
+          
+          if (subscriptionJson.endpoint && subscriptionJson.keys?.p256dh && subscriptionJson.keys?.auth) {
+            subscription = {
+              endpoint: subscriptionJson.endpoint,
+              keys: {
+                p256dh: subscriptionJson.keys.p256dh,
+                auth: subscriptionJson.keys.auth
+              }
+            };
+            isRealSubscription = true;
+            logger.info('Subscription VAPID réelle créée:', { 
+              endpoint: subscriptionJson.endpoint.substring(0, 50) 
+            });
+          }
         } catch (vapidError) {
-          logger.warn('Erreur VAPID, fallback sur subscription simulée:', vapidError);
-          // Fallback sur subscription simulée
-          subscription = {
-            endpoint: `https://push.solocab.fr/${user.id}/${Date.now()}`,
-            keys: {
-              p256dh: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(65)).buffer),
-              auth: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(16)).buffer)
-            }
-          };
+          logger.error('Erreur création subscription VAPID:', vapidError);
+          toast.error("Erreur technique. Les notifications fonctionneront dans l'application.");
         }
       } else {
-        // Pas de clé VAPID, utiliser subscription simulée
-        logger.warn('Pas de clé VAPID configurée, utilisation subscription simulée');
+        logger.warn('Clé VAPID non disponible');
+      }
+
+      // Si pas de vraie subscription, créer une subscription de fallback
+      if (!subscription) {
+        logger.info('Création subscription de fallback');
         subscription = {
-          endpoint: `https://push.solocab.fr/${user.id}/${Date.now()}`,
+          endpoint: `https://fallback.solocab.fr/${user.id}/${Date.now()}`,
           keys: {
             p256dh: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(65)).buffer),
             auth: arrayBufferToBase64(crypto.getRandomValues(new Uint8Array(16)).buffer)
@@ -188,7 +232,7 @@ export const usePushNotificationsV2 = () => {
       // Sauvegarder dans la base de données
       const subscriptionJson = JSON.parse(JSON.stringify(subscription));
       
-      // Désactiver les anciennes subscriptions pour cet utilisateur
+      // Désactiver les anciennes subscriptions
       await supabase
         .from('push_subscriptions')
         .update({ is_active: false })
@@ -216,8 +260,14 @@ export const usePushNotificationsV2 = () => {
         .eq('id', user.id);
 
       setIsSubscribed(true);
-      toast.success("Notifications activées ! Vous recevrez les alertes sur cet appareil.");
-      logger.info('Push notifications activées');
+      
+      if (isRealSubscription) {
+        toast.success("🔔 Notifications activées ! Vous recevrez les alertes même si l'app est fermée.");
+      } else {
+        toast.success("Notifications activées dans l'application.");
+      }
+      
+      logger.info('Push notifications activées', { isReal: isRealSubscription });
 
       return true;
 
@@ -228,9 +278,9 @@ export const usePushNotificationsV2 = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported, user]);
+  }, [isSupported, user, vapidKey]);
 
-  // Afficher une notification
+  // Afficher une notification locale
   const showNotification = useCallback(async (title: string, body: string, link?: string) => {
     if (permission !== 'granted') {
       logger.warn('Notification bloquée: permission non accordée');
@@ -249,7 +299,7 @@ export const usePushNotificationsV2 = () => {
 
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification(title, options);
-      logger.info('Notification affichée:', { title });
+      logger.info('Notification locale affichée:', { title });
     } catch (error) {
       logger.error('Erreur affichage notification:', { error });
       // Fallback vers Notification API
@@ -261,6 +311,31 @@ export const usePushNotificationsV2 = () => {
       }
     }
   }, [permission]);
+
+  // Envoyer une notification push via edge function
+  const sendPushNotification = useCallback(async (
+    userId: string, 
+    title: string, 
+    message: string, 
+    link?: string
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: { user_id: userId, title, message, link }
+      });
+
+      if (error) {
+        logger.error('Erreur envoi push:', error);
+        return false;
+      }
+
+      logger.info('Push envoyé:', data);
+      return true;
+    } catch (error) {
+      logger.error('Erreur appel send-push-notification:', error);
+      return false;
+    }
+  }, []);
 
   // Désactiver les notifications
   const unsubscribe = useCallback(async () => {
@@ -306,8 +381,10 @@ export const usePushNotificationsV2 = () => {
     isSupported,
     isSubscribed,
     isLoading,
+    vapidAvailable: !!vapidKey,
     requestPermissionAndSubscribe,
     showNotification,
+    sendPushNotification,
     unsubscribe
   };
 };

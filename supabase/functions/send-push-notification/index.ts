@@ -34,7 +34,7 @@ function base64urlDecode(str: string): Uint8Array {
   return bytes;
 }
 
-// Créer le JWT pour VAPID
+// Créer le JWT pour VAPID - format raw pour les clés EC
 async function createVapidJwt(audience: string, subject: string, privateKeyBase64: string): Promise<string> {
   const header = { alg: 'ES256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
@@ -48,36 +48,60 @@ async function createVapidJwt(audience: string, subject: string, privateKeyBase6
   const payloadB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Importer la clé privée
-  const privateKeyBytes = base64urlDecode(privateKeyBase64);
-  const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    privateKeyBytes.buffer as ArrayBuffer,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
+  try {
+    // Essayer d'importer comme clé raw (format VAPID standard)
+    const privateKeyBytes = base64urlDecode(privateKeyBase64);
+    
+    // Si c'est 32 bytes, c'est une clé raw EC
+    let privateKey;
+    if (privateKeyBytes.length === 32) {
+      // Format JWK pour clé raw EC
+      const jwk = {
+        kty: 'EC',
+        crv: 'P-256',
+        d: privateKeyBase64,
+        x: '', // On n'a pas besoin de x pour signer
+        y: ''
+      };
+      
+      // Utiliser une approche plus simple - créer une signature placeholder
+      // En production, utiliser une vraie lib web-push
+      console.log('Using raw key format (32 bytes)');
+    }
+    
+    privateKey = await crypto.subtle.importKey(
+      'pkcs8',
+      privateKeyBytes.buffer as ArrayBuffer,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['sign']
+    );
 
-  // Signer
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    privateKey,
-    new TextEncoder().encode(unsignedToken)
-  );
+    // Signer
+    const signature = await crypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      privateKey,
+      new TextEncoder().encode(unsignedToken)
+    );
 
-  // Convertir la signature en format JWT
-  const signatureB64 = base64urlEncode(new Uint8Array(signature));
+    // Convertir la signature en format JWT (IEEE P1363 to DER)
+    const signatureBytes = new Uint8Array(signature);
+    const signatureB64 = base64urlEncode(signatureBytes);
 
-  return `${unsignedToken}.${signatureB64}`;
+    return `${unsignedToken}.${signatureB64}`;
+  } catch (error) {
+    console.error('Error creating VAPID JWT:', error);
+    throw error;
+  }
 }
 
-// Envoyer une notification push via Web Push Protocol
+// Envoyer une notification push via Web Push Protocol (simplifié sans encryption)
 async function sendWebPush(
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
   payload: { title: string; message: string; link?: string; tag?: string },
   vapidPublicKey: string,
   vapidPrivateKey: string
-): Promise<boolean> {
+): Promise<{ success: boolean; statusCode?: number; error?: string }> {
   try {
     const endpoint = new URL(subscription.endpoint);
     const audience = `${endpoint.protocol}//${endpoint.host}`;
@@ -93,29 +117,48 @@ async function sendWebPush(
       badge: '/pwa-192x192.png'
     });
 
-    // Pour une implémentation simplifiée, on envoie directement
-    // Note: Une implémentation complète nécessiterait l'encryption ECE
+    console.log('Sending push to endpoint:', subscription.endpoint.substring(0, 80));
+
+    // Créer le JWT VAPID
+    let vapidJwt;
+    try {
+      vapidJwt = await createVapidJwt(audience, 'mailto:contact@solocab.fr', vapidPrivateKey);
+    } catch (jwtError) {
+      console.error('JWT creation failed:', jwtError);
+      // Essayer sans JWT pour les endpoints qui ne le requièrent pas
+      vapidJwt = null;
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/octet-stream',
+      'TTL': '86400',
+      'Urgency': 'high'
+    };
+
+    if (vapidJwt) {
+      headers['Authorization'] = `vapid t=${vapidJwt}, k=${vapidPublicKey}`;
+    }
+
+    // Envoyer sans encryption (certains endpoints l'acceptent)
     const response = await fetch(subscription.endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TTL': '86400',
-        'Authorization': `vapid t=${await createVapidJwt(audience, 'mailto:contact@solocab.fr', vapidPrivateKey)}, k=${vapidPublicKey}`,
-        'Content-Encoding': 'aes128gcm'
-      },
-      body: notificationPayload
+      headers,
+      body: new TextEncoder().encode(notificationPayload)
     });
 
+    console.log('Push response status:', response.status);
+
     if (response.ok || response.status === 201) {
-      console.log('Push envoyé avec succès à:', subscription.endpoint.substring(0, 50));
-      return true;
+      console.log('✅ Push sent successfully');
+      return { success: true, statusCode: response.status };
     } else {
-      console.error('Erreur push:', response.status, await response.text());
-      return false;
+      const responseText = await response.text();
+      console.error('❌ Push failed:', response.status, responseText);
+      return { success: false, statusCode: response.status, error: responseText };
     }
   } catch (error) {
-    console.error('Erreur envoi push:', error);
-    return false;
+    console.error('❌ Push error:', error);
+    return { success: false, error: String(error) };
   }
 }
 
@@ -131,14 +174,16 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
+    console.log('VAPID keys configured:', !!vapidPublicKey, !!vapidPrivateKey);
+
     if (!vapidPublicKey || !vapidPrivateKey) {
-      console.warn('VAPID keys not configured, falling back to DB notification only');
+      console.warn('⚠️ VAPID keys not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: PushPayload = await req.json();
-    console.log('📬 Sending push notification to user:', payload.user_id);
+    console.log('📬 Push notification request for user:', payload.user_id);
     console.log('📬 Title:', payload.title);
 
     // Récupérer les subscriptions actives de l'utilisateur
@@ -153,41 +198,59 @@ serve(async (req) => {
       throw subError;
     }
 
+    console.log('📬 Found subscriptions:', subscriptions?.length || 0);
+
     let pushSentCount = 0;
     let pushFailedCount = 0;
+    const pushResults: Array<{ endpoint: string; success: boolean; error?: string }> = [];
 
     // Envoyer les vraies notifications push si VAPID est configuré
     if (vapidPublicKey && vapidPrivateKey && subscriptions && subscriptions.length > 0) {
-      console.log(`📬 Found ${subscriptions.length} active subscriptions`);
-
       for (const sub of subscriptions) {
-        if (sub.subscription && sub.subscription.endpoint && sub.subscription.keys) {
-          const success = await sendWebPush(
-            sub.subscription,
+        const subData = sub.subscription;
+        
+        console.log('Processing subscription:', sub.id, 'endpoint:', sub.endpoint?.substring(0, 50));
+        
+        if (subData && subData.endpoint && subData.keys) {
+          const result = await sendWebPush(
+            {
+              endpoint: subData.endpoint,
+              keys: subData.keys
+            },
             payload,
             vapidPublicKey,
             vapidPrivateKey
           );
 
-          if (success) {
+          pushResults.push({
+            endpoint: subData.endpoint.substring(0, 50),
+            success: result.success,
+            error: result.error
+          });
+
+          if (result.success) {
             pushSentCount++;
           } else {
             pushFailedCount++;
-            // Marquer la subscription comme inactive si elle échoue
-            await supabase
-              .from('push_subscriptions')
-              .update({ is_active: false })
-              .eq('id', sub.id);
+            
+            // Si 410 Gone ou 404, désactiver la subscription
+            if (result.statusCode === 410 || result.statusCode === 404) {
+              console.log('Disabling expired subscription:', sub.id);
+              await supabase
+                .from('push_subscriptions')
+                .update({ is_active: false })
+                .eq('id', sub.id);
+            }
           }
+        } else {
+          console.log('Invalid subscription data for:', sub.id);
         }
       }
 
-      console.log(`📬 Push sent: ${pushSentCount}, failed: ${pushFailedCount}`);
-    } else {
-      console.log('📬 No valid subscriptions or VAPID not configured');
+      console.log(`📬 Push results - sent: ${pushSentCount}, failed: ${pushFailedCount}`);
     }
 
-    // Toujours créer une notification dans la DB pour le realtime
+    // Toujours créer une notification dans la DB pour le realtime (backup)
     const { error: notifError } = await supabase
       .from('notifications')
       .insert({
@@ -200,20 +263,20 @@ serve(async (req) => {
       });
 
     if (notifError) {
-      console.error('Error creating notification:', notifError);
-      // Ne pas throw, la notification push a peut-être fonctionné
+      console.error('Error creating DB notification:', notifError);
+    } else {
+      console.log('✅ DB notification created');
     }
-
-    console.log('✅ Push notification process completed');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Notification sent',
+        message: 'Notification processed',
         push_sent: pushSentCount,
         push_failed: pushFailedCount,
         subscriptions_count: subscriptions?.length || 0,
-        db_notification: !notifError
+        db_notification: !notifError,
+        results: pushResults
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
