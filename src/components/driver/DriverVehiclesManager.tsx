@@ -16,8 +16,12 @@ import {
   Edit2, 
   Loader2,
   Camera,
-  X
+  X,
+  FileText,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { compressImage, validateImageType, validateImageSize } from '@/lib/imageCompression';
 import { EquipmentSelector } from './EquipmentSelector';
 
@@ -56,8 +60,11 @@ interface DriverVehiclesManagerProps {
 
 export const DriverVehiclesManager = ({ driverId }: DriverVehiclesManagerProps) => {
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
+  const [vehicleDocuments, setVehicleDocuments] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [documentInfoDialogOpen, setDocumentInfoDialogOpen] = useState(false);
+  const [newVehicleName, setNewVehicleName] = useState('');
   const [editingVehicle, setEditingVehicle] = useState<DriverVehicle | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -95,6 +102,26 @@ export const DriverVehiclesManager = ({ driverId }: DriverVehiclesManagerProps) 
 
       if (error) throw error;
       setVehicles(data || []);
+      
+      // Charger les documents pour chaque véhicule
+      if (data && data.length > 0) {
+        const vehicleIds = data.map(v => v.id);
+        const { data: docs } = await supabase
+          .from('vehicle_documents')
+          .select('*')
+          .in('vehicle_id', vehicleIds);
+        
+        if (docs) {
+          const docsMap: Record<string, any[]> = {};
+          docs.forEach(doc => {
+            if (!docsMap[doc.vehicle_id]) {
+              docsMap[doc.vehicle_id] = [];
+            }
+            docsMap[doc.vehicle_id].push(doc);
+          });
+          setVehicleDocuments(docsMap);
+        }
+      }
     } catch (error) {
       console.error('Error loading vehicles:', error);
       toast.error('Erreur lors du chargement des véhicules');
@@ -226,6 +253,10 @@ export const DriverVehiclesManager = ({ driverId }: DriverVehiclesManagerProps) 
 
         if (error) throw error;
         toast.success('Véhicule ajouté !');
+        
+        // Afficher le dialog d'information sur les documents
+        setNewVehicleName(`${formBrand} ${formModel}`);
+        setDocumentInfoDialogOpen(true);
       }
 
       setDialogOpen(false);
@@ -353,6 +384,33 @@ export const DriverVehiclesManager = ({ driverId }: DriverVehiclesManagerProps) 
                       <p className="text-sm text-muted-foreground mt-2">
                         Immatriculation: {vehicle.plate}
                       </p>
+                    )}
+
+                    {/* Statut des documents */}
+                    {vehicleDocuments[vehicle.id] && (
+                      <div className="mt-3 p-2 rounded-lg bg-muted/30">
+                        <div className="flex items-center gap-2 text-sm">
+                          <FileText className="w-4 h-4" />
+                          <span className="font-medium">Documents:</span>
+                          {vehicleDocuments[vehicle.id].every(d => d.status === 'validated') ? (
+                            <Badge className="bg-success/20 text-success border-success/30">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Validés
+                            </Badge>
+                          ) : vehicleDocuments[vehicle.id].some(d => d.status === 'submitted') ? (
+                            <Badge variant="secondary">En attente</Badge>
+                          ) : (
+                            <Badge className="bg-warning/20 text-warning border-warning/30">
+                              <AlertTriangle className="w-3 h-3 mr-1" />
+                              À soumettre
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {vehicleDocuments[vehicle.id].filter(d => d.status === 'validated').length}/
+                          {vehicleDocuments[vehicle.id].length} documents validés
+                        </div>
+                      </div>
                     )}
 
                     <div className="flex gap-2 mt-4">
@@ -589,6 +647,71 @@ export const DriverVehiclesManager = ({ driverId }: DriverVehiclesManagerProps) 
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
               {editingVehicle ? 'Mettre à jour' : 'Ajouter'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog d'information sur les documents requis */}
+      <Dialog open={documentInfoDialogOpen} onOpenChange={setDocumentInfoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Documents requis
+            </DialogTitle>
+            <DialogDescription>
+              Votre véhicule <strong>{newVehicleName}</strong> a été ajouté avec succès !
+            </DialogDescription>
+          </DialogHeader>
+
+          <Alert className="border-warning bg-warning/10">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertTitle className="text-warning">Action requise</AlertTitle>
+            <AlertDescription className="text-sm">
+              Pour que votre véhicule soit validé, vous devez soumettre les documents suivants dans la section <strong>"Mes Documents"</strong> :
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-3 py-2">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-sm font-bold text-primary">1</span>
+              </div>
+              <div>
+                <p className="font-medium">Carte grise</p>
+                <p className="text-xs text-muted-foreground">Certificat d'immatriculation du véhicule</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-sm font-bold text-primary">2</span>
+              </div>
+              <div>
+                <p className="font-medium">Assurance</p>
+                <p className="text-xs text-muted-foreground">Attestation d'assurance du véhicule en cours de validité</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-sm font-bold text-primary">3</span>
+              </div>
+              <div>
+                <p className="font-medium">Contrôle technique</p>
+                <p className="text-xs text-muted-foreground">Procès-verbal de contrôle technique en cours de validité</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Ces documents seront vérifiés par {' '}
+            <span className="font-medium">votre gestionnaire de flotte</span> ou {' '}
+            <span className="font-medium">l'administrateur SoloCab</span>.
+          </p>
+
+          <DialogFooter>
+            <Button onClick={() => setDocumentInfoDialogOpen(false)} className="w-full">
+              J'ai compris
             </Button>
           </DialogFooter>
         </DialogContent>
