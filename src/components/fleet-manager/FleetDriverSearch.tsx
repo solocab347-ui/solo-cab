@@ -233,7 +233,7 @@ Cordialement`;
       // Query drivers directly (same logic as FleetDriverPartnerships)
       let query = supabase
         .from('drivers')
-        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, visible_to_drivers')
+        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, visible_to_drivers, display_driver_name, display_company_name, show_rating_public, show_rating_partners, show_pricing_partners, card_photo_url, minimum_price')
         .eq('status', 'validated')
         .or('visible_to_drivers.eq.true,public_profile_enabled.eq.true')
         .is('fleet_manager_id', null);
@@ -568,7 +568,7 @@ Cordialement`;
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-16 w-16 border-2 border-primary/20">
-                      <AvatarImage src={driver.profile?.profile_photo_url || undefined} />
+                      <AvatarImage src={(driver as any).card_photo_url || driver.profile?.profile_photo_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(driver.profile?.full_name || 'CH')}
                       </AvatarFallback>
@@ -576,8 +576,12 @@ Cordialement`;
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{driver.profile?.full_name || 'Chauffeur'}</h3>
-                        {driver.rating && driver.rating >= 4.5 && (
+                        <h3 className="font-semibold truncate">
+                          {(driver as any).display_driver_name && driver.profile?.full_name 
+                            ? driver.profile.full_name 
+                            : 'Chauffeur VTC'}
+                        </h3>
+                        {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && driver.rating >= 4.5 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                             <Star className="h-3 w-3 fill-current mr-1" />
                             {driver.rating.toFixed(1)}
@@ -585,7 +589,7 @@ Cordialement`;
                         )}
                       </div>
                       
-                      {driver.company_name && (
+                      {(driver as any).display_company_name && driver.company_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <Building2 className="h-3 w-3" />
                           {driver.company_name}
@@ -616,7 +620,7 @@ Cordialement`;
                       )}
                       
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                        {driver.rating && (
+                        {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && (
                           <span className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                             {driver.rating.toFixed(1)}
@@ -687,21 +691,25 @@ Cordialement`;
                 <DialogHeader>
                   <div className="flex items-start gap-4">
                     <Avatar className="h-20 w-20 border-2 border-primary">
-                      <AvatarImage src={selectedDriver.profile?.profile_photo_url || undefined} />
+                      <AvatarImage src={(selectedDriver as any).card_photo_url || selectedDriver.profile?.profile_photo_url || undefined} />
                       <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                         {getInitials(selectedDriver.profile?.full_name || 'CH')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <DialogTitle className="text-2xl">{selectedDriver.profile?.full_name || 'Chauffeur'}</DialogTitle>
-                      {selectedDriver.company_name && (
+                      <DialogTitle className="text-2xl">
+                        {(selectedDriver as any).display_driver_name && selectedDriver.profile?.full_name 
+                          ? selectedDriver.profile.full_name 
+                          : 'Chauffeur VTC'}
+                      </DialogTitle>
+                      {(selectedDriver as any).display_company_name && selectedDriver.company_name && (
                         <p className="text-muted-foreground flex items-center gap-2 mt-1">
                           <Building2 className="h-4 w-4" />
                           {selectedDriver.company_name}
                         </p>
                       )}
                       <div className="flex items-center gap-4 mt-2">
-                        {selectedDriver.rating && (
+                        {((selectedDriver as any).show_rating_public !== false || (selectedDriver as any).show_rating_partners !== false) && selectedDriver.rating && (
                           <Badge className="bg-yellow-500/10 text-yellow-600">
                             <Star className="h-4 w-4 fill-current mr-1" />
                             {selectedDriver.rating.toFixed(1)}/5
