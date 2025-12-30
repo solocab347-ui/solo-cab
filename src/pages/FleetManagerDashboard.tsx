@@ -173,8 +173,21 @@ const FleetManagerDashboard = () => {
     }
     
     // Si deadline dépassée et documents non soumis, restriction
-    if (deadline && isPast(new Date(deadline))) {
-      return true;
+    if (deadline) {
+      const deadlineDate = new Date(deadline);
+      const now = new Date();
+      // Comparer les dates sans tenir compte des heures
+      const isDeadlinePassed = deadlineDate.getTime() < now.getTime();
+      console.log('[FleetManager] Restriction check:', { 
+        documentsStatus, 
+        deadline, 
+        deadlineDate: deadlineDate.toISOString(), 
+        now: now.toISOString(), 
+        isDeadlinePassed 
+      });
+      if (isDeadlinePassed) {
+        return true;
+      }
     }
     
     return false;
