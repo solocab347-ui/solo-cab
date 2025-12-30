@@ -12,14 +12,23 @@ Deno.serve(async (req) => {
 
   try {
     const ADMIN_INIT_SECRET = Deno.env.get('ADMIN_INIT_SECRET');
+    const ADMIN_DEFAULT_PASSWORD = Deno.env.get('ADMIN_DEFAULT_PASSWORD');
+    const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'contact@solocab.fr';
     
     if (!ADMIN_INIT_SECRET) {
-      throw new Error('ADMIN_INIT_SECRET not configured');
+      console.error('ADMIN_INIT_SECRET not configured');
+      throw new Error('Server configuration error');
+    }
+
+    if (!ADMIN_DEFAULT_PASSWORD) {
+      console.error('ADMIN_DEFAULT_PASSWORD not configured');
+      throw new Error('Server configuration error');
     }
 
     const { secret_token } = await req.json();
 
     if (secret_token !== ADMIN_INIT_SECRET) {
+      console.warn('Unauthorized admin init attempt');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { 
@@ -42,42 +51,43 @@ Deno.serve(async (req) => {
       }
     );
 
-    const adminEmail = 'contact@solocab.fr';
-    // Generate a complex password under 72 characters (bcrypt limit)
-    const adminPassword = 'SoloCab$2025#Admin@Secure!Pwd';
-
     // List all users
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     console.log('Found users:', existingUsers?.users?.length);
     
-    // Check if new admin already exists
-    const existingAdmin = existingUsers?.users.find(u => u.email === adminEmail);
+    // Check if admin already exists
+    const existingAdmin = existingUsers?.users.find(u => u.email === ADMIN_EMAIL);
     
     let userId: string;
+    let actionTaken: string;
 
     if (existingAdmin) {
-      console.log('Admin with new email already exists, updating password...');
+      console.log('Admin already exists, updating password...');
       userId = existingAdmin.id;
+      actionTaken = 'updated';
       
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        password: adminPassword
+        password: ADMIN_DEFAULT_PASSWORD
       });
       
       if (updateError) {
         console.error('Error updating password:', updateError);
         throw updateError;
       }
+      
+      console.log('Admin password updated successfully');
     } else {
       // Find old admin and update email+password
       const oldAdmin = existingUsers?.users.find(u => u.email === 'admin@solocab.fr');
       
       if (oldAdmin) {
-        console.log('Updating old admin email and password...');
+        console.log('Migrating old admin to new email...');
         userId = oldAdmin.id;
+        actionTaken = 'migrated';
         
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-          email: adminEmail,
-          password: adminPassword,
+          email: ADMIN_EMAIL,
+          password: ADMIN_DEFAULT_PASSWORD,
           email_confirm: true
         });
         
@@ -87,14 +97,17 @@ Deno.serve(async (req) => {
         }
         
         // Update profile email
-        await supabaseAdmin.from('profiles').update({ email: adminEmail }).eq('id', userId);
+        await supabaseAdmin.from('profiles').update({ email: ADMIN_EMAIL }).eq('id', userId);
+        console.log('Old admin migrated successfully');
         
       } else {
         // Create new admin
         console.log('Creating new admin user...');
+        actionTaken = 'created';
+        
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: adminEmail,
-          password: adminPassword,
+          email: ADMIN_EMAIL,
+          password: ADMIN_DEFAULT_PASSWORD,
           email_confirm: true,
           user_metadata: {
             full_name: 'Administrateur SoloCab'
@@ -114,7 +127,7 @@ Deno.serve(async (req) => {
           .from('profiles')
           .upsert({
             id: userId,
-            email: adminEmail,
+            email: ADMIN_EMAIL,
             full_name: 'Administrateur SoloCab',
             phone: '+33600000000',
             roles: ['admin']
@@ -140,19 +153,21 @@ Deno.serve(async (req) => {
           console.error('Error creating role:', roleError);
           throw roleError;
         }
+        
+        console.log('New admin created successfully');
       }
     }
 
-    console.log('Admin account ready!');
+    console.log(`Admin account ${actionTaken} successfully. User ID: ${userId}`);
 
+    // SECURITY: Never return credentials in the response
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Admin account secured',
-        credentials: {
-          email: adminEmail,
-          password: adminPassword
-        }
+        message: `Admin account ${actionTaken} successfully`,
+        action: actionTaken,
+        // Only return non-sensitive info
+        email: ADMIN_EMAIL
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -165,7 +180,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: 'An error occurred during admin initialization'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
