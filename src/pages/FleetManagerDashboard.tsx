@@ -56,7 +56,7 @@ import { FleetDriverPlanning } from "@/components/fleet-manager/FleetDriverPlann
 import { FleetPublicProfileSettings } from "@/components/fleet-manager/FleetPublicProfileSettings";
 import { FleetHome } from "@/components/fleet-manager/FleetHome";
 import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesManager";
-import { FleetStatisticsDashboard } from "@/components/fleet-manager/FleetStatisticsDashboard";
+import { FleetStatisticsComplete } from "@/components/fleet-manager/FleetStatisticsComplete";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
 import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
@@ -1007,7 +1007,7 @@ const FleetManagerDashboard = () => {
 
           {/* Statistics Tab */}
           <TabsContent value="stats">
-            <FleetStatisticsDashboard fleetManagerId={fleetManager.id} />
+            <FleetStatisticsComplete fleetManagerId={fleetManager.id} />
           </TabsContent>
 
           {/* Partnerships Tab */}
