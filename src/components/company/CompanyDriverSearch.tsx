@@ -143,7 +143,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           total_rides,
           bio,
           service_description,
-          languages,
           services_offered,
           primary_sectors,
           working_sectors,

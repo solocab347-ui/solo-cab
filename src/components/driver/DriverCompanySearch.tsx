@@ -71,12 +71,13 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const { data: companies, isLoading } = useQuery({
     queryKey: ["visible-companies", searchTerm],
     queryFn: async () => {
+      // Recherche les entreprises visibles aux chauffeurs (validated OU active)
       let query = supabase
         .from("companies")
         .select("*")
         .eq("visible_to_drivers", true)
-        .eq("status", "active")
-        .eq("accepting_proposals", true);
+        .eq("accepting_proposals", true)
+        .or("status.eq.validated,status.eq.active");
 
       if (searchTerm) {
         query = query.or(`company_name.ilike.%${searchTerm}%,contact_name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`);
