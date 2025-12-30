@@ -2570,6 +2570,7 @@ export type Database = {
           vehicle_plate: string | null
           vehicle_year: number | null
           visible_to_companies: boolean | null
+          visible_to_drivers: boolean | null
           visible_to_fleet_managers: boolean | null
           weekend_surcharge: number | null
           working_sectors: string[] | null
@@ -2657,6 +2658,7 @@ export type Database = {
           vehicle_plate?: string | null
           vehicle_year?: number | null
           visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
           visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
@@ -2744,6 +2746,7 @@ export type Database = {
           vehicle_plate?: string | null
           vehicle_year?: number | null
           visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
           visible_to_fleet_managers?: boolean | null
           weekend_surcharge?: number | null
           working_sectors?: string[] | null
