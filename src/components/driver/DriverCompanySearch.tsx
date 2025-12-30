@@ -15,6 +15,7 @@ import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Cloc
 
 interface DriverCompanySearchProps {
   driverId: string;
+  initialCompanyId?: string; // Pour pré-sélectionner une entreprise après un refus
 }
 
 const PAYMENT_METHODS = [
@@ -160,6 +161,12 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const getProposalStatus = (companyId: string) => {
     const existing = existingProposals?.find((p) => p.company_id === companyId);
     return existing?.status;
+  };
+
+  // Vérifie si on peut refaire une demande (après un refus)
+  const canRetryProposal = (companyId: string) => {
+    const status = getProposalStatus(companyId);
+    return !status || status === "rejected"; // Peut proposer si pas de demande ou si refusée
   };
 
   const handleOpenProposal = (company: any) => {
@@ -330,10 +337,17 @@ Cordialement.`;
                     <Button
                       className="flex-1"
                       onClick={() => handleOpenProposal(company)}
-                      disabled={hasProposal}
+                      disabled={proposalStatus === "pending" || proposalStatus === "accepted"}
                     >
-                      {hasProposal ? (
-                        proposalStatus === "accepted" ? "Partenaire" : "Envoyé"
+                      {proposalStatus === "accepted" ? (
+                        "Partenaire"
+                      ) : proposalStatus === "pending" ? (
+                        "En attente"
+                      ) : proposalStatus === "rejected" ? (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Relancer
+                        </>
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-2" />
@@ -556,24 +570,21 @@ Cordialement.`;
 
       {/* Company Profile Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <Building2 className="w-5 h-5 text-primary" />
-              Profil public de l'entreprise
+              Profil de l'entreprise
             </DialogTitle>
-            <DialogDescription>
-              Informations complètes sur {viewingCompany?.company_name}
-            </DialogDescription>
           </DialogHeader>
 
           {viewingCompany && (
-            <div className="space-y-6 py-4">
-              {/* En-tête entreprise avec logo */}
-              <div className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
-                <div className="flex items-center gap-4">
+            <div className="space-y-4 py-2">
+              {/* En-tête entreprise avec logo - responsive */}
+              <div className="p-3 sm:p-4 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg border">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   {viewingCompany.logo_url ? (
-                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0 mx-auto sm:mx-0">
                       <img 
                         src={viewingCompany.logo_url} 
                         alt={viewingCompany.company_name}
@@ -581,23 +592,23 @@ Cordialement.`;
                       />
                     </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-10 h-10 text-primary" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0">
+                      <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
                     </div>
                   )}
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-foreground">
+                  <div className="flex-1 text-center sm:text-left">
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground">
                       {viewingCompany.company_name}
                     </h3>
                     {viewingCompany.contact_name && (
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         Contact: {viewingCompany.contact_name}
                       </p>
                     )}
                     {viewingCompany.address && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                        <MapPin className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{viewingCompany.address}</span>
+                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 mt-1 justify-center sm:justify-start">
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span className="line-clamp-1">{viewingCompany.address}</span>
                       </p>
                     )}
                   </div>
@@ -606,27 +617,27 @@ Cordialement.`;
 
               {/* Description publique */}
               {viewingCompany.notes && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                     <Briefcase className="w-4 h-4" />
                     À propos de l'entreprise
                   </h4>
-                  <div className="p-4 bg-muted rounded-lg text-sm leading-relaxed">
+                  <div className="p-3 bg-muted rounded-lg text-sm leading-relaxed">
                     {viewingCompany.notes}
                   </div>
                 </div>
               )}
 
-              {/* Services recherchés (preferred_vehicle_types) */}
+              {/* Services recherchés */}
               {viewingCompany.preferred_vehicle_types && viewingCompany.preferred_vehicle_types.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                     <Package className="w-4 h-4" />
                     Services recherchés
                   </h4>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {viewingCompany.preferred_vehicle_types.map((service: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="text-sm py-1">
+                      <Badge key={index} variant="secondary" className="text-xs sm:text-sm py-0.5 sm:py-1">
                         {service}
                       </Badge>
                     ))}
@@ -635,64 +646,58 @@ Cordialement.`;
               )}
 
               {/* Coordonnées */}
-              <div className="space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                   <Phone className="w-4 h-4" />
                   Coordonnées
                 </h4>
                 <div className="grid gap-2 text-sm">
                   {viewingCompany.address && (
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span>{viewingCompany.address}</span>
-                    </div>
-                  )}
-                  {viewingCompany.contact_phone && (
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <a href={`tel:${viewingCompany.contact_phone}`} className="text-primary hover:underline font-medium">
-                        {viewingCompany.contact_phone}
-                      </a>
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted rounded-lg">
+                      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs sm:text-sm line-clamp-2">{viewingCompany.address}</span>
                     </div>
                   )}
                   {viewingCompany.contact_email && (
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <a href={`mailto:${viewingCompany.contact_email}`} className="text-primary hover:underline">
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted rounded-lg">
+                      <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <a href={`mailto:${viewingCompany.contact_email}`} className="text-primary hover:underline text-xs sm:text-sm truncate">
                         {viewingCompany.contact_email}
                       </a>
                     </div>
                   )}
-                  {viewingCompany.department && (
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span>Département: {viewingCompany.department}</span>
+                  {viewingCompany.contact_phone && (
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted rounded-lg">
+                      <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <a href={`tel:${viewingCompany.contact_phone}`} className="text-primary hover:underline font-medium text-xs sm:text-sm">
+                        {viewingCompany.contact_phone}
+                      </a>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Informations sur l'entreprise */}
-              <div className="space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
+              <div className="space-y-2">
+                <h4 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                   <Users className="w-4 h-4" />
                   Informations
                 </h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {viewingCompany.employee_count && (
-                    <Badge variant="secondary" className="text-sm py-1">
+                    <Badge variant="secondary" className="text-xs sm:text-sm py-0.5 sm:py-1">
                       <Users className="w-3 h-3 mr-1" />
                       {viewingCompany.employee_count} employés
                     </Badge>
                   )}
                   {viewingCompany.monthly_budget && (
-                    <Badge variant="secondary" className="text-sm py-1">
+                    <Badge variant="secondary" className="text-xs sm:text-sm py-0.5 sm:py-1">
                       <Euro className="w-3 h-3 mr-1" />
-                      Budget: ~{viewingCompany.monthly_budget}€/mois
+                      ~{viewingCompany.monthly_budget}€/mois
                     </Badge>
                   )}
                   {viewingCompany.accepting_proposals && (
-                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-sm py-1">
+                    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs sm:text-sm py-0.5 sm:py-1">
                       <Star className="w-3 h-3 mr-1" />
                       Accepte les propositions
                     </Badge>
@@ -700,29 +705,29 @@ Cordialement.`;
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowProfileDialog(false)} className="flex-1">
+              {/* Actions - stacked on mobile */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowProfileDialog(false)} className="w-full sm:flex-1 order-last sm:order-first">
                   Fermer
                 </Button>
                 {viewingCompany.contact_phone && (
-                  <Button variant="secondary" asChild className="flex-1">
+                  <Button variant="secondary" asChild className="w-full sm:flex-1">
                     <a href={`tel:${viewingCompany.contact_phone}`}>
                       <Phone className="w-4 h-4 mr-2" />
                       Appeler
                     </a>
                   </Button>
                 )}
-                {!getProposalStatus(viewingCompany.id) && (
+                {canRetryProposal(viewingCompany.id) && (
                   <Button 
-                    className="flex-1"
+                    className="w-full sm:flex-1"
                     onClick={() => {
                       setShowProfileDialog(false);
                       handleOpenProposal(viewingCompany);
                     }}
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    Proposer mes services
+                    {getProposalStatus(viewingCompany.id) === "rejected" ? "Relancer" : "Proposer"}
                   </Button>
                 )}
               </div>
