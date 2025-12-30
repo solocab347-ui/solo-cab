@@ -145,17 +145,17 @@ export const FleetPublicProfileSettings = ({
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${fleetManagerId}-logo.${fileExt}`;
-      const filePath = `fleet-logos/${fileName}`;
+      const fileName = `${fleetManagerId}-logo-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("avatars")
+        .from("fleet-documents")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
+        .from("fleet-documents")
         .getPublicUrl(filePath);
 
       setLogoUrl(publicUrl);
