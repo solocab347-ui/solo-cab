@@ -21,6 +21,8 @@ import {
   Star,
   Car
 } from 'lucide-react';
+import { useFleetProfileRealtime, PUBLIC_FLEETS_QUERY_KEY } from '@/hooks/usePublicFleetProfile';
+import { useQuery } from '@tanstack/react-query';
 
 interface FleetManager {
   id: string;
@@ -48,13 +50,10 @@ interface Props {
 }
 
 export function FleetPartnerSearch({ driverId }: Props) {
-  const [fleets, setFleets] = useState<FleetManager[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  
-  // Filters
+  // Activer l'écoute temps réel des changements de profils flottes
+  useFleetProfileRealtime();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   
   // Partnership proposal
   const [selectedFleet, setSelectedFleet] = useState<FleetManager | null>(null);
@@ -63,13 +62,10 @@ export function FleetPartnerSearch({ driverId }: Props) {
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('weekly');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    searchFleets();
-  }, []);
-
-  const searchFleets = async () => {
-    setSearching(true);
-    try {
+  // Utiliser useQuery pour le cache et la synchronisation temps réel
+  const { data: fleets = [], isLoading: loading, isFetching: searching, refetch: searchFleets } = useQuery({
+    queryKey: [...PUBLIC_FLEETS_QUERY_KEY, 'partner-search', searchTerm],
+    queryFn: async () => {
       let query = supabase
         .from('fleet_managers')
         .select('id, user_id, company_name, description, address, visible_to_drivers')
@@ -114,16 +110,13 @@ export function FleetPartnerSearch({ driverId }: Props) {
         });
       }
 
-      setFleets(enrichedFleets);
-    } catch (error) {
-      console.error('Error searching fleets:', error);
-      toast.error('Erreur lors de la recherche');
-    } finally {
-      setSearching(false);
-      setLoading(false);
-    }
-  };
-
+      return enrichedFleets;
+    },
+    staleTime: 0,
+    gcTime: 30000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
   const proposePartnership = async () => {
     if (!selectedFleet || !driverId) return;
 
@@ -162,7 +155,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={searchFleets} disabled={searching}>
+            <Button onClick={() => searchFleets()} disabled={searching}>
               {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
