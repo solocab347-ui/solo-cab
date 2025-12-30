@@ -511,6 +511,20 @@ ${company?.company_name || ""}`;
             return (
               <Card key={driver.id} className={hasProposal ? "opacity-75" : ""}>
                 <CardContent className="p-4">
+                  {/* Location badge at top */}
+                  {driver.working_sectors?.length > 0 && (
+                    <div className="flex items-center gap-1.5 mb-3 -mt-1">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <Badge variant="outline" className="text-xs font-medium border-primary/30 text-primary">
+                        {driver.working_sectors[0]}
+                      </Badge>
+                      {driver.working_sectors.length > 1 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{driver.working_sectors.length - 1} zones
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="flex gap-3 mb-4">
                     <Avatar className="w-14 h-14">
                       <AvatarImage src={driver.card_photo_url || driver.profile?.profile_photo_url} />
