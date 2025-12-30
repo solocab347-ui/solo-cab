@@ -539,13 +539,16 @@ ${company?.company_name || ""}`;
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold truncate">
-                        {driver.display_driver_name && driver.profile?.full_name 
-                          ? driver.profile.full_name 
-                          : driver.display_company_name && driver.company_name
-                          ? driver.company_name
-                          : "Chauffeur VTC"}
+                        {(() => {
+                          const showName = driver.display_driver_name && driver.profile?.full_name;
+                          const showCompany = driver.display_company_name && driver.company_name;
+                          if (showName && showCompany) return driver.profile.full_name;
+                          if (showName) return driver.profile.full_name;
+                          if (showCompany) return driver.company_name;
+                          return "Chauffeur VTC";
+                        })()}
                       </h4>
-                      {driver.display_driver_name && driver.display_company_name && driver.company_name && (
+                      {driver.display_driver_name && driver.display_company_name && driver.company_name && driver.profile?.full_name && (
                         <p className="text-sm text-muted-foreground truncate">
                           {driver.company_name}
                         </p>
@@ -692,11 +695,16 @@ ${company?.company_name || ""}`;
                 </div>
                 <div className="text-center">
                   <h3 className="text-xl font-semibold">
-                    {selectedDriver.display_driver_name && selectedDriver.profile?.full_name 
-                      ? selectedDriver.profile.full_name 
-                      : "Chauffeur VTC"}
+                    {(() => {
+                      const showName = selectedDriver.display_driver_name && selectedDriver.profile?.full_name;
+                      const showCompany = selectedDriver.display_company_name && selectedDriver.company_name;
+                      if (showName && showCompany) return selectedDriver.profile.full_name;
+                      if (showName) return selectedDriver.profile.full_name;
+                      if (showCompany) return selectedDriver.company_name;
+                      return "Chauffeur VTC";
+                    })()}
                   </h3>
-                  {selectedDriver.display_company_name && selectedDriver.company_name && (
+                  {selectedDriver.display_driver_name && selectedDriver.display_company_name && selectedDriver.company_name && selectedDriver.profile?.full_name && (
                     <p className="text-muted-foreground">{selectedDriver.company_name}</p>
                   )}
                   {selectedDriver.rating && (selectedDriver.show_rating_public !== false || selectedDriver.show_rating_partners !== false) && (
