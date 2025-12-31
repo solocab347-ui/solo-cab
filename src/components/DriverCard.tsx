@@ -30,6 +30,7 @@ interface DriverCardProps {
     display_driver_name?: boolean;
     display_company_name?: boolean;
     distance_km?: number;
+    show_rating_public?: boolean;
   };
   cardIndex?: number;
   onViewProfile?: (driverId: string) => void;
@@ -107,7 +108,8 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
           {/* Rating & Rides - Only show if there are rides */}
           {driver.total_rides > 0 && (
             <div className="flex items-center justify-center gap-4">
-              {driver.rating > 0 && (
+              {/* Afficher la note uniquement si show_rating_public est true */}
+              {driver.show_rating_public !== false && driver.rating > 0 && (
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                   <span className="font-semibold text-sm">
