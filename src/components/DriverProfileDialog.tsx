@@ -113,6 +113,7 @@ export const DriverProfileDialog = ({
             company_name,
             show_phone,
             show_email,
+            show_rating_public,
             created_at,
             updated_at,
             profiles!drivers_user_id_fkey (
@@ -283,12 +284,15 @@ export const DriverProfileDialog = ({
 
                 {driver.total_rides > 0 && (
                   <div className="flex items-center justify-center gap-6">
-                    <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-full">
-                      <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                      <span className="font-bold text-lg">
-                        {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
-                      </span>
-                    </div>
+                    {/* Afficher la note uniquement si show_rating_public est true */}
+                    {(driver as any).show_rating_public !== false && (
+                      <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-full">
+                        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                        <span className="font-bold text-lg">
+                          {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-full">
                       <Award className="w-5 h-5 text-primary" />
                       <span className="font-semibold">
