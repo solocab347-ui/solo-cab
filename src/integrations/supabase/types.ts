@@ -6735,6 +6735,7 @@ export type Database = {
           profile_photo_url: string
           rating: number
           service_description: string
+          show_rating_public: boolean
           total_rides: number
           user_id: string
           vehicle_brand: string
