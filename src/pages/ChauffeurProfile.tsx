@@ -269,12 +269,15 @@ const ChauffeurProfile = () => {
                 
                 {driver.total_rides > 0 && (
                   <div className="flex items-center justify-center gap-8">
-                    <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
-                      <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
-                      <span className="font-bold text-xl">
-                        {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
-                      </span>
-                    </div>
+                    {/* Afficher la note uniquement si show_rating_public est true */}
+                    {(driver as any).show_rating_public !== false && (
+                      <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
+                        <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                        <span className="font-bold text-xl">
+                          {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
                       <Award className="w-6 h-6 text-primary" />
                       <span className="font-semibold text-lg">{driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}</span>
