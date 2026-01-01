@@ -935,9 +935,26 @@ export const FleetDriverPartnerships = ({
                                 Actif
                               </Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {partnership.driver?.vehicle_brand} {partnership.driver?.vehicle_model}
-                            </p>
+                            {/* Use driver_vehicles if available, fallback to legacy fields */}
+                            {(() => {
+                              const favoriteVehicle = partnership.driver?.vehicles?.find(v => v.is_favorite) || partnership.driver?.vehicles?.[0];
+                              if (favoriteVehicle) {
+                                return (
+                                  <p className="text-sm text-muted-foreground">
+                                    <Car className="w-3 h-3 inline mr-1" />
+                                    {favoriteVehicle.brand} {favoriteVehicle.model}
+                                    {favoriteVehicle.year && ` (${favoriteVehicle.year})`}
+                                  </p>
+                                );
+                              }
+                              return partnership.driver?.vehicle_brand || partnership.driver?.vehicle_model ? (
+                                <p className="text-sm text-muted-foreground">
+                                  <Car className="w-3 h-3 inline mr-1" />
+                                  {partnership.driver?.vehicle_brand} {partnership.driver?.vehicle_model}
+                                  {partnership.driver?.vehicle_year && ` (${partnership.driver?.vehicle_year})`}
+                                </p>
+                              ) : null;
+                            })()}
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <Badge variant="outline">
                                 {partnership.commission_type === "fixed" ? (

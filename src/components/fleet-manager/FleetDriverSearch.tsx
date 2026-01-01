@@ -37,6 +37,20 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
+import { extractCityDepartment } from "@/lib/addressPrivacy";
+
+interface DriverVehicle {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  color: string | null;
+  category: string | null;
+  photos: string[];
+  equipment: string[];
+  is_favorite: boolean;
+  max_passengers: number | null;
+}
 
 interface SearchableDriver {
   id: string;
@@ -62,9 +76,11 @@ interface SearchableDriver {
   gallery_photos: string[] | null;
   show_phone: boolean | null;
   show_email: boolean | null;
+  show_pricing_partners?: boolean | null;
   contact_phone: string | null;
   contact_email: string | null;
   sharing_number?: number | null;
+  vehicles?: DriverVehicle[];
   profile?: {
     full_name: string;
     profile_photo_url: string | null;
@@ -279,16 +295,29 @@ Cordialement`;
       if (error) throw error;
 
       if (driversData && driversData.length > 0) {
-        // Fetch profiles
+        // Fetch profiles and vehicles in parallel
         const userIds = driversData.map(d => d.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, profile_photo_url, phone, email')
-          .in('id', userIds);
+        const driverIds = driversData.map(d => d.id);
+        
+        const [profilesResult, vehiclesResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, full_name, profile_photo_url, phone, email')
+            .in('id', userIds),
+          supabase
+            .from('driver_vehicles')
+            .select('*')
+            .in('driver_id', driverIds)
+            .eq('is_active', true)
+        ]);
+
+        const profiles = profilesResult.data;
+        const vehiclesData = vehiclesResult.data;
 
         // Apply text search filter on combined data
         let driversWithProfiles = driversData.map(d => ({
           ...d,
+          vehicles: vehiclesData?.filter(v => v.driver_id === d.id) || [],
           profile: profiles?.find(p => p.id === d.user_id)
         }));
 
@@ -609,28 +638,52 @@ Cordialement`;
                         </p>
                       )}
 
-                      {driver.vehicle_brand && driver.vehicle_model && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <Car className="h-3 w-3" />
-                          {driver.vehicle_brand} {driver.vehicle_model}
-                          {driver.vehicle_year && ` (${driver.vehicle_year})`}
-                        </p>
-                      )}
-                      
-                      {driver.vehicle_category && driver.vehicle_category.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {driver.vehicle_category.slice(0, 2).map((cat, i) => (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              {getCategoryLabel(cat)}
-                            </Badge>
-                          ))}
-                          {driver.vehicle_category.length > 2 && (
-                            <span className="text-xs text-muted-foreground">
-                              +{driver.vehicle_category.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {/* Use driver_vehicles if available, fallback to legacy fields */}
+                      {(() => {
+                        const favoriteVehicle = driver.vehicles?.find(v => v.is_favorite) || driver.vehicles?.[0];
+                        if (favoriteVehicle) {
+                          return (
+                            <>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <Car className="h-3 w-3" />
+                                {favoriteVehicle.brand} {favoriteVehicle.model}
+                                {favoriteVehicle.year && ` (${favoriteVehicle.year})`}
+                              </p>
+                              {favoriteVehicle.category && (
+                                <Badge variant="outline" className="text-xs mt-1">
+                                  {getCategoryLabel(favoriteVehicle.category)}
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        }
+                        // Fallback to legacy fields
+                        return (
+                          <>
+                            {(driver.vehicle_brand || driver.vehicle_model) && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                <Car className="h-3 w-3" />
+                                {driver.vehicle_brand} {driver.vehicle_model}
+                                {driver.vehicle_year && ` (${driver.vehicle_year})`}
+                              </p>
+                            )}
+                            {driver.vehicle_category && driver.vehicle_category.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {driver.vehicle_category.slice(0, 2).map((cat, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {getCategoryLabel(cat)}
+                                  </Badge>
+                                ))}
+                                {driver.vehicle_category.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    +{driver.vehicle_category.length - 2}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                       
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                         {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && (
@@ -803,6 +856,7 @@ Cordialement`;
                       </Card>
                     )}
 
+                    {/* Localisation - ville/département uniquement, pas l'adresse complète */}
                     {selectedDriver.home_address && (
                       <Card>
                         <CardHeader className="pb-2">
@@ -812,93 +866,199 @@ Cordialement`;
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground">{selectedDriver.home_address}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {extractCityDepartment(selectedDriver.home_address) || "Non spécifiée"}
+                          </p>
                         </CardContent>
                       </Card>
                     )}
                   </TabsContent>
 
                   <TabsContent value="vehicle" className="space-y-4 mt-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Car className="h-4 w-4" />
-                          Véhicule
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4">
-                          {selectedDriver.vehicle_brand && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Marque</Label>
-                              <p className="font-medium">{selectedDriver.vehicle_brand}</p>
-                            </div>
-                          )}
-                          {selectedDriver.vehicle_model && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Modèle</Label>
-                              <p className="font-medium">{selectedDriver.vehicle_model}</p>
-                            </div>
-                          )}
-                          {selectedDriver.vehicle_year && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Année</Label>
-                              <p className="font-medium">{selectedDriver.vehicle_year}</p>
-                            </div>
-                          )}
-                          {selectedDriver.vehicle_color && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Couleur</Label>
-                              <p className="font-medium">{selectedDriver.vehicle_color}</p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* Use driver_vehicles if available, else fallback to legacy */}
+                    {(() => {
+                      const vehicles = selectedDriver.vehicles || [];
+                      const favoriteVehicle = vehicles.find(v => v.is_favorite) || vehicles[0];
+                      
+                      if (favoriteVehicle) {
+                        return (
+                          <>
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center gap-2">
+                                  <Car className="h-4 w-4" />
+                                  Véhicule principal
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Marque</Label>
+                                    <p className="font-medium">{favoriteVehicle.brand}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Modèle</Label>
+                                    <p className="font-medium">{favoriteVehicle.model}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Année</Label>
+                                    <p className="font-medium">{favoriteVehicle.year}</p>
+                                  </div>
+                                  {favoriteVehicle.color && (
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Couleur</Label>
+                                      <p className="font-medium">{favoriteVehicle.color}</p>
+                                    </div>
+                                  )}
+                                  {favoriteVehicle.category && (
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Catégorie</Label>
+                                      <p className="font-medium">{getCategoryLabel(favoriteVehicle.category)}</p>
+                                    </div>
+                                  )}
+                                  {favoriteVehicle.max_passengers && (
+                                    <div>
+                                      <Label className="text-xs text-muted-foreground">Passagers max</Label>
+                                      <p className="font-medium">{favoriteVehicle.max_passengers}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
 
-                    {selectedDriver.vehicle_equipment && selectedDriver.vehicle_equipment.length > 0 && (
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Équipements</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedDriver.vehicle_equipment.map((equip, i) => (
-                              <Badge 
-                                key={i} 
-                                className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
-                              >
-                                <span className="text-base">{getEquipmentIcon(equip)}</span>
-                                <span>{getEquipmentLabel(equip)}</span>
-                              </Badge>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                            {favoriteVehicle.equipment && favoriteVehicle.equipment.length > 0 && (
+                              <Card>
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-sm">Équipements</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="flex flex-wrap gap-2">
+                                    {favoriteVehicle.equipment.map((equip, i) => (
+                                      <Badge 
+                                        key={i} 
+                                        className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                                      >
+                                        <span className="text-base">{getEquipmentIcon(equip)}</span>
+                                        <span>{getEquipmentLabel(equip)}</span>
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
 
-                    {selectedDriver.vehicle_photos && selectedDriver.vehicle_photos.length > 0 && (
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <ImageIcon className="h-4 w-4" />
-                            Photos du véhicule
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-3 gap-2">
-                            {selectedDriver.vehicle_photos.slice(0, 6).map((photo, i) => (
-                              <img 
-                                key={i} 
-                                src={photo} 
-                                alt={`Véhicule ${i + 1}`}
-                                className="w-full h-24 object-cover rounded-lg"
-                              />
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                            {favoriteVehicle.photos && favoriteVehicle.photos.length > 0 && (
+                              <Card>
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-sm flex items-center gap-2">
+                                    <ImageIcon className="h-4 w-4" />
+                                    Photos du véhicule
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {favoriteVehicle.photos.slice(0, 6).map((photo, i) => (
+                                      <img 
+                                        key={i} 
+                                        src={photo} 
+                                        alt={`Véhicule ${i + 1}`}
+                                        className="w-full h-24 object-cover rounded-lg"
+                                      />
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </>
+                        );
+                      }
+                      
+                      // Fallback to legacy fields
+                      return (
+                        <>
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                <Car className="h-4 w-4" />
+                                Véhicule
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="grid grid-cols-2 gap-4">
+                                {selectedDriver.vehicle_brand && (
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Marque</Label>
+                                    <p className="font-medium">{selectedDriver.vehicle_brand}</p>
+                                  </div>
+                                )}
+                                {selectedDriver.vehicle_model && (
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Modèle</Label>
+                                    <p className="font-medium">{selectedDriver.vehicle_model}</p>
+                                  </div>
+                                )}
+                                {selectedDriver.vehicle_year && (
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Année</Label>
+                                    <p className="font-medium">{selectedDriver.vehicle_year}</p>
+                                  </div>
+                                )}
+                                {selectedDriver.vehicle_color && (
+                                  <div>
+                                    <Label className="text-xs text-muted-foreground">Couleur</Label>
+                                    <p className="font-medium">{selectedDriver.vehicle_color}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {selectedDriver.vehicle_equipment && selectedDriver.vehicle_equipment.length > 0 && (
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm">Équipements</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                  {selectedDriver.vehicle_equipment.map((equip, i) => (
+                                    <Badge 
+                                      key={i} 
+                                      className="bg-primary text-primary-foreground flex items-center gap-1.5 px-3 py-1.5 text-sm"
+                                    >
+                                      <span className="text-base">{getEquipmentIcon(equip)}</span>
+                                      <span>{getEquipmentLabel(equip)}</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+
+                          {selectedDriver.vehicle_photos && selectedDriver.vehicle_photos.length > 0 && (
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm flex items-center gap-2">
+                                  <ImageIcon className="h-4 w-4" />
+                                  Photos du véhicule
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {selectedDriver.vehicle_photos.slice(0, 6).map((photo, i) => (
+                                    <img 
+                                      key={i} 
+                                      src={photo} 
+                                      alt={`Véhicule ${i + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg"
+                                    />
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </>
+                      );
+                    })()}
                   </TabsContent>
 
                   <TabsContent value="services" className="space-y-4 mt-4">
@@ -926,30 +1086,47 @@ Cordialement`;
                       </Card>
                     )}
 
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Euro className="h-4 w-4" />
-                          Tarification indicative
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Prise en charge</p>
-                            <p className="font-bold text-lg">{formatPrice(selectedDriver.base_fare)}</p>
+                    {/* Tarification - visible uniquement si show_pricing_partners est activé */}
+                    {selectedDriver.show_pricing_partners ? (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Euro className="h-4 w-4" />
+                            Tarification indicative
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Prise en charge</p>
+                              <p className="font-bold text-lg">{formatPrice(selectedDriver.base_fare)}</p>
+                            </div>
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Par km</p>
+                              <p className="font-bold text-lg">{formatPrice(selectedDriver.per_km_rate)}</p>
+                            </div>
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-xs text-muted-foreground">Par heure</p>
+                              <p className="font-bold text-lg">{formatPrice(selectedDriver.hourly_rate)}</p>
+                            </div>
                           </div>
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Par km</p>
-                            <p className="font-bold text-lg">{formatPrice(selectedDriver.per_km_rate)}</p>
-                          </div>
-                          <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Par heure</p>
-                            <p className="font-bold text-lg">{formatPrice(selectedDriver.hourly_rate)}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Euro className="h-4 w-4" />
+                            Tarification
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Ce chauffeur n'a pas rendu sa tarification visible aux partenaires
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="contact" className="space-y-4 mt-4">
