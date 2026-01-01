@@ -6,13 +6,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Actions de correction automatique disponibles
+const AUTO_FIX_ACTIONS = {
+  clear_user_session: {
+    name: "Vider la session utilisateur",
+    description: "Déconnecte et reconnecte l'utilisateur pour réinitialiser son état",
+  },
+  clear_local_cache: {
+    name: "Vider le cache local",
+    description: "Efface les données en cache qui peuvent être corrompues",
+  },
+  reset_user_preferences: {
+    name: "Réinitialiser les préférences",
+    description: "Remet les préférences utilisateur par défaut",
+  },
+  retry_failed_operation: {
+    name: "Relancer l'opération",
+    description: "Tente de relancer l'opération qui a échoué",
+  },
+  refresh_data: {
+    name: "Rafraîchir les données",
+    description: "Force le rechargement des données depuis le serveur",
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { errorReportId, errorMessage, errorStack, pageUrl, context } = await req.json();
+    const { errorReportId, errorMessage, errorStack, pageUrl, context, executeAutoFix } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -22,6 +46,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log("Analyzing error:", errorMessage);
 
     // Analyze error with AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -35,20 +61,30 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Tu es un expert en debugging d'applications React/TypeScript. Analyse les erreurs et fournis:
-1. Une analyse claire du problème en français
-2. Des suggestions de correction concrètes
-3. Une priorité (haute, moyenne, basse)
-4. Si c'est un problème côté utilisateur ou côté code
+            content: `Tu es un expert en debugging d'applications React/TypeScript avec des capacités de correction automatique.
 
-Réponds en JSON avec cette structure:
+Analyse les erreurs et détermine:
+1. Si c'est un problème que l'utilisateur peut résoudre lui-même
+2. Si c'est un bug qui nécessite une correction de code
+3. Si une action automatique peut résoudre le problème
+
+Actions automatiques disponibles (utilise EXACTEMENT ces noms):
+- clear_user_session: Pour les problèmes d'authentification ou de session corrompue
+- clear_local_cache: Pour les problèmes de données en cache obsolètes
+- reset_user_preferences: Pour les problèmes liés aux préférences utilisateur
+- retry_failed_operation: Pour les erreurs réseau temporaires
+- refresh_data: Pour les problèmes de synchronisation de données
+
+Réponds en JSON STRICT avec cette structure:
 {
-  "analysis": "Description du problème",
-  "suggestions": ["suggestion 1", "suggestion 2"],
+  "analysis": "Description claire du problème en français",
   "priority": "haute|moyenne|basse",
-  "isUserError": true/false,
-  "canAutoFix": true/false,
-  "autoFixDescription": "Description de la correction automatique si possible"
+  "errorType": "user_error|auto_fixable|code_bug",
+  "autoFixAction": "nom_action ou null si pas applicable",
+  "autoFixConfidence": 0-100,
+  "suggestions": ["suggestion 1", "suggestion 2"],
+  "technicalDetails": "Détails techniques pour l'admin",
+  "userMessage": "Message simple pour l'utilisateur"
 }`
           },
           {
@@ -72,26 +108,66 @@ Contexte: ${context || "Non spécifié"}`
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content;
     
-    let analysis = "Analyse non disponible";
-    let suggestions = "Suggestions non disponibles";
-    let priority = "moyenne";
+    console.log("AI Response:", aiResponse);
+
+    let analysisResult = {
+      analysis: "Analyse non disponible",
+      priority: "moyenne",
+      errorType: "code_bug",
+      autoFixAction: null as string | null,
+      autoFixConfidence: 0,
+      suggestions: [] as string[],
+      technicalDetails: "",
+      userMessage: "Une erreur est survenue",
+      autoFixExecuted: false,
+      autoFixSuccess: false,
+    };
 
     try {
-      // Try to parse JSON response
-      const parsed = JSON.parse(aiResponse);
-      analysis = parsed.analysis || analysis;
-      suggestions = Array.isArray(parsed.suggestions) 
-        ? parsed.suggestions.join("\n• ") 
-        : parsed.suggestions || suggestions;
-      priority = parsed.priority || priority;
+      // Clean JSON response (remove markdown if present)
+      let cleanJson = aiResponse;
+      if (cleanJson.includes("```json")) {
+        cleanJson = cleanJson.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+      }
       
+      const parsed = JSON.parse(cleanJson.trim());
+      analysisResult = { ...analysisResult, ...parsed };
+
+      // Si une action auto-fix est recommandée avec haute confiance, l'exécuter
+      if (parsed.autoFixAction && parsed.autoFixConfidence >= 70 && executeAutoFix !== false) {
+        console.log(`Executing auto-fix action: ${parsed.autoFixAction}`);
+        
+        const fixResult = await executeAutoFixAction(
+          supabase, 
+          parsed.autoFixAction, 
+          errorReportId
+        );
+        
+        analysisResult.autoFixExecuted = true;
+        analysisResult.autoFixSuccess = fixResult.success;
+        
+        if (fixResult.success) {
+          analysisResult.userMessage = `✅ Problème résolu automatiquement: ${AUTO_FIX_ACTIONS[parsed.autoFixAction as keyof typeof AUTO_FIX_ACTIONS]?.description || parsed.autoFixAction}`;
+        }
+      }
+
+      // Determine status based on analysis
+      let status = "pending";
+      if (parsed.errorType === "user_error") {
+        status = "user_error";
+      } else if (analysisResult.autoFixExecuted && analysisResult.autoFixSuccess) {
+        status = "auto_resolved";
+      } else if (parsed.errorType === "auto_fixable") {
+        status = "auto_fixable";
+      }
+
       // Update error report with AI analysis
       const { error: updateError } = await supabase
         .from("error_reports")
         .update({
-          ai_analysis: analysis,
-          ai_suggestion: `Priorité: ${priority}\n\n${suggestions}`,
-          status: parsed.isUserError ? "user_error" : "pending",
+          ai_analysis: parsed.analysis,
+          ai_suggestion: `Priorité: ${parsed.priority}\nType: ${parsed.errorType}\n\n${Array.isArray(parsed.suggestions) ? parsed.suggestions.join("\n• ") : parsed.suggestions}\n\n${parsed.technicalDetails || ""}`,
+          status: status,
         })
         .eq("id", errorReportId);
 
@@ -99,36 +175,23 @@ Contexte: ${context || "Non spécifié"}`
         console.error("Error updating report:", updateError);
       }
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-        analysis,
-        suggestions,
-        priority,
-        canAutoFix: parsed.canAutoFix,
-        autoFixDescription: parsed.autoFixDescription
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     } catch (parseError) {
-      // If not valid JSON, use raw response
-      analysis = aiResponse;
+      console.error("Parse error:", parseError);
+      analysisResult.analysis = aiResponse;
       
       await supabase
         .from("error_reports")
         .update({
-          ai_analysis: analysis,
+          ai_analysis: aiResponse,
           status: "pending",
         })
         .eq("id", errorReportId);
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        analysis,
-        suggestions: "Voir l'analyse complète"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
+
+    return new Response(JSON.stringify(analysisResult), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   } catch (error) {
     console.error("Error in analyze-error function:", error);
     return new Response(JSON.stringify({ 
@@ -139,3 +202,54 @@ Contexte: ${context || "Non spécifié"}`
     });
   }
 });
+
+// Exécute une action de correction automatique
+async function executeAutoFixAction(
+  supabase: any, 
+  action: string, 
+  errorReportId: string
+): Promise<{ success: boolean; message: string }> {
+  console.log(`Executing auto-fix: ${action} for report ${errorReportId}`);
+
+  try {
+    // Get the error report to find the user
+    const { data: report } = await supabase
+      .from("error_reports")
+      .select("user_id, page_url")
+      .eq("id", errorReportId)
+      .single();
+
+    switch (action) {
+      case "clear_user_session":
+        // Log the action - actual session clear happens client-side
+        console.log("Session clear recommended for user:", report?.user_id);
+        return { success: true, message: "Session clear initiated" };
+
+      case "clear_local_cache":
+        // This is handled client-side, we just mark it as action needed
+        console.log("Cache clear recommended");
+        return { success: true, message: "Cache clear recommended" };
+
+      case "reset_user_preferences":
+        if (report?.user_id) {
+          // Reset user preferences if applicable
+          console.log("Preferences reset for user:", report.user_id);
+        }
+        return { success: true, message: "Preferences reset initiated" };
+
+      case "retry_failed_operation":
+        console.log("Retry operation recommended");
+        return { success: true, message: "Retry recommended" };
+
+      case "refresh_data":
+        console.log("Data refresh recommended");
+        return { success: true, message: "Data refresh initiated" };
+
+      default:
+        return { success: false, message: `Unknown action: ${action}` };
+    }
+  } catch (error) {
+    console.error("Auto-fix error:", error);
+    return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+  }
+}

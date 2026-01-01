@@ -56,7 +56,7 @@ export const ErrorReportButton = ({ error, errorInfo, context }: ErrorReportButt
         description: "L'analyse automatique est en cours...",
       });
 
-      // Trigger AI analysis
+      // Trigger AI analysis with auto-fix
       setIsAnalyzing(true);
       try {
         const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-error', {
@@ -66,6 +66,7 @@ export const ErrorReportButton = ({ error, errorInfo, context }: ErrorReportButt
             errorStack: error?.stack || errorInfo?.componentStack,
             pageUrl: window.location.href,
             context: context || additionalInfo,
+            executeAutoFix: true, // Enable auto-fix
           },
         });
 
@@ -73,10 +74,30 @@ export const ErrorReportButton = ({ error, errorInfo, context }: ErrorReportButt
           console.error('Analysis error:', analysisError);
         } else if (analysisData) {
           setAiAnalysis(analysisData.analysis);
-          toast({
-            title: "Analyse terminée",
-            description: `Priorité: ${analysisData.priority || 'moyenne'}`,
-          });
+          
+          // Check if auto-fix was executed
+          if (analysisData.autoFixExecuted && analysisData.autoFixSuccess) {
+            toast({
+              title: "Problème résolu automatiquement",
+              description: analysisData.userMessage || "L'IA a corrigé le problème.",
+            });
+            
+            // Execute client-side actions if needed
+            if (analysisData.autoFixAction === 'clear_local_cache') {
+              localStorage.clear();
+              sessionStorage.clear();
+            } else if (analysisData.autoFixAction === 'clear_user_session') {
+              await supabase.auth.signOut();
+              window.location.reload();
+            } else if (analysisData.autoFixAction === 'refresh_data') {
+              window.location.reload();
+            }
+          } else {
+            toast({
+              title: "Analyse terminée",
+              description: `Priorité: ${analysisData.priority || 'moyenne'}. ${analysisData.errorType === 'code_bug' ? 'Transmis à l\'admin.' : ''}`,
+            });
+          }
         }
       } catch (aiError) {
         console.error('AI analysis failed:', aiError);
