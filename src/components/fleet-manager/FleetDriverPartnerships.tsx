@@ -209,6 +209,14 @@ export const FleetDriverPartnerships = ({
   const [showModificationDialog, setShowModificationDialog] = useState(false);
   const [modifyingPartnership, setModifyingPartnership] = useState<Partnership | null>(null);
   
+  // Counter-proposal dialog state (for pending proposals from drivers)
+  const [showCounterProposalDialog, setShowCounterProposalDialog] = useState(false);
+  const [counterProposingPartnership, setCounterProposingPartnership] = useState<Partnership | null>(null);
+  const [counterCommission, setCounterCommission] = useState(10);
+  const [counterPaymentSchedule, setCounterPaymentSchedule] = useState("per_course");
+  const [counterReason, setCounterReason] = useState("");
+  const [submittingCounter, setSubmittingCounter] = useState(false);
+  
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
@@ -454,6 +462,69 @@ export const FleetDriverPartnerships = ({
     } catch (error) {
       console.error("Error cancelling partnership:", error);
       toast.error("Erreur lors de l'annulation");
+    }
+  };
+
+  const openCounterProposal = (partnership: Partnership) => {
+    setCounterProposingPartnership(partnership);
+    setCounterCommission(partnership.commission_percentage);
+    setCounterPaymentSchedule(partnership.payment_schedule || "per_course");
+    setCounterReason("");
+    setShowCounterProposalDialog(true);
+  };
+
+  const submitCounterProposal = async () => {
+    if (!counterProposingPartnership) return;
+    
+    if (!counterReason.trim()) {
+      toast.error("Veuillez indiquer la raison de votre contre-proposition");
+      return;
+    }
+    
+    setSubmittingCounter(true);
+    try {
+      // Update the partnership with the counter-proposal
+      const { error } = await supabase
+        .from("fleet_driver_partnerships")
+        .update({
+          commission_percentage: counterCommission,
+          payment_schedule: counterPaymentSchedule,
+          proposal_message: counterReason,
+          initiated_by: "fleet_manager", // Flip the initiator to show it's now the fleet manager's turn
+          fleet_manager_signed: true,
+          fleet_manager_signed_at: new Date().toISOString(),
+          driver_signed: false, // Reset driver signature to require their approval
+          driver_signed_at: null,
+        })
+        .eq("id", counterProposingPartnership.id);
+
+      if (error) throw error;
+
+      // Notify driver
+      const { data: driverData } = await supabase
+        .from("drivers")
+        .select("user_id")
+        .eq("id", counterProposingPartnership.driver_id)
+        .single();
+
+      if (driverData) {
+        await supabase.from("notifications").insert({
+          user_id: driverData.user_id,
+          title: "Contre-proposition reçue",
+          message: `Le gestionnaire a fait une contre-proposition: ${counterCommission}%`,
+          type: "partnership",
+          link: "/driver-dashboard?tab=partnerships"
+        });
+      }
+
+      toast.success("Contre-proposition envoyée !");
+      setShowCounterProposalDialog(false);
+      fetchData();
+    } catch (error) {
+      console.error("Error submitting counter-proposal:", error);
+      toast.error("Erreur lors de l'envoi");
+    } finally {
+      setSubmittingCounter(false);
     }
   };
 
@@ -868,12 +939,28 @@ export const FleetDriverPartnerships = ({
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
-                              <Button size="sm" onClick={() => signContract(partnership.id)}>
-                                <FileText className="w-4 h-4 mr-1" />
-                                Signer
-                              </Button>
+                              <>
+                                <Button size="sm" onClick={() => signContract(partnership.id)}>
+                                  <FileText className="w-4 h-4 mr-1" />
+                                  Accepter
+                                </Button>
+                                <Button 
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => openCounterProposal(partnership)}
+                                >
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Contre-proposer
+                                </Button>
+                              </>
+                            )}
+                            {partnership.fleet_manager_signed && !partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
+                              <Badge variant="secondary" className="py-1.5">
+                                <Clock className="w-3 h-3 mr-1" />
+                                En attente de réponse du chauffeur
+                              </Badge>
                             )}
                             <Button 
                               variant="outline" 
@@ -1625,6 +1712,83 @@ export const FleetDriverPartnerships = ({
           onSuccess={fetchData}
         />
       )}
+
+      {/* Counter-Proposal Dialog */}
+      <Dialog open={showCounterProposalDialog} onOpenChange={setShowCounterProposalDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" />
+              Contre-proposition
+            </DialogTitle>
+            <DialogDescription>
+              Proposez de nouvelles conditions à {counterProposingPartnership?.driver?.profile?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {counterProposingPartnership && (
+            <div className="space-y-4">
+              <Alert>
+                <AlertTriangle className="w-4 h-4" />
+                <AlertDescription>
+                  Proposition actuelle: <strong>{counterProposingPartnership.commission_percentage}%</strong> de commission
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label>Nouvelle commission (%)</Label>
+                <Input
+                  type="number"
+                  min={5}
+                  max={30}
+                  value={counterCommission}
+                  onChange={(e) => setCounterCommission(parseInt(e.target.value) || 10)}
+                />
+                <p className="text-xs text-muted-foreground">Entre 5% et 30%</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fréquence de paiement</Label>
+                <Select value={counterPaymentSchedule} onValueChange={setCounterPaymentSchedule}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="per_course">Par course</SelectItem>
+                    <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                    <SelectItem value="bi_weekly">Bi-mensuel</SelectItem>
+                    <SelectItem value="monthly">Mensuel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Raison de la contre-proposition *</Label>
+                <Textarea
+                  placeholder="Expliquez pourquoi vous proposez ces nouvelles conditions..."
+                  value={counterReason}
+                  onChange={(e) => setCounterReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCounterProposalDialog(false)}>
+              Annuler
+            </Button>
+            <Button onClick={submitCounterProposal} disabled={submittingCounter}>
+              {submittingCounter ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Envoyer la contre-proposition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
