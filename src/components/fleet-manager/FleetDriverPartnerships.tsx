@@ -118,6 +118,7 @@ interface IndependentDriver {
   hourly_rate?: number | null;
   show_phone?: boolean | null;
   show_email?: boolean | null;
+  show_rating_partners?: boolean | null;
   contact_phone?: string | null;
   contact_email?: string | null;
   profile?: {
@@ -237,7 +238,7 @@ export const FleetDriverPartnerships = ({
         const driverIds = partnershipsData.map(p => p.driver_id);
         const { data: driversData } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, contact_phone, contact_email")
+          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, contact_phone, contact_email")
           .in("id", driverIds);
 
         if (driversData) {
@@ -265,7 +266,7 @@ export const FleetDriverPartnerships = ({
       // Fetch independent drivers (not in any fleet) with complete data
       const { data: independentData, error: indErr } = await supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, contact_phone, contact_email")
+        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, contact_phone, contact_email")
         .eq("status", "validated")
         .eq("public_profile_enabled", true)
         .is("fleet_manager_id", null);
@@ -709,7 +710,7 @@ export const FleetDriverPartnerships = ({
                               <h3 className="font-semibold truncate">
                                 {driver.profile?.full_name || "Chauffeur"}
                               </h3>
-                              {driver.rating && (
+                              {driver.show_rating_partners && driver.rating && (
                                 <Badge variant="secondary" className="bg-warning/20 text-warning gap-1">
                                   <Star className="w-3 h-3 fill-warning" />
                                   {driver.rating.toFixed(1)}
@@ -1096,7 +1097,7 @@ export const FleetDriverPartnerships = ({
                     <div className="flex-1">
                       <DialogTitle className="text-2xl">{selectedDriver.profile?.full_name || "Chauffeur"}</DialogTitle>
                       <div className="flex items-center gap-4 mt-2">
-                        {selectedDriver.rating && (
+                        {selectedDriver.show_rating_partners && selectedDriver.rating && (
                           <Badge className="bg-yellow-500/10 text-yellow-600">
                             <Star className="h-4 w-4 fill-current mr-1" />
                             {selectedDriver.rating.toFixed(1)}/5

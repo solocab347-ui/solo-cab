@@ -6655,7 +6655,9 @@ export type Database = {
           partnership_terms: string
           services_offered: string[]
           show_address: boolean
+          show_client_count_public: boolean
           show_contact_name: boolean
+          show_driver_count_public: boolean
           show_email: boolean
           show_phone: boolean
           total_clients: number
