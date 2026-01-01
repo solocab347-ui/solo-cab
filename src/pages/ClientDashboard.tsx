@@ -25,6 +25,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
@@ -40,6 +41,7 @@ import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [clientProfile, setClientProfile] = useState<any>(null);
@@ -68,10 +70,10 @@ const ClientDashboard = () => {
       // Check for payment success
       const paymentStatus = searchParams.get("payment");
       if (paymentStatus === "success") {
-        toast.success("Paiement confirmé ! Votre course est réservée.");
+        toast.success(t('clientDashboard.paymentConfirmed'));
         setSearchParams({});
       } else if (paymentStatus === "cancelled") {
-        toast.error("Paiement annulé");
+        toast.error(t('clientDashboard.paymentCancelled'));
         setSearchParams({});
       }
     };
@@ -172,28 +174,28 @@ const ClientDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Chargement...</p>
+        <p className="text-muted-foreground">{t('clientDashboard.loading')}</p>
       </div>
     );
   }
 
   const menuItems = [
-    { id: "accueil", label: "Accueil", icon: Home },
-    { id: "courses", label: "Courses", icon: Clock },
-    { id: "devis-factures", label: "Devis & Factures", icon: FileText },
-    { id: "messages", label: "Messages", icon: MessageSquare },
-    { id: "notes", label: "Notes", icon: StickyNote },
+    { id: "accueil", label: t('clientDashboard.menu.home'), icon: Home },
+    { id: "courses", label: t('clientDashboard.menu.rides'), icon: Clock },
+    { id: "devis-factures", label: t('clientDashboard.menu.quotesInvoices'), icon: FileText },
+    { id: "messages", label: t('clientDashboard.menu.messages'), icon: MessageSquare },
+    { id: "notes", label: t('clientDashboard.menu.notes'), icon: StickyNote },
     { 
       id: "chauffeurs", 
-      label: clientProfile?.client?.is_exclusive ? "Mon Chauffeur" : "Mes Chauffeurs", 
+      label: clientProfile?.client?.is_exclusive ? t('clientDashboard.menu.myDriver') : t('clientDashboard.menu.myDrivers'), 
       icon: Users, 
       hideForExclusive: false 
     },
-    { id: "scanner", label: "Scanner QR", icon: QrCode, hideForExclusive: true }, // Only for free clients
-    { id: "vitrine", label: "Vitrine Publique", icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true }, // Only for free clients
-    { id: "profil-chauffeur", label: "Profil Chauffeur", icon: User, hideForExclusive: false },
-    { id: "compte", label: "Mon Compte", icon: User },
-    { id: "rgpd", label: "Mes Données RGPD", icon: Sparkles, isLink: true, path: "/rgpd-data" },
+    { id: "scanner", label: t('clientDashboard.menu.scanQR'), icon: QrCode, hideForExclusive: true },
+    { id: "vitrine", label: t('clientDashboard.menu.publicShowcase'), icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true },
+    { id: "profil-chauffeur", label: t('clientDashboard.menu.driverProfile'), icon: User, hideForExclusive: false },
+    { id: "compte", label: t('clientDashboard.menu.myAccount'), icon: User },
+    { id: "rgpd", label: t('clientDashboard.menu.myData'), icon: Sparkles, isLink: true, path: "/rgpd-data" },
   ];
 
   const renderNavigation = () => (
@@ -274,7 +276,7 @@ const ClientDashboard = () => {
               >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <Clock className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
-                  <h3 className="text-sm md:text-lg font-semibold text-white">Courses à venir</h3>
+                  <h3 className="text-sm md:text-lg font-semibold text-white">{t('clientDashboard.stats.upcomingRides')}</h3>
                 </div>
                 <p className="text-3xl md:text-4xl font-bold text-white">{stats.upcomingCourses}</p>
               </Card>
@@ -285,7 +287,7 @@ const ClientDashboard = () => {
               >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
-                  <h3 className="text-sm md:text-lg font-semibold text-white">Devis en attente</h3>
+                  <h3 className="text-sm md:text-lg font-semibold text-white">{t('clientDashboard.stats.pendingQuotes')}</h3>
                 </div>
                 <p className="text-3xl md:text-4xl font-bold text-white mb-2">{stats.pendingDevis}</p>
               </Card>
@@ -296,7 +298,7 @@ const ClientDashboard = () => {
               >
                 <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                   <FileText className="w-5 h-5 md:w-6 md:h-6 text-white flex-shrink-0" />
-                  <h3 className="text-sm md:text-lg font-semibold text-white">Factures impayées</h3>
+                  <h3 className="text-sm md:text-lg font-semibold text-white">{t('clientDashboard.stats.unpaidInvoices')}</h3>
                 </div>
                 <p className="text-3xl md:text-4xl font-bold text-white">{stats.unpaidInvoices}</p>
               </Card>
@@ -305,7 +307,7 @@ const ClientDashboard = () => {
             {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
               <Card className="p-4 md:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg md:text-xl font-bold">Mon Chauffeur</h2>
+                  <h2 className="text-lg md:text-xl font-bold">{t('clientDashboard.myDriver')}</h2>
                   <ShareButtons
                     title={`Découvrez ${clientProfile.client.drivers.profiles?.full_name || "mon chauffeur"} sur SoloCab`}
                     message={`Je vous recommande mon chauffeur VTC ${clientProfile.client.drivers.profiles?.full_name || ""} sur SoloCab ! Un service de qualité, ponctuel et professionnel. 🚗✨`}
@@ -325,9 +327,9 @@ const ClientDashboard = () => {
                     </div>
                   )}
                   <div className="flex-1 text-center sm:text-left">
-                    <p className="text-xs md:text-sm text-muted-foreground mb-1">Votre chauffeur privé</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-1">{t('clientDashboard.privateDriver')}</p>
                     <h3 className="font-bold text-lg md:text-xl mb-2">
-                      {clientProfile.client.drivers.profiles?.full_name || "Votre chauffeur"}
+                      {clientProfile.client.drivers.profiles?.full_name || t('clientDashboard.myDriver')}
                     </h3>
                     <Button 
                       variant="outline" 
@@ -335,7 +337,7 @@ const ClientDashboard = () => {
                       onClick={() => handleTabChange("profil-chauffeur")}
                     >
                       <User className="w-4 h-4 mr-2" />
-                      Voir le profil
+                      {t('clientDashboard.viewProfile')}
                     </Button>
                   </div>
                 </div>
@@ -382,7 +384,7 @@ const ClientDashboard = () => {
           <div className="flex items-center gap-3 mb-2">
             <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
           </div>
-          <p className="text-sm text-muted-foreground">Navigation</p>
+          <p className="text-sm text-muted-foreground">{t('clientDashboard.navigation')}</p>
         </div>
         {renderNavigation()}
       </aside>
@@ -394,7 +396,7 @@ const ClientDashboard = () => {
             <div className="flex items-center gap-3 mb-2">
               <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
             </div>
-            <p className="text-sm text-muted-foreground">Navigation</p>
+            <p className="text-sm text-muted-foreground">{t('clientDashboard.navigation')}</p>
           </div>
           {renderNavigation()}
         </SheetContent>
@@ -428,11 +430,11 @@ const ClientDashboard = () => {
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2 truncate">
-                Bonjour, {clientProfile?.full_name?.split(" ")[0] || "Client"}
+                {t('clientDashboard.hello')}, {clientProfile?.full_name?.split(" ")[0] || "Client"}
                 <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-yellow-500 flex-shrink-0" />
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
-                Gérez vos courses facilement
+                {t('clientDashboard.manageRides')}
               </p>
             </div>
 
@@ -443,7 +445,7 @@ const ClientDashboard = () => {
                 className="bg-orange-500 hover:bg-orange-600 text-white hidden sm:flex"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Nouvelle demande
+                {t('clientDashboard.newRequest')}
               </Button>
               <Button
                 onClick={handleNewReservation}
