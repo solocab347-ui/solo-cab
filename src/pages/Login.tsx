@@ -10,8 +10,11 @@ import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/productionLogger";
+import { useLocale } from "@/hooks/useLocale";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Login = () => {
+  const { t } = useLocale();
   const { signIn, user, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
