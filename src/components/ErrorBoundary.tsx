@@ -153,7 +153,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {/* Bouton de signalement à l'administrateur */}
               <ErrorReportButton 
                 error={this.state.error} 
-                errorStack={this.state.componentStack}
+                errorInfo={{ componentStack: this.state.componentStack } as React.ErrorInfo}
               />
               
               <Button onClick={this.handleReset} className="w-full gap-2">

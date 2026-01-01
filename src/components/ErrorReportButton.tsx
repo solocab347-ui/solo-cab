@@ -1,129 +1,174 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Send, Loader2, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ErrorReportButtonProps {
-  error: Error | null;
-  errorStack?: string;
+  error?: Error;
+  errorInfo?: React.ErrorInfo;
+  context?: string;
 }
 
-export const ErrorReportButton = ({ error, errorStack }: ErrorReportButtonProps) => {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const { user } = useAuth();
+export const ErrorReportButton = ({ error, errorInfo, context }: ErrorReportButtonProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { user, userRole } = useAuth();
 
-  const getUserRole = async (): Promise<string> => {
-    if (!user) return 'anonymous';
-    
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    
-    return data?.role || 'unknown';
-  };
-
-  const getUserProfile = async () => {
-    if (!user) return { email: null, name: null };
-    
-    const { data } = await supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('id', user.id)
-      .single();
-    
-    return { email: data?.email, name: data?.full_name };
-  };
-
-  const handleSendReport = async () => {
-    setSending(true);
-    
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
-      const userRole = await getUserRole();
-      const profile = await getUserProfile();
-      
-      const reportData = {
+      const errorData = {
         user_id: user?.id || null,
-        user_role: userRole,
-        user_email: profile.email,
-        user_name: profile.name,
+        user_role: userRole || 'anonymous',
         error_message: error?.message || 'Erreur inconnue',
-        error_stack: errorStack || error?.stack || null,
+        error_stack: error?.stack || errorInfo?.componentStack || null,
         page_url: window.location.href,
-        page_route: window.location.pathname,
         user_agent: navigator.userAgent,
-        screen_size: `${window.innerWidth}x${window.innerHeight}`,
-        browser_info: JSON.stringify({
-          language: navigator.language,
-          platform: navigator.platform,
-          cookieEnabled: navigator.cookieEnabled,
-          onLine: navigator.onLine,
-          timestamp: new Date().toISOString()
-        }),
-        additional_context: {
-          referrer: document.referrer,
-          localStorage_locale: localStorage.getItem('locale'),
-          sessionStorage_keys: Object.keys(sessionStorage)
-        }
+        context: context || additionalInfo || null,
+        status: 'pending',
       };
 
-      const { error: insertError } = await supabase
+      const { data: reportData, error: insertError } = await supabase
         .from('error_reports')
-        .insert(reportData);
+        .insert(errorData)
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
-      setSent(true);
-      toast.success('Rapport envoyé à l\'administrateur', {
-        description: 'Nous examinerons le problème rapidement.'
+      toast({
+        title: "Rapport envoyé",
+        description: "L'analyse automatique est en cours...",
       });
+
+      // Trigger AI analysis
+      setIsAnalyzing(true);
+      try {
+        const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-error', {
+          body: {
+            errorReportId: reportData.id,
+            errorMessage: error?.message || 'Erreur inconnue',
+            errorStack: error?.stack || errorInfo?.componentStack,
+            pageUrl: window.location.href,
+            context: context || additionalInfo,
+          },
+        });
+
+        if (analysisError) {
+          console.error('Analysis error:', analysisError);
+        } else if (analysisData) {
+          setAiAnalysis(analysisData.analysis);
+          toast({
+            title: "Analyse terminée",
+            description: `Priorité: ${analysisData.priority || 'moyenne'}`,
+          });
+        }
+      } catch (aiError) {
+        console.error('AI analysis failed:', aiError);
+      } finally {
+        setIsAnalyzing(false);
+      }
+
+      setIsOpen(false);
+      setAdditionalInfo('');
     } catch (err) {
-      console.error('Error sending report:', err);
-      toast.error('Impossible d\'envoyer le rapport', {
-        description: 'Veuillez réessayer plus tard.'
+      console.error('Error submitting report:', err);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer le rapport",
+        variant: "destructive",
       });
     } finally {
-      setSending(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (sent) {
-    return (
-      <Button 
-        variant="outline" 
-        className="w-full gap-2 border-success/50 text-success bg-success/10"
-        disabled
-      >
-        <CheckCircle className="w-4 h-4" />
-        Rapport envoyé
-      </Button>
-    );
-  }
-
   return (
-    <Button 
-      variant="outline" 
-      onClick={handleSendReport}
-      disabled={sending}
-      className="w-full gap-2 border-primary/50 text-primary hover:bg-primary/10"
-    >
-      {sending ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Envoi en cours...
-        </>
-      ) : (
-        <>
-          <Send className="w-4 h-4" />
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <AlertTriangle className="h-4 w-4" />
           Signaler à l'administrateur
-        </>
-      )}
-    </Button>
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            Signaler un problème
+          </DialogTitle>
+          <DialogDescription>
+            Votre rapport sera analysé automatiquement par notre IA puis transmis à l'administrateur.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="rounded-lg bg-destructive/10 p-3 text-sm">
+            <p className="font-medium text-destructive">Erreur détectée:</p>
+            <p className="text-muted-foreground">{error?.message || 'Erreur inconnue'}</p>
+          </div>
+          
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p><strong>Page:</strong> {window.location.pathname}</p>
+            <p><strong>Rôle:</strong> {userRole || 'Non connecté'}</p>
+          </div>
+
+          <Textarea
+            placeholder="Décrivez ce que vous faisiez avant l'erreur (optionnel)..."
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+            rows={3}
+          />
+
+          {aiAnalysis && (
+            <div className="rounded-lg bg-primary/10 p-3 text-sm">
+              <p className="font-medium text-primary flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                Analyse IA:
+              </p>
+              <p className="text-muted-foreground mt-1">{aiAnalysis}</p>
+            </div>
+          )}
+
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || isAnalyzing}
+            className="w-full gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Envoi en cours...
+              </>
+            ) : isAnalyzing ? (
+              <>
+                <Bot className="h-4 w-4 animate-pulse" />
+                Analyse IA en cours...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Envoyer et analyser
+              </>
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
-
 export default ErrorReportButton;
