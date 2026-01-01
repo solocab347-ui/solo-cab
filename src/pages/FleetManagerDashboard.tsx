@@ -75,6 +75,7 @@ import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchS
 import FleetDevisList from "@/components/fleet-manager/FleetDevisList";
 import FleetFacturesList from "@/components/fleet-manager/FleetFacturesList";
 import logoSolocab from "@/assets/logo-solocab.png";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 interface FleetManager {
   id: string;
@@ -447,6 +448,7 @@ const FleetManagerDashboard = () => {
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
+            <LanguageSelector variant="header" />
             <Button variant="ghost" size="icon" onClick={signOut} className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
