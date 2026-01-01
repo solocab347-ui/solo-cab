@@ -32,8 +32,10 @@ import {
   ImageIcon,
   Send,
   Handshake,
-  Percent
+  Percent,
+  Clock
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
@@ -170,6 +172,20 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const [partnershipMessage, setPartnershipMessage] = useState('');
   const [sendingPartnership, setSendingPartnership] = useState(false);
   const [existingPartnerships, setExistingPartnerships] = useState<string[]>([]);
+  
+  // Dialog pour voir les détails d'un partenariat existant
+  const [viewPartnershipDialogOpen, setViewPartnershipDialogOpen] = useState(false);
+  const [viewingPartnership, setViewingPartnership] = useState<any>(null);
+
+  interface ExistingPartnership {
+    driver_id: string;
+    status: string;
+    commission_percentage: number;
+    payment_schedule: string;
+    created_at: string;
+    accepted_at: string | null;
+  }
+  const [partnershipsDetails, setPartnershipsDetails] = useState<ExistingPartnership[]>([]);
 
   // Initial load only - filters are applied independently with the search button
   useEffect(() => {
@@ -181,15 +197,34 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
     try {
       const { data } = await supabase
         .from('fleet_driver_partnerships')
-        .select('driver_id')
+        .select('driver_id, status, commission_percentage, payment_schedule, created_at, accepted_at')
         .eq('fleet_manager_id', fleetManagerId)
         .in('status', ['pending', 'active']);
       
       if (data) {
         setExistingPartnerships(data.map(p => p.driver_id));
+        setPartnershipsDetails(data);
       }
     } catch (error) {
       console.error('Error fetching partnerships:', error);
+    }
+  };
+
+  const openPartnershipDetails = (driver: SearchableDriver) => {
+    const partnershipData = partnershipsDetails.find(p => p.driver_id === driver.id);
+    if (partnershipData) {
+      setViewingPartnership({ ...partnershipData, driver });
+      setViewPartnershipDialogOpen(true);
+    }
+  };
+
+  const getPaymentScheduleLabel = (schedule: string) => {
+    switch (schedule) {
+      case 'per_course': return 'Par course';
+      case 'weekly': return 'Hebdomadaire';
+      case 'monthly': return 'Mensuel';
+      case 'bi_monthly': return 'Bi-mensuel';
+      default: return schedule;
     }
   };
 
@@ -744,10 +779,16 @@ Cordialement`;
                     </Button>
                     
                     {existingPartnerships.includes(driver.id) ? (
-                      <Badge variant="secondary" className="w-full justify-center py-2">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full"
+                        onClick={() => openPartnershipDetails(driver)}
+                      >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Partenariat en cours
-                      </Badge>
+                        {partnershipsDetails.find(p => p.driver_id === driver.id)?.status === 'pending' 
+                          ? 'Demande en attente' 
+                          : 'Voir le partenariat'}
+                      </Button>
                     ) : (
                       <Button 
                         onClick={() => openPartnershipDialog(driver)}
@@ -1171,9 +1212,19 @@ Cordialement`;
                         Contacter
                       </Button>
                       {existingPartnerships.includes(selectedDriver.id) ? (
-                        <Button className="flex-1" size="default" disabled variant="secondary">
+                        <Button 
+                          className="flex-1" 
+                          size="default" 
+                          variant="secondary"
+                          onClick={() => {
+                            setProfileDialogOpen(false);
+                            openPartnershipDetails(selectedDriver);
+                          }}
+                        >
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Partenariat existant
+                          {partnershipsDetails.find(p => p.driver_id === selectedDriver.id)?.status === 'pending' 
+                            ? 'Demande en attente' 
+                            : 'Voir le partenariat'}
                         </Button>
                       ) : (
                         <Button 
@@ -1288,6 +1339,99 @@ Cordialement`;
                 <Send className="h-4 w-4 mr-2" />
               )}
               Envoyer la demande
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de visualisation du partenariat existant */}
+      <Dialog open={viewPartnershipDialogOpen} onOpenChange={setViewPartnershipDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5 text-primary" />
+              Détails du Partenariat
+            </DialogTitle>
+            <DialogDescription>
+              Conditions du partenariat avec ce chauffeur
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingPartnership && (
+            <div className="space-y-4">
+              {/* Driver info */}
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={(viewingPartnership.driver as any)?.card_photo_url || viewingPartnership.driver?.profile?.profile_photo_url} />
+                  <AvatarFallback>
+                    {viewingPartnership.driver?.profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'CH'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">
+                    {viewingPartnership.driver?.profile?.full_name || 'Chauffeur'}
+                  </p>
+                  {viewingPartnership.driver?.company_name && (
+                    <p className="text-sm text-muted-foreground">
+                      {viewingPartnership.driver.company_name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium">Statut</span>
+                <Badge variant={viewingPartnership.status === 'active' ? 'default' : 'secondary'}>
+                  {viewingPartnership.status === 'active' ? 'Actif' : 
+                   viewingPartnership.status === 'pending' ? 'En attente' : viewingPartnership.status}
+                </Badge>
+              </div>
+
+              {/* Commission */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-muted-foreground" />
+                  Commission
+                </span>
+                <span className="font-semibold text-primary">
+                  {viewingPartnership.commission_percentage}%
+                </span>
+              </div>
+
+              {/* Payment schedule */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Paiement
+                </span>
+                <span className="font-medium">
+                  {getPaymentScheduleLabel(viewingPartnership.payment_schedule)}
+                </span>
+              </div>
+
+              {/* Dates */}
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Demande envoyée le {new Date(viewingPartnership.created_at).toLocaleDateString('fr-FR')}</p>
+                {viewingPartnership.accepted_at && (
+                  <p>Accepté le {new Date(viewingPartnership.accepted_at).toLocaleDateString('fr-FR')}</p>
+                )}
+              </div>
+
+              {viewingPartnership.status === 'pending' && (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    Cette demande de partenariat est en attente de réponse du chauffeur.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewPartnershipDialogOpen(false)}>
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>
