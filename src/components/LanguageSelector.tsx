@@ -7,22 +7,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/hooks/useLocale";
-import type { Locale } from "@/lib/i18n";
-
-const languages: { code: Locale; label: string; flag: string }[] = [
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'zh', label: '中文', flag: '🇨🇳' },
-];
+import { SUPPORTED_LANGUAGES, type Locale } from "@/lib/i18n";
 
 interface LanguageSelectorProps {
   variant?: 'default' | 'compact';
+  showLabel?: boolean;
 }
 
-export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps) => {
-  const { locale, setLocale, t } = useLocale();
+export const LanguageSelector = ({ variant = 'default', showLabel = true }: LanguageSelectorProps) => {
+  const { locale, setLocale } = useLocale();
 
-  const currentLang = languages.find(l => l.code === locale) || languages[0];
+  const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === locale) || SUPPORTED_LANGUAGES[0];
 
   return (
     <DropdownMenu>
@@ -33,20 +28,23 @@ export const LanguageSelector = ({ variant = 'default' }: LanguageSelectorProps)
           className="gap-2"
         >
           <Globe className="h-4 w-4" />
-          {variant === 'default' && (
-            <span className="hidden sm:inline">{currentLang.flag} {currentLang.label}</span>
+          {variant === 'default' && showLabel && (
+            <span className="hidden sm:inline">{currentLang.flag} {currentLang.nativeLabel}</span>
+          )}
+          {variant === 'compact' && (
+            <span className="sr-only">{currentLang.nativeLabel}</span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {languages.map((lang) => (
+      <DropdownMenuContent align="end" className="min-w-[160px]">
+        {SUPPORTED_LANGUAGES.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
             onClick={() => setLocale(lang.code)}
-            className={locale === lang.code ? 'bg-muted' : ''}
+            className={`flex items-center gap-2 ${locale === lang.code ? 'bg-muted' : ''}`}
           >
-            <span className="mr-2">{lang.flag}</span>
-            {lang.label}
+            <span>{lang.flag}</span>
+            <span>{lang.nativeLabel}</span>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

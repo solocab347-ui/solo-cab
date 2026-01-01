@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Locale, getStoredLocale, setLocale as setStoredLocale, t as translate } from '@/lib/i18n';
+import { type Locale, getStoredLocale, setLocale as setStoredLocale, t as translate, isRTL } from '@/lib/i18n';
 
 export const useLocale = () => {
   const [locale, setLocaleState] = useState<Locale>(getStoredLocale());
 
   useEffect(() => {
-    const handleLocaleChange = () => {
-      setLocaleState(getStoredLocale());
+    const handleLocaleChange = (event: Event) => {
+      const customEvent = event as CustomEvent<Locale>;
+      if (customEvent.detail) {
+        setLocaleState(customEvent.detail);
+      } else {
+        setLocaleState(getStoredLocale());
+      }
     };
 
     window.addEventListener('localeChange', handleLocaleChange);
@@ -20,7 +25,9 @@ export const useLocale = () => {
 
   const t = useCallback((key: string) => translate(key, locale), [locale]);
 
-  return { locale, setLocale, t };
+  const rtl = isRTL(locale);
+
+  return { locale, setLocale, t, isRTL: rtl };
 };
 
 export default useLocale;
