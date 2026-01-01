@@ -196,7 +196,7 @@ const RegisterClientQR = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Chargement des informations...</p>
+          <p className="text-muted-foreground">{t('fleetPublic.loadingInfo')}</p>
         </Card>
       </div>
     );
@@ -269,7 +269,7 @@ const RegisterClientQR = () => {
                     </Badge>
                     <Badge className="bg-success/10 text-success border border-success/20 hover:bg-success/20 transition-colors px-4 py-1.5 flex items-center gap-1.5">
                       <CheckCircle className="w-4 h-4" />
-                      <span className="font-semibold">Vérifié</span>
+                      <span className="font-semibold">{t('fleetPublic.verified')}</span>
                     </Badge>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ const RegisterClientQR = () => {
               {/* Véhicule - Design sobre */}
               {(driverInfo.vehicle_model || driverInfo.vehicle_brand) && (
                 <div className="bg-muted/30 rounded-xl p-6 text-center space-y-2 border border-border/50">
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Véhicule</p>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('fleetPublic.vehicle')}</p>
                   <p className="text-xl font-semibold text-foreground">
                     {driverInfo.vehicle_brand && `${driverInfo.vehicle_brand} `}
                     {driverInfo.vehicle_model}
@@ -294,7 +294,7 @@ const RegisterClientQR = () => {
               {/* Présentation - Texte bien aligné */}
               {(driverInfo.service_description || driverInfo.bio) && (
                 <div className="mt-6 space-y-3 text-center">
-                  <h3 className="text-lg font-semibold text-foreground">Présentation</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t('fleetPublic.presentation')}</h3>
                   <p className="text-muted-foreground leading-relaxed text-base">
                     {driverInfo.service_description || driverInfo.bio}
                   </p>
@@ -304,7 +304,7 @@ const RegisterClientQR = () => {
               {/* Services proposés */}
               {driverInfo.services_offered && driverInfo.services_offered.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground text-center">Services proposés</h3>
+                  <h3 className="text-lg font-semibold text-foreground text-center">{t('fleetPublic.servicesOffered')}</h3>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {driverInfo.services_offered.map((service: string) => (
                       <Badge key={service} variant="secondary" className="px-3 py-1 text-base">
@@ -319,7 +319,7 @@ const RegisterClientQR = () => {
               {/* Équipements véhicule */}
               {driverInfo.vehicle_equipment && driverInfo.vehicle_equipment.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground text-center">Équipements du véhicule</h3>
+                  <h3 className="text-lg font-semibold text-foreground text-center">{t('fleetPublic.vehicleEquipment')}</h3>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {driverInfo.vehicle_equipment.map((equipment: string) => (
                       <Badge key={equipment} variant="outline" className="px-3 py-1 text-base">
@@ -334,7 +334,7 @@ const RegisterClientQR = () => {
               {/* Photos du véhicule */}
               {driverInfo.vehicle_photos && driverInfo.vehicle_photos.length > 0 && (
                 <div className="mt-6 space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground text-center">Photos du véhicule</h3>
+                  <h3 className="text-lg font-semibold text-foreground text-center">{t('fleetPublic.vehiclePhotos')}</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {driverInfo.vehicle_photos.slice(0, 4).map((photo: string, index: number) => (
                       <div key={index} className="aspect-video rounded-lg overflow-hidden border-2 border-border/50">
@@ -380,10 +380,10 @@ const RegisterClientQR = () => {
               className="w-full h-12 text-base font-medium border-2 hover:bg-muted/50 transition-all"
               size="lg"
             >
-              Réserver sans m'inscrire
+              {t('fleetPublic.bookWithoutRegister')}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Réservez rapidement avec vos coordonnées, vous pourrez vous inscrire plus tard
+              {t('fleetPublic.quickBookNote')}
             </p>
           </div>
         ) : (
@@ -476,7 +476,7 @@ const RegisterClientQR = () => {
                   placeholder="+33 6 12 34 56 78"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Obligatoire pour communiquer avec votre chauffeur
+                  {t('fleetPublic.phoneRequired')}
                 </p>
               </div>
               <div>

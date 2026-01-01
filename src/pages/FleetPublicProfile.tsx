@@ -46,6 +46,8 @@ import logoSolocab from "@/assets/logo-solocab.png";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useFleetProfileRealtime } from "@/hooks/usePublicFleetProfile";
 import { getServiceLabel } from "@/lib/serviceLabels";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 
 interface FleetDriver {
   id: string;
@@ -90,7 +92,7 @@ interface FleetManagerPublic {
 }
 
 // Composant pour gérer le bouton retour intelligemment
-const BackButton = ({ fleetManagerId }: { fleetManagerId: string | undefined }) => {
+const BackButton = ({ fleetManagerId, t }: { fleetManagerId: string | undefined, t: (key: string) => string }) => {
   const navigate = useNavigate();
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -140,7 +142,7 @@ const BackButton = ({ fleetManagerId }: { fleetManagerId: string | undefined }) 
       className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
     >
       <ArrowLeft className="w-4 h-4" />
-      <span>{isOwner ? "Retour au tableau de bord" : "Retour aux chauffeurs"}</span>
+      <span>{isOwner ? t('fleetPublic.backToDashboard') : t('fleetPublic.backToDrivers')}</span>
     </button>
   );
 };
@@ -149,6 +151,7 @@ const BackButton = ({ fleetManagerId }: { fleetManagerId: string | undefined }) 
 const FleetPublicProfile = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLocale();
   
   // Activer l'écoute temps réel pour les changements de profil flotte
   useFleetProfileRealtime();
@@ -290,12 +293,12 @@ const FleetPublicProfile = () => {
 
   const handleSubmitBooking = async () => {
     if (!bookingData.pickupAddress || !bookingData.destinationAddress || !bookingData.scheduledDate || !bookingData.scheduledTime) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
+      toast.error(t('fleetPublic.fillRequired'));
       return;
     }
 
     if (!bookingData.guestName || !bookingData.guestPhone) {
-      toast.error("Veuillez renseigner votre nom et téléphone");
+      toast.error(t('fleetPublic.enterNamePhone'));
       return;
     }
 
@@ -332,7 +335,7 @@ const FleetPublicProfile = () => {
       }
 
       if (!driverIdToUse) {
-        toast.error("Aucun chauffeur disponible dans cette flotte");
+        toast.error(t('fleetPublic.noDriverInFleet'));
         return;
       }
 
@@ -398,8 +401,8 @@ const FleetPublicProfile = () => {
 
       toast.success(
         isAutoAssigned 
-          ? "Réservation confirmée ! Un chauffeur vous a été assigné." 
-          : "Demande envoyée ! Le gestionnaire va vous assigner un chauffeur."
+          ? t('fleetPublic.bookingConfirmed')
+          : t('fleetPublic.requestSent')
       );
       
       setShowBookingDialog(false);
@@ -433,7 +436,7 @@ const FleetPublicProfile = () => {
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("Lien copié !");
+    toast.success(t('fleetPublic.linkCopied'));
   };
 
   if (loading) {
@@ -448,11 +451,11 @@ const FleetPublicProfile = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Flotte non trouvée</p>
+          <p className="text-muted-foreground mb-4">{t('fleetPublic.fleetNotFound')}</p>
           <Link to="/">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour à l'accueil
+              {t('fleetPublic.backToHome')}
             </Button>
           </Link>
         </div>
@@ -462,6 +465,11 @@ const FleetPublicProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+      
       {/* Hero Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-accent/20 to-transparent" />
@@ -474,10 +482,10 @@ const FleetPublicProfile = () => {
         <div className="relative container mx-auto px-4 py-12 md:py-20">
           {/* Back button + Share */}
           <div className="flex items-center justify-between mb-8">
-            <BackButton fleetManagerId={id} />
+            <BackButton fleetManagerId={id} t={t} />
             <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
               <Copy className="w-4 h-4" />
-              Partager
+              {t('fleetPublic.share')}
             </Button>
           </div>
 
@@ -500,7 +508,7 @@ const FleetPublicProfile = () => {
                 <h1 className="text-3xl md:text-4xl font-bold">{fleetManager.company_name}</h1>
                 <Badge className="bg-success/20 text-success border-success/30">
                   <Shield className="w-3 h-3 mr-1" />
-                  Vérifié
+                  {t('fleetPublic.verified')}
                 </Badge>
               </div>
               
@@ -535,18 +543,18 @@ const FleetPublicProfile = () => {
 
             {/* Stats + Quick book */}
             <div className="flex flex-col gap-4">
-              {(fleetManager.show_driver_count_public || fleetManager.show_client_count_public) && (
+            {(fleetManager.show_driver_count_public || fleetManager.show_client_count_public) && (
                 <div className="flex gap-4">
                   {fleetManager.show_driver_count_public && (
                     <div className="text-center bg-card/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-border/30">
                       <div className="text-3xl font-bold text-primary">{fleetManager.total_drivers || drivers.length}</div>
-                      <div className="text-sm text-muted-foreground">Chauffeurs</div>
+                      <div className="text-sm text-muted-foreground">{t('fleetPublic.drivers')}</div>
                     </div>
                   )}
                   {fleetManager.show_client_count_public && (
                     <div className="text-center bg-card/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-border/30">
                       <div className="text-3xl font-bold text-primary">{fleetManager.total_clients || 0}</div>
-                      <div className="text-sm text-muted-foreground">Clients</div>
+                      <div className="text-sm text-muted-foreground">{t('fleetPublic.clients')}</div>
                     </div>
                   )}
                 </div>
@@ -554,7 +562,7 @@ const FleetPublicProfile = () => {
               {drivers.length > 0 && (
                 <Button onClick={handleBookAvailable} size="lg" className="gap-2">
                   <Zap className="w-5 h-5" />
-                  Réserver
+                  {t('fleetPublic.book')}
                 </Button>
               )}
             </div>
@@ -572,7 +580,7 @@ const FleetPublicProfile = () => {
             <div className="mt-6 p-6 bg-card/50 backdrop-blur-xl rounded-2xl border border-border/30">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-primary" />
-                Services proposés
+                {t('fleetPublic.servicesOffered')}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {fleetManager.services_offered.map((service, index) => (
@@ -589,12 +597,12 @@ const FleetPublicProfile = () => {
             <div className="mt-6 p-6 bg-card/50 backdrop-blur-xl rounded-2xl border border-border/30">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5 text-primary" />
-                Conditions de partenariat
+                {t('fleetPublic.partnershipTerms')}
               </h3>
               <div className="space-y-3">
                 {fleetManager.default_partnership_commission && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="outline">Commission : {fleetManager.default_partnership_commission}%</Badge>
+                    <Badge variant="outline">{t('fleetPublic.commission')} : {fleetManager.default_partnership_commission}%</Badge>
                   </div>
                 )}
                 {fleetManager.partnership_terms && (
@@ -612,12 +620,12 @@ const FleetPublicProfile = () => {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold flex items-center gap-3">
               <Car className="w-6 h-6 text-primary" />
-              Nos Chauffeurs
+              {t('fleetPublic.ourDrivers')}
             </h2>
             {drivers.length > 0 && (
               <Button variant="outline" onClick={handleBookAvailable} className="gap-2">
                 <Clock className="w-4 h-4" />
-                Premier disponible
+                {t('fleetPublic.firstAvailable')}
               </Button>
             )}
           </div>
@@ -625,7 +633,7 @@ const FleetPublicProfile = () => {
           {drivers.length === 0 ? (
             <Card className="p-12 text-center">
               <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-muted-foreground">Aucun chauffeur disponible pour le moment</p>
+              <p className="text-muted-foreground">{t('fleetPublic.noDriversAvailable')}</p>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -694,11 +702,11 @@ const FleetPublicProfile = () => {
                     <div className="flex items-center justify-between pt-3 border-t border-border/50">
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Users className="w-4 h-4" />
-                        <span>{driver.total_rides || 0} courses</span>
+                        <span>{driver.total_rides || 0} {t('fleetPublic.rides')}</span>
                       </div>
                       <Button size="sm" onClick={() => handleBookWithDriver(driver)} className="gap-1">
                         <Calendar className="w-4 h-4" />
-                        Réserver
+                        {t('fleetPublic.book')}
                       </Button>
                     </div>
                   </CardContent>
@@ -714,24 +722,24 @@ const FleetPublicProfile = () => {
         <div className="text-center">
           <Card className="inline-block p-8 md:p-12 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/20 max-w-2xl">
             <Route className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h3 className="text-2xl font-bold mb-2">Planifier un trajet</h3>
+            <h3 className="text-2xl font-bold mb-2">{t('fleetPublic.planTrip')}</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Réservez directement ou créez un compte pour gérer vos réservations
+              {t('fleetPublic.bookOrCreateAccount')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button onClick={handleBookAvailable} size="lg" variant="outline" className="gap-2">
                 <Calendar className="w-5 h-5" />
-                Réserver sans compte
+                {t('fleetPublic.bookWithoutAccount')}
               </Button>
               <Link to={`/register-client-fleet?fm=${id}`}>
                 <Button size="lg" className="gap-2 w-full">
                   <UserPlus className="w-5 h-5" />
-                  Créer un compte
+                  {t('fleetPublic.createAccount')}
                 </Button>
               </Link>
             </div>
             <p className="text-xs text-muted-foreground mt-4">
-              En réservant sans compte, vos informations seront enregistrées et vous pourrez créer un compte ultérieurement
+              {t('fleetPublic.guestBookingNote')}
             </p>
           </Card>
         </div>
@@ -744,12 +752,12 @@ const FleetPublicProfile = () => {
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
               {bookingType === "specific" 
-                ? `Réserver avec ${selectedDriver?.profile?.full_name || "ce chauffeur"}`
-                : "Réserver avec un chauffeur disponible"
+                ? `${t('fleetPublic.bookWith')} ${selectedDriver?.profile?.full_name || t('fleetPublic.thisDriver')}`
+                : t('fleetPublic.bookWithAvailable')
               }
             </DialogTitle>
             <DialogDescription>
-              Remplissez les informations de votre trajet
+              {t('fleetPublic.fillTripInfo')}
             </DialogDescription>
           </DialogHeader>
 
@@ -874,13 +882,13 @@ const FleetPublicProfile = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowBookingDialog(false)}>
-              Annuler
+              {t('fleetPublic.cancel')}
             </Button>
             <Button onClick={handleSubmitBooking} disabled={bookingLoading}>
               {bookingLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : null}
-              Envoyer la demande
+              {t('fleetPublic.sendRequest')}
             </Button>
           </DialogFooter>
         </DialogContent>
