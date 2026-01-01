@@ -116,6 +116,7 @@ export const DriverProfileDialog = ({
             show_rating_public,
             created_at,
             updated_at,
+             card_photo_url,
             profiles!drivers_user_id_fkey (
               full_name,
               email,
@@ -137,7 +138,10 @@ export const DriverProfileDialog = ({
           return;
         }
 
-        console.log("✅ Driver data loaded");
+        console.log("✅ Driver data loaded:", {
+          card_photo_url: driverData.card_photo_url,
+          profile_photo_url: driverData.profiles?.profile_photo_url
+        });
 
         const { data: completedCourses } = await supabase
           .from("courses")
@@ -164,12 +168,15 @@ export const DriverProfileDialog = ({
 
         if (!isMounted) return;
 
+        // Priorité: card_photo_url du driver > profile_photo_url du profil
+        const photoUrl = driverData.card_photo_url || driverData.profiles?.profile_photo_url || null;
+
         const profile: DriverProfile = {
           ...driverData,
           full_name: driverData.profiles?.full_name || "Chauffeur",
           email: driverData.profiles?.email || "",
           phone: driverData.profiles?.phone || "",
-          profile_photo_url: driverData.profiles?.profile_photo_url || null,
+          profile_photo_url: photoUrl,
           rating: averageRating,
           total_rides: totalRides,
           vehicle_brand: driverData.vehicle_brand || null,
