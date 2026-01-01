@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { DriverCard } from "@/components/DriverCard";
-import { Car, Search, MapPin, AlertTriangle, Navigation, Lock } from "lucide-react";
+import { Car, Search, MapPin, AlertTriangle, Navigation, Lock, Building2, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
@@ -123,6 +125,7 @@ const Chauffeurs = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [includeFleets, setIncludeFleets] = useState(true);
   const navigate = useNavigate();
 
   // Restaurer les résultats UNIQUEMENT (pas de recherche auto)
@@ -560,6 +563,26 @@ const Chauffeurs = () => {
               </div>
             )}
 
+            {/* Option pour inclure les flottes */}
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border mt-4">
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <Label htmlFor="include-fleets" className="text-sm font-medium cursor-pointer">
+                    Inclure les flottes VTC
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Afficher aussi les chauffeurs des gestionnaires de flotte
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="include-fleets"
+                checked={includeFleets}
+                onCheckedChange={setIncludeFleets}
+              />
+            </div>
+
             {/* Search Button */}
             <Button
               onClick={handleSearch}
@@ -583,50 +606,68 @@ const Chauffeurs = () => {
             ) : drivers.length === 0 ? (
               <Card className="p-12 text-center">
                 <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mb-2">Aucun chauffeur trouvé</h3>
+                <h3 className="text-xl font-semibold mb-2">Aucun chauffeur indépendant trouvé</h3>
                 <p className="text-muted-foreground mb-4">
                   Essayez d'élargir votre zone de recherche ou de changer de ville
                 </p>
               </Card>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold">
-                    {drivers.length} chauffeur{drivers.length > 1 ? "s" : ""} trouvé{drivers.length > 1 ? "s" : ""}
-                  </h3>
+                {/* Section chauffeurs indépendants */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold">
+                        Chauffeurs indépendants
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {drivers.length} résultat{drivers.length > 1 ? "s" : ""} - Priorité donnée aux chauffeurs indépendants
+                      </p>
+                    </div>
+                    {totalPages > 1 && (
+                      <Badge variant="outline" className="ml-auto">
+                        Page {currentPage}/{totalPages}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedDrivers.map((driver, index) => (
+                      <DriverCard
+                        key={driver.id}
+                        driver={driver}
+                        cardIndex={index}
+                        onViewProfile={(driverId) => {
+                          setSelectedDriverId(driverId);
+                          setDialogOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                  
                   {totalPages > 1 && (
-                    <p className="text-sm text-muted-foreground">
-                      Page {currentPage} sur {totalPages}
-                    </p>
+                    <div className="mt-8">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        itemsPerPage={20}
+                        totalItems={drivers.length}
+                        onPageChange={goToPage}
+                      />
+                    </div>
                   )}
                 </div>
-                
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {paginatedDrivers.map((driver, index) => (
-                    <DriverCard
-                      key={driver.id}
-                      driver={driver}
-                      cardIndex={index}
-                      onViewProfile={(driverId) => {
-                        setSelectedDriverId(driverId);
-                        setDialogOpen(true);
-                      }}
-                    />
-                  ))}
-                </div>
-                
-                {totalPages > 1 && (
-                  <div className="mt-8">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      itemsPerPage={20}
-                      totalItems={drivers.length}
-                      onPageChange={goToPage}
-                    />
-                  </div>
-                )}
               </>
+            )}
+            
+            {/* Section flottes VTC après les résultats si activée */}
+            {includeFleets && (
+              <div className="mt-8 pt-8 border-t">
+                <FleetShowcaseSection />
+              </div>
             )}
           </>
         )}
