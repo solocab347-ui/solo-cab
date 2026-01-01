@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -149,6 +150,7 @@ interface Invitation {
 
 const FleetManagerDashboard = () => {
   const { user, signOut } = useAuth();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(true);
   const [fleetManager, setFleetManager] = useState<FleetManager | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -397,7 +399,7 @@ const FleetManagerDashboard = () => {
   if (!fleetManager) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Profil non trouvé</p>
+        <p className="text-muted-foreground">{t('fleetDashboard.profileNotFound')}</p>
       </div>
     );
   }
@@ -421,7 +423,7 @@ const FleetManagerDashboard = () => {
             {activeTab !== "home" && (
               <Button variant="ghost" size="sm" onClick={() => setActiveTab("home")} className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Accueil</span>
+                <span className="hidden sm:inline">{t('fleetDashboard.tabs.home')}</span>
               </Button>
             )}
           </div>
@@ -437,7 +439,7 @@ const FleetManagerDashboard = () => {
                     : "border-muted-foreground/50 text-muted-foreground bg-muted"
                 }`}
               >
-                {fleetManager.subscription_status === "active" ? "Premium" : "Standard"}
+                {fleetManager.subscription_status === "active" ? t('fleetDashboard.premium') : t('fleetDashboard.standard')}
               </Badge>
             </div>
             <Link to="/rgpd-data">
@@ -457,13 +459,9 @@ const FleetManagerDashboard = () => {
         {isAccountRestricted && (
           <Alert variant="destructive" className="mb-6 border-destructive/50 bg-destructive/10">
             <AlertTriangle className="h-5 w-5" />
-            <AlertTitle className="text-lg font-bold">Compte temporairement restreint</AlertTitle>
+            <AlertTitle className="text-lg font-bold">{t('fleetDashboard.accountRestricted')}</AlertTitle>
             <AlertDescription className="mt-2">
-              Le délai de 7 jours pour soumettre vos documents est dépassé. Veuillez envoyer vos documents ci-dessous pour débloquer l'accès complet à votre espace gestionnaire.
-              <br /><br />
-              <span className="text-sm opacity-80">
-                Une fois vos documents soumis, vous retrouverez l'accès à toutes les fonctionnalités en attendant la validation par notre équipe.
-              </span>
+              {t('fleetDashboard.submitDocuments')}
             </AlertDescription>
           </Alert>
         )}
@@ -471,7 +469,7 @@ const FleetManagerDashboard = () => {
         <Tabs value={activeTab} onValueChange={(tab) => {
           // Si compte restreint, seul l'onglet documents est accessible
           if (isAccountRestricted && tab !== "documents") {
-            toast.error("Veuillez d'abord soumettre vos documents pour accéder à cette fonctionnalité");
+            toast.error(t('fleetDashboard.accessFeatureError'));
             return;
           }
           setActiveTab(tab);
@@ -492,7 +490,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Home className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Accueil</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.home')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="drivers" 
@@ -502,7 +500,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Car className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Chauffeurs</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.drivers')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="clients" 
@@ -512,7 +510,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Users className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Clients</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.clients')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="courses" 
@@ -522,7 +520,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Route className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Courses</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.courses')}</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -536,7 +534,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <BarChart3 className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Statistiques</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.statistics')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="tools" 
@@ -546,7 +544,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Wrench className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Outils</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('common.more')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
@@ -555,7 +553,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <FileText className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Documents</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.documents')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
@@ -565,7 +563,7 @@ const FleetManagerDashboard = () => {
                   <div className="relative">
                     <Settings className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45 group-data-[state=active]:drop-shadow-glow" />
                   </div>
-                  <span className="text-xs font-semibold tracking-wide">Paramètres</span>
+                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.settings')}</span>
                 </TabsTrigger>
               </TabsList>
             </div>

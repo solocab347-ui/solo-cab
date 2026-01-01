@@ -8,10 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Truck, ArrowLeft, Eye, EyeOff, Building2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 import logo from "@/assets/logo-solocab.png";
 
 const RegisterFleetManager = () => {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -114,14 +117,19 @@ const RegisterFleetManager = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/50 flex items-center justify-center p-4">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+      
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={logo} alt="SoloCab" className="h-16 mx-auto mb-4" />
           </Link>
-          <h1 className="text-2xl font-bold">Devenir Gestionnaire de Flotte</h1>
+          <h1 className="text-2xl font-bold">{t('landing.fleet.registerFleet')}</h1>
           <p className="text-muted-foreground mt-2">
-            Gérez votre équipe de chauffeurs VTC
+            {t('landing.fleet.heroSubtitle')}
           </p>
         </div>
 
@@ -295,9 +303,9 @@ const RegisterFleetManager = () => {
 
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
-                Déjà inscrit ?{" "}
+                {t('login.alreadyHaveAccount')}{" "}
                 <Link to="/login" className="text-primary hover:underline">
-                  Se connecter
+                  {t('login.signIn')}
                 </Link>
               </p>
             </div>
@@ -307,7 +315,7 @@ const RegisterFleetManager = () => {
         <div className="mt-4 text-center">
           <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-4 h-4 mr-1" />
-            Retour à l'accueil
+            {t('common.back')}
           </Link>
         </div>
       </div>

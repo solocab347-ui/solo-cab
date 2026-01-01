@@ -13,6 +13,7 @@ import { usePaginatedData } from "@/hooks/usePaginatedQuery";
 import Pagination from "@/components/Pagination";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import SocialLinks from "@/components/SocialLinks";
 import FleetShowcaseSection from "@/components/public/FleetShowcaseSection";
@@ -43,6 +44,7 @@ interface PublicDriver {
 
 const Chauffeurs = () => {
   const { user, userRole } = useAuth();
+  const { t } = useLocale();
   const [drivers, setDrivers] = useState<PublicDriver[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -338,7 +340,7 @@ const Chauffeurs = () => {
   if (checkingAccess) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Chargement...</p>
+        <p className="text-muted-foreground">{t('chauffeurs.loading')}</p>
       </div>
     );
   }
@@ -350,13 +352,12 @@ const Chauffeurs = () => {
           <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock className="w-8 h-8 text-amber-600" />
           </div>
-          <h1 className="text-2xl font-bold mb-4">Accès Restreint</h1>
+          <h1 className="text-2xl font-bold mb-4">{t('chauffeurs.restrictedAccess')}</h1>
           <p className="text-muted-foreground mb-6">
-            En tant que client exclusif, vous avez déjà un chauffeur attitré. 
-            Vous ne pouvez pas accéder à la vitrine publique des chauffeurs.
+            {t('chauffeurs.exclusiveClientMessage')}
           </p>
           <Button onClick={() => navigate("/client-dashboard")}>
-            Retour au tableau de bord
+            {t('chauffeurs.backToDashboard')}
           </Button>
         </Card>
       </div>
@@ -374,16 +375,16 @@ const Chauffeurs = () => {
             <SocialLinks variant="compact" className="text-white" />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Trouvez Votre Chauffeur VTC
+            {t('chauffeurs.title')}
           </h1>
           <div className="flex items-center justify-center gap-6 flex-wrap">
             <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 px-6 py-2 text-base">
               <Car className="w-5 h-5 mr-2" />
-              Service Premium
+              {t('chauffeurs.premiumService')}
             </Badge>
             <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 px-6 py-2 text-base">
               <MapPin className="w-5 h-5 mr-2" />
-              Toute la France
+              {t('chauffeurs.allFrance')}
             </Badge>
           </div>
         </div>
@@ -396,10 +397,10 @@ const Chauffeurs = () => {
             <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
             <div>
               <p className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                Réservation à l'avance obligatoire :
+                {t('chauffeurs.advanceBookingRequired')}
               </p>
               <p className="text-amber-800 dark:text-amber-200">
-                Inscrivez-vous avec un chauffeur → Envoyez votre demande → Recevez votre devis automatique
+                {t('chauffeurs.bookingSteps')}
               </p>
             </div>
           </div>
@@ -412,7 +413,7 @@ const Chauffeurs = () => {
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
                 <Search className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold">Trouvez votre chauffeur</h2>
+              <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
             </div>
 
             {/* Search Mode Tabs */}
@@ -423,7 +424,7 @@ const Chauffeurs = () => {
                 className={searchMode === "city" ? "bg-gradient-to-r from-purple-600 to-blue-500" : ""}
               >
                 <MapPin className="w-4 h-4 mr-2" />
-                Par ville
+                {t('chauffeurs.byCity')}
               </Button>
               <Button
                 variant={searchMode === "address" ? "default" : "outline"}
@@ -431,7 +432,7 @@ const Chauffeurs = () => {
                 className={searchMode === "address" ? "bg-gradient-to-r from-purple-600 to-blue-500" : ""}
               >
                 <Navigation className="w-4 h-4 mr-2" />
-                Par adresse et rayon
+                {t('chauffeurs.byAddress')}
               </Button>
             </div>
 
@@ -441,7 +442,7 @@ const Chauffeurs = () => {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <MapPin className="w-4 h-4 text-purple-600" />
-                    Recherche par ville
+                    {t('chauffeurs.searchByCity')}
                   </label>
                   <CityAutocomplete
                     value={citySearch}
@@ -453,18 +454,18 @@ const Chauffeurs = () => {
                         console.log("✅ Coordonnées ville définies:", coords);
                       }
                     }}
-                    placeholder="Tapez et SÉLECTIONNEZ une ville dans la liste"
+                    placeholder={t('chauffeurs.typeAndSelectCity')}
                   />
                   {citySearch && !cityCoordinates && (
                     <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
-                      Sélectionnez une ville dans la liste qui apparaît
+                      {t('chauffeurs.selectCityHint')}
                     </p>
                   )}
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Rayon de recherche</label>
+                    <label className="text-sm font-medium">{t('chauffeurs.searchRadius')}</label>
                     <div className="relative">
                       <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
                         <span className="text-3xl font-bold text-white">{radiusCity[0]}</span>
