@@ -767,39 +767,39 @@ Cordialement`;
 
       {/* Dialog profil détaillé */}
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
-          <ScrollArea className="max-h-[80vh] pr-4">
+        <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] sm:w-full p-4 sm:p-6">
+          <ScrollArea className="max-h-[80vh] pr-2 sm:pr-4">
             {selectedDriver && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <DialogHeader>
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-20 w-20 border-2 border-primary">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-primary shrink-0">
                       <AvatarImage src={(selectedDriver as any).card_photo_url || selectedDriver.profile?.profile_photo_url || undefined} />
-                      <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                      <AvatarFallback className="text-xl sm:text-2xl bg-primary/10 text-primary">
                         {getInitials(selectedDriver.profile?.full_name || 'CH')}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <DialogTitle className="text-2xl">
+                    <div className="flex-1 min-w-0">
+                      <DialogTitle className="text-lg sm:text-2xl truncate">
                         {(selectedDriver as any).display_driver_name && selectedDriver.profile?.full_name 
                           ? selectedDriver.profile.full_name 
                           : 'Chauffeur VTC'}
                       </DialogTitle>
                       {(selectedDriver as any).display_company_name && selectedDriver.company_name && (
-                        <p className="text-muted-foreground flex items-center gap-2 mt-1">
-                          <Building2 className="h-4 w-4" />
-                          {selectedDriver.company_name}
+                        <p className="text-muted-foreground flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm">
+                          <Building2 className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{selectedDriver.company_name}</span>
                         </p>
                       )}
-                      <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-2 flex-wrap">
                         {((selectedDriver as any).show_rating_public !== false || (selectedDriver as any).show_rating_partners !== false) && selectedDriver.rating && (
-                          <Badge className="bg-yellow-500/10 text-yellow-600">
-                            <Star className="h-4 w-4 fill-current mr-1" />
+                          <Badge className="bg-yellow-500/10 text-yellow-600 text-xs">
+                            <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current mr-1" />
                             {selectedDriver.rating.toFixed(1)}/5
                           </Badge>
                         )}
-                        <Badge variant="outline">
-                          <CheckCircle className="h-4 w-4 mr-1 text-success" />
+                        <Badge variant="outline" className="text-xs">
+                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-success" />
                           {selectedDriver.total_rides || 0} courses
                         </Badge>
                       </div>
@@ -808,11 +808,11 @@ Cordialement`;
                 </DialogHeader>
 
                 <Tabs defaultValue="info" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="info">Infos</TabsTrigger>
-                    <TabsTrigger value="vehicle">Véhicule</TabsTrigger>
-                    <TabsTrigger value="services">Services</TabsTrigger>
-                    <TabsTrigger value="contact">Contact</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+                    <TabsTrigger value="info" className="text-xs sm:text-sm py-2">Infos</TabsTrigger>
+                    <TabsTrigger value="vehicle" className="text-xs sm:text-sm py-2">Véhicule</TabsTrigger>
+                    <TabsTrigger value="services" className="text-xs sm:text-sm py-2">Services</TabsTrigger>
+                    <TabsTrigger value="contact" className="text-xs sm:text-sm py-2">Contact</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="info" className="space-y-4 mt-4">
@@ -1165,20 +1165,20 @@ Cordialement`;
                       </CardContent>
                     </Card>
 
-                    <div className="flex gap-2">
-                      <Button className="flex-1" size="lg" variant="outline">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button className="flex-1" size="default" variant="outline">
                         <Send className="h-4 w-4 mr-2" />
                         Contacter
                       </Button>
                       {existingPartnerships.includes(selectedDriver.id) ? (
-                        <Button className="flex-1" size="lg" disabled variant="secondary">
+                        <Button className="flex-1" size="default" disabled variant="secondary">
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Partenariat existant
                         </Button>
                       ) : (
                         <Button 
                           className="flex-1" 
-                          size="lg"
+                          size="default"
                           onClick={() => {
                             setProfileDialogOpen(false);
                             openPartnershipDialog(selectedDriver);
