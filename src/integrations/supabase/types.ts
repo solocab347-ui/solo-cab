@@ -2929,6 +2929,72 @@ export type Database = {
         }
         Relationships: []
       }
+      error_reports: {
+        Row: {
+          additional_context: Json | null
+          admin_notes: string | null
+          browser_info: string | null
+          created_at: string
+          error_message: string
+          error_stack: string | null
+          id: string
+          page_route: string | null
+          page_url: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          screen_size: string | null
+          status: string | null
+          updated_at: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          user_role: string | null
+        }
+        Insert: {
+          additional_context?: Json | null
+          admin_notes?: string | null
+          browser_info?: string | null
+          created_at?: string
+          error_message: string
+          error_stack?: string | null
+          id?: string
+          page_route?: string | null
+          page_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screen_size?: string | null
+          status?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          additional_context?: Json | null
+          admin_notes?: string | null
+          browser_info?: string | null
+          created_at?: string
+          error_message?: string
+          error_stack?: string | null
+          id?: string
+          page_route?: string | null
+          page_url?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screen_size?: string | null
+          status?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       expense_reports: {
         Row: {
           amount: number
