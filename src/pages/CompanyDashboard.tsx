@@ -49,6 +49,7 @@ import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReports";
 import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
+import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
 import { cn } from "@/lib/utils";
 
 interface Company {
@@ -78,6 +79,7 @@ const menuItems = [
   { id: "partnerships", icon: Handshake, label: "Mes accords", color: "text-cyan-400" },
   { id: "drivers", icon: Car, label: "Chauffeurs VTC", color: "text-indigo-400" },
   { id: "fleets", icon: Truck, label: "Flottes", color: "text-rose-400" },
+  { id: "qrcode", icon: Globe, label: "QR Partenariat", color: "text-purple-400" },
   { id: "divider3", type: "divider", label: "Paramètres" },
   { id: "stats", icon: BarChart3, label: "Statistiques", color: "text-teal-400" },
   { id: "public", icon: Globe, label: "Profil public", color: "text-sky-400" },
@@ -205,6 +207,8 @@ export default function CompanyDashboard() {
         return <CompanyDriverSearch companyId={company.id} />;
       case "fleets":
         return <CompanyFleetSearch companyId={company.id} companyProfile={{ company_name: company.company_name, contact_name: company.contact_name }} />;
+      case "qrcode":
+        return <CompanyPartnershipQRCode companyId={company.id} companyName={company.company_name} />;
       case "employees":
         return <CompanyEmployeesManager companyId={company.id} />;
       case "stats":
