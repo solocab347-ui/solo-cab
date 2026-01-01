@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,28 +67,10 @@ interface Company {
   status: string;
 }
 
-const menuItems = [
-  { id: "overview", icon: Home, label: "Tableau de bord", color: "text-blue-400" },
-  { id: "reservations", icon: Calendar, label: "Courses", color: "text-violet-400" },
-  { id: "employees", icon: Users, label: "Collaborateurs", color: "text-emerald-400" },
-  { id: "divider1", type: "divider", label: "Finances" },
-  { id: "devis", icon: FileText, label: "Devis", color: "text-amber-400" },
-  { id: "invoices", icon: Receipt, label: "Factures", color: "text-orange-400" },
-  { id: "expenses", icon: Euro, label: "Notes de frais", color: "text-lime-400" },
-  { id: "payments", icon: CreditCard, label: "Paiements", color: "text-pink-400" },
-  { id: "divider2", type: "divider", label: "Partenaires" },
-  { id: "partnerships", icon: Handshake, label: "Mes accords", color: "text-cyan-400" },
-  { id: "drivers", icon: Car, label: "Chauffeurs VTC", color: "text-indigo-400" },
-  { id: "fleets", icon: Truck, label: "Flottes", color: "text-rose-400" },
-  { id: "qrcode", icon: Globe, label: "QR Partenariat", color: "text-purple-400" },
-  { id: "divider3", type: "divider", label: "Paramètres" },
-  { id: "stats", icon: BarChart3, label: "Statistiques", color: "text-teal-400" },
-  { id: "public", icon: Globe, label: "Profil public", color: "text-sky-400" },
-  { id: "settings", icon: Settings, label: "Configuration", color: "text-slate-400" },
-];
 
 export default function CompanyDashboard() {
   const { user, signOut } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
@@ -95,6 +78,26 @@ export default function CompanyDashboard() {
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
   const [stats, setStats] = useState({ courses: 0, spent: 0, drivers: 0, employees: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const menuItems = [
+    { id: "overview", icon: Home, label: t('companyDashboard.menu.dashboard'), color: "text-blue-400" },
+    { id: "reservations", icon: Calendar, label: t('companyDashboard.menu.rides'), color: "text-violet-400" },
+    { id: "employees", icon: Users, label: t('companyDashboard.menu.employees'), color: "text-emerald-400" },
+    { id: "divider1", type: "divider", label: t('companyDashboard.menu.finances') },
+    { id: "devis", icon: FileText, label: t('companyDashboard.menu.quotes'), color: "text-amber-400" },
+    { id: "invoices", icon: Receipt, label: t('companyDashboard.menu.invoices'), color: "text-orange-400" },
+    { id: "expenses", icon: Euro, label: t('companyDashboard.menu.expenses'), color: "text-lime-400" },
+    { id: "payments", icon: CreditCard, label: t('companyDashboard.menu.payments'), color: "text-pink-400" },
+    { id: "divider2", type: "divider", label: t('companyDashboard.menu.partners') },
+    { id: "partnerships", icon: Handshake, label: t('companyDashboard.menu.agreements'), color: "text-cyan-400" },
+    { id: "drivers", icon: Car, label: t('companyDashboard.menu.vtcDrivers'), color: "text-indigo-400" },
+    { id: "fleets", icon: Truck, label: t('companyDashboard.menu.fleets'), color: "text-rose-400" },
+    { id: "qrcode", icon: Globe, label: t('companyDashboard.menu.partnershipQR'), color: "text-purple-400" },
+    { id: "divider3", type: "divider", label: t('companyDashboard.menu.settings') },
+    { id: "stats", icon: BarChart3, label: t('companyDashboard.menu.statistics'), color: "text-teal-400" },
+    { id: "public", icon: Globe, label: t('companyDashboard.menu.publicProfile'), color: "text-sky-400" },
+    { id: "settings", icon: Settings, label: t('companyDashboard.menu.configuration'), color: "text-slate-400" },
+  ];
 
   useEffect(() => {
     if (user) {
@@ -162,7 +165,7 @@ export default function CompanyDashboard() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center animate-pulse">
             <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">{t('companyDashboard.loading')}</p>
         </div>
       </div>
     );
@@ -176,9 +179,9 @@ export default function CompanyDashboard() {
             <div className="w-20 h-20 mx-auto rounded-full bg-destructive/20 flex items-center justify-center mb-4">
               <XCircle className="w-10 h-10 text-destructive" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Profil non trouvé</h2>
-            <p className="text-muted-foreground mb-4">Votre profil entreprise n'a pas été trouvé.</p>
-            <Button onClick={() => navigate("/")}>Retour à l'accueil</Button>
+            <h2 className="text-xl font-semibold mb-2">{t('companyDashboard.profileNotFound')}</h2>
+            <p className="text-muted-foreground mb-4">{t('companyDashboard.profileNotFoundDesc')}</p>
+            <Button onClick={() => navigate("/")}>{t('companyDashboard.backToHome')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -256,6 +259,8 @@ export default function CompanyDashboard() {
               onTabChange={handleTabChange}
               onLogout={handleLogout}
               onClose={() => setSidebarOpen(false)}
+              menuItems={menuItems}
+              t={t}
             />
           </aside>
         </div>
@@ -268,6 +273,8 @@ export default function CompanyDashboard() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           onLogout={handleLogout}
+          menuItems={menuItems}
+          t={t}
         />
       </aside>
 
@@ -283,7 +290,7 @@ export default function CompanyDashboard() {
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold text-white">{currentMenuItem.label}</h1>
-                  <p className="text-sm text-muted-foreground">Espace entreprise</p>
+                  <p className="text-sm text-muted-foreground">{t('companyDashboard.companySpace')}</p>
                 </div>
               </>
             )}
@@ -292,7 +299,7 @@ export default function CompanyDashboard() {
             <NotificationBell />
             <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-white">
               <LogOut className="w-4 h-4 mr-2" />
-              Déconnexion
+              {t('companyDashboard.logout')}
             </Button>
           </div>
         </header>
@@ -313,12 +320,16 @@ function SidebarContent({
   onTabChange,
   onLogout,
   onClose,
+  menuItems,
+  t,
 }: {
   company: Company;
   activeTab: string;
   onTabChange: (tab: string) => void;
   onLogout: () => void;
   onClose?: () => void;
+  menuItems: any[];
+  t: (key: string) => string;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -331,7 +342,7 @@ function SidebarContent({
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white truncate">{company.company_name}</p>
-              <p className="text-xs text-muted-foreground">Entreprise</p>
+              <p className="text-xs text-muted-foreground">{t('companyDashboard.company')}</p>
             </div>
           </div>
           {onClose && (
@@ -387,7 +398,7 @@ function SidebarContent({
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Déconnexion
+          {t('companyDashboard.logout')}
         </button>
       </div>
     </div>
