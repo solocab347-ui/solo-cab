@@ -332,4 +332,12 @@ export const driverDashboardTranslations: Translations = {
     zh: '公司',
     ar: 'الشركة',
   },
+  'driverDashboard.rgpdData': {
+    fr: 'Mes Données RGPD',
+    en: 'My GDPR Data',
+    es: 'Mis Datos RGPD',
+    it: 'I Miei Dati GDPR',
+    zh: '我的GDPR数据',
+    ar: 'بياناتي GDPR',
+  },
 };

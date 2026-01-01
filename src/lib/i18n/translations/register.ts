@@ -380,4 +380,20 @@ export const registerTranslations: Translations = {
     zh: '检测到有效的邀请令牌。完整的注册表单即将推出。',
     ar: 'تم اكتشاف رمز دعوة صالح. سيتوفر نموذج التسجيل الكامل قريباً.',
   },
+  'register.phoneHint': {
+    fr: 'Obligatoire pour communiquer avec votre chauffeur',
+    en: 'Required to communicate with your driver',
+    es: 'Necesario para comunicarse con su conductor',
+    it: 'Necessario per comunicare con il tuo autista',
+    zh: '需要与您的司机沟通',
+    ar: 'مطلوب للتواصل مع سائقك',
+  },
+  'register.addressPlaceholder': {
+    fr: 'Commencez à taper votre adresse...',
+    en: 'Start typing your address...',
+    es: 'Comience a escribir su dirección...',
+    it: 'Inizia a digitare il tuo indirizzo...',
+    zh: '开始输入您的地址...',
+    ar: 'ابدأ بكتابة عنوانك...',
+  },
 };

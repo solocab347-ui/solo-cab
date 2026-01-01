@@ -46,9 +46,11 @@ import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissio
 import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
+import { useLocale } from "@/hooks/useLocale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,7 +60,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { logger } from "@/lib/productionLogger";
 
 const DriverDashboard = () => {
-  
+  const { t } = useLocale();
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);
@@ -346,9 +348,10 @@ const DriverDashboard = () => {
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <LanguageSelector />
             <NotificationBell />
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || "Chauffeur"}</span>
+              <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || t('driverDashboard.driver')}</span>
               <Badge 
                 variant="outline" 
                 className={`text-xs border ${
@@ -360,14 +363,14 @@ const DriverDashboard = () => {
                 }`}
               >
                 {driverProfile?.driver?.free_access_granted 
-                  ? "Accès Gratuit" 
+                  ? t('driverDashboard.freeAccess') 
                   : driverProfile?.driver?.subscription_status === "active" 
-                    ? "Actif" 
-                    : "Inactif"}
+                    ? t('driverDashboard.active') 
+                    : t('driverDashboard.inactive')}
               </Badge>
             </div>
             <Link to="/rgpd-data">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground hover:bg-muted" title="Mes Données RGPD">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground hover:bg-muted" title={t('driverDashboard.rgpdData')}>
                 <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
@@ -384,9 +387,9 @@ const DriverDashboard = () => {
         {driverProfile?.driver?.subscription_status !== "active" && !driverProfile?.driver?.free_access_granted && (
           <Alert className="mb-6 bg-destructive/10 border-destructive">
             <AlertCircle className="h-4 w-4 text-destructive" />
-            <AlertTitle className="text-destructive">Abonnement Inactif</AlertTitle>
+            <AlertTitle className="text-destructive">{t('driverDashboard.subscriptionInactive')}</AlertTitle>
             <AlertDescription>
-              Votre abonnement n'est pas actif. Activez-le dans l'onglet "Abonnement" pour accéder à toutes les fonctionnalités de la plateforme.
+              {t('driverDashboard.subscriptionAlert')}
             </AlertDescription>
           </Alert>
         )}
@@ -411,33 +414,33 @@ const DriverDashboard = () => {
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
               <TabsTrigger value="home" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
                 <Home className="w-4 h-4" />
-                <span className="hidden sm:inline">Accueil</span>
-                <span className="sm:hidden">Accueil</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.home')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.home')}</span>
               </TabsTrigger>
               <TabsTrigger value="clients" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white">
                 <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Mes Clients</span>
-                <span className="sm:hidden">Clients</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.myClients')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.clients')}</span>
               </TabsTrigger>
               <TabsTrigger value="courses" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
                 <Car className="w-4 h-4" />
-                <span className="hidden sm:inline">Mes Courses</span>
-                <span className="sm:hidden">Courses</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.myRides')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.rides')}</span>
               </TabsTrigger>
               <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <MessageSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Messages</span>
-                <span className="sm:hidden">Messages</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.messages')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.messages')}</span>
               </TabsTrigger>
               <TabsTrigger value="devis" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Devis</span>
-                <span className="sm:hidden">Devis</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.quotes')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.quotes')}</span>
               </TabsTrigger>
               <TabsTrigger value="factures" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
                 <CreditCard className="w-4 h-4" />
-                <span className="hidden sm:inline">Factures</span>
-                <span className="sm:hidden">Factures</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.invoices')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.invoices')}</span>
               </TabsTrigger>
             </div>
             
@@ -447,8 +450,8 @@ const DriverDashboard = () => {
               {!driverProfile?.driver?.is_fleet_driver && (
                 <TabsTrigger value="documents" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                   <FolderOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Documents</span>
-                  <span className="sm:hidden">Docs</span>
+                  <span className="hidden sm:inline">{t('driverDashboard.menu.documents')}</span>
+                  <span className="sm:hidden">{t('driverDashboard.menu.docs')}</span>
                 </TabsTrigger>
               )}
               
@@ -456,23 +459,23 @@ const DriverDashboard = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white flex-col sm:flex-row">
                     <Wrench className="w-4 h-4" />
-                    <span className="hidden sm:inline">Outils</span>
-                    <span className="sm:hidden">Outils</span>
+                    <span className="hidden sm:inline">{t('driverDashboard.menu.tools')}</span>
+                    <span className="sm:hidden">{t('driverDashboard.menu.tools')}</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48 bg-[#1a2942] border border-white/10 z-50">
                   <DropdownMenuItem onClick={() => setActiveTab("planning")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
                     <Calendar className="w-4 h-4" />
-                    Planning
+                    {t('driverDashboard.menu.planning')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white">
                     <Calculator className="w-4 h-4" />
-                    Calculatrice
+                    {t('driverDashboard.menu.calculator')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("qrcode")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
                     <QrCode className="w-4 h-4" />
-                    Mon QR Code
+                    {t('driverDashboard.menu.myQRCode')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -481,56 +484,56 @@ const DriverDashboard = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 sm:px-3 py-2 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-gray-400 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-600 hover:text-white flex-col sm:flex-row">
                     <Wrench className="w-4 h-4" />
-                    <span className="hidden sm:inline">Développement</span>
-                    <span className="sm:hidden">Dev</span>
+                    <span className="hidden sm:inline">{t('driverDashboard.menu.development')}</span>
+                    <span className="sm:hidden">{t('driverDashboard.menu.dev')}</span>
                     <ChevronDown className="w-3 h-3 hidden sm:inline" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 bg-[#1a2942] border border-white/10 z-50">
                   <DropdownMenuItem onClick={() => setActiveTab("campaigns")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-blue-600 hover:text-white">
                     <Megaphone className="w-4 h-4" />
-                    Campagne
+                    {t('driverDashboard.menu.campaign')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("profitability")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white">
                     <PieChart className="w-4 h-4" />
-                    Calcul de rentabilité
+                    {t('driverDashboard.menu.profitability')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("prospection")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-600 hover:text-white">
                     <Sparkles className="w-4 h-4" />
-                    Prospection
+                    {t('driverDashboard.menu.prospection')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
               <TabsTrigger value="feedback" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                 <Lightbulb className="w-4 h-4" />
-                <span className="hidden sm:inline">Feedback</span>
-                <span className="sm:hidden">Retour</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.feedback')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.feedback')}</span>
               </TabsTrigger>
               
               <TabsTrigger value="subscription" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
                 <TrendingUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Abonnement</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.subscription')}</span>
                 <span className="sm:hidden">Abo</span>
               </TabsTrigger>
               <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white">
                 <Globe className="w-4 h-4" />
-                <span className="hidden sm:inline">Profil Public</span>
-                <span className="sm:hidden">Profil</span>
+                <span className="hidden sm:inline">{t('driverDashboard.profile.publicProfile')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.profile')}</span>
               </TabsTrigger>
               <TabsTrigger value="statistics" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Statistiques</span>
-                <span className="sm:hidden">Stats</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.statistics')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.stats')}</span>
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
                 <Handshake className="w-4 h-4" />
-                <span className="hidden sm:inline">Partenariats</span>
-                <span className="sm:hidden">Partenariats</span>
+                <span className="hidden sm:inline">{t('driverDashboard.menu.partnerships')}</span>
+                <span className="sm:hidden">{t('driverDashboard.menu.partnerships')}</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-slate-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
-                <span>Paramètres</span>
+                <span>{t('driverDashboard.menu.settings')}</span>
               </TabsTrigger>
             </div>
           </TabsList>

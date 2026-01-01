@@ -181,7 +181,7 @@ const RegisterClientDriver = () => {
               placeholder="+33 6 12 34 56 78"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Obligatoire pour communiquer avec votre chauffeur
+              {t('register.phoneHint')}
             </p>
           </div>
           <div>
@@ -189,7 +189,7 @@ const RegisterClientDriver = () => {
             <AddressAutocomplete
               value={formData.address}
               onChange={(address) => setFormData({ ...formData, address })}
-              placeholder="Commencez à taper votre adresse..."
+              placeholder={t('register.addressPlaceholder')}
             />
             <p className="text-xs text-muted-foreground mt-1">
               {t('register.addressHint')}
