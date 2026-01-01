@@ -199,7 +199,7 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
         .from('fleet_driver_partnerships')
         .select('driver_id, status, commission_percentage, payment_schedule, created_at, accepted_at')
         .eq('fleet_manager_id', fleetManagerId)
-        .in('status', ['pending', 'active']);
+        .in('status', ['pending', 'accepted']); // Status is 'accepted' not 'active'
       
       if (data) {
         setExistingPartnerships(data.map(p => p.driver_id));
@@ -1382,8 +1382,8 @@ Cordialement`;
               {/* Status */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm font-medium">Statut</span>
-                <Badge variant={viewingPartnership.status === 'active' ? 'default' : 'secondary'}>
-                  {viewingPartnership.status === 'active' ? 'Actif' : 
+                <Badge variant={viewingPartnership.status === 'accepted' ? 'default' : 'secondary'}>
+                  {viewingPartnership.status === 'accepted' ? 'Actif' : 
                    viewingPartnership.status === 'pending' ? 'En attente' : viewingPartnership.status}
                 </Badge>
               </div>
