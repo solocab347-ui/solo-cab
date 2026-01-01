@@ -18,7 +18,7 @@ export function useDriverProfile(userId: string | undefined) {
 
       const [profileRes, driverRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('drivers').select('*').eq('user_id', userId).single()
+        supabase.from('drivers').select('*, card_photo_url').eq('user_id', userId).single()
       ]);
 
       if (profileRes.error) throw profileRes.error;

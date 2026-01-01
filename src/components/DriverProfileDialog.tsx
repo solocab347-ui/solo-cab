@@ -114,9 +114,7 @@ export const DriverProfileDialog = ({
             show_phone,
             show_email,
             show_rating_public,
-            created_at,
-            updated_at,
-             card_photo_url,
+            card_photo_url,
             profiles!drivers_user_id_fkey (
               full_name,
               email,

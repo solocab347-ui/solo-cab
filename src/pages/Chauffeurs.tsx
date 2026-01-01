@@ -125,7 +125,7 @@ const Chauffeurs = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [includeFleets, setIncludeFleets] = useState(true);
+  const [includeFleets, setIncludeFleets] = useState(false); // Flottes exclues par défaut
   const navigate = useNavigate();
 
   // Restaurer les résultats UNIQUEMENT (pas de recherche auto)
@@ -419,6 +419,26 @@ const Chauffeurs = () => {
               <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
             </div>
 
+            {/* Option pour inclure les flottes - EN HAUT */}
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border mb-6">
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <Label htmlFor="include-fleets-top" className="text-sm font-medium cursor-pointer">
+                    Rechercher des flottes VTC
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Inclure les chauffeurs des gestionnaires de flotte
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="include-fleets-top"
+                checked={includeFleets}
+                onCheckedChange={setIncludeFleets}
+              />
+            </div>
+
             {/* Search Mode Tabs */}
             <div className="flex gap-4 mb-6">
               <Button
@@ -563,25 +583,6 @@ const Chauffeurs = () => {
               </div>
             )}
 
-            {/* Option pour inclure les flottes */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border mt-4">
-              <div className="flex items-center gap-3">
-                <Building2 className="w-5 h-5 text-emerald-600" />
-                <div>
-                  <Label htmlFor="include-fleets" className="text-sm font-medium cursor-pointer">
-                    Inclure les flottes VTC
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Afficher aussi les chauffeurs des gestionnaires de flotte
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="include-fleets"
-                checked={includeFleets}
-                onCheckedChange={setIncludeFleets}
-              />
-            </div>
 
             {/* Search Button */}
             <Button
