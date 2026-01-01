@@ -18,10 +18,25 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase
+  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase, EyeOff
 } from "lucide-react";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
-import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
+import { getEquipmentLabel, getEquipmentIcon } from "@/lib/vehicleEquipmentDisplay";
+import { getServiceLabel, getServiceIcon } from "@/lib/serviceLabels";
+import { extractCityDepartment } from "@/lib/addressPrivacy";
+
+interface DriverVehicle {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  color: string | null;
+  license_plate: string | null;
+  vehicle_category: string | null;
+  max_passengers: number | null;
+  vehicle_photos: string[] | null;
+  is_favorite: boolean | null;
+}
 
 interface CompanyDriverSearchProps {
   companyId: string;
@@ -172,12 +187,31 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           base_rate,
           per_km_rate,
           hourly_rate,
-          minimum_price
+          minimum_price,
+          home_address
         `)
         .eq("status", "validated")
         .eq("visible_to_companies", true)
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(100);
+
+      // Récupérer les véhicules pour chaque chauffeur
+      const driverIds = (data || []).map((d: any) => d.id);
+      let vehiclesMap: Record<string, DriverVehicle[]> = {};
+      if (driverIds.length > 0) {
+        const { data: vehicles } = await supabase
+          .from("driver_vehicles")
+          .select("*")
+          .in("driver_id", driverIds);
+        
+        if (vehicles) {
+          vehiclesMap = vehicles.reduce((acc: Record<string, DriverVehicle[]>, v: any) => {
+            if (!acc[v.driver_id]) acc[v.driver_id] = [];
+            acc[v.driver_id].push(v);
+            return acc;
+          }, {});
+        }
+      }
 
       if (error) throw error;
       
@@ -199,10 +233,11 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
         }
       }
       
-      // Attacher les profils aux chauffeurs
+      // Attacher les profils et véhicules aux chauffeurs
       const dataWithProfiles = (data || []).map((driver: any) => ({
         ...driver,
-        profile: profilesMap[driver.user_id] || null
+        profile: profilesMap[driver.user_id] || null,
+        vehicles: vehiclesMap[driver.id] || []
       }));
 
       // Apply filters in JavaScript for more flexibility
@@ -621,8 +656,16 @@ ${company?.company_name || ""}`;
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Car className="w-4 h-4" />
                       <span className="truncate">
-                        {driver.vehicle_brand} {driver.vehicle_model}
-                        {driver.max_passengers && ` • ${driver.max_passengers} places`}
+                        {(() => {
+                          // Priorité aux véhicules de la nouvelle table
+                          const vehicles = driver.vehicles || [];
+                          const favoriteVehicle = vehicles.find((v: DriverVehicle) => v.is_favorite) || vehicles[0];
+                          if (favoriteVehicle) {
+                            return `${favoriteVehicle.brand} ${favoriteVehicle.model}${favoriteVehicle.max_passengers ? ` • ${favoriteVehicle.max_passengers} places` : ''}`;
+                          }
+                          // Fallback vers anciens champs
+                          return `${driver.vehicle_brand || ''} ${driver.vehicle_model || ''}${driver.max_passengers ? ` • ${driver.max_passengers} places` : ''}`.trim() || 'Véhicule non renseigné';
+                        })()}
                       </span>
                     </div>
                     {driver.working_sectors?.length > 0 && (
@@ -840,52 +883,67 @@ ${company?.company_name || ""}`;
                   Véhicule
                 </h4>
                 
-                {/* Photos du véhicule */}
-                {selectedDriver.vehicle_photos?.length > 0 && (
-                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    {selectedDriver.vehicle_photos.slice(0, 4).map((photo: string, idx: number) => (
-                      <img 
-                        key={idx}
-                        src={photo} 
-                        alt={`Véhicule ${idx + 1}`}
-                        className="w-24 h-18 object-cover rounded-lg flex-shrink-0 border"
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {(selectedDriver.vehicle_brand || selectedDriver.vehicle_model) && (
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-xs">Modèle</span>
-                      <span className="font-medium">{selectedDriver.vehicle_brand} {selectedDriver.vehicle_model}</span>
-                    </div>
-                  )}
-                  {selectedDriver.vehicle_year && (
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-xs">Année</span>
-                      <span className="font-medium">{selectedDriver.vehicle_year}</span>
-                    </div>
-                  )}
-                  {selectedDriver.vehicle_color && (
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-xs">Couleur</span>
-                      <span className="font-medium">{selectedDriver.vehicle_color}</span>
-                    </div>
-                  )}
-                  {selectedDriver.max_passengers && (
-                    <div className="flex flex-col">
-                      <span className="text-muted-foreground text-xs">Passagers max</span>
-                      <span className="font-medium">{selectedDriver.max_passengers}</span>
-                    </div>
-                  )}
-                  {selectedDriver.vehicle_category && typeof selectedDriver.vehicle_category === 'string' && (
-                    <div className="flex flex-col col-span-2">
-                      <span className="text-muted-foreground text-xs">Catégorie</span>
-                      <span className="font-medium capitalize">{selectedDriver.vehicle_category.replace(/_/g, ' ')}</span>
-                    </div>
-                  )}
-                </div>
+                {(() => {
+                  // Priorité aux véhicules de la nouvelle table
+                  const vehicles = selectedDriver.vehicles || [];
+                  const favoriteVehicle = vehicles.find((v: DriverVehicle) => v.is_favorite) || vehicles[0];
+                  const vehiclePhotos = favoriteVehicle?.vehicle_photos || selectedDriver.vehicle_photos;
+                  
+                  return (
+                    <>
+                      {/* Photos du véhicule */}
+                      {vehiclePhotos?.length > 0 && (
+                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                          {vehiclePhotos.slice(0, 4).map((photo: string, idx: number) => (
+                            <img 
+                              key={idx}
+                              src={photo} 
+                              alt={`Véhicule ${idx + 1}`}
+                              className="w-24 h-18 object-cover rounded-lg flex-shrink-0 border"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">Modèle</span>
+                          <span className="font-medium">
+                            {favoriteVehicle 
+                              ? `${favoriteVehicle.brand} ${favoriteVehicle.model}`
+                              : `${selectedDriver.vehicle_brand || ''} ${selectedDriver.vehicle_model || ''}`.trim() || 'Non renseigné'}
+                          </span>
+                        </div>
+                        {(favoriteVehicle?.year || selectedDriver.vehicle_year) && (
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Année</span>
+                            <span className="font-medium">{favoriteVehicle?.year || selectedDriver.vehicle_year}</span>
+                          </div>
+                        )}
+                        {(favoriteVehicle?.color || selectedDriver.vehicle_color) && (
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Couleur</span>
+                            <span className="font-medium">{favoriteVehicle?.color || selectedDriver.vehicle_color}</span>
+                          </div>
+                        )}
+                        {(favoriteVehicle?.max_passengers || selectedDriver.max_passengers) && (
+                          <div className="flex flex-col">
+                            <span className="text-muted-foreground text-xs">Passagers max</span>
+                            <span className="font-medium">{favoriteVehicle?.max_passengers || selectedDriver.max_passengers}</span>
+                          </div>
+                        )}
+                        {(favoriteVehicle?.vehicle_category || (selectedDriver.vehicle_category && typeof selectedDriver.vehicle_category === 'string')) && (
+                          <div className="flex flex-col col-span-2">
+                            <span className="text-muted-foreground text-xs">Catégorie</span>
+                            <span className="font-medium capitalize">
+                              {(favoriteVehicle?.vehicle_category || selectedDriver.vehicle_category)?.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
                 
                 {selectedDriver.vehicle_equipment?.length > 0 && (
                   <div className="mt-4 pt-4 border-t">
@@ -906,7 +964,7 @@ ${company?.company_name || ""}`;
               </div>
 
               {/* Tarifs - uniquement si chauffeur autorise */}
-              {selectedDriver.show_pricing_partners && (
+              {selectedDriver.show_pricing_partners ? (
                 <div className="p-4 border rounded-xl bg-amber-500/5 border-amber-500/20">
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-amber-700">
                     <Euro className="w-4 h-4" />
@@ -938,6 +996,26 @@ ${company?.company_name || ""}`;
                       </div>
                     )}
                   </div>
+                </div>
+              ) : (
+                <div className="p-4 border rounded-xl bg-muted/50 border-muted">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <EyeOff className="w-4 h-4" />
+                    <span className="text-sm">Les tarifs ne sont pas partagés par ce chauffeur</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Localisation - Ville/Département uniquement */}
+              {selectedDriver.home_address && (
+                <div className="p-4 border rounded-xl">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Localisation
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {extractCityDepartment(selectedDriver.home_address) || 'Non renseignée'}
+                  </p>
                 </div>
               )}
 
