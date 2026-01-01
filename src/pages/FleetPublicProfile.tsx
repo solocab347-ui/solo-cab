@@ -765,7 +765,7 @@ const FleetPublicProfile = () => {
             {/* Adresses */}
             <div className="space-y-3">
               <div>
-                <Label>Adresse de départ *</Label>
+                <Label>{t('fleetPublic.pickupAddress')} *</Label>
                 <AddressAutocomplete
                   value={bookingData.pickupAddress}
                   onChange={(address, coordinates) => setBookingData(prev => ({
@@ -774,11 +774,11 @@ const FleetPublicProfile = () => {
                     pickupLatitude: coordinates?.latitude || null,
                     pickupLongitude: coordinates?.longitude || null,
                   }))}
-                  placeholder="Où souhaitez-vous être pris en charge ?"
+                  placeholder={t('fleetPublic.pickupPlaceholder')}
                 />
               </div>
               <div>
-                <Label>Adresse d'arrivée *</Label>
+                <Label>{t('fleetPublic.destinationAddress')} *</Label>
                 <AddressAutocomplete
                   value={bookingData.destinationAddress}
                   onChange={(address, coordinates) => setBookingData(prev => ({
@@ -787,7 +787,7 @@ const FleetPublicProfile = () => {
                     destinationLatitude: coordinates?.latitude || null,
                     destinationLongitude: coordinates?.longitude || null,
                   }))}
-                  placeholder="Où souhaitez-vous aller ?"
+                  placeholder={t('fleetPublic.destinationPlaceholder')}
                 />
               </div>
             </div>
@@ -795,7 +795,7 @@ const FleetPublicProfile = () => {
             {/* Date et heure */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Date *</Label>
+                <Label>{t('fleetPublic.date')} *</Label>
                 <Input
                   type="date"
                   value={bookingData.scheduledDate}
@@ -804,7 +804,7 @@ const FleetPublicProfile = () => {
                 />
               </div>
               <div>
-                <Label>Heure *</Label>
+                <Label>{t('fleetPublic.time')} *</Label>
                 <Input
                   type="time"
                   value={bookingData.scheduledTime}
@@ -815,7 +815,7 @@ const FleetPublicProfile = () => {
 
             {/* Passagers */}
             <div>
-              <Label>Nombre de passagers</Label>
+              <Label>{t('fleetPublic.passengers')}</Label>
               <Input
                 type="number"
                 min={1}
@@ -828,25 +828,25 @@ const FleetPublicProfile = () => {
             {/* Infos contact */}
             <div className="border-t border-border pt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">Vos coordonnées</p>
-                <Badge variant="secondary" className="text-xs">Réservation invité</Badge>
+                <p className="text-sm font-medium text-muted-foreground">{t('fleetPublic.yourDetails')}</p>
+                <Badge variant="secondary" className="text-xs">{t('fleetPublic.guestBooking')}</Badge>
               </div>
               <Alert className="bg-primary/5 border-primary/20">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Vos informations seront enregistrées. Vous pourrez créer un compte ultérieurement pour accéder à l'historique de vos réservations.
+                  {t('fleetPublic.guestInfoNote')}
                 </AlertDescription>
               </Alert>
               <div>
-                <Label>Nom complet *</Label>
+                <Label>{t('fleetPublic.fullName')} *</Label>
                 <Input
                   value={bookingData.guestName}
                   onChange={(e) => setBookingData(prev => ({ ...prev, guestName: e.target.value }))}
-                  placeholder="Votre nom"
+                  placeholder={t('fleetPublic.fullName')}
                 />
               </div>
               <div>
-                <Label>Téléphone *</Label>
+                <Label>{t('fleetPublic.phone')} *</Label>
                 <Input
                   type="tel"
                   value={bookingData.guestPhone}
@@ -855,7 +855,7 @@ const FleetPublicProfile = () => {
                 />
               </div>
               <div>
-                <Label>Email (recommandé pour le suivi)</Label>
+                <Label>{t('fleetPublic.emailRecommended')}</Label>
                 <Input
                   type="email"
                   value={bookingData.guestEmail}
@@ -863,18 +863,18 @@ const FleetPublicProfile = () => {
                   placeholder="email@exemple.com"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Permet de recevoir les confirmations et de créer un compte facilement
+                  {t('fleetPublic.emailNote')}
                 </p>
               </div>
             </div>
 
             {/* Notes */}
             <div>
-              <Label>Notes (optionnel)</Label>
+              <Label>{t('fleetPublic.notes')}</Label>
               <Textarea
                 value={bookingData.notes}
                 onChange={(e) => setBookingData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Informations complémentaires..."
+                placeholder={t('fleetPublic.additionalInfo')}
                 rows={2}
               />
             </div>
