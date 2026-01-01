@@ -45,6 +45,7 @@ import { fr } from "date-fns/locale";
 import logoSolocab from "@/assets/logo-solocab.png";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { useFleetProfileRealtime } from "@/hooks/usePublicFleetProfile";
+import { getServiceLabel } from "@/lib/serviceLabels";
 
 interface FleetDriver {
   id: string;
@@ -78,11 +79,16 @@ interface FleetManagerPublic {
   show_address: boolean;
   show_phone: boolean;
   show_email: boolean;
+  show_driver_count_public: boolean;
+  show_client_count_public: boolean;
   auto_dispatch_enabled: boolean;
   services_offered: string[] | null;
   default_partnership_commission: number | null;
   partnership_terms: string | null;
+  total_drivers?: number;
+  total_clients?: number;
 }
+
 
 const FleetPublicProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -141,10 +147,14 @@ const FleetPublicProfile = () => {
           show_address,
           show_phone,
           show_email,
+          show_driver_count_public,
+          show_client_count_public,
           auto_dispatch_enabled,
           services_offered,
           default_partnership_commission,
-          partnership_terms
+          partnership_terms,
+          total_drivers,
+          total_clients
         `)
         .eq("id", id)
         .single();
@@ -433,12 +443,22 @@ const FleetPublicProfile = () => {
 
             {/* Stats + Quick book */}
             <div className="flex flex-col gap-4">
-              <div className="flex gap-4">
-                <div className="text-center bg-card/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-border/30">
-                  <div className="text-3xl font-bold text-primary">{drivers.length}</div>
-                  <div className="text-sm text-muted-foreground">Chauffeurs</div>
+              {(fleetManager.show_driver_count_public || fleetManager.show_client_count_public) && (
+                <div className="flex gap-4">
+                  {fleetManager.show_driver_count_public && (
+                    <div className="text-center bg-card/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-border/30">
+                      <div className="text-3xl font-bold text-primary">{fleetManager.total_drivers || drivers.length}</div>
+                      <div className="text-sm text-muted-foreground">Chauffeurs</div>
+                    </div>
+                  )}
+                  {fleetManager.show_client_count_public && (
+                    <div className="text-center bg-card/50 backdrop-blur-xl rounded-2xl px-6 py-4 border border-border/30">
+                      <div className="text-3xl font-bold text-primary">{fleetManager.total_clients || 0}</div>
+                      <div className="text-sm text-muted-foreground">Clients</div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
               {drivers.length > 0 && (
                 <Button onClick={handleBookAvailable} size="lg" className="gap-2">
                   <Zap className="w-5 h-5" />
@@ -464,8 +484,8 @@ const FleetPublicProfile = () => {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {fleetManager.services_offered.map((service, index) => (
-                  <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                    {service}
+                  <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-3 py-1.5">
+                    {getServiceLabel(service)}
                   </Badge>
                 ))}
               </div>
