@@ -1503,6 +1503,47 @@ export type Database = {
           },
         ]
       }
+      company_qr_codes: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          qr_code_image: string | null
+          scans_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          qr_code_image?: string | null
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          qr_code_image?: string | null
+          scans_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_qr_codes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
