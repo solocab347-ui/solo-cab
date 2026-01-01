@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
+import { useUserLanguage } from "@/hooks/useUserLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -152,6 +153,7 @@ interface Invitation {
 const FleetManagerDashboard = () => {
   const { user, signOut } = useAuth();
   const { t } = useLocale();
+  useUserLanguage(); // Sync language with user profile
   const [loading, setLoading] = useState(true);
   const [fleetManager, setFleetManager] = useState<FleetManager | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);

@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo-solocab.png";
-import { Building2, User, Mail, Phone, Eye, EyeOff, Check, Loader2, XCircle } from "lucide-react";
+import { Building2, User, Mail, Phone, Eye, EyeOff, Check, Loader2, XCircle, Globe } from "lucide-react";
 import { sanitizeString, sanitizeEmail, sanitizePhone } from "@/lib/inputSanitizer";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 
 interface InvitationData {
   id: string;
@@ -24,6 +26,7 @@ interface InvitationData {
 export default function RegisterCompanyEmployee() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { locale } = useLocale();
   const token = searchParams.get("token");
   
   const [loading, setLoading] = useState(true);
@@ -145,13 +148,14 @@ export default function RegisterCompanyEmployee() {
       // 2. Attendre que le profil soit créé
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // 3. Mettre à jour le profil avec le téléphone
-      if (formData.phone) {
-        await supabase
-          .from("profiles")
-          .update({ phone: sanitizePhone(formData.phone) })
-          .eq("id", authData.user.id);
-      }
+      // 3. Mettre à jour le profil avec le téléphone et la langue
+      await supabase
+        .from("profiles")
+        .update({ 
+          phone: formData.phone ? sanitizePhone(formData.phone) : null,
+          preferred_language: locale 
+        })
+        .eq("id", authData.user.id);
 
       // 4. Créer l'entrée company_employees
       const { error: employeeError } = await supabase
@@ -235,6 +239,11 @@ export default function RegisterCompanyEmployee() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-muted/10 to-background flex items-center justify-center p-4">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
       <Card className="w-full max-w-lg shadow-elegant">
         <CardHeader className="text-center pb-2">
           <img src={logo} alt="SoloCab" className="w-16 h-16 mx-auto mb-4" />

@@ -26,6 +26,7 @@ import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
+import { useUserLanguage } from "@/hooks/useUserLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils";
 const ClientDashboard = () => {
   const { signOut, user } = useAuth();
   const { t } = useLocale();
+  useUserLanguage(); // Sync language with user profile
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [clientProfile, setClientProfile] = useState<any>(null);

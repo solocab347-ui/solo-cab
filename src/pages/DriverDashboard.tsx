@@ -51,6 +51,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { useLocale } from "@/hooks/useLocale";
+import { useUserLanguage } from "@/hooks/useUserLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,6 +62,7 @@ import { logger } from "@/lib/productionLogger";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
+  useUserLanguage(); // Sync language with user profile
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
   const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);

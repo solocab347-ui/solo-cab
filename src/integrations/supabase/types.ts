@@ -5161,6 +5161,7 @@ export type Database = {
           full_name: string
           id: string
           phone: string | null
+          preferred_language: string | null
           profile_photo_url: string | null
           push_enabled: boolean | null
           push_subscription: Json | null
@@ -5175,6 +5176,7 @@ export type Database = {
           full_name: string
           id: string
           phone?: string | null
+          preferred_language?: string | null
           profile_photo_url?: string | null
           push_enabled?: boolean | null
           push_subscription?: Json | null
@@ -5189,6 +5191,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          preferred_language?: string | null
           profile_photo_url?: string | null
           push_enabled?: boolean | null
           push_subscription?: Json | null
