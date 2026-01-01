@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo-solocab.png";
 import SocialLinks from "@/components/SocialLinks";
@@ -42,6 +43,7 @@ import {
 
 const Index = () => {
   const { user, userRole, loading } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies" | "fleet">("clients");
 
@@ -75,50 +77,50 @@ const Index = () => {
   const clientFeatures = [
     {
       icon: Search,
-      title: "Trouvez LE bon chauffeur",
-      description: "Parcourez les profils, notes et services de chauffeurs près de chez vous",
+      title: t('landing.client.findRightDriver'),
+      description: t('landing.client.findRightDriverDesc'),
       gradient: "from-pink-500 to-purple-600",
     },
     {
       icon: DollarSign,
-      title: "Tarifs Transparents",
-      description: "Devis instantané avant chaque course. Pas de mauvaise surprise",
+      title: t('landing.client.transparentPricing'),
+      description: t('landing.client.transparentPricingDesc'),
       gradient: "from-green-500 to-emerald-600",
     },
     {
       icon: Shield,
-      title: "Chauffeurs Vérifiés",
-      description: "Tous nos chauffeurs sont des professionnels certifiés VTC",
+      title: t('landing.client.verifiedDrivers'),
+      description: t('landing.client.verifiedDriversDesc'),
       gradient: "from-blue-500 to-cyan-600",
     },
     {
       icon: Heart,
-      title: "Votre Chauffeur Préféré",
-      description: "Définissez un chauffeur favori pour vos courses régulières",
+      title: t('landing.client.favoriteDriver'),
+      description: t('landing.client.favoriteDriverDesc'),
       gradient: "from-red-500 to-pink-600",
     },
     {
       icon: CalendarCheck,
-      title: "Réservation Facile",
-      description: "Réservez en quelques clics depuis votre téléphone",
+      title: t('landing.client.easyBooking'),
+      description: t('landing.client.easyBookingDesc'),
       gradient: "from-cyan-500 to-blue-600",
     },
     {
       icon: MessageCircle,
-      title: "Communication Directe",
-      description: "Messagerie intégrée avec votre chauffeur",
+      title: t('landing.client.directCommunication'),
+      description: t('landing.client.directCommunicationDesc'),
       gradient: "from-orange-500 to-red-600",
     },
     {
       icon: Bell,
-      title: "Notifications en Temps Réel",
-      description: "Soyez informé à chaque étape de votre course",
+      title: t('landing.client.realTimeNotifications'),
+      description: t('landing.client.realTimeNotificationsDesc'),
       gradient: "from-amber-500 to-orange-600",
     },
     {
       icon: CreditCard,
-      title: "Paiement Sécurisé",
-      description: "Vos données bancaires sont protégées et sécurisées",
+      title: t('landing.client.securePayment'),
+      description: t('landing.client.securePaymentDesc'),
       gradient: "from-purple-500 to-pink-600",
     },
   ];
@@ -126,50 +128,50 @@ const Index = () => {
   const driverFeatures = [
     {
       icon: Globe,
-      title: "Profil Public Automatique",
-      description: "Votre profil professionnel est visible par tous les clients potentiels",
+      title: t('landing.driver.publicProfile'),
+      description: t('landing.driver.publicProfileDesc'),
       gradient: "from-blue-500 to-cyan-600",
     },
     {
       icon: Users,
-      title: "Vos Clients Privés",
-      description: "Construisez votre propre base de clients fidèles sans intermédiaire",
+      title: t('landing.driver.privateClients'),
+      description: t('landing.driver.privateClientsDesc'),
       gradient: "from-pink-500 to-purple-600",
     },
     {
       icon: QrCode,
-      title: "QR Code Personnel",
-      description: "Vos clients scannent votre code et s'inscrivent en 30 secondes",
+      title: t('landing.driver.personalQR'),
+      description: t('landing.driver.personalQRDesc'),
       gradient: "from-orange-500 to-red-600",
     },
     {
       icon: DollarSign,
-      title: "0% de Commission",
-      description: "Gardez 100% de vos revenus. Plus de commissions aux plateformes",
+      title: t('landing.driver.zeroCommission'),
+      description: t('landing.driver.zeroCommissionDesc'),
       gradient: "from-green-500 to-emerald-600",
     },
     {
       icon: ClipboardList,
-      title: "Gestion Complète",
-      description: "Planning, devis, factures, messages : tout au même endroit",
+      title: t('landing.driver.completeManagement'),
+      description: t('landing.driver.completeManagementDesc'),
       gradient: "from-cyan-500 to-blue-600",
     },
     {
       icon: BarChart3,
-      title: "Statistiques & Objectifs",
-      description: "Suivez votre activité en temps réel et pilotez votre business",
+      title: t('landing.driver.statisticsGoals'),
+      description: t('landing.driver.statisticsGoalsDesc'),
       gradient: "from-purple-500 to-pink-600",
     },
     {
       icon: Star,
-      title: "Système de Notes",
-      description: "Collectez des avis clients pour booster votre réputation",
+      title: t('landing.driver.ratingSystem'),
+      description: t('landing.driver.ratingSystemDesc'),
       gradient: "from-amber-500 to-orange-600",
     },
     {
       icon: Target,
-      title: "Campagnes Marketing",
-      description: "Envoyez des offres promotionnelles à vos clients par SMS",
+      title: t('landing.driver.marketingCampaigns'),
+      description: t('landing.driver.marketingCampaignsDesc'),
       gradient: "from-red-500 to-pink-600",
     },
   ];
@@ -286,17 +288,17 @@ const Index = () => {
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/chauffeurs" className="text-gray-400 hover:text-white transition-colors">
-              Trouver un chauffeur
+              {t('landing.findDriver')}
             </Link>
             <Link to="/devenir-chauffeur" className="text-gray-400 hover:text-white transition-colors">
-              Devenir chauffeur
+              {t('landing.becomeDriver')}
             </Link>
           </nav>
           <div className="flex items-center gap-4">
             <SocialLinks variant="compact" iconSize={20} />
             <Link to="/login">
               <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
-                Se Connecter
+                {t('landing.connect')}
               </Button>
             </Link>
           </div>
@@ -319,7 +321,7 @@ const Index = () => {
                 )}
               >
                 <Users className="w-4 h-4 flex-shrink-0" />
-                <span>Pour les Clients</span>
+                <span>{t('landing.forClients')}</span>
               </button>
               <button
                 onClick={() => setActiveView("drivers")}
@@ -331,7 +333,7 @@ const Index = () => {
                 )}
               >
                 <Car className="w-4 h-4 flex-shrink-0" />
-                <span>Pour les Chauffeurs</span>
+                <span>{t('landing.forDrivers')}</span>
               </button>
               <button
                 onClick={() => setActiveView("companies")}
@@ -343,7 +345,7 @@ const Index = () => {
                 )}
               >
                 <Building2 className="w-4 h-4 flex-shrink-0" />
-                <span>Pour les Entreprises</span>
+                <span>{t('landing.forCompanies')}</span>
               </button>
               <button
                 onClick={() => setActiveView("fleet")}
@@ -355,7 +357,7 @@ const Index = () => {
                 )}
               >
                 <Truck className="w-4 h-4 flex-shrink-0" />
-                <span>Gestionnaire Flotte</span>
+                <span>{t('landing.fleetManager')}</span>
               </button>
             </div>
           </div>
@@ -364,10 +366,10 @@ const Index = () => {
           {activeView === "clients" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
+                {t('landing.client.heroTitle').split(' ').slice(0, 2).join(' ')} <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">{t('landing.client.heroTitle').split(' ').slice(2).join(' ')}</span>
               </h1>
               <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                Des professionnels indépendants, des tarifs transparents
+                {t('landing.client.heroSubtitle')}
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {clientFeatures.map((feature, index) => (
@@ -387,7 +389,7 @@ const Index = () => {
                 <Link to="/chauffeurs">
                   <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg">
                     <Search className="w-5 h-5 mr-2" />
-                    Rechercher un chauffeur
+                    {t('landing.client.searchDriver')}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -399,10 +401,10 @@ const Index = () => {
           {activeView === "drivers" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                Devenez un <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Chauffeur Indépendant</span>
+                {t('landing.driver.heroTitle').split(' ').slice(0, 2).join(' ')} <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">{t('landing.driver.heroTitle').split(' ').slice(2).join(' ')}</span>
               </h1>
               <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                Profil automatique, clients privés, zéro commission
+                {t('landing.driver.heroSubtitle')}
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {driverFeatures.map((feature, index) => (
@@ -422,7 +424,7 @@ const Index = () => {
                 <Link to="/devenir-chauffeur">
                   <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
                     <Zap className="w-5 h-5 mr-2" />
-                    Rejoindre la communauté
+                    {t('landing.driver.joinCommunity')}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -434,10 +436,10 @@ const Index = () => {
           {activeView === "companies" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                Solutions <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Transport Entreprise</span>
+                <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">{t('landing.company.heroTitle')}</span>
               </h1>
               <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                Gérez les déplacements de vos collaborateurs en toute simplicité
+                {t('landing.company.heroSubtitle')}
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {companyFeatures.map((feature, index) => (
@@ -457,7 +459,7 @@ const Index = () => {
                 <Link to="/register-company">
                   <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
                     <Building2 className="w-5 h-5 mr-2" />
-                    Créer un compte entreprise
+                    {t('landing.company.registerCompany')}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -469,10 +471,10 @@ const Index = () => {
           {activeView === "fleet" && (
             <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                <span className="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">Gestionnaire de Flotte</span>
+                <span className="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">{t('landing.fleet.heroTitle')}</span>
               </h1>
               <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                Gérez votre flotte de véhicules et votre équipe de chauffeurs
+                {t('landing.fleet.heroSubtitle')}
               </p>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                 {fleetFeatures.map((feature, index) => (
@@ -492,7 +494,7 @@ const Index = () => {
                 <Link to="/register-fleet">
                   <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-lg">
                     <Truck className="w-5 h-5 mr-2" />
-                    Créer un compte gestionnaire
+                    {t('landing.fleet.registerFleet')}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>

@@ -10,6 +10,8 @@ import { companyTranslations } from './company';
 import { navigationTranslations } from './navigation';
 import { landingTranslations } from './landing';
 import { loginTranslations } from './login';
+import { fleetDashboardTranslations } from './fleetDashboard';
+import { footerTranslations } from './footer';
 import type { Translations } from '../types';
 
 // Merge all translations
@@ -26,4 +28,6 @@ export const translations: Translations = {
   ...navigationTranslations,
   ...landingTranslations,
   ...loginTranslations,
+  ...fleetDashboardTranslations,
+  ...footerTranslations,
 };
