@@ -47,6 +47,8 @@ interface FleetManager {
   address: string | null;
   total_drivers: number | null;
   total_clients: number | null;
+  show_driver_count_public?: boolean;
+  show_client_count_public?: boolean;
 }
 
 interface Partnership {
@@ -332,14 +334,18 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                               Géré par {fleet.contact_name}
                             </p>
                             <div className="flex flex-wrap gap-2 mb-2">
-                              <Badge variant="outline" className="text-xs">
-                                <Car className="w-2 h-2 mr-1" />
-                                {fleet.total_drivers || 0} chauffeurs
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                <Users className="w-2 h-2 mr-1" />
-                                {fleet.total_clients || 0} clients
-                              </Badge>
+                              {fleet.show_driver_count_public && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Car className="w-2 h-2 mr-1" />
+                                  {fleet.total_drivers || 0} chauffeurs
+                                </Badge>
+                              )}
+                              {fleet.show_client_count_public && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Users className="w-2 h-2 mr-1" />
+                                  {fleet.total_clients || 0} clients
+                                </Badge>
+                              )}
                             </div>
                             {fleet.default_partnership_commission && (
                               <Badge className="bg-info/20 text-info border-info/30">

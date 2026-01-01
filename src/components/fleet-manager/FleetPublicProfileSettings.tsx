@@ -93,6 +93,10 @@ export const FleetPublicProfileSettings = ({
   const [defaultCommission, setDefaultCommission] = useState(initialDefaultCommission || 10);
   const [partnershipTerms, setPartnershipTerms] = useState(initialPartnershipTerms || "");
   
+  // Champs visibilité compteurs
+  const [showDriverCountPublic, setShowDriverCountPublic] = useState(false);
+  const [showClientCountPublic, setShowClientCountPublic] = useState(false);
+  
   // Champs d'entreprise
   const [siret, setSiret] = useState("");
   const [siren, setSiren] = useState("");
@@ -105,7 +109,7 @@ export const FleetPublicProfileSettings = ({
     const loadFleetData = async () => {
       const { data } = await supabase
         .from("fleet_managers")
-        .select("siret, siren, tva_number, address, contact_phone, visible_to_drivers, visible_to_companies, driver_profile_description, default_partnership_commission, partnership_terms, logo_url, description, services_offered, show_contact_name, show_address, show_phone, show_email, show_drivers_in_public_storefront")
+        .select("siret, siren, tva_number, address, contact_phone, visible_to_drivers, visible_to_companies, driver_profile_description, default_partnership_commission, partnership_terms, logo_url, description, services_offered, show_contact_name, show_address, show_phone, show_email, show_drivers_in_public_storefront, show_driver_count_public, show_client_count_public")
         .eq("id", fleetManagerId)
         .single();
       
@@ -127,6 +131,8 @@ export const FleetPublicProfileSettings = ({
         setShowPhone(data.show_phone ?? true);
         setShowEmail(data.show_email ?? true);
         setShowDrivers(data.show_drivers_in_public_storefront ?? false);
+        setShowDriverCountPublic((data as any).show_driver_count_public ?? false);
+        setShowClientCountPublic((data as any).show_client_count_public ?? false);
         
         // Charger les services et les dédoublonner
         const predefinedIds = DRIVER_SERVICES.map(s => s.id);
@@ -241,9 +247,11 @@ export const FleetPublicProfileSettings = ({
           contact_phone: contactPhone || null,
           visible_to_drivers: visibleToDrivers,
           visible_to_companies: visibleToCompanies,
-          driver_profile_description: description || null, // Utilise la même description
+          driver_profile_description: description || null,
           default_partnership_commission: defaultCommission,
           partnership_terms: partnershipTerms || null,
+          show_driver_count_public: showDriverCountPublic,
+          show_client_count_public: showClientCountPublic,
         } as any)
         .eq("id", fleetManagerId);
 
@@ -653,12 +661,39 @@ export const FleetPublicProfileSettings = ({
           </div>
 
           {(visibleToDrivers || visibleToCompanies) && (
-            <div className="p-4 bg-success/10 rounded-xl border border-success/20">
-              <p className="text-sm text-success flex items-center gap-2">
-                <span className="text-lg">✓</span>
-                Votre flotte est visible pour les partenariats B2B
-              </p>
-            </div>
+            <>
+              <div className="p-4 bg-success/10 rounded-xl border border-success/20">
+                <p className="text-sm text-success flex items-center gap-2">
+                  <span className="text-lg">✓</span>
+                  Votre flotte est visible pour les partenariats B2B
+                </p>
+              </div>
+              
+              {/* Privacy settings for counters */}
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                <Label className="text-sm font-medium text-muted-foreground">Informations visibles</Label>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium">Afficher le nombre de chauffeurs</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Les partenaires verront combien de chauffeurs vous avez
+                    </p>
+                  </div>
+                  <Switch checked={showDriverCountPublic} onCheckedChange={setShowDriverCountPublic} />
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium">Afficher le nombre de clients</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Les partenaires verront combien de clients vous avez
+                    </p>
+                  </div>
+                  <Switch checked={showClientCountPublic} onCheckedChange={setShowClientCountPublic} />
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
