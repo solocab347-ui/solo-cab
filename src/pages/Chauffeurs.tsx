@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import SocialLinks from "@/components/SocialLinks";
+import FleetShowcaseSection from "@/components/public/FleetShowcaseSection";
 
 interface PublicDriver {
   id: string;
@@ -631,16 +632,21 @@ const Chauffeurs = () => {
 
         {/* Default View - Before Search */}
         {!searchPerformed && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mx-auto mb-6">
-              <Search className="w-12 h-12 text-purple-600" />
+          <>
+            {/* Section Flottes VTC */}
+            <FleetShowcaseSection />
+            
+            <div className="text-center py-16">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mx-auto mb-6">
+                <Search className="w-12 h-12 text-purple-600" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Recherchez un chauffeur indépendant</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Utilisez la recherche ci-dessus pour trouver des chauffeurs VTC indépendants près de chez vous.
+                Recherche par ville ou par adresse avec rayon personnalisable.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold mb-3">Commencez votre recherche</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Utilisez la recherche ci-dessus pour trouver des chauffeurs VTC près de chez vous.
-              Recherche par ville ou par adresse avec rayon personnalisable.
-            </p>
-          </div>
+          </>
         )}
       </div>
 

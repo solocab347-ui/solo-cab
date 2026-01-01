@@ -89,6 +89,62 @@ interface FleetManagerPublic {
   total_clients?: number;
 }
 
+// Composant pour gérer le bouton retour intelligemment
+const BackButton = ({ fleetManagerId }: { fleetManagerId: string | undefined }) => {
+  const navigate = useNavigate();
+  const [isOwner, setIsOwner] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkOwnership = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !fleetManagerId) {
+          setLoading(false);
+          return;
+        }
+
+        // Vérifier si l'utilisateur est le propriétaire de cette flotte
+        const { data: fleetManager } = await supabase
+          .from("fleet_managers")
+          .select("user_id")
+          .eq("id", fleetManagerId)
+          .single();
+
+        setIsOwner(fleetManager?.user_id === user.id);
+      } catch (error) {
+        console.error("Error checking ownership:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkOwnership();
+  }, [fleetManagerId]);
+
+  const handleBack = () => {
+    if (isOwner) {
+      // Si c'est le propriétaire, retourner au dashboard
+      navigate("/fleet-dashboard");
+    } else {
+      // Sinon, retourner à la vitrine publique
+      navigate("/chauffeurs");
+    }
+  };
+
+  if (loading) return null;
+
+  return (
+    <button 
+      onClick={handleBack}
+      className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <ArrowLeft className="w-4 h-4" />
+      <span>{isOwner ? "Retour au tableau de bord" : "Retour aux chauffeurs"}</span>
+    </button>
+  );
+};
+
 
 const FleetPublicProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -376,13 +432,7 @@ const FleetPublicProfile = () => {
         <div className="relative container mx-auto px-4 py-12 md:py-20">
           {/* Back button + Share */}
           <div className="flex items-center justify-between mb-8">
-            <button 
-              onClick={() => navigate(-1)} 
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Retour</span>
-            </button>
+            <BackButton fleetManagerId={id} />
             <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
               <Copy className="w-4 h-4" />
               Partager
