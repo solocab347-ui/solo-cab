@@ -303,8 +303,10 @@ const FleetPublicProfile = () => {
     try {
       const scheduledDateTime = new Date(`${bookingData.scheduledDate}T${bookingData.scheduledTime}`);
       let driverIdToUse = selectedDriver?.id;
+      let isAutoAssigned = false;
+      let courseStatus: "pending" | "accepted" = "pending";
 
-      // Si dispatch automatique, trouver le chauffeur le plus proche
+      // Mode dispatch automatique
       if (bookingType === "available" && fleetManager?.auto_dispatch_enabled && bookingData.pickupLatitude) {
         const { data: availableDriverId } = await supabase.rpc(
           "find_nearest_available_fleet_driver",
@@ -319,17 +321,18 @@ const FleetPublicProfile = () => {
 
         if (availableDriverId) {
           driverIdToUse = availableDriverId;
-        } else {
-          // Prendre le premier chauffeur si pas de disponible
-          driverIdToUse = drivers[0]?.id;
+          isAutoAssigned = true;
+          courseStatus = "accepted"; // Auto-accepté en dispatch auto
         }
-      } else if (bookingType === "available") {
-        // Prendre le premier chauffeur si pas de dispatch auto
+      }
+      
+      // Mode manuel ou pas de chauffeur trouvé en auto - prendre le premier chauffeur comme placeholder
+      if (!driverIdToUse && drivers.length > 0) {
         driverIdToUse = drivers[0]?.id;
       }
 
       if (!driverIdToUse) {
-        toast.error("Aucun chauffeur disponible");
+        toast.error("Aucun chauffeur disponible dans cette flotte");
         return;
       }
 
@@ -349,17 +352,56 @@ const FleetPublicProfile = () => {
           guest_name: bookingData.guestName,
           guest_phone: bookingData.guestPhone,
           guest_email: bookingData.guestEmail || null,
-          notes: bookingData.notes || null,
+          notes: `[Réservation via vitrine flotte: ${fleetManager?.company_name}]${bookingData.notes ? `\n${bookingData.notes}` : ''}`,
           is_guest_booking: true,
           guest_tracking_token: crypto.randomUUID(),
-          status: "pending",
+          status: courseStatus,
         })
         .select()
         .single();
 
       if (courseError) throw courseError;
 
-      toast.success("Demande de réservation envoyée !");
+      // En mode manuel (pas de dispatch auto), ajouter à la file d'attente pour le gestionnaire
+      if (!isAutoAssigned && !fleetManager?.auto_dispatch_enabled) {
+        await supabase
+          .from("unassigned_fleet_courses")
+          .insert({
+            course_id: course.id,
+            fleet_manager_id: id,
+            reason: "manual_assignment_required",
+            attempts: 0
+          })
+          .single();
+      }
+
+      // Notifier le gestionnaire de la nouvelle réservation
+      if (fleetManager) {
+        const { data: fmData } = await supabase
+          .from("fleet_managers")
+          .select("user_id")
+          .eq("id", id)
+          .single();
+
+        if (fmData?.user_id) {
+          await supabase.from("notifications").insert({
+            user_id: fmData.user_id,
+            title: isAutoAssigned 
+              ? "✅ Nouvelle réservation auto-assignée" 
+              : "🚗 Nouvelle demande de réservation",
+            message: `${bookingData.guestName} - ${bookingData.pickupAddress.substring(0, 50)}...`,
+            type: "course",
+            link: "/fleet-dashboard?tab=courses"
+          });
+        }
+      }
+
+      toast.success(
+        isAutoAssigned 
+          ? "Réservation confirmée ! Un chauffeur vous a été assigné." 
+          : "Demande envoyée ! Le gestionnaire va vous assigner un chauffeur."
+      );
+      
       setShowBookingDialog(false);
       setBookingData({
         pickupAddress: "",
@@ -377,7 +419,7 @@ const FleetPublicProfile = () => {
         notes: "",
       });
 
-      // Rediriger vers la page de suivi si token existe
+      // Rediriger vers la page de suivi
       if (course.guest_tracking_token) {
         navigate(`/reservation-suivi/${course.guest_tracking_token}`);
       }
