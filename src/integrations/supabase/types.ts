@@ -5975,6 +5975,7 @@ export type Database = {
           sharing_number: number | null
           show_email: boolean | null
           show_phone_for_sharing: boolean | null
+          show_rating_partners: boolean | null
           total_rides: number | null
           user_id: string | null
           vehicle_brand: string | null
@@ -6708,6 +6709,7 @@ export type Database = {
           sharing_number: number
           show_email: boolean
           show_phone: boolean
+          show_rating_partners: boolean
           total_rides: number
           user_id: string
           vehicle_brand: string

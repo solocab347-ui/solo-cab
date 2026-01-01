@@ -41,6 +41,7 @@ interface AvailableDriver {
   phone: string | null;
   display_driver_name?: boolean;
   display_company_name?: boolean;
+  show_rating_partners?: boolean;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -352,10 +353,12 @@ export function PartnerSearchInline({ driverId }: Props) {
                       </div>
                       
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                          {driver.rating?.toFixed(1) || 'N/A'}
-                        </span>
+                        {driver.show_rating_partners && (
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                            {driver.rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Car className="h-3 w-3" />
                           {driver.total_rides || 0}
