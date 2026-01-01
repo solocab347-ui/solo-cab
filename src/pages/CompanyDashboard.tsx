@@ -35,6 +35,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { CompanyEmployeesManager } from "@/components/company/CompanyEmployeesManager";
 import { CompanyDriverAgreements } from "@/components/company/CompanyDriverAgreements";
 import { CompanyCoursesList } from "@/components/company/CompanyCoursesList";
@@ -243,6 +244,7 @@ export default function CompanyDashboard() {
             <img src={logo} alt="SoloCab" className="w-8 h-8" />
           </div>
           <div className="flex items-center gap-2">
+            <LanguageSelector variant="header" />
             <NotificationBell />
           </div>
         </div>

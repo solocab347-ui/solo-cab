@@ -348,7 +348,7 @@ const DriverDashboard = () => {
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <LanguageSelector />
+            <LanguageSelector variant="header" />
             <NotificationBell />
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || t('driverDashboard.driver')}</span>
