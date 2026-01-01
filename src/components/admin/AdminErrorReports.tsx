@@ -31,7 +31,9 @@ import {
   Calendar,
   MessageSquare,
   Eye,
-  Loader2
+  Loader2,
+  Bot,
+  RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -56,6 +58,8 @@ interface ErrorReport {
   resolved_at: string | null;
   resolved_by: string | null;
   created_at: string;
+  ai_analysis: string | null;
+  ai_suggestion: string | null;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -96,6 +100,7 @@ export const AdminErrorReports = () => {
   const [selectedReport, setSelectedReport] = useState<ErrorReport | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   const { data: reports, isLoading } = useQuery({
     queryKey: ['error-reports', filterStatus],
@@ -111,9 +116,46 @@ export const AdminErrorReports = () => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return data as ErrorReport[];
+      return data as unknown as ErrorReport[];
     }
   });
+
+  const handleReanalyze = async (report: ErrorReport) => {
+    setIsReanalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-error', {
+        body: {
+          errorReportId: report.id,
+          errorMessage: report.error_message,
+          errorStack: report.error_stack,
+          pageUrl: report.page_url,
+          context: report.additional_context,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('Analyse IA terminée');
+      queryClient.invalidateQueries({ queryKey: ['error-reports'] });
+      
+      // Refresh selected report
+      if (selectedReport?.id === report.id) {
+        const { data: updatedReport } = await supabase
+          .from('error_reports')
+          .select('*')
+          .eq('id', report.id)
+          .single();
+        if (updatedReport) {
+          setSelectedReport(updatedReport as unknown as ErrorReport);
+        }
+      }
+    } catch (err) {
+      console.error('Reanalysis error:', err);
+      toast.error('Erreur lors de la ré-analyse');
+    } finally {
+      setIsReanalyzing(false);
+    }
+  };
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: string; notes?: string }) => {
@@ -358,6 +400,67 @@ export const AdminErrorReports = () => {
                     <pre className="text-xs font-mono whitespace-pre-wrap">
                       {selectedReport.error_stack}
                     </pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Analyse IA */}
+              {(selectedReport.ai_analysis || selectedReport.ai_suggestion) && (
+                <div className="border border-primary/20 rounded-lg p-4 bg-primary/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Bot className="w-4 h-4 text-primary" />
+                      Analyse automatique IA
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleReanalyze(selectedReport)}
+                      disabled={isReanalyzing}
+                    >
+                      {isReanalyzing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {selectedReport.ai_analysis && (
+                    <div className="mb-2">
+                      <p className="text-xs text-muted-foreground mb-1">Analyse:</p>
+                      <p className="text-sm">{selectedReport.ai_analysis}</p>
+                    </div>
+                  )}
+                  {selectedReport.ai_suggestion && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Suggestions:</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedReport.ai_suggestion}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!selectedReport.ai_analysis && !selectedReport.ai_suggestion && (
+                <div className="border border-dashed border-muted-foreground/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      Pas encore d'analyse IA
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReanalyze(selectedReport)}
+                      disabled={isReanalyzing}
+                      className="gap-2"
+                    >
+                      {isReanalyzing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                      Analyser avec l'IA
+                    </Button>
                   </div>
                 </div>
               )}
