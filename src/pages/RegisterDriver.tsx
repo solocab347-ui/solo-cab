@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocale } from "@/hooks/useLocale";
 
 const RegisterDriver = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useLocale();
   
   // Vérifier la présence d'un token d'invitation
   const token = searchParams.get("token");
@@ -28,9 +30,9 @@ const RegisterDriver = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold mb-4">Inscription Chauffeur</h1>
+        <h1 className="text-2xl font-bold mb-4">{t('register.driver.title')}</h1>
         <p className="text-muted-foreground mb-4">
-          Token d'invitation valide détecté. Le formulaire d'inscription complet sera disponible prochainement.
+          {t('register.driver.tokenDetected')}
         </p>
         <p className="text-sm text-muted-foreground">Token: {token}</p>
       </div>

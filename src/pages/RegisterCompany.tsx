@@ -11,9 +11,11 @@ import logo from "@/assets/logo-solocab.png";
 import { Building2, User, Mail, Phone, MapPin, FileText, Users, ArrowRight, Eye, EyeOff, Check } from "lucide-react";
 import { sanitizeString, sanitizeEmail, sanitizePhone } from "@/lib/inputSanitizer";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function RegisterCompany() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -167,9 +169,9 @@ export default function RegisterCompany() {
       <Card className="w-full max-w-2xl shadow-elegant">
         <CardHeader className="text-center pb-2">
           <img src={logo} alt="SoloCab" className="w-20 h-20 mx-auto mb-4" />
-          <CardTitle className="text-2xl">Inscription Entreprise</CardTitle>
+          <CardTitle className="text-2xl">{t('register.company.title')}</CardTitle>
           <CardDescription>
-            Créez votre compte entreprise pour accéder à nos services VTC
+            {t('register.company.subtitle')}
           </CardDescription>
           
           {/* Progress steps */}
@@ -195,9 +197,9 @@ export default function RegisterCompany() {
             ))}
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-2 px-2">
-            <span>Compte</span>
-            <span>Entreprise</span>
-            <span>Contact</span>
+            <span>{t('register.company.step.account')}</span>
+            <span>{t('register.company.step.company')}</span>
+            <span>{t('register.company.step.contact')}</span>
           </div>
         </CardHeader>
         
