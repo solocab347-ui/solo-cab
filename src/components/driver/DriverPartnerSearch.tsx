@@ -48,6 +48,7 @@ interface AvailableDriver {
   display_company_name?: boolean;
   show_phone?: boolean;
   show_email?: boolean;
+  show_rating_partners?: boolean;
   vehicle_brand?: string | null;
   vehicle_model?: string | null;
 }
@@ -422,10 +423,12 @@ Cordialement.`;
                       </div>
                       
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                          {driver.rating?.toFixed(1) || 'N/A'}
-                        </span>
+                        {driver.show_rating_partners && (
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                            {driver.rating?.toFixed(1) || 'N/A'}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Car className="h-3 w-3" />
                           {driver.total_rides || 0}
@@ -604,10 +607,12 @@ Cordialement.`;
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                        <span className="font-medium">{viewingDriver.rating?.toFixed(1) || 'N/A'}</span>
-                      </span>
+                      {viewingDriver.show_rating_partners && (
+                        <span className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                          <span className="font-medium">{viewingDriver.rating?.toFixed(1) || 'N/A'}</span>
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <Car className="h-4 w-4" />
                         {viewingDriver.total_rides || 0} courses
