@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoSolocab from "@/assets/logo-solocab.png";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
 
 interface FleetManagerInfo {
   id: string;
@@ -27,6 +29,7 @@ interface FleetManagerInfo {
 const RegisterClientFleet = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { locale } = useLocale();
   const fleetManagerId = searchParams.get("fm");
 
   const [loading, setLoading] = useState(false);
@@ -108,12 +111,13 @@ const RegisterClientFleet = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("Erreur lors de la création du compte");
 
-      // 2. Update profile with phone
+      // 2. Update profile with phone and preferred language
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           full_name: formData.fullName,
           phone: formData.phone,
+          preferred_language: locale,
         })
         .eq("id", authData.user.id);
 
@@ -203,6 +207,11 @@ const RegisterClientFleet = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
       {/* Header */}
       <div className="bg-gradient-to-br from-primary/20 via-accent/10 to-transparent">
         <div className="container mx-auto px-4 py-8">

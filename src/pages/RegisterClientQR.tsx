@@ -18,7 +18,7 @@ import { useLocale } from "@/hooks/useLocale";
 const RegisterClientQR = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useLocale(); // Hook appelé en haut du composant (règle des hooks)
+  const { t, locale } = useLocale();
   const qrCodeId = searchParams.get("qr") || searchParams.get("qr_code_id");
   
   const [loading, setLoading] = useState(false);
@@ -169,6 +169,12 @@ const RegisterClientQR = () => {
 
       // Attendre un peu pour s'assurer que le profil est créé
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Sauvegarder la langue préférée
+      await supabase
+        .from('profiles')
+        .update({ preferred_language: locale })
+        .eq('id', authData.user.id);
 
       // Appeler l'edge function pour créer le client
       const { data, error } = await supabase.functions.invoke("register-client-qr", {

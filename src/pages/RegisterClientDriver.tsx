@@ -14,6 +14,7 @@ import { useLocale } from "@/hooks/useLocale";
 const RegisterClientDriver = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { locale, t } = useLocale();
   const driverId = searchParams.get("driver_id");
   
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,12 @@ const RegisterClientDriver = () => {
       // CRITIQUE: Attendre que le profil soit créé par le trigger handle_new_user
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      // Sauvegarder la langue préférée
+      await supabase
+        .from('profiles')
+        .update({ preferred_language: locale })
+        .eq('id', authData.user.id);
+
       // Appeler l'edge function pour créer le client
       const { data, error } = await supabase.functions.invoke("register-client-driver", {
         body: { driver_id: driverId },
@@ -88,8 +95,6 @@ const RegisterClientDriver = () => {
       setLoading(false);
     }
   };
-
-  const { t } = useLocale();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

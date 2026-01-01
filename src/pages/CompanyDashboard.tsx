@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
+import { useUserLanguage } from "@/hooks/useUserLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,6 +73,7 @@ interface Company {
 export default function CompanyDashboard() {
   const { user, signOut } = useAuth();
   const { t } = useLocale();
+  useUserLanguage(); // Sync language with user profile
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
