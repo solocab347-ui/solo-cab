@@ -1,9 +1,10 @@
 import React, { Component, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, Send } from 'lucide-react';
 import { captureError } from '@/lib/sentry';
 import { logger } from '@/lib/productionLogger';
+import { ErrorReportButton } from '@/components/ErrorReportButton';
 
 interface Props {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorCount: number;
+  componentStack?: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -68,6 +70,9 @@ export class ErrorBoundary extends Component<Props, State> {
       errorStack: error.stack,
       componentStack: errorInfo.componentStack?.substring(0, 500)
     });
+    
+    // Stocker le componentStack pour le rapport
+    this.setState({ componentStack: errorInfo.componentStack || undefined });
     
     // Envoyer à Sentry avec le contexte complet
     captureError(error, {
@@ -145,6 +150,12 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             
             <div className="space-y-2">
+              {/* Bouton de signalement à l'administrateur */}
+              <ErrorReportButton 
+                error={this.state.error} 
+                errorStack={this.state.componentStack}
+              />
+              
               <Button onClick={this.handleReset} className="w-full gap-2">
                 <RefreshCw className="w-4 h-4" />
                 Recharger complètement
@@ -169,7 +180,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             <p className="text-xs text-muted-foreground mt-4">
-              Si le problème persiste, contactez le support.
+              Cliquez sur "Signaler à l'administrateur" pour nous aider à corriger ce problème.
             </p>
           </Card>
         </div>
