@@ -14,6 +14,8 @@ import { fleetDashboardTranslations } from './fleetDashboard';
 import { footerTranslations } from './footer';
 import { chauffeursTranslations } from './chauffeurs';
 import { clientDashboardTranslations } from './clientDashboard';
+import { companyDashboardTranslations } from './companyDashboard';
+import { driverDashboardTranslations } from './driverDashboard';
 import type { Translations } from '../types';
 
 // Merge all translations
@@ -34,4 +36,6 @@ export const translations: Translations = {
   ...footerTranslations,
   ...chauffeursTranslations,
   ...clientDashboardTranslations,
+  ...companyDashboardTranslations,
+  ...driverDashboardTranslations,
 };
