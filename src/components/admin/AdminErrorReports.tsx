@@ -68,10 +68,30 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
     color: 'bg-destructive/20 text-destructive border-destructive/30',
     icon: <AlertTriangle className="w-4 h-4" />
   },
+  pending: { 
+    label: 'En attente', 
+    color: 'bg-warning/20 text-warning border-warning/30',
+    icon: <Clock className="w-4 h-4" />
+  },
   in_progress: { 
     label: 'En cours', 
     color: 'bg-warning/20 text-warning border-warning/30',
     icon: <Clock className="w-4 h-4" />
+  },
+  auto_resolved: { 
+    label: 'Résolu par IA', 
+    color: 'bg-primary/20 text-primary border-primary/30',
+    icon: <Bot className="w-4 h-4" />
+  },
+  auto_fixable: { 
+    label: 'Corrigeable auto', 
+    color: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
+    icon: <Bot className="w-4 h-4" />
+  },
+  user_error: { 
+    label: 'Erreur utilisateur', 
+    color: 'bg-muted text-muted-foreground border-muted-foreground/30',
+    icon: <User className="w-4 h-4" />
   },
   resolved: { 
     label: 'Résolu', 
