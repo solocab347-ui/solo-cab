@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Car, MessageSquare, MapPin, Star, Calendar, Palette, Award, Briefcase } from "lucide-react";
+import { Car, MessageSquare, MapPin, Star, Calendar, Palette, Award, Briefcase, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { getServiceLabel } from "@/lib/serviceLabels";
 
 interface Driver {
   id: string;
@@ -20,6 +21,9 @@ interface Driver {
   working_sectors: string[] | null;
   services_offered: string[] | null;
   service_description: string | null;
+  display_driver_name: boolean;
+  display_company_name: boolean;
+  show_rating_public: boolean;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
@@ -60,6 +64,9 @@ const ClientDriversList = () => {
         working_sectors,
         services_offered,
         service_description,
+        display_driver_name,
+        display_company_name,
+        show_rating_public,
         profiles:user_id(full_name, profile_photo_url)
       `;
 
@@ -104,20 +111,27 @@ const ClientDriversList = () => {
     navigate(`/create-course?driver_id=${driverId}`);
   };
 
-  // Map service codes to French labels
-  const getServiceLabel = (service: string): string => {
-    const serviceLabels: Record<string, string> = {
-      'airport_transfer': 'Transferts aéroport',
-      'business': 'Business',
-      'wedding': 'Mariage',
-      'tourism': 'Tourisme',
-      'medical': 'Transport médical',
-      'long_distance': 'Longue distance',
-      'hourly': 'Mise à disposition',
-      'prestige': 'Service Prestige',
-      'event': 'Événementiel',
-    };
-    return serviceLabels[service] || service;
+  // Get driver display name based on visibility settings
+  const getDriverDisplayName = (driver: Driver): { primary: string; secondary?: string } => {
+    const fullName = driver.profiles?.full_name?.trim();
+    const companyName = driver.company_name?.trim();
+    const showDriverName = driver.display_driver_name === true;
+    const showCompanyName = driver.display_company_name === true;
+
+    // Both enabled - show driver name as primary, company as secondary
+    if (showDriverName && showCompanyName && fullName && companyName) {
+      return { primary: fullName, secondary: companyName };
+    }
+    // Only driver name
+    if (showDriverName && fullName) {
+      return { primary: fullName };
+    }
+    // Only company name
+    if (showCompanyName && companyName) {
+      return { primary: companyName };
+    }
+    // Fallback
+    return { primary: "Chauffeur VTC" };
   };
 
   if (loading) {
@@ -139,132 +153,137 @@ const ClientDriversList = () => {
 
   return (
     <div className="space-y-4">
-      {drivers.map((driver) => (
-        <Card key={driver.id} className="p-6 border-2 hover:shadow-elegant transition-all">
-          <div className="flex items-start gap-4">
-            {/* Photo de profil */}
-            {driver.profiles?.profile_photo_url ? (
-              <img
-                src={driver.profiles.profile_photo_url}
-                alt={driver.profiles.full_name}
-                className="w-20 h-20 rounded-full object-cover border-2 border-primary/20"
-              />
-            ) : (
-              <div className="w-20 h-20 bg-gradient-dark rounded-full flex items-center justify-center border-2 border-primary/20">
-                <span className="text-2xl font-bold text-primary-foreground">
-                  {driver.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
-                </span>
-              </div>
-            )}
+      {drivers.map((driver) => {
+        const displayName = getDriverDisplayName(driver);
+        
+        return (
+          <Card key={driver.id} className="p-6 border-2 hover:shadow-elegant transition-all">
+            <div className="flex items-start gap-4">
+              {/* Photo de profil */}
+              {driver.profiles?.profile_photo_url ? (
+                <img
+                  src={driver.profiles.profile_photo_url}
+                  alt={displayName.primary}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-primary/20"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-gradient-dark rounded-full flex items-center justify-center border-2 border-primary/20">
+                  <span className="text-2xl font-bold text-primary-foreground">
+                    {displayName.primary.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
 
-            <div className="flex-1">
-              {/* Nom et note */}
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="text-lg font-bold">
-                    {driver.profiles?.full_name}
-                  </h3>
-                  {driver.company_name && (
-                    <p className="text-sm text-muted-foreground">
-                      {driver.company_name}
-                    </p>
+              <div className="flex-1">
+                {/* Nom et note */}
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="text-lg font-bold">
+                      {displayName.primary}
+                    </h3>
+                    {displayName.secondary && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Building2 className="w-3 h-3" />
+                        {displayName.secondary}
+                      </p>
+                    )}
+                  </div>
+                  {driver.rating && driver.rating > 0 && driver.show_rating_public === true && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                      {driver.rating.toFixed(1)}
+                    </Badge>
                   )}
                 </div>
-                {driver.rating && driver.rating > 0 && (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    {driver.rating.toFixed(1)}
-                  </Badge>
-                )}
-              </div>
 
-              {/* Nombre de courses */}
-              {driver.total_rides && driver.total_rides > 0 && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                  <Award className="w-4 h-4" />
-                  <span>{driver.total_rides} courses effectuées</span>
-                </div>
-              )}
-
-              {/* Informations du véhicule */}
-              <div className="flex flex-wrap gap-2 mb-3">
-                {/* Marque et modèle */}
-                {(driver.vehicle_brand || driver.vehicle_model) && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Car className="w-3 h-3" />
-                    {driver.vehicle_brand && `${driver.vehicle_brand} `}
-                    {driver.vehicle_model}
-                  </Badge>
-                )}
-                
-                {/* Couleur */}
-                {driver.vehicle_color && (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Palette className="w-3 h-3" />
-                    {driver.vehicle_color}
-                  </Badge>
-                )}
-                
-                {/* Année */}
-                {driver.vehicle_year && driver.vehicle_year > 1900 && (
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {driver.vehicle_year}
-                  </Badge>
-                )}
-              </div>
-
-              {/* Services proposés */}
-              {driver.services_offered && driver.services_offered.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                    <Briefcase className="w-3 h-3" />
-                    <span>Services</span>
+                {/* Nombre de courses */}
+                {driver.total_rides && driver.total_rides > 0 && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                    <Award className="w-4 h-4" />
+                    <span>{driver.total_rides} courses effectuées</span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {driver.services_offered.map((service) => (
-                      <Badge key={service} variant="outline" className="text-xs bg-primary/5">
-                        {getServiceLabel(service)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Secteurs de travail */}
-              {driver.working_sectors && driver.working_sectors.length > 0 && (
-                <div className="flex items-start gap-2 mb-4">
-                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <p className="text-sm text-muted-foreground">
-                    {driver.working_sectors.join(", ")}
+                {/* Informations du véhicule */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {/* Marque et modèle */}
+                  {(driver.vehicle_brand || driver.vehicle_model) && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Car className="w-3 h-3" />
+                      {driver.vehicle_brand && `${driver.vehicle_brand} `}
+                      {driver.vehicle_model}
+                    </Badge>
+                  )}
+                  
+                  {/* Couleur */}
+                  {driver.vehicle_color && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Palette className="w-3 h-3" />
+                      {driver.vehicle_color}
+                    </Badge>
+                  )}
+                  
+                  {/* Année */}
+                  {driver.vehicle_year && driver.vehicle_year > 1900 && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {driver.vehicle_year}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Services proposés */}
+                {driver.services_offered && driver.services_offered.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                      <Briefcase className="w-3 h-3" />
+                      <span>Services</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {driver.services_offered.map((service) => (
+                        <Badge key={service} variant="outline" className="text-xs bg-primary/5">
+                          {getServiceLabel(service)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Secteurs de travail */}
+                {driver.working_sectors && driver.working_sectors.length > 0 && (
+                  <div className="flex items-start gap-2 mb-4">
+                    <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                      {driver.working_sectors.join(", ")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Description du service */}
+                {driver.service_description && (
+                  <p className="text-sm text-muted-foreground italic mb-4">
+                    "{driver.service_description}"
                   </p>
+                )}
+
+                {/* Boutons d'action */}
+                <div className="flex gap-2">
+                  <Button onClick={() => handleBooking(driver.id)}>
+                    Réserver une course
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleMessage(driver.id)}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
                 </div>
-              )}
-
-              {/* Description du service */}
-              {driver.service_description && (
-                <p className="text-sm text-muted-foreground italic mb-4">
-                  "{driver.service_description}"
-                </p>
-              )}
-
-              {/* Boutons d'action */}
-              <div className="flex gap-2">
-                <Button onClick={() => handleBooking(driver.id)}>
-                  Réserver une course
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleMessage(driver.id)}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Message
-                </Button>
               </div>
             </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 };
