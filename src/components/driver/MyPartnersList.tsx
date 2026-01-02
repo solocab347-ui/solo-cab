@@ -346,109 +346,120 @@ Généré par SoloCab
             Demandes reçues ({pendingRequests.length})
           </h3>
           {pendingRequests.map((request) => (
-            <Card key={request.id} className="border-amber-500/30 bg-amber-500/5">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  {/* Photo du partenaire */}
-                  <Avatar className="h-14 w-14 shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setSelectedProfileDriverId(request.partner_id)}>
-                    <AvatarImage src={request.partner_photo || undefined} />
-                    <AvatarFallback className="bg-amber-100 text-amber-700 text-lg">
-                      {request.partner_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex-1 min-w-0">
-                    {/* Nom et bouton profil */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="font-semibold">{request.partner_name}</p>
-                        {request.partner_company && (
-                          <p className="text-xs text-muted-foreground">{request.partner_company}</p>
-                        )}
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 px-3 gap-1.5"
-                        onClick={() => setSelectedProfileDriverId(request.partner_id)}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="text-xs">Voir profil</span>
-                      </Button>
+            <Card key={request.id} className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-transparent overflow-hidden">
+              <CardContent className="p-0">
+                {/* Header avec grande photo */}
+                <div className="relative">
+                  <div className="h-16 bg-gradient-to-r from-primary/20 via-amber-500/10 to-transparent" />
+                  <div className="absolute -bottom-8 left-4">
+                    <Avatar 
+                      className="h-16 w-16 sm:h-20 sm:w-20 border-4 border-background shadow-lg cursor-pointer hover:ring-2 hover:ring-primary transition-all ring-2 ring-amber-500/30" 
+                      onClick={() => setSelectedProfileDriverId(request.partner_id)}
+                    >
+                      <AvatarImage src={request.partner_photo || undefined} />
+                      <AvatarFallback className="bg-amber-100 text-amber-700 text-xl sm:text-2xl font-semibold">
+                        {request.partner_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      className="h-7 px-2.5 gap-1.5 text-xs bg-background/90 hover:bg-background"
+                      onClick={() => setSelectedProfileDriverId(request.partner_id)}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="hidden sm:inline">Voir profil</span>
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="pt-10 sm:pt-12 px-4 pb-4">
+                  {/* Nom et entreprise */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                    <div>
+                      <p className="font-bold text-base sm:text-lg">{request.partner_name}</p>
+                      {request.partner_company && (
+                        <p className="text-xs sm:text-sm text-muted-foreground">{request.partner_company}</p>
+                      )}
                     </div>
-
                     {/* Numéro de partage */}
                     {request.partner_sharing_number && (
-                      <Badge variant="outline" className="mt-1.5 font-mono text-xs">
+                      <Badge variant="outline" className="font-mono text-xs w-fit bg-background/50">
                         <Hash className="h-3 w-3 mr-1" />
                         SOLO-{String(request.partner_sharing_number).padStart(6, '0')}
                       </Badge>
                     )}
-                    
-                    {/* Stats et commission */}
-                    <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary" className="gap-1">
-                        <Euro className="h-3 w-3" />
-                        {request.commission_percentage}%
-                      </Badge>
-                      <Badge variant="secondary" className="gap-1">
-                        {getPaymentScheduleLabel(request.payment_schedule)}
-                      </Badge>
-                      <Badge variant="secondary" className="gap-1">
-                        <Star className="h-3 w-3 text-yellow-500" />
-                        {request.partner_rating?.toFixed(1) || 'N/A'}
-                      </Badge>
-                      <Badge variant="secondary" className="gap-1">
-                        <Car className="h-3 w-3" />
-                        {request.partner_rides || 0} courses
-                      </Badge>
-                    </div>
+                  </div>
+                  
+                  {/* Badges principaux - commission, note, courses */}
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3">
+                    <Badge className="gap-1 bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">
+                      <Euro className="h-3 w-3" />
+                      {request.commission_percentage}%
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      {getPaymentScheduleLabel(request.payment_schedule)}
+                    </Badge>
+                    <Badge className="gap-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                      <Star className="h-3 w-3 fill-current" />
+                      {request.partner_rating?.toFixed(1) || 'N/A'}
+                    </Badge>
+                    <Badge className="gap-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                      <Car className="h-3 w-3" />
+                      {request.partner_rides || 0} courses
+                    </Badge>
+                  </div>
 
-                    {/* Secteurs de travail (aperçu) */}
-                    {request.partner_working_sectors && request.partner_working_sectors.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  {/* Secteurs de travail */}
+                  {request.partner_working_sectors && request.partner_working_sectors.length > 0 && (
+                    <div className="flex items-start gap-1.5 mt-3">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="flex flex-wrap gap-1">
                         {request.partner_working_sectors.slice(0, 3).map((sector, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs py-0">
+                          <Badge key={idx} variant="outline" className="text-xs py-0.5 bg-background/50">
                             {sector}
                           </Badge>
                         ))}
                         {request.partner_working_sectors.length > 3 && (
-                          <Badge variant="outline" className="text-xs py-0">
+                          <Badge variant="outline" className="text-xs py-0.5 bg-muted">
                             +{request.partner_working_sectors.length - 3}
                           </Badge>
                         )}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Bio (extrait) */}
-                    {request.partner_bio && (
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
-                        "{request.partner_bio}"
-                      </p>
-                    )}
+                  {/* Bio (extrait) */}
+                  {request.partner_bio && (
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-3 line-clamp-2 italic bg-muted/30 p-2 rounded-md border border-border/50">
+                      "{request.partner_bio}"
+                    </p>
+                  )}
 
-                    {/* Message de proposition */}
-                    {request.proposal_message && (
-                      <div className="mt-3 p-2.5 bg-background/50 rounded-md border border-primary/20">
-                        <div className="flex items-start gap-2">
-                          <MessageSquare className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-medium text-primary mb-0.5">Message du partenaire :</p>
-                            <p className="text-sm text-foreground">
-                              "{request.proposal_message}"
-                            </p>
-                          </div>
+                  {/* Message de proposition */}
+                  {request.proposal_message && (
+                    <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-primary mb-1">Message du partenaire</p>
+                          <p className="text-sm text-foreground leading-relaxed">
+                            "{request.proposal_message}"
+                          </p>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Contact */}
-                    <div className="flex flex-wrap gap-3 mt-3">
+                  {/* Contact direct */}
+                  {(request.partner_phone || request.partner_email) && (
+                    <div className="flex flex-col sm:flex-row gap-2 mt-3 p-2 bg-muted/30 rounded-md">
                       {request.partner_phone && (
                         <a 
                           href={`tel:${request.partner_phone}`}
-                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline hover:bg-primary/5 p-1.5 rounded transition-colors"
                         >
                           <Phone className="h-3.5 w-3.5" />
                           {request.partner_phone}
@@ -457,41 +468,41 @@ Généré par SoloCab
                       {request.partner_email && (
                         <a 
                           href={`mailto:${request.partner_email}`}
-                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline hover:bg-primary/5 p-1.5 rounded transition-colors"
                         >
                           <Mail className="h-3.5 w-3.5" />
-                          {request.partner_email}
+                          <span className="truncate max-w-[200px]">{request.partner_email}</span>
                         </a>
                       )}
                     </div>
+                  )}
 
-                    {/* Boutons d'action */}
-                    <div className="flex gap-2 mt-4">
-                      <Button 
-                        size="sm" 
-                        onClick={() => respondToRequest(request.id, true)}
-                        disabled={responding === request.id}
-                        className="flex-1 bg-green-600 hover:bg-green-700 h-10"
-                      >
-                        {responding === request.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-1.5" />
-                            Accepter
-                          </>
-                        )}
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => respondToRequest(request.id, false)}
-                        disabled={responding === request.id}
-                        className="h-10 px-4 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  {/* Boutons d'action */}
+                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                    <Button 
+                      size="sm" 
+                      className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700 h-10"
+                      onClick={() => respondToRequest(request.id, true)}
+                      disabled={responding === request.id}
+                    >
+                      {responding === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Accepter
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => respondToRequest(request.id, false)}
+                      disabled={responding === request.id}
+                      className="h-10 px-4 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>

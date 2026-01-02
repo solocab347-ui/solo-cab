@@ -352,19 +352,23 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="explore" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="explore" className="gap-2">
-                <Search className="w-4 h-4" />
-                Explorer
+          <Tabs defaultValue="explore" className="space-y-4 sm:space-y-6">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
+              <TabsTrigger value="explore" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Explorer</span>
               </TabsTrigger>
-              <TabsTrigger value="pending" className="gap-2">
-                <Clock className="w-4 h-4" />
-                En attente ({pendingPartnerships.length})
+              <TabsTrigger value="pending" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">En attente</span>
+                <span className="xs:hidden">{pendingPartnerships.length}</span>
+                <span className="hidden xs:inline">({pendingPartnerships.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="active" className="gap-2">
-                <Check className="w-4 h-4" />
-                Actifs ({activePartnerships.length})
+              <TabsTrigger value="active" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Actifs</span>
+                <span className="xs:hidden">{activePartnerships.length}</span>
+                <span className="hidden xs:inline">({activePartnerships.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -389,54 +393,54 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                   </p>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   {availableFleets.map((fleet) => (
-                    <Card key={fleet.id} className="border-border/50 hover:border-primary/50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-4">
-                          <Avatar className="w-14 h-14 border-2 border-border">
+                    <Card key={fleet.id} className="border-border/50 hover:border-primary/50 transition-colors overflow-hidden">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-border shrink-0">
                             <AvatarImage src={fleet.logo_url || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-sm sm:text-base">
                               {(fleet.company_name || "F").slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{fleet.company_name}</h3>
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <h3 className="font-semibold truncate text-sm sm:text-base">{fleet.company_name}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 truncate">
                               Géré par {fleet.contact_name}
                             </p>
-                            <div className="flex flex-wrap gap-2 mb-2">
+                            <div className="flex flex-wrap gap-1.5 mb-2">
                               {fleet.show_driver_count_public && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Car className="w-2 h-2 mr-1" />
-                                  {fleet.total_drivers || 0} chauffeurs
+                                <Badge variant="outline" className="text-xs py-0.5">
+                                  <Car className="w-3 h-3 mr-1" />
+                                  {fleet.total_drivers || 0}
                                 </Badge>
                               )}
                               {fleet.show_client_count_public && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Users className="w-2 h-2 mr-1" />
-                                  {fleet.total_clients || 0} clients
+                                <Badge variant="outline" className="text-xs py-0.5">
+                                  <Users className="w-3 h-3 mr-1" />
+                                  {fleet.total_clients || 0}
+                                </Badge>
+                              )}
+                              {fleet.default_partnership_commission && (
+                                <Badge className="bg-primary/10 text-primary border-primary/30 text-xs py-0.5">
+                                  <Percent className="w-3 h-3 mr-1" />
+                                  {fleet.default_partnership_commission}%
                                 </Badge>
                               )}
                             </div>
-                            {fleet.default_partnership_commission && (
-                              <Badge className="bg-info/20 text-info border-info/30">
-                                <Percent className="w-3 h-3 mr-1" />
-                                {fleet.default_partnership_commission}% commission
-                              </Badge>
-                            )}
                           </div>
                         </div>
                         {fleet.driver_profile_description && (
-                          <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-2 sm:mt-3 line-clamp-2">
                             {fleet.driver_profile_description}
                           </p>
                         )}
                         <Button 
-                          className="w-full mt-4 gap-2"
+                          className="w-full mt-3 sm:mt-4 gap-1.5 h-9 sm:h-10 text-xs sm:text-sm"
                           onClick={() => handleProposePartnership(fleet)}
                         >
-                          <Send className="w-4 h-4" />
+                          <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           Demander à rejoindre
                         </Button>
                       </CardContent>
@@ -454,66 +458,79 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                   <p className="text-muted-foreground">Aucune demande en attente</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {pendingPartnerships.map((partnership) => (
-                    <Card key={partnership.id} className="border-warning/30 bg-warning/5">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                          <div className="flex items-center gap-4">
-                            <Avatar className="w-12 h-12">
+                    <Card key={partnership.id} className="border-warning/30 bg-gradient-to-br from-warning/5 to-transparent overflow-hidden">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 ring-2 ring-warning/30">
                               <AvatarImage src={partnership.fleet_manager?.logo_url || undefined} />
-                              <AvatarFallback>
+                              <AvatarFallback className="bg-gradient-to-br from-warning/20 to-warning/5">
                                 {(partnership.fleet_manager?.company_name || "F").slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h3 className="font-semibold">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold truncate text-sm sm:text-base">
                                 {partnership.fleet_manager?.company_name || "Gestionnaire"}
                               </h3>
-                              <p className="text-sm text-muted-foreground">
-                                Commission: {partnership.commission_percentage}%
-                              </p>
-                              {partnership.proposal_message && partnership.initiated_by === "fleet_manager" && (
-                                <p className="text-sm mt-1 italic">"{partnership.proposal_message}"</p>
-                              )}
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge variant={partnership.driver_signed ? "default" : "secondary"}>
-                                  {partnership.driver_signed ? "✓ Vous avez signé" : "En attente de votre signature"}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                <Badge className="text-xs bg-primary/20 text-primary border-primary/30">
+                                  <Percent className="w-3 h-3 mr-1" />
+                                  {partnership.commission_percentage}%
                                 </Badge>
-                                <Badge variant={partnership.fleet_manager_signed ? "default" : "secondary"}>
-                                  {partnership.fleet_manager_signed ? "✓ Gestionnaire a signé" : "En attente du gestionnaire"}
+                              </div>
+                              {partnership.proposal_message && partnership.initiated_by === "fleet_manager" && (
+                                <p className="text-xs sm:text-sm mt-2 italic text-muted-foreground line-clamp-2">
+                                  "{partnership.proposal_message}"
+                                </p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                <Badge 
+                                  variant={partnership.driver_signed ? "default" : "secondary"} 
+                                  className={`text-xs ${partnership.driver_signed ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' : ''}`}
+                                >
+                                  {partnership.driver_signed ? "✓ Signé" : "À signer"}
+                                </Badge>
+                                <Badge 
+                                  variant={partnership.fleet_manager_signed ? "default" : "secondary"}
+                                  className={`text-xs ${partnership.fleet_manager_signed ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' : ''}`}
+                                >
+                                  {partnership.fleet_manager_signed ? "✓ Gestionnaire" : "Attente gest."}
                                 </Badge>
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:shrink-0">
                             {!partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
                               <>
-                                <Button size="sm" onClick={() => signContract(partnership.id)}>
-                                  <Check className="w-4 h-4 mr-1" />
-                                  Accepter
+                                <Button size="sm" onClick={() => signContract(partnership.id)} className="flex-1 sm:flex-none gap-1.5">
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span className="text-xs sm:text-sm">Accepter</span>
                                 </Button>
                                 <Button 
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => openCounterProposal(partnership)}
+                                  className="flex-1 sm:flex-none gap-1.5"
                                 >
-                                  <Edit className="w-4 h-4 mr-1" />
-                                  Contre-proposer
+                                  <Edit className="w-3.5 h-3.5" />
+                                  <span className="text-xs sm:text-sm">Contre-proposer</span>
                                 </Button>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
                                   onClick={() => rejectPartnership(partnership.id, "Refusé par le chauffeur")}
+                                  className="px-2.5"
                                 >
                                   <X className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
                             {partnership.driver_signed && !partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
-                              <Badge variant="secondary" className="py-1.5">
+                              <Badge variant="secondary" className="py-1.5 text-xs">
                                 <Clock className="w-3 h-3 mr-1" />
-                                En attente de réponse du gestionnaire
+                                Attente réponse
                               </Badge>
                             )}
                           </div>
@@ -533,10 +550,10 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                   <p className="text-muted-foreground">Aucun partenariat actif</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {activePartnerships.map((partnership) => (
-                    <Card key={partnership.id} className="border-success/30 bg-success/5">
-                      <CardContent className="p-4 space-y-4">
+                    <Card key={partnership.id} className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent overflow-hidden">
+                      <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                         {/* Pending modification banner */}
                         {partnership.pending_modification && (
                           <PendingModificationBanner
@@ -552,28 +569,28 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                           />
                         )}
 
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-14 h-14 border-2 border-success/30">
-                            <AvatarImage src={partnership.fleet_manager?.logo_url || undefined} />
-                            <AvatarFallback className="bg-success/20">
-                              {(partnership.fleet_manager?.company_name || "F").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">
-                                {partnership.fleet_manager?.company_name || "Gestionnaire"}
-                              </h3>
-                              <Badge className="bg-success/20 text-success border-success/30">
-                                <Check className="w-3 h-3 mr-1" />
-                                Actif
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {partnership.fleet_manager?.contact_name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-emerald-500/30 shrink-0 ring-2 ring-emerald-500/20">
+                              <AvatarImage src={partnership.fleet_manager?.logo_url || undefined} />
+                              <AvatarFallback className="bg-emerald-500/20 text-emerald-600">
+                                {(partnership.fleet_manager?.company_name || "F").slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <h3 className="font-semibold truncate text-sm sm:text-base">
+                                  {partnership.fleet_manager?.company_name || "Gestionnaire"}
+                                </h3>
+                                <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 text-xs">
+                                  <Check className="w-3 h-3 mr-0.5" />
+                                  Actif
+                                </Badge>
+                              </div>
+                              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                {partnership.fleet_manager?.contact_name}
+                              </p>
+                              <Badge variant="outline" className="mt-1.5 text-xs">
                                 <Percent className="w-3 h-3 mr-1" />
                                 {partnership.commission_percentage}% commission
                               </Badge>
@@ -585,13 +602,14 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                             <Button
                               variant="outline"
                               size="sm"
+                              className="w-full sm:w-auto gap-1.5 h-9"
                               onClick={() => {
                                 setModifyingPartnership(partnership);
                                 setShowModificationDialog(true);
                               }}
                             >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Modifier
+                              <Edit className="w-3.5 h-3.5" />
+                              <span className="text-xs sm:text-sm">Modifier</span>
                             </Button>
                           )}
                         </div>
