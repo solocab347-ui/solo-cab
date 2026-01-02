@@ -28,6 +28,9 @@ interface DriverProfile {
   service_description: string | null;
   max_passengers: number;
   public_profile_enabled: boolean | null;
+  show_rating_public: boolean | null;
+  show_phone: boolean | null;
+  show_email: boolean | null;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
@@ -79,6 +82,9 @@ const ClientDriverProfile = () => {
           service_description,
           max_passengers,
           public_profile_enabled,
+          show_rating_public,
+          show_phone,
+          show_email,
           profiles:user_id(full_name, profile_photo_url)
         `)
         .eq("id", client.driver_id)
@@ -169,7 +175,7 @@ const ClientDriverProfile = () => {
             )}
             
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              {driver.rating && (
+              {driver.show_rating_public !== false && driver.rating && (
                 <Badge variant="outline" className="text-base px-3 py-1">
                   <Star className="w-4 h-4 mr-1 fill-amber-400 text-amber-400" />
                   {driver.rating.toFixed(1)}
