@@ -244,16 +244,8 @@ serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    console.log("[CREATE-FACTURE-AUTO] Facture created:", facture.id);
-
-      // Create notification for client using their user_id
-      await supabase.from("notifications").insert({
-        user_id: course.clients.user_id,
-        title: "Facture disponible",
-        message: `Votre facture ${invoiceNumber} est maintenant disponible en téléchargement.`,
-        type: "facture_generated",
-        link: "/client-dashboard?tab=factures"
-      });
+    // La notification est gérée par le trigger notify_new_facture
+    // Ne pas envoyer de notification en double ici
 
     return new Response(
       JSON.stringify({ 

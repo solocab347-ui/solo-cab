@@ -25,7 +25,7 @@ export function CourseCreatedInfoDialog({
 
   const handleViewDevis = () => {
     onClose();
-    navigate("/client-dashboard?tab=finances");
+    navigate("/client-dashboard?tab=finances&subtab=devis");
   };
 
   return (
