@@ -6808,6 +6808,15 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: undefined
       }
+      repair_driver_counter: {
+        Args: { _driver_id: string }
+        Returns: {
+          message: string
+          new_counter: number
+          old_counter: number
+          success: boolean
+        }[]
+      }
       search_available_partners: {
         Args: {
           _city?: string
@@ -6891,6 +6900,20 @@ export type Database = {
         Returns: {
           is_valid: boolean
           issues: string[]
+        }[]
+      }
+      validate_driver_numbering_integrity: {
+        Args: { _driver_id: string }
+        Returns: {
+          courses_count: number
+          devis_count: number
+          factures_count: number
+          is_valid: boolean
+          issues: string[]
+          max_course_number: number
+          max_invoice_number: number
+          max_quote_number: number
+          reservation_counter: number
         }[]
       }
       validate_invitation_token: {
