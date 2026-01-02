@@ -78,6 +78,36 @@ const ClientDashboard = () => {
         toast.error(t('clientDashboard.paymentCancelled'));
         setSearchParams({});
       }
+      
+      // Gérer la navigation par URL (depuis les notifications)
+      const tabParam = searchParams.get("tab");
+      const subtabParam = searchParams.get("subtab");
+      
+      if (tabParam) {
+        // Mapper les noms d'onglets depuis les URLs
+        const tabMapping: Record<string, string> = {
+          "finances": "devis-factures",
+          "devis": "devis-factures",
+          "factures": "devis-factures",
+          "courses": "courses",
+          "messages": "messages",
+        };
+        
+        const mappedTab = tabMapping[tabParam] || tabParam;
+        setActiveTab(mappedTab);
+        
+        // Gérer le sous-onglet
+        if (subtabParam) {
+          if (mappedTab === "devis-factures") {
+            setDevisFacturesSubTab(subtabParam);
+          } else if (mappedTab === "courses") {
+            setCoursesSubTab(subtabParam);
+          }
+        }
+        
+        // Nettoyer les paramètres URL
+        setSearchParams({});
+      }
     };
     
     loadData();
