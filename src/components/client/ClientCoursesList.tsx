@@ -445,87 +445,32 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   const handleAcceptDevis = async (devisId: string, courseId: string) => {
     try {
-      // Récupérer les informations du devis
-      const { data: devisData, error: fetchError } = await supabase
-        .from("devis")
-        .select(`
-          id,
-          quote_number,
-          driver_id,
-          drivers:driver_id(user_id)
-        `)
-        .eq("id", devisId)
-        .single();
-
-      if (fetchError) {
-        console.error("Erreur récupération devis:", fetchError);
-        throw new Error("Impossible de récupérer le devis");
+      // Récupérer l'utilisateur courant
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Vous devez être connecté pour accepter un devis");
       }
 
-      // Récupérer les informations de la course séparément
-      const { data: courseData, error: courseError } = await supabase
-        .from("courses")
-        .select("id, created_by_user_id")
-        .eq("id", courseId)
-        .single();
+      // Utiliser la fonction sécurisée avec verrou atomique
+      const { data, error } = await supabase
+        .rpc('accept_devis_safely', {
+          _devis_id: devisId,
+          _client_user_id: user.id
+        });
 
-      if (courseError) {
-        console.error("Erreur récupération course:", courseError);
-        throw new Error("Impossible de récupérer la course");
+      if (error) {
+        console.error("Erreur RPC accept_devis_safely:", error);
+        throw new Error("Erreur lors de l'acceptation du devis");
       }
 
-      const driverUserId = devisData.drivers?.user_id;
-      const isDriverCreated = courseData.created_by_user_id === driverUserId;
-
-      // Étape 1: Accepter le devis
-      const { error: updateError } = await supabase
-        .from("devis")
-        .update({ status: "accepted", accepted_at: new Date().toISOString() })
-        .eq("id", devisId);
-
-      if (updateError) {
-        console.error("Erreur mise à jour devis:", updateError);
-        throw new Error("Impossible de mettre à jour le devis");
+      // La fonction retourne un tableau avec un seul résultat
+      const result = data?.[0];
+      
+      if (!result?.success) {
+        throw new Error(result?.message || "Échec de l'acceptation du devis");
       }
 
-      // Si le chauffeur a créé la course, confirmer directement
-      if (isDriverCreated) {
-        const { error: courseUpdateError } = await supabase
-          .from("courses")
-          .update({ status: "accepted" })
-          .eq("id", courseId);
-
-        if (courseUpdateError) {
-          console.error("Erreur confirmation course:", courseUpdateError);
-        }
-
-        // Notifier le chauffeur
-        if (driverUserId) {
-          await supabase.from("notifications").insert({
-            user_id: driverUserId,
-            title: "Devis accepté !",
-            message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
-            type: "devis_accepted",
-            link: "/driver-dashboard?tab=courses"
-          });
-        }
-
-        toast.success("Devis accepté ! Course confirmée.");
-      } else {
-        // Notifier le chauffeur qu'il doit maintenant accepter
-        if (driverUserId) {
-          await supabase.from("notifications").insert({
-            user_id: driverUserId,
-            title: "Nouveau devis accepté",
-            message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
-            type: "devis_accepted",
-            link: "/driver-dashboard?tab=courses"
-          });
-        }
-
-        toast.success("Devis accepté ! En attente de confirmation du chauffeur.");
-      }
-
+      toast.success(result.message);
       await fetchCourses();
     } catch (error: any) {
       console.error("Erreur acceptation devis:", error);
