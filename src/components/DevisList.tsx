@@ -518,6 +518,36 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
     return (
       <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
+        {/* SECTION PRIORITAIRE: Boutons d'action en haut si en attente */}
+        {canAccept && (
+          <div className="flex gap-3 mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+            <Button
+              onClick={() => handleAccept(devis.id)}
+              className="flex-1 bg-green-500 hover:bg-green-600"
+              size="lg"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Accepter le devis
+            </Button>
+            <Button
+              onClick={() => openRejectDialog(devis.id)}
+              variant="destructive"
+              className="flex-1"
+              size="lg"
+            >
+              <XCircle className="w-5 h-5 mr-2" />
+              Refuser
+            </Button>
+          </div>
+        )}
+
+        {devis.status === "accepted" && (
+          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-600 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">Devis accepté le {format(new Date(devis.accepted_at), "d MMMM yyyy", { locale: fr })}</span>
+          </div>
+        )}
+
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -554,36 +584,10 @@ const DevisList = ({ clientId }: DevisListProps) => {
           )}
         </div>
 
-        {/* Prix simplifié pour le client - pas de détail des tarifs */}
-        <div className="border border-border rounded-lg p-4 mb-4">
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <Euro className="w-4 h-4" />
-            Prix de la course
-          </h4>
-          <div className="space-y-2 text-sm">
-            {devis.courses.distance_km && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Distance</span>
-                <span>{devis.courses.distance_km} km</span>
-              </div>
-            )}
-            {devis.courses.duration_minutes && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Durée estimée</span>
-                <span>~{devis.courses.duration_minutes} min</span>
-              </div>
-            )}
-            {devis.promo_code && devis.discount_amount > 0 && (
-              <div className="flex justify-between text-success">
-                <span>Réduction ({devis.promo_code})</span>
-                <span>-{parseFloat(devis.discount_amount).toFixed(2)} €</span>
-              </div>
-            )}
-            <div className="pt-2 border-t border-border flex justify-between text-lg font-bold">
-              <span>Total TTC</span>
-              <span className="text-premium">{parseFloat(devis.amount).toFixed(2)} €</span>
-            </div>
-          </div>
+        {/* Prix compact */}
+        <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg mb-4">
+          <span className="font-semibold">Total TTC</span>
+          <span className="text-2xl font-bold text-premium">{parseFloat(devis.amount).toFixed(2)} €</span>
         </div>
 
         <div className="text-xs text-muted-foreground mb-4">
@@ -601,7 +605,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
           </div>
         )}
 
-        {/* Boutons de partage et téléchargement - toujours visibles */}
+        {/* Boutons de partage et téléchargement */}
         <div className="flex gap-2 pt-4 border-t border-border">
           <Button
             variant="outline"
@@ -630,43 +634,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
             <Mail className="w-4 h-4 mr-2" />
             Email
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleShareDevis(devis, 'sms')}
-            className="flex-1"
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            SMS
-          </Button>
         </div>
-
-        {canAccept && (
-          <div className="flex gap-3 pt-4 border-t border-border">
-            <Button
-              onClick={() => handleAccept(devis.id)}
-              className="flex-1 bg-gradient-premium"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Accepter le devis
-            </Button>
-            <Button
-              onClick={() => openRejectDialog(devis.id)}
-              variant="outline"
-              className="flex-1"
-            >
-              <XCircle className="w-4 h-4 mr-2" />
-              Refuser
-            </Button>
-          </div>
-        )}
-
-        {devis.status === "accepted" && (
-          <div className="pt-4 border-t border-border text-sm text-green-600 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Devis accepté le {format(new Date(devis.accepted_at), "d MMMM yyyy", { locale: fr })}
-          </div>
-        )}
       </Card>
     );
   };
