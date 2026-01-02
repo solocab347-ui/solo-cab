@@ -156,23 +156,42 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
   const getStatusBadge = (status: string, devis?: any) => {
     const styles = {
       pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      pending_driver: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       accepted: "bg-green-500/10 text-green-500 border-green-500/20",
       in_progress: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       completed: "bg-premium/10 text-premium border-premium/20",
       cancelled: "bg-destructive/10 text-destructive border-destructive/20",
     };
 
-    const labels = {
-      pending: "En attente d'acceptation par le chauffeur",
-      accepted: "Confirmée",
-      in_progress: "En cours",
-      completed: "Terminée",
-      cancelled: "Annulée",
-    };
+    // Déterminer le bon label en fonction du statut du devis
+    let displayStatus = status;
+    let label = "";
+    
+    if (status === "pending") {
+      // Vérifier si le devis a été accepté par le client
+      if (devis?.status === "accepted") {
+        // Client a accepté, en attente du chauffeur
+        displayStatus = "pending_driver";
+        label = "En attente de confirmation du chauffeur";
+      } else if (devis?.status === "pending") {
+        // Client doit accepter le devis
+        label = "Devis en attente de votre acceptation";
+      } else {
+        label = "En attente de devis";
+      }
+    } else {
+      const labels: Record<string, string> = {
+        accepted: "Confirmée",
+        in_progress: "En cours",
+        completed: "Terminée",
+        cancelled: "Annulée",
+      };
+      label = labels[status] || status;
+    }
 
     return (
-      <Badge variant="outline" className={styles[status as keyof typeof styles]}>
-        {labels[status as keyof typeof labels]}
+      <Badge variant="outline" className={styles[displayStatus as keyof typeof styles] || styles.pending}>
+        {label}
       </Badge>
     );
   };
@@ -426,85 +445,91 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
 
   const handleAcceptDevis = async (devisId: string, courseId: string) => {
     try {
-      // ========== SYNCHRONISATION SYSTÈME Course/Devis ==========
-      // Récupérer les informations du devis, de la course et du créateur
+      // Récupérer les informations du devis
       const { data: devisData, error: fetchError } = await supabase
         .from("devis")
         .select(`
-          *,
-          courses!inner(
-            id,
-            created_by_user_id,
-            status
-          ),
-          drivers!inner(
-            user_id
-          )
+          id,
+          quote_number,
+          driver_id,
+          drivers:driver_id(user_id)
         `)
         .eq("id", devisId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error("Erreur récupération devis:", fetchError);
+        throw new Error("Impossible de récupérer le devis");
+      }
 
-      const course = devisData.courses;
-      const driverUserId = devisData.drivers.user_id;
-      
-      // Récupérer l'ID du client actuel
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // CORRECTION CRITIQUE: Vérifier si c'est LE CHAUFFEUR qui a créé la course
-      // en comparant created_by_user_id avec le user_id du chauffeur
-      const isDriverCreated = course.created_by_user_id === driverUserId;
+      // Récupérer les informations de la course séparément
+      const { data: courseData, error: courseError } = await supabase
+        .from("courses")
+        .select("id, created_by_user_id")
+        .eq("id", courseId)
+        .single();
 
-      // Étape 1: TOUJOURS accepter le devis d'abord
-      const { error: devisError } = await supabase
+      if (courseError) {
+        console.error("Erreur récupération course:", courseError);
+        throw new Error("Impossible de récupérer la course");
+      }
+
+      const driverUserId = devisData.drivers?.user_id;
+      const isDriverCreated = courseData.created_by_user_id === driverUserId;
+
+      // Étape 1: Accepter le devis
+      const { error: updateError } = await supabase
         .from("devis")
         .update({ status: "accepted", accepted_at: new Date().toISOString() })
         .eq("id", devisId);
 
-      if (devisError) throw devisError;
+      if (updateError) {
+        console.error("Erreur mise à jour devis:", updateError);
+        throw new Error("Impossible de mettre à jour le devis");
+      }
 
-      // ========== CAS 1: CHAUFFEUR A CRÉÉ LA COURSE ==========
-      // Flux: Chauffeur crée → Client accepte → Course CONFIRMÉE DIRECTEMENT
+      // Si le chauffeur a créé la course, confirmer directement
       if (isDriverCreated) {
-        const { error: courseError } = await supabase
+        const { error: courseUpdateError } = await supabase
           .from("courses")
           .update({ status: "accepted" })
           .eq("id", courseId);
 
-        if (courseError) throw courseError;
+        if (courseUpdateError) {
+          console.error("Erreur confirmation course:", courseUpdateError);
+        }
 
-        // Notifier le chauffeur que son devis a été accepté
-        await supabase.from("notifications").insert({
-          user_id: driverUserId,
-          title: "Devis accepté !",
-          message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
-          type: "devis_accepted",
-          link: "/driver-dashboard?tab=courses"
-        });
+        // Notifier le chauffeur
+        if (driverUserId) {
+          await supabase.from("notifications").insert({
+            user_id: driverUserId,
+            title: "Devis accepté !",
+            message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
+            type: "devis_accepted",
+            link: "/driver-dashboard?tab=courses"
+          });
+        }
 
         toast.success("Devis accepté ! Course confirmée.");
-      } 
-      // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
-      // Flux: Client crée → Client accepte → Chauffeur doit accepter → Course confirmée
-      else {
-        // Course reste "pending", le chauffeur doit maintenant l'accepter
-        // Notifier le chauffeur qu'il doit maintenant accepter la course
-        await supabase.from("notifications").insert({
-          user_id: driverUserId,
-          title: "Nouveau devis accepté",
-          message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
-          type: "devis_accepted",
-          link: "/driver-dashboard?tab=courses"
-        });
+      } else {
+        // Notifier le chauffeur qu'il doit maintenant accepter
+        if (driverUserId) {
+          await supabase.from("notifications").insert({
+            user_id: driverUserId,
+            title: "Nouveau devis accepté",
+            message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
+            type: "devis_accepted",
+            link: "/driver-dashboard?tab=courses"
+          });
+        }
 
         toast.success("Devis accepté ! En attente de confirmation du chauffeur.");
       }
 
       await fetchCourses();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur acceptation devis:", error);
-      toast.error("Erreur lors de l'acceptation du devis");
+      toast.error(error.message || "Erreur lors de l'acceptation du devis");
     }
   };
 
