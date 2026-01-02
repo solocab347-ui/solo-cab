@@ -83,14 +83,10 @@ serve(async (req) => {
     console.log("[CREATE-FACTURE-AUTO] Processing:", { course_id, payment_method });
 
     // Verify user owns this course (either as driver or client)
+    // Use separate queries to avoid join ambiguity issues
     const { data: courseCheck, error: courseCheckError } = await supabase
       .from("courses")
-      .select(`
-        driver_id,
-        client_id,
-        clients(user_id),
-        drivers(user_id)
-      `)
+      .select("driver_id, client_id")
       .eq("id", course_id)
       .maybeSingle();
 
@@ -102,19 +98,33 @@ serve(async (req) => {
       );
     }
 
-    // Check if authenticated user is either the driver or the client
-    // Handle both array and object formats from Supabase joins
-    const driverUserId = Array.isArray(courseCheck.drivers) 
-      ? courseCheck.drivers[0]?.user_id 
-      : (courseCheck.drivers as any)?.user_id;
-    const clientUserId = Array.isArray(courseCheck.clients) 
-      ? courseCheck.clients[0]?.user_id 
-      : (courseCheck.clients as any)?.user_id;
+    // Get driver user_id
+    const { data: driverData } = await supabase
+      .from("drivers")
+      .select("user_id")
+      .eq("id", courseCheck.driver_id)
+      .maybeSingle();
+
+    // Get client user_id (if client exists)
+    let clientData = null;
+    if (courseCheck.client_id) {
+      const { data: cd } = await supabase
+        .from("clients")
+        .select("user_id")
+        .eq("id", courseCheck.client_id)
+        .maybeSingle();
+      clientData = cd;
+    }
+
+    const driverUserId = driverData?.user_id;
+    const clientUserId = clientData?.user_id;
 
     const isDriver = driverUserId === user.id;
     const isClient = clientUserId === user.id;
 
     console.log("[CREATE-FACTURE-AUTO] Authorization check:", { 
+      courseDriverId: courseCheck.driver_id,
+      courseClientId: courseCheck.client_id,
       driverUserId, 
       clientUserId, 
       currentUser: user.id,
