@@ -315,17 +315,23 @@ export function ModifyPartnershipDialog({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
+          >
+            Retour
+          </Button>
           {!hasPendingModification && (
-            <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
-              </Button>
-              <Button onClick={handleSubmitModification} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Proposer
-              </Button>
-            </>
+            <Button 
+              onClick={handleSubmitModification} 
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Proposer
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
