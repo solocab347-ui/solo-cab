@@ -27,12 +27,25 @@ export const useNotifications = () => {
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50); // Limiter pour performance
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter((n) => !n.is_read).length || 0);
+      // Dédupliquer les notifications par titre + message + date (même jour)
+      const seen = new Map<string, boolean>();
+      const uniqueNotifications = (data || []).filter((n) => {
+        const dateKey = new Date(n.created_at).toDateString();
+        const key = `${n.title}-${n.message}-${dateKey}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.set(key, true);
+        return true;
+      });
+
+      setNotifications(uniqueNotifications);
+      setUnreadCount(uniqueNotifications.filter((n) => !n.is_read).length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
