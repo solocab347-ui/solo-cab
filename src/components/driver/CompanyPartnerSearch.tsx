@@ -102,30 +102,54 @@ export function CompanyPartnerSearch({ driverId }: Props) {
 
     setSubmitting(true);
     try {
-      // Check if agreement already exists
-      const { data: existing } = await supabase
+      // Check if any agreement exists (active, pending, rejected, or terminated)
+      const { data: existingAgreement } = await supabase
         .from('company_driver_agreements')
-        .select('id')
+        .select('id, status')
         .eq('driver_id', driverId)
         .eq('company_id', selectedCompany.id)
-        .not('status', 'in', '("rejected","terminated")')
         .maybeSingle();
 
-      if (existing) {
-        toast.error('Un partenariat existe déjà avec cette entreprise');
+      // If active or pending partnership exists, don't allow new proposal
+      if (existingAgreement && !['rejected', 'terminated'].includes(existingAgreement.status)) {
+        toast.error('Un partenariat actif ou en attente existe déjà avec cette entreprise');
+        setSubmitting(false);
         return;
       }
 
-      const { error } = await supabase.from('company_driver_agreements').insert({
-        driver_id: driverId,
-        company_id: selectedCompany.id,
+      // Prepare agreement data
+      const agreementData = {
         payment_frequency: paymentFrequency,
         payment_methods: paymentMethods,
         driver_presentation: presentation,
         driver_services_offered: servicesOffered.split(',').map(s => s.trim()).filter(Boolean),
         proposed_by: 'driver',
         status: 'pending',
-      });
+        // Reset rejection/termination fields for re-proposal
+        rejected_at: null,
+        rejection_reason: null,
+        terminated_at: null,
+        termination_reason: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      let error;
+      if (existingAgreement) {
+        // Update existing rejected/terminated agreement
+        const result = await supabase
+          .from('company_driver_agreements')
+          .update(agreementData)
+          .eq('id', existingAgreement.id);
+        error = result.error;
+      } else {
+        // Insert new agreement
+        const result = await supabase.from('company_driver_agreements').insert({
+          driver_id: driverId,
+          company_id: selectedCompany.id,
+          ...agreementData,
+        });
+        error = result.error;
+      }
 
       if (error) throw error;
 
@@ -156,7 +180,7 @@ export function CompanyPartnerSearch({ driverId }: Props) {
       setServicesOffered('');
     } catch (error: any) {
       console.error('Error proposing partnership:', error);
-      toast.error('Erreur lors de l\'envoi de la proposition');
+      toast.error(`Erreur lors de l'envoi: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setSubmitting(false);
     }
