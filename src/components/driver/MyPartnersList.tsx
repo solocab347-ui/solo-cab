@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { notificationService } from '@/lib/notificationService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -162,6 +163,9 @@ export function MyPartnersList() {
   const respondToRequest = async (partnershipId: string, accept: boolean) => {
     setResponding(partnershipId);
     try {
+      // Récupérer les infos du partenariat pour notifier l'expéditeur
+      const partnership = pendingRequests.find(p => p.id === partnershipId);
+      
       if (accept) {
         const { error } = await supabase
           .from('driver_partnerships')
@@ -177,6 +181,30 @@ export function MyPartnersList() {
           .eq('id', partnershipId);
 
         if (error) throw error;
+        
+        // Notifier l'expéditeur que le partenariat a été accepté
+        if (partnership) {
+          const senderDriverId = partnership.proposed_by;
+          const { data: senderDriver } = await supabase
+            .from('drivers')
+            .select('user_id')
+            .eq('id', senderDriverId)
+            .single();
+          
+          if (senderDriver) {
+            const { data: myProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', user?.id)
+              .single();
+              
+            await notificationService.notifyDriverPartnershipAccepted(
+              senderDriver.user_id,
+              myProfile?.full_name || 'Un chauffeur'
+            );
+          }
+        }
+        
         toast.success('Partenariat accepté !');
       } else {
         const { error } = await supabase
@@ -185,6 +213,30 @@ export function MyPartnersList() {
           .eq('id', partnershipId);
 
         if (error) throw error;
+        
+        // Notifier l'expéditeur que le partenariat a été refusé
+        if (partnership) {
+          const senderDriverId = partnership.proposed_by;
+          const { data: senderDriver } = await supabase
+            .from('drivers')
+            .select('user_id')
+            .eq('id', senderDriverId)
+            .single();
+          
+          if (senderDriver) {
+            const { data: myProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', user?.id)
+              .single();
+              
+            await notificationService.notifyDriverPartnershipRejected(
+              senderDriver.user_id,
+              myProfile?.full_name || 'Un chauffeur'
+            );
+          }
+        }
+        
         toast.success('Demande refusée');
       }
 

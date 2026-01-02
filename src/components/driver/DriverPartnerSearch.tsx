@@ -193,6 +193,7 @@ Cordialement.`;
         }
         setDrivers([{
           id: found.id,
+          user_id: found.user_id,
           sharing_number: found.sharing_number,
           formatted_sharing_number: found.formatted_sharing_number,
           working_sectors: [],
