@@ -313,11 +313,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      // Notifier le client que la course est acceptée
-      if (course?.clients?.user_id && driverInfo) {
-        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
-        await notificationService.notifyCourseAccepted(course.clients.user_id, driverName);
-      }
+      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
+      // Ne pas dupliquer les notifications ici
 
       // Notifier l'entreprise si la course est liée à une entreprise
       await notifyCompanyForCourse(courseId, 'accepted');
@@ -352,11 +349,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      // Notifier le client que la course a démarré
-      if (course?.clients?.user_id && driverInfo) {
-        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
-        await notificationService.notifyCourseStarted(course.clients.user_id, driverName);
-      }
+      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
 
       toast.success("Course commencée !");
     } catch (error: any) {
@@ -430,10 +423,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (factureError) throw factureError;
 
-      // Notifier le client que la course est terminée
-      if (courseData?.clients?.user_id) {
-        await notificationService.notifyCourseCompleted(courseData.clients.user_id);
-      }
+      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
 
       // Notifier l'entreprise si la course est liée à une entreprise
       await notifyCompanyForCourse(selectedCourseId, 'completed', courseAmount);
@@ -504,11 +494,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      // Notifier le client que la course est refusée
-      if (course?.clients?.user_id && driverInfo) {
-        const driverName = driverInfo.profiles?.full_name || driverInfo.company_name || 'Votre chauffeur';
-        await notificationService.notifyCourseRejected(course.clients.user_id, driverName);
-      }
+      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
 
       // Notifier l'entreprise si la course est liée à une entreprise
       await notifyCompanyForCourse(courseToReject, 'cancelled');

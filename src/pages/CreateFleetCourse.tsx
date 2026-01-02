@@ -19,6 +19,7 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
+import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
 
 interface FleetDriver {
   id: string;
@@ -55,6 +56,7 @@ const CreateFleetCourse = () => {
   const [clientAddress, setClientAddress] = useState("");
   const [useAddressPickup, setUseAddressPickup] = useState(false);
   const [useAddressDestination, setUseAddressDestination] = useState(false);
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -355,7 +357,8 @@ const CreateFleetCourse = () => {
           passengers_count: sanitizedPassengers,
           notes: sanitizedNotes,
           status: "pending",
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          payment_method_requested: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : null,
         })
         .select()
         .single();
@@ -629,6 +632,14 @@ const CreateFleetCourse = () => {
                       Max: {getMaxPassengers()} personnes
                     </p>
                   </div>
+                </div>
+
+                {/* Moyen de paiement */}
+                <div className="bg-card/50 p-4 rounded-lg border border-border">
+                  <CoursePaymentMethodSelector
+                    value={paymentMethodPreference}
+                    onChange={setPaymentMethodPreference}
+                  />
                 </div>
 
                 <div className="space-y-2">

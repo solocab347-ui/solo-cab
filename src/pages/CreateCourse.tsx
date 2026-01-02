@@ -19,6 +19,7 @@ import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
 import { CourseCreatedInfoDialog } from "@/components/client/CourseCreatedInfoDialog";
+import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
 
 const CreateCourse = () => {
   const [searchParams] = useSearchParams();
@@ -41,6 +42,7 @@ const CreateCourse = () => {
   const [useAddressPickup, setUseAddressPickup] = useState(false);
   const [useAddressDestination, setUseAddressDestination] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
   const [createdCourseInfo, setCreatedCourseInfo] = useState<{
     pickupAddress: string;
     destinationAddress: string;
@@ -271,6 +273,7 @@ const CreateCourse = () => {
         passengersCount: sanitizedPassengers,
         notes: sanitizedNotes,
         promoCode: sanitizedPromoCode,
+        paymentMethodPreference: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : undefined,
       });
 
       if (course) {
@@ -485,6 +488,14 @@ const CreateCourse = () => {
                 )}
               </div>
             </ErrorBoundary>
+
+            {/* Moyen de paiement */}
+            <div className="bg-card/50 p-6 rounded-lg border border-border">
+              <CoursePaymentMethodSelector
+                value={paymentMethodPreference}
+                onChange={setPaymentMethodPreference}
+              />
+            </div>
 
             {/* Notes */}
             <div className="space-y-2">

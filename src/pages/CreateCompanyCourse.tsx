@@ -14,6 +14,7 @@ import { Car, MapPin, Calendar, Users, Building2 } from "lucide-react";
 import { geocodeAddress } from "@/lib/geocoding";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
+import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
 
 export default function CreateCompanyCourse() {
   const [searchParams] = useSearchParams();
@@ -31,6 +32,7 @@ export default function CreateCompanyCourse() {
   const [maxPassengers, setMaxPassengers] = useState(4);
   const [notes, setNotes] = useState("");
   const [company, setCompany] = useState<any>(null);
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -93,6 +95,7 @@ export default function CreateCompanyCourse() {
           notes: sanitizeString(notes),
           status: "pending",
           created_by_user_id: user.id,
+          payment_method_requested: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : null,
         })
         .select()
         .single();
@@ -222,6 +225,14 @@ export default function CreateCompanyCourse() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Moyen de paiement */}
+            <div className="bg-card/50 p-4 rounded-lg border border-border">
+              <CoursePaymentMethodSelector
+                value={paymentMethodPreference}
+                onChange={setPaymentMethodPreference}
+              />
             </div>
 
             <div className="space-y-2">
