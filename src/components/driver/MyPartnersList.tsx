@@ -303,18 +303,10 @@ export function MyPartnersList() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const activePartners = partners.filter(p => p.status === 'active');
   const sentRequests = partners.filter(p => p.status === 'pending');
 
-  // Filter active partners by search query
+  // Filter active partners by search query - must be before any conditional return
   const filteredActivePartners = useMemo(() => {
     if (!searchQuery.trim()) return activePartners;
     const query = searchQuery.toLowerCase();
@@ -324,6 +316,14 @@ export function MyPartnersList() {
       (p.partner_sharing_number && `SOLO-${String(p.partner_sharing_number).padStart(6, '0')}`.toLowerCase().includes(query))
     );
   }, [activePartners, searchQuery]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
