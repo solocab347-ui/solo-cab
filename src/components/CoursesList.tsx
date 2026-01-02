@@ -28,6 +28,7 @@ import Pagination from "@/components/Pagination";
 import { notificationService } from "@/lib/notificationService";
 import { CourseType, CourseTypeInfo, getCourseType, getCourseTypeFilters, COURSE_TYPE_CONFIG } from "@/lib/courseTypeUtils";
 import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
+import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelector";
 
 interface CoursesListProps {
   driverId: string;
@@ -1708,6 +1709,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <h3 className="font-semibold text-sm sm:text-base text-foreground">{course.clients?.profiles?.full_name}</h3>
                           {getStatusBadge(course.status)}
                           <CourseTypeBadge typeInfo={courseTypeInfo} size="sm" />
+                          <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                         </div>
                         <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
@@ -1990,9 +1992,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
+                        <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                       </div>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="w-4 h-4 text-muted-foreground/70" />
@@ -2178,9 +2181,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
+                        <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                       </div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
@@ -2325,9 +2329,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
+                        <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                       </div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
