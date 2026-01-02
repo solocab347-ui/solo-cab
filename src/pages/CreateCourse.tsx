@@ -274,31 +274,8 @@ const CreateCourse = () => {
       });
 
       if (course) {
-        // Notifier le chauffeur
-        const { data: driverData } = await supabase
-          .from("drivers")
-          .select("user_id")
-          .eq("id", assignedDriverId)
-          .maybeSingle();
-
-        if (driverData?.user_id) {
-          await supabase.from("notifications").insert({
-            user_id: driverData.user_id,
-            title: "Nouvelle demande de course",
-            message: `Nouvelle demande de ${pickupAddress} à ${destinationAddress}`,
-            type: "course_request",
-            link: "/driver-dashboard?tab=courses",
-          });
-        }
-
-        // Notifier le client
-        await supabase.from("notifications").insert({
-          user_id: user.id,
-          title: "Devis généré",
-          message: "Votre devis a été généré. Consultez-le dans 'Devis et Factures'",
-          type: "info",
-          link: "/client-dashboard?tab=devis",
-        });
+        // Les notifications sont gérées par les triggers de base de données
+        // Ne pas envoyer de notifications en double ici
 
         // Afficher le dialog d'information au lieu de naviguer immédiatement
         setCreatedCourseInfo({

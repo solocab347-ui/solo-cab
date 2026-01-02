@@ -148,30 +148,14 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
         if (courseError) throw courseError;
 
-        // Notifier le chauffeur que son devis a été accepté
-        await supabase.from("notifications").insert({
-          user_id: driverUserId,
-          title: "Devis accepté !",
-          message: `Le client a accepté votre devis ${devisData.quote_number}. La course est confirmée.`,
-          type: "devis_accepted",
-          link: "/driver-dashboard?tab=courses"
-        });
-
+        // Les notifications sont gérées par le trigger notify_driver_devis_accepted_with_email
         toast.success("Devis accepté ! Course confirmée.");
       } 
       // ========== CAS 2: CLIENT A CRÉÉ LA COURSE ==========
       // Flux: Client crée → Client accepte → Chauffeur doit accepter → Course confirmée
       else {
         // Course reste "pending", le chauffeur doit maintenant l'accepter
-        // Notifier le chauffeur qu'il doit maintenant accepter la course
-        await supabase.from("notifications").insert({
-          user_id: driverUserId,
-          title: "Nouveau devis accepté",
-          message: `Le client a accepté le devis ${devisData.quote_number}. Vous devez maintenant accepter la course.`,
-          type: "devis_accepted",
-          link: "/driver-dashboard?tab=courses"
-        });
-
+        // Les notifications sont gérées par le trigger notify_driver_devis_accepted_with_email
         toast.success("Devis accepté ! En attente de confirmation du chauffeur.");
       }
 
