@@ -29,7 +29,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  Eye,
   AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -42,12 +41,16 @@ export type PartnershipType =
   | 'company_driver'     // Entreprise ↔ Chauffeur
   | 'company_fleet';     // Entreprise ↔ Gestionnaire de flotte
 
-interface PartnerProfile {
+interface PartyInfo {
   name: string;
   company?: string;
-  photo?: string | null;
+  siret?: string;
+  tvaNumber?: string;
+  address?: string;
   phone?: string | null;
   email?: string | null;
+  photo?: string | null;
+  // Optional for display
   rating?: number | null;
   totalRides?: number | null;
   vehicle?: string | null;
@@ -61,6 +64,7 @@ interface ContractTerms {
   commissionType?: 'percentage' | 'fixed';
   paymentSchedule?: string;
   paymentFrequency?: string;
+  paymentDay?: number;
 }
 
 interface SignatureStatus {
@@ -78,11 +82,12 @@ interface UniversalPartnershipContractProps {
   status: string;
   createdAt: string;
   acceptedAt?: string | null;
+  terminatedAt?: string | null;
   
   // Party 1 = Current user
-  party1: PartnerProfile;
+  party1: PartyInfo;
   // Party 2 = Partner
-  party2: PartnerProfile;
+  party2: PartyInfo;
   
   terms: ContractTerms;
   signatures: SignatureStatus;
@@ -95,22 +100,22 @@ interface UniversalPartnershipContractProps {
 
 const PARTNERSHIP_LABELS: Record<PartnershipType, { title: string; party1Label: string; party2Label: string }> = {
   driver_driver: {
-    title: 'Partenariat entre Chauffeurs',
-    party1Label: 'Chauffeur',
-    party2Label: 'Chauffeur Partenaire'
+    title: 'Partenariat entre Chauffeurs VTC',
+    party1Label: 'Chauffeur Partie 1',
+    party2Label: 'Chauffeur Partie 2'
   },
   fleet_driver: {
-    title: 'Partenariat Gestionnaire - Chauffeur',
+    title: 'Partenariat Gestionnaire de Flotte - Chauffeur',
     party1Label: 'Gestionnaire de Flotte',
     party2Label: 'Chauffeur Partenaire'
   },
   company_driver: {
-    title: 'Partenariat Entreprise - Chauffeur',
+    title: 'Partenariat Entreprise - Chauffeur VTC',
     party1Label: 'Entreprise',
-    party2Label: 'Chauffeur'
+    party2Label: 'Chauffeur VTC'
   },
   company_fleet: {
-    title: 'Partenariat Entreprise - Gestionnaire',
+    title: 'Partenariat Entreprise - Gestionnaire de Flotte',
     party1Label: 'Entreprise',
     party2Label: 'Gestionnaire de Flotte'
   }
@@ -124,6 +129,7 @@ export function UniversalPartnershipContract({
   status,
   createdAt,
   acceptedAt,
+  terminatedAt,
   party1,
   party2,
   terms,
@@ -133,7 +139,6 @@ export function UniversalPartnershipContract({
   signing
 }: UniversalPartnershipContractProps) {
   const [generating, setGenerating] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
 
   const labels = PARTNERSHIP_LABELS[partnershipType];
 
@@ -148,14 +153,14 @@ export function UniversalPartnershipContract({
 
   const getPaymentScheduleLabel = (schedule: string | undefined) => {
     if (!schedule) return 'Non défini';
-    const labels: Record<string, string> = {
-      per_course: 'Par course',
-      weekly: 'Hebdomadaire',
-      monthly: 'Mensuel',
-      custom: 'Personnalisé',
-      mixed: 'Mixte'
+    const scheduleLabels: Record<string, string> = {
+      per_course: 'À chaque course effectuée',
+      weekly: 'Hebdomadaire (chaque semaine)',
+      monthly: 'Mensuel (chaque mois)',
+      custom: 'Personnalisé selon accord',
+      mixed: 'Mixte selon accord'
     };
-    return labels[schedule] || schedule;
+    return scheduleLabels[schedule] || schedule;
   };
 
   const getCommissionDisplay = () => {
@@ -169,18 +174,27 @@ export function UniversalPartnershipContract({
   };
 
   const isFullySigned = () => signatures.party1Signed && signatures.party2Signed;
-
-  const isActive = () => 
-    status === 'accepted' || status === 'active';
+  const isActive = () => status === 'accepted' || status === 'active';
+  const isTerminated = () => status === 'terminated' || status === 'suspended';
 
   const generateContractPDF = async () => {
     setGenerating(true);
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 20;
       const contentWidth = pageWidth - 2 * margin;
-      let yPos = 20;
+      let yPos = 15;
+
+      const checkNewPage = (neededSpace: number) => {
+        if (yPos + neededSpace > pageHeight - 25) {
+          doc.addPage();
+          yPos = 20;
+          return true;
+        }
+        return false;
+      };
 
       const addCenteredText = (text: string, size: number, style: 'normal' | 'bold' = 'normal') => {
         doc.setFontSize(size);
@@ -189,167 +203,334 @@ export function UniversalPartnershipContract({
         yPos += size * 0.5;
       };
 
-      const addText = (text: string, size: number = 10, style: 'normal' | 'bold' = 'normal') => {
+      const addText = (text: string, size: number = 10, style: 'normal' | 'bold' = 'normal', indent: number = 0) => {
         doc.setFontSize(size);
         doc.setFont('helvetica', style);
-        const lines = doc.splitTextToSize(text, contentWidth);
-        doc.text(lines, margin, yPos);
+        const lines = doc.splitTextToSize(text, contentWidth - indent);
+        doc.text(lines, margin + indent, yPos);
         yPos += lines.length * size * 0.4;
       };
 
-      const addLine = () => {
-        doc.setDrawColor(200);
+      const addLine = (color: number = 200) => {
+        doc.setDrawColor(color);
         doc.line(margin, yPos, pageWidth - margin, yPos);
         yPos += 5;
       };
 
-      // Header
-      addCenteredText('CONTRAT DE PARTENARIAT VTC', 18, 'bold');
-      yPos += 5;
-      addCenteredText(labels.title.toUpperCase(), 12, 'normal');
-      yPos += 10;
-
-      // Contract info
-      doc.setFontSize(10);
-      doc.text(`Référence: PART-${partnershipId.substring(0, 8).toUpperCase()}`, margin, yPos);
-      doc.text(`Date: ${format(new Date(), "d MMMM yyyy", { locale: fr })}`, pageWidth - margin - 50, yPos);
-      yPos += 15;
-
-      addLine();
-      yPos += 5;
-
-      // Parties
-      addText('ENTRE LES PARTIES:', 12, 'bold');
-      yPos += 5;
-
-      addText(`${labels.party1Label}:`, 10, 'bold');
-      addText(`Nom/Raison sociale: ${party1.name}${party1.company ? ` - ${party1.company}` : ''}`, 10);
-      yPos += 5;
-
-      addText(`${labels.party2Label}:`, 10, 'bold');
-      addText(`Nom/Raison sociale: ${party2.name}${party2.company ? ` - ${party2.company}` : ''}`, 10);
-      yPos += 10;
-
-      addLine();
-      yPos += 5;
-
-      // Conditions
-      addText('CONDITIONS DU PARTENARIAT', 12, 'bold');
-      yPos += 5;
-
-      addText('Article 1 - Objet du contrat', 10, 'bold');
-      addText('Le présent contrat établit les conditions de partenariat entre les deux parties pour le partage de courses VTC et la collaboration professionnelle dans le cadre de leur activité de transport.', 10);
-      yPos += 5;
-
-      addText('Article 2 - Commission', 10, 'bold');
-      if (terms.commissionPercentage) {
-        addText(`Le taux de commission convenu entre les parties est de ${terms.commissionPercentage}% du montant total de chaque course partagée.`, 10);
-      } else if (terms.commissionFixedAmount) {
-        addText(`Le montant de commission fixe convenu est de ${terms.commissionFixedAmount}€ par course partagée.`, 10);
-      } else {
-        addText('Les conditions de rémunération sont définies séparément entre les parties.', 10);
-      }
-      yPos += 5;
-
-      addText('Article 3 - Modalités de paiement', 10, 'bold');
-      addText(`Les règlements des commissions seront effectués selon la fréquence suivante: ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency)}.`, 10);
-      yPos += 5;
-
-      addText('Article 4 - Obligations des parties', 10, 'bold');
-      addText('Chaque partie s\'engage à:', 10);
-      addText('• Respecter les termes du présent contrat', 10);
-      addText('• Fournir un service de qualité aux clients', 10);
-      addText('• Effectuer les paiements des commissions dans les délais convenus', 10);
-      addText('• Respecter la confidentialité des informations commerciales', 10);
-      yPos += 5;
-
-      addText('Article 5 - Durée et résiliation', 10, 'bold');
-      addText('Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis raisonnable et après régularisation de toutes les commissions dues.', 10);
-      yPos += 10;
-
-      // Check if we need a new page
-      if (yPos > 220) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      addLine();
-      yPos += 5;
-
-      // Legal clause
-      addText('CLAUSE LÉGALE', 12, 'bold');
-      yPos += 3;
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      const legalText = 'En cas de non-respect des termes du présent contrat par l\'une des parties, ce document pourra être utilisé comme preuve pour faire valoir les droits de la partie lésée auprès des juridictions compétentes. La signature électronique de ce contrat via la plateforme SoloCab a valeur de signature manuscrite conformément à la réglementation en vigueur (eIDAS).';
-      const legalLines = doc.splitTextToSize(legalText, contentWidth);
-      doc.text(legalLines, margin, yPos);
-      yPos += legalLines.length * 4 + 10;
-
-      addLine();
-      yPos += 5;
-
-      // Signatures section
-      addText('SIGNATURES', 12, 'bold');
-      yPos += 10;
-
-      const signatureBoxWidth = (contentWidth - 20) / 2;
+      // ========== EN-TÊTE ==========
+      doc.setFillColor(30, 41, 59); // slate-800
+      doc.rect(0, 0, pageWidth, 35, 'F');
       
-      // Partie 1
-      doc.setDrawColor(150);
-      doc.rect(margin, yPos, signatureBoxWidth, 45);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CONTRAT DE PARTENARIAT VTC', pageWidth / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(labels.title, pageWidth / 2, 24, { align: 'center' });
+      
+      doc.setFontSize(9);
+      doc.text(`Réf: PART-${partnershipId.substring(0, 8).toUpperCase()}`, pageWidth / 2, 31, { align: 'center' });
+      
+      doc.setTextColor(0, 0, 0);
+      yPos = 45;
+
+      // ========== STATUT DU CONTRAT ==========
+      const statusLabel = isTerminated() ? 'CONTRAT RÉSILIÉ' : isActive() ? 'CONTRAT EN VIGUEUR' : 'EN ATTENTE DE SIGNATURE';
+      const statusColor = isTerminated() ? [220, 38, 38] : isActive() ? [22, 163, 74] : [234, 179, 8];
+      
+      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+      doc.roundedRect(margin, yPos - 5, contentWidth, 12, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(labels.party1Label + ':', margin + 5, yPos + 8);
+      doc.text(statusLabel, pageWidth / 2, yPos + 2, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      yPos += 18;
+
+      // ========== INFORMATIONS GÉNÉRALES ==========
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, yPos - 2, contentWidth, 22, 'F');
+      
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(party1.name, margin + 5, yPos + 16);
+      doc.text(`Date d'établissement: ${format(new Date(createdAt), "d MMMM yyyy", { locale: fr })}`, margin + 5, yPos + 5);
+      
+      if (acceptedAt) {
+        doc.text(`Date de validation: ${format(new Date(acceptedAt), "d MMMM yyyy à HH:mm", { locale: fr })}`, margin + 5, yPos + 12);
+      }
+      
+      if (terminatedAt) {
+        doc.setTextColor(220, 38, 38);
+        doc.text(`Date de résiliation: ${format(new Date(terminatedAt), "d MMMM yyyy", { locale: fr })}`, margin + 5, yPos + 19);
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      yPos += 28;
+
+      // ========== PARTIES CONTRACTANTES ==========
+      addLine(100);
+      yPos += 3;
+      addText('PARTIES CONTRACTANTES', 12, 'bold');
+      yPos += 8;
+
+      const drawPartyBox = (partyLabel: string, party: PartyInfo, xStart: number, boxWidth: number) => {
+        const boxHeight = 50;
+        doc.setDrawColor(200);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(xStart, yPos, boxWidth, boxHeight, 3, 3, 'FD');
+        
+        doc.setFillColor(30, 41, 59);
+        doc.roundedRect(xStart, yPos, boxWidth, 8, 3, 3, 'F');
+        doc.rect(xStart, yPos + 5, boxWidth, 3, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(partyLabel.toUpperCase(), xStart + boxWidth / 2, yPos + 5.5, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        
+        let textY = yPos + 14;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(party.name || 'Non renseigné', xStart + 5, textY);
+        textY += 5;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        
+        if (party.company) {
+          doc.text(`Société: ${party.company}`, xStart + 5, textY);
+          textY += 4;
+        }
+        if (party.siret) {
+          doc.text(`SIRET: ${party.siret}`, xStart + 5, textY);
+          textY += 4;
+        }
+        if (party.tvaNumber) {
+          doc.text(`N° TVA: ${party.tvaNumber}`, xStart + 5, textY);
+          textY += 4;
+        }
+        if (party.address) {
+          const addrLines = doc.splitTextToSize(`Adresse: ${party.address}`, boxWidth - 10);
+          doc.text(addrLines, xStart + 5, textY);
+          textY += addrLines.length * 3.5;
+        }
+        if (party.email) {
+          doc.text(`Email: ${party.email}`, xStart + 5, textY);
+          textY += 4;
+        }
+        if (party.phone) {
+          doc.text(`Tél: ${party.phone}`, xStart + 5, textY);
+        }
+      };
+
+      const boxWidth = (contentWidth - 10) / 2;
+      drawPartyBox(labels.party1Label, party1, margin, boxWidth);
+      drawPartyBox(labels.party2Label, party2, margin + boxWidth + 10, boxWidth);
+      yPos += 58;
+
+      // ========== CONDITIONS FINANCIÈRES ==========
+      checkNewPage(60);
+      addLine(100);
+      yPos += 3;
+      addText('CONDITIONS FINANCIÈRES', 12, 'bold');
+      yPos += 5;
+
+      doc.setFillColor(239, 246, 255);
+      doc.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F');
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Commission:', margin + 5, yPos + 8);
+      doc.setFont('helvetica', 'normal');
+      
+      if (terms.commissionPercentage) {
+        doc.text(`${terms.commissionPercentage}% du montant de chaque course effectuée`, margin + 35, yPos + 8);
+      } else if (terms.commissionFixedAmount) {
+        doc.text(`${terms.commissionFixedAmount}€ par course effectuée (montant fixe)`, margin + 35, yPos + 8);
+      } else {
+        doc.text('À définir selon accord mutuel', margin + 35, yPos + 8);
+      }
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Paiement:', margin + 5, yPos + 16);
+      doc.setFont('helvetica', 'normal');
+      doc.text(getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency), margin + 35, yPos + 16);
+      
+      if (terms.paymentDay) {
+        const dayLabel = (terms.paymentSchedule === 'weekly') 
+          ? ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][terms.paymentDay]
+          : `le ${terms.paymentDay} du mois`;
+        doc.text(`(${dayLabel})`, margin + 100, yPos + 16);
+      }
+      
+      yPos += 35;
+
+      // ========== CLAUSES DU CONTRAT ==========
+      checkNewPage(100);
+      addLine(100);
+      yPos += 3;
+      addText('CLAUSES ET ENGAGEMENTS', 12, 'bold');
+      yPos += 5;
+
+      const clauses = [
+        {
+          title: 'Article 1 - Objet du contrat',
+          content: `Le présent contrat établit les conditions de partenariat entre les parties pour le partage de courses VTC, la transmission de clientèle et la collaboration professionnelle dans le cadre de leurs activités de transport de personnes.`
+        },
+        {
+          title: 'Article 2 - Commission et rémunération',
+          content: terms.commissionPercentage 
+            ? `${labels.party2Label} s'engage à verser à ${labels.party1Label} une commission de ${terms.commissionPercentage}% du montant total TTC de chaque course transmise. Cette commission est due dès la réalisation effective de la course.`
+            : terms.commissionFixedAmount
+              ? `${labels.party2Label} s'engage à verser à ${labels.party1Label} un montant fixe de ${terms.commissionFixedAmount}€ par course transmise, quel que soit le montant de la course. Cette commission est due dès la réalisation effective de la course.`
+              : 'Les conditions de rémunération seront définies d\'un commun accord entre les parties.'
+        },
+        {
+          title: 'Article 3 - Modalités de paiement',
+          content: `Les règlements des commissions seront effectués ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency).toLowerCase()}. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités et la suspension du partenariat.`
+        },
+        {
+          title: 'Article 4 - Obligations des parties',
+          content: 'Chaque partie s\'engage à: (a) respecter les termes du présent contrat, (b) fournir un service de qualité irréprochable aux clients, (c) effectuer les paiements dans les délais convenus, (d) respecter la confidentialité des informations commerciales, (e) maintenir ses autorisations professionnelles en cours de validité.'
+        },
+        {
+          title: 'Article 5 - Durée et résiliation',
+          content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les commissions dues. En cas de manquement grave, la résiliation peut être immédiate.'
+        },
+        {
+          title: 'Article 6 - Responsabilités',
+          content: 'Chaque partie reste responsable de ses propres actes professionnels, de sa comptabilité et de ses obligations fiscales et sociales. La transmission d\'un client n\'engage pas la responsabilité du transmetteur pour les prestations effectuées.'
+        }
+      ];
+
+      for (const clause of clauses) {
+        checkNewPage(25);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clause.title, margin, yPos);
+        yPos += 5;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const lines = doc.splitTextToSize(clause.content, contentWidth - 5);
+        doc.text(lines, margin + 3, yPos);
+        yPos += lines.length * 3.5 + 4;
+      }
+
+      // ========== CLAUSE LÉGALE ==========
+      checkNewPage(35);
+      yPos += 5;
+      doc.setFillColor(254, 243, 199);
+      doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'F');
+      doc.setDrawColor(234, 179, 8);
+      doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'S');
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(146, 64, 14);
+      doc.text('VALEUR JURIDIQUE', margin + 5, yPos + 6);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(7);
+      const legalText = 'En cas de non-respect des termes du présent contrat par l\'une des parties, ce document pourra être utilisé comme preuve pour faire valoir les droits de la partie lésée auprès des juridictions compétentes. La signature électronique de ce contrat via la plateforme SoloCab a valeur de signature manuscrite conformément au règlement européen eIDAS (n°910/2014) et au Code civil français (art. 1366 et 1367).';
+      const legalLines = doc.splitTextToSize(legalText, contentWidth - 10);
+      doc.text(legalLines, margin + 5, yPos + 12);
+      yPos += 33;
+
+      // ========== SIGNATURES ==========
+      checkNewPage(60);
+      addLine(100);
+      yPos += 3;
+      addText('SIGNATURES DES PARTIES', 12, 'bold');
+      yPos += 8;
+
+      const signBoxWidth = (contentWidth - 15) / 2;
+      const signBoxHeight = 45;
+
+      // Signature Partie 1
+      doc.setDrawColor(150);
+      doc.roundedRect(margin, yPos, signBoxWidth, signBoxHeight, 3, 3, 'S');
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(labels.party1Label.toUpperCase(), margin + 5, yPos + 7);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(party1.name, margin + 5, yPos + 14);
+      if (party1.company) {
+        doc.setFontSize(7);
+        doc.text(party1.company, margin + 5, yPos + 19);
+      }
       
       if (signatures.party1Signed) {
-        doc.setTextColor(0, 128, 0);
-        doc.text('✓ Signé électroniquement', margin + 5, yPos + 28);
+        doc.setTextColor(22, 163, 74);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('✓ SIGNÉ ÉLECTRONIQUEMENT', margin + 5, yPos + 30);
         if (signatures.party1SignedAt) {
-          doc.setFontSize(8);
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
           doc.text(`Le ${format(new Date(signatures.party1SignedAt), 'dd/MM/yyyy à HH:mm')}`, margin + 5, yPos + 36);
         }
-        doc.setTextColor(0);
+        doc.setTextColor(0, 0, 0);
       } else {
         doc.setTextColor(200, 100, 0);
-        doc.text('En attente de signature', margin + 5, yPos + 28);
-        doc.setTextColor(0);
+        doc.setFontSize(8);
+        doc.text('En attente de signature...', margin + 5, yPos + 30);
+        doc.setTextColor(0, 0, 0);
       }
 
-      // Partie 2
-      doc.rect(margin + signatureBoxWidth + 20, yPos, signatureBoxWidth, 45);
-      doc.setFontSize(10);
+      // Signature Partie 2
+      doc.roundedRect(margin + signBoxWidth + 15, yPos, signBoxWidth, signBoxHeight, 3, 3, 'S');
+      
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text(labels.party2Label + ':', margin + signatureBoxWidth + 25, yPos + 8);
+      doc.text(labels.party2Label.toUpperCase(), margin + signBoxWidth + 20, yPos + 7);
+      
       doc.setFont('helvetica', 'normal');
-      doc.text(party2.name, margin + signatureBoxWidth + 25, yPos + 16);
+      doc.text(party2.name, margin + signBoxWidth + 20, yPos + 14);
+      if (party2.company) {
+        doc.setFontSize(7);
+        doc.text(party2.company, margin + signBoxWidth + 20, yPos + 19);
+      }
       
       if (signatures.party2Signed) {
-        doc.setTextColor(0, 128, 0);
-        doc.text('✓ Signé électroniquement', margin + signatureBoxWidth + 25, yPos + 28);
+        doc.setTextColor(22, 163, 74);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('✓ SIGNÉ ÉLECTRONIQUEMENT', margin + signBoxWidth + 20, yPos + 30);
         if (signatures.party2SignedAt) {
-          doc.setFontSize(8);
-          doc.text(`Le ${format(new Date(signatures.party2SignedAt), 'dd/MM/yyyy à HH:mm')}`, margin + signatureBoxWidth + 25, yPos + 36);
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Le ${format(new Date(signatures.party2SignedAt), 'dd/MM/yyyy à HH:mm')}`, margin + signBoxWidth + 20, yPos + 36);
         }
-        doc.setTextColor(0);
+        doc.setTextColor(0, 0, 0);
       } else {
         doc.setTextColor(200, 100, 0);
-        doc.text('En attente de signature', margin + signatureBoxWidth + 25, yPos + 28);
-        doc.setTextColor(0);
+        doc.setFontSize(8);
+        doc.text('En attente de signature...', margin + signBoxWidth + 20, yPos + 30);
+        doc.setTextColor(0, 0, 0);
       }
 
-      yPos += 60;
+      yPos += signBoxHeight + 10;
 
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      if (acceptedAt) {
-        doc.text(`Contrat validé le ${format(new Date(acceptedAt), "d MMMM yyyy à HH:mm", { locale: fr })}`, margin, yPos);
+      // ========== PIED DE PAGE ==========
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(128);
+        doc.text(
+          `Contrat PART-${partnershipId.substring(0, 8).toUpperCase()} | Page ${i}/${totalPages} | Généré par SoloCab`,
+          pageWidth / 2,
+          pageHeight - 8,
+          { align: 'center' }
+        );
       }
-      
-      doc.text('Document généré par SoloCab - Plateforme VTC', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
       // Download
       const filename = `contrat-partenariat-${party2.name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
@@ -379,7 +560,7 @@ export function UniversalPartnershipContract({
             <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-primary/20">
+                  <Avatar className="h-14 w-14 border-2 border-primary/20">
                     <AvatarImage src={party2.photo || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                       {party2.name.charAt(0)}
@@ -388,96 +569,64 @@ export function UniversalPartnershipContract({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-bold text-lg">{party2.name}</p>
+                        <p className="font-bold text-base">{party2.name}</p>
                         {party2.company && (
                           <p className="text-sm text-muted-foreground">{party2.company}</p>
                         )}
                       </div>
                       <Badge 
                         className={
-                          isActive()
-                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                            : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                          isTerminated()
+                            ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
+                            : isActive()
+                              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                              : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
                         }
                       >
-                        {isActive() ? 'Actif' : 'En attente'}
+                        {isTerminated() ? 'Résilié' : isActive() ? 'Actif' : 'En attente'}
                       </Badge>
                     </div>
                     
-                    {/* Partner badges */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    {/* SIRET and info */}
+                    <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                      {party2.siret && (
+                        <span className="bg-muted px-2 py-0.5 rounded">SIRET: {party2.siret}</span>
+                      )}
                       {party2.rating && (
                         <Badge variant="secondary" className="gap-1 text-xs">
                           <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                           {party2.rating.toFixed(1)}
                         </Badge>
                       )}
-                      {party2.totalRides !== undefined && party2.totalRides !== null && (
-                        <Badge variant="secondary" className="gap-1 text-xs">
-                          <Car className="h-3 w-3" />
-                          {party2.totalRides} courses
-                        </Badge>
-                      )}
-                      {party2.vehicle && (
-                        <Badge variant="outline" className="text-xs">
-                          {party2.vehicle}
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Bio and contact */}
-                {party2.bio && (
-                  <p className="mt-3 text-sm text-muted-foreground line-clamp-2 italic">
-                    "{party2.bio}"
-                  </p>
+                {party2.address && (
+                  <div className="flex items-start gap-2 mt-3 pt-3 border-t border-border/50">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground">{party2.address}</span>
+                  </div>
                 )}
 
                 {(party2.phone || party2.email) && (
-                  <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-border/50">
+                  <div className="flex flex-wrap gap-3 mt-2">
                     {party2.phone && (
-                      <a 
-                        href={`tel:${party2.phone}`} 
-                        className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                      >
+                      <a href={`tel:${party2.phone}`} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
                         <Phone className="h-3 w-3" />
                         {party2.phone}
                       </a>
                     )}
                     {party2.email && (
-                      <a 
-                        href={`mailto:${party2.email}`} 
-                        className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                      >
+                      <a href={`mailto:${party2.email}`} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
                         <Mail className="h-3 w-3" />
                         {party2.email}
                       </a>
                     )}
                   </div>
                 )}
-
-                {party2.workingSectors && party2.workingSectors.length > 0 && (
-                  <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/50">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                    <div className="flex flex-wrap gap-1">
-                      {party2.workingSectors.slice(0, 3).map((sector, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs py-0.5">
-                          {sector}
-                        </Badge>
-                      ))}
-                      {party2.workingSectors.length > 3 && (
-                        <Badge variant="outline" className="text-xs py-0.5 bg-muted">
-                          +{party2.workingSectors.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
-
-            <Separator />
 
             {/* Partnership type */}
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
@@ -492,11 +641,13 @@ export function UniversalPartnershipContract({
               </div>
             </div>
 
+            <Separator />
+
             {/* Contract terms */}
             <div className="space-y-4">
               <h4 className="font-semibold flex items-center gap-2">
                 <Scale className="h-4 w-4 text-primary" />
-                Conditions du partenariat
+                Conditions du contrat
               </h4>
               
               <div className="grid gap-3">
@@ -515,7 +666,7 @@ export function UniversalPartnershipContract({
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">Paiement</span>
                   </div>
-                  <span className="font-medium">
+                  <span className="font-medium text-sm">
                     {getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency)}
                   </span>
                 </div>
@@ -523,9 +674,9 @@ export function UniversalPartnershipContract({
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Créé le</span>
+                    <span className="text-sm">Date du contrat</span>
                   </div>
-                  <span className="font-medium">
+                  <span className="font-medium text-sm">
                     {format(new Date(createdAt), 'dd/MM/yyyy', { locale: fr })}
                   </span>
                 </div>
@@ -538,7 +689,7 @@ export function UniversalPartnershipContract({
             <div className="space-y-4">
               <h4 className="font-semibold flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-primary" />
-                État des signatures
+                Signatures
               </h4>
               
               <div className="grid gap-2">
@@ -548,10 +699,17 @@ export function UniversalPartnershipContract({
                     <p className="text-xs text-muted-foreground">{labels.party1Label}</p>
                   </div>
                   {signatures.party1Signed ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Signé
-                    </Badge>
+                    <div className="text-right">
+                      <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Signé
+                      </Badge>
+                      {signatures.party1SignedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(signatures.party1SignedAt), 'dd/MM/yyyy HH:mm')}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <Badge variant="secondary">En attente</Badge>
                   )}
@@ -562,10 +720,17 @@ export function UniversalPartnershipContract({
                     <p className="text-xs text-muted-foreground">{labels.party2Label}</p>
                   </div>
                   {signatures.party2Signed ? (
-                    <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Signé
-                    </Badge>
+                    <div className="text-right">
+                      <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Signé
+                      </Badge>
+                      {signatures.party2SignedAt && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(signatures.party2SignedAt), 'dd/MM/yyyy HH:mm')}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <Badge variant="secondary">En attente</Badge>
                   )}
@@ -584,9 +749,8 @@ export function UniversalPartnershipContract({
                     Valeur juridique
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Ce contrat signé électroniquement via SoloCab a valeur légale 
-                    conformément au règlement eIDAS. En cas de non-respect des termes, 
-                    ce document peut être utilisé pour faire valoir vos droits 
+                    Ce contrat signé électroniquement via SoloCab a valeur légale conformément au règlement eIDAS. 
+                    En cas de non-respect des termes, ce document peut être utilisé pour faire valoir vos droits 
                     auprès des juridictions compétentes.
                   </p>
                 </div>
