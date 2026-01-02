@@ -1373,9 +1373,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const sortByDate = (coursesList: any[]) => 
     [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  // SYSTÈME DE FIGEMENT: Tri stable pour les courses confirmées
-  const sortConfirmedByStableOrder = (coursesList: any[]) => {
+  // SYSTÈME DE FIGEMENT: Les courses "en cours" (in_progress) sont TOUJOURS en premier
+  const sortConfirmedWithInProgressFirst = (coursesList: any[]) => {
     return [...coursesList].sort((a, b) => {
+      // Les courses in_progress sont toujours en premier
+      if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
+      if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
+      
+      // Entre courses in_progress, trier par date (plus récent d'abord)
+      if (a.status === 'in_progress' && b.status === 'in_progress') {
+        return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
+      }
+      
+      // Pour les autres, utiliser l'ordre stable capturé
       const orderA = confirmedCoursesOrder.get(a.id) ?? 999999;
       const orderB = confirmedCoursesOrder.get(b.id) ?? 999999;
       return orderA - orderB;
@@ -1385,7 +1395,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
   const acceptedCourses = applyAllFilters(courses.filter(c => c.status === "accepted"));
   const inProgressCourses = applyAllFilters(courses.filter(c => c.status === "in_progress"));
-  const confirmedCoursesCombined = sortConfirmedByStableOrder([...acceptedCourses, ...inProgressCourses]);
+  const confirmedCoursesCombined = sortConfirmedWithInProgressFirst([...acceptedCourses, ...inProgressCourses]);
   const completedCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "completed")));
   const cancelledCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "cancelled")));
 
