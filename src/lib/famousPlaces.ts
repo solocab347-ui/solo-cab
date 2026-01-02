@@ -11,19 +11,120 @@ export interface FamousPlace {
 }
 
 export const FAMOUS_PLACES: FamousPlace[] = [
-  // Aéroports
+  // =====================================
+  // AÉROPORT PARIS-CHARLES DE GAULLE (CDG)
+  // =====================================
   {
     keywords: ["cdg", "charles de gaulle", "roissy", "aéroport cdg"],
     place_name: "Aéroport Paris-Charles de Gaulle",
     address: "Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
     center: [2.547778, 49.009722]
   },
+  // Terminal 1
+  {
+    keywords: ["cdg t1", "cdg terminal 1", "charles de gaulle t1", "roissy t1", "terminal 1 cdg"],
+    place_name: "CDG Terminal 1",
+    address: "Terminal 1, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.521944, 49.016667]
+  },
+  // Terminal 2A
+  {
+    keywords: ["cdg 2a", "cdg t2a", "terminal 2a", "charles de gaulle 2a", "roissy 2a"],
+    place_name: "CDG Terminal 2A",
+    address: "Terminal 2A, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.551389, 49.004167]
+  },
+  // Terminal 2B
+  {
+    keywords: ["cdg 2b", "cdg t2b", "terminal 2b", "charles de gaulle 2b", "roissy 2b"],
+    place_name: "CDG Terminal 2B",
+    address: "Terminal 2B, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.555833, 49.003889]
+  },
+  // Terminal 2C
+  {
+    keywords: ["cdg 2c", "cdg t2c", "terminal 2c", "charles de gaulle 2c", "roissy 2c"],
+    place_name: "CDG Terminal 2C",
+    address: "Terminal 2C, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.561111, 49.003611]
+  },
+  // Terminal 2D
+  {
+    keywords: ["cdg 2d", "cdg t2d", "terminal 2d", "charles de gaulle 2d", "roissy 2d"],
+    place_name: "CDG Terminal 2D",
+    address: "Terminal 2D, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.565278, 49.003333]
+  },
+  // Terminal 2E
+  {
+    keywords: ["cdg 2e", "cdg t2e", "terminal 2e", "charles de gaulle 2e", "roissy 2e"],
+    place_name: "CDG Terminal 2E",
+    address: "Terminal 2E, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.570556, 49.008889]
+  },
+  // Terminal 2F
+  {
+    keywords: ["cdg 2f", "cdg t2f", "terminal 2f", "charles de gaulle 2f", "roissy 2f"],
+    place_name: "CDG Terminal 2F",
+    address: "Terminal 2F, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.560278, 49.008333]
+  },
+  // Terminal 2G
+  {
+    keywords: ["cdg 2g", "cdg t2g", "terminal 2g", "charles de gaulle 2g", "roissy 2g"],
+    place_name: "CDG Terminal 2G",
+    address: "Terminal 2G, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.576944, 48.997222]
+  },
+  // Terminal 3
+  {
+    keywords: ["cdg t3", "cdg terminal 3", "charles de gaulle t3", "roissy t3", "terminal 3 cdg"],
+    place_name: "CDG Terminal 3",
+    address: "Terminal 3, Aéroport Paris-Charles de Gaulle, 95700 Roissy-en-France",
+    center: [2.509722, 49.003889]
+  },
+
+  // =====================================
+  // AÉROPORT PARIS-ORLY (ORY)
+  // =====================================
   {
     keywords: ["orly", "aéroport orly", "ory"],
     place_name: "Aéroport Paris-Orly",
     address: "Aéroport de Paris-Orly, 94390 Orly",
     center: [2.379444, 48.723333]
   },
+  // Orly 1
+  {
+    keywords: ["orly 1", "ory 1", "terminal 1 orly", "orly terminal 1"],
+    place_name: "Orly Terminal 1",
+    address: "Terminal 1, Aéroport de Paris-Orly, 94390 Orly",
+    center: [2.370556, 48.726111]
+  },
+  // Orly 2
+  {
+    keywords: ["orly 2", "ory 2", "terminal 2 orly", "orly terminal 2"],
+    place_name: "Orly Terminal 2",
+    address: "Terminal 2, Aéroport de Paris-Orly, 94390 Orly",
+    center: [2.373611, 48.726667]
+  },
+  // Orly 3
+  {
+    keywords: ["orly 3", "ory 3", "terminal 3 orly", "orly terminal 3"],
+    place_name: "Orly Terminal 3",
+    address: "Terminal 3, Aéroport de Paris-Orly, 94390 Orly",
+    center: [2.378889, 48.726944]
+  },
+  // Orly 4
+  {
+    keywords: ["orly 4", "ory 4", "terminal 4 orly", "orly terminal 4", "orly sud"],
+    place_name: "Orly Terminal 4",
+    address: "Terminal 4, Aéroport de Paris-Orly, 94390 Orly",
+    center: [2.385833, 48.721111]
+  },
+
+  // =====================================
+  // AUTRES AÉROPORTS
+  // =====================================
   {
     keywords: ["le bourget", "bourget", "aéroport le bourget"],
     place_name: "Aéroport Paris-Le Bourget",
