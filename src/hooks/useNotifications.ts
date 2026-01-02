@@ -54,18 +54,23 @@ export const useNotifications = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
+    // Mise à jour optimiste IMMÉDIATE pour éviter les réapparitions
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    
     try {
       const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
         .eq("id", notificationId);
 
-      if (error) throw error;
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      if (error) {
+        // Rollback en cas d'erreur
+        console.error("Error marking notification as read:", error);
+        await fetchNotifications();
+      }
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }

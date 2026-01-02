@@ -123,7 +123,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           )
         `)
         .eq("driver_id", driverId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setDevisList(data || []);
