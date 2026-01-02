@@ -61,9 +61,7 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
             passengers_count
           ),
           devis(
-            base_price,
-            distance_price,
-            time_price
+            amount
           ),
           clients!inner(
             profiles:user_id(full_name, phone, email)
@@ -182,7 +180,8 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     yPos += 8;
 
     const amount = facture.amount;
-    const tvaRate = facture.devis?.time_price && facture.devis.time_price > 0 ? 20 : 10;
+    // TVA 10% par défaut pour les prestations VTC
+    const tvaRate = 10;
     const subtotalHT = amount / (1 + tvaRate / 100);
     const tvaAmount = amount - subtotalHT;
 
