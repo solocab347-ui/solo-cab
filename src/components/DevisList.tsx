@@ -199,27 +199,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
       if (devisError) throw devisError;
 
-      const { data: devisData } = await supabase
-        .from("devis")
-        .select(`
-          quote_number,
-          driver_id,
-          clients!inner(
-            profiles:user_id(full_name)
-          )
-        `)
-        .eq("id", selectedDevisId)
-        .single();
-
-      if (devisData) {
-        await supabase.from("notifications").insert({
-          user_id: devisData.driver_id,
-          title: "Devis refusé",
-          message: `Le devis ${devisData.quote_number} a été refusé par ${devisData.clients.profiles.full_name}. Raison : ${finalReason}`,
-          type: "devis_rejected",
-          link: "/driver-dashboard?tab=devis"
-        });
-      }
+      // La notification est gérée par le trigger unified_notify_devis_status_change
 
       toast.success("Devis refusé");
       setShowRejectDialog(false);
