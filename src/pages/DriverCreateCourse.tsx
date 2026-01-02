@@ -18,6 +18,7 @@ import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
+import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
 
 interface Client {
   id: string;
@@ -56,6 +57,7 @@ const DriverCreateCourse = () => {
   
   // Pour mise à disposition
   const [durationHours, setDurationHours] = useState("");
+  const [paymentMethodPreference, setPaymentMethodPreference] = useState("not_specified");
   
   // Calcul automatique
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -300,6 +302,7 @@ const DriverCreateCourse = () => {
         promoCode: undefined, // Les drivers ne gèrent pas les promos lors de la création
         courseType,
         durationHours,
+        paymentMethodPreference: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : undefined,
       });
 
       if (course) {
@@ -550,6 +553,14 @@ const DriverCreateCourse = () => {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Moyen de paiement */}
+            <div className="bg-card/50 p-6 rounded-lg border border-border">
+              <CoursePaymentMethodSelector
+                value={paymentMethodPreference}
+                onChange={setPaymentMethodPreference}
+              />
             </div>
 
             {/* Notes */}

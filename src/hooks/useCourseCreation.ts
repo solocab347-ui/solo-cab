@@ -198,6 +198,7 @@ export function useCourseCreation() {
           promo_code: sanitizedPromoCode,
           status: "pending",
           created_by_user_id: userId,
+          payment_method_requested: paymentMethodPreference || null,
         })
         .select()
         .single();
