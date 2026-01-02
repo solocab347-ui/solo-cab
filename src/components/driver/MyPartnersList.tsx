@@ -147,7 +147,7 @@ export function MyPartnersList() {
         
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered, bio, sharing_number, card_photo_url')
+          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered, bio, sharing_number, card_photo_url, show_rating_for_sharing, show_rides_for_sharing')
           .eq('id', partnerId)
           .single();
 
@@ -179,9 +179,9 @@ export function MyPartnersList() {
             partner_sharing_number: driverData.sharing_number || null,
             show_phone_for_sharing: driverData.show_phone_for_sharing || false,
             show_email: driverData.show_email || false,
-            // For now, always show rating and rides - these fields can be added later
-            show_rating: true,
-            show_total_rides: true,
+            // Respect partner visibility settings - default to true if not set
+            show_rating: driverData.show_rating_for_sharing !== false,
+            show_total_rides: driverData.show_rides_for_sharing !== false,
           };
 
           if (p.status === 'pending' && p.proposed_by !== myDriverId) {
@@ -442,14 +442,18 @@ export function MyPartnersList() {
                     <Badge variant="secondary" className="gap-1">
                       {getPaymentScheduleLabel(request.payment_schedule)}
                     </Badge>
-                    <Badge className="gap-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                      <Star className="h-3 w-3 fill-current" />
-                      {request.partner_rating?.toFixed(1) || 'N/A'}
-                    </Badge>
-                    <Badge className="gap-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                      <Car className="h-3 w-3" />
-                      {request.partner_rides || 0} courses
-                    </Badge>
+                    {request.show_rating && (
+                      <Badge className="gap-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                        <Star className="h-3 w-3 fill-current" />
+                        {request.partner_rating?.toFixed(1) || 'N/A'}
+                      </Badge>
+                    )}
+                    {request.show_total_rides && (
+                      <Badge className="gap-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                        <Car className="h-3 w-3" />
+                        {request.partner_rides || 0} courses
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Secteurs de travail */}

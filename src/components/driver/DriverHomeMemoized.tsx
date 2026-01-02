@@ -176,8 +176,8 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           </Card>
 
           {/* Partner Courses Shortcut with notification badge - goes to received courses */}
-          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group" onClick={() => onTabChange("partnerships-received")}>
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-lg group" onClick={() => onTabChange("partnerships-received")}>
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/20 to-purple-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
             {/* Notification badge */}
             {stats.availablePartnerCourses > 0 && (
               <div className="absolute top-3 right-3 z-20">
@@ -187,7 +187,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
               </div>
             )}
             <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                 <Handshake className="w-10 h-10 text-white" />
               </div>
               <div>
