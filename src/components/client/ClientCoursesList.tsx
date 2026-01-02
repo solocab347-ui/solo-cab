@@ -92,10 +92,9 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             quote_number,
             amount,
             status,
-            base_price,
-            distance_price,
-            time_price,
-            valid_until
+            valid_until,
+            discount_amount,
+            promo_code
           ),
           factures(
             id,
