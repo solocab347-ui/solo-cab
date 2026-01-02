@@ -260,27 +260,28 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     doc.text("Date:", 20, yPos);
     doc.text(format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
     
-    // Tarification
+    // Prix simplifié pour le client - sans détails de tarification
     yPos = 155;
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.text("TARIFICATION", 20, yPos);
+    doc.text("MONTANT", 20, yPos);
     
-    const totalHT = parseFloat(devis.base_price) + parseFloat(devis.distance_price) + parseFloat(devis.time_price || 0);
-    const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
-    const tvaAmount = totalHT * (tvaRate / 100);
-    const totalTTC = totalHT + tvaAmount;
-    
+    // Afficher uniquement distance et total TTC
     yPos += 8;
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     
-    doc.text("Montant HT", 20, yPos);
-    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    if (course.distance_km) {
+      doc.text("Distance", 20, yPos);
+      doc.text(`${course.distance_km} km`, pageWidth - 20, yPos, { align: "right" });
+      yPos += 6;
+    }
     
-    yPos += 6;
-    doc.text(`TVA (${tvaRate}%)`, 20, yPos);
-    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    if (course.duration_minutes) {
+      doc.text("Durée estimée", 20, yPos);
+      doc.text(`~${course.duration_minutes} min`, pageWidth - 20, yPos, { align: "right" });
+      yPos += 6;
+    }
     
     yPos += 4;
     doc.setDrawColor(200, 200, 200);
@@ -293,7 +294,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
     doc.setFont(undefined, 'bold');
     doc.setTextColor(255, 255, 255);
     doc.text("TOTAL TTC", 20, yPos + 2);
-    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
+    doc.text(`${parseFloat(devis.amount).toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
     doc.setTextColor(0, 0, 0);
     
     doc.save(`devis-${devis.quote_number}.pdf`);
