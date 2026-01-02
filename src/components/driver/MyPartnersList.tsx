@@ -151,37 +151,40 @@ export function MyPartnersList() {
           .eq('id', partnerId)
           .single();
 
-        if (driverData) {
+        // Cast to any to handle potential column not yet in types
+        const driverInfo = driverData as any;
+
+        if (driverInfo) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, profile_photo_url, phone, email')
-            .eq('id', driverData.user_id)
+            .eq('id', driverInfo.user_id)
             .single();
 
-          const displayName = profile?.full_name || driverData.company_name || 'Chauffeur partenaire';
+          const displayName = profile?.full_name || driverInfo.company_name || 'Chauffeur partenaire';
           // Prioritize card_photo_url from drivers, fallback to profile photo
-          const photoUrl = driverData.card_photo_url || profile?.profile_photo_url || null;
+          const photoUrl = driverInfo.card_photo_url || profile?.profile_photo_url || null;
           
           const partnerData: Partner = {
             ...p,
             partner_id: partnerId,
-            partner_user_id: driverData.user_id,
+            partner_user_id: driverInfo.user_id,
             partner_name: displayName,
             partner_photo: photoUrl,
-            partner_company: driverData.company_name,
-            partner_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
-            partner_email: driverData.show_email ? profile?.email : null,
-            partner_rating: driverData.rating || 0,
-            partner_rides: driverData.total_rides || 0,
-            partner_working_sectors: driverData.working_sectors || [],
-            partner_services_offered: driverData.services_offered || [],
-            partner_bio: driverData.bio || null,
-            partner_sharing_number: driverData.sharing_number || null,
-            show_phone_for_sharing: driverData.show_phone_for_sharing || false,
-            show_email: driverData.show_email || false,
+            partner_company: driverInfo.company_name,
+            partner_phone: driverInfo.show_phone_for_sharing ? profile?.phone : null,
+            partner_email: driverInfo.show_email ? profile?.email : null,
+            partner_rating: driverInfo.rating || 0,
+            partner_rides: driverInfo.total_rides || 0,
+            partner_working_sectors: driverInfo.working_sectors || [],
+            partner_services_offered: driverInfo.services_offered || [],
+            partner_bio: driverInfo.bio || null,
+            partner_sharing_number: driverInfo.sharing_number || null,
+            show_phone_for_sharing: driverInfo.show_phone_for_sharing || false,
+            show_email: driverInfo.show_email || false,
             // Respect partner visibility settings - default to true if not set
-            show_rating: driverData.show_rating_for_sharing !== false,
-            show_total_rides: driverData.show_rides_for_sharing !== false,
+            show_rating: driverInfo.show_rating_for_sharing !== false,
+            show_total_rides: driverInfo.show_rides_for_sharing !== false,
           };
 
           if (p.status === 'pending' && p.proposed_by !== myDriverId) {

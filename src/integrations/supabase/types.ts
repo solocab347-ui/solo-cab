@@ -2645,8 +2645,10 @@ export type Database = {
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
           show_pricing_partners: boolean | null
+          show_rating_for_sharing: boolean | null
           show_rating_partners: boolean | null
           show_rating_public: boolean | null
+          show_rides_for_sharing: boolean | null
           siren: string | null
           siret: string | null
           status: Database["public"]["Enums"]["driver_status"]
@@ -2735,8 +2737,10 @@ export type Database = {
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
           show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
           show_rating_partners?: boolean | null
           show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
@@ -2825,8 +2829,10 @@ export type Database = {
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
           show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
           show_rating_partners?: boolean | null
           show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
           siren?: string | null
           siret?: string | null
           status?: Database["public"]["Enums"]["driver_status"]
