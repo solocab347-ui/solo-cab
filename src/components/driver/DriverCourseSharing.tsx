@@ -313,6 +313,31 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
     }
   };
 
+  // Calculate totals - must be before any conditional return to maintain hooks order
+  const totalOwed = balances.reduce((acc, b) => {
+    if (b.balance?.net_balance > 0) return acc + b.balance.net_balance;
+    return acc;
+  }, 0);
+
+  const totalDue = balances.reduce((acc, b) => {
+    if (b.balance?.net_balance < 0) return acc + Math.abs(b.balance.net_balance);
+    return acc;
+  }, 0);
+
+  // Smart net calculation: what you need to pay or receive globally
+  const netGlobal = totalOwed - totalDue;
+
+  // Filter balances by search - must be before conditional returns
+  const filteredBalances = useMemo(() => {
+    if (!searchQuery.trim()) return balances;
+    const query = searchQuery.toLowerCase();
+    return balances.filter((b: any) => 
+      b.partnerName.toLowerCase().includes(query) ||
+      b.companyName?.toLowerCase().includes(query) ||
+      (b.sharingNumber && `SOLO-${String(b.sharingNumber).padStart(6, '0')}`.toLowerCase().includes(query))
+    );
+  }, [balances, searchQuery]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -331,31 +356,6 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
       </Alert>
     );
   }
-
-  // Calculate totals
-  const totalOwed = balances.reduce((acc, b) => {
-    if (b.balance?.net_balance > 0) return acc + b.balance.net_balance;
-    return acc;
-  }, 0);
-
-  const totalDue = balances.reduce((acc, b) => {
-    if (b.balance?.net_balance < 0) return acc + Math.abs(b.balance.net_balance);
-    return acc;
-  }, 0);
-
-  // Smart net calculation: what you need to pay or receive globally
-  const netGlobal = totalOwed - totalDue;
-
-  // Filter balances by search
-  const filteredBalances = useMemo(() => {
-    if (!searchQuery.trim()) return balances;
-    const query = searchQuery.toLowerCase();
-    return balances.filter((b: any) => 
-      b.partnerName.toLowerCase().includes(query) ||
-      b.companyName?.toLowerCase().includes(query) ||
-      (b.sharingNumber && `SOLO-${String(b.sharingNumber).padStart(6, '0')}`.toLowerCase().includes(query))
-    );
-  }, [balances, searchQuery]);
 
   const getPaymentScheduleLabel = (schedule: string) => {
     switch (schedule) {
