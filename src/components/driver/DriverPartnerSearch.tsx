@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { notificationService } from '@/lib/notificationService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ import { getEquipmentIcon, getEquipmentLabel, getServiceLabel, getServiceIcon } 
 
 interface AvailableDriver {
   id: string;
+  user_id: string;
   sharing_number: number;
   formatted_sharing_number: string;
   working_sectors: string[];
@@ -239,6 +241,14 @@ Cordialement.`;
       });
 
       if (error) throw error;
+
+      // Envoyer la notification au chauffeur destinataire
+      const senderName = driverProfile?.profile?.full_name || driverProfile?.company_name || 'Un chauffeur';
+      await notificationService.notifyDriverPartnershipRequest(
+        selectedDriver.user_id,
+        senderName,
+        proposedCommission
+      );
 
       toast.success(`Demande de partenariat envoyée à ${selectedDriver.full_name} !`);
       setProposalDialogOpen(false);
