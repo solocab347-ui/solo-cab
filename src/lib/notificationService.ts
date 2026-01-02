@@ -507,6 +507,213 @@ export const notificationService = {
       type: 'error',
       link
     });
+  },
+
+  /**
+   * Notifications PARTENARIAT DRIVER-DRIVER COMPLÈTES
+   */
+  async notifyDriverPartnershipRequest(receiverUserId: string, senderName: string, commission: number) {
+    return this.create({
+      userId: receiverUserId,
+      title: '🤝 Nouvelle demande de partenariat',
+      message: `${senderName} souhaite devenir votre partenaire (${commission}% de commission)`,
+      type: 'partnership',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyDriverPartnershipAccepted(senderUserId: string, partnerName: string) {
+    return this.create({
+      userId: senderUserId,
+      title: '✅ Partenariat accepté !',
+      message: `${partnerName} a accepté votre demande de partenariat`,
+      type: 'success',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyDriverPartnershipRejected(senderUserId: string, partnerName: string) {
+    return this.create({
+      userId: senderUserId,
+      title: '❌ Partenariat refusé',
+      message: `${partnerName} a décliné votre demande de partenariat`,
+      type: 'warning',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyDriverPartnershipTerminated(partnerUserId: string, partnerName: string, reason?: string) {
+    return this.create({
+      userId: partnerUserId,
+      title: '🚫 Partenariat terminé',
+      message: reason 
+        ? `${partnerName} a mis fin au partenariat: ${reason}` 
+        : `${partnerName} a mis fin au partenariat`,
+      type: 'warning',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  /**
+   * Notifications COURSES PARTAGÉES entre partenaires
+   */
+  async notifyPartnerCourseReceived(receiverUserId: string, senderName: string, courseDate: string, commission: number) {
+    return this.create({
+      userId: receiverUserId,
+      title: '📤 Course proposée par un partenaire',
+      message: `${senderName} vous propose une course le ${courseDate} (${commission}€ de commission)`,
+      type: 'course',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerCourseAccepted(senderUserId: string, partnerName: string, courseDate: string) {
+    return this.create({
+      userId: senderUserId,
+      title: '✅ Course acceptée par votre partenaire',
+      message: `${partnerName} a accepté votre course du ${courseDate}`,
+      type: 'success',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerCourseDeclined(senderUserId: string, partnerName: string, courseDate: string) {
+    return this.create({
+      userId: senderUserId,
+      title: '❌ Course refusée par votre partenaire',
+      message: `${partnerName} a refusé votre course du ${courseDate}`,
+      type: 'warning',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerCourseCompleted(senderUserId: string, partnerName: string, amount: number, commission: number) {
+    return this.create({
+      userId: senderUserId,
+      title: '🏁 Course partenaire terminée',
+      message: `${partnerName} a effectué votre course (${amount}€, commission: ${commission}€)`,
+      type: 'success',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  /**
+   * Notifications PAIEMENT PARTENAIRES
+   */
+  async notifyPartnerPaymentDue(driverUserId: string, partnerName: string, amount: number, dueDate: string) {
+    return this.create({
+      userId: driverUserId,
+      title: '⏰ Paiement partenaire à venir',
+      message: `${amount.toFixed(2)}€ à régler à ${partnerName} avant le ${dueDate}`,
+      type: 'warning',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerPaymentOverdue(driverUserId: string, partnerName: string, amount: number) {
+    return this.create({
+      userId: driverUserId,
+      title: '🚨 Paiement partenaire en retard',
+      message: `${amount.toFixed(2)}€ en retard de paiement à ${partnerName}`,
+      type: 'error',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerPaymentReceived(receiverUserId: string, senderName: string, amount: number) {
+    return this.create({
+      userId: receiverUserId,
+      title: '💰 Paiement partenaire reçu',
+      message: `${senderName} a confirmé un paiement de ${amount.toFixed(2)}€`,
+      type: 'success',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyPartnerPaymentSent(receiverUserId: string, senderName: string, amount: number) {
+    return this.create({
+      userId: receiverUserId,
+      title: '💸 Paiement partenaire envoyé',
+      message: `${senderName} vous a envoyé ${amount.toFixed(2)}€`,
+      type: 'info',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  /**
+   * Notifications FLEET-DRIVER PARTNERSHIP
+   */
+  async notifyFleetPartnershipRequest(driverUserId: string, fleetName: string, commission: string) {
+    return this.create({
+      userId: driverUserId,
+      title: '🚐 Proposition de partenariat flotte',
+      message: `${fleetName} vous propose un partenariat (${commission})`,
+      type: 'partnership',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyFleetPartnershipAccepted(fleetManagerUserId: string, driverName: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '✅ Partenariat chauffeur accepté',
+      message: `${driverName} a accepté votre proposition de partenariat`,
+      type: 'success',
+      link: '/fleet-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyFleetPartnershipRejected(fleetManagerUserId: string, driverName: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '❌ Partenariat chauffeur refusé',
+      message: `${driverName} a décliné votre proposition`,
+      type: 'warning',
+      link: '/fleet-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyFleetPartnerCourseCompleted(fleetManagerUserId: string, driverName: string, amount: number, commission: number) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🏁 Course partenaire terminée',
+      message: `${driverName} a terminé une course (${amount}€, commission: ${commission}€)`,
+      type: 'success',
+      link: '/fleet-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyDriverFleetCommissionDue(driverUserId: string, fleetName: string, amount: number, dueDate: string) {
+    return this.create({
+      userId: driverUserId,
+      title: '⏰ Commission flotte à régler',
+      message: `${amount.toFixed(2)}€ de commission à régler à ${fleetName} avant le ${dueDate}`,
+      type: 'warning',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  /**
+   * Notifications CONTRE-PROPOSITION
+   */
+  async notifyPartnershipCounterProposal(receiverUserId: string, senderName: string, newCommission: string) {
+    return this.create({
+      userId: receiverUserId,
+      title: '🔄 Contre-proposition reçue',
+      message: `${senderName} propose ${newCommission} de commission`,
+      type: 'partnership',
+      link: '/driver-dashboard?tab=partnerships'
+    });
+  },
+
+  async notifyFleetPartnershipCounterProposal(fleetManagerUserId: string, driverName: string, newCommission: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🔄 Contre-proposition du chauffeur',
+      message: `${driverName} propose ${newCommission} de commission`,
+      type: 'partnership',
+      link: '/fleet-dashboard?tab=partnerships'
+    });
   }
 };
 
