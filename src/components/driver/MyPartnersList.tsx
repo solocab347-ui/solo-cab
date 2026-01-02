@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
 import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
 import { 
@@ -35,7 +36,9 @@ import {
   Car,
   ExternalLink,
   Hash,
-  FileText
+  FileText,
+  Search,
+  Filter
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -93,6 +96,7 @@ export function MyPartnersList() {
   const [selectedContractPartner, setSelectedContractPartner] = useState<Partner | null>(null);
   const [myName, setMyName] = useState<string>('');
   const [myCompany, setMyCompany] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user?.id) {
@@ -152,11 +156,12 @@ export function MyPartnersList() {
             .eq('id', driverData.user_id)
             .single();
 
+          const displayName = profile?.full_name || driverData.company_name || 'Chauffeur partenaire';
           const partnerData: Partner = {
             ...p,
             partner_id: partnerId,
             partner_user_id: driverData.user_id,
-            partner_name: profile?.full_name || 'Chauffeur',
+            partner_name: displayName,
             partner_photo: profile?.profile_photo_url || null,
             partner_company: driverData.company_name,
             partner_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
@@ -308,6 +313,17 @@ export function MyPartnersList() {
 
   const activePartners = partners.filter(p => p.status === 'active');
   const sentRequests = partners.filter(p => p.status === 'pending');
+
+  // Filter active partners by search query
+  const filteredActivePartners = useMemo(() => {
+    if (!searchQuery.trim()) return activePartners;
+    const query = searchQuery.toLowerCase();
+    return activePartners.filter(p => 
+      p.partner_name.toLowerCase().includes(query) ||
+      p.partner_company?.toLowerCase().includes(query) ||
+      (p.partner_sharing_number && `SOLO-${String(p.partner_sharing_number).padStart(6, '0')}`.toLowerCase().includes(query))
+    );
+  }, [activePartners, searchQuery]);
 
   return (
     <div className="space-y-4">
@@ -562,12 +578,39 @@ export function MyPartnersList() {
 
       {/* Active Partners */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Partenaires actifs ({activePartners.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Partenaires actifs ({activePartners.length})
+          </h3>
+          {searchQuery && filteredActivePartners.length !== activePartners.length && (
+            <Badge variant="outline" className="text-xs">
+              {filteredActivePartners.length} / {activePartners.length}
+            </Badge>
+          )}
+        </div>
 
-        {activePartners.length === 0 ? (
+        {/* Search filter */}
+        {activePartners.length > 2 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un partenaire..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        )}
+
+        {filteredActivePartners.length === 0 && activePartners.length > 0 ? (
+          <Alert>
+            <Search className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Aucun partenaire ne correspond à votre recherche.
+            </AlertDescription>
+          </Alert>
+        ) : activePartners.length === 0 ? (
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
@@ -576,7 +619,7 @@ export function MyPartnersList() {
           </Alert>
         ) : (
           <div className="space-y-3">
-            {activePartners.map((partner) => {
+            {filteredActivePartners.map((partner) => {
               const balance = balances[partner.id];
               const isExpanded = expandedPartner === partner.id;
 
@@ -667,16 +710,16 @@ export function MyPartnersList() {
                             </div>
                             <div className="col-span-2 pt-2 border-t flex items-center justify-between">
                               <span className="font-medium">Solde</span>
-                              <span className={`font-bold flex items-center gap-1 ${balance.net_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              <span className={`font-bold flex items-center gap-1 ${balance.net_balance > 0 ? 'text-red-600' : balance.net_balance < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                                 {balance.net_balance > 0 ? (
                                   <>
                                     <TrendingDown className="h-3 w-3" />
-                                    Vous devez {balance.net_balance.toFixed(2)}€
+                                    Vous devez à {partner.partner_name.split(' ')[0]} {balance.net_balance.toFixed(2)}€
                                   </>
                                 ) : balance.net_balance < 0 ? (
                                   <>
                                     <TrendingUp className="h-3 w-3" />
-                                    On vous doit {Math.abs(balance.net_balance).toFixed(2)}€
+                                    {partner.partner_name.split(' ')[0]} vous doit {Math.abs(balance.net_balance).toFixed(2)}€
                                   </>
                                 ) : (
                                   'Équilibré'
