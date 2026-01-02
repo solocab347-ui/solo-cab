@@ -6494,6 +6494,7 @@ export type Database = {
           rating: number
           sharing_number: number
           total_rides: number
+          user_id: string
         }[]
       }
       find_nearest_available_fleet_driver: {
