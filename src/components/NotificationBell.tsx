@@ -23,11 +23,18 @@ export const NotificationBell = () => {
   const displayedNotifications = notifications.slice(0, 3);
   const hasMore = notifications.length > 3;
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     markAsRead(notification.id);
+    
     if (notification.link) {
-      navigate(notification.link);
       setOpen(false);
+      // Petit délai pour laisser le popover se fermer avant navigation
+      setTimeout(() => {
+        navigate(notification.link);
+      }, 50);
     }
   };
 
@@ -131,7 +138,7 @@ export const NotificationBell = () => {
                     getNotificationBg(notification.type, notification.is_read),
                     !notification.is_read && "border-l-4 border-l-primary"
                   )}
-                  onClick={() => handleNotificationClick(notification)}
+                  onClick={(e) => handleNotificationClick(notification, e)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-0.5">
