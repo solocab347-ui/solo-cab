@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
-import ClientDriversList from "@/components/client/ClientDriversList";
+import ClientDriversWithProfile from "@/components/client/ClientDriversWithProfile";
 import ClientQRScanner from "@/components/client/ClientQRScanner";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
@@ -195,7 +195,6 @@ const ClientDashboard = () => {
     },
     { id: "scanner", label: t('clientDashboard.menu.scanQR'), icon: QrCode, hideForExclusive: true },
     { id: "vitrine", label: t('clientDashboard.menu.publicShowcase'), icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true },
-    { id: "profil-chauffeur", label: t('clientDashboard.menu.driverProfile'), icon: User, hideForExclusive: false },
     { id: "compte", label: t('clientDashboard.menu.myAccount'), icon: User },
     { id: "rgpd", label: t('clientDashboard.menu.myData'), icon: Sparkles, isLink: true, path: "/rgpd-data" },
   ];
@@ -336,7 +335,7 @@ const ClientDashboard = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleTabChange("profil-chauffeur")}
+                      onClick={() => handleTabChange("chauffeurs")}
                     >
                       <User className="w-4 h-4 mr-2" />
                       {t('clientDashboard.viewProfile')}
@@ -366,9 +365,7 @@ const ClientDashboard = () => {
       case "notes":
         return <ClientNotes />;
       case "chauffeurs":
-        return <ClientDriversList />;
-      case "scanner":
-        return <ClientQRScanner />;
+        return <ClientDriversWithProfile onViewProfile={() => handleTabChange("profil-chauffeur")} />;
       case "profil-chauffeur":
         return <ClientDriverProfile />;
       case "compte":
