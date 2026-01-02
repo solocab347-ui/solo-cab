@@ -306,6 +306,16 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Helper function defined at top to avoid hooks order issues
+  const getPaymentScheduleLabel = (schedule: string) => {
+    switch (schedule) {
+      case 'per_course': return 'Par course';
+      case 'weekly': return 'Hebdomadaire';
+      case 'monthly': return 'Mensuel';
+      default: return schedule;
+    }
+  };
+
   useEffect(() => {
     if (driverId) {
       loadBalances();
@@ -326,18 +336,20 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
       for (const p of partnerships || []) {
         const partnerId = p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id;
         
-        // Get partner info
+        // Get partner info with card_photo_url
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, sharing_number')
+          .select('user_id, company_name, sharing_number, card_photo_url')
           .eq('id', partnerId)
           .single();
 
-        if (driverData) {
+        const driverInfo = driverData as any;
+
+        if (driverInfo) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, profile_photo_url, phone')
-            .eq('id', driverData.user_id)
+            .eq('id', driverInfo.user_id)
             .single();
 
           // Get balance
@@ -346,14 +358,16 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
             _driver_id: driverId
           });
 
-          const displayName = profile?.full_name || driverData.company_name || 'Chauffeur partenaire';
+          const displayName = profile?.full_name || driverInfo.company_name || 'Chauffeur partenaire';
+          const photoUrl = driverInfo.card_photo_url || profile?.profile_photo_url || null;
+          
           balanceData.push({
             partnershipId: p.id,
             partnerId,
             partnerName: displayName,
-            partnerPhoto: profile?.profile_photo_url,
-            companyName: driverData.company_name,
-            sharingNumber: driverData.sharing_number,
+            partnerPhoto: photoUrl,
+            companyName: driverInfo.company_name,
+            sharingNumber: driverInfo.sharing_number,
             phone: profile?.phone,
             balance: balance?.[0] || null,
             commissionPercentage: p.commission_percentage,
@@ -412,15 +426,6 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
       </Alert>
     );
   }
-
-  const getPaymentScheduleLabel = (schedule: string) => {
-    switch (schedule) {
-      case 'per_course': return 'Par course';
-      case 'weekly': return 'Hebdomadaire';
-      case 'monthly': return 'Mensuel';
-      default: return schedule;
-    }
-  };
 
   return (
     <div className="space-y-4">
