@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { PartnershipModificationDialog } from "@/components/fleet-manager/PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
+import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DriverFleetPartnershipsProps {
   driverId: string;
@@ -75,6 +77,7 @@ interface Partnership {
 }
 
 export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsProps) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [fleetManagers, setFleetManagers] = useState<FleetManager[]>([]);
@@ -83,6 +86,12 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  
+  // Contract dialog state
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [selectedContractPartnership, setSelectedContractPartnership] = useState<Partnership | null>(null);
+  const [driverName, setDriverName] = useState("");
+  const [driverCompany, setDriverCompany] = useState("");
   
   // Modification dialog state
   const [showModificationDialog, setShowModificationDialog] = useState(false);
@@ -99,8 +108,27 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   useEffect(() => {
     if (driverId) {
       fetchData();
+      loadDriverInfo();
     }
   }, [driverId]);
+
+  const loadDriverInfo = async () => {
+    if (!user?.id) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("company_name")
+      .eq("id", driverId)
+      .single();
+
+    if (profile) setDriverName(profile.full_name || "");
+    if (driver) setDriverCompany(driver.company_name || "");
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -597,21 +625,35 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                             </div>
                           </div>
                           
-                          {/* Modify button */}
-                          {!partnership.pending_modification && (
+                          {/* Action buttons */}
+                          <div className="flex flex-col sm:flex-row gap-2 sm:shrink-0">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="w-full sm:w-auto gap-1.5 h-9"
+                              className="gap-1.5 h-9"
                               onClick={() => {
-                                setModifyingPartnership(partnership);
-                                setShowModificationDialog(true);
+                                setSelectedContractPartnership(partnership);
+                                setShowContractDialog(true);
                               }}
                             >
-                              <Edit className="w-3.5 h-3.5" />
-                              <span className="text-xs sm:text-sm">Modifier</span>
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="text-xs sm:text-sm">Contrat</span>
                             </Button>
-                          )}
+                            {!partnership.pending_modification && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 h-9"
+                                onClick={() => {
+                                  setModifyingPartnership(partnership);
+                                  setShowModificationDialog(true);
+                                }}
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span className="text-xs sm:text-sm">Modifier</span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -780,6 +822,33 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Contract Dialog */}
+      <UniversalPartnershipContract
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
+        partnershipId={selectedContractPartnership?.id || ''}
+        partnershipType="fleet_driver"
+        status={selectedContractPartnership?.status || ''}
+        createdAt={selectedContractPartnership?.proposed_at || new Date().toISOString()}
+        acceptedAt={selectedContractPartnership?.status === 'accepted' ? selectedContractPartnership?.proposed_at : undefined}
+        party1={{
+          name: driverName,
+          company: driverCompany || undefined,
+        }}
+        party2={{
+          name: selectedContractPartnership?.fleet_manager?.company_name || 'Gestionnaire',
+          company: selectedContractPartnership?.fleet_manager?.company_name || undefined,
+        }}
+        terms={{
+          commissionPercentage: selectedContractPartnership?.commission_percentage,
+          paymentSchedule: selectedContractPartnership?.payment_schedule,
+        }}
+        signatures={{
+          party1Signed: selectedContractPartnership?.driver_signed || false,
+          party2Signed: selectedContractPartnership?.fleet_manager_signed || false,
+        }}
+      />
     </div>
   );
 };

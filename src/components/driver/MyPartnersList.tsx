@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
+import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
 import { 
   Users, 
   Handshake,
@@ -33,7 +34,8 @@ import {
   Star,
   Car,
   ExternalLink,
-  Hash
+  Hash,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -88,6 +90,9 @@ export function MyPartnersList() {
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [responding, setResponding] = useState<string | null>(null);
   const [selectedProfileDriverId, setSelectedProfileDriverId] = useState<string | null>(null);
+  const [selectedContractPartner, setSelectedContractPartner] = useState<Partner | null>(null);
+  const [myName, setMyName] = useState<string>('');
+  const [myCompany, setMyCompany] = useState<string>('');
 
   useEffect(() => {
     if (user?.id) {
@@ -98,12 +103,22 @@ export function MyPartnersList() {
   const loadDriverAndPartners = async () => {
     const { data: driver } = await supabase
       .from('drivers')
-      .select('id')
+      .select('id, company_name')
       .eq('user_id', user?.id)
       .single();
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user?.id)
+      .single();
+
+    if (profile) {
+      setMyName(profile.full_name || '');
+    }
     if (driver) {
       setDriverId(driver.id);
+      setMyCompany(driver.company_name || '');
       await loadPartners(driver.id);
     }
     setLoading(false);
@@ -283,41 +298,6 @@ export function MyPartnersList() {
     }
   };
 
-  const downloadContract = (partner: Partner) => {
-    const today = format(new Date(), "d MMMM yyyy", { locale: fr });
-    const contractText = `
-CONTRAT DE PARTENARIAT VTC
-===========================
-
-Date: ${today}
-Référence: PART-${partner.id.substring(0, 8).toUpperCase()}
-
-PARTENAIRES
------------
-Chauffeur 1: ${partner.driver_a_id === driverId ? 'Vous' : partner.partner_name}
-Chauffeur 2: ${partner.driver_b_id === driverId ? 'Vous' : partner.partner_name}
-
-CONDITIONS
-----------
-Commission: ${partner.commission_percentage}%
-Paiement: ${getPaymentScheduleLabel(partner.payment_schedule)}
-
-Ce taux s'applique de manière réciproque entre les deux parties.
-
----
-Généré par SoloCab
-    `;
-
-    const blob = new Blob([contractText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `contrat-${partner.partner_name.replace(/\s+/g, '-')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Contrat téléchargé');
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -336,6 +316,42 @@ Généré par SoloCab
         open={!!selectedProfileDriverId}
         onOpenChange={(open) => !open && setSelectedProfileDriverId(null)}
         driverId={selectedProfileDriverId}
+      />
+
+      {/* Contract Dialog */}
+      <UniversalPartnershipContract
+        open={!!selectedContractPartner}
+        onOpenChange={(open) => !open && setSelectedContractPartner(null)}
+        partnershipId={selectedContractPartner?.id || ''}
+        partnershipType="driver_driver"
+        status={selectedContractPartner?.status || ''}
+        createdAt={selectedContractPartner?.accepted_at || new Date().toISOString()}
+        acceptedAt={selectedContractPartner?.accepted_at}
+        party1={{
+          name: myName,
+          company: myCompany || undefined,
+        }}
+        party2={{
+          name: selectedContractPartner?.partner_name || '',
+          company: selectedContractPartner?.partner_company || undefined,
+          photo: selectedContractPartner?.partner_photo,
+          phone: selectedContractPartner?.partner_phone,
+          email: selectedContractPartner?.partner_email,
+          rating: selectedContractPartner?.partner_rating,
+          totalRides: selectedContractPartner?.partner_rides,
+          workingSectors: selectedContractPartner?.partner_working_sectors,
+          bio: selectedContractPartner?.partner_bio,
+        }}
+        terms={{
+          commissionPercentage: selectedContractPartner?.commission_percentage,
+          paymentSchedule: selectedContractPartner?.payment_schedule,
+        }}
+        signatures={{
+          party1Signed: selectedContractPartner?.driver_a_signed || selectedContractPartner?.driver_b_signed || false,
+          party1SignedAt: selectedContractPartner?.accepted_at,
+          party2Signed: selectedContractPartner?.driver_a_signed && selectedContractPartner?.driver_b_signed,
+          party2SignedAt: selectedContractPartner?.accepted_at,
+        }}
       />
 
       {/* Pending Requests */}
@@ -671,17 +687,15 @@ Généré par SoloCab
                         )}
 
                         {/* Contract download */}
-                        {partner.contract_generated_at && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadContract(partner)}
-                            className="w-full"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Télécharger le contrat
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedContractPartner(partner)}
+                          className="w-full gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Voir le contrat
+                        </Button>
                       </div>
                     )}
                   </CardContent>
