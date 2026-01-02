@@ -38,7 +38,9 @@ import {
   Hash,
   FileText,
   Search,
-  Filter
+  Filter,
+  Settings,
+  PauseCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -311,6 +313,34 @@ export function MyPartnersList() {
       case 'weekly': return 'Hebdo';
       case 'monthly': return 'Mensuel';
       default: return schedule;
+    }
+  };
+
+  const handleModifyPartnership = (partner: Partner) => {
+    toast.info('Fonctionnalité de modification à venir. Contactez votre partenaire pour discuter des changements.');
+  };
+
+  const handleSuspendPartnership = async (partner: Partner) => {
+    if (!confirm(`Êtes-vous sûr de vouloir suspendre le partenariat avec ${partner.partner_name} ?`)) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('driver_partnerships')
+        .update({ 
+          status: 'suspended',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', partner.id);
+      
+      if (error) throw error;
+      
+      toast.success(`Partenariat avec ${partner.partner_name} suspendu`);
+      if (driverId) loadPartners(driverId);
+    } catch (error) {
+      console.error('Error suspending partnership:', error);
+      toast.error('Erreur lors de la suspension');
     }
   };
 
@@ -750,16 +780,39 @@ export function MyPartnersList() {
                           </div>
                         )}
 
-                        {/* Contract download */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedContractPartner(partner)}
-                          className="w-full gap-2"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Voir le contrat
-                        </Button>
+                        {/* Action buttons */}
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedContractPartner(partner)}
+                            className="w-full gap-2"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Voir le contrat
+                          </Button>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleModifyPartnership(partner)}
+                              className="flex-1 gap-1.5 text-xs"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                              Modifier
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSuspendPartnership(partner)}
+                              className="flex-1 gap-1.5 text-xs text-amber-600 border-amber-500/30 hover:bg-amber-500/10"
+                            >
+                              <PauseCircle className="h-3.5 w-3.5" />
+                              Suspendre
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </CardContent>
