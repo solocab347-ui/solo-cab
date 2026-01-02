@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
 import { 
   Users, 
   Handshake,
@@ -30,7 +31,9 @@ import {
   MessageSquare,
   Mail,
   Star,
-  Car
+  Car,
+  ExternalLink,
+  Hash
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -59,6 +62,8 @@ interface Partner {
   partner_rides: number;
   partner_working_sectors: string[];
   partner_services_offered: string[];
+  partner_bio: string | null;
+  partner_sharing_number: number | null;
   show_phone_for_sharing: boolean;
   show_email: boolean;
 }
@@ -82,7 +87,7 @@ export function MyPartnersList() {
   const [loading, setLoading] = useState(true);
   const [expandedPartner, setExpandedPartner] = useState<string | null>(null);
   const [responding, setResponding] = useState<string | null>(null);
-  const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
+  const [selectedProfileDriverId, setSelectedProfileDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -121,7 +126,7 @@ export function MyPartnersList() {
         
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered')
+          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered, bio, sharing_number')
           .eq('id', partnerId)
           .single();
 
@@ -145,6 +150,8 @@ export function MyPartnersList() {
             partner_rides: driverData.total_rides || 0,
             partner_working_sectors: driverData.working_sectors || [],
             partner_services_offered: driverData.services_offered || [],
+            partner_bio: driverData.bio || null,
+            partner_sharing_number: driverData.sharing_number || null,
             show_phone_for_sharing: driverData.show_phone_for_sharing || false,
             show_email: driverData.show_email || false,
           };
@@ -324,6 +331,13 @@ Généré par SoloCab
 
   return (
     <div className="space-y-4">
+      {/* Partner Profile Dialog */}
+      <PartnerProfileDialog
+        open={!!selectedProfileDriverId}
+        onOpenChange={(open) => !open && setSelectedProfileDriverId(null)}
+        driverId={selectedProfileDriverId}
+      />
+
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
         <div className="space-y-3">
@@ -335,127 +349,135 @@ Généré par SoloCab
             <Card key={request.id} className="border-amber-500/30 bg-amber-500/5">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar className="h-12 w-12 shrink-0">
+                  {/* Photo du partenaire */}
+                  <Avatar className="h-14 w-14 shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => setSelectedProfileDriverId(request.partner_id)}>
                     <AvatarImage src={request.partner_photo || undefined} />
-                    <AvatarFallback className="bg-amber-100 text-amber-700">
+                    <AvatarFallback className="bg-amber-100 text-amber-700 text-lg">
                       {request.partner_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
+                  
                   <div className="flex-1 min-w-0">
+                    {/* Nom et bouton profil */}
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold truncate">{request.partner_name}</p>
+                      <div>
+                        <p className="font-semibold">{request.partner_name}</p>
+                        {request.partner_company && (
+                          <p className="text-xs text-muted-foreground">{request.partner_company}</p>
+                        )}
+                      </div>
                       <Button 
                         size="sm" 
-                        variant="ghost"
-                        className="h-7 px-2"
-                        onClick={() => setExpandedRequest(expandedRequest === request.id ? null : request.id)}
+                        variant="outline"
+                        className="h-8 px-3 gap-1.5"
+                        onClick={() => setSelectedProfileDriverId(request.partner_id)}
                       >
-                        <Eye className="h-3.5 w-3.5 mr-1" />
-                        <span className="text-xs">Profil</span>
-                        {expandedRequest === request.id ? (
-                          <ChevronUp className="h-3 w-3 ml-1" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3 ml-1" />
-                        )}
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="text-xs">Voir profil</span>
                       </Button>
                     </div>
-                    
-                    {request.partner_company && (
-                      <p className="text-xs text-muted-foreground">{request.partner_company}</p>
+
+                    {/* Numéro de partage */}
+                    {request.partner_sharing_number && (
+                      <Badge variant="outline" className="mt-1.5 font-mono text-xs">
+                        <Hash className="h-3 w-3 mr-1" />
+                        SOLO-{String(request.partner_sharing_number).padStart(6, '0')}
+                      </Badge>
                     )}
                     
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                    {/* Stats et commission */}
+                    <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary" className="gap-1">
                         <Euro className="h-3 w-3" />
                         {request.commission_percentage}%
-                      </span>
-                      <span>•</span>
-                      <span>{getPaymentScheduleLabel(request.payment_schedule)}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Star className="h-3 w-3" />
+                      </Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        {getPaymentScheduleLabel(request.payment_schedule)}
+                      </Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <Star className="h-3 w-3 text-yellow-500" />
                         {request.partner_rating?.toFixed(1) || 'N/A'}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
+                      </Badge>
+                      <Badge variant="secondary" className="gap-1">
                         <Car className="h-3 w-3" />
                         {request.partner_rides || 0} courses
-                      </span>
+                      </Badge>
                     </div>
+
+                    {/* Secteurs de travail (aperçu) */}
+                    {request.partner_working_sectors && request.partner_working_sectors.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        {request.partner_working_sectors.slice(0, 3).map((sector, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs py-0">
+                            {sector}
+                          </Badge>
+                        ))}
+                        {request.partner_working_sectors.length > 3 && (
+                          <Badge variant="outline" className="text-xs py-0">
+                            +{request.partner_working_sectors.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Bio (extrait) */}
+                    {request.partner_bio && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
+                        "{request.partner_bio}"
+                      </p>
+                    )}
 
                     {/* Message de proposition */}
                     {request.proposal_message && (
-                      <div className="mt-3 p-2 bg-background/50 rounded-md border">
+                      <div className="mt-3 p-2.5 bg-background/50 rounded-md border border-primary/20">
                         <div className="flex items-start gap-2">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <p className="text-sm text-muted-foreground italic">
-                            "{request.proposal_message}"
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Profil étendu */}
-                    {expandedRequest === request.id && (
-                      <div className="mt-3 p-3 bg-background/50 rounded-md border space-y-3">
-                        {/* Secteurs de travail */}
-                        {request.partner_working_sectors && request.partner_working_sectors.length > 0 && (
+                          <MessageSquare className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-xs font-medium mb-1 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              Secteurs de travail
+                            <p className="text-xs font-medium text-primary mb-0.5">Message du partenaire :</p>
+                            <p className="text-sm text-foreground">
+                              "{request.proposal_message}"
                             </p>
-                            <div className="flex flex-wrap gap-1">
-                              {request.partner_working_sectors.slice(0, 5).map((sector, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {sector}
-                                </Badge>
-                              ))}
-                              {request.partner_working_sectors.length > 5 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{request.partner_working_sectors.length - 5}
-                                </Badge>
-                              )}
-                            </div>
                           </div>
-                        )}
-
-                        {/* Contact */}
-                        <div className="flex flex-wrap gap-2">
-                          {request.partner_phone && (
-                            <a 
-                              href={`tel:${request.partner_phone}`}
-                              className="flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              <Phone className="h-3 w-3" />
-                              {request.partner_phone}
-                            </a>
-                          )}
-                          {request.partner_email && (
-                            <a 
-                              href={`mailto:${request.partner_email}`}
-                              className="flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              <Mail className="h-3 w-3" />
-                              {request.partner_email}
-                            </a>
-                          )}
                         </div>
                       </div>
                     )}
 
-                    <div className="flex gap-2 mt-3">
+                    {/* Contact */}
+                    <div className="flex flex-wrap gap-3 mt-3">
+                      {request.partner_phone && (
+                        <a 
+                          href={`tel:${request.partner_phone}`}
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          {request.partner_phone}
+                        </a>
+                      )}
+                      {request.partner_email && (
+                        <a 
+                          href={`mailto:${request.partner_email}`}
+                          className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          {request.partner_email}
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Boutons d'action */}
+                    <div className="flex gap-2 mt-4">
                       <Button 
                         size="sm" 
                         onClick={() => respondToRequest(request.id, true)}
                         disabled={responding === request.id}
-                        className="flex-1 bg-green-600 hover:bg-green-700 h-9"
+                        className="flex-1 bg-green-600 hover:bg-green-700 h-10"
                       >
                         {responding === request.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <>
-                            <Check className="h-4 w-4 mr-1" />
+                            <Check className="h-4 w-4 mr-1.5" />
                             Accepter
                           </>
                         )}
@@ -465,7 +487,7 @@ Généré par SoloCab
                         variant="outline"
                         onClick={() => respondToRequest(request.id, false)}
                         disabled={responding === request.id}
-                        className="h-9 px-3"
+                        className="h-10 px-4 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                       >
                         <X className="h-4 w-4" />
                       </Button>
