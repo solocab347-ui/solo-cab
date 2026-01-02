@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
+import { ModifyPartnershipDialog } from './partnership/ModifyPartnershipDialog';
 import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
 import { 
   Users, 
@@ -75,6 +76,11 @@ interface Partner {
   show_email: boolean;
   show_rating: boolean;
   show_total_rides: boolean;
+  // Pending modification fields
+  pending_modification?: boolean;
+  pending_new_commission?: number;
+  pending_new_payment_schedule?: string;
+  pending_modification_by?: string;
 }
 
 interface PartnershipBalance {
@@ -98,6 +104,7 @@ export function MyPartnersList() {
   const [responding, setResponding] = useState<string | null>(null);
   const [selectedProfileDriverId, setSelectedProfileDriverId] = useState<string | null>(null);
   const [selectedContractPartner, setSelectedContractPartner] = useState<Partner | null>(null);
+  const [selectedModifyPartner, setSelectedModifyPartner] = useState<Partner | null>(null);
   const [myName, setMyName] = useState<string>('');
   const [myCompany, setMyCompany] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,9 +191,14 @@ export function MyPartnersList() {
             partner_sharing_number: driverInfo.sharing_number || null,
             show_phone_for_sharing: driverInfo.show_phone_for_sharing || false,
             show_email: driverInfo.show_email || false,
-            // Respect partner visibility settings - default to true if not set
-            show_rating: driverInfo.show_rating_for_sharing !== false,
-            show_total_rides: driverInfo.show_rides_for_sharing !== false,
+            // Respect partner visibility settings - default to false for privacy
+            show_rating: driverInfo.show_rating_for_sharing === true,
+            show_total_rides: driverInfo.show_rides_for_sharing === true,
+            // Pending modification fields
+            pending_modification: p.pending_modification || false,
+            pending_new_commission: p.pending_new_commission,
+            pending_new_payment_schedule: p.pending_new_payment_schedule,
+            pending_modification_by: p.pending_modification_by,
           };
 
           if (p.status === 'pending' && p.proposed_by !== myDriverId) {
@@ -317,7 +329,7 @@ export function MyPartnersList() {
   };
 
   const handleModifyPartnership = (partner: Partner) => {
-    toast.info('Fonctionnalité de modification à venir. Contactez votre partenaire pour discuter des changements.');
+    setSelectedModifyPartner(partner);
   };
 
   const handleSuspendPartnership = async (partner: Partner) => {
@@ -410,6 +422,17 @@ export function MyPartnersList() {
           party2SignedAt: selectedContractPartner?.accepted_at,
         }}
       />
+
+      {/* Modify Partnership Dialog */}
+      {selectedModifyPartner && driverId && (
+        <ModifyPartnershipDialog
+          open={!!selectedModifyPartner}
+          onOpenChange={(open) => !open && setSelectedModifyPartner(null)}
+          partnership={selectedModifyPartner}
+          currentDriverId={driverId}
+          onSuccess={() => driverId && loadPartners(driverId)}
+        />
+      )}
 
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
