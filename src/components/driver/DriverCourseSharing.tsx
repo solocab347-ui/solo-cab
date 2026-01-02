@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Users, 
   Search, 
@@ -17,7 +19,8 @@ import {
   Send,
   Wallet,
   ChevronRight,
-  Loader2
+  Loader2,
+  Filter
 } from 'lucide-react';
 
 // Sub-components
@@ -245,6 +248,7 @@ export function DriverCourseSharing() {
 function BalancesSummary({ driverId }: { driverId: string | null }) {
   const [balances, setBalances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (driverId) {
@@ -286,10 +290,11 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
             _driver_id: driverId
           });
 
+          const displayName = profile?.full_name || driverData.company_name || 'Chauffeur partenaire';
           balanceData.push({
             partnershipId: p.id,
             partnerId,
-            partnerName: profile?.full_name || 'Chauffeur',
+            partnerName: displayName,
             partnerPhoto: profile?.profile_photo_url,
             companyName: driverData.company_name,
             sharingNumber: driverData.sharing_number,
@@ -340,6 +345,17 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
 
   // Smart net calculation: what you need to pay or receive globally
   const netGlobal = totalOwed - totalDue;
+
+  // Filter balances by search
+  const filteredBalances = useMemo(() => {
+    if (!searchQuery.trim()) return balances;
+    const query = searchQuery.toLowerCase();
+    return balances.filter((b: any) => 
+      b.partnerName.toLowerCase().includes(query) ||
+      b.companyName?.toLowerCase().includes(query) ||
+      (b.sharingNumber && `SOLO-${String(b.sharingNumber).padStart(6, '0')}`.toLowerCase().includes(query))
+    );
+  }, [balances, searchQuery]);
 
   const getPaymentScheduleLabel = (schedule: string) => {
     switch (schedule) {
@@ -401,20 +417,46 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
         </AlertDescription>
       </Alert>
 
+      {/* Search filter */}
+      {balances.length > 2 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un partenaire..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {/* Partner balances list */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground">Détail par partenaire</h3>
-        {balances.map((item, index) => (
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground">Détail par partenaire</h3>
+          {searchQuery && (
+            <Badge variant="outline" className="text-xs">
+              {filteredBalances.length} / {balances.length}
+            </Badge>
+          )}
+        </div>
+        {filteredBalances.map((item: any, index: number) => (
           <Card key={index} className="overflow-hidden">
             <CardContent className="p-0">
               {/* Partner header */}
               <div className="p-3 flex items-center gap-3 border-b bg-muted/30">
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                  {item.partnerName.charAt(0)}
-                </div>
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={item.partnerPhoto || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {item.partnerName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.partnerName}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {item.companyName && item.companyName !== item.partnerName && (
+                    <p className="text-xs text-muted-foreground truncate">{item.companyName}</p>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     {item.sharingNumber && (
                       <span className="font-mono text-primary">SOLO-{String(item.sharingNumber).padStart(6, '0')}</span>
                     )}
@@ -453,15 +495,13 @@ function BalancesSummary({ driverId }: { driverId: string | null }) {
                   }`}>
                     {item.balance.net_balance > 0 ? (
                       <>
-                        <p className="text-xs text-red-600 font-medium">Vous lui devez</p>
+                        <p className="text-xs text-red-600 font-medium">Vous devez à {item.partnerName.split(' ')[0]}</p>
                         <p className="text-lg font-bold text-red-600">{item.balance.net_balance.toFixed(2)} €</p>
-                        <p className="text-[10px] text-muted-foreground mt-1">Vous êtes le payeur</p>
                       </>
                     ) : item.balance.net_balance < 0 ? (
                       <>
-                        <p className="text-xs text-green-600 font-medium">Il/elle vous doit</p>
+                        <p className="text-xs text-green-600 font-medium">{item.partnerName.split(' ')[0]} vous doit</p>
                         <p className="text-lg font-bold text-green-600">{Math.abs(item.balance.net_balance).toFixed(2)} €</p>
-                        <p className="text-[10px] text-muted-foreground mt-1">Partenaire payeur</p>
                       </>
                     ) : (
                       <>
