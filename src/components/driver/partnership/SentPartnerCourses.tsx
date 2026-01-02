@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,10 +18,12 @@ import {
   ArrowRight,
   TrendingUp,
   Send,
-  Receipt
+  Receipt,
+  Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { PushCourseToPartners } from '../PushCourseToPartners';
 
 interface Props {
   driverId: string | null;
@@ -60,6 +63,7 @@ export function SentPartnerCourses({ driverId }: Props) {
   const [courses, setCourses] = useState<SentCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [showPropose, setShowPropose] = useState(false);
 
   useEffect(() => {
     if (driverId) {
@@ -204,8 +208,34 @@ export function SentPartnerCourses({ driverId }: Props) {
   const totalCommissionToReceive = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
   const pendingCommission = pendingCourses.reduce((acc, c) => acc + c.commission_amount, 0);
 
+  if (showPropose) {
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPropose(false)}
+          className="mb-4"
+        >
+          ← Retour aux courses envoyées
+        </Button>
+        <PushCourseToPartners />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* Action button */}
+      <Button
+        onClick={() => setShowPropose(true)}
+        className="w-full"
+        size="lg"
+      >
+        <Plus className="h-5 w-5 mr-2" />
+        Proposer une course à un partenaire
+      </Button>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-amber-500/10 border-amber-500/30">

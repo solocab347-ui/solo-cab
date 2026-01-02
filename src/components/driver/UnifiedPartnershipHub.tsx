@@ -22,7 +22,11 @@ import { PartnershipSettings } from './partnership/PartnershipSettings';
 
 type MainTab = 'drivers' | 'companies' | 'fleets' | 'settings';
 
-export function UnifiedPartnershipHub() {
+interface UnifiedPartnershipHubProps {
+  initialDriverSubTab?: 'list' | 'search' | 'received' | 'sent' | 'balances';
+}
+
+export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershipHubProps = {}) {
   const { user } = useAuth();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -217,7 +221,10 @@ export function UnifiedPartnershipHub() {
         {/* Driver Partnerships */}
         <TabsContent value="drivers" className="mt-4">
           {driverInfo?.id && (
-            <DriverPartnershipsTab driverId={driverInfo.id} />
+            <DriverPartnershipsTab 
+              driverId={driverInfo.id} 
+              initialSubTab={initialDriverSubTab}
+            />
           )}
         </TabsContent>
 

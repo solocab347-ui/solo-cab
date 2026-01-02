@@ -175,8 +175,8 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
             </div>
           </Card>
 
-          {/* Partner Courses Shortcut with notification badge */}
-          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group" onClick={() => onTabChange("partnerships")}>
+          {/* Partner Courses Shortcut with notification badge - goes to received courses */}
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group" onClick={() => onTabChange("partnerships-received")}>
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
             {/* Notification badge */}
             {stats.availablePartnerCourses > 0 && (
@@ -191,11 +191,11 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
                 <Handshake className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-foreground">Courses Partenaires</h3>
+                <h3 className="text-xl font-bold text-foreground">Courses Reçues</h3>
                 <p className="text-sm text-muted-foreground">
                   {stats.availablePartnerCourses > 0 
-                    ? `${stats.availablePartnerCourses} disponible${stats.availablePartnerCourses > 1 ? 's' : ''}`
-                    : 'Voir les offres'
+                    ? `${stats.availablePartnerCourses} en attente`
+                    : 'Des partenaires'
                   }
                 </p>
               </div>
