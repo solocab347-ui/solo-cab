@@ -15,33 +15,39 @@ import {
   Handshake, 
   Copy,
   AlertTriangle,
-  Car,
+  Inbox,
   Send,
   Wallet,
   ChevronRight,
-  Loader2,
-  Filter
+  Loader2
 } from 'lucide-react';
 
 // Sub-components
 import { MyPartnersList } from './MyPartnersList';
-import { PartnerCoursesHub } from './partnership/PartnerCoursesHub';
+import { ReceivedPartnerCourses } from './partnership/ReceivedPartnerCourses';
+import { SentPartnerCourses } from './partnership/SentPartnerCourses';
+import { PartnerCoursePool } from './PartnerCoursePool';
 import { PushCourseToPartners } from './PushCourseToPartners';
 import { PartnerSearchInline } from './PartnerSearchInline';
 
-type TabType = 'partners' | 'search' | 'available' | 'propose' | 'balances';
+type TabType = 'partners' | 'search' | 'received' | 'sent' | 'balances';
 
-export function DriverCourseSharing() {
+interface DriverCourseSharingProps {
+  initialTab?: TabType;
+}
+
+export function DriverCourseSharing({ initialTab }: DriverCourseSharingProps) {
   const { user } = useAuth();
   const [driverInfo, setDriverInfo] = useState<{ id: string; sharing_number: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('partners');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'partners');
   const [canShare, setCanShare] = useState(true);
   
   // Stats
   const [activePartnersCount, setActivePartnersCount] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const [availableCoursesCount, setAvailableCoursesCount] = useState(0);
+  const [receivedCoursesCount, setReceivedCoursesCount] = useState(0);
+  const [sentCoursesCount, setSentCoursesCount] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
@@ -98,16 +104,30 @@ export function DriverCourseSharing() {
 
     const pendingCount = pendingData?.filter(p => p.proposed_by !== driverInfo?.id).length || 0;
 
-    // Count available courses in pool
+    // Count received courses (pending to accept from pool + direct)
     const { count: poolCount } = await supabase
       .from('partner_course_pool')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'available')
       .gt('expires_at', new Date().toISOString());
 
+    const { count: directPendingCount } = await supabase
+      .from('shared_courses')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_driver_id', driverInfo.id)
+      .eq('status', 'pending');
+
+    // Count sent courses (pending or accepted)
+    const { count: sentCount } = await supabase
+      .from('shared_courses')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender_driver_id', driverInfo.id)
+      .in('status', ['pending', 'accepted']);
+
     setActivePartnersCount(activeCount || 0);
     setPendingRequestsCount(pendingCount);
-    setAvailableCoursesCount(poolCount || 0);
+    setReceivedCoursesCount((poolCount || 0) + (directPendingCount || 0));
+    setSentCoursesCount(sentCount || 0);
   };
 
   // Format sharing number (6 chiffres pour sécurité)
@@ -133,8 +153,8 @@ export function DriverCourseSharing() {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'partners', label: 'Partenaires', icon: <Users className="h-4 w-4" />, count: activePartnersCount },
     { id: 'search', label: 'Rechercher', icon: <Search className="h-4 w-4" /> },
-    { id: 'available', label: 'Courses', icon: <Car className="h-4 w-4" />, count: availableCoursesCount },
-    { id: 'propose', label: 'Proposer', icon: <Send className="h-4 w-4" /> },
+    { id: 'received', label: 'Reçues', icon: <Inbox className="h-4 w-4" />, count: receivedCoursesCount },
+    { id: 'sent', label: 'Envoyées', icon: <Send className="h-4 w-4" />, count: sentCoursesCount },
     { id: 'balances', label: 'Soldes', icon: <Wallet className="h-4 w-4" /> },
   ];
 
@@ -236,10 +256,46 @@ export function DriverCourseSharing() {
       <div className="mx-1">
         {activeTab === 'partners' && <MyPartnersList />}
         {activeTab === 'search' && <PartnerSearchInline driverId={driverInfo?.id || ''} />}
-        {activeTab === 'available' && <PartnerCoursesHub driverId={driverInfo?.id || null} />}
-        {activeTab === 'propose' && <PushCourseToPartners />}
+        {activeTab === 'received' && (
+          <ReceivedCoursesTab driverId={driverInfo?.id || null} />
+        )}
+        {activeTab === 'sent' && <SentPartnerCourses driverId={driverInfo?.id || null} />}
         {activeTab === 'balances' && <BalancesSummary driverId={driverInfo?.id || null} />}
       </div>
+    </div>
+  );
+}
+
+// New component combining pool + received courses
+function ReceivedCoursesTab({ driverId }: { driverId: string | null }) {
+  const [activeSubTab, setActiveSubTab] = useState<'pool' | 'received'>('pool');
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs for pool vs received */}
+      <div className="flex gap-2">
+        <Button
+          variant={activeSubTab === 'pool' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveSubTab('pool')}
+          className="flex-1"
+        >
+          <Inbox className="h-4 w-4 mr-2" />
+          Disponibles
+        </Button>
+        <Button
+          variant={activeSubTab === 'received' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveSubTab('received')}
+          className="flex-1"
+        >
+          <Send className="h-4 w-4 mr-2" />
+          Acceptées
+        </Button>
+      </div>
+
+      {activeSubTab === 'pool' && <PartnerCoursePool />}
+      {activeSubTab === 'received' && <ReceivedPartnerCourses driverId={driverId} />}
     </div>
   );
 }

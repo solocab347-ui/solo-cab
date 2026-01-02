@@ -70,6 +70,21 @@ const DriverDashboard = () => {
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | undefined>(undefined);
+
+  // Handle special tab navigation (e.g., partnerships-received)
+  const handleTabChange = (tab: string) => {
+    if (tab === "partnerships-received") {
+      setPartnershipInitialTab('received');
+      setActiveTab("sharing");
+    } else {
+      // Reset initial tab when navigating normally
+      if (tab !== "sharing") {
+        setPartnershipInitialTab(undefined);
+      }
+      setActiveTab(tab);
+    }
+  };
 
   // Form states
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false); // Désactivé par défaut
@@ -542,7 +557,7 @@ const DriverDashboard = () => {
 
           {/* Home Tab */}
           <TabsContent value="home">
-            <DriverHome driverProfile={driverProfile} onTabChange={setActiveTab} />
+            <DriverHome driverProfile={driverProfile} onTabChange={handleTabChange} />
           </TabsContent>
 
           {/* Planning Tab */}
@@ -992,7 +1007,7 @@ const DriverDashboard = () => {
 
           {/* Partage & Partenariats Tab */}
           <TabsContent value="sharing" className="space-y-6">
-            <UnifiedPartnershipHub />
+            <UnifiedPartnershipHub initialDriverSubTab={partnershipInitialTab} />
           </TabsContent>
 
           {/* Documents Tab - Hub unifié */}
