@@ -5,7 +5,8 @@
 
 import { memo, useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, Handshake } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
@@ -22,6 +23,7 @@ interface Stats {
   monthCourses: number;
   monthCompleted: number;
   monthRevenue: number;
+  availablePartnerCourses: number;
 }
 
 const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) => {
@@ -33,6 +35,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
     monthCourses: 0,
     monthCompleted: 0,
     monthRevenue: 0,
+    availablePartnerCourses: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -51,12 +54,14 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
         const driverId = driverProfile.driver.id;
 
         // Optimisation: toutes les requêtes en parallèle
-        const [todayFactures, monthClientsData, monthCoursesData, monthCompletedData, monthFactures] = await Promise.all([
+        const [todayFactures, monthClientsData, monthCoursesData, monthCompletedData, monthFactures, partnerPoolData] = await Promise.all([
           supabase.from('factures').select('amount, course_id').eq('driver_id', driverId).eq('payment_status', 'paid').gte('paid_at', todayStart).lte('paid_at', todayEnd),
           supabase.from('clients').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).gte('created_at', monthStart).lte('created_at', monthEnd),
           supabase.from('courses').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).gte('created_at', monthStart).lte('created_at', monthEnd),
           supabase.from('courses').select('id').or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`).eq('status', 'completed').gte('updated_at', monthStart).lte('updated_at', monthEnd),
-          supabase.from('factures').select('amount').eq('driver_id', driverId).eq('payment_status', 'paid').gte('paid_at', monthStart).lte('paid_at', monthEnd)
+          supabase.from('factures').select('amount').eq('driver_id', driverId).eq('payment_status', 'paid').gte('paid_at', monthStart).lte('paid_at', monthEnd),
+          // Count available partner courses in pool that haven't been claimed
+          supabase.from('partner_course_pool').select('id').eq('status', 'available').gt('expires_at', new Date().toISOString())
         ]);
 
         if (!mounted) return;
@@ -72,6 +77,7 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
           monthCourses: monthCoursesData.data?.length || 0,
           monthCompleted: monthCompletedData.data?.length || 0,
           monthRevenue,
+          availablePartnerCourses: partnerPoolData.data?.length || 0,
         });
       } catch (error) {
         if (mounted) console.error('Erreur stats:', error);
@@ -165,6 +171,33 @@ const DriverHomeComponent = ({ driverProfile, onTabChange }: DriverHomeProps) =>
               <div>
                 <h3 className="text-xl font-bold text-foreground">Planning</h3>
                 <p className="text-sm text-muted-foreground">Voir mes courses</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Partner Courses Shortcut with notification badge */}
+          <Card className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-premium group" onClick={() => onTabChange("partnerships")}>
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/10 opacity-50 group-hover:opacity-70 transition-opacity"></div>
+            {/* Notification badge */}
+            {stats.availablePartnerCourses > 0 && (
+              <div className="absolute top-3 right-3 z-20">
+                <Badge className="bg-red-500 text-white border-0 text-xs font-bold px-2 py-0.5 animate-pulse">
+                  {stats.availablePartnerCourses}
+                </Badge>
+              </div>
+            )}
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Handshake className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Courses Partenaires</h3>
+                <p className="text-sm text-muted-foreground">
+                  {stats.availablePartnerCourses > 0 
+                    ? `${stats.availablePartnerCourses} disponible${stats.availablePartnerCourses > 1 ? 's' : ''}`
+                    : 'Voir les offres'
+                  }
+                </p>
               </div>
             </div>
           </Card>
