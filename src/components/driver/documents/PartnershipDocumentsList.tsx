@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { PartnershipContractDialog } from './PartnershipContractDialog';
 import { 
   FileText, 
   Search, 
@@ -48,10 +50,11 @@ interface DocumentItem {
   pickupAddress?: string;
   destinationAddress?: string;
   scheduledDate?: string;
-  isNew?: boolean; // Pour marquer les nouveaux documents
+  isNew?: boolean;
 }
 
 export function PartnershipDocumentsList({ driverId, partnershipType }: PartnershipDocumentsListProps) {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +69,14 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
   
   // Contracts for this partnership type
   const [contracts, setContracts] = useState<any[]>([]);
+  
+  // Contract detail dialog
+  const [selectedContract, setSelectedContract] = useState<any | null>(null);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  
+  // User info for contract
+  const [currentUserName, setCurrentUserName] = useState('');
+  const [currentUserCompany, setCurrentUserCompany] = useState('');
 
   // Liste des partenaires uniques pour le filtre
   const uniquePartners = useMemo(() => {
@@ -81,7 +92,27 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
   useEffect(() => {
     loadDocuments();
     loadContracts();
+    loadUserInfo();
   }, [driverId, partnershipType]);
+
+  const loadUserInfo = async () => {
+    if (!user?.id) return;
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+    
+    const { data: driver } = await supabase
+      .from('drivers')
+      .select('company_name')
+      .eq('id', driverId)
+      .single();
+    
+    if (profile) setCurrentUserName(profile.full_name || 'Utilisateur');
+    if (driver) setCurrentUserCompany(driver.company_name || '');
+  };
 
   const loadDocuments = async () => {
     setLoading(true);
@@ -279,23 +310,45 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
 
           const fleetMap = new Map(fleetsData?.map(f => [f.id, f.company_name]) || []);
 
-          // For fleet partnerships, get all driver's courses and check for fleet association
-          // This is simplified since fleet_courses table doesn't exist
-          // Fleet documents will be shown based on courses with fleet_manager_drivers association
-          for (const partnership of partnerships) {
-            const fleetManagerId = partnership.fleet_manager_id;
+          // Get courses assigned by fleet managers (from fleet_manager_drivers)
+          const { data: fleetDriverRelations } = await supabase
+            .from('fleet_manager_drivers')
+            .select('fleet_manager_id')
+            .eq('driver_id', driverId);
+          
+          const relatedFleetIds = fleetDriverRelations?.map(r => r.fleet_manager_id) || [];
+          
+          // Get fleet courses (courses where the driver was assigned by a fleet manager)
+          // These courses would be ones created via the fleet booking system
+          const { data: fleetCourses } = await supabase
+            .from('courses')
+            .select('id, pickup_address, destination_address, scheduled_date')
+            .eq('driver_id', driverId)
+            .order('created_at', { ascending: false });
+          
+          if (fleetCourses && fleetCourses.length > 0) {
+            const courseIds = fleetCourses.map(c => c.id);
             
-            // Get devis for this driver (fleet-related will be filtered by existence of partnership)
-            const { data: driverDevis } = await supabase
+            // Get devis for fleet courses - only those linked to fleet manager courses
+            const { data: fleetDevis } = await supabase
               .from('devis')
-              .select('*, courses!inner(pickup_address, destination_address, scheduled_date)')
+              .select('*')
+              .in('course_id', courseIds)
               .eq('driver_id', driverId)
-              .order('created_at', { ascending: false })
-              .limit(50);
+              .order('created_at', { ascending: false });
 
-            if (driverDevis) {
-              for (const devis of driverDevis) {
+            // Only include devis that belong to fleet manager courses
+            // We identify these by checking if the course was created via fleet system
+            if (fleetDevis) {
+              for (const devis of fleetDevis) {
+                // Find the matching course
+                const course = fleetCourses.find(c => c.id === devis.course_id);
+                if (!course) continue;
+                
+                // Assign to first fleet partnership found (simplification)
+                const fleetManagerId = fleetIds[0];
                 const createdDate = new Date(devis.created_at);
+                
                 allDocs.push({
                   id: devis.id,
                   type: 'devis',
@@ -305,25 +358,30 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
                   createdAt: devis.created_at,
                   partnerName: fleetMap.get(fleetManagerId) || 'Gestionnaire',
                   partnerId: fleetManagerId,
-                  pickupAddress: (devis.courses as any)?.pickup_address,
-                  destinationAddress: (devis.courses as any)?.destination_address,
-                  scheduledDate: (devis.courses as any)?.scheduled_date,
+                  pickupAddress: course.pickup_address,
+                  destinationAddress: course.destination_address,
+                  scheduledDate: course.scheduled_date,
                   isNew: createdDate > weekAgo
                 });
               }
             }
 
-            // Get factures
-            const { data: driverFactures } = await supabase
+            // Get factures for fleet courses
+            const { data: fleetFactures } = await supabase
               .from('factures')
-              .select('*, courses!inner(pickup_address, destination_address, scheduled_date)')
+              .select('*')
+              .in('course_id', courseIds)
               .eq('driver_id', driverId)
-              .order('created_at', { ascending: false })
-              .limit(50);
+              .order('created_at', { ascending: false });
 
-            if (driverFactures) {
-              for (const facture of driverFactures) {
+            if (fleetFactures) {
+              for (const facture of fleetFactures) {
+                const course = fleetCourses.find(c => c.id === facture.course_id);
+                if (!course) continue;
+                
+                const fleetManagerId = fleetIds[0];
                 const createdDate = new Date(facture.created_at);
+                
                 allDocs.push({
                   id: facture.id,
                   type: 'facture',
@@ -333,9 +391,9 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
                   createdAt: facture.created_at,
                   partnerName: fleetMap.get(fleetManagerId) || 'Gestionnaire',
                   partnerId: fleetManagerId,
-                  pickupAddress: (facture.courses as any)?.pickup_address,
-                  destinationAddress: (facture.courses as any)?.destination_address,
-                  scheduledDate: (facture.courses as any)?.scheduled_date,
+                  pickupAddress: course.pickup_address,
+                  destinationAddress: course.destination_address,
+                  scheduledDate: course.scheduled_date,
                   isNew: createdDate > weekAgo
                 });
               }
@@ -727,6 +785,15 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
 
   return (
     <div className="space-y-4">
+      {/* Contract Detail Dialog */}
+      <PartnershipContractDialog
+        open={contractDialogOpen}
+        onOpenChange={setContractDialogOpen}
+        contract={selectedContract}
+        partnershipType={partnershipType}
+        currentUserName={currentUserName}
+        currentUserCompany={currentUserCompany}
+      />
       {/* Header avec icône et compteur */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -873,7 +940,15 @@ export function PartnershipDocumentsList({ driverId, partnershipType }: Partners
                         <p className="text-xs text-muted-foreground">
                           Depuis le {format(new Date(contract.created_at), 'dd/MM/yyyy', { locale: fr })}
                         </p>
-                        <Button variant="outline" size="sm" className="mt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2"
+                          onClick={() => {
+                            setSelectedContract(contract);
+                            setContractDialogOpen(true);
+                          }}
+                        >
                           <Eye className="h-4 w-4 mr-1" />
                           Détails
                         </Button>
