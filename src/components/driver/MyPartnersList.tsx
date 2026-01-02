@@ -71,6 +71,8 @@ interface Partner {
   partner_sharing_number: number | null;
   show_phone_for_sharing: boolean;
   show_email: boolean;
+  show_rating: boolean;
+  show_total_rides: boolean;
 }
 
 interface PartnershipBalance {
@@ -145,7 +147,7 @@ export function MyPartnersList() {
         
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered, bio, sharing_number')
+          .select('user_id, company_name, rating, total_rides, show_phone_for_sharing, show_email, working_sectors, services_offered, bio, sharing_number, card_photo_url')
           .eq('id', partnerId)
           .single();
 
@@ -157,12 +159,15 @@ export function MyPartnersList() {
             .single();
 
           const displayName = profile?.full_name || driverData.company_name || 'Chauffeur partenaire';
+          // Prioritize card_photo_url from drivers, fallback to profile photo
+          const photoUrl = driverData.card_photo_url || profile?.profile_photo_url || null;
+          
           const partnerData: Partner = {
             ...p,
             partner_id: partnerId,
             partner_user_id: driverData.user_id,
             partner_name: displayName,
-            partner_photo: profile?.profile_photo_url || null,
+            partner_photo: photoUrl,
             partner_company: driverData.company_name,
             partner_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
             partner_email: driverData.show_email ? profile?.email : null,
@@ -174,6 +179,9 @@ export function MyPartnersList() {
             partner_sharing_number: driverData.sharing_number || null,
             show_phone_for_sharing: driverData.show_phone_for_sharing || false,
             show_email: driverData.show_email || false,
+            // For now, always show rating and rides - these fields can be added later
+            show_rating: true,
+            show_total_rides: true,
           };
 
           if (p.status === 'pending' && p.proposed_by !== myDriverId) {
@@ -645,9 +653,15 @@ export function MyPartnersList() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                          <span>⭐ {partner.partner_rating.toFixed(1)}</span>
-                          <span>•</span>
-                          <span>{partner.partner_rides} courses</span>
+                          {partner.show_rating && (
+                            <>
+                              <span>⭐ {partner.partner_rating.toFixed(1)}</span>
+                              {partner.show_total_rides && <span>•</span>}
+                            </>
+                          )}
+                          {partner.show_total_rides && (
+                            <span>{partner.partner_rides} courses</span>
+                          )}
                         </div>
                       </div>
                       {/* Balance indicator */}
