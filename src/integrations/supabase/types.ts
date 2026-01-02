@@ -6905,15 +6905,15 @@ export type Database = {
       validate_driver_numbering_integrity: {
         Args: { _driver_id: string }
         Returns: {
-          courses_count: number
-          devis_count: number
-          factures_count: number
+          current_counter: number
+          found_issues: string[]
           is_valid: boolean
-          issues: string[]
-          max_course_number: number
-          max_invoice_number: number
-          max_quote_number: number
-          reservation_counter: number
+          max_course_num: number
+          max_invoice_num: number
+          max_quote_num: number
+          total_courses: number
+          total_devis: number
+          total_factures: number
         }[]
       }
       validate_invitation_token: {
