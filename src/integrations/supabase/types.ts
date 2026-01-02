@@ -2189,6 +2189,7 @@ export type Database = {
           last_payment_date: string | null
           payment_day: number | null
           payment_schedule: string | null
+          proposal_message: string | null
           proposed_by: string
           sharing_blocked: boolean | null
           status: string | null
@@ -2214,6 +2215,7 @@ export type Database = {
           last_payment_date?: string | null
           payment_day?: number | null
           payment_schedule?: string | null
+          proposal_message?: string | null
           proposed_by: string
           sharing_blocked?: boolean | null
           status?: string | null
@@ -2239,6 +2241,7 @@ export type Database = {
           last_payment_date?: string | null
           payment_day?: number | null
           payment_schedule?: string | null
+          proposal_message?: string | null
           proposed_by?: string
           sharing_blocked?: boolean | null
           status?: string | null

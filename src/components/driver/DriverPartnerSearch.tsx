@@ -28,7 +28,8 @@ import {
   Eye,
   Briefcase,
   Package,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { getEquipmentIcon, getEquipmentLabel, getServiceLabel, getServiceIcon } from '@/lib/vehicleEquipmentDisplay';
@@ -239,6 +240,7 @@ Cordialement.`;
         proposed_by: driverId,
         status: 'pending',
         payment_schedule: proposedPaymentSchedule,
+        proposal_message: proposalMessage || null,
       });
 
       if (error) throw error;
@@ -339,19 +341,31 @@ Cordialement.`;
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Département</Label>
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les départements</SelectItem>
-                      {FRENCH_DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept.code} value={dept.code}>
-                          {dept.code} - {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Tous" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les départements</SelectItem>
+                        {FRENCH_DEPARTMENTS.map((dept) => (
+                          <SelectItem key={dept.code} value={dept.name}>
+                            {dept.code} - {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedDepartment !== 'all' && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => setSelectedDepartment('all')}
+                        className="shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -362,6 +376,18 @@ Cordialement.`;
                       value={citySearch}
                       onChange={(e) => setCitySearch(e.target.value)}
                     />
+                    {citySearch && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          setCitySearch('');
+                          searchDrivers();
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="outline" size="icon" onClick={searchDrivers}>
                       <Search className="h-4 w-4" />
                     </Button>
@@ -370,7 +396,20 @@ Cordialement.`;
               </div>
 
               <div className="space-y-2">
-                <Label>Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}</Label>
+                  {minRating > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setMinRating(0)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Effacer
+                    </Button>
+                  )}
+                </div>
                 <Slider
                   value={[minRating]}
                   onValueChange={(v) => setMinRating(v[0])}
