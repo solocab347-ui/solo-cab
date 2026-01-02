@@ -6228,6 +6228,14 @@ export type Database = {
       }
     }
     Functions: {
+      accept_devis_safely: {
+        Args: { _client_user_id: string; _devis_id: string }
+        Returns: {
+          course_id: string
+          message: string
+          success: boolean
+        }[]
+      }
       accept_shared_course: {
         Args: { p_driver_id: string; p_shared_course_id: string }
         Returns: {
@@ -6877,6 +6885,13 @@ export type Database = {
       set_favorite_vehicle: {
         Args: { _driver_id: string; _vehicle_id: string }
         Returns: boolean
+      }
+      validate_driver_numbering: {
+        Args: { _driver_id: string }
+        Returns: {
+          is_valid: boolean
+          issues: string[]
+        }[]
       }
       validate_invitation_token: {
         Args: { token_value: string }
