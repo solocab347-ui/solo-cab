@@ -520,23 +520,23 @@ const DevisList = ({ clientId }: DevisListProps) => {
       <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
         {/* SECTION PRIORITAIRE: Boutons d'action en haut si en attente */}
         {canAccept && (
-          <div className="flex gap-3 mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
             <Button
               onClick={() => handleAccept(devis.id)}
-              className="flex-1 bg-green-500 hover:bg-green-600"
+              className="flex-1 bg-green-500 hover:bg-green-600 min-w-0"
               size="lg"
             >
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Accepter le devis
+              <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span className="truncate">Accepter le devis</span>
             </Button>
             <Button
               onClick={() => openRejectDialog(devis.id)}
               variant="destructive"
-              className="flex-1"
+              className="flex-1 min-w-0"
               size="lg"
             >
-              <XCircle className="w-5 h-5 mr-2" />
-              Refuser
+              <XCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span className="truncate">Refuser</span>
             </Button>
           </div>
         )}
