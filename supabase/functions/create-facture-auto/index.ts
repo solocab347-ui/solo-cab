@@ -88,14 +88,14 @@ serve(async (req) => {
       .select(`
         driver_id,
         client_id,
-        clients!inner(user_id),
-        drivers!inner(user_id)
+        clients(user_id),
+        drivers(user_id)
       `)
       .eq("id", course_id)
-      .single();
+      .maybeSingle();
 
     if (courseCheckError || !courseCheck) {
-      console.log("[CREATE-FACTURE-AUTO] ❌ Course not found or access denied");
+      console.log("[CREATE-FACTURE-AUTO] ❌ Course not found:", courseCheckError?.message);
       return new Response(
         JSON.stringify({ error: "Course introuvable ou accès refusé" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -103,8 +103,24 @@ serve(async (req) => {
     }
 
     // Check if authenticated user is either the driver or the client
-    const isDriver = courseCheck.drivers && Array.isArray(courseCheck.drivers) && courseCheck.drivers[0]?.user_id === user.id;
-    const isClient = courseCheck.clients && Array.isArray(courseCheck.clients) && courseCheck.clients[0]?.user_id === user.id;
+    // Handle both array and object formats from Supabase joins
+    const driverUserId = Array.isArray(courseCheck.drivers) 
+      ? courseCheck.drivers[0]?.user_id 
+      : (courseCheck.drivers as any)?.user_id;
+    const clientUserId = Array.isArray(courseCheck.clients) 
+      ? courseCheck.clients[0]?.user_id 
+      : (courseCheck.clients as any)?.user_id;
+
+    const isDriver = driverUserId === user.id;
+    const isClient = clientUserId === user.id;
+
+    console.log("[CREATE-FACTURE-AUTO] Authorization check:", { 
+      driverUserId, 
+      clientUserId, 
+      currentUser: user.id,
+      isDriver, 
+      isClient 
+    });
 
     if (!isDriver && !isClient) {
       console.log("[CREATE-FACTURE-AUTO] ❌ User not authorized for this course");
