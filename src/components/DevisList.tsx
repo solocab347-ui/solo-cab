@@ -404,72 +404,44 @@ const DevisList = ({ clientId }: DevisListProps) => {
       doc.text(`${devis.courses.distance_km} km`, 45, yPos);
     }
     
-    // Tarification - VERSION SIMPLIFIÉE POUR CLIENT (affichage clair avec majorations)
+    // Prix simplifié pour le client - sans détails de tarification internes
     yPos = 155;
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.text("TARIFICATION", 20, yPos);
-    
-    // Calcul du HT de base (avant majorations)
-    const baseHT = parseFloat(devis.base_price) + 
-                   parseFloat(devis.distance_price) + 
-                   parseFloat(devis.time_price || 0);
-    
-    const eveningSurcharge = parseFloat(devis.evening_surcharge_amount || 0);
-    const weekendSurcharge = parseFloat(devis.weekend_surcharge_amount || 0);
-    
-    // Total HT incluant toutes les majorations
-    const totalHT = baseHT + eveningSurcharge + weekendSurcharge;
-    
-    const tvaRate = parseFloat(devis.time_price || 0) > 0 ? 20 : 10;
-    const tvaAmount = totalHT * (tvaRate / 100);
-    const totalTTC = totalHT + tvaAmount;
+    doc.text("MONTANT", 20, yPos);
     
     yPos += 8;
     doc.setFontSize(9);
     doc.setFont(undefined, 'normal');
     
-    // Sous-total HT (base)
-    doc.text("Sous-total HT", 20, yPos);
-    doc.text(`${baseHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-    
-    // Majorations (si présentes)
-    if (eveningSurcharge > 0) {
+    // Afficher uniquement distance et durée
+    if (devis.courses?.distance_km) {
+      doc.text("Distance", 20, yPos);
+      doc.text(`${devis.courses.distance_km} km`, pageWidth - 20, yPos, { align: "right" });
       yPos += 6;
-      doc.setTextColor(255, 140, 0);
-      doc.text("Majoration soirée", 20, yPos);
-      doc.text(`+ ${eveningSurcharge.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+    }
+    
+    if (devis.courses?.duration_minutes) {
+      doc.text("Durée estimée", 20, yPos);
+      doc.text(`~${devis.courses.duration_minutes} min`, pageWidth - 20, yPos, { align: "right" });
+      yPos += 6;
+    }
+    
+    // Réduction si présente
+    if (devis.promo_code && devis.discount_amount > 0) {
+      doc.setTextColor(34, 197, 94);
+      doc.text(`Réduction (${devis.promo_code})`, 20, yPos);
+      doc.text(`-${parseFloat(devis.discount_amount).toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
       doc.setTextColor(0, 0, 0);
-    }
-    
-    if (weekendSurcharge > 0) {
       yPos += 6;
-      doc.setTextColor(255, 140, 0);
-      doc.text("Majoration week-end", 20, yPos);
-      doc.text(`+ ${weekendSurcharge.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-      doc.setTextColor(0, 0, 0);
     }
-    
-    // Total HT après majorations
-    if (eveningSurcharge > 0 || weekendSurcharge > 0) {
-      yPos += 6;
-      doc.setFont(undefined, 'bold');
-      doc.text("Total HT", 20, yPos);
-      doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
-      doc.setFont(undefined, 'normal');
-    }
-    
-    // TVA
-    yPos += 6;
-    doc.text(`TVA (${tvaRate}%)`, 20, yPos);
-    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
     
     // Ligne de séparation
     yPos += 4;
     doc.setDrawColor(200, 200, 200);
     doc.line(15, yPos, pageWidth - 15, yPos);
     
-    // Total TTC
+    // Total TTC uniquement
     yPos += 7;
     doc.setFillColor(0, 102, 204);
     doc.rect(15, yPos - 3, pageWidth - 30, 9, 'F');
@@ -477,7 +449,7 @@ const DevisList = ({ clientId }: DevisListProps) => {
     doc.setFont(undefined, 'bold');
     doc.setTextColor(255, 255, 255);
     doc.text("TOTAL TTC", 20, yPos + 2);
-    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
+    doc.text(`${parseFloat(devis.amount).toFixed(2)} €`, pageWidth - 20, yPos + 2, { align: "right" });
     doc.setTextColor(0, 0, 0);
     
     // Validité (encadré avec mention 7 jours)
