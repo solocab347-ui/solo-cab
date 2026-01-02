@@ -2189,6 +2189,12 @@ export type Database = {
           last_payment_date: string | null
           payment_day: number | null
           payment_schedule: string | null
+          pending_modification: boolean | null
+          pending_modification_at: string | null
+          pending_modification_by: string | null
+          pending_modification_message: string | null
+          pending_new_commission: number | null
+          pending_new_payment_schedule: string | null
           proposal_message: string | null
           proposed_by: string
           sharing_blocked: boolean | null
@@ -2215,6 +2221,12 @@ export type Database = {
           last_payment_date?: string | null
           payment_day?: number | null
           payment_schedule?: string | null
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_message?: string | null
+          pending_new_commission?: number | null
+          pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_by: string
           sharing_blocked?: boolean | null
@@ -2241,6 +2253,12 @@ export type Database = {
           last_payment_date?: string | null
           payment_day?: number | null
           payment_schedule?: string | null
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_message?: string | null
+          pending_new_commission?: number | null
+          pending_new_payment_schedule?: string | null
           proposal_message?: string | null
           proposed_by?: string
           sharing_blocked?: boolean | null
