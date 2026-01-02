@@ -99,19 +99,26 @@ const ClientDashboard = () => {
 
       if (!client) return;
 
-      // Upcoming courses
+      // Courses confirmées à venir (status "accepted" uniquement, pas "pending")
       const { count: upcomingCount } = await supabase
         .from("courses")
         .select("*", { count: "exact", head: true })
         .eq("client_id", client.id)
-        .in("status", ["pending", "accepted"]);
+        .eq("status", "accepted")
+        .gte("scheduled_date", new Date().toISOString());
 
-      // Pending devis
-      const { count: pendingDevisCount } = await supabase
+      // Devis en attente : status "pending", non expiré, et course non annulée
+      const { data: pendingDevisData } = await supabase
         .from("devis")
-        .select("*", { count: "exact", head: true })
+        .select(`
+          id,
+          valid_until,
+          courses!inner(status)
+        `)
         .eq("client_id", client.id)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .gte("valid_until", new Date().toISOString())
+        .neq("courses.status", "cancelled");
 
       // Unpaid invoices
       const { count: unpaidCount } = await supabase
@@ -122,7 +129,7 @@ const ClientDashboard = () => {
 
       setStats({
         upcomingCourses: upcomingCount || 0,
-        pendingDevis: pendingDevisCount || 0,
+        pendingDevis: pendingDevisData?.length || 0,
         unpaidInvoices: unpaidCount || 0,
       });
     } catch (error) {
