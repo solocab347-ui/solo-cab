@@ -79,6 +79,7 @@ export function PartnerSearchInline({ driverId }: Props) {
   const [drivers, setDrivers] = useState<AvailableDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [existingPartnerIds, setExistingPartnerIds] = useState<string[]>([]);
   
   // Filtres
   const [searchNumber, setSearchNumber] = useState('');
@@ -94,11 +95,33 @@ export function PartnerSearchInline({ driverId }: Props) {
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
   const [submitting, setSubmitting] = useState(false);
 
+  // Charger les partenaires existants pour les exclure de la recherche
+  useEffect(() => {
+    if (driverId) {
+      loadExistingPartners();
+    }
+  }, [driverId]);
+
+  const loadExistingPartners = async () => {
+    const { data } = await supabase
+      .from('driver_partnerships')
+      .select('driver_a_id, driver_b_id')
+      .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
+      .in('status', ['active', 'pending']);
+
+    if (data) {
+      const partnerIds = data.map(p => 
+        p.driver_a_id === driverId ? p.driver_b_id : p.driver_a_id
+      );
+      setExistingPartnerIds(partnerIds);
+    }
+  };
+
   useEffect(() => {
     if (driverId) {
       searchDrivers();
     }
-  }, [driverId, selectedDepartment, minRating]);
+  }, [driverId, selectedDepartment, minRating, existingPartnerIds]);
 
   const searchDrivers = async () => {
     if (!driverId) return;
@@ -113,7 +136,12 @@ export function PartnerSearchInline({ driverId }: Props) {
       });
 
       if (error) throw error;
-      setDrivers(data || []);
+      
+      // Filtrer pour exclure les partenaires existants
+      const filteredData = (data || []).filter(
+        (driver: AvailableDriver) => !existingPartnerIds.includes(driver.id)
+      );
+      setDrivers(filteredData);
     } catch (error) {
       console.error('Error searching drivers:', error);
       toast.error('Erreur lors de la recherche');
@@ -141,6 +169,11 @@ export function PartnerSearchInline({ driverId }: Props) {
         const found = data[0];
         if (found.id === driverId) {
           toast.error('Vous ne pouvez pas vous rechercher vous-même');
+          return;
+        }
+        // Vérifier si c'est déjà un partenaire
+        if (existingPartnerIds.includes(found.id)) {
+          toast.info('Vous avez déjà un partenariat avec ce chauffeur');
           return;
         }
         setDrivers([{
