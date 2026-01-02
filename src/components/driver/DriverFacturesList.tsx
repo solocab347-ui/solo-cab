@@ -134,7 +134,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           )
         `)
         .eq("driver_id", driverId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setFactures(data || []);
