@@ -22,7 +22,7 @@ import {
 
 // Sub-components
 import { MyPartnersList } from './MyPartnersList';
-import { PartnerCoursePool } from './PartnerCoursePool';
+import { PartnerCoursesHub } from './partnership/PartnerCoursesHub';
 import { PushCourseToPartners } from './PushCourseToPartners';
 import { PartnerSearchInline } from './PartnerSearchInline';
 
@@ -233,7 +233,7 @@ export function DriverCourseSharing() {
       <div className="mx-1">
         {activeTab === 'partners' && <MyPartnersList />}
         {activeTab === 'search' && <PartnerSearchInline driverId={driverInfo?.id || ''} />}
-        {activeTab === 'available' && <PartnerCoursePool />}
+        {activeTab === 'available' && <PartnerCoursesHub driverId={driverInfo?.id || null} />}
         {activeTab === 'propose' && <PushCourseToPartners />}
         {activeTab === 'balances' && <BalancesSummary driverId={driverInfo?.id || null} />}
       </div>
