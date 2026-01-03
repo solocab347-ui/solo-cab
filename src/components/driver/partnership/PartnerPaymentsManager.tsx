@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,9 +22,12 @@ import {
   FileText,
   Send,
   Euro,
-  Loader2
+  Loader2,
+  Bell,
+  Eye,
+  Ban
 } from 'lucide-react';
-import { format, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, isAfter, isBefore, startOfDay, endOfWeek, endOfMonth, parseISO, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface Props {
@@ -56,11 +59,16 @@ interface PartnerInvoiceItem {
   payment_status: string;
   payment_due_date: string | null;
   payment_schedule: string | null;
+  billing_period_end: string | null;
   partner_name: string;
   partner_photo: string | null;
   partner_driver_id: string;
   scheduled_date: string;
   created_at: string;
+  last_reminder_sent_at: string | null;
+  reminder_count: number;
+  payment_sent_at: string | null;
+  payment_proof_url: string | null;
 }
 
 const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
@@ -71,6 +79,7 @@ const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
 
 const STATUS_CONFIG = {
   pending: { label: 'En attente', color: 'bg-yellow-500/20 text-yellow-600', icon: Clock },
+  sent: { label: 'Envoyé', color: 'bg-blue-500/20 text-blue-600', icon: Send },
   paid: { label: 'Payée', color: 'bg-green-500/20 text-green-600', icon: CheckCircle },
   disputed: { label: 'Litige', color: 'bg-red-500/20 text-red-600', icon: AlertTriangle },
 };
@@ -81,6 +90,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
   const [loading, setLoading] = useState(true);
   const [sendPaymentOpen, setSendPaymentOpen] = useState(false);
   const [confirmReceiptOpen, setConfirmReceiptOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<PartnerInvoiceItem | null>(null);
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
@@ -140,11 +150,16 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           payment_status: invoice.payment_status,
           payment_due_date: invoice.payment_due_date,
           payment_schedule: invoice.payment_schedule,
+          billing_period_end: invoice.billing_period_end,
           partner_name: partnerProfile?.full_name || 'Partenaire',
           partner_photo: partnerDriver?.card_photo_url || partnerProfile?.profile_photo_url || null,
           partner_driver_id: partnerDriverId,
           scheduled_date: doc.scheduled_date,
           created_at: invoice.created_at,
+          last_reminder_sent_at: invoice.last_reminder_sent_at,
+          reminder_count: invoice.reminder_count || 0,
+          payment_sent_at: invoice.payment_sent_at,
+          payment_proof_url: invoice.payment_proof_url,
         });
       }
 
@@ -169,12 +184,12 @@ export function PartnerPaymentsManager({ driverId }: Props) {
   );
 
   const pendingOutgoing = useMemo(() => 
-    outgoingInvoices.filter(i => i.payment_status === 'pending'),
+    outgoingInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'sent'),
     [outgoingInvoices]
   );
 
   const pendingIncoming = useMemo(() => 
-    incomingInvoices.filter(i => i.payment_status === 'pending'),
+    incomingInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'sent'),
     [incomingInvoices]
   );
 
@@ -197,14 +212,66 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     [pendingIncoming]
   );
 
+  // Vérifier si on peut confirmer un paiement selon la fréquence
+  const canConfirmPayment = useCallback((invoice: PartnerInvoiceItem): { canConfirm: boolean; reason?: string } => {
+    const schedule = invoice.payment_schedule;
+    const periodEnd = invoice.billing_period_end;
+    const today = new Date();
+
+    // Par course: confirmation immédiate possible
+    if (schedule === 'per_course') {
+      return { canConfirm: true };
+    }
+
+    if (!periodEnd) {
+      return { canConfirm: true };
+    }
+
+    const endDate = parseISO(periodEnd);
+
+    // Hebdomadaire: confirmation possible à la fin de la semaine
+    if (schedule === 'weekly') {
+      const weekEnd = endOfWeek(endDate, { weekStartsOn: 1 });
+      if (isBefore(today, weekEnd)) {
+        return { 
+          canConfirm: false, 
+          reason: `Disponible le ${format(weekEnd, 'dd/MM/yyyy', { locale: fr })}` 
+        };
+      }
+    }
+
+    // Mensuel: confirmation possible à la fin du mois
+    if (schedule === 'monthly') {
+      const monthEnd = endOfMonth(endDate);
+      if (isBefore(today, monthEnd)) {
+        return { 
+          canConfirm: false, 
+          reason: `Disponible le ${format(monthEnd, 'dd/MM/yyyy', { locale: fr })}` 
+        };
+      }
+    }
+
+    return { canConfirm: true };
+  }, []);
+
   const handleSendPayment = (invoice: PartnerInvoiceItem) => {
     setSelectedInvoice(invoice);
     setSendPaymentOpen(true);
   };
 
   const handleConfirmReceipt = (invoice: PartnerInvoiceItem) => {
+    const { canConfirm, reason } = canConfirmPayment(invoice);
+    if (!canConfirm) {
+      toast.error(reason || 'Confirmation non disponible pour le moment');
+      return;
+    }
     setSelectedInvoice(invoice);
     setConfirmReceiptOpen(true);
+  };
+
+  const handleSendReminder = (invoice: PartnerInvoiceItem) => {
+    setSelectedInvoice(invoice);
+    setReminderOpen(true);
   };
 
   const uploadProof = async (): Promise<string | null> => {
@@ -232,19 +299,23 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     return urlData.publicUrl;
   };
 
+  // Notifier l'envoi du paiement (sortant)
   const submitPaymentSent = async () => {
     if (!selectedInvoice) return;
     setSubmitting(true);
 
     try {
       const proofUrl = await uploadProof();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
 
-      // Update invoice status
+      // Update invoice status to 'sent' (not 'paid' yet - receiver must confirm)
       const { error } = await supabase
         .from('partner_invoices')
         .update({
-          payment_status: 'paid',
-          paid_at: new Date().toISOString(),
+          payment_status: 'sent',
+          payment_sent_at: new Date().toISOString(),
+          payment_sent_by: userId,
+          payment_proof_url: proofUrl,
           payment_notes: paymentNotes || null,
         })
         .eq('id', selectedInvoice.id);
@@ -285,14 +356,14 @@ export function PartnerPaymentsManager({ driverId }: Props) {
       if (partnerDriver?.user_id) {
         await supabase.from('notifications').insert({
           user_id: partnerDriver.user_id,
-          title: '💰 Paiement reçu',
-          message: `Un partenaire vous a envoyé un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€`,
-          type: 'success',
-          link: '/driver-dashboard?tab=partnerships&subtab=balances',
+          title: '💸 Paiement envoyé',
+          message: `Un partenaire vous a envoyé un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€. Confirmez sa réception.`,
+          type: 'info',
+          link: '/driver-dashboard?tab=partnerships&subtab=payments',
         });
       }
 
-      toast.success('Paiement envoyé avec succès');
+      toast.success('Paiement notifié avec succès');
       setSendPaymentOpen(false);
       setPaymentReference('');
       setPaymentNotes('');
@@ -300,27 +371,57 @@ export function PartnerPaymentsManager({ driverId }: Props) {
       loadInvoices();
     } catch (error) {
       console.error('Error sending payment:', error);
-      toast.error('Erreur lors de l\'envoi du paiement');
+      toast.error('Erreur lors de la notification du paiement');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Confirmer la réception d'un paiement (entrant)
   const submitReceiptConfirmation = async () => {
     if (!selectedInvoice) return;
+    
+    const { canConfirm, reason } = canConfirmPayment(selectedInvoice);
+    if (!canConfirm) {
+      toast.error(reason || 'Confirmation non disponible');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
       const { error } = await supabase
         .from('partner_invoices')
         .update({
           payment_status: 'paid',
           paid_at: new Date().toISOString(),
+          payment_confirmed_by: userId,
+          received_confirmed_at: new Date().toISOString(),
+          received_confirmed_by: userId,
           payment_notes: paymentNotes || null,
         })
         .eq('id', selectedInvoice.id);
 
       if (error) throw error;
+
+      // Notify partner that payment was confirmed
+      const { data: partnerDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', selectedInvoice.partner_driver_id)
+        .single();
+
+      if (partnerDriver?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: partnerDriver.user_id,
+          title: '✅ Paiement confirmé',
+          message: `Votre paiement de ${selectedInvoice.commission_amount.toFixed(2)}€ a été confirmé par le partenaire`,
+          type: 'success',
+          link: '/driver-dashboard?tab=partnerships&subtab=payments',
+        });
+      }
 
       toast.success('Réception confirmée');
       setConfirmReceiptOpen(false);
@@ -334,13 +435,66 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     }
   };
 
+  // Envoyer un rappel au partenaire
+  const submitReminder = async () => {
+    if (!selectedInvoice) return;
+    setSubmitting(true);
+
+    try {
+      // Update reminder tracking
+      const { error } = await supabase
+        .from('partner_invoices')
+        .update({
+          last_reminder_sent_at: new Date().toISOString(),
+          reminder_count: (selectedInvoice.reminder_count || 0) + 1,
+        })
+        .eq('id', selectedInvoice.id);
+
+      if (error) throw error;
+
+      // Notify partner
+      const { data: partnerDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', selectedInvoice.partner_driver_id)
+        .single();
+
+      if (partnerDriver?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: partnerDriver.user_id,
+          title: '🔔 Rappel de paiement',
+          message: `Rappel: Un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€ est en attente (${selectedInvoice.invoice_number})`,
+          type: 'warning',
+          link: '/driver-dashboard?tab=partnerships&subtab=payments',
+        });
+      }
+
+      toast.success('Rappel envoyé au partenaire');
+      setReminderOpen(false);
+      loadInvoices();
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error('Erreur lors de l\'envoi du rappel');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const isInvoiceOverdue = (invoice: PartnerInvoiceItem) => {
-    if (!invoice.payment_due_date || invoice.payment_status !== 'pending') return false;
+    if (!invoice.payment_due_date || invoice.payment_status === 'paid') return false;
     return isBefore(new Date(invoice.payment_due_date), startOfDay(new Date()));
   };
 
-  const getScheduleAlert = (invoice: PartnerInvoiceItem) => {
-    if (invoice.payment_status !== 'pending') return null;
+  const getScheduleAlert = (invoice: PartnerInvoiceItem, direction: 'incoming' | 'outgoing') => {
+    if (invoice.payment_status === 'paid') return null;
+
+    // Pour les entrants, vérifier si confirmation possible
+    if (direction === 'incoming') {
+      const { canConfirm, reason } = canConfirmPayment(invoice);
+      if (!canConfirm && reason) {
+        return { type: 'info', message: reason };
+      }
+    }
     
     const isOverdue = isInvoiceOverdue(invoice);
     if (isOverdue) {
@@ -439,7 +593,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             </Alert>
           ) : (
             pendingOutgoing.map((invoice) => {
-              const alert = getScheduleAlert(invoice);
+              const alert = getScheduleAlert(invoice, 'outgoing');
               return (
                 <InvoiceCard
                   key={invoice.id}
@@ -447,8 +601,10 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                   direction="outgoing"
                   alert={alert}
                   onAction={() => handleSendPayment(invoice)}
-                  actionLabel="Notifier paiement"
-                  actionIcon={<Send className="h-4 w-4 mr-1" />}
+                  actionLabel={invoice.payment_status === 'sent' ? 'Envoyé' : 'Notifier paiement'}
+                  actionIcon={invoice.payment_status === 'sent' ? <CheckCircle className="h-4 w-4 mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                  isSent={invoice.payment_status === 'sent'}
+                  proofUrl={invoice.payment_proof_url}
                 />
               );
             })
@@ -477,16 +633,25 @@ export function PartnerPaymentsManager({ driverId }: Props) {
               <AlertDescription>Aucun paiement en attente à recevoir.</AlertDescription>
             </Alert>
           ) : (
-            pendingIncoming.map((invoice) => (
-              <InvoiceCard
-                key={invoice.id}
-                invoice={invoice}
-                direction="incoming"
-                onAction={() => handleConfirmReceipt(invoice)}
-                actionLabel="Confirmer réception"
-                actionIcon={<CheckCircle className="h-4 w-4 mr-1" />}
-              />
-            ))
+            pendingIncoming.map((invoice) => {
+              const alert = getScheduleAlert(invoice, 'incoming');
+              const { canConfirm } = canConfirmPayment(invoice);
+              return (
+                <InvoiceCard
+                  key={invoice.id}
+                  invoice={invoice}
+                  direction="incoming"
+                  alert={alert}
+                  onAction={() => handleConfirmReceipt(invoice)}
+                  actionLabel="Confirmer réception"
+                  actionIcon={<CheckCircle className="h-4 w-4 mr-1" />}
+                  onReminder={() => handleSendReminder(invoice)}
+                  reminderCount={invoice.reminder_count}
+                  canConfirm={canConfirm}
+                  isSent={invoice.payment_status === 'sent'}
+                />
+              );
+            })
           )}
 
           {/* Paid incoming */}
@@ -618,6 +783,56 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Reminder Dialog */}
+      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-orange-600" />
+              Relancer le partenaire
+            </DialogTitle>
+            <DialogDescription>
+              Envoyer un rappel de paiement
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-muted/50 p-3 rounded-lg text-sm">
+              <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
+              <p><strong>De:</strong> {selectedInvoice?.partner_name}</p>
+              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
+              {selectedInvoice && selectedInvoice.reminder_count > 0 && (
+                <p className="text-orange-600 mt-2">
+                  <strong>Rappels déjà envoyés:</strong> {selectedInvoice.reminder_count}
+                </p>
+              )}
+            </div>
+
+            <Alert className="border-orange-500/50 bg-orange-500/10">
+              <Bell className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm text-orange-700">
+                Une notification sera envoyée au partenaire pour lui rappeler le paiement en attente.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReminderOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={submitReminder} 
+              disabled={submitting}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Bell className="h-4 w-4 mr-2" />
+              Envoyer le rappel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -630,6 +845,11 @@ interface InvoiceCardProps {
   actionLabel?: string;
   actionIcon?: React.ReactNode;
   isPaid?: boolean;
+  isSent?: boolean;
+  proofUrl?: string | null;
+  onReminder?: () => void;
+  reminderCount?: number;
+  canConfirm?: boolean;
 }
 
 function InvoiceCard({ 
@@ -639,23 +859,34 @@ function InvoiceCard({
   onAction, 
   actionLabel, 
   actionIcon,
-  isPaid 
+  isPaid,
+  isSent,
+  proofUrl,
+  onReminder,
+  reminderCount,
+  canConfirm = true
 }: InvoiceCardProps) {
   return (
     <Card className={cn(
       "overflow-hidden",
       isPaid && "opacity-60",
+      isSent && direction === 'outgoing' && "border-blue-500/50 bg-blue-500/5",
+      isSent && direction === 'incoming' && "border-blue-500/50 bg-blue-500/5",
       alert?.type === 'error' && "border-red-500/50",
-      alert?.type === 'warning' && "border-orange-500/50"
+      alert?.type === 'warning' && "border-orange-500/50",
+      alert?.type === 'info' && "border-blue-500/50"
     )}>
       <CardContent className="p-3">
         <div className="flex items-center gap-3">
           {/* Direction indicator */}
           <div className={cn(
             "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
-            direction === 'outgoing' ? "bg-orange-500/20" : "bg-green-500/20"
+            direction === 'outgoing' ? "bg-orange-500/20" : "bg-green-500/20",
+            isSent && "bg-blue-500/20"
           )}>
-            {direction === 'outgoing' ? (
+            {isSent ? (
+              <Send className="h-5 w-5 text-blue-600" />
+            ) : direction === 'outgoing' ? (
               <ArrowUpRight className="h-5 w-5 text-orange-600" />
             ) : (
               <ArrowDownLeft className="h-5 w-5 text-green-600" />
@@ -672,6 +903,11 @@ function InvoiceCard({
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium truncate">{invoice.partner_name}</span>
+              {isSent && (
+                <Badge className="bg-blue-500/20 text-blue-600 text-[9px]">
+                  Envoyé
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
               <span className="font-mono">{invoice.invoice_number}</span>
@@ -704,9 +940,15 @@ function InvoiceCard({
             {alert && (
               <Badge className={cn(
                 "text-[9px] mt-1",
-                alert.type === 'error' ? "bg-red-500/20 text-red-600" : "bg-orange-500/20 text-orange-600"
+                alert.type === 'error' ? "bg-red-500/20 text-red-600" : 
+                alert.type === 'warning' ? "bg-orange-500/20 text-orange-600" :
+                "bg-blue-500/20 text-blue-600"
               )}>
-                <AlertTriangle className="h-3 w-3 mr-1" />
+                {alert.type === 'info' ? (
+                  <Clock className="h-3 w-3 mr-1" />
+                ) : (
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                )}
                 {alert.message}
               </Badge>
             )}
@@ -717,24 +959,82 @@ function InvoiceCard({
               </Badge>
             )}
           </div>
-
-          {onAction && !isPaid && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={cn(
-                "shrink-0 text-xs",
-                direction === 'outgoing' 
-                  ? "border-primary text-primary hover:bg-primary/10" 
-                  : "border-green-600 text-green-600 hover:bg-green-600/10"
-              )}
-              onClick={onAction}
-            >
-              {actionIcon}
-              <span className="hidden sm:inline">{actionLabel}</span>
-            </Button>
-          )}
         </div>
+
+        {/* Actions row for incoming */}
+        {direction === 'incoming' && !isPaid && (
+          <div className="flex gap-2 mt-3 pt-2 border-t">
+            {onReminder && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-xs border-orange-500 text-orange-600 hover:bg-orange-500/10"
+                onClick={onReminder}
+              >
+                <Bell className="h-3.5 w-3.5 mr-1" />
+                Relancer
+                {reminderCount && reminderCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-[9px] px-1">
+                    {reminderCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
+            {onAction && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!canConfirm}
+                className={cn(
+                  "flex-1 text-xs",
+                  canConfirm 
+                    ? "border-green-600 text-green-600 hover:bg-green-600/10" 
+                    : "opacity-50 cursor-not-allowed"
+                )}
+                onClick={onAction}
+              >
+                {actionIcon}
+                <span className="hidden sm:inline">{actionLabel}</span>
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Actions row for outgoing */}
+        {direction === 'outgoing' && !isPaid && (
+          <div className="flex gap-2 mt-3 pt-2 border-t">
+            {isSent ? (
+              <>
+                <Badge className="flex-1 justify-center py-2 bg-blue-500/20 text-blue-600">
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                  Paiement envoyé
+                </Badge>
+                {proofUrl && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => window.open(proofUrl, '_blank')}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </>
+            ) : (
+              onAction && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 text-xs border-primary text-primary hover:bg-primary/10"
+                  onClick={onAction}
+                >
+                  {actionIcon}
+                  <span className="hidden sm:inline">{actionLabel}</span>
+                </Button>
+              )
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

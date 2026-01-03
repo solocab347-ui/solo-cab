@@ -4988,14 +4988,21 @@ export type Database = {
           invoice_number: string
           invoice_type: string
           is_overdue: boolean | null
+          last_reminder_sent_at: string | null
           order_document_id: string
           paid_at: string | null
           partnership_id: string
           payment_confirmed_by: string | null
           payment_due_date: string | null
           payment_notes: string | null
+          payment_proof_url: string | null
           payment_schedule: string | null
+          payment_sent_at: string | null
+          payment_sent_by: string | null
           payment_status: string
+          received_confirmed_at: string | null
+          received_confirmed_by: string | null
+          reminder_count: number | null
           shared_course_id: string
           tva_amount: number | null
           tva_rate: number | null
@@ -5014,14 +5021,21 @@ export type Database = {
           invoice_number: string
           invoice_type: string
           is_overdue?: boolean | null
+          last_reminder_sent_at?: string | null
           order_document_id: string
           paid_at?: string | null
           partnership_id: string
           payment_confirmed_by?: string | null
           payment_due_date?: string | null
           payment_notes?: string | null
+          payment_proof_url?: string | null
           payment_schedule?: string | null
+          payment_sent_at?: string | null
+          payment_sent_by?: string | null
           payment_status?: string
+          received_confirmed_at?: string | null
+          received_confirmed_by?: string | null
+          reminder_count?: number | null
           shared_course_id: string
           tva_amount?: number | null
           tva_rate?: number | null
@@ -5040,14 +5054,21 @@ export type Database = {
           invoice_number?: string
           invoice_type?: string
           is_overdue?: boolean | null
+          last_reminder_sent_at?: string | null
           order_document_id?: string
           paid_at?: string | null
           partnership_id?: string
           payment_confirmed_by?: string | null
           payment_due_date?: string | null
           payment_notes?: string | null
+          payment_proof_url?: string | null
           payment_schedule?: string | null
+          payment_sent_at?: string | null
+          payment_sent_by?: string | null
           payment_status?: string
+          received_confirmed_at?: string | null
+          received_confirmed_by?: string | null
+          reminder_count?: number | null
           shared_course_id?: string
           tva_amount?: number | null
           tva_rate?: number | null
@@ -7017,6 +7038,10 @@ export type Database = {
       }
       can_add_free_driver: {
         Args: { _fleet_manager_id: string }
+        Returns: boolean
+      }
+      can_confirm_payment_by_schedule: {
+        Args: { p_billing_period_end: string; p_payment_schedule: string }
         Returns: boolean
       }
       can_share_courses: { Args: { _driver_id: string }; Returns: boolean }
