@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Handshake, 
   Search, 
-  Wallet,
+  CreditCard,
   Inbox,
   Send,
   FileText
@@ -16,20 +16,19 @@ import { supabase } from '@/integrations/supabase/client';
 // Import sub-components
 import { MyPartnersList } from '../MyPartnersList';
 import { PartnerCoursePool } from '../PartnerCoursePool';
-import { PushCourseToPartners } from '../PushCourseToPartners';
 import { DriverPartnerSearch } from '../DriverPartnerSearch';
-import { PartnershipBalances } from '../PartnershipBalances';
 import { ReceivedPartnerCourses } from './ReceivedPartnerCourses';
 import { SentPartnerCourses } from './SentPartnerCourses';
 import { PartnerInvoicesList } from './PartnerInvoicesList';
+import { PartnerPaymentsManager } from './PartnerPaymentsManager';
 
 interface DriverPartnershipsTabProps {
   driverId: string;
-  initialSubTab?: 'list' | 'search' | 'received' | 'sent' | 'balances' | 'invoices';
+  initialSubTab?: 'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices';
 }
 
 export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: DriverPartnershipsTabProps) {
-  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | 'invoices'>(initialSubTab);
+  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices'>(initialSubTab);
   const [receivedCount, setReceivedCount] = useState(0);
 
   // Sync with initialSubTab when it changes (e.g., from URL params)
@@ -115,10 +114,10 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
                 <span className="hidden sm:inline">Envoyées</span>
                 <span className="sm:hidden">Env.</span>
               </TabsTrigger>
-              <TabsTrigger value="balances" className="text-xs gap-1 px-2">
-                <Wallet className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Soldes</span>
-                <span className="sm:hidden">Sold.</span>
+              <TabsTrigger value="payments" className="text-xs gap-1 px-2">
+                <CreditCard className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Paiements</span>
+                <span className="sm:hidden">Paie.</span>
               </TabsTrigger>
               <TabsTrigger value="invoices" className="text-xs gap-1 px-2">
                 <FileText className="h-3.5 w-3.5" />
@@ -158,8 +157,8 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
               <SentPartnerCourses driverId={driverId} />
             </TabsContent>
 
-            <TabsContent value="balances" className="mt-4">
-              <PartnershipBalances driverId={driverId} />
+            <TabsContent value="payments" className="mt-4">
+              <PartnerPaymentsManager driverId={driverId} />
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-4">

@@ -72,7 +72,7 @@ const DriverDashboard = () => {
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
-  const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | undefined>(undefined);
+  const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
@@ -89,8 +89,8 @@ const DriverDashboard = () => {
         setPartnershipInitialTab('received');
       } else if (subtabParam === "sent") {
         setPartnershipInitialTab('sent');
-      } else if (subtabParam === "balances") {
-        setPartnershipInitialTab('balances');
+      } else if (subtabParam === "balances" || subtabParam === "payments") {
+        setPartnershipInitialTab('payments');
       } else if (subtabParam === "list") {
         setPartnershipInitialTab('list');
       } else if (subtabParam === "search") {
