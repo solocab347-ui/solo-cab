@@ -52,6 +52,7 @@ interface PartnerInvoiceItem {
   invoice_number: string;
   invoice_type: 'sender' | 'receiver';
   invoice_amount: number;
+  commission_amount: number;
   payment_status: string;
   payment_due_date: string | null;
   payment_schedule: string | null;
@@ -135,6 +136,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           invoice_number: invoice.invoice_number,
           invoice_type: invoiceType,
           invoice_amount: invoice.invoice_amount,
+          commission_amount: invoice.commission_amount,
           payment_status: invoice.payment_status,
           payment_due_date: invoice.payment_due_date,
           payment_schedule: invoice.payment_schedule,
@@ -183,13 +185,15 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     [pendingOutgoing]
   );
 
+  // Pour les sortants (receiver), on doit payer la commission
   const totalOutgoingPending = useMemo(() => 
-    pendingOutgoing.reduce((acc, i) => acc + i.invoice_amount, 0),
+    pendingOutgoing.reduce((acc, i) => acc + i.commission_amount, 0),
     [pendingOutgoing]
   );
 
+  // Pour les entrants (sender), on reçoit la commission
   const totalIncomingPending = useMemo(() => 
-    pendingIncoming.reduce((acc, i) => acc + i.invoice_amount, 0),
+    pendingIncoming.reduce((acc, i) => acc + i.commission_amount, 0),
     [pendingIncoming]
   );
 
@@ -261,7 +265,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           partnership_id: partnership.id,
           payer_driver_id: driverId,
           receiver_driver_id: selectedInvoice.partner_driver_id,
-          amount: selectedInvoice.invoice_amount,
+          amount: selectedInvoice.commission_amount,
           payment_reference: paymentReference || null,
           payment_method: 'transfer',
           proof_url: proofUrl,
@@ -282,7 +286,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
         await supabase.from('notifications').insert({
           user_id: partnerDriver.user_id,
           title: '💰 Paiement reçu',
-          message: `Un partenaire vous a envoyé un paiement de ${selectedInvoice.invoice_amount.toFixed(2)}€`,
+          message: `Un partenaire vous a envoyé un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€`,
           type: 'success',
           link: '/driver-dashboard?tab=partnerships&subtab=balances',
         });
@@ -519,7 +523,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             <div className="bg-muted/50 p-3 rounded-lg text-sm">
               <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
               <p><strong>À:</strong> {selectedInvoice?.partner_name}</p>
-              <p><strong>Montant:</strong> {selectedInvoice?.invoice_amount.toFixed(2)}€</p>
+              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
             </div>
 
             <div>
@@ -586,7 +590,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             <div className="bg-muted/50 p-3 rounded-lg text-sm">
               <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
               <p><strong>De:</strong> {selectedInvoice?.partner_name}</p>
-              <p><strong>Montant:</strong> {selectedInvoice?.invoice_amount.toFixed(2)}€</p>
+              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
             </div>
 
             <div>
@@ -695,7 +699,7 @@ function InvoiceCard({
               "text-sm font-bold",
               direction === 'outgoing' ? "text-orange-600" : "text-green-600"
             )}>
-              {direction === 'outgoing' ? '-' : '+'}{invoice.invoice_amount.toFixed(2)}€
+              {direction === 'outgoing' ? '-' : '+'}{invoice.commission_amount.toFixed(2)}€
             </p>
             {alert && (
               <Badge className={cn(
