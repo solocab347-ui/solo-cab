@@ -71,6 +71,7 @@ const DriverDashboard = () => {
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | undefined>(undefined);
+  const [pendingSharedCoursesCount, setPendingSharedCoursesCount] = useState(0);
 
   // Handle special tab navigation (e.g., partnerships-received)
   const handleTabChange = (tab: string) => {
@@ -236,6 +237,47 @@ const DriverDashboard = () => {
 
     return () => {
       mounted = false;
+    };
+  }, [driverProfile?.driver?.id]);
+
+  // Load pending shared courses count for badge
+  useEffect(() => {
+    if (!driverProfile?.driver?.id) return;
+
+    const loadPendingSharedCourses = async () => {
+      const { count, error } = await supabase
+        .from('shared_courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_driver_id', driverProfile.driver.id)
+        .eq('status', 'pending')
+        .is('cancelled_at', null);
+
+      if (!error && count !== null) {
+        setPendingSharedCoursesCount(count);
+      }
+    };
+
+    loadPendingSharedCourses();
+
+    // Realtime subscription for shared courses
+    const channel = supabase
+      .channel('shared-courses-badge')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shared_courses',
+          filter: `receiver_driver_id=eq.${driverProfile.driver.id}`
+        },
+        () => {
+          loadPendingSharedCourses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
   }, [driverProfile?.driver?.id]);
 
@@ -543,10 +585,15 @@ const DriverDashboard = () => {
                 <span className="hidden sm:inline">{t('driverDashboard.menu.statistics')}</span>
                 <span className="sm:hidden">{t('driverDashboard.menu.stats')}</span>
               </TabsTrigger>
-              <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
+              <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white relative">
                 <Handshake className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('driverDashboard.menu.partnerships')}</span>
                 <span className="sm:hidden">{t('driverDashboard.menu.partnerships')}</span>
+                {pendingSharedCoursesCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-500 text-white text-xs font-bold">
+                    {pendingSharedCoursesCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-slate-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
