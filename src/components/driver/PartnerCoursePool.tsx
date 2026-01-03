@@ -70,6 +70,10 @@ interface SharedCourse {
   sender_company: string | null;
   sender_sharing_number: number | null;
   sender_phone: string | null;
+  // Client info
+  client_name: string | null;
+  client_phone: string | null;
+  client_photo: string | null;
 }
 
 export function PartnerCoursePool() {
@@ -185,7 +189,8 @@ export function PartnerCoursePool() {
             destination_address,
             scheduled_date,
             passengers_count,
-            distance_km
+            distance_km,
+            client_id
           )
         `)
         .eq('receiver_driver_id', targetDriverId)
@@ -216,6 +221,39 @@ export function PartnerCoursePool() {
             .single();
 
           const course = item.courses as any;
+          
+          // Load client info for this shared course
+          let clientInfo: { client_name: string | null; client_phone: string | null; client_photo: string | null } = {
+            client_name: null,
+            client_phone: null,
+            client_photo: null
+          };
+          
+          // Get client info from the course
+          if (course.client_id) {
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('user_id')
+              .eq('id', course.client_id)
+              .single();
+            
+            if (clientData?.user_id) {
+              const { data: clientProfile } = await supabase
+                .from('profiles')
+                .select('full_name, phone, profile_photo_url')
+                .eq('id', clientData.user_id)
+                .single();
+              
+              if (clientProfile) {
+                clientInfo = {
+                  client_name: clientProfile.full_name,
+                  client_phone: clientProfile.phone,
+                  client_photo: clientProfile.profile_photo_url
+                };
+              }
+            }
+          }
+          
           enrichedCourses.push({
             id: item.id,
             course_id: item.course_id,
@@ -237,6 +275,9 @@ export function PartnerCoursePool() {
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
             sender_phone: profile?.phone,
+            client_name: clientInfo.client_name,
+            client_phone: clientInfo.client_phone,
+            client_photo: clientInfo.client_photo,
           });
         }
       }
@@ -568,6 +609,39 @@ export function PartnerCoursePool() {
                         </span>
                       )}
                     </div>
+                    
+                    {/* Client Info Section */}
+                    {course.client_name && (
+                      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10 border-2 border-blue-500/30">
+                              <AvatarImage src={course.client_photo || undefined} />
+                              <AvatarFallback className="bg-blue-500/20 text-blue-600 text-sm">
+                                {course.client_name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-[10px] text-blue-600 font-medium uppercase tracking-wide">Client</p>
+                              <p className="text-sm font-semibold">{course.client_name}</p>
+                            </div>
+                          </div>
+                          {course.client_phone && (
+                            <Button
+                              size="sm"
+                              className="bg-blue-500 hover:bg-blue-600 text-white h-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`tel:${course.client_phone}`, '_self');
+                              }}
+                            >
+                              <Phone className="h-3 w-3 mr-1" />
+                              Appeler
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer with actions */}
