@@ -60,6 +60,10 @@ interface DriverProfile {
   sharing_number: number | null;
   show_phone_for_sharing: boolean;
   show_email: boolean;
+  show_rating_for_sharing: boolean;
+  show_rides_for_sharing: boolean;
+  contact_phone: string | null;
+  contact_email: string | null;
   profile: {
     full_name: string;
     profile_photo_url: string | null;
@@ -121,7 +125,11 @@ export function PartnerProfileDialog({
           card_photo_url,
           sharing_number,
           show_phone_for_sharing,
-          show_email
+          show_email,
+          show_rating_for_sharing,
+          show_rides_for_sharing,
+          contact_phone,
+          contact_email
         `)
         .eq('id', driverId)
         .single();
@@ -204,7 +212,8 @@ export function PartnerProfileDialog({
                       </AvatarFallback>
                     </Avatar>
                     <div className="pb-2">
-                      <h2 className="text-lg sm:text-xl font-bold">{(profile.profile?.full_name?.split(' ')[0]) || 'Partenaire'}</h2>
+                      {/* Nom complet TOUJOURS visible en partenariat */}
+                      <h2 className="text-lg sm:text-xl font-bold">{profile.profile?.full_name || 'Partenaire'}</h2>
                       {profile.company_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5" />
@@ -214,7 +223,7 @@ export function PartnerProfileDialog({
                     </div>
                   </div>
 
-                  {/* Badges stats */}
+                  {/* Badges stats - respecter la visibilité */}
                   <div className="flex flex-wrap gap-2 mt-4">
                     {profile.sharing_number && (
                       <Badge variant="outline" className="font-mono bg-background/50">
@@ -222,14 +231,20 @@ export function PartnerProfileDialog({
                         {formatSharingNumber(profile.sharing_number)}
                       </Badge>
                     )}
-                    <Badge className="gap-1 bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500/30">
-                      <Star className="h-3 w-3 fill-current" />
-                      {profile.rating?.toFixed(1) || 'N/A'}
-                    </Badge>
-                    <Badge className="gap-1 bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
-                      <Car className="h-3 w-3" />
-                      {profile.total_rides || 0} courses
-                    </Badge>
+                    {/* Rating visible uniquement si show_rating_for_sharing est true */}
+                    {profile.show_rating_for_sharing && profile.rating !== null && (
+                      <Badge className="gap-1 bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500/30">
+                        <Star className="h-3 w-3 fill-current" />
+                        {profile.rating?.toFixed(1) || 'N/A'}
+                      </Badge>
+                    )}
+                    {/* Total rides visible uniquement si show_rides_for_sharing est true */}
+                    {profile.show_rides_for_sharing && (
+                      <Badge className="gap-1 bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
+                        <Car className="h-3 w-3" />
+                        {profile.total_rides || 0} courses
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -255,28 +270,44 @@ export function PartnerProfileDialog({
                     Contact
                   </h3>
                   <div className="space-y-2">
-                    {profile.show_phone_for_sharing && profile.profile?.phone ? (
-                      <a 
-                        href={`tel:${profile.profile.phone}`}
-                        className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5 transition-colors"
-                      >
-                        <Phone className="h-4 w-4" />
-                        {profile.profile.phone}
-                      </a>
+                    {/* Téléphone: contact_phone prioritaire, sinon profile.phone */}
+                    {profile.show_phone_for_sharing ? (
+                      (profile.contact_phone || profile.profile?.phone) ? (
+                        <a 
+                          href={`tel:${profile.contact_phone || profile.profile?.phone}`}
+                          className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5 transition-colors"
+                        >
+                          <Phone className="h-4 w-4" />
+                          {profile.contact_phone || profile.profile?.phone}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground flex items-center gap-2 p-2">
+                          <Phone className="h-4 w-4" />
+                          Téléphone non renseigné
+                        </p>
+                      )
                     ) : (
                       <p className="text-sm text-muted-foreground flex items-center gap-2 p-2">
                         <Phone className="h-4 w-4" />
                         Téléphone non visible
                       </p>
                     )}
-                    {profile.show_email && profile.profile?.email ? (
-                      <a 
-                        href={`mailto:${profile.profile.email}`}
-                        className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5 transition-colors"
-                      >
-                        <Mail className="h-4 w-4" />
-                        {profile.profile.email}
-                      </a>
+                    {/* Email: contact_email prioritaire, sinon profile.email */}
+                    {profile.show_email ? (
+                      (profile.contact_email || profile.profile?.email) ? (
+                        <a 
+                          href={`mailto:${profile.contact_email || profile.profile?.email}`}
+                          className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-primary/5 transition-colors"
+                        >
+                          <Mail className="h-4 w-4" />
+                          {profile.contact_email || profile.profile?.email}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground flex items-center gap-2 p-2">
+                          <Mail className="h-4 w-4" />
+                          Email non renseigné
+                        </p>
+                      )
                     ) : (
                       <p className="text-sm text-muted-foreground flex items-center gap-2 p-2">
                         <Mail className="h-4 w-4" />
