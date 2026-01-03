@@ -715,26 +715,23 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             <div className="flex gap-2 mt-4">
               {direction === 'outgoing' ? (
                 group.allSent ? (
-                  <>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex-1 text-blue-600 border-blue-500"
-                      disabled
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Paiement envoyé
-                    </Button>
+                  <div className="flex-1 flex items-center justify-between p-2 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Paiement notifié</span>
+                    </div>
                     {group.invoices.some(i => i.payment_proof_url) && (
                       <Button 
                         size="sm" 
-                        variant="outline"
+                        variant="ghost"
+                        className="h-7 px-2 text-blue-600 hover:bg-blue-500/20"
                         onClick={() => window.open(group.invoices.find(i => i.payment_proof_url)?.payment_proof_url!, '_blank')}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        <span className="text-xs">Justificatif</span>
                       </Button>
                     )}
-                  </>
+                  </div>
                 ) : (
                   <Button 
                     size="sm" 
