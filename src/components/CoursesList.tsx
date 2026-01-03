@@ -76,7 +76,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   
   // État pour le compteur de courses partagées reçues (acceptées/en cours)
   const [receivedSharedCoursesCount, setReceivedSharedCoursesCount] = useState(0);
-  // État pour le compteur de courses partagées terminées (sender side)
+  // État pour le compteur de courses partagées terminées (sender side + receiver side)
   const [completedPartnerCoursesCount, setCompletedPartnerCoursesCount] = useState(0);
   const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
@@ -237,11 +237,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       
       setReceivedSharedCoursesCount(receivedCount || 0);
       
-      // Fetch completed partner courses count (for sender - courses they sent that were completed)
+      // Fetch completed partner courses count (both sender and receiver - all partner courses completed)
       const { count: completedPartnerCount } = await supabase
         .from("partner_order_documents")
         .select("*", { count: "exact", head: true })
-        .eq("sender_driver_id", driverId);
+        .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`);
       
       setCompletedPartnerCoursesCount(completedPartnerCount || 0);
     } catch (error: any) {
