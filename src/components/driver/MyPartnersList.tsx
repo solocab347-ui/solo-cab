@@ -871,6 +871,16 @@ export function MyPartnersList() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => setSelectedProfileDriverId(partner.partner_id)}
+                            className="w-full gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            Voir le profil
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setSelectedContractPartner(partner)}
                             className="w-full gap-2"
                           >

@@ -33,6 +33,8 @@ export function PartnershipBalances({ driverId }: Props) {
   useEffect(() => {
     if (driverId) {
       loadBalances();
+    } else {
+      setLoading(false);
     }
   }, [driverId]);
 
