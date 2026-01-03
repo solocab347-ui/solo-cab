@@ -2644,6 +2644,7 @@ export type Database = {
           license_number: string
           max_passengers: number
           minimum_price: number | null
+          partner_order_counter: number | null
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
@@ -2736,6 +2737,7 @@ export type Database = {
           license_number: string
           max_passengers?: number
           minimum_price?: number | null
+          partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
@@ -2828,6 +2830,7 @@ export type Database = {
           license_number?: string
           max_passengers?: number
           minimum_price?: number | null
+          partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
@@ -4968,6 +4971,225 @@ export type Database = {
           },
         ]
       }
+      partner_order_documents: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          completed_at: string | null
+          course_amount: number
+          course_id: string
+          created_at: string
+          destination_address: string
+          distance_km: number | null
+          document_number: string
+          id: string
+          paid_at: string | null
+          passengers_count: number | null
+          payment_confirmed_by: string | null
+          payment_method_used: string | null
+          payment_notes: string | null
+          pickup_address: string
+          receiver_driver_id: string
+          receiver_earnings: number
+          scheduled_date: string
+          sender_driver_id: string
+          shared_course_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commission_amount: number
+          commission_percentage: number
+          completed_at?: string | null
+          course_amount: number
+          course_id: string
+          created_at?: string
+          destination_address: string
+          distance_km?: number | null
+          document_number: string
+          id?: string
+          paid_at?: string | null
+          passengers_count?: number | null
+          payment_confirmed_by?: string | null
+          payment_method_used?: string | null
+          payment_notes?: string | null
+          pickup_address: string
+          receiver_driver_id: string
+          receiver_earnings: number
+          scheduled_date: string
+          sender_driver_id: string
+          shared_course_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          completed_at?: string | null
+          course_amount?: number
+          course_id?: string
+          created_at?: string
+          destination_address?: string
+          distance_km?: number | null
+          document_number?: string
+          id?: string
+          paid_at?: string | null
+          passengers_count?: number | null
+          payment_confirmed_by?: string | null
+          payment_method_used?: string | null
+          payment_notes?: string | null
+          pickup_address?: string
+          receiver_driver_id?: string
+          receiver_earnings?: number
+          scheduled_date?: string
+          sender_driver_id?: string
+          shared_course_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_order_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_shared_course_id_fkey"
+            columns: ["shared_course_id"]
+            isOneToOne: false
+            referencedRelation: "shared_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_course_commissions: {
         Row: {
           commission_amount: number
@@ -5492,6 +5714,7 @@ export type Database = {
           earnings_for_receiver: number | null
           id: string
           partnership_id: string
+          payment_method_used: string | null
           payment_settled: boolean | null
           payment_settled_at: string | null
           pool_group_id: string | null
@@ -5524,6 +5747,7 @@ export type Database = {
           earnings_for_receiver?: number | null
           id?: string
           partnership_id: string
+          payment_method_used?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           pool_group_id?: string | null
@@ -5556,6 +5780,7 @@ export type Database = {
           earnings_for_receiver?: number | null
           id?: string
           partnership_id?: string
+          payment_method_used?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           pool_group_id?: string | null

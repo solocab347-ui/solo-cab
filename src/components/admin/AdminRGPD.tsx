@@ -63,7 +63,7 @@ const AdminRGPD = () => {
         // Vérifier si c'est un chauffeur
         const { data: driver } = await supabase
           .from("drivers")
-          .select("*, user_roles!inner(*)")
+          .select("*")
           .eq("user_id", profile.id)
           .maybeSingle();
 
