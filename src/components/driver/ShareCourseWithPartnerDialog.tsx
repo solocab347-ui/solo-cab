@@ -122,9 +122,13 @@ export function ShareCourseWithPartnerDialog({
             .eq('id', partnerData.user_id)
             .single();
 
+          // Extract first name for proximity relationship
+          const fullName = profileData?.full_name || '';
+          const firstName = fullName.split(' ')[0] || 'Partenaire';
+
           enrichedPartners.push({
             ...p,
-            partner_name: profileData?.full_name || 'Chauffeur',
+            partner_name: firstName,
             partner_photo: profileData?.profile_photo_url,
             partner_card_photo: partnerData.card_photo_url,
             partner_phone: partnerData.show_phone_for_sharing ? (partnerData.contact_phone || profileData?.phone) : null,

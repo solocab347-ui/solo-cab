@@ -140,10 +140,14 @@ export function PushCourseToPartners() {
             .eq('id', partnerDriver.user_id)
             .single();
 
+          // Extract first name for proximity relationship
+          const fullName = profile?.full_name || '';
+          const firstName = fullName.split(' ')[0] || 'Partenaire';
+
           enriched.push({
             id: p.id,
             partner_id: partnerId,
-            partner_name: profile?.full_name || 'Chauffeur',
+            partner_name: firstName,
             commission_percentage: p.commission_percentage,
           });
         }

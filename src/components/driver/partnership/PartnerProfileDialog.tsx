@@ -200,11 +200,11 @@ export function PartnerProfileDialog({
                     <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-4 border-background shadow-lg ring-2 ring-primary/20">
                       <AvatarImage src={profile.card_photo_url || profile.profile?.profile_photo_url || undefined} />
                       <AvatarFallback className="text-xl sm:text-2xl bg-primary/10 text-primary">
-                        {profile.profile?.full_name?.charAt(0) || 'C'}
+                        {profile.profile?.full_name?.charAt(0) || 'P'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="pb-2">
-                      <h2 className="text-lg sm:text-xl font-bold">{profile.profile?.full_name || 'Chauffeur'}</h2>
+                      <h2 className="text-lg sm:text-xl font-bold">{(profile.profile?.full_name?.split(' ')[0]) || 'Partenaire'}</h2>
                       {profile.company_name && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5" />
