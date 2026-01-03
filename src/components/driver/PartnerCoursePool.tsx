@@ -22,10 +22,15 @@ import {
   RefreshCw,
   ArrowRight,
   Hash,
-  Phone
+  Phone,
+  Mail,
+  Eye,
+  User
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { DeclineCourseDialog } from './partnership/DeclineCourseDialog';
+import { SenderProfileDialog } from './partnership/SenderProfileDialog';
 
 interface PooledCourse {
   pool_id: string;
@@ -74,6 +79,7 @@ interface SharedCourse {
   client_name: string | null;
   client_phone: string | null;
   client_photo: string | null;
+  client_email: string | null;
 }
 
 interface PartnerCoursePoolProps {
@@ -89,6 +95,11 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
   const [claiming, setClaiming] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
+  
+  // Dialog states
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<SharedCourse | null>(null);
 
   // If propDriverId is provided, use it directly
   useEffect(() => {
@@ -233,10 +244,11 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           const course = item.courses as any;
           
           // Load client info for this shared course
-          let clientInfo: { client_name: string | null; client_phone: string | null; client_photo: string | null } = {
+          let clientInfo: { client_name: string | null; client_phone: string | null; client_photo: string | null; client_email: string | null } = {
             client_name: null,
             client_phone: null,
-            client_photo: null
+            client_photo: null,
+            client_email: null
           };
           
           // Get client info from the course
@@ -250,7 +262,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             if (clientData?.user_id) {
               const { data: clientProfile } = await supabase
                 .from('profiles')
-                .select('full_name, phone, profile_photo_url')
+                .select('full_name, phone, profile_photo_url, email')
                 .eq('id', clientData.user_id)
                 .single();
               
@@ -258,7 +270,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                 clientInfo = {
                   client_name: clientProfile.full_name,
                   client_phone: clientProfile.phone,
-                  client_photo: clientProfile.profile_photo_url
+                  client_photo: clientProfile.profile_photo_url,
+                  client_email: clientProfile.email
                 };
               }
             }
@@ -288,6 +301,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             client_name: clientInfo.client_name,
             client_phone: clientInfo.client_phone,
             client_photo: clientInfo.client_photo,
+            client_email: clientInfo.client_email,
           });
         }
       }
@@ -419,8 +433,8 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
     }
   };
 
-  // Decline shared course
-  const declineSharedCourse = async (sharedCourseId: string) => {
+  // Decline shared course with reason
+  const declineSharedCourse = async (sharedCourseId: string, reason: string) => {
     if (!driverId) return;
     
     setClaiming(sharedCourseId);
@@ -428,7 +442,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
       const { data, error } = await supabase.rpc('decline_shared_course', {
         p_shared_course_id: sharedCourseId,
         p_driver_id: driverId,
-        p_reason: null
+        p_reason: reason || null
       });
 
       if (error) throw error;
@@ -446,6 +460,13 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
     } finally {
       setClaiming(null);
     }
+  };
+
+  // Handler for decline dialog
+  const handleDeclineWithReason = async (reason: string) => {
+    if (!selectedCourse) return;
+    await declineSharedCourse(selectedCourse.id, reason);
+    setSelectedCourse(null);
   };
 
   // Claim pooled course
@@ -550,39 +571,64 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             sharedCourses.map((course) => (
               <Card key={course.id} className="overflow-hidden border-primary/30">
                 <CardContent className="p-0">
-                  {/* Sender info */}
-                  <div className="p-3 border-b bg-primary/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={course.sender_photo || undefined} />
-                        <AvatarFallback>{course.sender_name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{course.sender_name}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {/* Sender info header */}
+                  <div className="p-3 border-b bg-primary/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12 border-2 border-primary/30">
+                          <AvatarImage src={course.sender_photo || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {course.sender_name.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Partenaire</p>
+                          <p className="font-semibold">{course.sender_name}</p>
                           {course.sender_sharing_number && (
-                            <span className="flex items-center gap-0.5 text-primary font-mono">
-                              <Hash className="h-3 w-3" />
-                              {formatSharingNumber(course.sender_sharing_number)}
-                            </span>
-                          )}
-                          {course.sender_phone && (
-                            <span className="flex items-center gap-0.5">
-                              <Phone className="h-3 w-3" />
-                              {course.sender_phone}
+                            <span className="text-xs text-primary font-mono">
+                              #{formatSharingNumber(course.sender_sharing_number)}
                             </span>
                           )}
                         </div>
                       </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {course.sharing_mode === 'pool' ? (
+                          <Badge className="bg-amber-500/20 text-amber-600 border-0 text-xs">
+                            Premier arrivé
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-primary/20 text-primary border-0 text-xs">
+                            Pour vous
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-primary hover:text-primary/80"
+                          onClick={() => {
+                            setSelectedCourse(course);
+                            setProfileDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Voir profil
+                        </Button>
+                      </div>
                     </div>
-                    {course.sharing_mode === 'pool' ? (
-                      <Badge className="bg-amber-500/20 text-amber-600 border-0">
-                        Premier arrivé
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-primary/20 text-primary border-0">
-                        Pour vous
-                      </Badge>
+                    
+                    {/* Sender contact */}
+                    {course.sender_phone && (
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-primary/10">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs flex-1"
+                          onClick={() => window.open(`tel:${course.sender_phone}`, '_self')}
+                        >
+                          <Phone className="h-3 w-3 mr-1" />
+                          {course.sender_phone}
+                        </Button>
+                      </div>
                     )}
                   </div>
 
@@ -620,12 +666,12 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       )}
                     </div>
                     
-                    {/* Client Info Section */}
+                    {/* Client Info Section - Enhanced */}
                     {course.client_name && (
-                      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                      <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 border-2 border-blue-500/30">
+                            <Avatar className="h-11 w-11 border-2 border-blue-500/30">
                               <AvatarImage src={course.client_photo || undefined} />
                               <AvatarFallback className="bg-blue-500/20 text-blue-600 text-sm">
                                 {course.client_name.charAt(0)}
@@ -636,17 +682,36 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                               <p className="text-sm font-semibold">{course.client_name}</p>
                             </div>
                           </div>
+                        </div>
+                        
+                        {/* Client contact info */}
+                        <div className="grid grid-cols-1 gap-1.5 pt-2 border-t border-blue-500/20">
                           {course.client_phone && (
                             <Button
+                              variant="ghost"
                               size="sm"
-                              className="bg-blue-500 hover:bg-blue-600 text-white h-8"
+                              className="h-8 justify-start text-xs bg-blue-500/10 hover:bg-blue-500/20"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 window.open(`tel:${course.client_phone}`, '_self');
                               }}
                             >
-                              <Phone className="h-3 w-3 mr-1" />
-                              Appeler
+                              <Phone className="h-3 w-3 mr-2 text-blue-600" />
+                              {course.client_phone}
+                            </Button>
+                          )}
+                          {course.client_email && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 justify-start text-xs bg-blue-500/10 hover:bg-blue-500/20"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`mailto:${course.client_email}`, '_blank');
+                              }}
+                            >
+                              <Mail className="h-3 w-3 mr-2 text-blue-600" />
+                              {course.client_email}
                             </Button>
                           )}
                         </div>
@@ -669,9 +734,12 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => declineSharedCourse(course.id)}
+                        onClick={() => {
+                          setSelectedCourse(course);
+                          setDeclineDialogOpen(true);
+                        }}
                         disabled={claiming === course.id}
-                        className="h-9"
+                        className="h-9 border-red-500/30 text-red-600 hover:bg-red-500/10"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -810,6 +878,24 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Decline Dialog */}
+      <DeclineCourseDialog
+        open={declineDialogOpen}
+        onOpenChange={setDeclineDialogOpen}
+        onConfirm={handleDeclineWithReason}
+        senderName={selectedCourse?.sender_name || 'Partenaire'}
+      />
+
+      {/* Sender Profile Dialog */}
+      {selectedCourse && driverId && (
+        <SenderProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          senderDriverId={selectedCourse.sender_driver_id}
+          currentDriverId={driverId}
+        />
+      )}
     </div>
   );
 }
