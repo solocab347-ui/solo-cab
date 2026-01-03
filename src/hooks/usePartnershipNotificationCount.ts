@@ -3,12 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook to count all partnership-related notifications that require attention:
+ * - Unread notifications related to partnerships (link contains tab=partnerships)
  * - Pending shared courses (received)
  * - Pool courses available
  * - Pending partnership modification requests
  * - Pending partnership requests
- * - Recently completed shared courses (last 24h, not acknowledged)
- * - Recently cancelled shared courses (last 24h, not acknowledged)
  */
 export function usePartnershipNotificationCount(driverId: string | null) {
   const [count, setCount] = useState(0);
@@ -25,6 +24,25 @@ export function usePartnershipNotificationCount(driverId: string | null) {
       let totalCount = 0;
 
       try {
+        // First, get user_id from driver
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('user_id')
+          .eq('id', driverId)
+          .single();
+
+        if (driverData?.user_id) {
+          // Count unread notifications related to partnerships
+          const { count: unreadNotifCount } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', driverData.user_id)
+            .eq('is_read', false)
+            .like('link', '%tab=partnerships%');
+
+          if (unreadNotifCount) totalCount += unreadNotifCount;
+        }
+
         // 1. Pending shared courses (direct to me)
         const { count: pendingSharedCount } = await supabase
           .from('shared_courses')
@@ -80,27 +98,6 @@ export function usePartnershipNotificationCount(driverId: string | null) {
 
         if (requestCount) totalCount += requestCount;
 
-        // 5. Recently accepted shared courses (sent by me, accepted in last 24h)
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { count: recentAcceptedCount } = await supabase
-          .from('shared_courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('sender_driver_id', driverId)
-          .eq('status', 'accepted')
-          .gte('accepted_at', twentyFourHoursAgo);
-
-        if (recentAcceptedCount) totalCount += recentAcceptedCount;
-
-        // 6. Recently completed shared courses (where I'm sender, completed in last 24h)
-        const { count: recentCompletedCount } = await supabase
-          .from('shared_courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('sender_driver_id', driverId)
-          .eq('status', 'completed')
-          .gte('completed_at', twentyFourHoursAgo);
-
-        if (recentCompletedCount) totalCount += recentCompletedCount;
-
       } catch (error) {
         console.error('Error loading partnership notification count:', error);
       }
@@ -139,9 +136,24 @@ export function usePartnershipNotificationCount(driverId: string | null) {
       )
       .subscribe();
 
+    // Realtime subscription for notifications
+    const notificationsChannel = supabase
+      .channel('partnership-notifications-notifs')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        },
+        () => loadNotificationCount()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(sharedCoursesChannel);
       supabase.removeChannel(partnershipsChannel);
+      supabase.removeChannel(notificationsChannel);
     };
   }, [driverId]);
 
