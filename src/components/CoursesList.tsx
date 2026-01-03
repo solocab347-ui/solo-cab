@@ -31,6 +31,7 @@ import { CourseType, CourseTypeInfo, getCourseType, getCourseTypeFilters, COURSE
 import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
 import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelector";
 import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInCoursesList";
+import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartnerCoursesList";
 
 interface CoursesListProps {
   driverId: string;
@@ -2384,6 +2385,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               );
             })
           )}
+          
+          {/* Courses partenaires terminées */}
+          <CompletedPartnerCoursesList driverId={driverId} limit={20} />
         </TabsContent>
 
         <TabsContent value="rejected" className="space-y-4">
