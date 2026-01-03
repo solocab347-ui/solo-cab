@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { format, isBefore, startOfDay, endOfWeek, endOfMonth, parseISO, startOfWeek, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getPaymentMethodLabel, getPaymentMethodIcon, PAYMENT_METHODS } from '@/components/shared/PaymentMethodSelector';
 
 interface Props {
   driverId: string;
@@ -59,6 +60,7 @@ interface PartnerInvoiceItem {
   reminder_count: number;
   payment_sent_at: string | null;
   payment_proof_url: string | null;
+  payment_methods: string[];
 }
 
 // Regroupement intelligent par partenaire et période
@@ -81,6 +83,7 @@ interface PaymentGroup {
   allPending: boolean;
   canConfirm: boolean;
   confirmReason?: string;
+  paymentMethods: string[];
 }
 
 const SCHEDULE_LABELS: Record<string, string> = {
@@ -112,6 +115,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -135,7 +139,8 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             id,
             driver_a_id,
             driver_b_id,
-            payment_schedule
+            payment_schedule,
+            payment_methods
           )
         `)
         .eq('driver_id', driverId)
@@ -186,6 +191,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           reminder_count: invoice.reminder_count || 0,
           payment_sent_at: invoice.payment_sent_at,
           payment_proof_url: invoice.payment_proof_url,
+          payment_methods: partnership?.payment_methods || ['transfer'],
         });
       }
 
@@ -273,6 +279,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           allPending: true,
           canConfirm,
           confirmReason,
+          paymentMethods: invoice.payment_methods || ['transfer'],
         });
       }
 
@@ -570,6 +577,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     setPaymentReference('');
     setPaymentNotes('');
     setProofFile(null);
+    setSelectedPaymentMethod('');
   };
 
   // Composant pour une carte de groupe de paiement
@@ -670,6 +678,23 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                     )}
                   </div>
                 )}
+
+                {/* Payment methods */}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {group.paymentMethods.map(method => {
+                    const Icon = getPaymentMethodIcon(method);
+                    return (
+                      <Badge 
+                        key={method} 
+                        variant="outline" 
+                        className="text-[10px] py-0.5 px-1.5 bg-muted/50"
+                      >
+                        <Icon className="h-3 w-3 mr-1" />
+                        {getPaymentMethodLabel(method)}
+                      </Badge>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Amount */}
@@ -716,6 +741,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                     className="flex-1 bg-primary hover:bg-primary/90"
                     onClick={() => {
                       setSelectedGroup(group);
+                      setSelectedPaymentMethod(group.paymentMethods[0] || 'transfer');
                       setSendPaymentOpen(true);
                     }}
                   >
@@ -970,8 +996,36 @@ export function PartnerPaymentsManager({ driverId }: Props) {
               </div>
             </div>
 
+            {/* Payment method selection */}
+            {selectedGroup && selectedGroup.paymentMethods.length > 0 && (
+              <div>
+                <label className="text-sm font-medium block mb-2">Méthode de paiement utilisée</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {selectedGroup.paymentMethods.map(method => {
+                    const Icon = getPaymentMethodIcon(method);
+                    const isSelected = selectedPaymentMethod === method;
+                    return (
+                      <Button
+                        key={method}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        className={cn(
+                          "justify-start h-auto py-2",
+                          isSelected && "bg-primary text-primary-foreground"
+                        )}
+                        onClick={() => setSelectedPaymentMethod(method)}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {getPaymentMethodLabel(method)}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="text-sm font-medium">Référence du virement (optionnel)</label>
+              <label className="text-sm font-medium">Référence du paiement (optionnel)</label>
               <Input
                 placeholder="Ex: VIR-2026-001"
                 value={paymentReference}
