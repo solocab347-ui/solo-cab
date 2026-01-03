@@ -580,21 +580,21 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     setSelectedPaymentMethod('');
   };
 
-  // Composant pour une carte de groupe de paiement
-  const PaymentGroupCard: React.FC<{
-    group: PaymentGroup;
-    direction: 'outgoing' | 'incoming';
-  }> = ({ group, direction }) => {
+  // Render a payment group card (moved inline for stability)
+  const renderPaymentGroupCard = (group: PaymentGroup, direction: 'outgoing' | 'incoming') => {
     const isExpanded = expandedGroups.has(group.id);
     const isPool = group.paymentSchedule !== 'per_course';
     
     return (
-      <Card className={cn(
-        "overflow-hidden transition-all",
-        group.isOverdue && "border-red-500/50 bg-red-500/5",
-        group.isDueSoon && !group.isOverdue && "border-orange-500/50 bg-orange-500/5",
-        group.allSent && "border-blue-500/50 bg-blue-500/5"
-      )}>
+      <Card 
+        key={group.id}
+        className={cn(
+          "overflow-hidden transition-all",
+          group.isOverdue && "border-red-500/50 bg-red-500/5",
+          group.isDueSoon && !group.isOverdue && "border-orange-500/50 bg-orange-500/5",
+          group.allSent && "border-blue-500/50 bg-blue-500/5"
+        )}
+      >
         <CardContent className="p-0">
           {/* Header */}
           <div className="p-4">
@@ -934,9 +934,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                   <AlertDescription>Aucun paiement à effectuer. Vous êtes à jour !</AlertDescription>
                 </Alert>
               ) : (
-                outgoingGroups.map(group => (
-                  <PaymentGroupCard key={group.id} group={group} direction="outgoing" />
-                ))
+                outgoingGroups.map(group => renderPaymentGroupCard(group, 'outgoing'))
               )}
             </div>
           </ScrollArea>
@@ -951,9 +949,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                   <AlertDescription>Aucun paiement en attente à recevoir.</AlertDescription>
                 </Alert>
               ) : (
-                incomingGroups.map(group => (
-                  <PaymentGroupCard key={group.id} group={group} direction="incoming" />
-                ))
+                incomingGroups.map(group => renderPaymentGroupCard(group, 'incoming'))
               )}
             </div>
           </ScrollArea>
