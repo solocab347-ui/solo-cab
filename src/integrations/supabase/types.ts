@@ -5474,6 +5474,10 @@ export type Database = {
       shared_courses: {
         Row: {
           accepted_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           client_message: string | null
           client_notified: boolean | null
           client_notified_at: string | null
@@ -5490,16 +5494,22 @@ export type Database = {
           partnership_id: string
           payment_settled: boolean | null
           payment_settled_at: string | null
+          pool_group_id: string | null
           receiver_driver_id: string
           receiver_notified_at: string | null
           sender_driver_id: string
           sender_notified_at: string | null
+          sharing_mode: string | null
           started_at: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           client_message?: string | null
           client_notified?: boolean | null
           client_notified_at?: string | null
@@ -5516,16 +5526,22 @@ export type Database = {
           partnership_id: string
           payment_settled?: boolean | null
           payment_settled_at?: string | null
+          pool_group_id?: string | null
           receiver_driver_id: string
           receiver_notified_at?: string | null
           sender_driver_id: string
           sender_notified_at?: string | null
+          sharing_mode?: string | null
           started_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           client_message?: string | null
           client_notified?: boolean | null
           client_notified_at?: string | null
@@ -5542,10 +5558,12 @@ export type Database = {
           partnership_id?: string
           payment_settled?: boolean | null
           payment_settled_at?: string | null
+          pool_group_id?: string | null
           receiver_driver_id?: string
           receiver_notified_at?: string | null
           sender_driver_id?: string
           sender_notified_at?: string | null
+          sharing_mode?: string | null
           started_at?: string | null
           status?: string | null
           updated_at?: string | null
@@ -6456,6 +6474,10 @@ export type Database = {
         Returns: boolean
       }
       can_share_courses: { Args: { _driver_id: string }; Returns: boolean }
+      cancel_shared_course: {
+        Args: { p_driver_id: string; p_shared_course_id: string }
+        Returns: Json
+      }
       check_driver_availability: {
         Args: {
           p_driver_id: string
@@ -6467,6 +6489,10 @@ export type Database = {
       check_vehicle_documents_status: {
         Args: { _vehicle_id: string }
         Returns: boolean
+      }
+      claim_pool_course: {
+        Args: { p_pool_group_id: string; p_receiver_driver_id: string }
+        Returns: Json
       }
       claim_pooled_course: {
         Args: { _claimer_driver_id: string; _pool_id: string }
@@ -6675,6 +6701,10 @@ export type Database = {
           show_rating: boolean
         }[]
       }
+      get_course_sharing_status: {
+        Args: { p_course_id: string; p_driver_id: string }
+        Returns: Json
+      }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number
@@ -6869,6 +6899,7 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      is_course_shared_locked: { Args: { p_course_id: string }; Returns: Json }
       is_first_order: {
         Args: {
           p_client_id: string

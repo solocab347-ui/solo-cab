@@ -161,6 +161,17 @@ export function ShareCourseWithPartnerDialog({
     }
     if (!course) return;
     
+    // Check if course is already shared and locked
+    const { data: lockStatus } = await supabase.rpc('is_course_shared_locked', {
+      p_course_id: course.id
+    });
+    
+    const lockResult = lockStatus as unknown as { is_locked?: boolean };
+    if (lockResult?.is_locked) {
+      toast.error('Cette course est déjà partagée et en attente de réponse');
+      return;
+    }
+    
     // VÉRIFICATION CRITIQUE: Seules les courses avec devis accepté peuvent être partagées
     const acceptedDevis = course.devis?.find(d => (d as any).status === 'accepted');
     if (!acceptedDevis) {
@@ -175,6 +186,9 @@ export function ShareCourseWithPartnerDialog({
         : shareMode === 'all'
         ? `Je ne peux pas effectuer cette course mais je vous confie à l'un de mes partenaires de confiance.`
         : `Je ne peux pas effectuer cette course mais je vous confie à mon partenaire de confiance ${selectedPartner?.partner_name}.`;
+
+      // Generate pool_group_id for pool sharing
+      const poolGroupId = shareMode === 'all' ? crypto.randomUUID() : null;
 
       if (shareMode === 'all') {
         // Send to all partners
@@ -192,6 +206,8 @@ export function ShareCourseWithPartnerDialog({
             commission_percentage: partner.commission_percentage,
             commission_amount: commissionAmount,
             status: 'pending',
+            sharing_mode: 'pool',
+            pool_group_id: poolGroupId,
             client_notified: false,
             client_message: null,
           });
@@ -254,6 +270,7 @@ export function ShareCourseWithPartnerDialog({
           commission_percentage: selectedPartner.commission_percentage,
           commission_amount: commissionAmount,
           status: 'pending',
+          sharing_mode: 'single',
           client_notified: notifyClient,
           client_notified_at: notifyClient ? new Date().toISOString() : null,
           client_message: notifyClient ? finalClientMessage : null,

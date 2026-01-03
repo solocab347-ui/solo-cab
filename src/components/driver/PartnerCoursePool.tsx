@@ -57,6 +57,8 @@ interface SharedCourse {
   commission_percentage: number;
   commission_amount: number;
   status: string;
+  sharing_mode: string;
+  pool_group_id: string | null;
   created_at: string;
   pickup_address: string;
   destination_address: string;
@@ -154,6 +156,8 @@ export function PartnerCoursePool() {
           commission_percentage,
           commission_amount,
           status,
+          sharing_mode,
+          pool_group_id,
           created_at,
           courses!inner(
             pickup_address,
@@ -165,6 +169,7 @@ export function PartnerCoursePool() {
         `)
         .eq('receiver_driver_id', driverId)
         .eq('status', 'pending')
+        .is('cancelled_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -193,6 +198,8 @@ export function PartnerCoursePool() {
             commission_percentage: item.commission_percentage,
             commission_amount: item.commission_amount,
             status: item.status,
+            sharing_mode: item.sharing_mode || 'single',
+            pool_group_id: item.pool_group_id,
             created_at: item.created_at,
             pickup_address: course.pickup_address,
             destination_address: course.destination_address,
@@ -293,25 +300,37 @@ export function PartnerCoursePool() {
     toast.success('Liste actualisée');
   };
 
-  // Accept shared course with atomic function
-  const acceptSharedCourse = async (sharedCourseId: string) => {
+  // Accept shared course - uses atomic claim for pool mode
+  const acceptSharedCourse = async (course: SharedCourse) => {
     if (!driverId) return;
     
-    setClaiming(sharedCourseId);
+    setClaiming(course.id);
     try {
-      const { data, error } = await supabase.rpc('accept_shared_course', {
-        p_shared_course_id: sharedCourseId,
-        p_driver_id: driverId
-      });
+      let result;
+      
+      // For pool mode, use atomic claiming function
+      if (course.sharing_mode === 'pool' && course.pool_group_id) {
+        const { data, error } = await supabase.rpc('claim_pool_course', {
+          p_pool_group_id: course.pool_group_id,
+          p_receiver_driver_id: driverId
+        });
+        if (error) throw error;
+        result = data as unknown as { success: boolean; message?: string; error?: string };
+      } else {
+        // For single mode, use standard accept function
+        const { data, error } = await supabase.rpc('accept_shared_course', {
+          p_shared_course_id: course.id,
+          p_driver_id: driverId
+        });
+        if (error) throw error;
+        result = data?.[0] as { success: boolean; message?: string };
+      }
 
-      if (error) throw error;
-
-      const result = data?.[0];
       if (result?.success) {
-        toast.success(result.message);
+        toast.success(result.message || 'Course acceptée !');
         loadSharedCourses();
       } else {
-        toast.error(result?.message || 'Cette course n\'est plus disponible');
+        toast.error(result?.error || result?.message || 'Cette course n\'est plus disponible');
         loadSharedCourses();
       }
     } catch (error: any) {
@@ -479,9 +498,15 @@ export function PartnerCoursePool() {
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-primary/20 text-primary border-0">
-                      Pour vous
-                    </Badge>
+                    {course.sharing_mode === 'pool' ? (
+                      <Badge className="bg-amber-500/20 text-amber-600 border-0">
+                        Premier arrivé
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-primary/20 text-primary border-0">
+                        Pour vous
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Course info */}
@@ -541,7 +566,7 @@ export function PartnerCoursePool() {
                         <X className="h-4 w-4" />
                       </Button>
                       <Button
-                        onClick={() => acceptSharedCourse(course.id)}
+                        onClick={() => acceptSharedCourse(course)}
                         disabled={claiming === course.id}
                         size="sm"
                         className="h-9 px-4"
