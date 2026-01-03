@@ -137,14 +137,20 @@ export function PartnerCoursePool() {
 
     if (driver) {
       setDriverId(driver.id);
-      await Promise.all([loadPooledCourses(), loadSharedCourses()]);
+      // Pass driver.id directly to avoid race condition with state update
+      await Promise.all([loadPooledCourses(), loadSharedCoursesForDriver(driver.id)]);
     }
     setLoading(false);
   };
 
+  // Wrapper that uses state driverId for realtime callbacks
   const loadSharedCourses = async () => {
     if (!driverId) return;
-    
+    await loadSharedCoursesForDriver(driverId);
+  };
+
+  // Main function that accepts driverId as parameter to avoid race conditions
+  const loadSharedCoursesForDriver = async (targetDriverId: string) => {
     try {
       const { data, error } = await supabase
         .from('shared_courses')
@@ -167,7 +173,7 @@ export function PartnerCoursePool() {
             distance_km
           )
         `)
-        .eq('receiver_driver_id', driverId)
+        .eq('receiver_driver_id', targetDriverId)
         .eq('status', 'pending')
         .is('cancelled_at', null)
         .order('created_at', { ascending: false });
