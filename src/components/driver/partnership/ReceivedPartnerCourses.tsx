@@ -143,7 +143,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             course_status: course.status,
             course_number: course.course_number,
             shared_status: item.status,
-            sender_name: profile?.full_name || 'Chauffeur',
+            sender_name: (profile?.full_name?.split(' ')[0]) || 'Partenaire',
             sender_photo: profile?.profile_photo_url,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
