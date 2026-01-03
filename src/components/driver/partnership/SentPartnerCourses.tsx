@@ -208,8 +208,19 @@ export function SentPartnerCourses({ driverId }: Props) {
     );
   }
 
-  const pendingCourses = courses.filter(c => c.status === 'pending' || (c.status === 'accepted' && c.course_status !== 'completed'));
-  const completedCourses = courses.filter(c => c.status === 'completed' || c.course_status === 'completed');
+  // Filter out cancelled/declined to avoid duplicates
+  const activeCourses = courses.filter(c => c.status !== 'cancelled' && c.status !== 'declined');
+  const pendingCourses = activeCourses.filter(c => c.status === 'pending' || (c.status === 'accepted' && c.course_status !== 'completed'));
+  // Use unique course_id to prevent duplicates
+  const seenCourseIds = new Set<string>();
+  const completedCourses = activeCourses.filter(c => {
+    if (c.status === 'completed' || c.course_status === 'completed') {
+      if (seenCourseIds.has(c.course_id)) return false;
+      seenCourseIds.add(c.course_id);
+      return true;
+    }
+    return false;
+  });
   const declinedCourses = courses.filter(c => c.status === 'declined');
 
   // Calculate totals
