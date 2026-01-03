@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCw, Home, Send } from 'lucide-react';
 import { captureError } from '@/lib/sentry';
 import { logger } from '@/lib/productionLogger';
 import { ErrorReportButton } from '@/components/ErrorReportButton';
+import { toast } from 'sonner';
 
 interface Props {
   children: ReactNode;
@@ -61,6 +62,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    // Dismiss all toasts when an error occurs
+    toast.dismiss();
     return { hasError: true, error };
   }
 
