@@ -2188,6 +2188,7 @@ export type Database = {
           id: string
           last_payment_date: string | null
           payment_day: number | null
+          payment_methods: string[] | null
           payment_schedule: string | null
           pending_modification: boolean | null
           pending_modification_at: string | null
@@ -2220,6 +2221,7 @@ export type Database = {
           id?: string
           last_payment_date?: string | null
           payment_day?: number | null
+          payment_methods?: string[] | null
           payment_schedule?: string | null
           pending_modification?: boolean | null
           pending_modification_at?: string | null
@@ -2252,6 +2254,7 @@ export type Database = {
           id?: string
           last_payment_date?: string | null
           payment_day?: number | null
+          payment_methods?: string[] | null
           payment_schedule?: string | null
           pending_modification?: boolean | null
           pending_modification_at?: string | null
