@@ -37,6 +37,7 @@ import {
 import jsPDF from "jspdf";
 import { CourseRating } from "@/components/CourseRating";
 import CourseReportDialog from "@/components/CourseReportDialog";
+import { SharedCoursePartnerInfo } from "./SharedCoursePartnerInfo";
 
 interface ClientCoursesListProps {
   clientId: string;
@@ -566,6 +567,8 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
           )}
         </div>
 
+        {/* Affichage du partenaire si course partagée */}
+        <SharedCoursePartnerInfo courseId={course.id} userId={currentUserId} />
         {/* Afficher devis si disponible */}
         {devis && (
           <div className="p-3 bg-orange-500/10 rounded-lg mb-4">

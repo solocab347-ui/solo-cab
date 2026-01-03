@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SharedCourseClientInfo } from './SharedCourseClientInfo';
 
 interface Props {
   driverId: string | null;
@@ -256,7 +257,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             activeCourses.map((course) => (
               <CourseCard 
                 key={course.id} 
-                course={course} 
+                course={course}
+                receiverDriverId={driverId!}
                 shortenAddress={shortenAddress}
                 formatSharingNumber={formatSharingNumber}
                 getStatusBadge={getStatusBadge}
@@ -282,7 +284,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             completedCourses.map((course) => (
               <CourseCard 
                 key={course.id} 
-                course={course} 
+                course={course}
+                receiverDriverId={driverId!}
                 shortenAddress={shortenAddress}
                 formatSharingNumber={formatSharingNumber}
                 getStatusBadge={getStatusBadge}
@@ -301,6 +304,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
 
 interface CourseCardProps {
   course: ReceivedCourse;
+  receiverDriverId: string;
   shortenAddress: (address: string) => string;
   formatSharingNumber: (num: number | null) => string | null;
   getStatusBadge: (status: string) => JSX.Element;
@@ -312,6 +316,7 @@ interface CourseCardProps {
 
 function CourseCard({ 
   course, 
+  receiverDriverId,
   shortenAddress, 
   formatSharingNumber, 
   getStatusBadge, 
@@ -363,6 +368,8 @@ function CourseCard({
   const canStart = course.shared_status === 'accepted' && course.course_status !== 'in_progress';
   const canComplete = course.shared_status === 'in_progress' || (course.shared_status === 'accepted' && course.course_status === 'in_progress');
 
+  // Vérifier si on a accès aux infos client (seulement pendant course active)
+  const showClientInfo = ['pending', 'accepted', 'in_progress'].includes(course.shared_status);
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
@@ -420,6 +427,13 @@ function CourseCard({
               {course.distance_km.toFixed(0)} km
             </div>
           )}
+
+          {/* Infos client temporaires */}
+          <SharedCourseClientInfo 
+            sharedCourseId={course.id} 
+            driverId={receiverDriverId} 
+            sharedStatus={course.shared_status}
+          />
         </div>
 
         {/* Footer - Commission info */}
