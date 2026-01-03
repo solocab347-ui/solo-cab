@@ -91,47 +91,59 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
       const enrichedDocs: PartnerOrderDocument[] = [];
       
       for (const doc of data || []) {
-        // Get sender info
-        const { data: senderDriver } = await supabase
-          .from('drivers')
-          .select('user_id, company_name, siret, sharing_number, card_photo_url')
-          .eq('id', doc.sender_driver_id)
-          .single();
+        try {
+          // Get sender info
+          const { data: senderDriver } = await supabase
+            .from('drivers')
+            .select('user_id, company_name, siret, sharing_number, card_photo_url')
+            .eq('id', doc.sender_driver_id)
+            .single();
 
-        const { data: senderProfile } = await supabase
-          .from('profiles')
-          .select('full_name, phone, profile_photo_url')
-          .eq('id', senderDriver?.user_id)
-          .single();
+          let senderProfile: any = null;
+          if (senderDriver?.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, phone, profile_photo_url')
+              .eq('id', senderDriver.user_id)
+              .single();
+            senderProfile = profile;
+          }
 
-        // Get receiver info
-        const { data: receiverDriver } = await supabase
-          .from('drivers')
-          .select('user_id, company_name, siret, sharing_number, card_photo_url')
-          .eq('id', doc.receiver_driver_id)
-          .single();
+          // Get receiver info
+          const { data: receiverDriver } = await supabase
+            .from('drivers')
+            .select('user_id, company_name, siret, sharing_number, card_photo_url')
+            .eq('id', doc.receiver_driver_id)
+            .single();
 
-        const { data: receiverProfile } = await supabase
-          .from('profiles')
-          .select('full_name, phone, profile_photo_url')
-          .eq('id', receiverDriver?.user_id)
-          .single();
+          let receiverProfile: any = null;
+          if (receiverDriver?.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, phone, profile_photo_url')
+              .eq('id', receiverDriver.user_id)
+              .single();
+            receiverProfile = profile;
+          }
 
-        enrichedDocs.push({
-          ...doc,
-          sender_name: senderProfile?.full_name || 'Partenaire',
-          sender_company: senderDriver?.company_name || null,
-          sender_siret: senderDriver?.siret || null,
-          sender_phone: senderProfile?.phone || null,
-          sender_sharing_number: senderDriver?.sharing_number || null,
-          sender_photo: senderDriver?.card_photo_url || senderProfile?.profile_photo_url || null,
-          receiver_name: receiverProfile?.full_name || 'Partenaire',
-          receiver_company: receiverDriver?.company_name || null,
-          receiver_siret: receiverDriver?.siret || null,
-          receiver_phone: receiverProfile?.phone || null,
-          receiver_sharing_number: receiverDriver?.sharing_number || null,
-          receiver_photo: receiverDriver?.card_photo_url || receiverProfile?.profile_photo_url || null,
-        });
+          enrichedDocs.push({
+            ...doc,
+            sender_name: senderProfile?.full_name || 'Partenaire',
+            sender_company: senderDriver?.company_name || null,
+            sender_siret: senderDriver?.siret || null,
+            sender_phone: senderProfile?.phone || null,
+            sender_sharing_number: senderDriver?.sharing_number || null,
+            sender_photo: senderDriver?.card_photo_url || senderProfile?.profile_photo_url || null,
+            receiver_name: receiverProfile?.full_name || 'Partenaire',
+            receiver_company: receiverDriver?.company_name || null,
+            receiver_siret: receiverDriver?.siret || null,
+            receiver_phone: receiverProfile?.phone || null,
+            receiver_sharing_number: receiverDriver?.sharing_number || null,
+            receiver_photo: receiverDriver?.card_photo_url || receiverProfile?.profile_photo_url || null,
+          });
+        } catch (docError) {
+          console.error('Error enriching document:', docError);
+        }
       }
 
       setDocuments(enrichedDocs);

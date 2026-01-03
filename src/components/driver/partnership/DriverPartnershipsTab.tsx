@@ -8,7 +8,8 @@ import {
   Search, 
   Wallet,
   Inbox,
-  Send
+  Send,
+  FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,14 +21,15 @@ import { DriverPartnerSearch } from '../DriverPartnerSearch';
 import { PartnershipBalances } from '../PartnershipBalances';
 import { ReceivedPartnerCourses } from './ReceivedPartnerCourses';
 import { SentPartnerCourses } from './SentPartnerCourses';
+import { PartnerInvoicesList } from './PartnerInvoicesList';
 
 interface DriverPartnershipsTabProps {
   driverId: string;
-  initialSubTab?: 'list' | 'search' | 'received' | 'sent' | 'balances';
+  initialSubTab?: 'list' | 'search' | 'received' | 'sent' | 'balances' | 'invoices';
 }
 
 export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: DriverPartnershipsTabProps) {
-  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances'>(initialSubTab);
+  const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | 'invoices'>(initialSubTab);
   const [receivedCount, setReceivedCount] = useState(0);
 
   // Sync with initialSubTab when it changes (e.g., from URL params)
@@ -87,7 +89,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
               <TabsTrigger value="list" className="text-xs gap-1 px-2">
                 <Handshake className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Partenaires</span>
@@ -117,6 +119,11 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
                 <Wallet className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Soldes</span>
                 <span className="sm:hidden">Sold.</span>
+              </TabsTrigger>
+              <TabsTrigger value="invoices" className="text-xs gap-1 px-2">
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Factures</span>
+                <span className="sm:hidden">Fact.</span>
               </TabsTrigger>
             </TabsList>
 
@@ -153,6 +160,10 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
 
             <TabsContent value="balances" className="mt-4">
               <PartnershipBalances driverId={driverId} />
+            </TabsContent>
+
+            <TabsContent value="invoices" className="mt-4">
+              <PartnerInvoicesList driverId={driverId} />
             </TabsContent>
           </Tabs>
         </CardContent>
