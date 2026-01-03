@@ -71,27 +71,48 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
   const [documents, setDocuments] = useState<PartnerOrderDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadDocuments();
+    if (driverId) {
+      loadDocuments();
+    }
   }, [driverId]);
 
   const loadDocuments = async () => {
     try {
-      const { data, error } = await supabase
+      setError(null);
+      const { data, error: fetchError } = await supabase
         .from('partner_order_documents')
         .select('*')
         .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
         .order('completed_at', { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error('Error fetching partner order documents:', fetchError);
+        setError(fetchError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setDocuments([]);
+        setLoading(false);
+        return;
+      }
 
       // Enrich with driver info
       const enrichedDocs: PartnerOrderDocument[] = [];
       
-      for (const doc of data || []) {
+      for (const doc of data) {
         try {
+          // Validate required fields exist
+          if (!doc.sender_driver_id || !doc.receiver_driver_id) {
+            console.warn('Document missing driver IDs:', doc.id);
+            continue;
+          }
+
           // Get sender info
           const { data: senderDriver } = await supabase
             .from('drivers')
@@ -99,7 +120,7 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
             .eq('id', doc.sender_driver_id)
             .single();
 
-          let senderProfile: any = null;
+          let senderProfile: { full_name?: string; phone?: string; profile_photo_url?: string } | null = null;
           if (senderDriver?.user_id) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -116,7 +137,7 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
             .eq('id', doc.receiver_driver_id)
             .single();
 
-          let receiverProfile: any = null;
+          let receiverProfile: { full_name?: string; phone?: string; profile_photo_url?: string } | null = null;
           if (receiverDriver?.user_id) {
             const { data: profile } = await supabase
               .from('profiles')
@@ -142,13 +163,14 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
             receiver_photo: receiverDriver?.card_photo_url || receiverProfile?.profile_photo_url || null,
           });
         } catch (docError) {
-          console.error('Error enriching document:', docError);
+          console.error('Error enriching document:', doc.id, docError);
         }
       }
 
       setDocuments(enrichedDocs);
-    } catch (error) {
-      console.error('Error loading partner order documents:', error);
+    } catch (err) {
+      console.error('Error loading partner order documents:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -196,6 +218,20 @@ export function CompletedPartnerCoursesList({ driverId, limit = 10 }: Props) {
   };
 
   if (loading) {
+    return (
+      <Card className="border-purple-500/20 animate-pulse">
+        <CardHeader className="pb-3">
+          <div className="h-5 w-48 bg-muted rounded"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-20 bg-muted rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    console.error('CompletedPartnerCoursesList error:', error);
     return null;
   }
 

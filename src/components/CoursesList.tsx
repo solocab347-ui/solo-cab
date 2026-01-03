@@ -76,6 +76,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   
   // État pour le compteur de courses partagées reçues (acceptées/en cours)
   const [receivedSharedCoursesCount, setReceivedSharedCoursesCount] = useState(0);
+  // État pour le compteur de courses partagées terminées (sender side)
+  const [completedPartnerCoursesCount, setCompletedPartnerCoursesCount] = useState(0);
   const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
   // État pour le signalement
@@ -234,6 +236,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .in("status", ["accepted", "in_progress"]);
       
       setReceivedSharedCoursesCount(receivedCount || 0);
+      
+      // Fetch completed partner courses count (for sender - courses they sent that were completed)
+      const { count: completedPartnerCount } = await supabase
+        .from("partner_order_documents")
+        .select("*", { count: "exact", head: true })
+        .eq("sender_driver_id", driverId);
+      
+      setCompletedPartnerCoursesCount(completedPartnerCount || 0);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -1711,7 +1721,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           >
             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-xs sm:text-sm font-bold">Terminée</span>
-            <Badge className="bg-green-500/30 text-green-200 text-xs font-bold">{completedCourses.length}</Badge>
+            <Badge className="bg-green-500/30 text-green-200 text-xs font-bold">{completedCourses.length + completedPartnerCoursesCount}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="rejected"
@@ -2235,18 +2245,42 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
-          {completedCourses.length === 0 ? (
+          {completedCourses.length === 0 && completedPartnerCoursesCount === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course terminée</p>
           ) : (
             completedCourses.map((course) => {
+              const courseTypeInfo = getCourseTypeInfo(course);
+              // Check if this course was shared and completed by a partner
+              const sharedCourseInfo = sharedCoursesData.find(sc => 
+                sc.course_id === course.id && 
+                sc.sender_driver_id === driverId &&
+                sc.status === 'completed'
+              );
+              const wasHandledByPartner = !!sharedCourseInfo;
+              
               return (
-              <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
-                <div className="space-y-3">
+              <Card key={course.id} className={cn(
+                "relative overflow-hidden p-4 backdrop-blur-sm border bg-card/95 hover:shadow-lg transition-all",
+                courseTypeInfo.borderColor,
+                wasHandledByPartner && "border-purple-500/30"
+              )}>
+                {/* Indicateur de type de course - barre latérale colorée */}
+                <CourseTypeIndicator type={wasHandledByPartner ? 'partner' : courseTypeInfo.type} className="absolute left-0 top-0 bottom-0 w-1" />
+                
+                <div className="space-y-3 pl-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
                         {getStatusBadge(course.status)}
+                        {wasHandledByPartner ? (
+                          <Badge className="bg-purple-500/20 text-purple-600 text-xs flex items-center gap-1">
+                            <Handshake className="w-3 h-3" />
+                            Partenaire
+                          </Badge>
+                        ) : (
+                          <CourseTypeBadge typeInfo={courseTypeInfo} size="sm" />
+                        )}
                         <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                         <CourseShareStatusIndicator 
                           courseId={course.id} 
