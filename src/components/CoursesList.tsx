@@ -72,6 +72,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   // État pour les informations de type de course
   const [sharedCoursesData, setSharedCoursesData] = useState<any[]>([]);
   const [companyCoursesData, setCompanyCoursesData] = useState<any[]>([]);
+  
+  // État pour le compteur de courses partagées reçues (acceptées/en cours)
+  const [receivedSharedCoursesCount, setReceivedSharedCoursesCount] = useState(0);
   const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
   // État pour le signalement
@@ -221,6 +224,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         setCompanyCoursesData(companyData || []);
       }
+      
+      // Fetch received shared courses count (courses partenaires acceptées/en cours)
+      const { count: receivedCount } = await supabase
+        .from("shared_courses")
+        .select("*", { count: "exact", head: true })
+        .eq("receiver_driver_id", driverId)
+        .in("status", ["accepted", "in_progress"]);
+      
+      setReceivedSharedCoursesCount(receivedCount || 0);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -1680,7 +1692,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           >
             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-xs sm:text-sm font-bold">Confirmée</span>
-            <Badge className="bg-blue-500/30 text-blue-200 text-xs font-bold">{confirmedCoursesCombined.length}</Badge>
+            <Badge className="bg-blue-500/30 text-blue-200 text-xs font-bold">{confirmedCoursesCombined.length + receivedSharedCoursesCount}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="completed"

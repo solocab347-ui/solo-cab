@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { 
   MapPin, 
   Calendar, 
@@ -205,33 +206,36 @@ export function SharedCoursesInCoursesList({ driverId }: Props) {
           return (
             <Card key={course.id} className="overflow-hidden border-purple-500/20">
               {/* Header - Sender info */}
-              <div className="p-3 border-b bg-purple-500/10 flex items-center justify-between">
+              <div className="p-2 sm:p-3 border-b bg-purple-500/10">
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-10 w-10 border-2 border-purple-500/30">
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-purple-500/30 shrink-0">
                     <AvatarImage src={course.sender_photo || undefined} />
-                    <AvatarFallback className="bg-purple-500/20 text-purple-600">
+                    <AvatarFallback className="bg-purple-500/20 text-purple-600 text-xs sm:text-sm">
                       {course.sender_name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{course.sender_name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium truncate">{course.sender_name}</p>
+                    <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
                       {course.sender_sharing_number && (
                         <span className="font-mono text-purple-600">{formatSharingNumber(course.sender_sharing_number)}</span>
                       )}
                       {course.sender_company && (
-                        <span>• {course.sender_company}</span>
+                        <span className="hidden sm:inline">• {course.sender_company}</span>
                       )}
                     </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <Badge className={course.status === 'in_progress' ? 'bg-blue-500/20 text-blue-600' : 'bg-green-500/20 text-green-600'}>
-                    {course.status === 'in_progress' ? 'En cours' : 'Acceptée'}
-                  </Badge>
-                  {course.course_number && (
-                    <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
-                  )}
+                  <div className="text-right shrink-0">
+                    <Badge className={cn(
+                      "text-[10px] sm:text-xs",
+                      course.status === 'in_progress' ? 'bg-blue-500/20 text-blue-600' : 'bg-green-500/20 text-green-600'
+                    )}>
+                      {course.status === 'in_progress' ? 'En cours' : 'Acceptée'}
+                    </Badge>
+                    {course.course_number && (
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -271,18 +275,18 @@ export function SharedCoursesInCoursesList({ driverId }: Props) {
 
               {/* Footer - Commission info + Actions */}
               <div className="p-3 border-t bg-muted/20">
-                <div className="flex items-center justify-between mb-3">
+                <div className="grid grid-cols-3 gap-2 mb-3 text-center">
                   <div>
-                    <p className="text-xs text-muted-foreground">Montant</p>
-                    <p className="font-semibold">{course.course_amount.toFixed(2)} €</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Montant</p>
+                    <p className="font-semibold text-sm sm:text-base">{course.course_amount.toFixed(2)} €</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Commission ({course.commission_percentage}%)</p>
-                    <p className="font-semibold text-red-600">-{course.commission_amount.toFixed(2)} €</p>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Commission ({course.commission_percentage}%)</p>
+                    <p className="font-semibold text-sm sm:text-base text-red-600">-{course.commission_amount.toFixed(2)} €</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Vous gardez</p>
-                    <p className="font-bold text-green-600">
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Vous gardez</p>
+                    <p className="font-bold text-sm sm:text-base text-green-600">
                       {(course.course_amount - course.commission_amount).toFixed(2)} €
                     </p>
                   </div>
