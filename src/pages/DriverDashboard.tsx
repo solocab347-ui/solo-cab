@@ -59,6 +59,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { logger } from "@/lib/productionLogger";
+import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificationCount";
 
 const DriverDashboard = () => {
   const { t } = useLocale();
@@ -71,8 +72,9 @@ const DriverDashboard = () => {
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | undefined>(undefined);
-  const [pendingSharedCoursesCount, setPendingSharedCoursesCount] = useState(0);
-  const [pendingPartnershipActionsCount, setPendingPartnershipActionsCount] = useState(0);
+  
+  // Use unified partnership notification count hook
+  const { count: partnershipNotificationCount } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 
   // Handle special tab navigation (e.g., partnerships-received)
   const handleTabChange = (tab: string) => {
@@ -241,104 +243,7 @@ const DriverDashboard = () => {
     };
   }, [driverProfile?.driver?.id]);
 
-  // Load pending shared courses count for badge
-  useEffect(() => {
-    if (!driverProfile?.driver?.id) return;
-
-    const loadPendingSharedCourses = async () => {
-      const { count, error } = await supabase
-        .from('shared_courses')
-        .select('*', { count: 'exact', head: true })
-        .eq('receiver_driver_id', driverProfile.driver.id)
-        .eq('status', 'pending')
-        .is('cancelled_at', null);
-
-      if (!error && count !== null) {
-        setPendingSharedCoursesCount(count);
-      }
-    };
-
-    loadPendingSharedCourses();
-
-    // Realtime subscription for shared courses
-    const channel = supabase
-      .channel('shared-courses-badge')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shared_courses',
-          filter: `receiver_driver_id=eq.${driverProfile.driver.id}`
-        },
-        () => {
-          loadPendingSharedCourses();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [driverProfile?.driver?.id]);
-
-  // Load pending partnership actions count (modifications + partnership requests)
-  useEffect(() => {
-    if (!driverProfile?.driver?.id) return;
-
-    const loadPendingPartnershipActions = async () => {
-      let totalCount = 0;
-
-      // Count pending modification requests FROM partners (not from me)
-      const { count: modificationCount, error: modError } = await supabase
-        .from('driver_partnerships')
-        .select('*', { count: 'exact', head: true })
-        .or(`driver_a_id.eq.${driverProfile.driver.id},driver_b_id.eq.${driverProfile.driver.id}`)
-        .eq('status', 'active')
-        .eq('pending_modification', true)
-        .neq('pending_modification_by', driverProfile.driver.id);
-
-      if (!modError && modificationCount !== null) {
-        totalCount += modificationCount;
-      }
-
-      // Count pending partnership requests TO me
-      const { count: requestCount, error: reqError } = await supabase
-        .from('driver_partnerships')
-        .select('*', { count: 'exact', head: true })
-        .or(`driver_a_id.eq.${driverProfile.driver.id},driver_b_id.eq.${driverProfile.driver.id}`)
-        .eq('status', 'pending')
-        .neq('proposed_by', driverProfile.driver.id);
-
-      if (!reqError && requestCount !== null) {
-        totalCount += requestCount;
-      }
-
-      setPendingPartnershipActionsCount(totalCount);
-    };
-
-    loadPendingPartnershipActions();
-
-    // Realtime subscription for partnership changes
-    const channel = supabase
-      .channel('partnership-actions-badge')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'driver_partnerships'
-        },
-        () => {
-          loadPendingPartnershipActions();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [driverProfile?.driver?.id]);
+  // Partnership notification count is now handled by usePartnershipNotificationCount hook
 
 
   const downloadQRCode = () => {
@@ -645,14 +550,16 @@ const DriverDashboard = () => {
                 <span className="sm:hidden">{t('driverDashboard.menu.stats')}</span>
               </TabsTrigger>
               <TabsTrigger value="sharing" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-600 data-[state=active]:text-white relative">
-                <Handshake className="w-4 h-4" />
+                <div className="relative">
+                  <Handshake className="w-4 h-4" />
+                  {partnershipNotificationCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-4 min-w-[16px] px-1 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {partnershipNotificationCount}
+                    </Badge>
+                  )}
+                </div>
                 <span className="hidden sm:inline">{t('driverDashboard.menu.partnerships')}</span>
                 <span className="sm:hidden">{t('driverDashboard.menu.partnerships')}</span>
-                {(pendingSharedCoursesCount + pendingPartnershipActionsCount) > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-500 text-white text-xs font-bold">
-                    {pendingSharedCoursesCount + pendingPartnershipActionsCount}
-                  </Badge>
-                )}
               </TabsTrigger>
               <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm flex-col sm:flex-row py-2 sm:py-1.5 text-gray-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-500 data-[state=active]:to-slate-600 data-[state=active]:text-white">
                 <Settings className="w-4 h-4" />
