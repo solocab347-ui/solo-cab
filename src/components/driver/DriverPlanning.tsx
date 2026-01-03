@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -25,7 +26,8 @@ import {
   Route,
   ExternalLink,
   Info,
-  MessageSquare
+  MessageSquare,
+  Handshake
 } from "lucide-react";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, differenceInMinutes } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -72,6 +74,15 @@ interface EnrichedCourse {
   shared_courses?: any[];
   company_courses?: any[];
   courseType?: CourseTypeInfo;
+  // New fields for received shared courses
+  isReceivedSharedCourse?: boolean;
+  sharedCourseId?: string;
+  senderDriverName?: string;
+  senderDriverPhoto?: string | null;
+  senderSharingNumber?: number | null;
+  commissionPercentage?: number;
+  commissionAmount?: number;
+  courseAmount?: number;
 }
 
 const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
@@ -112,125 +123,232 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
 
       if (coursesError) throw coursesError;
 
-      if (!coursesData || coursesData.length === 0) {
-        setCourses([]);
-        setLoading(false);
-        return;
-      }
+      // ALSO fetch received shared courses (courses shared TO this driver)
+      const { data: receivedSharedCourses } = await supabase
+        .from('shared_courses')
+        .select(`
+          id,
+          course_id,
+          sender_driver_id,
+          course_amount,
+          commission_percentage,
+          commission_amount,
+          status,
+          courses!inner(
+            id,
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            passengers_count,
+            distance_km,
+            duration_minutes,
+            status,
+            course_number,
+            notes,
+            clients(
+              user_id,
+              is_exclusive,
+              profiles:user_id(full_name, phone, profile_photo_url)
+            )
+          )
+        `)
+        .eq('receiver_driver_id', driverId)
+        .in('status', ['accepted', 'in_progress']);
 
-      const courseIds = coursesData.map(c => c.id);
+      // Collect sender driver IDs for profiles
+      const senderDriverIds = new Set<string>();
+      receivedSharedCourses?.forEach(sc => senderDriverIds.add(sc.sender_driver_id));
 
-      // Fetch shared courses - simplified query
-      const { data: sharedData } = await supabase
-        .from("shared_courses")
-        .select("id, course_id, sender_driver_id, receiver_driver_id, status")
-        .in("course_id", courseIds);
-
-      // Get sender/receiver driver names separately
-      const driverIds = new Set<string>();
-      sharedData?.forEach(sc => {
-        driverIds.add(sc.sender_driver_id);
-        driverIds.add(sc.receiver_driver_id);
-      });
-      
-      let driverProfiles: Record<string, string> = {};
-      if (driverIds.size > 0) {
-        const { data: drivers } = await supabase
+      let senderProfiles: Record<string, { name: string; photo: string | null; sharing_number: number | null }> = {};
+      if (senderDriverIds.size > 0) {
+        const { data: senderDrivers } = await supabase
           .from("drivers")
-          .select("id, user_id, profiles:user_id(full_name)")
-          .in("id", Array.from(driverIds));
+          .select("id, user_id, card_photo_url, sharing_number, profiles:user_id(full_name, profile_photo_url)")
+          .in("id", Array.from(senderDriverIds));
         
-        drivers?.forEach((d: any) => {
-          driverProfiles[d.id] = d.profiles?.full_name || 'Chauffeur';
+        senderDrivers?.forEach((d: any) => {
+          senderProfiles[d.id] = {
+            name: d.profiles?.full_name || 'Partenaire',
+            photo: d.card_photo_url || d.profiles?.profile_photo_url,
+            sharing_number: d.sharing_number
+          };
         });
       }
 
-      // Fetch company courses
-      const { data: companyData } = await supabase
-        .from("company_courses")
-        .select("id, course_id, company_id")
-        .in("course_id", courseIds);
-
-      // Get company names
-      const companyIds = [...new Set(companyData?.map(cc => cc.company_id) || [])];
-      let companyNames: Record<string, string> = {};
-      if (companyIds.length > 0) {
-        const { data: companies } = await supabase
-          .from("companies")
-          .select("id, company_name")
-          .in("id", companyIds);
+      // Convert received shared courses to EnrichedCourse format
+      const receivedCoursesEnriched: EnrichedCourse[] = (receivedSharedCourses || []).map(sc => {
+        const course = sc.courses as any;
+        const sender = senderProfiles[sc.sender_driver_id] || { name: 'Partenaire', photo: null, sharing_number: null };
         
-        companies?.forEach(c => {
-          companyNames[c.id] = c.company_name;
-        });
-      }
-
-      // Fetch fleet driver partnerships
-      const { data: fleetData } = await supabase
-        .from("fleet_driver_partnerships")
-        .select("id, fleet_manager_id, driver_id, status")
-        .eq("driver_id", driverId)
-        .eq("status", "active");
-
-      // Get fleet manager names
-      const fleetManagerIds = [...new Set(fleetData?.map(f => f.fleet_manager_id) || [])];
-      let fleetManagerNames: Record<string, string> = {};
-      if (fleetManagerIds.length > 0) {
-        const { data: fleetManagers } = await supabase
-          .from("fleet_managers")
-          .select("id, company_name")
-          .in("id", fleetManagerIds);
+        // Map shared_courses status to CourseStatus
+        let mappedStatus: CourseStatus = 'accepted';
+        if (sc.status === 'in_progress') mappedStatus = 'in_progress';
         
-        fleetManagers?.forEach(fm => {
-          fleetManagerNames[fm.id] = fm.company_name;
-        });
-      }
-
-      // Enrich courses with type info
-      const enrichedCourses: EnrichedCourse[] = coursesData.map(course => {
-        const courseSharedData = sharedData?.filter(sc => sc.course_id === course.id) || [];
-        const courseCompanyData = companyData?.filter(cc => cc.course_id === course.id) || [];
-        
-        // Enrich shared courses with driver names
-        const enrichedSharedCourses = courseSharedData.map(sc => ({
-          ...sc,
-          sender_driver: { profiles: { full_name: driverProfiles[sc.sender_driver_id] || 'Chauffeur' } },
-          receiver_driver: { profiles: { full_name: driverProfiles[sc.receiver_driver_id] || 'Chauffeur' } }
-        }));
-
-        // Enrich company courses with company names
-        const enrichedCompanyCourses = courseCompanyData.map(cc => ({
-          ...cc,
-          company: { company_name: companyNames[cc.company_id] || 'Entreprise' }
-        }));
-
-        // Check if this is a fleet course (driver has active fleet partnership and course was created by fleet)
-        const activeFleetPartnership = fleetData?.[0];
-        const isFleetCourse = activeFleetPartnership && course.driver_ids?.includes(driverId);
-
-        const courseType = getCourseType(
-          { ...course, shared_courses: enrichedSharedCourses, company_courses: enrichedCompanyCourses },
-          driverId,
-          {
-            sharedCourses: enrichedSharedCourses,
-            companyCourses: enrichedCompanyCourses,
-            fleetDriverInfo: isFleetCourse && activeFleetPartnership ? {
-              fleet_manager_id: activeFleetPartnership.fleet_manager_id,
-              fleet_name: fleetManagerNames[activeFleetPartnership.fleet_manager_id]
-            } : undefined
-          }
-        );
-
         return {
-          ...course,
-          shared_courses: enrichedSharedCourses,
-          company_courses: enrichedCompanyCourses,
-          courseType
+          id: course.id,
+          scheduled_date: course.scheduled_date,
+          status: mappedStatus,
+          pickup_address: course.pickup_address,
+          destination_address: course.destination_address,
+          distance_km: course.distance_km,
+          duration_minutes: course.duration_minutes,
+          passengers_count: course.passengers_count,
+          notes: course.notes,
+          course_number: course.course_number,
+          driver_id: null,
+          driver_ids: null,
+          clients: course.clients,
+          devis: [],
+          shared_courses: [],
+          company_courses: [],
+          courseType: {
+            type: 'partner' as CourseType,
+            label: 'Course partenaire reçue',
+            shortLabel: 'Partenaire',
+            icon: 'handshake',
+            color: 'text-purple-600 dark:text-purple-400',
+            bgColor: 'bg-purple-500/10',
+            borderColor: 'border-purple-500/30',
+            partnerName: sender.name,
+            partnerType: 'Reçue'
+          },
+          isReceivedSharedCourse: true,
+          sharedCourseId: sc.id,
+          senderDriverName: sender.name,
+          senderDriverPhoto: sender.photo,
+          senderSharingNumber: sender.sharing_number,
+          commissionPercentage: sc.commission_percentage,
+          commissionAmount: sc.commission_amount,
+          courseAmount: sc.course_amount
         };
       });
+
+      // Process own courses if any
+      let enrichedOwnCourses: EnrichedCourse[] = [];
       
-      console.log('Planning - Fetched courses:', enrichedCourses.length);
-      setCourses(enrichedCourses);
+      if (coursesData && coursesData.length > 0) {
+        const courseIds = coursesData.map(c => c.id);
+
+        // Fetch shared courses - simplified query
+        const { data: sharedData } = await supabase
+          .from("shared_courses")
+          .select("id, course_id, sender_driver_id, receiver_driver_id, status")
+          .in("course_id", courseIds);
+
+        // Get sender/receiver driver names separately
+        const driverIds = new Set<string>();
+        sharedData?.forEach(sc => {
+          driverIds.add(sc.sender_driver_id);
+          driverIds.add(sc.receiver_driver_id);
+        });
+        
+        let driverProfiles: Record<string, string> = {};
+        if (driverIds.size > 0) {
+          const { data: drivers } = await supabase
+            .from("drivers")
+            .select("id, user_id, profiles:user_id(full_name)")
+            .in("id", Array.from(driverIds));
+          
+          drivers?.forEach((d: any) => {
+            driverProfiles[d.id] = d.profiles?.full_name || 'Chauffeur';
+          });
+        }
+
+        // Fetch company courses
+        const { data: companyData } = await supabase
+          .from("company_courses")
+          .select("id, course_id, company_id")
+          .in("course_id", courseIds);
+
+        // Get company names
+        const companyIds = [...new Set(companyData?.map(cc => cc.company_id) || [])];
+        let companyNames: Record<string, string> = {};
+        if (companyIds.length > 0) {
+          const { data: companies } = await supabase
+            .from("companies")
+            .select("id, company_name")
+            .in("id", companyIds);
+          
+          companies?.forEach(c => {
+            companyNames[c.id] = c.company_name;
+          });
+        }
+
+        // Fetch fleet driver partnerships
+        const { data: fleetData } = await supabase
+          .from("fleet_driver_partnerships")
+          .select("id, fleet_manager_id, driver_id, status")
+          .eq("driver_id", driverId)
+          .eq("status", "active");
+
+        // Get fleet manager names
+        const fleetManagerIds = [...new Set(fleetData?.map(f => f.fleet_manager_id) || [])];
+        let fleetManagerNames: Record<string, string> = {};
+        if (fleetManagerIds.length > 0) {
+          const { data: fleetManagers } = await supabase
+            .from("fleet_managers")
+            .select("id, company_name")
+            .in("id", fleetManagerIds);
+          
+          fleetManagers?.forEach(fm => {
+            fleetManagerNames[fm.id] = fm.company_name;
+          });
+        }
+
+        // Enrich courses with type info
+        enrichedOwnCourses = coursesData.map(course => {
+          const courseSharedData = sharedData?.filter(sc => sc.course_id === course.id) || [];
+          const courseCompanyData = companyData?.filter(cc => cc.course_id === course.id) || [];
+          
+          // Enrich shared courses with driver names
+          const enrichedSharedCourses = courseSharedData.map(sc => ({
+            ...sc,
+            sender_driver: { profiles: { full_name: driverProfiles[sc.sender_driver_id] || 'Chauffeur' } },
+            receiver_driver: { profiles: { full_name: driverProfiles[sc.receiver_driver_id] || 'Chauffeur' } }
+          }));
+
+          // Enrich company courses with company names
+          const enrichedCompanyCourses = courseCompanyData.map(cc => ({
+            ...cc,
+            company: { company_name: companyNames[cc.company_id] || 'Entreprise' }
+          }));
+
+          // Check if this is a fleet course (driver has active fleet partnership and course was created by fleet)
+          const activeFleetPartnership = fleetData?.[0];
+          const isFleetCourse = activeFleetPartnership && course.driver_ids?.includes(driverId);
+
+          const courseType = getCourseType(
+            { ...course, shared_courses: enrichedSharedCourses, company_courses: enrichedCompanyCourses },
+            driverId,
+            {
+              sharedCourses: enrichedSharedCourses,
+              companyCourses: enrichedCompanyCourses,
+              fleetDriverInfo: isFleetCourse && activeFleetPartnership ? {
+                fleet_manager_id: activeFleetPartnership.fleet_manager_id,
+                fleet_name: fleetManagerNames[activeFleetPartnership.fleet_manager_id]
+              } : undefined
+            }
+          );
+
+          return {
+            ...course,
+            shared_courses: enrichedSharedCourses,
+            company_courses: enrichedCompanyCourses,
+            courseType,
+            isReceivedSharedCourse: false
+          };
+        });
+      }
+      
+      // Merge own courses with received shared courses
+      // Avoid duplicates by filtering out own courses that are in receivedCoursesEnriched
+      const receivedCourseIds = new Set(receivedCoursesEnriched.map(c => c.id));
+      const filteredOwnCourses = enrichedOwnCourses.filter(c => !receivedCourseIds.has(c.id));
+      
+      const allCourses = [...filteredOwnCourses, ...receivedCoursesEnriched];
+      
+      console.log('Planning - Fetched courses:', allCourses.length, '(own:', filteredOwnCourses.length, ', received:', receivedCoursesEnriched.length, ')');
+      setCourses(allCourses);
     } catch (error: any) {
       console.error("Planning - Error:", error);
       toast.error("Erreur lors du chargement du planning");
@@ -500,6 +618,40 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             </div>
           </div>
 
+          {/* Partner info for received shared courses */}
+          {course.isReceivedSharedCourse && (
+            <div className="flex items-center gap-3 mb-3 p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <Avatar className="h-10 w-10 border-2 border-purple-500/30">
+                <AvatarImage src={course.senderDriverPhoto || undefined} />
+                <AvatarFallback className="bg-purple-500/20 text-purple-600">
+                  {course.senderDriverName?.charAt(0) || 'P'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1 text-xs text-purple-600 font-medium">
+                  <Handshake className="w-3 h-3" />
+                  <span>Course partenaire de</span>
+                </div>
+                <div className="font-medium text-foreground truncate">
+                  {course.senderDriverName || 'Partenaire'}
+                </div>
+                {course.senderSharingNumber && (
+                  <div className="text-xs text-muted-foreground font-mono">
+                    SOLO-{String(course.senderSharingNumber).padStart(6, '0')}
+                  </div>
+                )}
+              </div>
+              {course.courseAmount && (
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Vous gardez</div>
+                  <div className="font-bold text-green-600 text-sm">
+                    {((course.courseAmount || 0) - (course.commissionAmount || 0)).toFixed(2)}€
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Client info */}
           <div className="flex items-center gap-3 mb-3 p-2 rounded-lg bg-muted/30">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -561,7 +713,17 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
                 </div>
               )}
             </div>
-            {course.devis?.[0] && (
+            {course.isReceivedSharedCourse && course.courseAmount ? (
+              <div className="flex items-center gap-1">
+                <Euro className="w-4 h-4 text-green-600" />
+                <span className="text-lg font-bold text-green-600">
+                  {((course.courseAmount || 0) - (course.commissionAmount || 0)).toFixed(2)}€
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  (-{course.commissionPercentage}%)
+                </span>
+              </div>
+            ) : course.devis?.[0] && (
               <div className="flex items-center gap-1">
                 <Euro className="w-4 h-4 text-primary" />
                 <span className="text-lg font-bold text-primary">

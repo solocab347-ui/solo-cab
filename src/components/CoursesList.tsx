@@ -30,6 +30,7 @@ import { notificationService } from "@/lib/notificationService";
 import { CourseType, CourseTypeInfo, getCourseType, getCourseTypeFilters, COURSE_TYPE_CONFIG } from "@/lib/courseTypeUtils";
 import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/CourseTypeBadge";
 import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelector";
+import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInCoursesList";
 
 interface CoursesListProps {
   driverId: string;
@@ -2190,6 +2191,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               );
             })
           )}
+          
+          {/* Courses partagées reçues et acceptées */}
+          <SharedCoursesInCoursesList driverId={driverId} />
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
