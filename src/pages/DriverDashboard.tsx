@@ -47,7 +47,7 @@ import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedDriverProfile } from "@/hooks/useOptimizedDriverProfile";
 import { useLocale } from "@/hooks/useLocale";
@@ -63,6 +63,7 @@ import { usePartnershipNotificationCount } from "@/hooks/usePartnershipNotificat
 
 const DriverDashboard = () => {
   const { t } = useLocale();
+  const [searchParams] = useSearchParams();
   useUserLanguage(); // Sync language with user profile
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
@@ -75,6 +76,30 @@ const DriverDashboard = () => {
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
+
+  // Handle URL parameters for tab navigation (from notifications)
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const subtabParam = searchParams.get("subtab");
+    
+    if (tabParam === "partnerships") {
+      setActiveTab("sharing");
+      // Map subtab to partnership tab
+      if (subtabParam === "received") {
+        setPartnershipInitialTab('received');
+      } else if (subtabParam === "sent") {
+        setPartnershipInitialTab('sent');
+      } else if (subtabParam === "balances") {
+        setPartnershipInitialTab('balances');
+      } else if (subtabParam === "list") {
+        setPartnershipInitialTab('list');
+      } else if (subtabParam === "search") {
+        setPartnershipInitialTab('search');
+      }
+    } else if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Handle special tab navigation (e.g., partnerships-received)
   const handleTabChange = (tab: string) => {

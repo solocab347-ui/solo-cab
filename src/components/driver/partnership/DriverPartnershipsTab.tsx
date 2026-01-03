@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   Inbox,
   Send
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Import sub-components
 import { MyPartnersList } from '../MyPartnersList';
@@ -27,6 +28,50 @@ interface DriverPartnershipsTabProps {
 
 export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: DriverPartnershipsTabProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances'>(initialSubTab);
+  const [receivedCount, setReceivedCount] = useState(0);
+
+  // Sync with initialSubTab when it changes (e.g., from URL params)
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
+  // Count pending received courses
+  useEffect(() => {
+    if (!driverId) return;
+
+    const loadReceivedCount = async () => {
+      try {
+        const { count } = await supabase
+          .from('shared_courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_driver_id', driverId)
+          .eq('status', 'pending')
+          .is('cancelled_at', null);
+        
+        setReceivedCount(count || 0);
+      } catch (error) {
+        console.error('Error loading received count:', error);
+      }
+    };
+
+    loadReceivedCount();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('received-count-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shared_courses' },
+        () => loadReceivedCount()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driverId]);
 
   return (
     <div className="space-y-4">
@@ -53,10 +98,15 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
                 <span className="hidden sm:inline">Rechercher</span>
                 <span className="sm:hidden">Rech.</span>
               </TabsTrigger>
-              <TabsTrigger value="received" className="text-xs gap-1 px-2">
+              <TabsTrigger value="received" className="text-xs gap-1 px-2 relative">
                 <Inbox className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Reçues</span>
                 <span className="sm:hidden">Reçu</span>
+                {receivedCount > 0 && (
+                  <Badge className="absolute -top-1.5 -right-1.5 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
+                    {receivedCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="sent" className="text-xs gap-1 px-2">
                 <Send className="h-3.5 w-3.5" />

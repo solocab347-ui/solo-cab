@@ -84,6 +84,7 @@ export function PartnerCoursePool() {
 
   useEffect(() => {
     if (user?.id) {
+      console.log('[PartnerCoursePool] Loading for user:', user.id);
       loadDriverAndCourses();
     }
   }, [user?.id]);
@@ -129,18 +130,30 @@ export function PartnerCoursePool() {
   }, [driverId]);
 
   const loadDriverAndCourses = async () => {
-    const { data: driver } = await supabase
-      .from('drivers')
-      .select('id')
-      .eq('user_id', user?.id)
-      .single();
+    try {
+      const { data: driver, error } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
 
-    if (driver) {
-      setDriverId(driver.id);
-      // Pass driver.id directly to avoid race condition with state update
-      await Promise.all([loadPooledCourses(), loadSharedCoursesForDriver(driver.id)]);
+      if (error) {
+        console.error('[PartnerCoursePool] Error loading driver:', error);
+        setLoading(false);
+        return;
+      }
+
+      if (driver) {
+        console.log('[PartnerCoursePool] Found driver:', driver.id);
+        setDriverId(driver.id);
+        // Pass driver.id directly to avoid race condition with state update
+        await Promise.all([loadPooledCourses(), loadSharedCoursesForDriver(driver.id)]);
+      }
+    } catch (err) {
+      console.error('[PartnerCoursePool] Error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Wrapper that uses state driverId for realtime callbacks
@@ -152,6 +165,8 @@ export function PartnerCoursePool() {
   // Main function that accepts driverId as parameter to avoid race conditions
   const loadSharedCoursesForDriver = async (targetDriverId: string) => {
     try {
+      console.log('[PartnerCoursePool] Loading shared courses for driver:', targetDriverId);
+      
       const { data, error } = await supabase
         .from('shared_courses')
         .select(`
@@ -178,7 +193,12 @@ export function PartnerCoursePool() {
         .is('cancelled_at', null)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[PartnerCoursePool] Query error:', error);
+        throw error;
+      }
+      
+      console.log('[PartnerCoursePool] Found shared courses:', data?.length || 0, data);
 
       const enrichedCourses: SharedCourse[] = [];
       for (const item of data || []) {
