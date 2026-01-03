@@ -328,7 +328,8 @@ export function ShareCourseWithPartnerDialog({
       onSuccess();
     } catch (error: any) {
       console.error('Error sending course:', error);
-      toast.error('Erreur lors de l\'envoi de la course');
+      const errorMessage = error?.message || error?.details || 'Erreur inconnue';
+      toast.error(`Erreur lors de l'envoi: ${errorMessage}`);
     } finally {
       setSending(false);
     }
