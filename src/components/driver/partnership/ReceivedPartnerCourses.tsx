@@ -112,7 +112,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
       for (const item of data || []) {
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, sharing_number, show_phone_for_sharing')
+          .select('user_id, company_name, sharing_number, show_phone_for_sharing, card_photo_url')
           .eq('id', item.sender_driver_id)
           .single();
 
@@ -124,6 +124,9 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             .single();
 
           const course = item.courses as any;
+          // Priorité: card_photo_url (driver) > profile_photo_url (profile)
+          const senderPhoto = driverData.card_photo_url || profile?.profile_photo_url;
+          
           enrichedCourses.push({
             id: item.id,
             course_id: item.course_id,
@@ -143,8 +146,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             course_status: course.status,
             course_number: course.course_number,
             shared_status: item.status,
-            sender_name: (profile?.full_name?.split(' ')[0]) || 'Partenaire',
-            sender_photo: profile?.profile_photo_url,
+            sender_name: profile?.full_name || 'Partenaire',
+            sender_photo: senderPhoto,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
             sender_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
