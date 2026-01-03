@@ -125,6 +125,35 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
   if (loading) return null;
   if (!status?.has_sharing) return null;
 
+  const handleQuickCancel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!status?.pending_share?.id) return;
+
+    setCancelling(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_shared_course', {
+        p_shared_course_id: status.pending_share.id,
+        p_driver_id: driverId
+      });
+
+      if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string; message?: string };
+      if (result.success) {
+        toast.success('Partage annulé - Course récupérée');
+        loadSharingStatus();
+        onCancelSuccess?.();
+      } else {
+        toast.error(result.error || 'Erreur lors de l\'annulation');
+      }
+    } catch (error) {
+      console.error('Error cancelling share:', error);
+      toast.error('Erreur lors de l\'annulation');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const getStatusBadge = () => {
     if (status.active_share) {
       switch (status.active_share.status) {
@@ -148,17 +177,39 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
     if (status.pending_share) {
       if (status.pending_share.sharing_mode === 'pool') {
         return (
-          <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
-            <Users className="w-3 h-3 mr-1" />
-            Proposée à {status.pending_share.pending_count} partenaires
-          </Badge>
+          <div className="flex items-center gap-1 flex-wrap">
+            <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
+              <Users className="w-3 h-3 mr-1" />
+              Proposée à {status.pending_share.pending_count} partenaires
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
+              onClick={handleQuickCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+            </Button>
+          </div>
         );
       }
       return (
-        <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
-          <Clock className="w-3 h-3 mr-1" />
-          Partagée - En attente
-        </Badge>
+        <div className="flex items-center gap-1 flex-wrap">
+          <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
+            <Clock className="w-3 h-3 mr-1" />
+            Partagée - En attente
+          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
+            onClick={handleQuickCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+          </Button>
+        </div>
       );
     }
 
