@@ -21,6 +21,7 @@ interface Partner {
   status: string;
   partner_name: string;
   partner_photo: string | null;
+  partner_card_photo: string | null;
   partner_code: string;
   partner_rating: number;
   partner_rides: number;
@@ -28,6 +29,10 @@ interface Partner {
   sharing_blocked: boolean;
   sharing_number: number | null;
   partner_phone: string | null;
+  partner_company_name: string | null;
+  show_rating_for_sharing: boolean;
+  show_rides_for_sharing: boolean;
+  show_phone_for_sharing: boolean;
 }
 
 interface ShareCourseWithPartnerDialogProps {
@@ -106,7 +111,7 @@ export function ShareCourseWithPartnerDialog({
         
         const { data: partnerData } = await supabase
           .from('drivers')
-          .select('driver_code, rating, total_rides, user_id, sharing_number')
+          .select('driver_code, rating, total_rides, user_id, sharing_number, card_photo_url, company_name, show_rating_for_sharing, show_rides_for_sharing, show_phone_for_sharing, contact_phone')
           .eq('id', partnerId)
           .single();
 
@@ -121,12 +126,17 @@ export function ShareCourseWithPartnerDialog({
             ...p,
             partner_name: profileData?.full_name || 'Chauffeur',
             partner_photo: profileData?.profile_photo_url,
-            partner_phone: profileData?.phone,
+            partner_card_photo: partnerData.card_photo_url,
+            partner_phone: partnerData.show_phone_for_sharing ? (partnerData.contact_phone || profileData?.phone) : null,
             partner_code: partnerData.driver_code,
             partner_rating: partnerData.rating || 0,
             partner_rides: partnerData.total_rides || 0,
             partner_driver_id: partnerId,
             sharing_number: partnerData.sharing_number,
+            partner_company_name: partnerData.company_name,
+            show_rating_for_sharing: partnerData.show_rating_for_sharing ?? false,
+            show_rides_for_sharing: partnerData.show_rides_for_sharing ?? false,
+            show_phone_for_sharing: partnerData.show_phone_for_sharing ?? false,
           });
         }
       }
@@ -416,11 +426,14 @@ export function ShareCourseWithPartnerDialog({
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={partner.partner_photo || undefined} />
+                        <AvatarImage src={partner.partner_card_photo || partner.partner_photo || undefined} />
                         <AvatarFallback>{partner.partner_name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{partner.partner_name}</p>
+                        {partner.partner_company_name && (
+                          <p className="text-xs text-muted-foreground truncate">{partner.partner_company_name}</p>
+                        )}
                         
                         {/* Sharing number prominently displayed */}
                         <div className="flex items-center gap-1 text-primary font-mono text-sm">
@@ -429,15 +442,19 @@ export function ShareCourseWithPartnerDialog({
                         </div>
                         
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-yellow-500" />
-                            {partner.partner_rating?.toFixed(1) || '0.0'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Car className="w-3 h-3" />
-                            {partner.partner_rides || 0}
-                          </span>
-                          {partner.partner_phone && (
+                          {partner.show_rating_for_sharing && (
+                            <span className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-500" />
+                              {partner.partner_rating?.toFixed(1) || '0.0'}
+                            </span>
+                          )}
+                          {partner.show_rides_for_sharing && (
+                            <span className="flex items-center gap-1">
+                              <Car className="w-3 h-3" />
+                              {partner.partner_rides || 0}
+                            </span>
+                          )}
+                          {partner.show_phone_for_sharing && partner.partner_phone && (
                             <span className="flex items-center gap-1">
                               <Phone className="w-3 h-3" />
                               {partner.partner_phone}
