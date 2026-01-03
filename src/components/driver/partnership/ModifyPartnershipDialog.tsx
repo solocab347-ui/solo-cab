@@ -46,13 +46,20 @@ export function ModifyPartnershipDialog({
 
   const handleSubmitModification = async () => {
     const commission = parseFloat(newCommission);
-    if (isNaN(commission) || commission < 5 || commission > 30) {
-      toast.error('La commission doit être entre 5% et 30%');
+    if (isNaN(commission) || commission < 5 || commission > 20) {
+      toast.error('La commission doit être entre 5% et 20%');
       return;
     }
 
     setLoading(true);
     try {
+      // Get the partner's user_id to send notification
+      const { data: partnerDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', partnership.partner_id)
+        .single();
+
       const { error } = await supabase
         .from('driver_partnerships')
         .update({
@@ -68,6 +75,33 @@ export function ModifyPartnershipDialog({
 
       if (error) throw error;
 
+      // Get current driver's name for notification
+      const { data: currentDriverData } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', currentDriverId)
+        .single();
+
+      if (currentDriverData) {
+        const { data: myProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', currentDriverData.user_id)
+          .single();
+
+        // Send notification to partner
+        if (partnerDriver) {
+          await supabase.from('notifications').insert({
+            user_id: partnerDriver.user_id,
+            title: '📝 Demande de modification',
+            message: `${myProfile?.full_name || 'Un partenaire'} propose de modifier le contrat: ${commission}% - ${newPaymentSchedule === 'per_course' ? 'Par course' : newPaymentSchedule === 'weekly' ? 'Hebdomadaire' : 'Mensuel'}`,
+            type: 'partnership',
+            link: '/driver-dashboard?tab=sharing',
+            is_read: false
+          });
+        }
+      }
+
       toast.success('Proposition de modification envoyée à votre partenaire');
       onSuccess();
       onOpenChange(false);
@@ -82,6 +116,13 @@ export function ModifyPartnershipDialog({
   const handleAcceptModification = async () => {
     setLoading(true);
     try {
+      // Get the proposer's user_id to send notification
+      const { data: proposerDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', partnership.pending_modification_by)
+        .single();
+
       const { error } = await supabase
         .from('driver_partnerships')
         .update({
@@ -93,11 +134,37 @@ export function ModifyPartnershipDialog({
           pending_modification_by: null,
           pending_modification_at: null,
           pending_modification_message: null,
+          contract_generated_at: new Date().toISOString(), // Update contract date
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', partnership.id);
 
       if (error) throw error;
+
+      // Get current driver's name for notification
+      const { data: currentDriverData } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', currentDriverId)
+        .single();
+
+      if (currentDriverData && proposerDriver) {
+        const { data: myProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', currentDriverData.user_id)
+          .single();
+
+        // Send notification to proposer
+        await supabase.from('notifications').insert({
+          user_id: proposerDriver.user_id,
+          title: '✅ Modification acceptée',
+          message: `${myProfile?.full_name || 'Votre partenaire'} a accepté les nouvelles conditions: ${partnership.pending_new_commission}%`,
+          type: 'success',
+          link: '/driver-dashboard?tab=sharing',
+          is_read: false
+        });
+      }
 
       toast.success('Modification acceptée ! Le contrat a été mis à jour.');
       onSuccess();
@@ -113,6 +180,13 @@ export function ModifyPartnershipDialog({
   const handleRejectModification = async () => {
     setLoading(true);
     try {
+      // Get the proposer's user_id to send notification
+      const { data: proposerDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', partnership.pending_modification_by)
+        .single();
+
       const { error } = await supabase
         .from('driver_partnerships')
         .update({
@@ -127,6 +201,31 @@ export function ModifyPartnershipDialog({
         .eq('id', partnership.id);
 
       if (error) throw error;
+
+      // Get current driver's name for notification
+      const { data: currentDriverData } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', currentDriverId)
+        .single();
+
+      if (currentDriverData && proposerDriver) {
+        const { data: myProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', currentDriverData.user_id)
+          .single();
+
+        // Send notification to proposer
+        await supabase.from('notifications').insert({
+          user_id: proposerDriver.user_id,
+          title: '❌ Modification refusée',
+          message: `${myProfile?.full_name || 'Votre partenaire'} a refusé les nouvelles conditions`,
+          type: 'warning',
+          link: '/driver-dashboard?tab=sharing',
+          is_read: false
+        });
+      }
 
       toast.success('Modification refusée. Le contrat actuel reste en vigueur.');
       onSuccess();
@@ -270,7 +369,7 @@ export function ModifyPartnershipDialog({
                   id="commission"
                   type="number"
                   min={5}
-                  max={30}
+                  max={20}
                   step={1}
                   value={newCommission}
                   onChange={(e) => setNewCommission(e.target.value)}
@@ -278,7 +377,7 @@ export function ModifyPartnershipDialog({
                 />
                 <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
-              <p className="text-xs text-muted-foreground">Entre 5% et 30%</p>
+              <p className="text-xs text-muted-foreground">Entre 5% et 20%</p>
             </div>
 
             <div className="space-y-2">
