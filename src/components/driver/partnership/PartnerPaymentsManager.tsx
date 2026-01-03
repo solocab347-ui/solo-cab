@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { 
@@ -18,36 +20,22 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Upload,
-  FileText,
   Send,
   Euro,
   Loader2,
   Bell,
   Eye,
-  Ban
+  ChevronDown,
+  ChevronUp,
+  Wallet,
+  FileText,
+  Users
 } from 'lucide-react';
-import { format, isAfter, isBefore, startOfDay, endOfWeek, endOfMonth, parseISO, differenceInDays } from 'date-fns';
+import { format, isBefore, startOfDay, endOfWeek, endOfMonth, parseISO, startOfWeek, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface Props {
   driverId: string;
-}
-
-interface PartnerBalance {
-  partnershipId: string;
-  partnerId: string;
-  partnerName: string;
-  partnerPhoto: string | null;
-  commissionPercentage: number;
-  paymentSchedule: string;
-  pendingInvoicesCount: number;
-  pendingAmount: number;
-  overdueAmount: number;
-  overdueCount: number;
-  nextPaymentDue: Date | null;
-  isOverdue: boolean;
-  direction: 'incoming' | 'outgoing';
 }
 
 interface PartnerInvoiceItem {
@@ -59,10 +47,12 @@ interface PartnerInvoiceItem {
   payment_status: string;
   payment_due_date: string | null;
   payment_schedule: string | null;
+  billing_period_start: string | null;
   billing_period_end: string | null;
   partner_name: string;
   partner_photo: string | null;
   partner_driver_id: string;
+  partnership_id: string;
   scheduled_date: string;
   created_at: string;
   last_reminder_sent_at: string | null;
@@ -71,27 +61,54 @@ interface PartnerInvoiceItem {
   payment_proof_url: string | null;
 }
 
-const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
+// Regroupement intelligent par partenaire et période
+interface PaymentGroup {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  partnerPhoto: string | null;
+  partnershipId: string;
+  paymentSchedule: 'per_course' | 'weekly' | 'monthly';
+  periodLabel: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  invoices: PartnerInvoiceItem[];
+  totalAmount: number;
+  dueDate: string | null;
+  isOverdue: boolean;
+  isDueSoon: boolean;
+  allSent: boolean;
+  allPending: boolean;
+  canConfirm: boolean;
+  confirmReason?: string;
+}
+
+const SCHEDULE_LABELS: Record<string, string> = {
   per_course: 'Par course',
   weekly: 'Hebdomadaire',
   monthly: 'Mensuel',
 };
 
-const STATUS_CONFIG = {
-  pending: { label: 'En attente', color: 'bg-yellow-500/20 text-yellow-600', icon: Clock },
-  sent: { label: 'Envoyé', color: 'bg-blue-500/20 text-blue-600', icon: Send },
-  paid: { label: 'Payée', color: 'bg-green-500/20 text-green-600', icon: CheckCircle },
-  disputed: { label: 'Litige', color: 'bg-red-500/20 text-red-600', icon: AlertTriangle },
+const SCHEDULE_ICONS: Record<string, React.ReactNode> = {
+  per_course: <FileText className="h-4 w-4" />,
+  weekly: <Calendar className="h-4 w-4" />,
+  monthly: <Wallet className="h-4 w-4" />,
 };
 
 export function PartnerPaymentsManager({ driverId }: Props) {
   const [activeTab, setActiveTab] = useState<'outgoing' | 'incoming'>('outgoing');
   const [invoices, setInvoices] = useState<PartnerInvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  
+  // Dialog states
   const [sendPaymentOpen, setSendPaymentOpen] = useState(false);
   const [confirmReceiptOpen, setConfirmReceiptOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<PaymentGroup | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<PartnerInvoiceItem | null>(null);
+  
+  // Form states
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -113,6 +130,12 @@ export function PartnerPaymentsManager({ driverId }: Props) {
             scheduled_date,
             sender_driver_id,
             receiver_driver_id
+          ),
+          partnership:driver_partnerships!partnership_id(
+            id,
+            driver_a_id,
+            driver_b_id,
+            payment_schedule
           )
         `)
         .eq('driver_id', driverId)
@@ -124,6 +147,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
 
       for (const invoice of data || []) {
         const doc = invoice.partner_order_documents as any;
+        const partnership = invoice.partnership as any;
         const invoiceType = invoice.invoice_type as 'sender' | 'receiver';
         const isSender = invoiceType === 'sender';
         const partnerDriverId = isSender ? doc.receiver_driver_id : doc.sender_driver_id;
@@ -149,11 +173,13 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           commission_amount: invoice.commission_amount,
           payment_status: invoice.payment_status,
           payment_due_date: invoice.payment_due_date,
-          payment_schedule: invoice.payment_schedule,
+          payment_schedule: invoice.payment_schedule || partnership?.payment_schedule,
+          billing_period_start: invoice.billing_period_start,
           billing_period_end: invoice.billing_period_end,
           partner_name: partnerProfile?.full_name || 'Partenaire',
           partner_photo: partnerDriver?.card_photo_url || partnerProfile?.profile_photo_url || null,
           partner_driver_id: partnerDriverId,
+          partnership_id: partnership?.id || invoice.partnership_id,
           scheduled_date: doc.scheduled_date,
           created_at: invoice.created_at,
           last_reminder_sent_at: invoice.last_reminder_sent_at,
@@ -171,109 +197,176 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     }
   };
 
-  // Outgoing = invoices where I'm receiver (I need to pay commission to sender)
-  const outgoingInvoices = useMemo(() => 
-    invoices.filter(i => i.invoice_type === 'receiver'), 
-    [invoices]
-  );
-
-  // Incoming = invoices where I'm sender (I receive commission from receiver)
-  const incomingInvoices = useMemo(() => 
-    invoices.filter(i => i.invoice_type === 'sender'),
-    [invoices]
-  );
-
-  const pendingOutgoing = useMemo(() => 
-    outgoingInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'sent'),
-    [outgoingInvoices]
-  );
-
-  const pendingIncoming = useMemo(() => 
-    incomingInvoices.filter(i => i.payment_status === 'pending' || i.payment_status === 'sent'),
-    [incomingInvoices]
-  );
-
-  const overdueOutgoing = useMemo(() => 
-    pendingOutgoing.filter(i => 
-      i.payment_due_date && isBefore(new Date(i.payment_due_date), startOfDay(new Date()))
-    ),
-    [pendingOutgoing]
-  );
-
-  // Pour les sortants (receiver), on doit payer la commission
-  const totalOutgoingPending = useMemo(() => 
-    pendingOutgoing.reduce((acc, i) => acc + i.commission_amount, 0),
-    [pendingOutgoing]
-  );
-
-  // Pour les entrants (sender), on reçoit la commission
-  const totalIncomingPending = useMemo(() => 
-    pendingIncoming.reduce((acc, i) => acc + i.commission_amount, 0),
-    [pendingIncoming]
-  );
-
-  // Vérifier si on peut confirmer un paiement selon la fréquence
-  const canConfirmPayment = useCallback((invoice: PartnerInvoiceItem): { canConfirm: boolean; reason?: string } => {
-    const schedule = invoice.payment_schedule;
-    const periodEnd = invoice.billing_period_end;
+  // Regrouper les factures par partenaire et par période
+  const groupInvoices = useCallback((invoiceList: PartnerInvoiceItem[], direction: 'outgoing' | 'incoming'): PaymentGroup[] => {
+    const groups: Map<string, PaymentGroup> = new Map();
     const today = new Date();
 
-    // Par course: confirmation immédiate possible
-    if (schedule === 'per_course') {
-      return { canConfirm: true };
-    }
+    invoiceList.forEach(invoice => {
+      const schedule = (invoice.payment_schedule || 'per_course') as 'per_course' | 'weekly' | 'monthly';
+      let groupKey: string;
+      let periodLabel: string;
+      let periodStart: string | null = null;
+      let periodEnd: string | null = null;
 
-    if (!periodEnd) {
-      return { canConfirm: true };
-    }
-
-    const endDate = parseISO(periodEnd);
-
-    // Hebdomadaire: confirmation possible à la fin de la semaine
-    if (schedule === 'weekly') {
-      const weekEnd = endOfWeek(endDate, { weekStartsOn: 1 });
-      if (isBefore(today, weekEnd)) {
-        return { 
-          canConfirm: false, 
-          reason: `Disponible le ${format(weekEnd, 'dd/MM/yyyy', { locale: fr })}` 
-        };
+      if (schedule === 'per_course') {
+        // Chaque facture est un groupe distinct
+        groupKey = `${invoice.partner_driver_id}_course_${invoice.id}`;
+        periodLabel = format(parseISO(invoice.scheduled_date), "d MMM yyyy", { locale: fr });
+      } else if (schedule === 'weekly') {
+        // Grouper par semaine
+        const courseDate = parseISO(invoice.scheduled_date);
+        const weekStart = startOfWeek(courseDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(courseDate, { weekStartsOn: 1 });
+        groupKey = `${invoice.partner_driver_id}_week_${format(weekStart, 'yyyy-ww')}`;
+        periodLabel = `Semaine du ${format(weekStart, "d MMM", { locale: fr })} au ${format(weekEnd, "d MMM yyyy", { locale: fr })}`;
+        periodStart = weekStart.toISOString();
+        periodEnd = weekEnd.toISOString();
+      } else {
+        // Grouper par mois
+        const courseDate = parseISO(invoice.scheduled_date);
+        const monthStart = startOfMonth(courseDate);
+        const monthEnd = endOfMonth(courseDate);
+        groupKey = `${invoice.partner_driver_id}_month_${format(monthStart, 'yyyy-MM')}`;
+        periodLabel = format(monthStart, "MMMM yyyy", { locale: fr });
+        periodStart = monthStart.toISOString();
+        periodEnd = monthEnd.toISOString();
       }
-    }
 
-    // Mensuel: confirmation possible à la fin du mois
-    if (schedule === 'monthly') {
-      const monthEnd = endOfMonth(endDate);
-      if (isBefore(today, monthEnd)) {
-        return { 
-          canConfirm: false, 
-          reason: `Disponible le ${format(monthEnd, 'dd/MM/yyyy', { locale: fr })}` 
-        };
+      if (!groups.has(groupKey)) {
+        // Déterminer si confirmation possible
+        let canConfirm = true;
+        let confirmReason: string | undefined;
+        
+        if (direction === 'incoming') {
+          if (schedule === 'weekly' && periodEnd) {
+            const end = parseISO(periodEnd);
+            if (isBefore(today, end)) {
+              canConfirm = false;
+              confirmReason = `Confirmation possible le ${format(end, "d MMM", { locale: fr })}`;
+            }
+          } else if (schedule === 'monthly' && periodEnd) {
+            const end = parseISO(periodEnd);
+            if (isBefore(today, end)) {
+              canConfirm = false;
+              confirmReason = `Confirmation possible le ${format(end, "d MMM", { locale: fr })}`;
+            }
+          }
+        }
+
+        groups.set(groupKey, {
+          id: groupKey,
+          partnerId: invoice.partner_driver_id,
+          partnerName: invoice.partner_name,
+          partnerPhoto: invoice.partner_photo,
+          partnershipId: invoice.partnership_id,
+          paymentSchedule: schedule,
+          periodLabel,
+          periodStart,
+          periodEnd,
+          invoices: [],
+          totalAmount: 0,
+          dueDate: null,
+          isOverdue: false,
+          isDueSoon: false,
+          allSent: true,
+          allPending: true,
+          canConfirm,
+          confirmReason,
+        });
       }
-    }
 
-    return { canConfirm: true };
+      const group = groups.get(groupKey)!;
+      group.invoices.push(invoice);
+      group.totalAmount += invoice.commission_amount;
+      
+      // Mettre à jour la date d'échéance (la plus proche)
+      if (invoice.payment_due_date) {
+        if (!group.dueDate || isBefore(parseISO(invoice.payment_due_date), parseISO(group.dueDate))) {
+          group.dueDate = invoice.payment_due_date;
+        }
+      }
+
+      // Vérifier les statuts
+      if (invoice.payment_status !== 'sent') group.allSent = false;
+      if (invoice.payment_status !== 'pending') group.allPending = false;
+    });
+
+    // Calculer isOverdue et isDueSoon pour chaque groupe
+    groups.forEach(group => {
+      if (group.dueDate) {
+        const dueDate = parseISO(group.dueDate);
+        const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        group.isOverdue = diffDays < 0;
+        group.isDueSoon = diffDays >= 0 && diffDays <= 2;
+      }
+    });
+
+    // Trier par urgence puis par date
+    return Array.from(groups.values()).sort((a, b) => {
+      if (a.isOverdue && !b.isOverdue) return -1;
+      if (!a.isOverdue && b.isOverdue) return 1;
+      if (a.isDueSoon && !b.isDueSoon) return -1;
+      if (!a.isDueSoon && b.isDueSoon) return 1;
+      if (a.dueDate && b.dueDate) {
+        return parseISO(a.dueDate).getTime() - parseISO(b.dueDate).getTime();
+      }
+      return 0;
+    });
   }, []);
 
-  const handleSendPayment = (invoice: PartnerInvoiceItem) => {
-    setSelectedInvoice(invoice);
-    setSendPaymentOpen(true);
+  // Séparer les factures par type
+  const outgoingInvoices = useMemo(() => 
+    invoices.filter(i => i.invoice_type === 'receiver' && i.payment_status !== 'paid'),
+    [invoices]
+  );
+
+  const incomingInvoices = useMemo(() => 
+    invoices.filter(i => i.invoice_type === 'sender' && i.payment_status !== 'paid'),
+    [invoices]
+  );
+
+  // Grouper les factures
+  const outgoingGroups = useMemo(() => 
+    groupInvoices(outgoingInvoices, 'outgoing'),
+    [outgoingInvoices, groupInvoices]
+  );
+
+  const incomingGroups = useMemo(() => 
+    groupInvoices(incomingInvoices, 'incoming'),
+    [incomingInvoices, groupInvoices]
+  );
+
+  // Totaux
+  const totalOutgoing = useMemo(() => 
+    outgoingGroups.reduce((acc, g) => acc + g.totalAmount, 0),
+    [outgoingGroups]
+  );
+
+  const totalIncoming = useMemo(() => 
+    incomingGroups.reduce((acc, g) => acc + g.totalAmount, 0),
+    [incomingGroups]
+  );
+
+  const overdueCount = useMemo(() => 
+    outgoingGroups.filter(g => g.isOverdue).length,
+    [outgoingGroups]
+  );
+
+  // Toggle group expansion
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
   };
 
-  const handleConfirmReceipt = (invoice: PartnerInvoiceItem) => {
-    const { canConfirm, reason } = canConfirmPayment(invoice);
-    if (!canConfirm) {
-      toast.error(reason || 'Confirmation non disponible pour le moment');
-      return;
-    }
-    setSelectedInvoice(invoice);
-    setConfirmReceiptOpen(true);
-  };
-
-  const handleSendReminder = (invoice: PartnerInvoiceItem) => {
-    setSelectedInvoice(invoice);
-    setReminderOpen(true);
-  };
-
+  // Upload proof
   const uploadProof = async (): Promise<string | null> => {
     if (!proofFile) return null;
 
@@ -299,221 +392,435 @@ export function PartnerPaymentsManager({ driverId }: Props) {
     return urlData.publicUrl;
   };
 
-  // Notifier l'envoi du paiement (sortant)
+  // Notifier l'envoi du paiement (pour un groupe ou une facture)
   const submitPaymentSent = async () => {
-    if (!selectedInvoice) return;
+    if (!selectedGroup && !selectedInvoice) return;
     setSubmitting(true);
 
     try {
       const proofUrl = await uploadProof();
       const userId = (await supabase.auth.getUser()).data.user?.id;
+      
+      const invoicesToUpdate = selectedGroup 
+        ? selectedGroup.invoices.filter(i => i.payment_status === 'pending')
+        : selectedInvoice ? [selectedInvoice] : [];
 
-      // Update invoice status to 'sent' (not 'paid' yet - receiver must confirm)
-      const { error } = await supabase
-        .from('partner_invoices')
-        .update({
-          payment_status: 'sent',
-          payment_sent_at: new Date().toISOString(),
-          payment_sent_by: userId,
-          payment_proof_url: proofUrl,
-          payment_notes: paymentNotes || null,
-        })
-        .eq('id', selectedInvoice.id);
-
-      if (error) throw error;
-
-      // Create a payment record
-      const { data: partnership } = await supabase
-        .from('driver_partnerships')
-        .select('id')
-        .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
-        .or(`driver_a_id.eq.${selectedInvoice.partner_driver_id},driver_b_id.eq.${selectedInvoice.partner_driver_id}`)
-        .eq('status', 'active')
-        .single();
-
-      if (partnership) {
-        await supabase.from('partner_payments').insert({
-          partnership_id: partnership.id,
-          payer_driver_id: driverId,
-          receiver_driver_id: selectedInvoice.partner_driver_id,
-          amount: selectedInvoice.commission_amount,
-          payment_reference: paymentReference || null,
-          payment_method: 'transfer',
-          proof_url: proofUrl,
-          notes: paymentNotes || null,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        });
+      // Update all invoices in the group
+      for (const invoice of invoicesToUpdate) {
+        await supabase
+          .from('partner_invoices')
+          .update({
+            payment_status: 'sent',
+            payment_sent_at: new Date().toISOString(),
+            payment_sent_by: userId,
+            payment_proof_url: proofUrl,
+            payment_notes: paymentNotes || null,
+          })
+          .eq('id', invoice.id);
       }
 
       // Notify partner
+      const partnerId = selectedGroup?.partnerId || selectedInvoice?.partner_driver_id;
+      const totalAmount = selectedGroup?.totalAmount || selectedInvoice?.commission_amount || 0;
+      
       const { data: partnerDriver } = await supabase
         .from('drivers')
         .select('user_id')
-        .eq('id', selectedInvoice.partner_driver_id)
+        .eq('id', partnerId)
         .single();
 
       if (partnerDriver?.user_id) {
+        const scheduleLabel = selectedGroup 
+          ? SCHEDULE_LABELS[selectedGroup.paymentSchedule]
+          : 'Par course';
+        
         await supabase.from('notifications').insert({
           user_id: partnerDriver.user_id,
           title: '💸 Paiement envoyé',
-          message: `Un partenaire vous a envoyé un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€. Confirmez sa réception.`,
+          message: `Paiement ${scheduleLabel.toLowerCase()} de ${totalAmount.toFixed(2)}€ envoyé. Confirmez la réception.`,
           type: 'info',
           link: '/driver-dashboard?tab=partnerships&subtab=payments',
         });
       }
 
       toast.success('Paiement notifié avec succès');
-      setSendPaymentOpen(false);
-      setPaymentReference('');
-      setPaymentNotes('');
-      setProofFile(null);
+      resetDialogs();
       loadInvoices();
     } catch (error) {
-      console.error('Error sending payment:', error);
-      toast.error('Erreur lors de la notification du paiement');
+      console.error('Error:', error);
+      toast.error('Erreur lors de la notification');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Confirmer la réception d'un paiement (entrant)
+  // Confirmer la réception d'un paiement
   const submitReceiptConfirmation = async () => {
-    if (!selectedInvoice) return;
-    
-    const { canConfirm, reason } = canConfirmPayment(selectedInvoice);
-    if (!canConfirm) {
-      toast.error(reason || 'Confirmation non disponible');
-      return;
-    }
-
+    if (!selectedGroup && !selectedInvoice) return;
     setSubmitting(true);
 
     try {
       const userId = (await supabase.auth.getUser()).data.user?.id;
+      
+      const invoicesToUpdate = selectedGroup 
+        ? selectedGroup.invoices
+        : selectedInvoice ? [selectedInvoice] : [];
 
-      const { error } = await supabase
-        .from('partner_invoices')
-        .update({
-          payment_status: 'paid',
-          paid_at: new Date().toISOString(),
-          payment_confirmed_by: userId,
-          received_confirmed_at: new Date().toISOString(),
-          received_confirmed_by: userId,
-          payment_notes: paymentNotes || null,
-        })
-        .eq('id', selectedInvoice.id);
+      for (const invoice of invoicesToUpdate) {
+        await supabase
+          .from('partner_invoices')
+          .update({
+            payment_status: 'paid',
+            paid_at: new Date().toISOString(),
+            payment_confirmed_by: userId,
+            received_confirmed_at: new Date().toISOString(),
+            received_confirmed_by: userId,
+            payment_notes: paymentNotes || null,
+          })
+          .eq('id', invoice.id);
+      }
 
-      if (error) throw error;
-
-      // Notify partner that payment was confirmed
+      // Notify partner
+      const partnerId = selectedGroup?.partnerId || selectedInvoice?.partner_driver_id;
+      const totalAmount = selectedGroup?.totalAmount || selectedInvoice?.commission_amount || 0;
+      
       const { data: partnerDriver } = await supabase
         .from('drivers')
         .select('user_id')
-        .eq('id', selectedInvoice.partner_driver_id)
+        .eq('id', partnerId)
         .single();
 
       if (partnerDriver?.user_id) {
         await supabase.from('notifications').insert({
           user_id: partnerDriver.user_id,
           title: '✅ Paiement confirmé',
-          message: `Votre paiement de ${selectedInvoice.commission_amount.toFixed(2)}€ a été confirmé par le partenaire`,
+          message: `Votre paiement de ${totalAmount.toFixed(2)}€ a été confirmé`,
           type: 'success',
           link: '/driver-dashboard?tab=partnerships&subtab=payments',
         });
       }
 
       toast.success('Réception confirmée');
-      setConfirmReceiptOpen(false);
-      setPaymentNotes('');
+      resetDialogs();
       loadInvoices();
     } catch (error) {
-      console.error('Error confirming receipt:', error);
+      console.error('Error:', error);
       toast.error('Erreur lors de la confirmation');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Envoyer un rappel au partenaire
+  // Envoyer un rappel
   const submitReminder = async () => {
-    if (!selectedInvoice) return;
+    if (!selectedGroup && !selectedInvoice) return;
     setSubmitting(true);
 
     try {
-      // Update reminder tracking
-      const { error } = await supabase
-        .from('partner_invoices')
-        .update({
-          last_reminder_sent_at: new Date().toISOString(),
-          reminder_count: (selectedInvoice.reminder_count || 0) + 1,
-        })
-        .eq('id', selectedInvoice.id);
+      const invoicesToUpdate = selectedGroup 
+        ? selectedGroup.invoices
+        : selectedInvoice ? [selectedInvoice] : [];
 
-      if (error) throw error;
+      for (const invoice of invoicesToUpdate) {
+        await supabase
+          .from('partner_invoices')
+          .update({
+            last_reminder_sent_at: new Date().toISOString(),
+            reminder_count: (invoice.reminder_count || 0) + 1,
+          })
+          .eq('id', invoice.id);
+      }
 
-      // Notify partner
+      const partnerId = selectedGroup?.partnerId || selectedInvoice?.partner_driver_id;
+      const totalAmount = selectedGroup?.totalAmount || selectedInvoice?.commission_amount || 0;
+      
       const { data: partnerDriver } = await supabase
         .from('drivers')
         .select('user_id')
-        .eq('id', selectedInvoice.partner_driver_id)
+        .eq('id', partnerId)
         .single();
 
       if (partnerDriver?.user_id) {
         await supabase.from('notifications').insert({
           user_id: partnerDriver.user_id,
           title: '🔔 Rappel de paiement',
-          message: `Rappel: Un paiement de ${selectedInvoice.commission_amount.toFixed(2)}€ est en attente (${selectedInvoice.invoice_number})`,
+          message: `Rappel: Un paiement de ${totalAmount.toFixed(2)}€ est en attente`,
           type: 'warning',
           link: '/driver-dashboard?tab=partnerships&subtab=payments',
         });
       }
 
-      toast.success('Rappel envoyé au partenaire');
-      setReminderOpen(false);
+      toast.success('Rappel envoyé');
+      resetDialogs();
       loadInvoices();
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      console.error('Error:', error);
       toast.error('Erreur lors de l\'envoi du rappel');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isInvoiceOverdue = (invoice: PartnerInvoiceItem) => {
-    if (!invoice.payment_due_date || invoice.payment_status === 'paid') return false;
-    return isBefore(new Date(invoice.payment_due_date), startOfDay(new Date()));
+  const resetDialogs = () => {
+    setSendPaymentOpen(false);
+    setConfirmReceiptOpen(false);
+    setReminderOpen(false);
+    setSelectedGroup(null);
+    setSelectedInvoice(null);
+    setPaymentReference('');
+    setPaymentNotes('');
+    setProofFile(null);
   };
 
-  const getScheduleAlert = (invoice: PartnerInvoiceItem, direction: 'incoming' | 'outgoing') => {
-    if (invoice.payment_status === 'paid') return null;
-
-    // Pour les entrants, vérifier si confirmation possible
-    if (direction === 'incoming') {
-      const { canConfirm, reason } = canConfirmPayment(invoice);
-      if (!canConfirm && reason) {
-        return { type: 'info', message: reason };
-      }
-    }
+  // Composant pour une carte de groupe de paiement
+  const PaymentGroupCard: React.FC<{
+    group: PaymentGroup;
+    direction: 'outgoing' | 'incoming';
+  }> = ({ group, direction }) => {
+    const isExpanded = expandedGroups.has(group.id);
+    const isPool = group.paymentSchedule !== 'per_course';
     
-    const isOverdue = isInvoiceOverdue(invoice);
-    if (isOverdue) {
-      return { type: 'error', message: 'En retard' };
-    }
+    return (
+      <Card className={cn(
+        "overflow-hidden transition-all",
+        group.isOverdue && "border-red-500/50 bg-red-500/5",
+        group.isDueSoon && !group.isOverdue && "border-orange-500/50 bg-orange-500/5",
+        group.allSent && "border-blue-500/50 bg-blue-500/5"
+      )}>
+        <CardContent className="p-0">
+          {/* Header */}
+          <div className="p-4">
+            <div className="flex items-start gap-3">
+              {/* Partner avatar */}
+              <div className="relative">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={group.partnerPhoto || undefined} />
+                  <AvatarFallback className="text-sm bg-muted">
+                    {group.partnerName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className={cn(
+                  "absolute -bottom-1 -right-1 h-6 w-6 rounded-full flex items-center justify-center",
+                  direction === 'outgoing' ? "bg-orange-500" : "bg-green-500"
+                )}>
+                  {direction === 'outgoing' ? (
+                    <ArrowUpRight className="h-3.5 w-3.5 text-white" />
+                  ) : (
+                    <ArrowDownLeft className="h-3.5 w-3.5 text-white" />
+                  )}
+                </div>
+              </div>
 
-    if (!invoice.payment_due_date) return null;
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{group.partnerName}</p>
+                
+                {/* Schedule badge */}
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs gap-1",
+                      group.paymentSchedule === 'per_course' && "border-gray-400 text-gray-600",
+                      group.paymentSchedule === 'weekly' && "border-blue-400 text-blue-600",
+                      group.paymentSchedule === 'monthly' && "border-purple-400 text-purple-600"
+                    )}
+                  >
+                    {SCHEDULE_ICONS[group.paymentSchedule]}
+                    {SCHEDULE_LABELS[group.paymentSchedule]}
+                  </Badge>
+                  
+                  {isPool && (
+                    <Badge variant="secondary" className="text-xs">
+                      {group.invoices.length} course{group.invoices.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
 
-    const dueDate = new Date(invoice.payment_due_date);
-    const today = startOfDay(new Date());
-    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  {group.allSent && (
+                    <Badge className="bg-blue-500/20 text-blue-600 text-xs">
+                      <Send className="h-3 w-3 mr-1" />
+                      Envoyé
+                    </Badge>
+                  )}
+                </div>
 
-    if (diffDays <= 0) {
-      return { type: 'error', message: 'Échéance aujourd\'hui' };
-    } else if (diffDays <= 2) {
-      return { type: 'warning', message: `Échéance dans ${diffDays} jour${diffDays > 1 ? 's' : ''}` };
-    }
+                {/* Period */}
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {group.periodLabel}
+                </p>
 
-    return null;
+                {/* Due date */}
+                {group.dueDate && (
+                  <div className="mt-1">
+                    {group.isOverdue ? (
+                      <Badge className="bg-red-500/20 text-red-600 text-xs">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        En retard
+                      </Badge>
+                    ) : group.isDueSoon ? (
+                      <Badge className="bg-orange-500/20 text-orange-600 text-xs">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Échéance: {format(parseISO(group.dueDate), "d MMM", { locale: fr })}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Échéance: {format(parseISO(group.dueDate), "d MMM", { locale: fr })}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Amount */}
+              <div className="text-right">
+                <p className={cn(
+                  "text-lg font-bold",
+                  direction === 'outgoing' ? "text-orange-600" : "text-green-600"
+                )}>
+                  {direction === 'outgoing' ? '-' : '+'}{group.totalAmount.toFixed(2)}€
+                </p>
+                {isPool && (
+                  <p className="text-xs text-muted-foreground">Cagnotte</p>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 mt-4">
+              {direction === 'outgoing' ? (
+                group.allSent ? (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex-1 text-blue-600 border-blue-500"
+                      disabled
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Paiement envoyé
+                    </Button>
+                    {group.invoices.some(i => i.payment_proof_url) && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(group.invoices.find(i => i.payment_proof_url)?.payment_proof_url!, '_blank')}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                    onClick={() => {
+                      setSelectedGroup(group);
+                      setSendPaymentOpen(true);
+                    }}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Notifier le paiement
+                  </Button>
+                )
+              ) : (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex-1 text-orange-600 border-orange-500 hover:bg-orange-500/10"
+                    onClick={() => {
+                      setSelectedGroup(group);
+                      setReminderOpen(true);
+                    }}
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Relancer
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className={cn(
+                      "flex-1",
+                      group.canConfirm 
+                        ? "bg-green-600 hover:bg-green-700" 
+                        : "bg-gray-400 cursor-not-allowed"
+                    )}
+                    disabled={!group.canConfirm}
+                    onClick={() => {
+                      if (group.canConfirm) {
+                        setSelectedGroup(group);
+                        setConfirmReceiptOpen(true);
+                      }
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Valider réception
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Show reason if can't confirm */}
+            {direction === 'incoming' && !group.canConfirm && group.confirmReason && (
+              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {group.confirmReason}
+              </p>
+            )}
+          </div>
+
+          {/* Collapsible invoice list for pools */}
+          {isPool && (
+            <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.id)}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-full rounded-none border-t h-10 text-xs text-muted-foreground hover:bg-muted/50"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Masquer les détails
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Voir les {group.invoices.length} courses
+                    </>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t bg-muted/30 p-3 space-y-2">
+                  {group.invoices.map(invoice => (
+                    <div 
+                      key={invoice.id}
+                      className="flex items-center justify-between text-sm bg-background rounded-lg p-2"
+                    >
+                      <div>
+                        <p className="font-mono text-xs text-muted-foreground">{invoice.invoice_number}</p>
+                        <p className="text-xs">{format(parseISO(invoice.scheduled_date), "d MMM yyyy", { locale: fr })}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={cn(
+                          "font-medium",
+                          direction === 'outgoing' ? "text-orange-600" : "text-green-600"
+                        )}>
+                          {invoice.commission_amount.toFixed(2)}€
+                        </p>
+                        {invoice.payment_status === 'sent' && (
+                          <Badge className="bg-blue-500/20 text-blue-600 text-[10px]">Envoyé</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   if (loading) {
@@ -530,144 +837,100 @@ export function PartnerPaymentsManager({ driverId }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <Card className={cn(
           "border-2 transition-colors",
-          overdueOutgoing.length > 0 ? "border-red-500/50 bg-red-500/5" : "border-orange-500/30 bg-orange-500/5"
+          overdueCount > 0 ? "border-red-500/50 bg-red-500/5" : "border-orange-500/30 bg-orange-500/5"
         )}>
           <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground font-medium">À payer</p>
+            <div className="flex items-center justify-center gap-2">
+              <ArrowUpRight className="h-5 w-5 text-orange-600" />
+              <p className="text-xs text-muted-foreground font-medium">À payer</p>
+            </div>
             <p className={cn(
-              "text-xl font-bold",
-              overdueOutgoing.length > 0 ? "text-red-600" : "text-orange-600"
+              "text-xl font-bold mt-1",
+              overdueCount > 0 ? "text-red-600" : "text-orange-600"
             )}>
-              {totalOutgoingPending.toFixed(2)} €
+              {totalOutgoing.toFixed(2)} €
             </p>
-            {overdueOutgoing.length > 0 && (
+            {overdueCount > 0 && (
               <Badge className="bg-red-500/20 text-red-600 text-[10px] mt-1">
                 <AlertTriangle className="h-3 w-3 mr-1" />
-                {overdueOutgoing.length} en retard
+                {overdueCount} en retard
               </Badge>
             )}
           </CardContent>
         </Card>
+        
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground font-medium">À recevoir</p>
-            <p className="text-xl font-bold text-green-600">{totalIncomingPending.toFixed(2)} €</p>
-            {pendingIncoming.length > 0 && (
+            <div className="flex items-center justify-center gap-2">
+              <ArrowDownLeft className="h-5 w-5 text-green-600" />
+              <p className="text-xs text-muted-foreground font-medium">À recevoir</p>
+            </div>
+            <p className="text-xl font-bold text-green-600 mt-1">{totalIncoming.toFixed(2)} €</p>
+            {incomingGroups.length > 0 && (
               <Badge className="bg-green-500/20 text-green-600 text-[10px] mt-1">
-                {pendingIncoming.length} en attente
+                {incomingGroups.length} en attente
               </Badge>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Alerts for overdue payments */}
-      {overdueOutgoing.length > 0 && (
+      {/* Overdue alert */}
+      {overdueCount > 0 && (
         <Alert className="border-red-500/50 bg-red-500/10">
           <AlertTriangle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-sm text-red-600">
-            <strong>Attention :</strong> Vous avez {overdueOutgoing.length} paiement{overdueOutgoing.length > 1 ? 's' : ''} en retard. 
-            Régularisez la situation pour maintenir votre partenariat.
+            <strong>Attention :</strong> {overdueCount} paiement{overdueCount > 1 ? 's' : ''} en retard. 
+            Régularisez rapidement pour maintenir vos partenariats.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Tabs for incoming/outgoing */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList className="grid grid-cols-2 w-full">
-          <TabsTrigger value="outgoing" className="text-xs gap-1">
-            <ArrowUpRight className="h-3.5 w-3.5" />
-            Sortants ({pendingOutgoing.length})
+          <TabsTrigger value="outgoing" className="text-xs gap-1.5">
+            <ArrowUpRight className="h-4 w-4" />
+            Sortants ({outgoingGroups.length})
           </TabsTrigger>
-          <TabsTrigger value="incoming" className="text-xs gap-1">
-            <ArrowDownLeft className="h-3.5 w-3.5" />
-            Entrants ({pendingIncoming.length})
+          <TabsTrigger value="incoming" className="text-xs gap-1.5">
+            <ArrowDownLeft className="h-4 w-4" />
+            Entrants ({incomingGroups.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="outgoing" className="mt-4 space-y-2">
-          {pendingOutgoing.length === 0 ? (
-            <Alert>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription>Aucun paiement en attente à effectuer.</AlertDescription>
-            </Alert>
-          ) : (
-            pendingOutgoing.map((invoice) => {
-              const alert = getScheduleAlert(invoice, 'outgoing');
-              return (
-                <InvoiceCard
-                  key={invoice.id}
-                  invoice={invoice}
-                  direction="outgoing"
-                  alert={alert}
-                  onAction={() => handleSendPayment(invoice)}
-                  actionLabel={invoice.payment_status === 'sent' ? 'Envoyé' : 'Notifier paiement'}
-                  actionIcon={invoice.payment_status === 'sent' ? <CheckCircle className="h-4 w-4 mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-                  isSent={invoice.payment_status === 'sent'}
-                  proofUrl={invoice.payment_proof_url}
-                />
-              );
-            })
-          )}
-
-          {/* Paid outgoing */}
-          {outgoingInvoices.filter(i => i.payment_status === 'paid').length > 0 && (
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground mb-2">Paiements effectués</p>
-              {outgoingInvoices.filter(i => i.payment_status === 'paid').slice(0, 5).map((invoice) => (
-                <InvoiceCard
-                  key={invoice.id}
-                  invoice={invoice}
-                  direction="outgoing"
-                  isPaid
-                />
-              ))}
+        <TabsContent value="outgoing" className="mt-4">
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {outgoingGroups.length === 0 ? (
+                <Alert>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription>Aucun paiement à effectuer. Vous êtes à jour !</AlertDescription>
+                </Alert>
+              ) : (
+                outgoingGroups.map(group => (
+                  <PaymentGroupCard key={group.id} group={group} direction="outgoing" />
+                ))
+              )}
             </div>
-          )}
+          </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="incoming" className="mt-4 space-y-2">
-          {pendingIncoming.length === 0 ? (
-            <Alert>
-              <Euro className="h-4 w-4" />
-              <AlertDescription>Aucun paiement en attente à recevoir.</AlertDescription>
-            </Alert>
-          ) : (
-            pendingIncoming.map((invoice) => {
-              const alert = getScheduleAlert(invoice, 'incoming');
-              const { canConfirm } = canConfirmPayment(invoice);
-              return (
-                <InvoiceCard
-                  key={invoice.id}
-                  invoice={invoice}
-                  direction="incoming"
-                  alert={alert}
-                  onAction={() => handleConfirmReceipt(invoice)}
-                  actionLabel="Confirmer réception"
-                  actionIcon={<CheckCircle className="h-4 w-4 mr-1" />}
-                  onReminder={() => handleSendReminder(invoice)}
-                  reminderCount={invoice.reminder_count}
-                  canConfirm={canConfirm}
-                  isSent={invoice.payment_status === 'sent'}
-                />
-              );
-            })
-          )}
-
-          {/* Paid incoming */}
-          {incomingInvoices.filter(i => i.payment_status === 'paid').length > 0 && (
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground mb-2">Paiements reçus</p>
-              {incomingInvoices.filter(i => i.payment_status === 'paid').slice(0, 5).map((invoice) => (
-                <InvoiceCard
-                  key={invoice.id}
-                  invoice={invoice}
-                  direction="incoming"
-                  isPaid
-                />
-              ))}
+        <TabsContent value="incoming" className="mt-4">
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {incomingGroups.length === 0 ? (
+                <Alert>
+                  <Euro className="h-4 w-4" />
+                  <AlertDescription>Aucun paiement en attente à recevoir.</AlertDescription>
+                </Alert>
+              ) : (
+                incomingGroups.map(group => (
+                  <PaymentGroupCard key={group.id} group={group} direction="incoming" />
+                ))
+              )}
             </div>
-          )}
+          </ScrollArea>
         </TabsContent>
       </Tabs>
 
@@ -677,31 +940,47 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Send className="h-5 w-5 text-primary" />
-              Notifier un paiement
+              Notifier le paiement
             </DialogTitle>
             <DialogDescription>
-              Confirmez l'envoi du paiement à votre partenaire
+              Informez votre partenaire que vous avez effectué le virement
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-muted/50 p-3 rounded-lg text-sm">
-              <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
-              <p><strong>À:</strong> {selectedInvoice?.partner_name}</p>
-              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={selectedGroup?.partnerPhoto || undefined} />
+                  <AvatarFallback>{selectedGroup?.partnerName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{selectedGroup?.partnerName}</p>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {selectedGroup && SCHEDULE_LABELS[selectedGroup.paymentSchedule]}
+                  </Badge>
+                </div>
+              </div>
+              <div className="text-sm space-y-1">
+                <p><strong>Période:</strong> {selectedGroup?.periodLabel}</p>
+                <p><strong>Montant:</strong> <span className="text-orange-600 font-bold">{selectedGroup?.totalAmount.toFixed(2)}€</span></p>
+                {selectedGroup && selectedGroup.invoices.length > 1 && (
+                  <p><strong>Courses:</strong> {selectedGroup.invoices.length}</p>
+                )}
+              </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Référence de virement (optionnel)</label>
+              <label className="text-sm font-medium">Référence du virement (optionnel)</label>
               <Input
-                placeholder="Ex: VIR-2024-001"
+                placeholder="Ex: VIR-2026-001"
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">Preuve de paiement (optionnel)</label>
+              <label className="text-sm font-medium">Justificatif (optionnel)</label>
               <div className="mt-1">
                 <Input
                   type="file"
@@ -711,7 +990,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
               </div>
               {proofFile && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Fichier sélectionné: {proofFile.name}
+                  ✓ {proofFile.name}
                 </p>
               )}
             </div>
@@ -731,8 +1010,12 @@ export function PartnerPaymentsManager({ driverId }: Props) {
               Annuler
             </Button>
             <Button onClick={submitPaymentSent} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Confirmer l'envoi
+              {submitting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Notifier le paiement
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -744,7 +1027,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              Confirmer la réception
+              Valider la réception
             </DialogTitle>
             <DialogDescription>
               Confirmez que vous avez bien reçu le paiement
@@ -752,16 +1035,29 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-muted/50 p-3 rounded-lg text-sm">
-              <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
-              <p><strong>De:</strong> {selectedInvoice?.partner_name}</p>
-              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={selectedGroup?.partnerPhoto || undefined} />
+                  <AvatarFallback>{selectedGroup?.partnerName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{selectedGroup?.partnerName}</p>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {selectedGroup && SCHEDULE_LABELS[selectedGroup.paymentSchedule]}
+                  </Badge>
+                </div>
+              </div>
+              <div className="text-sm space-y-1">
+                <p><strong>Période:</strong> {selectedGroup?.periodLabel}</p>
+                <p><strong>Montant reçu:</strong> <span className="text-green-600 font-bold">{selectedGroup?.totalAmount.toFixed(2)}€</span></p>
+              </div>
             </div>
 
             <div>
               <label className="text-sm font-medium">Notes (optionnel)</label>
               <Textarea
-                placeholder="Informations complémentaires..."
+                placeholder="Commentaires..."
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
               />
@@ -778,13 +1074,14 @@ export function PartnerPaymentsManager({ driverId }: Props) {
               className="bg-green-600 hover:bg-green-700"
             >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Confirmer la réception
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Valider la réception
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Send Reminder Dialog */}
+      {/* Reminder Dialog */}
       <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
         <DialogContent>
           <DialogHeader>
@@ -798,21 +1095,28 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-muted/50 p-3 rounded-lg text-sm">
-              <p><strong>Facture:</strong> {selectedInvoice?.invoice_number}</p>
-              <p><strong>De:</strong> {selectedInvoice?.partner_name}</p>
-              <p><strong>Montant:</strong> {selectedInvoice?.commission_amount.toFixed(2)}€</p>
-              {selectedInvoice && selectedInvoice.reminder_count > 0 && (
-                <p className="text-orange-600 mt-2">
-                  <strong>Rappels déjà envoyés:</strong> {selectedInvoice.reminder_count}
-                </p>
-              )}
+            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={selectedGroup?.partnerPhoto || undefined} />
+                  <AvatarFallback>{selectedGroup?.partnerName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{selectedGroup?.partnerName}</p>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {selectedGroup && SCHEDULE_LABELS[selectedGroup.paymentSchedule]}
+                  </Badge>
+                </div>
+              </div>
+              <div className="text-sm space-y-1">
+                <p><strong>Montant en attente:</strong> <span className="text-orange-600 font-bold">{selectedGroup?.totalAmount.toFixed(2)}€</span></p>
+              </div>
             </div>
 
             <Alert className="border-orange-500/50 bg-orange-500/10">
               <Bell className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-sm text-orange-700">
-                Une notification sera envoyée au partenaire pour lui rappeler le paiement en attente.
+                Une notification sera envoyée au partenaire pour lui rappeler le paiement.
               </AlertDescription>
             </Alert>
           </div>
@@ -834,208 +1138,5 @@ export function PartnerPaymentsManager({ driverId }: Props) {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-interface InvoiceCardProps {
-  invoice: PartnerInvoiceItem;
-  direction: 'incoming' | 'outgoing';
-  alert?: { type: string; message: string } | null;
-  onAction?: () => void;
-  actionLabel?: string;
-  actionIcon?: React.ReactNode;
-  isPaid?: boolean;
-  isSent?: boolean;
-  proofUrl?: string | null;
-  onReminder?: () => void;
-  reminderCount?: number;
-  canConfirm?: boolean;
-}
-
-function InvoiceCard({ 
-  invoice, 
-  direction, 
-  alert, 
-  onAction, 
-  actionLabel, 
-  actionIcon,
-  isPaid,
-  isSent,
-  proofUrl,
-  onReminder,
-  reminderCount,
-  canConfirm = true
-}: InvoiceCardProps) {
-  return (
-    <Card className={cn(
-      "overflow-hidden",
-      isPaid && "opacity-60",
-      isSent && direction === 'outgoing' && "border-blue-500/50 bg-blue-500/5",
-      isSent && direction === 'incoming' && "border-blue-500/50 bg-blue-500/5",
-      alert?.type === 'error' && "border-red-500/50",
-      alert?.type === 'warning' && "border-orange-500/50",
-      alert?.type === 'info' && "border-blue-500/50"
-    )}>
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          {/* Direction indicator */}
-          <div className={cn(
-            "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
-            direction === 'outgoing' ? "bg-orange-500/20" : "bg-green-500/20",
-            isSent && "bg-blue-500/20"
-          )}>
-            {isSent ? (
-              <Send className="h-5 w-5 text-blue-600" />
-            ) : direction === 'outgoing' ? (
-              <ArrowUpRight className="h-5 w-5 text-orange-600" />
-            ) : (
-              <ArrowDownLeft className="h-5 w-5 text-green-600" />
-            )}
-          </div>
-
-          {/* Partner info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={invoice.partner_photo || undefined} />
-                <AvatarFallback className="text-[10px]">
-                  {invoice.partner_name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium truncate">{invoice.partner_name}</span>
-              {isSent && (
-                <Badge className="bg-blue-500/20 text-blue-600 text-[9px]">
-                  Envoyé
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-              <span className="font-mono">{invoice.invoice_number}</span>
-              {invoice.payment_schedule && (
-                <Badge variant="outline" className="text-[9px]">
-                  {PAYMENT_SCHEDULE_LABELS[invoice.payment_schedule] || invoice.payment_schedule}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              {format(new Date(invoice.scheduled_date), "d MMM yyyy", { locale: fr })}
-              {invoice.payment_due_date && (
-                <>
-                  <span className="mx-1">•</span>
-                  <span>Échéance: {format(new Date(invoice.payment_due_date), "d MMM", { locale: fr })}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Amount and action */}
-          <div className="text-right shrink-0">
-            <p className={cn(
-              "text-sm font-bold",
-              direction === 'outgoing' ? "text-orange-600" : "text-green-600"
-            )}>
-              {direction === 'outgoing' ? '-' : '+'}{invoice.commission_amount.toFixed(2)}€
-            </p>
-            {alert && (
-              <Badge className={cn(
-                "text-[9px] mt-1",
-                alert.type === 'error' ? "bg-red-500/20 text-red-600" : 
-                alert.type === 'warning' ? "bg-orange-500/20 text-orange-600" :
-                "bg-blue-500/20 text-blue-600"
-              )}>
-                {alert.type === 'info' ? (
-                  <Clock className="h-3 w-3 mr-1" />
-                ) : (
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                )}
-                {alert.message}
-              </Badge>
-            )}
-            {isPaid && (
-              <Badge className="bg-green-500/20 text-green-600 text-[9px] mt-1">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Payée
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Actions row for incoming */}
-        {direction === 'incoming' && !isPaid && (
-          <div className="flex gap-2 mt-3 pt-2 border-t">
-            {onReminder && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 text-xs border-orange-500 text-orange-600 hover:bg-orange-500/10"
-                onClick={onReminder}
-              >
-                <Bell className="h-3.5 w-3.5 mr-1" />
-                Relancer
-                {reminderCount && reminderCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-[9px] px-1">
-                    {reminderCount}
-                  </Badge>
-                )}
-              </Button>
-            )}
-            {onAction && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!canConfirm}
-                className={cn(
-                  "flex-1 text-xs",
-                  canConfirm 
-                    ? "border-green-600 text-green-600 hover:bg-green-600/10" 
-                    : "opacity-50 cursor-not-allowed"
-                )}
-                onClick={onAction}
-              >
-                {actionIcon}
-                <span className="hidden sm:inline">{actionLabel}</span>
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Actions row for outgoing */}
-        {direction === 'outgoing' && !isPaid && (
-          <div className="flex gap-2 mt-3 pt-2 border-t">
-            {isSent ? (
-              <>
-                <Badge className="flex-1 justify-center py-2 bg-blue-500/20 text-blue-600">
-                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
-                  Paiement envoyé
-                </Badge>
-                {proofUrl && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() => window.open(proofUrl, '_blank')}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </>
-            ) : (
-              onAction && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 text-xs border-primary text-primary hover:bg-primary/10"
-                  onClick={onAction}
-                >
-                  {actionIcon}
-                  <span className="hidden sm:inline">{actionLabel}</span>
-                </Button>
-              )
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
