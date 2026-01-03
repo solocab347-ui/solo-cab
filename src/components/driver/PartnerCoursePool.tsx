@@ -47,11 +47,20 @@ interface PooledCourse {
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
+  // Sender info (complet)
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
   sender_phone: string | null;
+  sender_email: string | null;
+  sender_vehicle_brand: string | null;
+  sender_vehicle_model: string | null;
+  sender_vehicle_color: string | null;
+  sender_rating: number | null;
+  sender_total_rides: number | null;
+  sender_show_phone: boolean;
+  sender_show_email: boolean;
 }
 
 interface SharedCourse {
@@ -70,11 +79,22 @@ interface SharedCourse {
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
+  // Sender info (complet)
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
   sender_phone: string | null;
+  sender_email: string | null;
+  sender_vehicle_brand: string | null;
+  sender_vehicle_model: string | null;
+  sender_vehicle_color: string | null;
+  sender_rating: number | null;
+  sender_total_rides: number | null;
+  sender_bio: string | null;
+  sender_services_offered: string[] | null;
+  sender_show_phone: boolean;
+  sender_show_email: boolean;
   // Client info
   client_name: string | null;
   client_phone: string | null;
@@ -228,16 +248,31 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
       const enrichedCourses: SharedCourse[] = [];
       for (const item of data || []) {
+        // Récupérer TOUTES les infos du driver sender
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, sharing_number')
+          .select(`
+            user_id, 
+            company_name, 
+            sharing_number,
+            vehicle_brand,
+            vehicle_model,
+            vehicle_color,
+            rating,
+            total_rides,
+            bio,
+            services_offered,
+            card_photo_url,
+            show_phone_for_sharing,
+            show_email
+          `)
           .eq('id', item.sender_driver_id)
           .single();
 
         if (driverData) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, profile_photo_url, phone')
+            .select('full_name, profile_photo_url, phone, email')
             .eq('id', driverData.user_id)
             .single();
 
@@ -277,6 +312,9 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             }
           }
           
+          // Utiliser card_photo_url en priorité, sinon profile_photo_url
+          const senderPhoto = driverData.card_photo_url || profile?.profile_photo_url;
+          
           enrichedCourses.push({
             id: item.id,
             course_id: item.course_id,
@@ -293,11 +331,23 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
-            sender_name: (profile?.full_name?.split(' ')[0]) || 'Partenaire',
-            sender_photo: profile?.profile_photo_url,
+            // Sender info COMPLET
+            sender_name: profile?.full_name || 'Partenaire',
+            sender_photo: senderPhoto,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
-            sender_phone: profile?.phone,
+            sender_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
+            sender_email: driverData.show_email ? profile?.email : null,
+            sender_vehicle_brand: driverData.vehicle_brand,
+            sender_vehicle_model: driverData.vehicle_model,
+            sender_vehicle_color: driverData.vehicle_color,
+            sender_rating: driverData.rating,
+            sender_total_rides: driverData.total_rides,
+            sender_bio: driverData.bio,
+            sender_services_offered: driverData.services_offered,
+            sender_show_phone: driverData.show_phone_for_sharing || false,
+            sender_show_email: driverData.show_email || false,
+            // Client info
             client_name: clientInfo.client_name,
             client_phone: clientInfo.client_phone,
             client_photo: clientInfo.client_photo,
@@ -341,20 +391,35 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
       const enrichedCourses: PooledCourse[] = [];
       for (const item of data || []) {
+        // Récupérer TOUTES les infos du driver sender
         const { data: driverData } = await supabase
           .from('drivers')
-          .select('user_id, company_name, sharing_number')
+          .select(`
+            user_id, 
+            company_name, 
+            sharing_number,
+            vehicle_brand,
+            vehicle_model,
+            vehicle_color,
+            rating,
+            total_rides,
+            card_photo_url,
+            show_phone_for_sharing,
+            show_email
+          `)
           .eq('id', item.sender_driver_id)
           .single();
 
         if (driverData) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, profile_photo_url, phone')
+            .select('full_name, profile_photo_url, phone, email')
             .eq('id', driverData.user_id)
             .single();
 
           const course = item.courses as any;
+          const senderPhoto = driverData.card_photo_url || profile?.profile_photo_url;
+          
           enrichedCourses.push({
             pool_id: item.id,
             course_id: item.course_id,
@@ -370,11 +435,20 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
-            sender_name: (profile?.full_name?.split(' ')[0]) || 'Partenaire',
-            sender_photo: profile?.profile_photo_url,
+            // Sender info COMPLET
+            sender_name: profile?.full_name || 'Partenaire',
+            sender_photo: senderPhoto,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
-            sender_phone: profile?.phone,
+            sender_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
+            sender_email: driverData.show_email ? profile?.email : null,
+            sender_vehicle_brand: driverData.vehicle_brand,
+            sender_vehicle_model: driverData.vehicle_model,
+            sender_vehicle_color: driverData.vehicle_color,
+            sender_rating: driverData.rating,
+            sender_total_rides: driverData.total_rides,
+            sender_show_phone: driverData.show_phone_for_sharing || false,
+            sender_show_email: driverData.show_email || false,
           });
         }
       }
@@ -571,19 +645,22 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             sharedCourses.map((course) => (
               <Card key={course.id} className="overflow-hidden border-primary/30">
                 <CardContent className="p-0">
-                  {/* Sender info header */}
+                  {/* Sender info header - ENRICHI */}
                   <div className="p-3 border-b bg-primary/5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12 border-2 border-primary/30">
+                        <Avatar className="h-14 w-14 border-2 border-primary/30">
                           <AvatarImage src={course.sender_photo || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
                             {course.sender_name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-[10px] text-primary font-medium uppercase tracking-wide">Partenaire</p>
-                          <p className="font-semibold">{course.sender_name}</p>
+                          <p className="font-semibold truncate">{course.sender_name}</p>
+                          {course.sender_company && (
+                            <p className="text-xs text-muted-foreground truncate">{course.sender_company}</p>
+                          )}
                           {course.sender_sharing_number && (
                             <span className="text-xs text-primary font-mono">
                               #{formatSharingNumber(course.sender_sharing_number)}
@@ -616,18 +693,53 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
                       </div>
                     </div>
                     
+                    {/* Sender vehicle & rating info */}
+                    <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-primary/10">
+                      {(course.sender_vehicle_brand || course.sender_vehicle_model) && (
+                        <Badge variant="outline" className="text-xs">
+                          <Car className="h-3 w-3 mr-1" />
+                          {[course.sender_vehicle_brand, course.sender_vehicle_model].filter(Boolean).join(' ')}
+                          {course.sender_vehicle_color && ` • ${course.sender_vehicle_color}`}
+                        </Badge>
+                      )}
+                      {course.sender_rating && (
+                        <Badge variant="outline" className="text-xs bg-yellow-500/10">
+                          <span className="text-yellow-600 mr-1">★</span>
+                          {course.sender_rating.toFixed(1)}
+                        </Badge>
+                      )}
+                      {course.sender_total_rides !== null && course.sender_total_rides > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {course.sender_total_rides} courses
+                        </Badge>
+                      )}
+                    </div>
+                    
                     {/* Sender contact */}
-                    {course.sender_phone && (
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-primary/10">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs flex-1"
-                          onClick={() => window.open(`tel:${course.sender_phone}`, '_self')}
-                        >
-                          <Phone className="h-3 w-3 mr-1" />
-                          {course.sender_phone}
-                        </Button>
+                    {(course.sender_phone || course.sender_email) && (
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        {course.sender_phone && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => window.open(`tel:${course.sender_phone}`, '_self')}
+                          >
+                            <Phone className="h-3 w-3 mr-1 text-green-600" />
+                            {course.sender_phone}
+                          </Button>
+                        )}
+                        {course.sender_email && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => window.open(`mailto:${course.sender_email}`, '_blank')}
+                          >
+                            <Mail className="h-3 w-3 mr-1 text-blue-600" />
+                            Email
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

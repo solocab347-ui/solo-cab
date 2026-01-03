@@ -25,7 +25,7 @@ import {
   History,
   CheckCircle2,
   XCircle,
-  ExternalLink
+  Briefcase
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -42,6 +42,7 @@ interface SenderProfile {
   user_id: string;
   full_name: string;
   profile_photo: string | null;
+  card_photo: string | null;
   phone: string | null;
   email: string | null;
   company_name: string | null;
@@ -50,10 +51,14 @@ interface SenderProfile {
   rating: number | null;
   total_rides: number | null;
   city: string | null;
-  department: string | null;
+  vehicle_brand: string | null;
   vehicle_model: string | null;
   vehicle_color: string | null;
+  vehicle_year: number | null;
   services_offered: string[] | null;
+  service_description: string | null;
+  show_phone: boolean;
+  show_email: boolean;
 }
 
 interface PartnershipHistory {
@@ -65,6 +70,18 @@ interface PartnershipHistory {
   total_shared_courses: number;
   total_amount: number;
 }
+
+const serviceLabels: Record<string, string> = {
+  airport: 'Aéroport',
+  hourly: 'Mise à disposition',
+  business: 'Affaires',
+  events: 'Événements',
+  shuttle: 'Navette',
+  wedding: 'Mariage',
+  medical: 'Médical',
+  tourism: 'Tourisme',
+  long_distance: 'Longue distance',
+};
 
 export function SenderProfileDialog({
   open,
@@ -86,7 +103,7 @@ export function SenderProfileDialog({
   const loadSenderProfile = async () => {
     setLoading(true);
     try {
-      // Load sender profile
+      // Load sender profile with ALL fields
       const { data: driverData } = await supabase
         .from('drivers')
         .select(`
@@ -98,9 +115,15 @@ export function SenderProfileDialog({
           rating,
           total_rides,
           home_address,
+          vehicle_brand,
           vehicle_model,
           vehicle_color,
-          services_offered
+          vehicle_year,
+          services_offered,
+          service_description,
+          card_photo_url,
+          show_phone_for_sharing,
+          show_email
         `)
         .eq('id', senderDriverId)
         .single();
@@ -121,18 +144,23 @@ export function SenderProfileDialog({
           user_id: driverData.user_id,
           full_name: profileData?.full_name || 'Chauffeur',
           profile_photo: profileData?.profile_photo_url,
-          phone: profileData?.phone,
-          email: profileData?.email,
+          card_photo: driverData.card_photo_url,
+          phone: driverData.show_phone_for_sharing ? profileData?.phone : null,
+          email: driverData.show_email ? profileData?.email : null,
           company_name: driverData.company_name,
           bio: driverData.bio,
           sharing_number: driverData.sharing_number,
           rating: driverData.rating,
           total_rides: driverData.total_rides,
           city: cityFromAddress,
-          department: null,
+          vehicle_brand: driverData.vehicle_brand,
           vehicle_model: driverData.vehicle_model,
           vehicle_color: driverData.vehicle_color,
+          vehicle_year: driverData.vehicle_year,
           services_offered: driverData.services_offered,
+          service_description: driverData.service_description,
+          show_phone: driverData.show_phone_for_sharing || false,
+          show_email: driverData.show_email || false,
         });
       }
 
@@ -168,6 +196,9 @@ export function SenderProfileDialog({
           count: sharedCount || 0,
           total: totalAmount,
         });
+      } else {
+        setPartnership(null);
+        setSharedCoursesStats({ count: 0, total: 0 });
       }
     } catch (error) {
       console.error('Error loading sender profile:', error);
@@ -177,6 +208,9 @@ export function SenderProfileDialog({
   };
 
   const formatSharingNumber = (num: number) => `SOLO-${String(num).padStart(6, '0')}`;
+  
+  // Photo à utiliser: card_photo prioritaire, sinon profile_photo
+  const displayPhoto = profile?.card_photo || profile?.profile_photo;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,12 +231,12 @@ export function SenderProfileDialog({
             {/* Main profile info */}
             <div className="flex items-start gap-4">
               <Avatar className="h-20 w-20 border-2 border-primary/20">
-                <AvatarImage src={profile.profile_photo || undefined} />
+                <AvatarImage src={displayPhoto || undefined} />
                 <AvatarFallback className="text-xl bg-primary/10 text-primary">
                   {profile.full_name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold">{profile.full_name}</h3>
                 {profile.company_name && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -219,12 +253,12 @@ export function SenderProfileDialog({
               </div>
             </div>
 
-            {/* Location & rating */}
+            {/* Location, rating & rides */}
             <div className="grid grid-cols-2 gap-3">
-              {(profile.city || profile.department) && (
+              {profile.city && (
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.city || profile.department}</span>
+                  <span>{profile.city}</span>
                 </div>
               )}
               {profile.rating && (
@@ -233,7 +267,7 @@ export function SenderProfileDialog({
                   <span>{profile.rating.toFixed(1)} / 5</span>
                 </div>
               )}
-              {profile.total_rides !== null && (
+              {profile.total_rides !== null && profile.total_rides > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <Car className="h-4 w-4 text-muted-foreground" />
                   <span>{profile.total_rides} courses</span>
@@ -242,49 +276,85 @@ export function SenderProfileDialog({
             </div>
 
             {/* Contact info */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Contact</h4>
-              <div className="grid gap-2">
-                {profile.phone && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start h-9"
-                    onClick={() => window.open(`tel:${profile.phone}`, '_self')}
-                  >
-                    <Phone className="h-4 w-4 mr-2 text-green-600" />
-                    {profile.phone}
-                  </Button>
-                )}
-                {profile.email && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start h-9"
-                    onClick={() => window.open(`mailto:${profile.email}`, '_blank')}
-                  >
-                    <Mail className="h-4 w-4 mr-2 text-blue-600" />
-                    {profile.email}
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Vehicle info */}
-            {(profile.vehicle_model || profile.vehicle_color) && (
+            {(profile.phone || profile.email) && (
               <div className="space-y-2">
-                <h4 className="text-sm font-medium">Véhicule</h4>
-                <p className="text-sm text-muted-foreground">
-                  {[profile.vehicle_model, profile.vehicle_color].filter(Boolean).join(' • ')}
-                </p>
+                <h4 className="text-sm font-medium">Contact</h4>
+                <div className="grid gap-2">
+                  {profile.phone && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="justify-start h-9"
+                      onClick={() => window.open(`tel:${profile.phone}`, '_self')}
+                    >
+                      <Phone className="h-4 w-4 mr-2 text-green-600" />
+                      {profile.phone}
+                    </Button>
+                  )}
+                  {profile.email && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="justify-start h-9"
+                      onClick={() => window.open(`mailto:${profile.email}`, '_blank')}
+                    >
+                      <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                      {profile.email}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Bio */}
-            {profile.bio && (
+            {/* Vehicle info - COMPLET */}
+            {(profile.vehicle_brand || profile.vehicle_model || profile.vehicle_color) && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Véhicule</h4>
+                <div className="flex flex-wrap gap-2">
+                  {(profile.vehicle_brand || profile.vehicle_model) && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Car className="h-3 w-3 mr-1" />
+                      {[profile.vehicle_brand, profile.vehicle_model].filter(Boolean).join(' ')}
+                    </Badge>
+                  )}
+                  {profile.vehicle_color && (
+                    <Badge variant="outline" className="text-xs">
+                      {profile.vehicle_color}
+                    </Badge>
+                  )}
+                  {profile.vehicle_year && (
+                    <Badge variant="outline" className="text-xs">
+                      {profile.vehicle_year}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Services offered */}
+            {profile.services_offered && profile.services_offered.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  Services proposés
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.services_offered.map((service) => (
+                    <Badge key={service} variant="secondary" className="text-xs">
+                      {serviceLabels[service] || service}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bio / Service description */}
+            {(profile.bio || profile.service_description) && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">À propos</h4>
-                <p className="text-sm text-muted-foreground">{profile.bio}</p>
+                <p className="text-sm text-muted-foreground">
+                  {profile.service_description || profile.bio}
+                </p>
               </div>
             )}
 
