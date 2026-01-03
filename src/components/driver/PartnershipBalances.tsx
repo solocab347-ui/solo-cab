@@ -31,14 +31,17 @@ export function PartnershipBalances({ driverId }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (driverId) {
-      loadBalances();
-    } else {
+    if (!driverId) {
       setLoading(false);
+      setBalances([]);
+      return;
     }
+    loadBalances();
   }, [driverId]);
 
   const loadBalances = async () => {
+    if (!driverId) return;
+    
     setLoading(true);
     try {
       // Get driver partnerships
@@ -106,6 +109,30 @@ export function PartnershipBalances({ driverId }: Props) {
     }
   };
 
+  // Calculate totals - always computed to avoid hook order issues
+  const totalOwed = balances.reduce((acc, b) => {
+    if (b.balance?.net_balance > 0) return acc + b.balance.net_balance;
+    return acc;
+  }, 0);
+
+  const totalDue = balances.reduce((acc, b) => {
+    if (b.balance?.net_balance < 0) return acc + Math.abs(b.balance.net_balance);
+    return acc;
+  }, 0);
+
+  const netGlobal = totalOwed - totalDue;
+
+  // Filter balances by search - useMemo must be called before any conditional return
+  const filteredBalances = useMemo(() => {
+    if (!searchQuery.trim()) return balances;
+    const query = searchQuery.toLowerCase();
+    return balances.filter(b => 
+      b.partnerName.toLowerCase().includes(query) ||
+      b.companyName?.toLowerCase().includes(query) ||
+      (b.sharingNumber && `SOLO-${String(b.sharingNumber).padStart(6, '0')}`.toLowerCase().includes(query))
+    );
+  }, [balances, searchQuery]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -124,30 +151,6 @@ export function PartnershipBalances({ driverId }: Props) {
       </Alert>
     );
   }
-
-  // Calculate totals
-  const totalOwed = balances.reduce((acc, b) => {
-    if (b.balance?.net_balance > 0) return acc + b.balance.net_balance;
-    return acc;
-  }, 0);
-
-  const totalDue = balances.reduce((acc, b) => {
-    if (b.balance?.net_balance < 0) return acc + Math.abs(b.balance.net_balance);
-    return acc;
-  }, 0);
-
-  const netGlobal = totalOwed - totalDue;
-
-  // Filter balances by search
-  const filteredBalances = useMemo(() => {
-    if (!searchQuery.trim()) return balances;
-    const query = searchQuery.toLowerCase();
-    return balances.filter(b => 
-      b.partnerName.toLowerCase().includes(query) ||
-      b.companyName?.toLowerCase().includes(query) ||
-      (b.sharingNumber && `SOLO-${String(b.sharingNumber).padStart(6, '0')}`.toLowerCase().includes(query))
-    );
-  }, [balances, searchQuery]);
 
   return (
     <div className="space-y-4">
