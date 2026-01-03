@@ -135,7 +135,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
                   <Inbox className="h-4 w-4 text-primary" />
                   Courses disponibles des partenaires
                 </h3>
-                <PartnerCoursePool />
+                <PartnerCoursePool driverId={driverId} />
               </div>
               
               <div className="border-t pt-4">

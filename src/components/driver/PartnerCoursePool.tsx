@@ -76,9 +76,13 @@ interface SharedCourse {
   client_photo: string | null;
 }
 
-export function PartnerCoursePool() {
+interface PartnerCoursePoolProps {
+  driverId?: string;
+}
+
+export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolProps = {}) {
   const { user } = useAuth();
-  const [driverId, setDriverId] = useState<string | null>(null);
+  const [driverId, setDriverId] = useState<string | null>(propDriverId || null);
   const [pooledCourses, setPooledCourses] = useState<PooledCourse[]>([]);
   const [sharedCourses, setSharedCourses] = useState<SharedCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,12 +90,18 @@ export function PartnerCoursePool() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'direct' | 'pool'>('direct');
 
+  // If propDriverId is provided, use it directly
   useEffect(() => {
-    if (user?.id) {
+    if (propDriverId) {
+      console.log('[PartnerCoursePool] Using provided driverId:', propDriverId);
+      setDriverId(propDriverId);
+      Promise.all([loadPooledCourses(), loadSharedCoursesForDriver(propDriverId)])
+        .finally(() => setLoading(false));
+    } else if (user?.id) {
       console.log('[PartnerCoursePool] Loading for user:', user.id);
       loadDriverAndCourses();
     }
-  }, [user?.id]);
+  }, [user?.id, propDriverId]);
 
   // Realtime subscription
   useEffect(() => {
