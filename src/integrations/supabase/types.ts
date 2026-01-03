@@ -6657,6 +6657,24 @@ export type Database = {
           token: string
         }[]
       }
+      get_course_partner_info: {
+        Args: { p_client_user_id: string; p_course_id: string }
+        Returns: {
+          partner_company: string
+          partner_driver_id: string
+          partner_name: string
+          partner_phone: string
+          partner_photo: string
+          partner_rating: number
+          partner_total_rides: number
+          partner_vehicle_color: string
+          partner_vehicle_model: string
+          shared_course_id: string
+          shared_status: string
+          show_phone: boolean
+          show_rating: boolean
+        }[]
+      }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number
@@ -6802,6 +6820,14 @@ export type Database = {
           vehicle_photos: string[]
           vehicle_year: number
           working_sectors: string[]
+        }[]
+      }
+      get_shared_course_client_info: {
+        Args: { p_receiver_driver_id: string; p_shared_course_id: string }
+        Returns: {
+          client_name: string
+          client_phone: string
+          client_photo: string
         }[]
       }
       get_user_role: {
