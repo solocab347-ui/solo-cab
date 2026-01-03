@@ -255,6 +255,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
   }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
 
+  // Helper to check if course is being handled by a partner (sender can't act on it)
+  const isCourseHandledByPartner = (courseId: string): boolean => {
+    const sharedCourse = sharedCoursesData.find(sc => 
+      sc.course_id === courseId && 
+      sc.sender_driver_id === driverId &&
+      ['accepted', 'in_progress', 'completed'].includes(sc.status)
+    );
+    return !!sharedCourse;
+  };
+
   const setupRealtimeSubscription = () => {
     if (!driverId) return () => {};
 
@@ -2016,6 +2026,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             <p className="text-center text-muted-foreground py-8">Aucune course confirmée</p>
           ) : (
             confirmedCoursesCombined.map((course) => {
+              const handledByPartner = isCourseHandledByPartner(course.id);
+              
               return (
               <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
                 <div className="space-y-3">
@@ -2079,39 +2091,52 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     destinationLongitude={course.destination_longitude}
                   />
 
-                  <div className="flex gap-2 flex-wrap">
-                    {course.status === "accepted" && (
+                  {/* Boutons d'action - masqués si la course est gérée par un partenaire */}
+                  {handledByPartner ? (
+                    <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                      <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                        <Handshake className="w-4 h-4" />
+                        <span className="text-sm font-medium">Course confiée à un partenaire</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Le partenaire gère cette course. Vous recevrez votre commission à la fin.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 flex-wrap">
+                      {course.status === "accepted" && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStartCourse(course.id)}
+                          className="flex-1"
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Commencer
+                        </Button>
+                      )}
+                      {course.status === "in_progress" && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleEndCourse(course.id)}
+                          className="flex-1"
+                        >
+                          <StopCircle className="w-4 h-4 mr-2" />
+                          Terminer
+                        </Button>
+                      )}
                       <Button
-                        variant="default"
+                        variant="outline"
                         size="sm"
-                        onClick={() => handleStartCourse(course.id)}
+                        onClick={() => handleCancelCourse(course.id)}
                         className="flex-1"
                       >
-                        <Play className="w-4 h-4 mr-2" />
-                        Commencer
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Annuler
                       </Button>
-                    )}
-                    {course.status === "in_progress" && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleEndCourse(course.id)}
-                        className="flex-1"
-                      >
-                        <StopCircle className="w-4 h-4 mr-2" />
-                        Terminer
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCancelCourse(course.id)}
-                      className="flex-1"
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Annuler
-                    </Button>
-                  </div>
+                    </div>
+                  )}
 
                   <div className="flex gap-2 flex-wrap">
                     <Button
@@ -2170,8 +2195,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées (accepted) */}
-                  {course.status === 'accepted' && (
+                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées non déjà partagées */}
+                  {course.status === 'accepted' && !handledByPartner && (
                     <Button
                       variant="outline"
                       size="sm"
