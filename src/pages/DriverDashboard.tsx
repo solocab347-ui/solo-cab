@@ -72,6 +72,7 @@ const DriverDashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'balances' | undefined>(undefined);
   const [pendingSharedCoursesCount, setPendingSharedCoursesCount] = useState(0);
+  const [pendingPartnershipActionsCount, setPendingPartnershipActionsCount] = useState(0);
 
   // Handle special tab navigation (e.g., partnerships-received)
   const handleTabChange = (tab: string) => {
@@ -272,6 +273,64 @@ const DriverDashboard = () => {
         },
         () => {
           loadPendingSharedCourses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driverProfile?.driver?.id]);
+
+  // Load pending partnership actions count (modifications + partnership requests)
+  useEffect(() => {
+    if (!driverProfile?.driver?.id) return;
+
+    const loadPendingPartnershipActions = async () => {
+      let totalCount = 0;
+
+      // Count pending modification requests FROM partners (not from me)
+      const { count: modificationCount, error: modError } = await supabase
+        .from('driver_partnerships')
+        .select('*', { count: 'exact', head: true })
+        .or(`driver_a_id.eq.${driverProfile.driver.id},driver_b_id.eq.${driverProfile.driver.id}`)
+        .eq('status', 'active')
+        .eq('pending_modification', true)
+        .neq('pending_modification_by', driverProfile.driver.id);
+
+      if (!modError && modificationCount !== null) {
+        totalCount += modificationCount;
+      }
+
+      // Count pending partnership requests TO me
+      const { count: requestCount, error: reqError } = await supabase
+        .from('driver_partnerships')
+        .select('*', { count: 'exact', head: true })
+        .or(`driver_a_id.eq.${driverProfile.driver.id},driver_b_id.eq.${driverProfile.driver.id}`)
+        .eq('status', 'pending')
+        .neq('proposed_by', driverProfile.driver.id);
+
+      if (!reqError && requestCount !== null) {
+        totalCount += requestCount;
+      }
+
+      setPendingPartnershipActionsCount(totalCount);
+    };
+
+    loadPendingPartnershipActions();
+
+    // Realtime subscription for partnership changes
+    const channel = supabase
+      .channel('partnership-actions-badge')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'driver_partnerships'
+        },
+        () => {
+          loadPendingPartnershipActions();
         }
       )
       .subscribe();
@@ -589,9 +648,9 @@ const DriverDashboard = () => {
                 <Handshake className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('driverDashboard.menu.partnerships')}</span>
                 <span className="sm:hidden">{t('driverDashboard.menu.partnerships')}</span>
-                {pendingSharedCoursesCount > 0 && (
+                {(pendingSharedCoursesCount + pendingPartnershipActionsCount) > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-500 text-white text-xs font-bold">
-                    {pendingSharedCoursesCount}
+                    {pendingSharedCoursesCount + pendingPartnershipActionsCount}
                   </Badge>
                 )}
               </TabsTrigger>
