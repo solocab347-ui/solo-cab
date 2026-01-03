@@ -748,37 +748,56 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                 )
               ) : (
                 <>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="flex-1 text-orange-600 border-orange-500 hover:bg-orange-500/10"
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      setReminderOpen(true);
-                    }}
-                  >
-                    <Bell className="h-4 w-4 mr-2" />
-                    Relancer
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    className={cn(
-                      "flex-1",
-                      group.canConfirm 
-                        ? "bg-green-600 hover:bg-green-700" 
-                        : "bg-gray-400 cursor-not-allowed"
+                  {/* Show payment received info if partner has sent payment */}
+                  {group.allSent && (
+                    <div className="w-full mb-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                      <div className="flex items-center gap-2 text-blue-600 mb-2">
+                        <Send className="h-4 w-4" />
+                        <span className="text-sm font-medium">Paiement envoyé par le partenaire</span>
+                      </div>
+                      {group.invoices.some(i => i.payment_proof_url) && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="w-full h-8 text-blue-600 border-blue-500/50 hover:bg-blue-500/20"
+                          onClick={() => window.open(group.invoices.find(i => i.payment_proof_url)?.payment_proof_url!, '_blank')}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir le justificatif
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-2 w-full">
+                    {!group.allSent && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="flex-1 text-orange-600 border-orange-500 hover:bg-orange-500/10"
+                        onClick={() => {
+                          setSelectedGroup(group);
+                          setReminderOpen(true);
+                        }}
+                      >
+                        <Bell className="h-4 w-4 mr-2" />
+                        Relancer
+                      </Button>
                     )}
-                    disabled={!group.canConfirm}
-                    onClick={() => {
-                      if (group.canConfirm) {
+                    <Button 
+                      size="sm" 
+                      className={cn(
+                        group.allSent ? "w-full" : "flex-1",
+                        "bg-green-600 hover:bg-green-700"
+                      )}
+                      onClick={() => {
                         setSelectedGroup(group);
                         setConfirmReceiptOpen(true);
-                      }
-                    }}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Valider réception
-                  </Button>
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Valider réception
+                    </Button>
+                  </div>
                 </>
               )}
             </div>
