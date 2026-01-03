@@ -434,6 +434,69 @@ export function MyPartnersList() {
         />
       )}
 
+      {/* Pending Modifications Alert */}
+      {activePartners.filter(p => p.pending_modification && p.pending_modification_by !== driverId).length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2 text-orange-600 dark:text-orange-400">
+            <AlertTriangle className="h-4 w-4" />
+            Modifications à valider ({activePartners.filter(p => p.pending_modification && p.pending_modification_by !== driverId).length})
+          </h3>
+          {activePartners
+            .filter(p => p.pending_modification && p.pending_modification_by !== driverId)
+            .map((partner) => (
+              <Card key={`mod-${partner.id}`} className="border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-transparent">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 border-2 border-orange-500/30">
+                      <AvatarImage src={partner.partner_photo || undefined} />
+                      <AvatarFallback className="bg-orange-100 text-orange-700">
+                        {partner.partner_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium">{partner.partner_name}</p>
+                        <Badge className="bg-orange-500/20 text-orange-700 border-0 text-xs">
+                          Modification proposée
+                        </Badge>
+                      </div>
+                      {partner.partner_company && (
+                        <p className="text-xs text-muted-foreground">{partner.partner_company}</p>
+                      )}
+                      
+                      <div className="mt-3 p-3 bg-background/50 rounded-lg space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase">Nouvelles conditions proposées</p>
+                        <div className="flex flex-wrap gap-3 text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <TrendingUp className="h-4 w-4 text-orange-600" />
+                            <span className="font-semibold">{partner.pending_new_commission}%</span>
+                            <span className="text-xs text-muted-foreground">(actuellement {partner.commission_percentage}%)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>{getPaymentScheduleLabel(partner.pending_new_payment_schedule || partner.payment_schedule)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                        <Button 
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={() => setSelectedModifyPartner(partner)}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Voir et répondre
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      )}
+
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
         <div className="space-y-3">
