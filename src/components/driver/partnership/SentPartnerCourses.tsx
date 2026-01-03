@@ -100,7 +100,6 @@ export function SentPartnerCourses({ driverId }: Props) {
           )
         `)
         .eq('sender_driver_id', driverId)
-        .in('status', ['accepted', 'completed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -180,14 +179,22 @@ export function SentPartnerCourses({ driverId }: Props) {
     return `SOLO-${String(num).padStart(6, '0')}`;
   };
 
-  const getStatusBadge = (courseStatus: string) => {
+  const getStatusBadge = (sharedStatus: string, courseStatus: string) => {
+    // Priority: shared course status first
+    switch (sharedStatus) {
+      case 'pending':
+        return <Badge className="bg-amber-500/20 text-amber-600 border-0">En attente d'acceptation</Badge>;
+      case 'declined':
+        return <Badge className="bg-red-500/20 text-red-600 border-0">Refusée</Badge>;
+    }
+    // Then course status
     switch (courseStatus) {
       case 'completed':
         return <Badge className="bg-green-500/20 text-green-600 border-0">Terminée</Badge>;
       case 'in_progress':
         return <Badge className="bg-blue-500/20 text-blue-600 border-0">En cours</Badge>;
       case 'confirmed':
-        return <Badge className="bg-primary/20 text-primary border-0">Confirmée</Badge>;
+        return <Badge className="bg-primary/20 text-primary border-0">Acceptée</Badge>;
       default:
         return <Badge variant="outline">{courseStatus}</Badge>;
     }
@@ -201,8 +208,9 @@ export function SentPartnerCourses({ driverId }: Props) {
     );
   }
 
-  const pendingCourses = courses.filter(c => c.status === 'accepted' && c.course_status !== 'completed');
+  const pendingCourses = courses.filter(c => c.status === 'pending' || (c.status === 'accepted' && c.course_status !== 'completed'));
   const completedCourses = courses.filter(c => c.status === 'completed' || c.course_status === 'completed');
+  const declinedCourses = courses.filter(c => c.status === 'declined');
 
   // Calculate totals
   const totalCommissionToReceive = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
@@ -328,7 +336,7 @@ interface SentCourseCardProps {
   course: SentCourse;
   shortenAddress: (address: string) => string;
   formatSharingNumber: (num: number | null) => string | null;
-  getStatusBadge: (status: string) => JSX.Element;
+  getStatusBadge: (sharedStatus: string, courseStatus: string) => JSX.Element;
 }
 
 function SentCourseCard({ course, shortenAddress, formatSharingNumber, getStatusBadge }: SentCourseCardProps) {
@@ -358,7 +366,7 @@ function SentCourseCard({ course, shortenAddress, formatSharingNumber, getStatus
             </div>
           </div>
           <div className="text-right">
-            {getStatusBadge(course.course_status)}
+            {getStatusBadge(course.status, course.course_status)}
             {course.course_number && (
               <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
             )}
