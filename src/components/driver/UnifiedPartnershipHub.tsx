@@ -23,7 +23,7 @@ import { PartnershipSettings } from './partnership/PartnershipSettings';
 type MainTab = 'drivers' | 'companies' | 'fleets' | 'settings';
 
 interface UnifiedPartnershipHubProps {
-  initialDriverSubTab?: 'list' | 'search' | 'received' | 'sent' | 'balances';
+  initialDriverSubTab?: 'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices';
 }
 
 export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershipHubProps = {}) {
