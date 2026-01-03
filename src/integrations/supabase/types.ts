@@ -2644,6 +2644,7 @@ export type Database = {
           license_number: string
           max_passengers: number
           minimum_price: number | null
+          partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
@@ -2737,6 +2738,7 @@ export type Database = {
           license_number: string
           max_passengers?: number
           minimum_price?: number | null
+          partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
@@ -2830,6 +2832,7 @@ export type Database = {
           license_number?: string
           max_passengers?: number
           minimum_price?: number | null
+          partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
@@ -4967,6 +4970,152 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_invoices: {
+        Row: {
+          billing_period_end: string | null
+          billing_period_start: string | null
+          commission_amount: number
+          commission_percentage: number
+          course_amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          invoice_amount: number
+          invoice_number: string
+          invoice_type: string
+          order_document_id: string
+          paid_at: string | null
+          partnership_id: string
+          payment_confirmed_by: string | null
+          payment_notes: string | null
+          payment_schedule: string | null
+          payment_status: string
+          shared_course_id: string
+          tva_amount: number | null
+          tva_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          commission_amount: number
+          commission_percentage: number
+          course_amount: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          invoice_amount: number
+          invoice_number: string
+          invoice_type: string
+          order_document_id: string
+          paid_at?: string | null
+          partnership_id: string
+          payment_confirmed_by?: string | null
+          payment_notes?: string | null
+          payment_schedule?: string | null
+          payment_status?: string
+          shared_course_id: string
+          tva_amount?: number | null
+          tva_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          commission_amount?: number
+          commission_percentage?: number
+          course_amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          invoice_amount?: number
+          invoice_number?: string
+          invoice_type?: string
+          order_document_id?: string
+          paid_at?: string | null
+          partnership_id?: string
+          payment_confirmed_by?: string | null
+          payment_notes?: string | null
+          payment_schedule?: string | null
+          payment_status?: string
+          shared_course_id?: string
+          tva_amount?: number | null
+          tva_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_order_document_id_fkey"
+            columns: ["order_document_id"]
+            isOneToOne: false
+            referencedRelation: "partner_order_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnership_balances"
+            referencedColumns: ["partnership_id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_shared_course_id_fkey"
+            columns: ["shared_course_id"]
+            isOneToOne: false
+            referencedRelation: "shared_courses"
             referencedColumns: ["id"]
           },
         ]
