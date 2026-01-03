@@ -40,6 +40,8 @@ export function ModifyPartnershipDialog({
   const [newCommission, setNewCommission] = useState(partnership.commission_percentage.toString());
   const [newPaymentSchedule, setNewPaymentSchedule] = useState(partnership.payment_schedule);
   const [message, setMessage] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectionForm, setShowRejectionForm] = useState(false);
 
   const hasPendingModification = partnership.pending_modification;
   const isPendingFromMe = partnership.pending_modification_by === currentDriverId;
@@ -216,11 +218,14 @@ export function ModifyPartnershipDialog({
           .eq('id', currentDriverData.user_id)
           .single();
 
-        // Send notification to proposer
+        // Send notification to proposer with rejection reason
+        const reasonText = rejectionReason 
+          ? `. Motif: "${rejectionReason}"` 
+          : '';
         await supabase.from('notifications').insert({
           user_id: proposerDriver.user_id,
           title: '❌ Modification refusée',
-          message: `${myProfile?.full_name || 'Votre partenaire'} a refusé les nouvelles conditions`,
+          message: `${myProfile?.full_name || 'Votre partenaire'} a refusé les nouvelles conditions${reasonText}`,
           type: 'warning',
           link: '/driver-dashboard?tab=sharing',
           is_read: false
@@ -228,6 +233,8 @@ export function ModifyPartnershipDialog({
       }
 
       toast.success('Modification refusée. Le contrat actuel reste en vigueur.');
+      setShowRejectionForm(false);
+      setRejectionReason('');
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -327,15 +334,70 @@ export function ModifyPartnershipDialog({
             </Alert>
 
             {isPendingFromMe ? (
-              <Button 
-                variant="outline" 
-                onClick={handleCancelModification}
-                disabled={loading}
-                className="w-full"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Annuler ma proposition
-              </Button>
+              <div className="space-y-3">
+                <Alert className="border-blue-500/30 bg-blue-500/10">
+                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-sm">
+                    Votre proposition a été envoyée à <strong>{partnership.partner_name}</strong>. 
+                    En attente de sa réponse.
+                  </AlertDescription>
+                </Alert>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelModification}
+                  disabled={loading}
+                  className="w-full text-destructive border-destructive/50 hover:bg-destructive/10"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Annuler ma proposition
+                </Button>
+              </div>
+            ) : showRejectionForm ? (
+              <div className="space-y-3">
+                <Label htmlFor="rejection-reason">Motif du refus (optionnel)</Label>
+                <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un motif..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Commission trop élevée">Commission trop élevée</SelectItem>
+                    <SelectItem value="Commission trop basse">Commission trop basse</SelectItem>
+                    <SelectItem value="Fréquence de paiement inadaptée">Fréquence de paiement inadaptée</SelectItem>
+                    <SelectItem value="Besoin de discuter avant">Besoin de discuter avant</SelectItem>
+                    <SelectItem value="other">Autre motif (personnalisé)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {rejectionReason === 'other' && (
+                  <Textarea
+                    id="rejection-reason-custom"
+                    placeholder="Expliquez votre motif de refus..."
+                    value=""
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={2}
+                  />
+                )}
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setShowRejectionForm(false);
+                      setRejectionReason('');
+                    }}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    Retour
+                  </Button>
+                  <Button 
+                    onClick={handleRejectModification}
+                    disabled={loading}
+                    className="flex-1 bg-destructive hover:bg-destructive/90"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Confirmer le refus
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div className="flex gap-2">
                 <Button 
@@ -348,9 +410,9 @@ export function ModifyPartnershipDialog({
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={handleRejectModification}
+                  onClick={() => setShowRejectionForm(true)}
                   disabled={loading}
-                  className="flex-1"
+                  className="flex-1 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                 >
                   Refuser
                 </Button>
