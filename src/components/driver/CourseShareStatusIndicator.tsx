@@ -60,6 +60,9 @@ interface SharingStatus {
     sharing_mode: string;
     pending_count: number;
     created_at: string;
+    receiver_name?: string;
+    receiver_photo?: string | null;
+    receiver_company?: string | null;
   };
   all_shares: ShareInfo[] | null;
 }
@@ -154,7 +157,7 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
       return (
         <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
           <Clock className="w-3 h-3 mr-1" />
-          En attente de réponse
+          Partagée - En attente
         </Badge>
       );
     }
@@ -220,6 +223,26 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
             {/* Pending share info */}
             {status.pending_share && (
               <div className="space-y-3">
+                {/* Show partner info for single share */}
+                {status.pending_share.sharing_mode === 'single' && status.pending_share.receiver_name && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={status.pending_share.receiver_photo || undefined} />
+                      <AvatarFallback>{status.pending_share.receiver_name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{status.pending_share.receiver_name}</p>
+                      {status.pending_share.receiver_company && (
+                        <p className="text-xs text-muted-foreground">{status.pending_share.receiver_company}</p>
+                      )}
+                    </div>
+                    <Badge className="bg-amber-500/20 text-amber-600 border-0">
+                      <Clock className="w-3 h-3 mr-1" />
+                      En attente
+                    </Badge>
+                  </div>
+                )}
+                
                 <Alert className="bg-amber-500/10 border-amber-500/30">
                   <Clock className="h-4 w-4 text-amber-600" />
                   <AlertDescription>
