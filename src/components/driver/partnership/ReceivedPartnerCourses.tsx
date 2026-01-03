@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { 
   Car, 
   MapPin, 
@@ -20,7 +21,9 @@ import {
   CircleDot,
   Phone,
   ArrowRight,
-  TrendingDown
+  TrendingDown,
+  Play,
+  CheckCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -48,6 +51,7 @@ interface ReceivedCourse {
   distance_km: number | null;
   course_status: string;
   course_number: string | null;
+  shared_status: string;
   // Sender info
   sender_name: string;
   sender_photo: string | null;
@@ -59,7 +63,8 @@ interface ReceivedCourse {
 export function ReceivedPartnerCourses({ driverId }: Props) {
   const [courses, setCourses] = useState<ReceivedCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (driverId) {
@@ -96,7 +101,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
           )
         `)
         .eq('receiver_driver_id', driverId)
-        .in('status', ['accepted', 'completed'])
+        .in('status', ['accepted', 'in_progress', 'completed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -136,6 +141,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             distance_km: course.distance_km,
             course_status: course.status,
             course_number: course.course_number,
+            shared_status: item.status,
             sender_name: profile?.full_name || 'Chauffeur',
             sender_photo: profile?.profile_photo_url,
             sender_company: driverData.company_name,
@@ -188,12 +194,12 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
     );
   }
 
-  const pendingCourses = courses.filter(c => c.status === 'accepted' && c.course_status !== 'completed');
-  const completedCourses = courses.filter(c => c.status === 'completed' || c.course_status === 'completed');
+  const activeCourses = courses.filter(c => c.shared_status === 'accepted' || c.shared_status === 'in_progress');
+  const completedCourses = courses.filter(c => c.shared_status === 'completed');
 
   // Calculate totals
   const totalCommissionDue = completedCourses.reduce((acc, c) => acc + c.commission_amount, 0);
-  const pendingCommission = pendingCourses.reduce((acc, c) => acc + c.commission_amount, 0);
+  const activeCommission = activeCourses.reduce((acc, c) => acc + c.commission_amount, 0);
 
   return (
     <div className="space-y-4">
@@ -203,8 +209,8 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
           <CardContent className="p-3 text-center">
             <CircleDot className="h-5 w-5 text-amber-600 mx-auto mb-1" />
             <p className="text-xs text-amber-600 font-medium">En cours</p>
-            <p className="text-lg font-bold">{pendingCourses.length}</p>
-            <p className="text-xs text-muted-foreground">{pendingCommission.toFixed(2)} € comm.</p>
+            <p className="text-lg font-bold">{activeCourses.length}</p>
+            <p className="text-xs text-muted-foreground">{activeCommission.toFixed(2)} € comm.</p>
           </CardContent>
         </Card>
         <Card className="bg-red-500/10 border-red-500/30">
@@ -227,19 +233,19 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
       </Alert>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'pending' | 'completed')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'completed')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending" className="text-xs">
-            En cours ({pendingCourses.length})
+          <TabsTrigger value="active" className="text-xs">
+            En cours ({activeCourses.length})
           </TabsTrigger>
           <TabsTrigger value="completed" className="text-xs">
             Terminées ({completedCourses.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* Pending/Active courses */}
-        <TabsContent value="pending" className="mt-4 space-y-3">
-          {pendingCourses.length === 0 ? (
+        {/* Active courses */}
+        <TabsContent value="active" className="mt-4 space-y-3">
+          {activeCourses.length === 0 ? (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-sm">
@@ -247,7 +253,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
               </AlertDescription>
             </Alert>
           ) : (
-            pendingCourses.map((course) => (
+            activeCourses.map((course) => (
               <CourseCard 
                 key={course.id} 
                 course={course} 
@@ -255,6 +261,9 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
                 formatSharingNumber={formatSharingNumber}
                 getStatusBadge={getStatusBadge}
                 showCommissionDue={false}
+                onAction={loadReceivedCourses}
+                actionLoading={actionLoading}
+                setActionLoading={setActionLoading}
               />
             ))
           )}
@@ -278,6 +287,9 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
                 formatSharingNumber={formatSharingNumber}
                 getStatusBadge={getStatusBadge}
                 showCommissionDue={true}
+                onAction={loadReceivedCourses}
+                actionLoading={actionLoading}
+                setActionLoading={setActionLoading}
               />
             ))
           )}
@@ -293,9 +305,64 @@ interface CourseCardProps {
   formatSharingNumber: (num: number | null) => string | null;
   getStatusBadge: (status: string) => JSX.Element;
   showCommissionDue: boolean;
+  onAction: () => void;
+  actionLoading: string | null;
+  setActionLoading: (id: string | null) => void;
 }
 
-function CourseCard({ course, shortenAddress, formatSharingNumber, getStatusBadge, showCommissionDue }: CourseCardProps) {
+function CourseCard({ 
+  course, 
+  shortenAddress, 
+  formatSharingNumber, 
+  getStatusBadge, 
+  showCommissionDue,
+  onAction,
+  actionLoading,
+  setActionLoading
+}: CourseCardProps) {
+  
+  const handleStartCourse = async () => {
+    setActionLoading(course.id);
+    try {
+      const { error } = await supabase
+        .from('shared_courses')
+        .update({ status: 'in_progress' })
+        .eq('id', course.id);
+      
+      if (error) throw error;
+      toast.success('Course démarrée !');
+      onAction();
+    } catch (error) {
+      console.error('Error starting course:', error);
+      toast.error('Erreur lors du démarrage de la course');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCompleteCourse = async () => {
+    setActionLoading(course.id);
+    try {
+      const { error } = await supabase
+        .from('shared_courses')
+        .update({ status: 'completed' })
+        .eq('id', course.id);
+      
+      if (error) throw error;
+      toast.success('Course terminée ! La commission a été enregistrée.');
+      onAction();
+    } catch (error) {
+      console.error('Error completing course:', error);
+      toast.error('Erreur lors de la finalisation de la course');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const isLoading = actionLoading === course.id;
+  const canStart = course.shared_status === 'accepted' && course.course_status !== 'in_progress';
+  const canComplete = course.shared_status === 'in_progress' || (course.shared_status === 'accepted' && course.course_status === 'in_progress');
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
@@ -319,7 +386,7 @@ function CourseCard({ course, shortenAddress, formatSharingNumber, getStatusBadg
             </div>
           </div>
           <div className="text-right">
-            {getStatusBadge(course.course_status)}
+            {getStatusBadge(course.shared_status === 'in_progress' ? 'in_progress' : course.course_status)}
             {course.course_number && (
               <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
             )}
@@ -375,6 +442,42 @@ function CourseCard({ course, shortenAddress, formatSharingNumber, getStatusBadg
               </p>
             </div>
           </div>
+          
+          {/* Action buttons for active courses */}
+          {!showCommissionDue && (canStart || canComplete) && (
+            <div className="mt-3 flex gap-2">
+              {canStart && (
+                <Button
+                  onClick={handleStartCourse}
+                  disabled={isLoading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Play className="h-4 w-4 mr-2" />
+                  )}
+                  Démarrer la course
+                </Button>
+              )}
+              {canComplete && (
+                <Button
+                  onClick={handleCompleteCourse}
+                  disabled={isLoading}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <CheckCheck className="h-4 w-4 mr-2" />
+                  )}
+                  Terminer la course
+                </Button>
+              )}
+            </div>
+          )}
           
           {showCommissionDue && (
             <div className="mt-3 p-2 bg-red-500/10 rounded-md border border-red-500/20">

@@ -5473,6 +5473,7 @@ export type Database = {
       }
       shared_courses: {
         Row: {
+          accepted_at: string | null
           client_message: string | null
           client_notified: boolean | null
           client_notified_at: string | null
@@ -5483,14 +5484,22 @@ export type Database = {
           course_id: string
           created_at: string | null
           decline_reason: string | null
+          declined_at: string | null
+          earnings_for_receiver: number | null
           id: string
           partnership_id: string
+          payment_settled: boolean | null
+          payment_settled_at: string | null
           receiver_driver_id: string
+          receiver_notified_at: string | null
           sender_driver_id: string
+          sender_notified_at: string | null
+          started_at: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
           client_message?: string | null
           client_notified?: boolean | null
           client_notified_at?: string | null
@@ -5501,14 +5510,22 @@ export type Database = {
           course_id: string
           created_at?: string | null
           decline_reason?: string | null
+          declined_at?: string | null
+          earnings_for_receiver?: number | null
           id?: string
           partnership_id: string
+          payment_settled?: boolean | null
+          payment_settled_at?: string | null
           receiver_driver_id: string
+          receiver_notified_at?: string | null
           sender_driver_id: string
+          sender_notified_at?: string | null
+          started_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
+          accepted_at?: string | null
           client_message?: string | null
           client_notified?: boolean | null
           client_notified_at?: string | null
@@ -5519,10 +5536,17 @@ export type Database = {
           course_id?: string
           created_at?: string | null
           decline_reason?: string | null
+          declined_at?: string | null
+          earnings_for_receiver?: number | null
           id?: string
           partnership_id?: string
+          payment_settled?: boolean | null
+          payment_settled_at?: string | null
           receiver_driver_id?: string
+          receiver_notified_at?: string | null
           sender_driver_id?: string
+          sender_notified_at?: string | null
+          started_at?: string | null
           status?: string | null
           updated_at?: string | null
         }
