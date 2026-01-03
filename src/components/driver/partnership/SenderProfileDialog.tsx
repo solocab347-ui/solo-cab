@@ -103,7 +103,7 @@ export function SenderProfileDialog({
   const loadSenderProfile = async () => {
     setLoading(true);
     try {
-      // Load sender profile with ALL fields
+      // Load sender profile with ALL fields including visibility settings
       const { data: driverData } = await supabase
         .from('drivers')
         .select(`
@@ -122,8 +122,12 @@ export function SenderProfileDialog({
           services_offered,
           service_description,
           card_photo_url,
+          contact_phone,
+          contact_email,
           show_phone_for_sharing,
-          show_email
+          show_email,
+          show_rating_for_sharing,
+          show_rides_for_sharing
         `)
         .eq('id', senderDriverId)
         .single();
@@ -139,19 +143,35 @@ export function SenderProfileDialog({
         const addressParts = driverData.home_address?.split(',') || [];
         const cityFromAddress = addressParts.length > 1 ? addressParts[addressParts.length - 2]?.trim() : null;
 
+        // Respecter les paramètres de visibilité
+        const showPhone = driverData.show_phone_for_sharing || false;
+        const showEmail = driverData.show_email || false;
+        const showRating = driverData.show_rating_for_sharing || false;
+        const showRides = driverData.show_rides_for_sharing || false;
+        
+        // Téléphone: contact_phone prioritaire, sinon profile.phone si autorisé
+        const displayPhone = showPhone 
+          ? (driverData.contact_phone || profileData?.phone) 
+          : null;
+        
+        // Email: contact_email prioritaire, sinon profile.email si autorisé
+        const displayEmail = showEmail 
+          ? (driverData.contact_email || profileData?.email) 
+          : null;
+
         setProfile({
           driver_id: driverData.id,
           user_id: driverData.user_id,
           full_name: profileData?.full_name || 'Chauffeur',
           profile_photo: profileData?.profile_photo_url,
           card_photo: driverData.card_photo_url,
-          phone: driverData.show_phone_for_sharing ? profileData?.phone : null,
-          email: driverData.show_email ? profileData?.email : null,
+          phone: displayPhone,
+          email: displayEmail,
           company_name: driverData.company_name,
           bio: driverData.bio,
           sharing_number: driverData.sharing_number,
-          rating: driverData.rating,
-          total_rides: driverData.total_rides,
+          rating: showRating ? driverData.rating : null,
+          total_rides: showRides ? driverData.total_rides : null,
           city: cityFromAddress,
           vehicle_brand: driverData.vehicle_brand,
           vehicle_model: driverData.vehicle_model,
@@ -159,8 +179,8 @@ export function SenderProfileDialog({
           vehicle_year: driverData.vehicle_year,
           services_offered: driverData.services_offered,
           service_description: driverData.service_description,
-          show_phone: driverData.show_phone_for_sharing || false,
-          show_email: driverData.show_email || false,
+          show_phone: showPhone,
+          show_email: showEmail,
         });
       }
 

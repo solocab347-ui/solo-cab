@@ -47,20 +47,22 @@ interface PooledCourse {
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
-  // Sender info (complet)
+  // Sender info (complet avec visibilité)
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;
+  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;
-  sender_total_rides: number | null;
+  sender_rating: number | null;  // null si show_rating_for_sharing = false
+  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
   sender_show_phone: boolean;
   sender_show_email: boolean;
+  sender_show_rating: boolean;
+  sender_show_rides: boolean;
 }
 
 interface SharedCourse {
@@ -79,22 +81,24 @@ interface SharedCourse {
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
-  // Sender info (complet)
+  // Sender info (complet avec visibilité)
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
   sender_sharing_number: number | null;
-  sender_phone: string | null;
+  sender_phone: string | null;  // contact_phone prioritaire, sinon profile.phone si show_phone_for_sharing
   sender_email: string | null;
   sender_vehicle_brand: string | null;
   sender_vehicle_model: string | null;
   sender_vehicle_color: string | null;
-  sender_rating: number | null;
-  sender_total_rides: number | null;
+  sender_rating: number | null;  // null si show_rating_for_sharing = false
+  sender_total_rides: number | null;  // null si show_rides_for_sharing = false
   sender_bio: string | null;
   sender_services_offered: string[] | null;
   sender_show_phone: boolean;
   sender_show_email: boolean;
+  sender_show_rating: boolean;
+  sender_show_rides: boolean;
   // Client info
   client_name: string | null;
   client_phone: string | null;
@@ -248,7 +252,7 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
       const enrichedCourses: SharedCourse[] = [];
       for (const item of data || []) {
-        // Récupérer TOUTES les infos du driver sender
+        // Récupérer TOUTES les infos du driver sender avec champs de visibilité
         const { data: driverData } = await supabase
           .from('drivers')
           .select(`
@@ -263,8 +267,12 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             bio,
             services_offered,
             card_photo_url,
+            contact_phone,
+            contact_email,
             show_phone_for_sharing,
-            show_email
+            show_email,
+            show_rating_for_sharing,
+            show_rides_for_sharing
           `)
           .eq('id', item.sender_driver_id)
           .single();
@@ -315,6 +323,22 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
           // Utiliser card_photo_url en priorité, sinon profile_photo_url
           const senderPhoto = driverData.card_photo_url || profile?.profile_photo_url;
           
+          // Respecter les paramètres de visibilité
+          const showPhone = driverData.show_phone_for_sharing || false;
+          const showEmail = driverData.show_email || false;
+          const showRating = driverData.show_rating_for_sharing || false;
+          const showRides = driverData.show_rides_for_sharing || false;
+          
+          // Téléphone: contact_phone prioritaire, sinon profile.phone si autorisé
+          const senderPhone = showPhone 
+            ? (driverData.contact_phone || profile?.phone) 
+            : null;
+          
+          // Email: contact_email prioritaire, sinon profile.email si autorisé
+          const senderEmail = showEmail 
+            ? (driverData.contact_email || profile?.email) 
+            : null;
+          
           enrichedCourses.push({
             id: item.id,
             course_id: item.course_id,
@@ -331,22 +355,24 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
-            // Sender info COMPLET
+            // Sender info avec respect de la visibilité
             sender_name: profile?.full_name || 'Partenaire',
             sender_photo: senderPhoto,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
-            sender_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
-            sender_email: driverData.show_email ? profile?.email : null,
+            sender_phone: senderPhone,
+            sender_email: senderEmail,
             sender_vehicle_brand: driverData.vehicle_brand,
             sender_vehicle_model: driverData.vehicle_model,
             sender_vehicle_color: driverData.vehicle_color,
-            sender_rating: driverData.rating,
-            sender_total_rides: driverData.total_rides,
+            sender_rating: showRating ? driverData.rating : null,
+            sender_total_rides: showRides ? driverData.total_rides : null,
             sender_bio: driverData.bio,
             sender_services_offered: driverData.services_offered,
-            sender_show_phone: driverData.show_phone_for_sharing || false,
-            sender_show_email: driverData.show_email || false,
+            sender_show_phone: showPhone,
+            sender_show_email: showEmail,
+            sender_show_rating: showRating,
+            sender_show_rides: showRides,
             // Client info
             client_name: clientInfo.client_name,
             client_phone: clientInfo.client_phone,
@@ -404,8 +430,12 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             rating,
             total_rides,
             card_photo_url,
+            contact_phone,
+            contact_email,
             show_phone_for_sharing,
-            show_email
+            show_email,
+            show_rating_for_sharing,
+            show_rides_for_sharing
           `)
           .eq('id', item.sender_driver_id)
           .single();
@@ -419,6 +449,22 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
 
           const course = item.courses as any;
           const senderPhoto = driverData.card_photo_url || profile?.profile_photo_url;
+          
+          // Respecter les paramètres de visibilité
+          const showPhone = driverData.show_phone_for_sharing || false;
+          const showEmail = driverData.show_email || false;
+          const showRating = driverData.show_rating_for_sharing || false;
+          const showRides = driverData.show_rides_for_sharing || false;
+          
+          // Téléphone: contact_phone prioritaire, sinon profile.phone si autorisé
+          const senderPhone = showPhone 
+            ? (driverData.contact_phone || profile?.phone) 
+            : null;
+          
+          // Email: contact_email prioritaire, sinon profile.email si autorisé
+          const senderEmail = showEmail 
+            ? (driverData.contact_email || profile?.email) 
+            : null;
           
           enrichedCourses.push({
             pool_id: item.id,
@@ -435,20 +481,22 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
-            // Sender info COMPLET
+            // Sender info avec respect de la visibilité
             sender_name: profile?.full_name || 'Partenaire',
             sender_photo: senderPhoto,
             sender_company: driverData.company_name,
             sender_sharing_number: driverData.sharing_number,
-            sender_phone: driverData.show_phone_for_sharing ? profile?.phone : null,
-            sender_email: driverData.show_email ? profile?.email : null,
+            sender_phone: senderPhone,
+            sender_email: senderEmail,
             sender_vehicle_brand: driverData.vehicle_brand,
             sender_vehicle_model: driverData.vehicle_model,
             sender_vehicle_color: driverData.vehicle_color,
-            sender_rating: driverData.rating,
-            sender_total_rides: driverData.total_rides,
-            sender_show_phone: driverData.show_phone_for_sharing || false,
-            sender_show_email: driverData.show_email || false,
+            sender_rating: showRating ? driverData.rating : null,
+            sender_total_rides: showRides ? driverData.total_rides : null,
+            sender_show_phone: showPhone,
+            sender_show_email: showEmail,
+            sender_show_rating: showRating,
+            sender_show_rides: showRides,
           });
         }
       }
