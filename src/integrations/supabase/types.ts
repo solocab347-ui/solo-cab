@@ -1866,7 +1866,7 @@ export type Database = {
           accepted_at: string | null
           amount: number
           base_price: number
-          client_id: string
+          client_id: string | null
           company_employee_id: string | null
           company_id: string | null
           course_id: string
@@ -1889,7 +1889,7 @@ export type Database = {
           accepted_at?: string | null
           amount: number
           base_price: number
-          client_id: string
+          client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id: string
@@ -1912,7 +1912,7 @@ export type Database = {
           accepted_at?: string | null
           amount?: number
           base_price?: number
-          client_id?: string
+          client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id?: string
