@@ -632,8 +632,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       toast.error("Aucun devis disponible");
       return;
     }
+    
+    // Récupérer le nom du client (enregistré ou invité)
+    const shareClientName = course.is_guest_booking || !course.clients?.profiles?.full_name
+      ? (course.guest_name || "Client invité")
+      : course.clients.profiles.full_name;
 
-    const message = `Devis ${devis.quote_number} - ${course.clients?.profiles?.full_name}\n` +
+    const message = `Devis ${devis.quote_number} - ${shareClientName}\n` +
                    `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
                    `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
                    `Montant: ${devis.amount.toFixed(2)}€\n` +
@@ -661,9 +666,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const handleDownloadDevis = async (course: any, forClient: boolean = false) => {
     const devis = course.devis?.[0];
     if (!devis || !driverInfo) {
-      toast.error("Informations incomplètes pour générer le PDF");
+      toast.error("Informations incomplètes pour générer le PDF (devis ou infos chauffeur manquants)");
       return;
     }
+    
+    // Récupérer le nom du client (enregistré ou invité)
+    const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name 
+      ? (course.guest_name || "Client invité") 
+      : course.clients.profiles.full_name;
 
     const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
@@ -705,13 +715,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       doc.text(addressLines, 20, 91);
     }
 
-    // Client info (right side)
+    // Client info (right side) - utilise clientName défini plus haut
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
     doc.text("CLIENT", 145, 65);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(course.clients?.profiles?.full_name || "N/A", 145, 71);
+    doc.text(clientName, 145, 71);
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
@@ -902,6 +912,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       toast.error("Informations de l'entreprise incomplètes. Veuillez compléter vos paramètres (Nom d'entreprise, SIRET ou SIREN, Adresse)");
       return;
     }
+    
+    // Récupérer le nom du client (enregistré ou invité)
+    const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name 
+      ? (course.guest_name || "Client invité") 
+      : course.clients.profiles.full_name;
 
     const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
@@ -947,12 +962,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
 
     // Client info (right side)
+    // Client info (right side) - utilise clientName défini plus haut
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
     doc.text("CLIENT", 145, 65);
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(course.clients?.profiles?.full_name || "N/A", 145, 71);
+    doc.text(clientName, 145, 71);
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
@@ -1192,8 +1208,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       toast.error("Aucune facture disponible");
       return;
     }
+    
+    // Récupérer le nom du client (enregistré ou invité)
+    const shareClientName = course.is_guest_booking || !course.clients?.profiles?.full_name
+      ? (course.guest_name || "Client invité")
+      : course.clients.profiles.full_name;
 
-    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number} - ${course.clients?.profiles?.full_name}\n` +
+    const message = `Facture ${facture.invoice_number_generated || facture.invoice_number} - ${shareClientName}\n` +
                    `Trajet: ${course.pickup_address} → ${course.destination_address}\n` +
                    `Date: ${format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}\n` +
                    `Montant: ${facture.amount.toFixed(2)}€\n` +
@@ -1353,12 +1374,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     // Filtre par date
     filtered = filterCoursesByDate(filtered);
 
-    // Filtre par recherche (nom du client)
+    // Filtre par recherche (nom du client - enregistré ou invité)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(course => 
-        course.clients?.profiles?.full_name?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(course => {
+        const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name
+          ? (course.guest_name || "")
+          : course.clients.profiles.full_name;
+        return clientName.toLowerCase().includes(query);
+      });
     }
 
     // Filtre par montant (devis ou facture)
@@ -1404,27 +1428,42 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     setCourseTypeFilter("all");
   };
 
-  // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN)
+  // Filtrage et tri des courses (DU PLUS RÉCENT AU PLUS ANCIEN - plus proche de maintenant en premier)
   const sortByDate = (coursesList: any[]) => 
     [...coursesList].sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-  // SYSTÈME DE FIGEMENT: Les courses "en cours" (in_progress) sont TOUJOURS en premier
+  // SYSTÈME DE FIGEMENT: Les courses "en cours" (in_progress) sont TOUJOURS épinglées en premier
+  // Ensuite les courses les plus récentes (proches de maintenant) en premier
   const sortConfirmedWithInProgressFirst = (coursesList: any[]) => {
     return [...coursesList].sort((a, b) => {
-      // Les courses in_progress sont toujours en premier
+      // Les courses in_progress sont TOUJOURS en premier et restent figées
       if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
       if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
       
-      // Entre courses in_progress, trier par date (plus récent d'abord)
+      // Entre courses in_progress, la plus récente d'abord
       if (a.status === 'in_progress' && b.status === 'in_progress') {
         return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
       }
       
-      // Pour les autres, utiliser l'ordre stable capturé
-      const orderA = confirmedCoursesOrder.get(a.id) ?? 999999;
-      const orderB = confirmedCoursesOrder.get(b.id) ?? 999999;
-      return orderA - orderB;
+      // Pour les courses acceptées, trier par date (plus récent d'abord)
+      return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
     });
+  };
+
+  // Helper pour obtenir le nom du client (enregistré ou invité)
+  const getClientDisplayName = (course: any): string => {
+    if (course.is_guest_booking || !course.clients?.profiles?.full_name) {
+      return course.guest_name || "Client invité";
+    }
+    return course.clients.profiles.full_name;
+  };
+
+  // Helper pour obtenir le téléphone du client (enregistré ou invité)
+  const getClientPhone = (course: any): string | null => {
+    if (course.is_guest_booking || !course.clients?.profiles?.phone) {
+      return course.guest_phone || null;
+    }
+    return course.clients.profiles.phone;
   };
 
   const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
@@ -1751,7 +1790,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
                       <div className="space-y-1 w-full">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-sm sm:text-base text-foreground">{course.clients?.profiles?.full_name}</h3>
+                          <h3 className="font-semibold text-sm sm:text-base text-foreground">
+                            {getClientDisplayName(course)}
+                            {course.is_guest_booking && (
+                              <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
+                            )}
+                          </h3>
                           {getStatusBadge(course.status)}
                           <CourseTypeBadge typeInfo={courseTypeInfo} size="sm" />
                           <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
@@ -2045,7 +2089,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
+                          <h3 className="font-semibold text-foreground">
+                            {getClientDisplayName(course)}
+                            {course.is_guest_booking && (
+                              <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
+                            )}
+                          </h3>
                           {getStatusBadge(course.status)}
                           <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                           <CourseShareStatusIndicator 
@@ -2271,7 +2320,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-foreground">
+                          {getClientDisplayName(course)}
+                          {course.is_guest_booking && (
+                            <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
+                          )}
+                        </h3>
                         {getStatusBadge(course.status)}
                         {wasHandledByPartner ? (
                           <Badge className="bg-purple-500/20 text-purple-600 text-xs flex items-center gap-1">
@@ -2435,7 +2489,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-foreground">{course.clients?.profiles?.full_name}</h3>
+                        <h3 className="font-semibold text-foreground">
+                          {getClientDisplayName(course)}
+                          {course.is_guest_booking && (
+                            <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
+                          )}
+                        </h3>
                         {getStatusBadge(course.status)}
                         <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                       </div>
