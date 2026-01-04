@@ -160,63 +160,80 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
         </Card>
       )}
 
-      {/* Main Navigation */}
+      {/* Main Navigation - Grid 2x2 for better visibility */}
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
-        <TabsList className="grid grid-cols-4 w-full h-auto">
-          <TabsTrigger 
-            value="drivers" 
-            className="flex-col sm:flex-row gap-1 py-3 text-xs"
-            disabled={isFleetDriver}
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Chauffeurs</span>
-            <span className="sm:hidden">Chauf.</span>
-            {driverPartnersCount > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
-                {driverPartnersCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          
-          <TabsTrigger 
-            value="companies" 
-            className="flex-col sm:flex-row gap-1 py-3 text-xs"
-            disabled={isFleetDriver}
-          >
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Entreprises</span>
-            <span className="sm:hidden">Entr.</span>
-            {companyAgreementsCount > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
-                {companyAgreementsCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          
-          <TabsTrigger 
-            value="fleets" 
-            className="flex-col sm:flex-row gap-1 py-3 text-xs"
-            disabled={isFleetDriver}
-          >
-            <Briefcase className="h-4 w-4" />
-            <span className="hidden sm:inline">Flottes</span>
-            <span className="sm:hidden">Flottes</span>
-            {fleetPartnershipsCount > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
-                {fleetPartnershipsCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          
-          <TabsTrigger 
-            value="settings" 
-            className="flex-col sm:flex-row gap-1 py-3 text-xs"
-          >
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Paramètres</span>
-            <span className="sm:hidden">Param.</span>
-          </TabsTrigger>
-        </TabsList>
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="p-3">
+            <TabsList className="grid grid-cols-2 gap-3 w-full h-auto bg-transparent">
+              {/* Row 1 */}
+              <TabsTrigger 
+                value="drivers" 
+                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                disabled={isFleetDriver}
+              >
+                <div className="relative">
+                  <Users className="h-7 w-7 text-primary" />
+                  {driverPartnersCount > 0 && (
+                    <Badge 
+                      variant="default" 
+                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-orange-500 hover:bg-orange-500"
+                    >
+                      {driverPartnersCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-sm font-medium">Chauffeurs</span>
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="companies" 
+                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                disabled={isFleetDriver}
+              >
+                <div className="relative">
+                  <Building2 className="h-7 w-7 text-blue-400" />
+                  {companyAgreementsCount > 0 && (
+                    <Badge 
+                      variant="default" 
+                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-blue-500 hover:bg-blue-500"
+                    >
+                      {companyAgreementsCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-sm font-medium">Entreprises</span>
+              </TabsTrigger>
+
+              {/* Row 2 */}
+              <TabsTrigger 
+                value="fleets" 
+                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                disabled={isFleetDriver}
+              >
+                <div className="relative">
+                  <Briefcase className="h-7 w-7 text-emerald-400" />
+                  {fleetPartnershipsCount > 0 && (
+                    <Badge 
+                      variant="default" 
+                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-emerald-500 hover:bg-emerald-500"
+                    >
+                      {fleetPartnershipsCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-sm font-medium">Flottes</span>
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="settings" 
+                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+              >
+                <Settings className="h-7 w-7 text-muted-foreground" />
+                <span className="text-sm font-medium">Paramètres</span>
+              </TabsTrigger>
+            </TabsList>
+          </CardContent>
+        </Card>
 
         {/* Driver Partnerships */}
         <TabsContent value="drivers" className="mt-4">
