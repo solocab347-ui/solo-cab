@@ -4622,6 +4622,116 @@ export type Database = {
           },
         ]
       }
+      guest_registration_tokens: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          destination_address: string | null
+          driver_id: string
+          estimated_price: number | null
+          expires_at: string
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string
+          id: string
+          is_used: boolean | null
+          pickup_address: string | null
+          scheduled_date: string | null
+          token: string
+          updated_at: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          driver_id: string
+          estimated_price?: number | null
+          expires_at?: string
+          guest_email?: string | null
+          guest_name: string
+          guest_phone: string
+          id?: string
+          is_used?: boolean | null
+          pickup_address?: string | null
+          scheduled_date?: string | null
+          token?: string
+          updated_at?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          driver_id?: string
+          estimated_price?: number | null
+          expires_at?: string
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string
+          id?: string
+          is_used?: boolean | null
+          pickup_address?: string | null
+          scheduled_date?: string | null
+          token?: string
+          updated_at?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_registration_tokens_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_tokens: {
         Row: {
           created_at: string
