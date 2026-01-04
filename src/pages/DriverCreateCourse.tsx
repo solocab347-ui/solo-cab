@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Car, MapPin, Calendar, Users, ArrowLeft, Calculator, Clock } from "lucide-react";
+import { Car, MapPin, Calendar, Users, ArrowLeft, Calculator, Clock, UserX } from "lucide-react";
 import { calculateRoute } from "@/lib/geocoding";
 import { useCourseCreation } from "@/hooks/useCourseCreation";
 import { validateCoordinates } from "@/lib/courseValidation";
@@ -360,13 +360,30 @@ const DriverCreateCourse = () => {
                 </Label>
                 <Select 
                   value={selectedClientId} 
-                  onValueChange={setSelectedClientId}
+                  onValueChange={(value) => {
+                    if (value === "__unregistered__") {
+                      navigate("/driver/create-direct-course");
+                    } else {
+                      setSelectedClientId(value);
+                    }
+                  }}
                   key={`client-select-${clients.length}`}
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Sélectionnez un client" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
+                    {/* Option client non enregistré en premier */}
+                    <SelectItem 
+                      value="__unregistered__"
+                      className="border-b border-border mb-1 pb-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <UserX className="h-4 w-4 text-orange-500" />
+                        <span className="font-medium text-orange-500">Client non enregistré</span>
+                      </div>
+                    </SelectItem>
+                    
                     {clients.map((client) => (
                       <SelectItem 
                         key={`client-${client.id}`} 
@@ -379,7 +396,7 @@ const DriverCreateCourse = () => {
                 </Select>
                 {clients.length === 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Aucun client enregistré. Invitez des clients via votre QR code.
+                    Aucun client enregistré. Utilisez "Client non enregistré" ou invitez des clients via votre QR code.
                   </p>
                 )}
               </div>
