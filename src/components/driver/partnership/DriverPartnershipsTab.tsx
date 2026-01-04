@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   UsersRound, 
-  Radar, 
-  Banknote,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  FileStack
+  Search, 
+  Wallet,
+  Inbox,
+  Send,
+  FileText,
+  Handshake,
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
@@ -104,7 +107,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="received" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(16,185,129,0.6)] data-[state=active]:border-emerald-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-950/80 data-[state=active]:via-emerald-900/60 data-[state=active]:to-emerald-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 group-hover:from-emerald-500/20 group-hover:to-emerald-600/10 group-data-[state=active]:from-emerald-500/30 group-data-[state=active]:to-emerald-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_4px_20px_rgb(16,185,129,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(16,185,129,0.7)] transition-transform">
-                  <ArrowDownToLine className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <Inbox className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-emerald-400">Courses reçues</span>
                 {receivedCount > 0 && (
@@ -117,7 +120,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="search" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(59,130,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(59,130,246,0.6)] data-[state=active]:border-blue-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-950/80 data-[state=active]:via-blue-900/60 data-[state=active]:to-blue-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5 group-hover:from-blue-500/20 group-hover:to-blue-600/10 group-data-[state=active]:from-blue-500/30 group-data-[state=active]:to-blue-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-[0_4px_20px_rgb(59,130,246,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(59,130,246,0.7)] transition-transform">
-                  <Radar className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <Search className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-blue-400">Trouver partenaire</span>
               </TabsTrigger>
@@ -125,7 +128,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="sent" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(249,115,22,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(249,115,22,0.6)] data-[state=active]:border-orange-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-950/80 data-[state=active]:via-orange-900/60 data-[state=active]:to-orange-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-orange-600/5 group-hover:from-orange-500/20 group-hover:to-orange-600/10 group-data-[state=active]:from-orange-500/30 group-data-[state=active]:to-orange-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-[0_4px_20px_rgb(249,115,22,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(249,115,22,0.7)] transition-transform">
-                  <ArrowUpFromLine className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <Send className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-orange-400">Mes envois</span>
               </TabsTrigger>
@@ -134,7 +137,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="list" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(139,92,246,0.6)] data-[state=active]:border-violet-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-950/80 data-[state=active]:via-violet-900/60 data-[state=active]:to-violet-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5 group-hover:from-violet-500/20 group-hover:to-violet-600/10 group-data-[state=active]:from-violet-500/30 group-data-[state=active]:to-violet-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-[0_4px_20px_rgb(139,92,246,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(139,92,246,0.7)] transition-transform">
-                  <UsersRound className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <Handshake className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-violet-400">Partenaires</span>
               </TabsTrigger>
@@ -142,7 +145,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="payments" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(245,158,11,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(245,158,11,0.6)] data-[state=active]:border-amber-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-950/80 data-[state=active]:via-amber-900/60 data-[state=active]:to-amber-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-600/5 group-hover:from-amber-500/20 group-hover:to-amber-600/10 group-data-[state=active]:from-amber-500/30 group-data-[state=active]:to-amber-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_4px_20px_rgb(245,158,11,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(245,158,11,0.7)] transition-transform">
-                  <Banknote className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <CreditCard className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-amber-400">Paiements</span>
               </TabsTrigger>
@@ -150,7 +153,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               <TabsTrigger value="invoices" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(6,182,212,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(6,182,212,0.6)] data-[state=active]:border-cyan-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-950/80 data-[state=active]:via-cyan-900/60 data-[state=active]:to-cyan-950/80 transition-all duration-300 h-auto group">
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 group-hover:from-cyan-500/20 group-hover:to-cyan-600/10 group-data-[state=active]:from-cyan-500/30 group-data-[state=active]:to-cyan-600/20 transition-all"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-[0_4px_20px_rgb(6,182,212,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(6,182,212,0.7)] transition-transform">
-                  <FileStack className="h-6 w-6 text-white" strokeWidth={2.5} />
+                  <Receipt className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-cyan-400">Factures</span>
               </TabsTrigger>
@@ -165,10 +168,9 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
             </TabsContent>
 
             <TabsContent value="received" className="mt-4 space-y-4">
-              {/* Available courses from partners */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <ArrowDownToLine className="h-4 w-4 text-primary" />
+                  <Inbox className="h-4 w-4 text-primary" />
                   Courses disponibles des partenaires
                 </h3>
                 <PartnerCoursePool driverId={driverId} />
@@ -176,7 +178,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               
               <div className="border-t pt-4">
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <ArrowDownToLine className="h-4 w-4 text-green-600" />
+                  <Inbox className="h-4 w-4 text-green-600" />
                   Courses acceptées
                 </h3>
                 <ReceivedPartnerCourses driverId={driverId} />
