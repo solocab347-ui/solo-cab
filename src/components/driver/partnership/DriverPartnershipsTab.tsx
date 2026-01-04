@@ -12,6 +12,7 @@ import {
   FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
 
 // Import sub-components
 import { MyPartnersList } from '../MyPartnersList';
@@ -30,6 +31,9 @@ interface DriverPartnershipsTabProps {
 export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: DriverPartnershipsTabProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices'>(initialSubTab);
   const [receivedCount, setReceivedCount] = useState(0);
+  
+  // Get the function to mark notifications as read
+  const { markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverId);
 
   // Sync with initialSubTab when it changes (e.g., from URL params)
   useEffect(() => {
@@ -37,6 +41,13 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
       setActiveTab(initialSubTab);
     }
   }, [initialSubTab]);
+
+  // Mark partnership notifications as read when user navigates to payments tab
+  useEffect(() => {
+    if (activeTab === 'payments') {
+      markPartnershipNotificationsAsRead();
+    }
+  }, [activeTab, markPartnershipNotificationsAsRead]);
 
   // Count pending received courses
   useEffect(() => {

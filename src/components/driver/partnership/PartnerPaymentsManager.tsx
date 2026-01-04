@@ -1147,57 +1147,95 @@ export function PartnerPaymentsManager({ driverId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Reminder Dialog */}
+      {/* Reminder Dialog - Enhanced design */}
       <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-orange-600" />
+        <DialogContent className="max-w-md">
+          <DialogHeader className="pb-4 border-b border-border">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-orange-500/20 rounded-full">
+                <Bell className="h-5 w-5 text-orange-600" />
+              </div>
               Relancer le partenaire
             </DialogTitle>
-            <DialogDescription>
-              Envoyer un rappel de paiement
+            <DialogDescription className="text-muted-foreground">
+              Envoyer un rappel de paiement à votre partenaire
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <Avatar className="h-10 w-10">
+          <div className="space-y-5 py-4">
+            {/* Partner card - improved styling */}
+            <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/30 p-5 rounded-xl">
+              <div className="flex items-center gap-4 mb-4">
+                <Avatar className="h-14 w-14 ring-2 ring-orange-500/30 ring-offset-2 ring-offset-background">
                   <AvatarImage src={selectedGroup?.partnerPhoto || undefined} />
-                  <AvatarFallback>{selectedGroup?.partnerName.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="bg-orange-500/20 text-orange-700 font-bold text-lg">
+                    {selectedGroup?.partnerName.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-medium">{selectedGroup?.partnerName}</p>
-                  <Badge variant="outline" className="text-xs mt-1">
-                    {selectedGroup && SCHEDULE_LABELS[selectedGroup.paymentSchedule]}
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">{selectedGroup?.partnerName}</p>
+                  <Badge variant="outline" className="text-xs mt-1 bg-background/50">
+                    {selectedGroup && SCHEDULE_ICONS[selectedGroup.paymentSchedule]}
+                    <span className="ml-1">{selectedGroup && SCHEDULE_LABELS[selectedGroup.paymentSchedule]}</span>
                   </Badge>
                 </div>
               </div>
-              <div className="text-sm space-y-1">
-                <p><strong>Montant en attente:</strong> <span className="text-orange-600 font-bold">{selectedGroup?.totalAmount.toFixed(2)}€</span></p>
+              
+              {/* Amount with better visual hierarchy */}
+              <div className="bg-background/60 backdrop-blur-sm rounded-lg p-4 border border-orange-500/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Montant en attente</span>
+                  <span className="text-2xl font-bold text-orange-600">{selectedGroup?.totalAmount.toFixed(2)}€</span>
+                </div>
+                {selectedGroup?.periodLabel && (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Période : {selectedGroup.periodLabel}
+                  </p>
+                )}
+                {selectedGroup && selectedGroup.invoices.length > 1 && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    {selectedGroup.invoices.length} courses concernées
+                  </p>
+                )}
               </div>
             </div>
 
-            <Alert className="border-orange-500/50 bg-orange-500/10">
-              <Bell className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-sm text-orange-700">
-                Une notification sera envoyée au partenaire pour lui rappeler le paiement.
-              </AlertDescription>
-            </Alert>
+            {/* Info message with icon */}
+            <div className="flex items-start gap-3 p-4 bg-orange-500/5 rounded-lg border border-orange-500/20">
+              <div className="p-1.5 bg-orange-500/20 rounded-full mt-0.5">
+                <Send className="h-3.5 w-3.5 text-orange-600" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Une notification de rappel sera envoyée à <span className="font-medium text-foreground">{selectedGroup?.partnerName}</span> pour lui rappeler de régler ce paiement.
+              </p>
+            </div>
+
+            {/* Reminder count if any */}
+            {selectedGroup && selectedGroup.invoices[0]?.reminder_count > 0 && (
+              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 p-2 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>{selectedGroup.invoices[0].reminder_count} rappel(s) déjà envoyé(s)</span>
+              </div>
+            )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReminderOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 pt-4 border-t border-border">
+            <Button 
+              variant="outline" 
+              onClick={() => setReminderOpen(false)}
+              className="w-full sm:w-auto"
+            >
               Annuler
             </Button>
             <Button 
               onClick={submitReminder} 
               disabled={submitting}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/25"
             >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Bell className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 mr-2" />
               Envoyer le rappel
             </Button>
           </DialogFooter>
