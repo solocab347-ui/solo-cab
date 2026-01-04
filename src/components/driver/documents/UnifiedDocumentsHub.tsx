@@ -135,27 +135,29 @@ export function UnifiedDocumentsHub({ driverId, userId, isFleetDriver = false }:
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DocumentTab)}>
-            <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto gap-1">
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-2">
               {!isFleetDriver && (
                 <TabsTrigger 
                   value="registration" 
-                  className="flex-col sm:flex-row gap-1 py-2 text-xs"
+                  className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
                 >
-                  <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Inscription</span>
-                  <span className="sm:hidden">Inscr.</span>
+                  <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                    <Upload className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <span className="text-xs font-medium">Inscription</span>
                 </TabsTrigger>
               )}
               
               <TabsTrigger 
                 value="driver-partnerships" 
-                className="flex-col sm:flex-row gap-1 py-2 text-xs"
+                className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all relative"
               >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Chauffeurs</span>
-                <span className="sm:hidden">Chauf.</span>
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-xs font-medium">Chauffeurs</span>
                 {driverPartnerDocs > 0 && (
-                  <Badge variant="secondary" className="h-5 min-w-5 px-1 text-[10px]">
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 text-[10px] bg-blue-600">
                     {driverPartnerDocs}
                   </Badge>
                 )}
@@ -163,13 +165,14 @@ export function UnifiedDocumentsHub({ driverId, userId, isFleetDriver = false }:
               
               <TabsTrigger 
                 value="company-partnerships" 
-                className="flex-col sm:flex-row gap-1 py-2 text-xs"
+                className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all relative"
               >
-                <Building2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Entreprises</span>
-                <span className="sm:hidden">Entr.</span>
+                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Building2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <span className="text-xs font-medium">Entreprises</span>
                 {companyPartnerDocs > 0 && (
-                  <Badge variant="secondary" className="h-5 min-w-5 px-1 text-[10px]">
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 text-[10px] bg-emerald-600">
                     {companyPartnerDocs}
                   </Badge>
                 )}
@@ -177,13 +180,14 @@ export function UnifiedDocumentsHub({ driverId, userId, isFleetDriver = false }:
               
               <TabsTrigger 
                 value="fleet-partnerships" 
-                className="flex-col sm:flex-row gap-1 py-2 text-xs"
+                className="flex flex-col items-center gap-2 py-3 px-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all relative"
               >
-                <Briefcase className="h-4 w-4" />
-                <span className="hidden sm:inline">Flottes</span>
-                <span className="sm:hidden">Flottes</span>
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                  <Briefcase className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="text-xs font-medium">Flottes</span>
                 {fleetPartnerDocs > 0 && (
-                  <Badge variant="secondary" className="h-5 min-w-5 px-1 text-[10px]">
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 text-[10px] bg-purple-600">
                     {fleetPartnerDocs}
                   </Badge>
                 )}
