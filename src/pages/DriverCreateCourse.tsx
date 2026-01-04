@@ -190,12 +190,15 @@ const DriverCreateCourse = () => {
     if (!driverProfile) return;
 
     let estimatedPrice = 0;
+    const minimumPrice = driverProfile.minimum_price || 0;
 
     if (courseType === "classic" && distanceKm !== null) {
       // Course classique : base + distance
       const baseFare = driverProfile.base_fare || 0;
       const perKmRate = driverProfile.per_km_rate || 0;
       const tvaRate = 10; // TVA 10% pour facturation au km
+      
+      let subtotal = 0;
       
       // SYSTÈME RENFORCÉ: Tenir compte du paramètre tva_included du chauffeur
       if (driverProfile.tva_included) {
@@ -204,12 +207,19 @@ const DriverCreateCourse = () => {
         const perKmRateHT = perKmRate / (1 + tvaRate / 100);
         const subtotalHT = baseFareHT + (distanceKm * perKmRateHT);
         const tva = subtotalHT * (tvaRate / 100);
-        estimatedPrice = subtotalHT + tva;
+        subtotal = subtotalHT + tva;
       } else {
         // TVA NON COMPRISE : ajouter la TVA au subtotal
-        const subtotal = baseFare + (distanceKm * perKmRate);
-        const tva = subtotal * (tvaRate / 100);
-        estimatedPrice = subtotal + tva;
+        const rawSubtotal = baseFare + (distanceKm * perKmRate);
+        const tva = rawSubtotal * (tvaRate / 100);
+        subtotal = rawSubtotal + tva;
+      }
+      
+      // APPLIQUER LE PRIX MINIMUM pour les courses classiques
+      if (minimumPrice > 0 && subtotal < minimumPrice) {
+        estimatedPrice = minimumPrice;
+      } else {
+        estimatedPrice = subtotal;
       }
     } else if (courseType === "hourly" && durationHours) {
       // Mise à disposition : durée * tarif horaire
@@ -229,6 +239,7 @@ const DriverCreateCourse = () => {
         const tva = subtotal * (tvaRate / 100);
         estimatedPrice = subtotal + tva;
       }
+      // Note: Le prix minimum ne s'applique pas aux mises à disposition
     }
 
     setCalculatedPrice(estimatedPrice > 0 ? parseFloat(estimatedPrice.toFixed(2)) : null);
