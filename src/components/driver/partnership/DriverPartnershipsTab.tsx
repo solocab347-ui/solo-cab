@@ -99,41 +99,38 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-6 w-full">
-              <TabsTrigger value="list" className="text-xs gap-1 px-2">
-                <Handshake className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Partenaires</span>
-                <span className="sm:hidden">Part.</span>
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-1">
+              {/* Ligne 1 */}
+              <TabsTrigger value="list" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <Handshake className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Partenaires</span>
               </TabsTrigger>
-              <TabsTrigger value="search" className="text-xs gap-1 px-2">
-                <Search className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Rechercher</span>
-                <span className="sm:hidden">Rech.</span>
+              <TabsTrigger value="search" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <Search className="h-5 w-5 text-blue-500" />
+                <span className="text-xs font-medium">Rechercher</span>
               </TabsTrigger>
-              <TabsTrigger value="received" className="text-xs gap-1 px-2 relative">
-                <Inbox className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Reçues</span>
-                <span className="sm:hidden">Reçu</span>
+              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <Inbox className="h-5 w-5 text-emerald-500" />
+                <span className="text-xs font-medium">Reçues</span>
                 {receivedCount > 0 && (
-                  <Badge className="absolute -top-1.5 -right-1.5 h-4 min-w-4 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
+                  <Badge className="absolute -top-0.5 -right-0.5 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
                     {receivedCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="sent" className="text-xs gap-1 px-2">
-                <Send className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Envoyées</span>
-                <span className="sm:hidden">Env.</span>
+              
+              {/* Ligne 2 */}
+              <TabsTrigger value="sent" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <Send className="h-5 w-5 text-orange-500" />
+                <span className="text-xs font-medium">Envoyées</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="text-xs gap-1 px-2">
-                <CreditCard className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Paiements</span>
-                <span className="sm:hidden">Paie.</span>
+              <TabsTrigger value="payments" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <CreditCard className="h-5 w-5 text-purple-500" />
+                <span className="text-xs font-medium">Paiements</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="text-xs gap-1 px-2">
-                <FileText className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Factures</span>
-                <span className="sm:hidden">Fact.</span>
+              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
+                <FileText className="h-5 w-5 text-cyan-500" />
+                <span className="text-xs font-medium">Factures</span>
               </TabsTrigger>
             </TabsList>
 
