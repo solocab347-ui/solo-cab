@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Handshake, 
-  Search, 
-  CreditCard,
-  Inbox,
-  Send,
-  FileText
+  Users, 
+  UserSearch, 
+  Wallet,
+  CarFront,
+  SendHorizontal,
+  Receipt
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
@@ -90,7 +90,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
-            <Handshake className="h-5 w-5 text-primary" />
+            <Users className="h-5 w-5 text-primary" />
             Partenariats Chauffeurs
           </CardTitle>
           <CardDescription>
@@ -99,38 +99,50 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-1">
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-1.5 p-1.5 bg-muted/50 rounded-xl">
               {/* Ligne 1 */}
-              <TabsTrigger value="list" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <Handshake className="h-5 w-5 text-primary" />
-                <span className="text-xs font-medium">Partenaires</span>
-              </TabsTrigger>
-              <TabsTrigger value="search" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <Search className="h-5 w-5 text-blue-500" />
-                <span className="text-xs font-medium">Rechercher</span>
-              </TabsTrigger>
-              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <Inbox className="h-5 w-5 text-emerald-500" />
-                <span className="text-xs font-medium">Reçues</span>
+              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                  <CarFront className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Courses reçues</span>
                 {receivedCount > 0 && (
-                  <Badge className="absolute -top-0.5 -right-0.5 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
+                  <Badge className="absolute -top-0.5 -right-0.5 h-4 min-w-4 p-0 flex items-center justify-center text-[9px] bg-red-500 text-white border-2 border-background">
                     {receivedCount}
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="search" className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                  <UserSearch className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Trouver partenaire</span>
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-orange-100 dark:bg-orange-900/30">
+                  <SendHorizontal className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Envoyées</span>
+              </TabsTrigger>
               
               {/* Ligne 2 */}
-              <TabsTrigger value="sent" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <Send className="h-5 w-5 text-orange-500" />
-                <span className="text-xs font-medium">Envoyées</span>
+              <TabsTrigger value="list" className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-violet-100 dark:bg-violet-900/30">
+                  <Users className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Partenaires</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <CreditCard className="h-5 w-5 text-purple-500" />
-                <span className="text-xs font-medium">Paiements</span>
+              <TabsTrigger value="payments" className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                  <Wallet className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Paiements</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg">
-                <FileText className="h-5 w-5 text-cyan-500" />
-                <span className="text-xs font-medium">Factures</span>
+              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <div className="p-1.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30">
+                  <Receipt className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <span className="text-[10px] font-medium text-center leading-tight">Factures</span>
               </TabsTrigger>
             </TabsList>
 
@@ -146,7 +158,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
               {/* Available courses from partners */}
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-primary" />
+                  <CarFront className="h-4 w-4 text-primary" />
                   Courses disponibles des partenaires
                 </h3>
                 <PartnerCoursePool driverId={driverId} />
@@ -154,7 +166,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
               
               <div className="border-t pt-4">
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-green-600" />
+                  <CarFront className="h-4 w-4 text-green-600" />
                   Courses acceptées
                 </h3>
                 <ReceivedPartnerCourses driverId={driverId} />
