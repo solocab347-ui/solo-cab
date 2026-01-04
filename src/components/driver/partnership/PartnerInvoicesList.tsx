@@ -352,80 +352,75 @@ function InvoiceCard({ invoice, driverId, onConfirmPayment, onDownload }: Invoic
         ? "border-l-4 border-l-green-500 bg-gradient-to-r from-green-500/5 to-transparent" 
         : "border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-500/5 to-transparent"
     )}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          {/* Avatar & Partner */}
-          <Avatar className="h-12 w-12 border-2 border-background shadow-md">
+      <CardContent className="p-3">
+        {/* Header: Avatar + Name + Amount */}
+        <div className="flex items-center gap-3 mb-3">
+          <Avatar className="h-10 w-10 shrink-0 border-2 border-background shadow">
             <AvatarImage src={invoice.partner_photo || undefined} />
             <AvatarFallback className={cn(
-              "text-white font-bold",
+              "text-white font-bold text-sm",
               isSender ? "bg-green-500" : "bg-blue-500"
             )}>
               {invoice.partner_name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0 space-y-2">
-            {/* Top Row: Name + Amount */}
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold text-sm">{invoice.partner_name}</p>
-                <p className="text-xs text-muted-foreground font-mono">{invoice.invoice_number}</p>
-              </div>
-              <div className="text-right">
-                <p className={cn(
-                  "text-lg font-bold",
-                  isSender ? "text-green-600" : "text-blue-600"
-                )}>
-                  {isSender ? '+' : ''}{invoice.commission_amount.toFixed(2)}€
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {isSender ? 'À recevoir' : 'À payer'}
-                </p>
-              </div>
-            </div>
-
-            {/* Status Row */}
-            <div className="flex items-center flex-wrap gap-2">
-              <Badge className={cn("text-xs font-medium", statusConfig.color)}>
-                <StatusIcon className="h-3 w-3 mr-1" />
-                {statusConfig.label}
-              </Badge>
-              {invoice.payment_schedule && (
-                <Badge variant="outline" className="text-xs">
-                  {PAYMENT_SCHEDULE_LABELS[invoice.payment_schedule]}
-                </Badge>
-              )}
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(invoice.scheduled_date), "d MMM yyyy", { locale: fr })}
-              </span>
-            </div>
-
-            {/* Actions Row */}
-            <div className="flex items-center gap-2 pt-1">
-              {canConfirmPayment && (
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white h-8"
-                  onClick={() => onConfirmPayment(invoice)}
-                >
-                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                  Confirmer réception
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={() => onDownload(invoice)}
-              >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                PDF
-              </Button>
-            </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate">{invoice.partner_name}</p>
+            <p className="text-[10px] text-muted-foreground font-mono truncate">{invoice.invoice_number}</p>
           </div>
+          
+          <div className="text-right shrink-0">
+            <p className={cn(
+              "text-base font-bold",
+              isSender ? "text-green-600" : "text-blue-600"
+            )}>
+              {isSender ? '+' : ''}{invoice.commission_amount.toFixed(2)}€
+            </p>
+            <p className="text-[9px] text-muted-foreground">
+              {isSender ? 'À recevoir' : 'À payer'}
+            </p>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-center flex-wrap gap-1.5 mb-3">
+          <Badge className={cn("text-[10px] font-medium px-2 py-0.5", statusConfig.color)}>
+            <StatusIcon className="h-3 w-3 mr-1" />
+            {statusConfig.label}
+          </Badge>
+          {invoice.payment_schedule && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+              {PAYMENT_SCHEDULE_LABELS[invoice.payment_schedule]}
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+            <Calendar className="h-3 w-3 mr-1" />
+            {format(new Date(invoice.scheduled_date), "d MMM", { locale: fr })}
+          </Badge>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {canConfirmPayment && (
+            <Button
+              size="sm"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+              onClick={() => onConfirmPayment(invoice)}
+            >
+              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+              Confirmer
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => onDownload(invoice)}
+          >
+            <Download className="h-3.5 w-3.5 mr-1" />
+            PDF
+          </Button>
         </div>
       </CardContent>
     </Card>

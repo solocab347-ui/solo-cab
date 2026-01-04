@@ -99,38 +99,50 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-2 bg-transparent">
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-2 bg-muted/20 rounded-2xl">
               {/* Ligne 1 */}
-              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/5 data-[state=active]:border-emerald-500 data-[state=active]:bg-emerald-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-emerald-500/60">
-                <ArrowDownToLine className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Courses reçues</span>
+              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-emerald-500/10 to-emerald-600/5 data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-emerald-500/20 data-[state=active]:bg-white/20 flex items-center justify-center">
+                  <ArrowDownToLine className="h-5 w-5 text-emerald-500 group-data-[state=active]:text-white" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Courses reçues</span>
                 {receivedCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg border-2 border-background">
+                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg">
                     {receivedCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="search" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 data-[state=active]:border-blue-500 data-[state=active]:bg-blue-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-blue-500/60">
-                <Radar className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Trouver partenaire</span>
+              <TabsTrigger value="search" className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-blue-500/10 to-blue-600/5 data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Radar className="h-5 w-5 text-blue-500" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Trouver partenaire</span>
               </TabsTrigger>
-              <TabsTrigger value="sent" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-orange-500/30 bg-orange-500/5 data-[state=active]:border-orange-500 data-[state=active]:bg-orange-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-orange-500/60">
-                <ArrowUpFromLine className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Mes envois</span>
+              <TabsTrigger value="sent" className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-orange-500/10 to-orange-600/5 data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <ArrowUpFromLine className="h-5 w-5 text-orange-500" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Mes envois</span>
               </TabsTrigger>
               
               {/* Ligne 2 */}
-              <TabsTrigger value="list" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-violet-500/30 bg-violet-500/5 data-[state=active]:border-violet-500 data-[state=active]:bg-violet-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-violet-500/60">
-                <UsersRound className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Partenaires</span>
+              <TabsTrigger value="list" className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-violet-500/10 to-violet-600/5 data-[state=active]:from-violet-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-violet-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                  <UsersRound className="h-5 w-5 text-violet-500" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Partenaires</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 data-[state=active]:border-amber-500 data-[state=active]:bg-amber-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-amber-500/60">
-                <Banknote className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Paiements</span>
+              <TabsTrigger value="payments" className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-amber-500/10 to-amber-600/5 data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <Banknote className="h-5 w-5 text-amber-500" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Paiements</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-cyan-500/30 bg-cyan-500/5 data-[state=active]:border-cyan-500 data-[state=active]:bg-cyan-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-cyan-500/60">
-                <FileStack className="h-6 w-6" strokeWidth={2} />
-                <span className="text-[11px] font-bold text-center leading-tight">Factures</span>
+              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-b from-cyan-500/10 to-cyan-600/5 data-[state=active]:from-cyan-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/30 transition-all duration-300">
+                <div className="h-10 w-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                  <FileStack className="h-5 w-5 text-cyan-500" />
+                </div>
+                <span className="text-[10px] font-bold text-center leading-tight">Factures</span>
               </TabsTrigger>
             </TabsList>
 
