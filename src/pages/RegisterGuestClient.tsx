@@ -146,9 +146,9 @@ const RegisterGuestClient = () => {
     setSubmitting(true);
 
     try {
-      // Call edge function to register client
+      // Call edge function to register guest as exclusive client
       const { data: registerData, error: registerError } = await supabase.functions.invoke(
-        "register-client-driver",
+        "register-guest-client",
         {
           body: {
             email: email.trim().toLowerCase(),
@@ -156,7 +156,6 @@ const RegisterGuestClient = () => {
             full_name: fullName.trim(),
             phone: phone.trim(),
             driver_id: tokenData.driver_id,
-            is_exclusive: true,
             registration_token: token,
           },
         }

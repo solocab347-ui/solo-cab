@@ -143,3 +143,6 @@ verify_jwt = true
 
 [functions.send-driver-document-reminder]
 verify_jwt = true
+
+[functions.register-guest-client]
+verify_jwt = false
