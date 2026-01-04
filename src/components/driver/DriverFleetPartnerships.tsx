@@ -32,6 +32,7 @@ import {
 import { PartnershipModificationDialog } from "@/components/fleet-manager/PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
+import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DriverFleetPartnershipsProps {
@@ -104,6 +105,10 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   const [counterPaymentSchedule, setCounterPaymentSchedule] = useState("per_course");
   const [counterReason, setCounterReason] = useState("");
   const [submittingCounter, setSubmittingCounter] = useState(false);
+  
+  // Pre-signature confirmation state
+  const [confirmSignaturePartnership, setConfirmSignaturePartnership] = useState<Partnership | null>(null);
+  const [signingContract, setSigningContract] = useState(false);
 
   useEffect(() => {
     if (driverId) {
@@ -532,9 +537,9 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                           <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:shrink-0">
                             {!partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
                               <>
-                                <Button size="sm" onClick={() => signContract(partnership.id)} className="flex-1 sm:flex-none gap-1.5">
+                                <Button size="sm" onClick={() => setConfirmSignaturePartnership(partnership)} className="flex-1 sm:flex-none gap-1.5">
                                   <Check className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Accepter</span>
+                                  <span className="text-xs sm:text-sm">Accepter et signer</span>
                                 </Button>
                                 <Button 
                                   variant="secondary"
@@ -822,6 +827,24 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pre-Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={!!confirmSignaturePartnership}
+        onOpenChange={(open) => !open && setConfirmSignaturePartnership(null)}
+        partnerName={confirmSignaturePartnership?.fleet_manager?.company_name || 'Gestionnaire de flotte'}
+        commissionPercentage={confirmSignaturePartnership?.commission_percentage}
+        paymentSchedule={confirmSignaturePartnership?.payment_schedule}
+        onConfirmSign={async () => {
+          if (confirmSignaturePartnership) {
+            setSigningContract(true);
+            await signContract(confirmSignaturePartnership.id);
+            setSigningContract(false);
+            setConfirmSignaturePartnership(null);
+          }
+        }}
+        signing={signingContract}
+      />
 
       {/* Contract Dialog */}
       <UniversalPartnershipContract

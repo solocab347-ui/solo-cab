@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
 import { ModifyPartnershipDialog } from './partnership/ModifyPartnershipDialog';
 import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
+import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 import { 
   Users, 
   Handshake,
@@ -108,6 +109,9 @@ export function MyPartnersList() {
   const [myName, setMyName] = useState<string>('');
   const [myCompany, setMyCompany] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  // Pre-signature confirmation state
+  const [confirmSignatureRequest, setConfirmSignatureRequest] = useState<Partner | null>(null);
+  const [signingPartnership, setSigningPartnership] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -423,6 +427,24 @@ export function MyPartnersList() {
         }}
       />
 
+      {/* Pre-Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={!!confirmSignatureRequest}
+        onOpenChange={(open) => !open && setConfirmSignatureRequest(null)}
+        partnerName={confirmSignatureRequest?.partner_name || ''}
+        commissionPercentage={confirmSignatureRequest?.commission_percentage}
+        paymentSchedule={confirmSignatureRequest?.payment_schedule}
+        onConfirmSign={async () => {
+          if (confirmSignatureRequest) {
+            setSigningPartnership(true);
+            await respondToRequest(confirmSignatureRequest.id, true);
+            setSigningPartnership(false);
+            setConfirmSignatureRequest(null);
+          }
+        }}
+        signing={signingPartnership}
+      />
+
       {/* Modify Partnership Dialog */}
       {selectedModifyPartner && driverId && (
         <ModifyPartnershipDialog
@@ -645,7 +667,7 @@ export function MyPartnersList() {
                     <Button 
                       size="sm" 
                       className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700 h-10"
-                      onClick={() => respondToRequest(request.id, true)}
+                      onClick={() => setConfirmSignatureRequest(request)}
                       disabled={responding === request.id}
                     >
                       {responding === request.id ? (
@@ -653,7 +675,7 @@ export function MyPartnersList() {
                       ) : (
                         <>
                           <Check className="h-4 w-4" />
-                          Accepter
+                          Accepter et signer
                         </>
                       )}
                     </Button>

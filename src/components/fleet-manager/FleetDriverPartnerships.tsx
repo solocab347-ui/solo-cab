@@ -48,6 +48,7 @@ import { Slider } from "@/components/ui/slider";
 import { PartnershipModificationDialog } from "./PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 import { PartnershipContractDocument } from "./PartnershipContractDocument";
+import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 
 // Vehicle categories
 const VEHICLE_CATEGORIES = [
@@ -216,6 +217,10 @@ export const FleetDriverPartnerships = ({
   const [counterPaymentSchedule, setCounterPaymentSchedule] = useState("per_course");
   const [counterReason, setCounterReason] = useState("");
   const [submittingCounter, setSubmittingCounter] = useState(false);
+  
+  // Pre-signature confirmation state
+  const [confirmSignaturePartnership, setConfirmSignaturePartnership] = useState<Partnership | null>(null);
+  const [signingContract, setSigningContract] = useState(false);
   
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
@@ -942,9 +947,9 @@ export const FleetDriverPartnerships = ({
                           <div className="flex flex-wrap gap-2">
                             {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
                               <>
-                                <Button size="sm" onClick={() => signContract(partnership.id)}>
+                                <Button size="sm" onClick={() => setConfirmSignaturePartnership(partnership)}>
                                   <FileText className="w-4 h-4 mr-1" />
-                                  Accepter
+                                  Accepter et signer
                                 </Button>
                                 <Button 
                                   variant="secondary"
@@ -1789,6 +1794,24 @@ export const FleetDriverPartnerships = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pre-Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={!!confirmSignaturePartnership}
+        onOpenChange={(open) => !open && setConfirmSignaturePartnership(null)}
+        partnerName={confirmSignaturePartnership?.driver?.profile?.full_name || 'Chauffeur partenaire'}
+        commissionPercentage={confirmSignaturePartnership?.commission_percentage}
+        paymentSchedule={confirmSignaturePartnership?.payment_schedule}
+        onConfirmSign={async () => {
+          if (confirmSignaturePartnership) {
+            setSigningContract(true);
+            await signContract(confirmSignaturePartnership.id);
+            setSigningContract(false);
+            setConfirmSignaturePartnership(null);
+          }
+        }}
+        signing={signingContract}
+      />
     </div>
   );
 };
