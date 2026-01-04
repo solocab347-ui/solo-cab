@@ -230,17 +230,24 @@ export function PartnerInvoicesList({ driverId }: Props) {
 
   return (
     <>
-      <Card className="border-purple-500/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2 text-purple-600 dark:text-purple-400">
-            <FileText className="h-5 w-5" />
-            Factures partenaires ({invoices.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {pendingInvoices.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">En attente de paiement</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-cyan-500" />
+            Factures partenaires
+            <Badge variant="secondary" className="ml-1">{invoices.length}</Badge>
+          </h2>
+        </div>
+
+        {/* Pending Section */}
+        {pendingInvoices.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+              <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">En attente ({pendingInvoices.length})</span>
+            </div>
+            <div className="grid gap-3">
               {pendingInvoices.map((invoice) => (
                 <InvoiceCard 
                   key={invoice.id} 
@@ -251,11 +258,17 @@ export function PartnerInvoicesList({ driverId }: Props) {
                 />
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {paidInvoices.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Payées</p>
+        {/* Paid Section */}
+        {paidInvoices.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="text-sm font-semibold text-green-600 dark:text-green-400">Payées ({paidInvoices.length})</span>
+            </div>
+            <div className="grid gap-3">
               {paidInvoices.slice(0, 5).map((invoice) => (
                 <InvoiceCard 
                   key={invoice.id} 
@@ -266,9 +279,9 @@ export function PartnerInvoicesList({ driverId }: Props) {
                 />
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
 
       {/* Confirm Payment Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
@@ -333,89 +346,88 @@ function InvoiceCard({ invoice, driverId, onConfirmPayment, onDownload }: Invoic
   const canConfirmPayment = invoice.payment_status === 'pending' && isSender;
 
   return (
-    <div className={cn(
-      "p-3 rounded-lg border flex items-center gap-3",
-      isSender ? "bg-green-500/5 border-green-500/20" : "bg-blue-500/5 border-blue-500/20"
+    <Card className={cn(
+      "overflow-hidden transition-all duration-200 hover:shadow-md",
+      isSender 
+        ? "border-l-4 border-l-green-500 bg-gradient-to-r from-green-500/5 to-transparent" 
+        : "border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-500/5 to-transparent"
     )}>
-      {/* Direction indicator */}
-      <div className={cn(
-        "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
-        isSender ? "bg-green-500/20" : "bg-blue-500/20"
-      )}>
-        {isSender ? (
-          <ArrowDownLeft className="h-5 w-5 text-green-600" />
-        ) : (
-          <ArrowUpRight className="h-5 w-5 text-blue-600" />
-        )}
-      </div>
-
-      {/* Partner info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          {/* Avatar & Partner */}
+          <Avatar className="h-12 w-12 border-2 border-background shadow-md">
             <AvatarImage src={invoice.partner_photo || undefined} />
-            <AvatarFallback className="text-[10px]">
+            <AvatarFallback className={cn(
+              "text-white font-bold",
+              isSender ? "bg-green-500" : "bg-blue-500"
+            )}>
               {invoice.partner_name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium truncate">{invoice.partner_name}</span>
-        </div>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-          <span className="font-mono">{invoice.invoice_number}</span>
-          <Badge variant="outline" className={cn("text-[9px]", statusConfig.color)}>
-            <StatusIcon className="h-3 w-3 mr-1" />
-            {statusConfig.label}
-          </Badge>
-          {invoice.payment_schedule && (
-            <Badge variant="outline" className="text-[9px]">
-              {PAYMENT_SCHEDULE_LABELS[invoice.payment_schedule] || invoice.payment_schedule}
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-          <Calendar className="h-3 w-3" />
-          {format(new Date(invoice.scheduled_date), "d MMM yyyy", { locale: fr })}
-        </div>
-      </div>
 
-      {/* Financial info */}
-      <div className="text-right shrink-0">
-        <p className={cn(
-          "text-sm font-bold",
-          isSender ? "text-green-600" : "text-blue-600"
-        )}>
-          {isSender ? '+' : ''}{invoice.invoice_amount.toFixed(2)}€
-        </p>
-        <p className="text-[10px] text-muted-foreground">
-          {isSender ? 'Commission à recevoir' : 'Votre gain net'}
-        </p>
-        {invoice.tva_amount > 0 && (
-          <p className="text-[10px] text-muted-foreground">
-            TVA: {invoice.tva_amount.toFixed(2)}€
-          </p>
-        )}
-      </div>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0 space-y-2">
+            {/* Top Row: Name + Amount */}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-sm">{invoice.partner_name}</p>
+                <p className="text-xs text-muted-foreground font-mono">{invoice.invoice_number}</p>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-lg font-bold",
+                  isSender ? "text-green-600" : "text-blue-600"
+                )}>
+                  {isSender ? '+' : ''}{invoice.commission_amount.toFixed(2)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {isSender ? 'À recevoir' : 'À payer'}
+                </p>
+              </div>
+            </div>
 
-      {/* Actions */}
-      <div className="flex gap-1 shrink-0">
-        {canConfirmPayment && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-green-600 hover:text-green-700 hover:bg-green-500/10"
-            onClick={() => onConfirmPayment(invoice)}
-          >
-            <CheckCircle className="h-4 w-4" />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onDownload(invoice)}
-        >
-          <Download className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+            {/* Status Row */}
+            <div className="flex items-center flex-wrap gap-2">
+              <Badge className={cn("text-xs font-medium", statusConfig.color)}>
+                <StatusIcon className="h-3 w-3 mr-1" />
+                {statusConfig.label}
+              </Badge>
+              {invoice.payment_schedule && (
+                <Badge variant="outline" className="text-xs">
+                  {PAYMENT_SCHEDULE_LABELS[invoice.payment_schedule]}
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(invoice.scheduled_date), "d MMM yyyy", { locale: fr })}
+              </span>
+            </div>
+
+            {/* Actions Row */}
+            <div className="flex items-center gap-2 pt-1">
+              {canConfirmPayment && (
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white h-8"
+                  onClick={() => onConfirmPayment(invoice)}
+                >
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Confirmer réception
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => onDownload(invoice)}
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                PDF
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

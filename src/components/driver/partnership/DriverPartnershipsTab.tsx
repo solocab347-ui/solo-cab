@@ -99,38 +99,38 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'list' }: Driv
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full h-auto gap-1 p-1 bg-muted/30 rounded-xl border border-border/50">
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-2 p-2 bg-transparent">
               {/* Ligne 1 */}
-              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <ArrowDownToLine className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Courses reçues</span>
+              <TabsTrigger value="received" className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/5 data-[state=active]:border-emerald-500 data-[state=active]:bg-emerald-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-emerald-500/60">
+                <ArrowDownToLine className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Courses reçues</span>
                 {receivedCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-md">
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg border-2 border-background">
                     {receivedCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="search" className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <Radar className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Trouver partenaire</span>
+              <TabsTrigger value="search" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 data-[state=active]:border-blue-500 data-[state=active]:bg-blue-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-blue-500/60">
+                <Radar className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Trouver partenaire</span>
               </TabsTrigger>
-              <TabsTrigger value="sent" className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <ArrowUpFromLine className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Mes envois</span>
+              <TabsTrigger value="sent" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-orange-500/30 bg-orange-500/5 data-[state=active]:border-orange-500 data-[state=active]:bg-orange-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-orange-500/60">
+                <ArrowUpFromLine className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Mes envois</span>
               </TabsTrigger>
               
               {/* Ligne 2 */}
-              <TabsTrigger value="list" className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <UsersRound className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Partenaires</span>
+              <TabsTrigger value="list" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-violet-500/30 bg-violet-500/5 data-[state=active]:border-violet-500 data-[state=active]:bg-violet-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-violet-500/60">
+                <UsersRound className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Partenaires</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <Banknote className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Paiements</span>
+              <TabsTrigger value="payments" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 data-[state=active]:border-amber-500 data-[state=active]:bg-amber-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-amber-500/60">
+                <Banknote className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Paiements</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200 hover:bg-muted/50">
-                <FileStack className="h-5 w-5" strokeWidth={2.5} />
-                <span className="text-[10px] font-semibold text-center leading-tight">Factures</span>
+              <TabsTrigger value="invoices" className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-cyan-500/30 bg-cyan-500/5 data-[state=active]:border-cyan-500 data-[state=active]:bg-cyan-500 data-[state=active]:text-white shadow-sm transition-all duration-200 hover:border-cyan-500/60">
+                <FileStack className="h-6 w-6" strokeWidth={2} />
+                <span className="text-[11px] font-bold text-center leading-tight">Factures</span>
               </TabsTrigger>
             </TabsList>
 
