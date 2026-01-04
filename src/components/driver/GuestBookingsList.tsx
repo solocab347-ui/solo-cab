@@ -16,7 +16,8 @@ import {
   Clock, 
   Euro,
   UserPlus,
-  MessageSquare
+  MessageSquare,
+  UserCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -29,6 +30,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { RegisterGuestClientDialog } from "./RegisterGuestClientDialog";
 
 interface GuestBooking {
   id: string;
@@ -58,6 +60,8 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("");
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [bookingToRegister, setBookingToRegister] = useState<GuestBooking | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -154,6 +158,11 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
     setSelectedBooking(booking);
     setInviteMessage(`Bonjour ${booking.guest_name},\n\nMerci d'avoir utilisé nos services ! Pour bénéficier de tous les avantages SoloCab (historique des courses, réservation simplifiée, devis automatiques), je vous invite à vous inscrire sur notre plateforme.\n\nÀ bientôt !`);
     setInviteDialogOpen(true);
+  };
+
+  const handleRegisterClient = (booking: GuestBooking) => {
+    setBookingToRegister(booking);
+    setRegisterDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -294,20 +303,40 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
                   className="w-full sm:w-auto"
                 >
                   <UserPlus className="w-4 h-4 mr-1" />
-                  Inviter à s'inscrire
+                  Inviter
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="default"
+                  onClick={() => handleRegisterClient(booking)}
+                  className="w-full sm:w-auto bg-primary"
+                >
+                  <UserCheck className="w-4 h-4 mr-1" />
+                  Inscrire
                 </Button>
               </>
             )}
             {(booking.status === 'completed' || booking.status === 'cancelled') && (
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => handleInviteToRegister(booking)}
-                className="w-full sm:w-auto"
-              >
-                <UserPlus className="w-4 h-4 mr-1" />
-                Inviter à s'inscrire
-              </Button>
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => handleInviteToRegister(booking)}
+                  className="w-full sm:w-auto"
+                >
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Inviter
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleRegisterClient(booking)}
+                  className="w-full sm:w-auto"
+                >
+                  <UserCheck className="w-4 h-4 mr-1" />
+                  Inscrire
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -425,6 +454,15 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog inscription client */}
+      <RegisterGuestClientDialog
+        open={registerDialogOpen}
+        onOpenChange={setRegisterDialogOpen}
+        guestBooking={bookingToRegister}
+        driverId={driverId}
+        onSuccess={() => fetchBookings()}
+      />
     </>
   );
 };

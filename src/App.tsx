@@ -51,6 +51,7 @@ const CreateCompanyCourse = lazy(() => import("./pages/CreateCompanyCourse"));
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
+const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
 const DriverPendingValidation = lazy(() => import("./pages/DriverPendingValidation"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -168,6 +169,18 @@ const App = () => (
                     <Suspense fallback={<LoadingFallback />}>
                       <ErrorBoundary>
                         <DriverCreateCourse />
+                      </ErrorBoundary>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/driver/create-direct-course"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <DriverCreateDirectCourse />
                       </ErrorBoundary>
                     </Suspense>
                   </ProtectedRoute>
