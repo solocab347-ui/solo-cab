@@ -17,7 +17,7 @@ import {
   Euro,
   UserPlus,
   MessageSquare,
-  UserCheck
+  Link2
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -30,7 +30,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { RegisterGuestClientDialog } from "./RegisterGuestClientDialog";
+import { SendRegistrationLinkDialog } from "./SendRegistrationLinkDialog";
 
 interface GuestBooking {
   id: string;
@@ -311,8 +311,8 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
                   onClick={() => handleRegisterClient(booking)}
                   className="w-full sm:w-auto bg-primary"
                 >
-                  <UserCheck className="w-4 h-4 mr-1" />
-                  Inscrire
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Lien inscription
                 </Button>
               </>
             )}
@@ -333,8 +333,8 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
                   onClick={() => handleRegisterClient(booking)}
                   className="w-full sm:w-auto"
                 >
-                  <UserCheck className="w-4 h-4 mr-1" />
-                  Inscrire
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Lien inscription
                 </Button>
               </div>
             )}
@@ -455,8 +455,8 @@ export const GuestBookingsList = ({ driverId }: GuestBookingsListProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog inscription client */}
-      <RegisterGuestClientDialog
+      {/* Dialog envoi lien inscription */}
+      <SendRegistrationLinkDialog
         open={registerDialogOpen}
         onOpenChange={setRegisterDialogOpen}
         guestBooking={bookingToRegister}
