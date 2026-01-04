@@ -272,29 +272,73 @@ const RegisterGuestClient = () => {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Car className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Finaliser votre inscription</h1>
+          <h1 className="text-2xl font-bold">Bienvenue sur SoloCab</h1>
           <p className="text-muted-foreground mt-2">
-            Créez votre compte SoloCab pour accéder à vos réservations
+            Finalisez votre inscription pour profiter de tous les avantages
           </p>
         </div>
+
+        {/* Welcome Message */}
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <p className="text-foreground leading-relaxed">
+                <span className="font-semibold">Bonjour{tokenData?.guest_name ? ` ${tokenData.guest_name.split(' ')[0]}` : ''} !</span>
+              </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Vous avez récemment effectué une course avec l'un de nos chauffeurs partenaires. 
+                Pour simplifier vos prochaines réservations et bénéficier d'un service personnalisé, 
+                nous vous invitons à créer votre compte SoloCab.
+              </p>
+              <div className="bg-background/50 rounded-lg p-4 space-y-2">
+                <p className="text-sm font-medium text-foreground">En vous inscrivant, vous bénéficiez de :</p>
+                <ul className="text-sm text-muted-foreground space-y-1.5">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    Réservations simplifiées avec votre chauffeur attitré
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    Historique complet de vos courses
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    Devis et factures accessibles à tout moment
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    Service client privilégié
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Driver Info */}
         {driverInfo && (
           <Card className="border-primary/20">
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Votre chauffeur partenaire</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {driverInfo.card_photo_url ? (
                     <img src={driverInfo.card_photo_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <User className="h-6 w-6 text-primary" />
+                    <User className="h-7 w-7 text-primary" />
                   )}
                 </div>
                 <div>
-                  <p className="font-medium">{driverInfo.company_name}</p>
+                  <p className="font-semibold text-lg">{driverInfo.company_name || "Chauffeur VTC"}</p>
                   <p className="text-sm text-muted-foreground">
-                    {driverInfo.working_sectors?.[0] && `${driverInfo.working_sectors[0]} • `}Votre chauffeur
+                    {driverInfo.working_sectors?.[0] && `${driverInfo.working_sectors[0]} • `}Chauffeur professionnel
                   </p>
+                  <Badge variant="secondary" className="mt-1.5 text-xs">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Vérifié SoloCab
+                  </Badge>
                 </div>
               </div>
             </CardContent>
