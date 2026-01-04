@@ -101,7 +101,7 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
       .eq('driver_id', driverInfo.id)
       .eq('status', 'accepted');
 
-    // Pending requests across all types
+    // Pending requests across all types (for badges)
     const { count: driverPending } = await supabase
       .from('driver_partnerships')
       .select('*', { count: 'exact', head: true })
@@ -120,9 +120,10 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
       .eq('driver_id', driverInfo.id)
       .eq('status', 'pending');
 
-    setDriverPartnersCount(driverCount || 0);
-    setCompanyAgreementsCount(companyCount || 0);
-    setFleetPartnershipsCount(fleetCount || 0);
+    // Use pending counts for badges (not total active partnerships)
+    setDriverPartnersCount(driverPending || 0);
+    setCompanyAgreementsCount(companyPending || 0);
+    setFleetPartnershipsCount(fleetPending || 0);
     setPendingCount((driverPending || 0) + (companyPending || 0) + (fleetPending || 0));
   };
 
@@ -160,75 +161,68 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
         </Card>
       )}
 
-      {/* Main Navigation - Grid 2x2 for better visibility */}
+      {/* Main Navigation - Grid 3 columns for better visibility */}
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
         <Card className="bg-card/50 border-border/50">
-          <CardContent className="p-3">
-            <TabsList className="grid grid-cols-2 gap-3 w-full h-auto bg-transparent">
-              {/* Row 1 */}
+          <CardContent className="p-4">
+            <TabsList className="grid grid-cols-3 gap-3 w-full h-auto bg-transparent">
+              {/* Row 1: Chauffeurs, Entreprises, Flottes */}
               <TabsTrigger 
                 value="drivers" 
-                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                className="relative flex flex-col items-center gap-3 py-5 px-2 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
                 disabled={isFleetDriver}
               >
-                <div className="relative">
-                  <Users className="h-7 w-7 text-primary" />
-                  {driverPartnersCount > 0 && (
-                    <Badge 
-                      variant="default" 
-                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-orange-500 hover:bg-orange-500"
-                    >
-                      {driverPartnersCount}
-                    </Badge>
-                  )}
+                <div className="p-3 rounded-xl bg-primary/10">
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
                 <span className="text-sm font-medium">Chauffeurs</span>
+                {driverPartnersCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-6 min-w-6 px-2 text-xs bg-orange-500 hover:bg-orange-500">
+                    {driverPartnersCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               
               <TabsTrigger 
                 value="companies" 
-                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                className="relative flex flex-col items-center gap-3 py-5 px-2 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
                 disabled={isFleetDriver}
               >
-                <div className="relative">
-                  <Building2 className="h-7 w-7 text-blue-400" />
-                  {companyAgreementsCount > 0 && (
-                    <Badge 
-                      variant="default" 
-                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-blue-500 hover:bg-blue-500"
-                    >
-                      {companyAgreementsCount}
-                    </Badge>
-                  )}
+                <div className="p-3 rounded-xl bg-blue-500/10">
+                  <Building2 className="h-8 w-8 text-blue-400" />
                 </div>
                 <span className="text-sm font-medium">Entreprises</span>
+                {companyAgreementsCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-6 min-w-6 px-2 text-xs bg-blue-500 hover:bg-blue-500">
+                    {companyAgreementsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
 
-              {/* Row 2 */}
               <TabsTrigger 
                 value="fleets" 
-                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                className="relative flex flex-col items-center gap-3 py-5 px-2 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
                 disabled={isFleetDriver}
               >
-                <div className="relative">
-                  <Briefcase className="h-7 w-7 text-emerald-400" />
-                  {fleetPartnershipsCount > 0 && (
-                    <Badge 
-                      variant="default" 
-                      className="absolute -top-2 -right-3 h-5 min-w-5 px-1.5 text-[10px] bg-emerald-500 hover:bg-emerald-500"
-                    >
-                      {fleetPartnershipsCount}
-                    </Badge>
-                  )}
+                <div className="p-3 rounded-xl bg-emerald-500/10">
+                  <Briefcase className="h-8 w-8 text-emerald-400" />
                 </div>
                 <span className="text-sm font-medium">Flottes</span>
+                {fleetPartnershipsCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-6 min-w-6 px-2 text-xs bg-emerald-500 hover:bg-emerald-500">
+                    {fleetPartnershipsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               
+              {/* Row 2: Settings centered */}
               <TabsTrigger 
                 value="settings" 
-                className="relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
+                className="col-start-2 relative flex flex-col items-center gap-3 py-5 px-2 rounded-xl bg-muted/50 hover:bg-muted data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
               >
-                <Settings className="h-7 w-7 text-muted-foreground" />
+                <div className="p-3 rounded-xl bg-muted">
+                  <Settings className="h-8 w-8 text-muted-foreground" />
+                </div>
                 <span className="text-sm font-medium">Paramètres</span>
               </TabsTrigger>
             </TabsList>
