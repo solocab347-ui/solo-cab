@@ -394,7 +394,7 @@ export function UniversalPartnershipContract({
         },
         {
           title: 'Article 4 - PROTECTION DE LA CLIENTÈLE (CLAUSE ESSENTIELLE)',
-          content: 'CLAUSE DE NON-SOLLICITATION ET DE NON-DÉTOURNEMENT : Chaque partie reconnaît expressément que les clients acquis par l\'autre partie lui appartiennent exclusivement. Il est formellement INTERDIT de solliciter, démarcher, contacter directement ou indirectement, ou tenter de détourner les clients de son partenaire, que ce soit pendant la durée du partenariat ou dans les 24 mois suivant sa résiliation. Cette interdiction s\'applique à tout client dont les coordonnées ont été obtenues dans le cadre du partenariat. Toute violation de cette clause constitue une faute grave ouvrant droit à des dommages et intérêts, la résiliation immédiate du contrat, et d\'éventuelles poursuites judiciaires pour concurrence déloyale (Art. 1240 du Code civil).'
+          content: 'CLAUSE DE NON-SOLLICITATION ET DE NON-DÉTOURNEMENT : Chaque partie reconnaît expressément que les clients acquis par l\'autre partie lui appartiennent exclusivement. Il est formellement INTERDIT de solliciter, démarcher, contacter directement ou indirectement, ou tenter de détourner les clients de son partenaire, que ce soit pendant la durée du partenariat ou dans les 24 mois suivant sa résiliation. Cette interdiction s\'applique à tout client dont les coordonnées ont été obtenues dans le cadre du partenariat. En cas de violation de cette clause, la partie lésée pourra engager toute action judiciaire qu\'elle estimera nécessaire pour faire valoir ses droits et obtenir réparation du préjudice subi devant les juridictions compétentes (Art. 1240 du Code civil).'
         },
         {
           title: 'Article 5 - Obligations des parties',
@@ -409,8 +409,8 @@ export function UniversalPartnershipContract({
           content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les commissions dues. En cas de manquement grave (non-paiement, détournement de clientèle, atteinte à la réputation), la résiliation peut être immédiate et sans préavis. La partie fautive s\'expose à des poursuites judiciaires.'
         },
         {
-          title: 'Article 8 - Sanctions et recours',
-          content: 'En cas de non-respect des obligations du présent contrat, la partie lésée pourra: (a) suspendre immédiatement le partage de courses, (b) exiger le paiement de pénalités de retard, (c) résilier le contrat sans préavis pour faute grave, (d) demander des dommages et intérêts. En cas de détournement de clientèle avéré, la partie fautive s\'engage à verser une indemnité forfaitaire de 2000€ par client détourné, sans préjudice de dommages et intérêts complémentaires.'
+          title: 'Article 8 - Recours en cas de litige',
+          content: 'En cas de non-respect des obligations du présent contrat, la partie lésée pourra: (a) suspendre immédiatement le partage de courses, (b) résilier le contrat sans préavis pour faute grave. En cas de litige persistant (non-paiement des commissions, détournement de clientèle, non-respect des engagements), la partie lésée pourra saisir les juridictions compétentes pour faire valoir ses droits et obtenir réparation du préjudice subi conformément aux dispositions légales en vigueur.'
         },
         {
           title: 'Article 9 - Responsabilités',
