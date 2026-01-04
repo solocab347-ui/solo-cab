@@ -276,6 +276,28 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     return !!sharedCourse;
   };
 
+  // Helper to check if course has a pending share request (sender can't start but can cancel share)
+  const hasCoursePendingShare = (courseId: string): boolean => {
+    const pendingShare = sharedCoursesData.find(sc => 
+      sc.course_id === courseId && 
+      sc.sender_driver_id === driverId &&
+      sc.status === 'pending'
+    );
+    return !!pendingShare;
+  };
+
+  // Combined check: course is locked if it has pending OR active share
+  const isCourseShareLocked = (courseId: string): 'pending' | 'active' | null => {
+    const share = sharedCoursesData.find(sc => 
+      sc.course_id === courseId && 
+      sc.sender_driver_id === driverId
+    );
+    if (!share) return null;
+    if (share.status === 'pending') return 'pending';
+    if (['accepted', 'in_progress', 'completed'].includes(share.status)) return 'active';
+    return null;
+  };
+
   const setupRealtimeSubscription = () => {
     if (!driverId) return () => {};
 
@@ -2082,9 +2104,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           ) : (
             confirmedCoursesCombined.map((course) => {
               const handledByPartner = isCourseHandledByPartner(course.id);
+              const shareLockStatus = isCourseShareLocked(course.id);
+              const isPendingShare = shareLockStatus === 'pending';
+              const isActivelySharingOrHandled = shareLockStatus === 'active' || handledByPartner;
               
               return (
-              <Card key={course.id} className="p-4 backdrop-blur-sm border border-primary/10 bg-card/95 hover:shadow-lg transition-all">
+              <Card key={course.id} className={cn(
+                "p-4 backdrop-blur-sm border bg-card/95 hover:shadow-lg transition-all",
+                isPendingShare ? "border-amber-500/30" : "border-primary/10"
+              )}>
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -2151,8 +2179,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     destinationLongitude={course.destination_longitude}
                   />
 
-                  {/* Boutons d'action - masqués si la course est gérée par un partenaire */}
-                  {handledByPartner ? (
+                  {/* Message de verrouillage si partage en attente */}
+                  {isPendingShare && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm font-medium">Partage en attente de réponse</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Vous avez envoyé cette course à un partenaire. En attente de sa réponse. 
+                        Annulez le partage via le badge ci-dessus pour récupérer la course.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Message si course gérée par un partenaire (acceptée/en cours) */}
+                  {isActivelySharingOrHandled && !isPendingShare && (
                     <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
                       <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
                         <Handshake className="w-4 h-4" />
@@ -2162,7 +2204,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         Le partenaire gère cette course. Vous recevrez votre commission à la fin.
                       </p>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Boutons d'action - masqués si la course est partagée (pending ou active) */}
+                  {!isPendingShare && !isActivelySharingOrHandled && (
                     <div className="flex gap-2 flex-wrap">
                       {course.status === "accepted" && (
                         <Button
@@ -2255,8 +2300,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées non déjà partagées */}
-                  {course.status === 'accepted' && !handledByPartner && (
+                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées non partagées (ni pending ni active) */}
+                  {course.status === 'accepted' && !shareLockStatus && (
                     <Button
                       variant="outline"
                       size="sm"
