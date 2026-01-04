@@ -390,19 +390,31 @@ export function UniversalPartnershipContract({
         },
         {
           title: 'Article 3 - Modalités de paiement',
-          content: `Les règlements des commissions seront effectués ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency).toLowerCase()}. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités et la suspension du partenariat.`
+          content: `Les règlements des commissions seront effectués ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency).toLowerCase()}. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard (taux légal + 10%) et la suspension immédiate du partenariat.`
         },
         {
-          title: 'Article 4 - Obligations des parties',
-          content: 'Chaque partie s\'engage à: (a) respecter les termes du présent contrat, (b) fournir un service de qualité irréprochable aux clients, (c) effectuer les paiements dans les délais convenus, (d) respecter la confidentialité des informations commerciales, (e) maintenir ses autorisations professionnelles en cours de validité.'
+          title: 'Article 4 - PROTECTION DE LA CLIENTÈLE (CLAUSE ESSENTIELLE)',
+          content: 'CLAUSE DE NON-SOLLICITATION ET DE NON-DÉTOURNEMENT : Chaque partie reconnaît expressément que les clients acquis par l\'autre partie lui appartiennent exclusivement. Il est formellement INTERDIT de solliciter, démarcher, contacter directement ou indirectement, ou tenter de détourner les clients de son partenaire, que ce soit pendant la durée du partenariat ou dans les 24 mois suivant sa résiliation. Cette interdiction s\'applique à tout client dont les coordonnées ont été obtenues dans le cadre du partenariat. Toute violation de cette clause constitue une faute grave ouvrant droit à des dommages et intérêts, la résiliation immédiate du contrat, et d\'éventuelles poursuites judiciaires pour concurrence déloyale (Art. 1240 du Code civil).'
         },
         {
-          title: 'Article 5 - Durée et résiliation',
-          content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les commissions dues. En cas de manquement grave, la résiliation peut être immédiate.'
+          title: 'Article 5 - Obligations des parties',
+          content: 'Chaque partie s\'engage à: (a) respecter scrupuleusement les termes du présent contrat, (b) fournir un service de qualité irréprochable aux clients de son partenaire, (c) effectuer les paiements de commissions dans les délais convenus sans aucun retard, (d) respecter strictement la confidentialité des informations commerciales (tarifs, coordonnées clients, conditions), (e) maintenir ses autorisations professionnelles en cours de validité (carte VTC, assurance, immatriculation), (f) respecter les horaires de prise en charge convenus avec les clients.'
         },
         {
-          title: 'Article 6 - Responsabilités',
-          content: 'Chaque partie reste responsable de ses propres actes professionnels, de sa comptabilité et de ses obligations fiscales et sociales. La transmission d\'un client n\'engage pas la responsabilité du transmetteur pour les prestations effectuées.'
+          title: 'Article 6 - Confidentialité des informations',
+          content: 'Les parties s\'engagent à garder strictement confidentielles toutes les informations commerciales, financières et relatives à la clientèle échangées dans le cadre du partenariat. Cette obligation de confidentialité perdure pendant 5 ans après la fin du partenariat. Sont notamment concernés: les coordonnées des clients, les conditions tarifaires, les volumes d\'activité, et toute information à caractère personnel au sens du RGPD.'
+        },
+        {
+          title: 'Article 7 - Durée et résiliation',
+          content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les commissions dues. En cas de manquement grave (non-paiement, détournement de clientèle, atteinte à la réputation), la résiliation peut être immédiate et sans préavis. La partie fautive s\'expose à des poursuites judiciaires.'
+        },
+        {
+          title: 'Article 8 - Sanctions et recours',
+          content: 'En cas de non-respect des obligations du présent contrat, la partie lésée pourra: (a) suspendre immédiatement le partage de courses, (b) exiger le paiement de pénalités de retard, (c) résilier le contrat sans préavis pour faute grave, (d) demander des dommages et intérêts. En cas de détournement de clientèle avéré, la partie fautive s\'engage à verser une indemnité forfaitaire de 2000€ par client détourné, sans préjudice de dommages et intérêts complémentaires.'
+        },
+        {
+          title: 'Article 9 - Responsabilités',
+          content: 'Chaque partie reste responsable de ses propres actes professionnels, de sa comptabilité et de ses obligations fiscales et sociales. La transmission d\'un client n\'engage pas la responsabilité du transmetteur pour les prestations effectuées. Le partenaire exécutant assume l\'entière responsabilité de la qualité de service fournie.'
         }
       ];
 
@@ -679,6 +691,48 @@ export function UniversalPartnershipContract({
                   <span className="font-medium text-sm">
                     {format(new Date(createdAt), 'dd/MM/yyyy', { locale: fr })}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Critical obligations summary */}
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="h-4 w-4" />
+                Clauses essentielles
+              </h4>
+              
+              <div className="space-y-2">
+                <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                  <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1">
+                    Protection de la clientèle
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Il est strictement interdit de solliciter ou détourner les clients de son partenaire, 
+                    pendant le partenariat et les 24 mois suivant sa fin. Toute violation est une faute grave.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
+                    Obligations de paiement
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Les commissions doivent être versées dans les délais convenus. 
+                    Tout retard supérieur à 15 jours entraîne des pénalités et la suspension du partenariat.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                  <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                    Qualité de service
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Chaque partie s'engage à fournir un service irréprochable et à respecter 
+                    les horaires de prise en charge convenus avec les clients.
+                  </p>
                 </div>
               </div>
             </div>
