@@ -75,7 +75,7 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   
   // Use unified partnership notification count hook
-  const { count: partnershipNotificationCount } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
+  const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 
   // Handle URL parameters for tab navigation (from notifications)
   useEffect(() => {
@@ -84,6 +84,8 @@ const DriverDashboard = () => {
     
     if (tabParam === "partnerships") {
       setActiveTab("sharing");
+      // Mark notifications as read when entering partnerships via URL
+      markPartnershipNotificationsAsRead();
       // Map subtab to partnership tab
       if (subtabParam === "received") {
         setPartnershipInitialTab('received');
@@ -99,7 +101,14 @@ const DriverDashboard = () => {
     } else if (tabParam) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+  }, [searchParams, markPartnershipNotificationsAsRead]);
+
+  // Mark notifications as read when entering the sharing/partnerships tab
+  useEffect(() => {
+    if (activeTab === "sharing") {
+      markPartnershipNotificationsAsRead();
+    }
+  }, [activeTab, markPartnershipNotificationsAsRead]);
 
   // Handle special tab navigation (e.g., partnerships-received)
   const handleTabChange = (tab: string) => {
