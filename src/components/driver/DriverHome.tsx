@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar } from "lucide-react";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -186,7 +186,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full"></div>
           Accès Rapide
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Nouvelle Course */}
           <Card 
             className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-success group"
@@ -200,6 +200,23 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-1">Nouvelle Course</h3>
                 <p className="text-sm text-muted-foreground">Créer pour un client</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Course client non inscrit */}
+          <Card 
+            className="relative overflow-hidden p-8 bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl hover:scale-[1.02] transition-all cursor-pointer border border-white/10 shadow-[0_8px_30px_rgb(249,115,22,0.2)] group"
+            onClick={() => navigate("/driver/create-direct-course")}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-orange-600/5 group-hover:from-orange-500/20 group-hover:to-orange-600/10 transition-opacity"></div>
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgb(249,115,22,0.5)] group-hover:scale-110 transition-transform">
+                <UserX className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-1">Client Non Inscrit</h3>
+                <p className="text-sm text-muted-foreground">Course confirmée directement</p>
               </div>
             </div>
           </Card>
