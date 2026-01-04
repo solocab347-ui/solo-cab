@@ -24,7 +24,7 @@ export interface DirectCourseParams {
 
 /**
  * Hook pour créer des courses confirmées directement pour des clients non inscrits
- * Ces courses n'ont pas de devis, elles sont confirmées immédiatement
+ * Ces courses sont confirmées immédiatement avec un devis auto-accepté
  */
 export function useDirectCourseCreation() {
   const [loading, setLoading] = useState(false);
@@ -70,7 +70,7 @@ export function useDirectCourseCreation() {
       // VALIDATION: Vérifier que le driver existe et est validé
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
-        .select("id, status, max_passengers, user_id")
+        .select("id, status, max_passengers, user_id, quote_counter, base_fare, per_km_rate, hourly_rate, tva_included, minimum_price")
         .eq("id", driverId)
         .maybeSingle();
 
@@ -109,6 +109,29 @@ export function useDirectCourseCreation() {
         durationMinutes = durationHours * 60;
       }
 
+      // CALCUL DU PRIX avec prix minimum
+      let finalPrice = estimatedPrice || 0;
+      const minimumPrice = driverData.minimum_price || 0;
+      
+      if (courseType === "classic" && distanceKm !== null && !estimatedPrice) {
+        const baseFare = driverData.base_fare || 0;
+        const perKmRate = driverData.per_km_rate || 0;
+        const tvaRate = 10;
+        
+        let subtotal = 0;
+        if (driverData.tva_included) {
+          const baseFareHT = baseFare / (1 + tvaRate / 100);
+          const perKmRateHT = perKmRate / (1 + tvaRate / 100);
+          const subtotalHT = baseFareHT + (distanceKm * perKmRateHT);
+          subtotal = subtotalHT * (1 + tvaRate / 100);
+        } else {
+          subtotal = (baseFare + (distanceKm * perKmRate)) * (1 + tvaRate / 100);
+        }
+        
+        // Appliquer le prix minimum
+        finalPrice = minimumPrice > 0 && subtotal < minimumPrice ? minimumPrice : subtotal;
+      }
+
       // CRÉATION: Course confirmée directement pour client non inscrit
       logger.info("Création course directe pour client non inscrit", { 
         driverId, 
@@ -118,7 +141,7 @@ export function useDirectCourseCreation() {
         destinationAddress,
         distanceKm,
         durationMinutes,
-        estimatedPrice
+        finalPrice
       });
 
       const trackingToken = crypto.randomUUID();
@@ -144,7 +167,7 @@ export function useDirectCourseCreation() {
           guest_name: guestName.trim(),
           guest_phone: guestPhone.trim(),
           guest_email: guestEmail?.trim() || null,
-          guest_estimated_price: estimatedPrice || null,
+          guest_estimated_price: finalPrice || null,
           guest_tracking_token: trackingToken,
           created_by_user_id: driverData.user_id,
         }])
@@ -167,6 +190,56 @@ export function useDirectCourseCreation() {
         status: course.status,
         guestName
       });
+
+      // CRÉATION AUTOMATIQUE DU DEVIS ACCEPTÉ
+      // Générer le numéro de devis
+      const newQuoteCounter = (driverData.quote_counter || 0) + 1;
+      const quoteNumber = `RES-${String(newQuoteCounter).padStart(6, '0')}`;
+
+      // Calculer les composantes du prix
+      const baseFare = driverData.base_fare || 0;
+      const perKmRate = driverData.per_km_rate || 0;
+      const distancePrice = distanceKm ? distanceKm * perKmRate : 0;
+
+      const { data: devis, error: devisError } = await supabase
+        .from("devis")
+        .insert([{
+          course_id: course.id,
+          driver_id: driverId,
+          client_id: null, // Pas de client enregistré
+          amount: finalPrice,
+          base_price: baseFare,
+          distance_price: distancePrice,
+          time_price: 0,
+          discount_amount: 0,
+          status: "accepted", // Devis auto-accepté pour course directe
+          accepted_at: new Date().toISOString(),
+          quote_number: quoteNumber,
+          valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 jours
+        }])
+        .select()
+        .single();
+
+      if (devisError) {
+        logger.error("Auto-devis creation failed", { 
+          error: devisError, 
+          courseId: course.id 
+        });
+        // Ne pas bloquer la création de course si le devis échoue
+        console.error("Erreur création devis auto:", devisError);
+      } else {
+        // Mettre à jour le compteur de devis du chauffeur
+        await supabase
+          .from("drivers")
+          .update({ quote_counter: newQuoteCounter })
+          .eq("id", driverId);
+
+        logger.info("Auto-devis created successfully", { 
+          devisId: devis?.id,
+          quoteNumber,
+          amount: finalPrice
+        });
+      }
 
       return course;
     } catch (error: any) {

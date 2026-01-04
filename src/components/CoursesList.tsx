@@ -161,7 +161,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         .from("courses")
         .select(`
           *,
-          clients!inner(
+          clients(
             user_id,
             is_exclusive,
             profiles:user_id(full_name, phone, profile_photo_url)
