@@ -482,111 +482,111 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
       </div>
 
       {/* Navigation Grid 3x2 */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 bg-muted/40 p-2 rounded-2xl">
         {/* Row 1 */}
         <button
           onClick={() => setActiveTab("search")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 ${
             activeTab === "search"
-              ? "bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-500 text-indigo-600 shadow-lg shadow-indigo-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-indigo-500/10 hover:border-indigo-300 text-muted-foreground hover:text-indigo-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl transition-all ${activeTab === "search" ? "bg-indigo-500 text-white shadow-md" : "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeTab === "search" ? "bg-indigo-500 text-white" : "bg-indigo-500/15 text-indigo-600"}`}>
             <Search className="w-5 h-5" />
           </div>
-          <span className="text-xs font-semibold">Rechercher</span>
+          <span className={`text-[11px] font-medium ${activeTab === "search" ? "text-foreground" : "text-muted-foreground"}`}>Rechercher</span>
         </button>
 
         <button
           onClick={() => setActiveTab("received")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 relative ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 relative ${
             activeTab === "received"
-              ? "bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-cyan-500 text-cyan-600 shadow-lg shadow-cyan-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-cyan-500/10 hover:border-cyan-300 text-muted-foreground hover:text-cyan-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl relative transition-all ${activeTab === "received" ? "bg-cyan-500 text-white shadow-md" : "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${activeTab === "received" ? "bg-cyan-500 text-white" : "bg-cyan-500/15 text-cyan-600"}`}>
             <Inbox className="w-5 h-5" />
             {receivedPending.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-cyan-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-cyan-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {receivedPending.length}
               </span>
             )}
           </div>
-          <span className="text-xs font-semibold">Reçues</span>
+          <span className={`text-[11px] font-medium ${activeTab === "received" ? "text-foreground" : "text-muted-foreground"}`}>Reçues</span>
         </button>
 
         <button
           onClick={() => setActiveTab("sent")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 relative ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 relative ${
             activeTab === "sent"
-              ? "bg-gradient-to-br from-orange-500/20 to-amber-500/20 border-orange-500 text-orange-600 shadow-lg shadow-orange-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-orange-500/10 hover:border-orange-300 text-muted-foreground hover:text-orange-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl relative transition-all ${activeTab === "sent" ? "bg-orange-500 text-white shadow-md" : "bg-orange-100 dark:bg-orange-900/30 text-orange-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${activeTab === "sent" ? "bg-orange-500 text-white" : "bg-orange-500/15 text-orange-600"}`}>
             <Send className="w-5 h-5" />
             {sentPending.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+              <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {sentPending.length}
               </span>
             )}
           </div>
-          <span className="text-xs font-semibold">Envoyées</span>
+          <span className={`text-[11px] font-medium ${activeTab === "sent" ? "text-foreground" : "text-muted-foreground"}`}>Envoyées</span>
         </button>
 
         {/* Row 2 */}
         <button
           onClick={() => setActiveTab("active")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 relative ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 relative ${
             activeTab === "active"
-              ? "bg-gradient-to-br from-teal-500/20 to-green-500/20 border-teal-500 text-teal-600 shadow-lg shadow-teal-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-teal-500/10 hover:border-teal-300 text-muted-foreground hover:text-teal-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl relative transition-all ${activeTab === "active" ? "bg-teal-500 text-white shadow-md" : "bg-teal-100 dark:bg-teal-900/30 text-teal-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${activeTab === "active" ? "bg-teal-500 text-white" : "bg-teal-500/15 text-teal-600"}`}>
             <Handshake className="w-5 h-5" />
             {activeAgreements.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-teal-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+              <span className="absolute -top-1 -right-1 bg-teal-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {activeAgreements.length}
               </span>
             )}
           </div>
-          <span className="text-xs font-semibold">Actifs</span>
+          <span className={`text-[11px] font-medium ${activeTab === "active" ? "text-foreground" : "text-muted-foreground"}`}>Actifs</span>
         </button>
 
         <button
           onClick={() => setActiveTab("blocked")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 relative ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 relative ${
             activeTab === "blocked"
-              ? "bg-gradient-to-br from-rose-500/20 to-red-500/20 border-rose-500 text-rose-600 shadow-lg shadow-rose-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-rose-500/10 hover:border-rose-300 text-muted-foreground hover:text-rose-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl relative transition-all ${activeTab === "blocked" ? "bg-rose-500 text-white shadow-md" : "bg-rose-100 dark:bg-rose-900/30 text-rose-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${activeTab === "blocked" ? "bg-rose-500 text-white" : "bg-rose-500/15 text-rose-600"}`}>
             <Ban className="w-5 h-5" />
             {blockedAgreements.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
                 {blockedAgreements.length}
               </span>
             )}
           </div>
-          <span className="text-xs font-semibold">Bloqués</span>
+          <span className={`text-[11px] font-medium ${activeTab === "blocked" ? "text-foreground" : "text-muted-foreground"}`}>Bloqués</span>
         </button>
 
         <button
           onClick={() => setActiveTab("history")}
-          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 ${
+          className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-150 ${
             activeTab === "history"
-              ? "bg-gradient-to-br from-gray-500/20 to-slate-500/20 border-gray-500 text-gray-600 shadow-lg shadow-gray-500/20 scale-[1.02]"
-              : "bg-muted/30 border-transparent hover:bg-gray-500/10 hover:border-gray-300 text-muted-foreground hover:text-gray-500"
+              ? "bg-background shadow-sm border border-border"
+              : "hover:bg-background/50"
           }`}
         >
-          <div className={`p-2.5 rounded-xl transition-all ${activeTab === "history" ? "bg-gray-500 text-white shadow-md" : "bg-gray-100 dark:bg-gray-800/50 text-gray-500"}`}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeTab === "history" ? "bg-gray-500 text-white" : "bg-gray-500/15 text-gray-600"}`}>
             <Clock className="w-5 h-5" />
           </div>
-          <span className="text-xs font-semibold">Historique</span>
+          <span className={`text-[11px] font-medium ${activeTab === "history" ? "text-foreground" : "text-muted-foreground"}`}>Historique</span>
         </button>
       </div>
 
