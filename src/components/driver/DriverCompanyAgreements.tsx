@@ -182,6 +182,52 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
     }
   };
 
+  // Block company mutation - MUST be before conditional returns
+  const blockCompany = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          driver_blocked_company: true,
+          driver_blocked_company_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Entreprise bloquée. Elle ne vous verra plus dans les recherches.");
+      queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["blocked-companies"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du blocage");
+    },
+  });
+
+  // Unblock company mutation - MUST be before conditional returns
+  const unblockCompany = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          driver_blocked_company: false,
+          driver_blocked_company_at: null,
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Entreprise débloquée. Vous pouvez à nouveau vous voir mutuellement.");
+      queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["blocked-companies"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du déblocage");
+    },
+  });
+
   const getStatusBadge = (status: string, proposedBy?: string) => {
     switch (status) {
       case "pending":
@@ -232,52 +278,6 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
   const otherAgreements = agreements?.filter((a) => !["pending", "accepted", "rejected"].includes(a.status) && !a.driver_blocked_company && !a.company_blocked_driver) || [];
   
   const totalPending = receivedRequests.length + sentRequests.length;
-
-  // Block company mutation
-  const blockCompany = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          driver_blocked_company: true,
-          driver_blocked_company_at: new Date().toISOString(),
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Entreprise bloquée. Elle ne vous verra plus dans les recherches.");
-      queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
-      queryClient.invalidateQueries({ queryKey: ["blocked-companies"] });
-    },
-    onError: () => {
-      toast.error("Erreur lors du blocage");
-    },
-  });
-
-  // Unblock company mutation
-  const unblockCompany = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          driver_blocked_company: false,
-          driver_blocked_company_at: null,
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Entreprise débloquée. Vous pouvez à nouveau vous voir mutuellement.");
-      queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
-      queryClient.invalidateQueries({ queryKey: ["blocked-companies"] });
-    },
-    onError: () => {
-      toast.error("Erreur lors du déblocage");
-    },
-  });
 
   return (
     <div className="space-y-6">
