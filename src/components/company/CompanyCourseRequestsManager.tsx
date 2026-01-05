@@ -315,8 +315,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
               </div>
             )}
 
-            {/* Actions for pending requests - allow resume or cancel */}
-            {["draft", "quotes_generated", "sent_to_drivers"].includes(request.status) && (
+            {/* Actions for draft/quotes_generated - allow resume */}
+            {["draft", "quotes_generated"].includes(request.status) && (
               <div className="flex justify-end gap-2 pt-2 flex-wrap">
                 <Button 
                   variant="default" 
@@ -329,6 +329,21 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   <Play className="w-3 h-3 mr-1" />
                   Reprendre
                 </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => setRequestToCancel(request)}
+                >
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Annuler
+                </Button>
+              </div>
+            )}
+
+            {/* Actions for sent_to_drivers - only cancel, no resume */}
+            {request.status === "sent_to_drivers" && (
+              <div className="flex justify-end gap-2 pt-2 flex-wrap">
                 <Button 
                   variant="outline" 
                   size="sm"
