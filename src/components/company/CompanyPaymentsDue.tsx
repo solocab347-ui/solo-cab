@@ -22,7 +22,9 @@ import {
   Car,
   CalendarDays,
   Send,
-  Check
+  Check,
+  Upload,
+  Paperclip
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, isSameWeek, isSameMonth } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,6 +61,8 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
   const [showSendPaymentDialog, setShowSendPaymentDialog] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<GroupedPayment | null>(null);
   const [paymentReference, setPaymentReference] = useState("");
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch agreements with payment settings
@@ -154,10 +158,10 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
 
   // Mark payment as sent mutation
   const markPaymentSentMutation = useMutation({
-    mutationFn: async ({ payment, reference }: { payment: GroupedPayment; reference: string }) => {
+    mutationFn: async ({ payment, reference, document }: { payment: GroupedPayment; reference: string; document?: File }) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       
-      // Create or update company_payments record
+      // Create company_payments record
       const { data, error } = await supabase
         .from("company_payments")
         .insert({
@@ -179,6 +183,32 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
         .single();
 
       if (error) throw error;
+
+      // Upload document if provided
+      if (document && data) {
+        const fileExt = document.name.split('.').pop();
+        const fileName = `${data.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('payment-documents')
+          .upload(fileName, document);
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('payment-documents')
+            .getPublicUrl(fileName);
+
+          await supabase
+            .from('company_payment_documents')
+            .insert({
+              payment_id: data.id,
+              document_url: urlData.publicUrl,
+              document_type: 'proof_of_payment',
+              file_name: document.name,
+              uploaded_by_user_id: userId,
+            });
+        }
+      }
 
       // Create notification for driver
       const { data: driverData } = await supabase
@@ -206,6 +236,7 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
       setShowSendPaymentDialog(false);
       setSelectedPayment(null);
       setPaymentReference("");
+      setDocumentFile(null);
     },
     onError: (error) => {
       console.error("Error marking payment as sent:", error);
@@ -408,6 +439,7 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
   const openSendPaymentDialog = (payment: GroupedPayment) => {
     setSelectedPayment(payment);
     setPaymentReference("");
+    setDocumentFile(null);
     setShowSendPaymentDialog(true);
   };
 
@@ -415,8 +447,20 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
     if (!selectedPayment) return;
     markPaymentSentMutation.mutate({ 
       payment: selectedPayment, 
-      reference: paymentReference 
+      reference: paymentReference,
+      document: documentFile || undefined
     });
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Fichier trop volumineux (max 10MB)");
+        return;
+      }
+      setDocumentFile(file);
+    }
   };
 
   const downloadRecap = (payment: GroupedPayment) => {
@@ -756,6 +800,36 @@ export function CompanyPaymentsDue({ companyId }: CompanyPaymentsDueProps) {
                 />
                 <p className="text-xs text-muted-foreground">
                   Numéro de virement, ID Stripe, ou toute référence utile
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="document">Justificatif de paiement (optionnel)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="document"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleDocumentChange}
+                    className="flex-1"
+                  />
+                </div>
+                {documentFile && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Paperclip className="w-4 h-4" />
+                    <span className="truncate">{documentFile.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDocumentFile(null)}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  PDF, JPG ou PNG (max 10MB) - Preuve de virement, reçu, etc.
                 </p>
               </div>
             </div>

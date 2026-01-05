@@ -50,6 +50,9 @@ interface GroupedPayment {
   paymentId?: string;
   sentAt?: Date;
   paymentReference?: string;
+  consolidatedInvoiceNumber?: string;
+  consolidatedInvoiceGeneratedAt?: Date;
+  documents?: any[];
 }
 
 export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) {
@@ -122,13 +125,16 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     },
   });
 
-  // Fetch company payments tracking
+  // Fetch company payments tracking with documents
   const { data: companyPayments, isLoading: loadingPayments } = useQuery({
     queryKey: ["driver-company-payments-tracking", driverId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_payments")
-        .select("*")
+        .select(`
+          *,
+          documents:company_payment_documents(*)
+        `)
         .eq("driver_id", driverId)
         .order("created_at", { ascending: false });
 
@@ -307,7 +313,10 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                    dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
             paymentId: existingPayment?.id,
             sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference
+            paymentReference: existingPayment?.payment_reference,
+            consolidatedInvoiceNumber: existingPayment?.consolidated_invoice_number,
+            consolidatedInvoiceGeneratedAt: existingPayment?.consolidated_invoice_generated_at ? new Date(existingPayment.consolidated_invoice_generated_at) : undefined,
+            documents: existingPayment?.documents || []
           });
         });
       } else if (paymentFrequency === "weekly") {
@@ -354,7 +363,10 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                    dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
             paymentId: existingPayment?.id,
             sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference
+            paymentReference: existingPayment?.payment_reference,
+            consolidatedInvoiceNumber: existingPayment?.consolidated_invoice_number,
+            consolidatedInvoiceGeneratedAt: existingPayment?.consolidated_invoice_generated_at ? new Date(existingPayment.consolidated_invoice_generated_at) : undefined,
+            documents: existingPayment?.documents || []
           });
         });
       } else if (paymentFrequency === "monthly") {
@@ -401,7 +413,10 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                    dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
             paymentId: existingPayment?.id,
             sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference
+            paymentReference: existingPayment?.payment_reference,
+            consolidatedInvoiceNumber: existingPayment?.consolidated_invoice_number,
+            consolidatedInvoiceGeneratedAt: existingPayment?.consolidated_invoice_generated_at ? new Date(existingPayment.consolidated_invoice_generated_at) : undefined,
+            documents: existingPayment?.documents || []
           });
         });
       }
@@ -613,12 +628,39 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
             </div>
 
             {payment.sentAt && (
-              <p className="text-xs text-blue-600 mt-2">
-                💸 Paiement envoyé le {format(payment.sentAt, "d MMM yyyy à HH:mm", { locale: fr })}
-                {payment.paymentReference && (
-                  <span className="block text-muted-foreground">Réf: {payment.paymentReference}</span>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-blue-600">
+                  💸 Paiement envoyé le {format(payment.sentAt, "d MMM yyyy à HH:mm", { locale: fr })}
+                  {payment.paymentReference && (
+                    <span className="block text-muted-foreground">Réf: {payment.paymentReference}</span>
+                  )}
+                </p>
+                
+                {/* Justificatifs */}
+                {payment.documents && payment.documents.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {payment.documents.map((doc: any) => (
+                      <a
+                        key={doc.id}
+                        href={doc.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
+                      >
+                        <FileText className="w-3 h-3" />
+                        {doc.file_name?.substring(0, 15) || "Justificatif"}...
+                      </a>
+                    ))}
+                  </div>
                 )}
-              </p>
+                
+                {/* Facture consolidée */}
+                {payment.consolidatedInvoiceNumber && (
+                  <Badge variant="secondary" className="text-xs">
+                    📄 {payment.consolidatedInvoiceNumber}
+                  </Badge>
+                )}
+              </div>
             )}
             
             <div className="flex items-center justify-between mt-3">
