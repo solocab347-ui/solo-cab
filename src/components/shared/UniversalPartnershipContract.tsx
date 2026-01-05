@@ -56,6 +56,9 @@ interface PartyInfo {
   vehicle?: string | null;
   workingSectors?: string[];
   bio?: string | null;
+  // Visibility settings
+  showRating?: boolean;
+  showTotalRides?: boolean;
 }
 
 interface ContractTerms {
@@ -604,10 +607,13 @@ export function UniversalPartnershipContract({
                       {party2.siret && (
                         <span className="bg-muted px-2 py-0.5 rounded">SIRET: {party2.siret}</span>
                       )}
-                      {party2.rating && (
+                      {party2.showRating !== false && party2.rating && (
                         <Badge variant="secondary" className="gap-1 text-xs">
                           <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                           {party2.rating.toFixed(1)}
+                          {party2.showTotalRides !== false && party2.totalRides && (
+                            <span className="text-muted-foreground ml-1">({party2.totalRides})</span>
+                          )}
                         </Badge>
                       )}
                     </div>

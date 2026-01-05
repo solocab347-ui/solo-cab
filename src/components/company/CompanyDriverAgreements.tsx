@@ -153,7 +153,8 @@ function ActiveAgreementCard({
               <p className="text-sm text-muted-foreground">
                 {agreement.driver?.company_name} • {agreement.driver?.vehicle_brand} {agreement.driver?.vehicle_model}
               </p>
-              {agreement.driver?.rating && (
+              {/* Respecter les critères de visibilité du chauffeur */}
+              {agreement.driver?.show_rating_partners !== false && agreement.driver?.rating && (
                 <div className="flex items-center gap-1 mt-1">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                   <span className="text-xs">{agreement.driver.rating.toFixed(1)}</span>
@@ -385,6 +386,8 @@ function ActiveAgreementCard({
           rating: agreement.driver?.rating,
           totalRides: agreement.driver?.total_rides,
           photo: agreement.driverProfile?.profile_photo_url,
+          showRating: agreement.driver?.show_rating_partners !== false,
+          showTotalRides: agreement.driver?.show_rides_for_sharing !== false,
         }}
         terms={{
           paymentFrequency: agreement.payment_frequency,
@@ -480,6 +483,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
             total_rides,
             show_rating_for_sharing,
             show_rides_for_sharing,
+            show_rating_partners,
             card_photo_url
           )
         `)
