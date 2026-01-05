@@ -44,7 +44,7 @@ import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreem
 import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
 import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
-import { DriverCompanyCourseRequests } from "@/components/driver/DriverCompanyCourseRequests";
+// DriverCompanyCourseRequests removed - company quotes now integrated in DriverDevisList
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -926,11 +926,6 @@ const DriverDashboard = () => {
 
           {/* Courses Tab */}
           <TabsContent value="courses" className="space-y-6">
-            {/* Company Course Requests */}
-            {driverProfile?.driver?.id && (
-              <DriverCompanyCourseRequests driverId={driverProfile.driver.id} />
-            )}
-
             <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
