@@ -63,16 +63,16 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
 
   // Mutation for accepting/refusing quotes
   const respondMutation = useMutation({
-    mutationFn: async ({ quoteId, accept }: { quoteId: string; accept: boolean }) => {
+    mutationFn: async ({ quoteId, action }: { quoteId: string; action: 'accept' | 'refuse' }) => {
       const { data, error } = await supabase.functions.invoke('accept-company-course-quote', {
-        body: { quote_id: quoteId, accept }
+        body: { quote_id: quoteId, action }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (data, variables) => {
-      if (variables.accept) {
+      if (variables.action === 'accept') {
         if (data?.status === 'already_taken') {
           toast.info("Cette course a déjà été attribuée à un autre chauffeur");
         } else {
@@ -99,10 +99,10 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
   };
 
   const confirmAction = () => {
-    if (!selectedQuote) return;
+    if (!selectedQuote || !actionType) return;
     respondMutation.mutate({
       quoteId: selectedQuote.id,
-      accept: actionType === 'accept'
+      action: actionType
     });
   };
 
