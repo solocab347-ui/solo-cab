@@ -284,19 +284,27 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     },
   });
 
-  // Check existing proposals
+  // Check existing proposals and blocked drivers
   const { data: existingProposals } = useQuery({
     queryKey: ["company-driver-proposals", companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_driver_agreements")
-        .select("driver_id, status")
+        .select("driver_id, status, company_blocked_driver, driver_blocked_company")
         .eq("company_id", companyId);
 
       if (error) throw error;
       return data;
     },
   });
+
+  // Get blocked driver IDs for filtering
+  const blockedDriverIds = (existingProposals || [])
+    .filter((p: any) => p.company_blocked_driver || p.driver_blocked_company)
+    .map((p: any) => p.driver_id);
+
+  // Filter out blocked drivers from the list
+  const filteredDrivers = (drivers || []).filter((d: any) => !blockedDriverIds.includes(d.id));
 
   // Send proposal mutation
   const sendProposal = useMutation({
@@ -559,9 +567,9 @@ ${company?.company_name || ""}`;
         <div className="flex justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : drivers && drivers.length > 0 ? (
+      ) : filteredDrivers && filteredDrivers.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {drivers.map((driver: any) => {
+          {filteredDrivers.map((driver: any) => {
             const proposalStatus = getProposalStatus(driver.id);
             const hasProposal = !!proposalStatus;
 
