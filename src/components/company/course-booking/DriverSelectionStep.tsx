@@ -63,14 +63,18 @@ export function DriverSelectionStep({ companyId, selectedDrivers, setSelectedDri
     if (isSelected) {
       setSelectedDrivers(prev => prev.filter(d => d.driverId !== driverId));
     } else {
-      setSelectedDrivers(prev => [...prev, {
-        driverId,
-        name: driver.profile?.full_name || "Chauffeur",
-        companyName: driver.driver?.company_name,
-        rating: driver.driver?.show_rating_partners !== false ? driver.driver?.rating : undefined,
-        vehicleInfo: `${driver.driver?.vehicle_brand} ${driver.driver?.vehicle_model}`.trim() || undefined,
-        photoUrl: driver.profile?.profile_photo_url,
-      }]);
+      // Prevent adding duplicate driver
+      setSelectedDrivers(prev => {
+        if (prev.some(d => d.driverId === driverId)) return prev;
+        return [...prev, {
+          driverId,
+          name: driver.profile?.full_name || "Chauffeur",
+          companyName: driver.driver?.company_name,
+          rating: driver.driver?.show_rating_partners !== false ? driver.driver?.rating : undefined,
+          vehicleInfo: `${driver.driver?.vehicle_brand} ${driver.driver?.vehicle_model}`.trim() || undefined,
+          photoUrl: driver.profile?.profile_photo_url,
+        }];
+      });
     }
   };
 
@@ -78,14 +82,21 @@ export function DriverSelectionStep({ companyId, selectedDrivers, setSelectedDri
     if (selectedDrivers.length === partnerDrivers?.length) {
       setSelectedDrivers([]);
     } else {
-      setSelectedDrivers(partnerDrivers?.map((d: any) => ({
-        driverId: d.driver_id,
-        name: d.profile?.full_name || "Chauffeur",
-        companyName: d.driver?.company_name,
-        rating: d.driver?.show_rating_partners !== false ? d.driver?.rating : undefined,
-        vehicleInfo: `${d.driver?.vehicle_brand} ${d.driver?.vehicle_model}`.trim() || undefined,
-        photoUrl: d.profile?.profile_photo_url,
-      })) || []);
+      // Use a Map to ensure unique drivers by driverId
+      const uniqueDrivers = new Map<string, SelectedDriver>();
+      partnerDrivers?.forEach((d: any) => {
+        if (!uniqueDrivers.has(d.driver_id)) {
+          uniqueDrivers.set(d.driver_id, {
+            driverId: d.driver_id,
+            name: d.profile?.full_name || "Chauffeur",
+            companyName: d.driver?.company_name,
+            rating: d.driver?.show_rating_partners !== false ? d.driver?.rating : undefined,
+            vehicleInfo: `${d.driver?.vehicle_brand} ${d.driver?.vehicle_model}`.trim() || undefined,
+            photoUrl: d.profile?.profile_photo_url,
+          });
+        }
+      });
+      setSelectedDrivers(Array.from(uniqueDrivers.values()));
     }
   };
 
