@@ -152,7 +152,23 @@ export function CompanyPartnerSearch({ driverId }: Props) {
     }
   }, [proposalDialogOpen, driverInfo?.bio]);
 
-  const { data: companies = [], isLoading: loading, isFetching: searching, refetch: searchCompanies } = useQuery({
+  // Fetch blocked companies (mutual blocking)
+  const { data: blockedCompanyIds = [] } = useQuery({
+    queryKey: ['blocked-companies', driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('company_driver_agreements')
+        .select('company_id')
+        .eq('driver_id', driverId)
+        .or('driver_blocked_company.eq.true,company_blocked_driver.eq.true');
+      
+      if (error) throw error;
+      return data?.map(d => d.company_id) || [];
+    },
+    enabled: !!driverId,
+  });
+
+  const { data: allCompanies = [], isLoading: loading, isFetching: searching, refetch: searchCompanies } = useQuery({
     queryKey: [...PUBLIC_COMPANIES_QUERY_KEY, 'partner-search', searchTerm],
     queryFn: async () => {
       let query = supabase
@@ -176,6 +192,9 @@ export function CompanyPartnerSearch({ driverId }: Props) {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
   });
+
+  // Filter out blocked companies
+  const companies = allCompanies.filter(c => !blockedCompanyIds.includes(c.id));
 
   const proposePartnership = async () => {
     if (!selectedCompany || !driverId) return;

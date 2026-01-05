@@ -755,6 +755,8 @@ export type Database = {
       company_driver_agreements: {
         Row: {
           accepted_at: string | null
+          company_blocked_driver: boolean | null
+          company_blocked_driver_at: string | null
           company_confirmed_final_payment: boolean | null
           company_confirmed_final_payment_at: string | null
           company_id: string
@@ -763,6 +765,8 @@ export type Database = {
           created_at: string
           credit_limit: number | null
           discount_percentage: number | null
+          driver_blocked_company: boolean | null
+          driver_blocked_company_at: string | null
           driver_confirmed_final_payment: boolean | null
           driver_confirmed_final_payment_at: string | null
           driver_id: string
@@ -794,6 +798,8 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          company_blocked_driver?: boolean | null
+          company_blocked_driver_at?: string | null
           company_confirmed_final_payment?: boolean | null
           company_confirmed_final_payment_at?: string | null
           company_id: string
@@ -802,6 +808,8 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
+          driver_blocked_company?: boolean | null
+          driver_blocked_company_at?: string | null
           driver_confirmed_final_payment?: boolean | null
           driver_confirmed_final_payment_at?: string | null
           driver_id: string
@@ -833,6 +841,8 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          company_blocked_driver?: boolean | null
+          company_blocked_driver_at?: string | null
           company_confirmed_final_payment?: boolean | null
           company_confirmed_final_payment_at?: string | null
           company_id?: string
@@ -841,6 +851,8 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
+          driver_blocked_company?: boolean | null
+          driver_blocked_company_at?: string | null
           driver_confirmed_final_payment?: boolean | null
           driver_confirmed_final_payment_at?: string | null
           driver_id?: string

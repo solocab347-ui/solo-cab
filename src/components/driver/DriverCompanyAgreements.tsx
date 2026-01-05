@@ -4,15 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { DriverCompanySearch } from "./DriverCompanySearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
+import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 
 interface DriverCompanyAgreementsProps {
   driverId: string;
@@ -90,8 +90,8 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
 export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsProps) {
   const queryClient = useQueryClient();
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [activeTab, setActiveTab] = useState("agreements");
 
   // Fetch agreements
@@ -143,31 +143,42 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
     },
   });
 
-  // Reject agreement
-  const rejectAgreement = useMutation({
-    mutationFn: async ({ agreementId, reason }: { agreementId: string; reason: string }) => {
+  // Reject agreement with optional blocking
+  const handleRejectAgreement = async (reason: string, blockCompany: boolean) => {
+    if (!selectedAgreement) return;
+    
+    setIsRejecting(true);
+    try {
+      const updateData: any = {
+        status: "rejected",
+        rejected_at: new Date().toISOString(),
+        rejection_reason: reason,
+      };
+      
+      // Si le chauffeur veut bloquer l'entreprise
+      if (blockCompany) {
+        updateData.driver_blocked_company = true;
+        updateData.driver_blocked_company_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("company_driver_agreements")
-        .update({
-          status: "rejected",
-          rejected_at: new Date().toISOString(),
-          rejection_reason: reason,
-        })
-        .eq("id", agreementId);
+        .update(updateData)
+        .eq("id", selectedAgreement.id);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Partenariat refusé");
+
+      toast.success(blockCompany ? "Partenariat refusé et entreprise bloquée" : "Partenariat refusé");
       queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["visible-companies"] });
       setShowRejectDialog(false);
-      setRejectionReason("");
       setSelectedAgreement(null);
-    },
-    onError: () => {
-      toast.error("Erreur lors du refus");
-    },
-  });
+    } catch (error: any) {
+      toast.error("Erreur lors du refus: " + error.message);
+    } finally {
+      setIsRejecting(false);
+    }
+  };
 
   const getStatusBadge = (status: string, proposedBy?: string) => {
     switch (status) {
@@ -440,7 +451,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
             </div>
           )}
 
-          {/* Rejected Agreements - Avec possibilité de refaire une demande */}
+          {/* Rejected Agreements - Avec affichage du motif et du blocage */}
           {rejectedAgreements.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-medium text-red-600 flex items-center gap-2">
@@ -450,34 +461,53 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
               {rejectedAgreements.map((agreement: any) => (
                 <Card key={agreement.id} className="border-destructive/50">
                   <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
                       <div>
                         <h4 className="font-medium">{agreement.company?.company_name}</h4>
                         <p className="text-sm text-muted-foreground">
                           {agreement.proposed_by === "driver" ? "Votre demande a été refusée" : "Vous avez refusé cette proposition"}
                         </p>
-                        {agreement.rejection_reason && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Raison: {agreement.rejection_reason}
-                          </p>
-                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           Le {new Date(agreement.rejected_at).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 items-start sm:items-end">
                         {getStatusBadge(agreement.status)}
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          onClick={() => setActiveTab("search")}
-                        >
-                          <Search className="w-4 h-4 mr-2" />
-                          Refaire une demande
-                        </Button>
+                        {agreement.driver_blocked_company && (
+                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                            Entreprise bloquée
+                          </Badge>
+                        )}
+                        {agreement.company_blocked_driver && (
+                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                            Vous êtes bloqué
+                          </Badge>
+                        )}
                       </div>
                     </div>
+
+                    {/* Motif de refus affiché clairement */}
+                    {agreement.rejection_reason && (
+                      <Alert className="mb-3 bg-destructive/5 border-destructive/20">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          <span className="font-medium">Motif du refus:</span> {agreement.rejection_reason}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Bouton pour refaire une demande (si non bloqué) */}
+                    {!agreement.driver_blocked_company && !agreement.company_blocked_driver && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={() => setActiveTab("search")}
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Refaire une demande
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -526,48 +556,15 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
         </TabsContent>
       </Tabs>
 
-      {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Refuser le partenariat</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Expliquez brièvement la raison de votre refus (optionnel)
-            </p>
-            <Textarea
-              placeholder="Ex: Conditions de paiement non adaptées à mon activité..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              rows={3}
-            />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
-                Annuler
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  selectedAgreement &&
-                  rejectAgreement.mutate({
-                    agreementId: selectedAgreement.id,
-                    reason: rejectionReason,
-                  })
-                }
-                disabled={rejectAgreement.isPending}
-              >
-                {rejectAgreement.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <XCircle className="w-4 h-4 mr-2" />
-                )}
-                Confirmer le refus
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Reject Dialog using new component */}
+      <PartnershipRejectDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        partnerName={selectedAgreement?.company?.company_name || "cette entreprise"}
+        partnerType="company"
+        onReject={handleRejectAgreement}
+        isLoading={isRejecting}
+      />
     </div>
   );
 }

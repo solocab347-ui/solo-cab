@@ -70,8 +70,24 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
     },
   });
 
+  // Fetch blocked companies (mutual blocking)
+  const { data: blockedCompanyIds = [] } = useQuery({
+    queryKey: ["blocked-companies-search", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("company_driver_agreements")
+        .select("company_id")
+        .eq("driver_id", driverId)
+        .or("driver_blocked_company.eq.true,company_blocked_driver.eq.true");
+      
+      if (error) throw error;
+      return data?.map(d => d.company_id) || [];
+    },
+    enabled: !!driverId,
+  });
+
   // Fetch visible companies
-  const { data: companies, isLoading } = useQuery({
+  const { data: allCompanies, isLoading } = useQuery({
     queryKey: ["visible-companies", searchTerm],
     queryFn: async () => {
       // Recherche les entreprises visibles aux chauffeurs (validated OU active)
@@ -92,6 +108,9 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
     },
     enabled: true,
   });
+
+  // Filter out blocked companies
+  const companies = (allCompanies || []).filter((c: any) => !blockedCompanyIds.includes(c.id));
 
   // Check existing proposals
   const { data: existingProposals } = useQuery({
