@@ -416,7 +416,6 @@ export function MyPartnersList() {
           bio: selectedContractPartner?.partner_bio,
         }}
         terms={{
-          commissionPercentage: selectedContractPartner?.commission_percentage,
           paymentSchedule: selectedContractPartner?.payment_schedule,
         }}
         signatures={{

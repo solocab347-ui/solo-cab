@@ -309,8 +309,15 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     .filter((p: any) => p.company_blocked_driver || p.driver_blocked_company)
     .map((p: any) => p.driver_id);
 
-  // Filter out blocked drivers from the list
-  const filteredDrivers = (drivers || []).filter((d: any) => !blockedDriverIds.includes(d.id));
+  // Get active partner driver IDs (accepted/active agreements should not appear in search)
+  const activePartnerDriverIds = (existingProposals || [])
+    .filter((p: any) => p.status === 'accepted' || p.status === 'active')
+    .map((p: any) => p.driver_id);
+
+  // Filter out blocked drivers AND active partners from the list
+  const filteredDrivers = (drivers || []).filter((d: any) => 
+    !blockedDriverIds.includes(d.id) && !activePartnerDriverIds.includes(d.id)
+  );
 
   // Send proposal mutation
   const sendProposal = useMutation({
