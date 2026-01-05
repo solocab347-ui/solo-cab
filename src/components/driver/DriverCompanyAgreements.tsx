@@ -451,66 +451,113 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
             </div>
           )}
 
-          {/* Rejected Agreements - Avec affichage du motif et du blocage */}
+          {/* Rejected Agreements - Avec affichage détaillé du motif et du blocage */}
           {rejectedAgreements.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-medium text-red-600 flex items-center gap-2">
                 <XCircle className="w-4 h-4" />
                 Demandes refusées ({rejectedAgreements.length})
               </h3>
-              {rejectedAgreements.map((agreement: any) => (
-                <Card key={agreement.id} className="border-destructive/50">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
-                      <div>
-                        <h4 className="font-medium">{agreement.company?.company_name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {agreement.proposed_by === "driver" ? "Votre demande a été refusée" : "Vous avez refusé cette proposition"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Le {new Date(agreement.rejected_at).toLocaleDateString('fr-FR')}
-                        </p>
+              {rejectedAgreements.map((agreement: any) => {
+                const isMyRequestRejected = agreement.proposed_by === "driver";
+                const rejectedDate = agreement.rejected_at 
+                  ? new Date(agreement.rejected_at) 
+                  : new Date(agreement.updated_at);
+                
+                return (
+                  <Card key={agreement.id} className="border-destructive/40 bg-destructive/5">
+                    <CardContent className="p-4">
+                      {/* En-tête avec entreprise et statut */}
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5 text-destructive" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{agreement.company?.company_name}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              Contact: {agreement.company?.contact_name}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 items-start sm:items-end">
+                          {getStatusBadge(agreement.status)}
+                          {agreement.driver_blocked_company && (
+                            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                              Entreprise bloquée
+                            </Badge>
+                          )}
+                          {agreement.company_blocked_driver && (
+                            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                              Vous êtes bloqué
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2 items-start sm:items-end">
-                        {getStatusBadge(agreement.status)}
-                        {agreement.driver_blocked_company && (
-                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-                            Entreprise bloquée
-                          </Badge>
-                        )}
-                        {agreement.company_blocked_driver && (
-                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
-                            Vous êtes bloqué
-                          </Badge>
-                        )}
+
+                      {/* Informations sur le refus */}
+                      <div className="p-3 rounded-lg bg-background/80 border border-destructive/20 mb-4">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Statut:</span>
+                            <span className="font-medium text-destructive">
+                              {isMyRequestRejected ? "Refusée par l'entreprise" : "Refusée par vous"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-muted-foreground">Le</span>
+                            <span className="font-medium">
+                              {rejectedDate.toLocaleDateString('fr-FR', { 
+                                day: 'numeric', 
+                                month: 'long', 
+                                year: 'numeric' 
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">Origine:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {isMyRequestRejected ? "Votre demande" : "Proposition reçue"}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Motif de refus affiché clairement */}
-                    {agreement.rejection_reason && (
-                      <Alert className="mb-3 bg-destructive/5 border-destructive/20">
-                        <Info className="h-4 w-4" />
-                        <AlertDescription>
-                          <span className="font-medium">Motif du refus:</span> {agreement.rejection_reason}
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                      {/* Motif de refus affiché clairement */}
+                      {agreement.rejection_reason ? (
+                        <Alert className="mb-4 bg-destructive/5 border-destructive/20">
+                          <Info className="h-4 w-4" />
+                          <AlertDescription>
+                            <span className="font-medium">Motif du refus:</span>{" "}
+                            <span className="text-foreground">{agreement.rejection_reason}</span>
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <Alert className="mb-4 bg-muted/50 border-muted">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                          <AlertDescription className="text-muted-foreground">
+                            Aucun motif de refus communiqué
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
-                    {/* Bouton pour refaire une demande (si non bloqué) */}
-                    {!agreement.driver_blocked_company && !agreement.company_blocked_driver && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full sm:w-auto"
-                        onClick={() => setActiveTab("search")}
-                      >
-                        <Search className="w-4 h-4 mr-2" />
-                        Refaire une demande
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {/* Bouton pour refaire une demande (si non bloqué) */}
+                      {!agreement.driver_blocked_company && !agreement.company_blocked_driver && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() => setActiveTab("search")}
+                        >
+                          <Search className="w-4 h-4 mr-2" />
+                          Refaire une demande
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 
