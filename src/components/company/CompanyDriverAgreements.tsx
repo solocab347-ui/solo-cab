@@ -384,6 +384,52 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     }
   };
 
+  // Block driver mutation - MUST be before conditional returns
+  const blockDriver = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          company_blocked_driver: true,
+          company_blocked_driver_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Chauffeur bloqué. Il ne vous verra plus dans les recherches.");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du blocage");
+    },
+  });
+
+  // Unblock driver mutation - MUST be before conditional returns
+  const unblockDriver = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          company_blocked_driver: false,
+          company_blocked_driver_at: null,
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Chauffeur débloqué. Vous pouvez à nouveau vous voir mutuellement.");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du déblocage");
+    },
+  });
+
   const getStatusBadge = (status: string, proposedBy: string) => {
     switch (status) {
       case "pending":
@@ -434,52 +480,6 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     a.company_blocked_driver || a.driver_blocked_company
   ) || [];
   const terminatedAgreements = agreements?.filter((a: any) => a.status === "terminated" || a.status === "suspended") || [];
-
-  // Block driver mutation
-  const blockDriver = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          company_blocked_driver: true,
-          company_blocked_driver_at: new Date().toISOString(),
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Chauffeur bloqué. Il ne vous verra plus dans les recherches.");
-      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
-      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
-    },
-    onError: () => {
-      toast.error("Erreur lors du blocage");
-    },
-  });
-
-  // Unblock driver mutation
-  const unblockDriver = useMutation({
-    mutationFn: async (agreementId: string) => {
-      const { error } = await supabase
-        .from("company_driver_agreements")
-        .update({
-          company_blocked_driver: false,
-          company_blocked_driver_at: null,
-        })
-        .eq("id", agreementId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Chauffeur débloqué. Vous pouvez à nouveau vous voir mutuellement.");
-      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
-      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
-    },
-    onError: () => {
-      toast.error("Erreur lors du déblocage");
-    },
-  });
 
 
   return (
