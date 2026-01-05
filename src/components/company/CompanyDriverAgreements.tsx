@@ -588,44 +588,114 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
           </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="search" className="flex items-center gap-2">
-            <Search className="w-4 h-4" />
-            <span className="hidden sm:inline">Rechercher</span>
-          </TabsTrigger>
-          <TabsTrigger value="received" className="flex items-center gap-2">
-            <Inbox className="w-4 h-4" />
-            <span className="hidden sm:inline">Reçues</span>
-            {receivedPending.length > 0 && (
-              <Badge className="bg-blue-500 ml-1">{receivedPending.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="sent" className="flex items-center gap-2">
-            <Send className="w-4 h-4" />
-            <span className="hidden sm:inline">Envoyées</span>
-            {sentPending.length > 0 && (
-              <Badge className="bg-yellow-500 ml-1">{sentPending.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="active" className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">Actifs</span>
-            {activeAgreements.length > 0 && (
-              <Badge className="bg-green-500 ml-1">{activeAgreements.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="blocked" className="flex items-center gap-2">
-            <Ban className="w-4 h-4" />
-            <span className="hidden sm:inline">Bloqués</span>
-            {blockedAgreements.length > 0 && (
-              <Badge variant="destructive" className="ml-1">{blockedAgreements.length}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Historique</span>
-          </TabsTrigger>
-        </TabsList>
+          {/* Navigation en grille 3x2 pour mobile */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {/* Ligne 1 */}
+            <button
+              onClick={() => setActiveTab("search")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                activeTab === "search"
+                  ? "bg-primary/10 border-primary text-primary shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg ${activeTab === "search" ? "bg-primary/20" : "bg-background"}`}>
+                <Search className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium">Rechercher</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("received")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all relative ${
+                activeTab === "received"
+                  ? "bg-blue-500/10 border-blue-500 text-blue-600 shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg relative ${activeTab === "received" ? "bg-blue-500/20" : "bg-background"}`}>
+                <Inbox className="w-5 h-5" />
+                {receivedPending.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    {receivedPending.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium">Reçues</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("sent")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all relative ${
+                activeTab === "sent"
+                  ? "bg-yellow-500/10 border-yellow-500 text-yellow-600 shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg relative ${activeTab === "sent" ? "bg-yellow-500/20" : "bg-background"}`}>
+                <Send className="w-5 h-5" />
+                {sentPending.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    {sentPending.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium">Envoyées</span>
+            </button>
+
+            {/* Ligne 2 */}
+            <button
+              onClick={() => setActiveTab("active")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all relative ${
+                activeTab === "active"
+                  ? "bg-green-500/10 border-green-500 text-green-600 shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg relative ${activeTab === "active" ? "bg-green-500/20" : "bg-background"}`}>
+                <CheckCircle className="w-5 h-5" />
+                {activeAgreements.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    {activeAgreements.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium">Actifs</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("blocked")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all relative ${
+                activeTab === "blocked"
+                  ? "bg-destructive/10 border-destructive text-destructive shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg relative ${activeTab === "blocked" ? "bg-destructive/20" : "bg-background"}`}>
+                <Ban className="w-5 h-5" />
+                {blockedAgreements.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    {blockedAgreements.length}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium">Bloqués</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                activeTab === "history"
+                  ? "bg-muted border-muted-foreground/50 shadow-md"
+                  : "bg-muted/50 border-transparent hover:bg-muted hover:border-muted-foreground/20"
+              }`}
+            >
+              <div className={`p-2 rounded-lg ${activeTab === "history" ? "bg-muted-foreground/20" : "bg-background"}`}>
+                <Clock className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium">Historique</span>
+            </button>
+          </div>
 
         {/* Search Tab */}
         <TabsContent value="search" className="mt-6">
