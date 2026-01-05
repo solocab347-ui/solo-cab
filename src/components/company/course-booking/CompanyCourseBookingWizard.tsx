@@ -17,6 +17,7 @@ import { BookingConfirmationStep } from "./BookingConfirmationStep";
 interface CompanyCourseBookingWizardProps {
   companyId: string;
   existingRequest?: any; // For resending a refused request
+  resumeStep?: WizardStep; // Step to resume from
   onClose?: () => void;
   onSuccess?: () => void;
 }
@@ -72,10 +73,17 @@ const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
   { key: "confirmation", label: "Confirmation", icon: Check },
 ];
 
-export function CompanyCourseBookingWizard({ companyId, existingRequest, onClose, onSuccess }: CompanyCourseBookingWizardProps) {
+export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeStep, onClose, onSuccess }: CompanyCourseBookingWizardProps) {
   const queryClient = useQueryClient();
-  // Start at drivers step if resending an existing request
-  const [currentStep, setCurrentStep] = useState<WizardStep>(existingRequest ? "drivers" : "employee");
+  
+  // Determine starting step: resumeStep > existingRequest logic > default
+  const getInitialStep = (): WizardStep => {
+    if (resumeStep) return resumeStep;
+    if (existingRequest) return "drivers";
+    return "employee";
+  };
+  
+  const [currentStep, setCurrentStep] = useState<WizardStep>(getInitialStep());
   const [requestId, setRequestId] = useState<string | null>(existingRequest?.id || null);
 
   const [formData, setFormData] = useState<CourseFormData>({
@@ -99,7 +107,25 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, onClose
   });
 
   const [selectedDrivers, setSelectedDrivers] = useState<SelectedDriver[]>([]);
-  const [generatedQuotes, setGeneratedQuotes] = useState<GeneratedQuote[]>([]);
+  
+  // Pre-load generated quotes if resuming from quotes step
+  const [generatedQuotes, setGeneratedQuotes] = useState<GeneratedQuote[]>(() => {
+    if (existingRequest?.quotesWithProfiles && resumeStep === "quotes") {
+      return existingRequest.quotesWithProfiles.map((q: any) => ({
+        id: q.id,
+        driverId: q.driver_id,
+        driverName: q.profile?.full_name || q.driver?.company_name || "Chauffeur",
+        driverPhoto: q.profile?.profile_photo_url,
+        vehicleInfo: "",
+        totalPrice: q.total_price,
+        distanceKm: q.distance_km || 0,
+        durationMinutes: q.duration_minutes || 0,
+        status: q.status || "pending",
+        selected: false,
+      }));
+    }
+    return [];
+  });
 
   const currentStepIndex = STEPS.findIndex(s => s.key === currentStep);
 
