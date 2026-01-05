@@ -200,6 +200,7 @@ export type Database = {
       }
       city_pricing: {
         Row: {
+          airport_surcharge: number | null
           base_fare: number | null
           city_name: string
           created_at: string
@@ -228,6 +229,7 @@ export type Database = {
           weekend_surcharge: number | null
         }
         Insert: {
+          airport_surcharge?: number | null
           base_fare?: number | null
           city_name: string
           created_at?: string
@@ -256,6 +258,7 @@ export type Database = {
           weekend_surcharge?: number | null
         }
         Update: {
+          airport_surcharge?: number | null
           base_fare?: number | null
           city_name?: string
           created_at?: string
@@ -3030,6 +3033,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          airport_surcharge: number | null
           base_fare: number | null
           base_rate: number | null
           bio: string | null
@@ -3124,6 +3128,7 @@ export type Database = {
           working_sectors: string[] | null
         }
         Insert: {
+          airport_surcharge?: number | null
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
@@ -3218,6 +3223,7 @@ export type Database = {
           working_sectors?: string[] | null
         }
         Update: {
+          airport_surcharge?: number | null
           base_fare?: number | null
           base_rate?: number | null
           bio?: string | null
@@ -4600,6 +4606,7 @@ export type Database = {
       fleet_managers: {
         Row: {
           address: string
+          airport_surcharge: number | null
           assignment_mode: string | null
           auto_dispatch_enabled: boolean | null
           auto_validate_courses: boolean | null
@@ -4672,6 +4679,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          airport_surcharge?: number | null
           assignment_mode?: string | null
           auto_dispatch_enabled?: boolean | null
           auto_validate_courses?: boolean | null
@@ -4744,6 +4752,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          airport_surcharge?: number | null
           assignment_mode?: string | null
           auto_dispatch_enabled?: boolean | null
           auto_validate_courses?: boolean | null
