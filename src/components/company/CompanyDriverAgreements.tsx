@@ -784,18 +784,42 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                         <div className="flex gap-3">
-                          <Avatar className="w-12 h-12">
+                          <Avatar className="w-14 h-14 border-2 border-destructive/20">
                             <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
-                            <AvatarFallback>
-                              <User className="w-6 h-6" />
+                            <AvatarFallback className="bg-destructive/10">
+                              <User className="w-7 h-7 text-destructive" />
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <h4 className="font-semibold">{agreement.driverProfile?.full_name || "Chauffeur"}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {agreement.driver?.company_name}
-                            </p>
-                            {/* Informations de blocage */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-base">
+                              {agreement.driverProfile?.full_name || "Chauffeur inconnu"}
+                            </h4>
+                            {agreement.driver?.company_name && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Car className="w-3 h-3" />
+                                {agreement.driver.company_name}
+                              </p>
+                            )}
+                            {/* Véhicule */}
+                            {(agreement.driver?.vehicle_brand || agreement.driver?.vehicle_model) && (
+                              <p className="text-xs text-muted-foreground">
+                                {agreement.driver.vehicle_brand} {agreement.driver.vehicle_model}
+                              </p>
+                            )}
+                            {/* Note si disponible */}
+                            {agreement.driver?.rating && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs font-medium">{agreement.driver.rating.toFixed(1)}</span>
+                                {agreement.driver?.total_rides && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ({agreement.driver.total_rides} courses)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Badges de blocage */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               {blockedByCompany && (
                                 <Badge variant="destructive" className="text-xs">

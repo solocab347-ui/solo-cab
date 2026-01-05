@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info, Ban, Unlock, Lock, EyeOff } from "lucide-react";
+import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info, Ban, Unlock, Lock, EyeOff, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { DriverCompanySearch } from "./DriverCompanySearch";
@@ -350,15 +350,33 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                         <div className="flex gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-                            <Building2 className="w-6 h-6 text-destructive" />
+                          <div className="w-14 h-14 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0 border-2 border-destructive/20">
+                            <Building2 className="w-7 h-7 text-destructive" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold">{agreement.company?.company_name || "Entreprise"}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {agreement.company?.contact_name}
-                            </p>
-                            {/* Informations de blocage */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-base">
+                              {agreement.company?.company_name || "Entreprise inconnue"}
+                            </h4>
+                            {agreement.company?.contact_name && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {agreement.company.contact_name}
+                              </p>
+                            )}
+                            {/* Adresse */}
+                            {agreement.company?.address && (
+                              <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                📍 {agreement.company.address}
+                              </p>
+                            )}
+                            {/* Contact */}
+                            {agreement.company?.contact_phone && (
+                              <p className="text-xs text-muted-foreground">
+                                📞 {agreement.company.contact_phone}
+                              </p>
+                            )}
+                            
+                            {/* Badges de blocage */}
                             <div className="flex flex-wrap gap-2 mt-2">
                               {blockedByDriver && (
                                 <Badge variant="destructive" className="text-xs">
