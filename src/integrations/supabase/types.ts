@@ -8006,6 +8006,7 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      is_airport_address: { Args: { address: string }; Returns: boolean }
       is_course_shared_locked: { Args: { p_course_id: string }; Returns: Json }
       is_first_order: {
         Args: {
