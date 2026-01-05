@@ -38,7 +38,7 @@ const PAYMENT_FREQUENCIES = [
 ];
 
 // Active Driver Agreement Card Component
-function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreement: any; driverId: string; onRefresh: () => void }) {
+function ActiveDriverAgreementCard({ agreement, driverId, driverInfo, onRefresh }: { agreement: any; driverId: string; driverInfo: any; onRefresh: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
@@ -257,14 +257,22 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
         acceptedAt={agreement.accepted_at}
         terminatedAt={agreement.terminated_at}
         party1={{
-          name: "Vous",
+          name: driverInfo?.full_name || "Vous",
+          company: driverInfo?.company_name,
+          siret: driverInfo?.siret,
+          tvaNumber: driverInfo?.tva_number,
+          address: driverInfo?.address,
+          phone: driverInfo?.phone,
+          email: driverInfo?.email,
         }}
         party2={{
           name: agreement.company?.company_name || "Entreprise",
           company: agreement.company?.company_name,
+          siret: agreement.company?.siret,
+          tvaNumber: agreement.company?.tva_number,
+          address: agreement.company?.billing_address || agreement.company?.address,
           phone: agreement.company?.contact_phone,
           email: agreement.company?.contact_email,
-          address: agreement.company?.address,
         }}
         terms={{
           paymentFrequency: agreement.payment_frequency,
@@ -288,6 +296,35 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
   const [isRejecting, setIsRejecting] = useState(false);
   const [activeTab, setActiveTab] = useState("agreements");
 
+  // Fetch driver info for contract
+  const { data: driverInfo } = useQuery({
+    queryKey: ["driver-info-for-contract", driverId],
+    queryFn: async () => {
+      const { data: driver, error } = await supabase
+        .from("drivers")
+        .select("id, user_id, company_name, siret, siren, tva_number, company_address")
+        .eq("id", driverId)
+        .single();
+
+      if (error) throw error;
+
+      // Fetch profile for full name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, phone, email")
+        .eq("id", driver.user_id)
+        .single();
+
+      return {
+        ...driver,
+        address: driver.company_address,
+        full_name: profile?.full_name,
+        phone: profile?.phone,
+        email: profile?.email,
+      };
+    },
+  });
+
   // Fetch agreements
   const { data: agreements, isLoading } = useQuery({
     queryKey: ["driver-company-agreements", driverId],
@@ -303,7 +340,11 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
             contact_name,
             contact_email,
             contact_phone,
-            address
+            address,
+            siret,
+            siren,
+            tva_number,
+            billing_address
           )
         `)
         .eq("driver_id", driverId)
@@ -832,6 +873,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
                   key={agreement.id}
                   agreement={agreement}
                   driverId={driverId}
+                  driverInfo={driverInfo}
                   onRefresh={() => queryClient.invalidateQueries({ queryKey: ["driver-company-agreements"] })}
                 />
               ))}

@@ -54,13 +54,15 @@ const PAYMENT_FREQUENCIES = [
 // Active Agreement Card Component
 function ActiveAgreementCard({ 
   agreement, 
-  companyId, 
+  companyId,
+  companyInfo,
   getStatusBadge, 
   getDayLabel,
   onRefresh 
 }: { 
   agreement: any; 
   companyId: string;
+  companyInfo: any;
   getStatusBadge: (status: string, proposedBy: string) => React.ReactNode;
   getDayLabel: (day: number, frequency: string) => string;
   onRefresh: () => void;
@@ -376,12 +378,20 @@ function ActiveAgreementCard({
         acceptedAt={agreement.accepted_at}
         terminatedAt={agreement.terminated_at}
         party1={{
-          name: "Votre entreprise",
-          company: agreement.company_name,
+          name: companyInfo?.company_name || "Votre entreprise",
+          company: companyInfo?.company_name,
+          siret: companyInfo?.siret,
+          tvaNumber: companyInfo?.tva_number,
+          address: companyInfo?.billing_address || companyInfo?.address,
+          phone: companyInfo?.contact_phone,
+          email: companyInfo?.contact_email,
         }}
         party2={{
           name: agreement.driverProfile?.full_name || "Chauffeur",
           company: agreement.driver?.company_name,
+          siret: agreement.driver?.siret,
+          tvaNumber: agreement.driver?.tva_number,
+          address: agreement.driver?.company_address,
           vehicle: `${agreement.driver?.vehicle_brand || ''} ${agreement.driver?.vehicle_model || ''}`.trim() || undefined,
           rating: agreement.driver?.rating,
           totalRides: agreement.driver?.total_rides,
@@ -456,7 +466,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
     queryFn: async () => {
       const { data, error } = await supabase
         .from("companies")
-        .select("company_name, contact_name, employee_count, preferred_vehicle_types")
+        .select("company_name, contact_name, contact_email, contact_phone, address, siret, siren, tva_number, billing_address, employee_count, preferred_vehicle_types")
         .eq("id", companyId)
         .single();
 
@@ -476,6 +486,10 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
           driver:drivers(
             id,
             company_name,
+            siret,
+            siren,
+            tva_number,
+            company_address,
             vehicle_model,
             vehicle_brand,
             rating,
@@ -1048,6 +1062,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                 key={agreement.id} 
                 agreement={agreement}
                 companyId={companyId}
+                companyInfo={companyFull}
                 getStatusBadge={getStatusBadge}
                 getDayLabel={getDayLabel}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ["company-agreements"] })}
