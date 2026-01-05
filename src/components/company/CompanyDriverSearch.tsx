@@ -719,26 +719,35 @@ ${company?.company_name || ""}`;
                     </div>
                   )}
 
-                  {/* Affichage des détails de refus */}
+                  {/* Affichage des détails de refus - Logique: si proposed_by='company' et rejeté → chauffeur a refusé. Si proposed_by='driver' et rejeté → entreprise a refusé */}
                   {isRejected && rejectionDetails && (
                     <Alert variant="destructive" className="mb-4 py-2">
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription className="text-xs space-y-1">
                         <div className="font-semibold">
-                          Refusé par le chauffeur
+                          {rejectionDetails.proposedBy === 'company' 
+                            ? "Refusé par le chauffeur" 
+                            : "Vous avez refusé cette demande"}
                           {rejectionDetails.rejectedAt && (
                             <span className="font-normal text-muted-foreground ml-1">
                               le {format(new Date(rejectionDetails.rejectedAt), "d MMM yyyy", { locale: fr })}
                             </span>
                           )}
                         </div>
+                        <div className="text-xs text-muted-foreground">
+                          {rejectionDetails.proposedBy === 'company' 
+                            ? "Vous aviez proposé ce partenariat" 
+                            : "Le chauffeur avait fait cette demande"}
+                        </div>
                         {rejectionDetails.rejectionReason && (
-                          <div className="text-xs italic">« {rejectionDetails.rejectionReason} »</div>
+                          <div className="text-xs italic mt-1 p-2 bg-background/50 rounded">
+                            « {rejectionDetails.rejectionReason} »
+                          </div>
                         )}
                         {rejectionDetails.driverBlockedCompany && (
                           <Badge variant="outline" className="text-xs border-destructive text-destructive mt-1">
                             <EyeOff className="w-3 h-3 mr-1" />
-                            Vous a bloqué
+                            Le chauffeur vous a bloqué
                           </Badge>
                         )}
                       </AlertDescription>
