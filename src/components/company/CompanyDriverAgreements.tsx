@@ -25,6 +25,7 @@ import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
+import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
 import { notificationService } from "@/lib/notificationService";
 
 interface CompanyDriverAgreementsProps {
@@ -212,6 +213,8 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [activeTab, setActiveTab] = useState("search");
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [agreementToBlock, setAgreementToBlock] = useState<any>(null);
 
   // Fetch company settings
   const { data: company } = useQuery({
@@ -386,12 +389,13 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
 
   // Block driver mutation - MUST be before conditional returns
   const blockDriver = useMutation({
-    mutationFn: async (agreementId: string) => {
+    mutationFn: async ({ agreementId, blockReason }: { agreementId: string; blockReason: string }) => {
       const { error } = await supabase
         .from("company_driver_agreements")
         .update({
           company_blocked_driver: true,
           company_blocked_driver_at: new Date().toISOString(),
+          notes: blockReason ? `Motif de blocage: ${blockReason}` : null,
         })
         .eq("id", agreementId);
 
@@ -401,11 +405,24 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
       toast.success("Chauffeur bloqué. Il ne vous verra plus dans les recherches.");
       queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
       queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+      setShowBlockDialog(false);
+      setAgreementToBlock(null);
     },
     onError: () => {
       toast.error("Erreur lors du blocage");
     },
   });
+
+  const handleBlockDriver = (reason: string) => {
+    if (agreementToBlock) {
+      blockDriver.mutate({ agreementId: agreementToBlock.id, blockReason: reason });
+    }
+  };
+
+  const openBlockDialog = (agreement: any) => {
+    setAgreementToBlock(agreement);
+    setShowBlockDialog(true);
+  };
 
   // Unblock driver mutation - MUST be before conditional returns
   const unblockDriver = useMutation({
@@ -910,81 +927,107 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
               {rejectedAgreements.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-medium text-muted-foreground">Refusés</h3>
-                  {rejectedAgreements.map((agreement: any) => (
-                    <Card key={agreement.id} className="opacity-80 border-destructive/30">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
-                          <div className="flex gap-3">
-                            <Avatar className="w-10 h-10">
-                              <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
-                              <AvatarFallback>
-                                <User className="w-5 h-5" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">{agreement.driverProfile?.full_name}</h4>
-                              <p className="text-xs text-muted-foreground">
-                                {agreement.proposed_by === "company" ? "Envoyée" : "Reçue"} • Refusée le {new Date(agreement.rejected_at || agreement.updated_at).toLocaleDateString('fr-FR')}
-                              </p>
+                  {rejectedAgreements.map((agreement: any) => {
+                    const isMyProposal = agreement.proposed_by === "company";
+                    const rejectedDate = new Date(agreement.rejected_at || agreement.updated_at);
+                    
+                    return (
+                      <Card key={agreement.id} className="border-destructive/30">
+                        <CardContent className="p-4">
+                          {/* En-tête avec photo et infos chauffeur */}
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
+                            <div className="flex gap-3">
+                              <Avatar className="w-14 h-14 border-2 border-destructive/20">
+                                <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
+                                <AvatarFallback className="bg-destructive/10">
+                                  <User className="w-7 h-7 text-destructive" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold text-base">
+                                  {agreement.driverProfile?.full_name || "Chauffeur"}
+                                </h4>
+                                {agreement.driver?.company_name && (
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Car className="w-3 h-3" />
+                                    {agreement.driver.company_name}
+                                  </p>
+                                )}
+                                {(agreement.driver?.vehicle_brand || agreement.driver?.vehicle_model) && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {agreement.driver.vehicle_brand} {agreement.driver.vehicle_model}
+                                  </p>
+                                )}
+                                {agreement.driver?.rating && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                    <span className="text-xs font-medium">{agreement.driver.rating.toFixed(1)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {getStatusBadge(agreement.status, agreement.proposed_by)}
+                          </div>
+
+                          {/* Informations détaillées sur le refus */}
+                          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Type:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {isMyProposal ? "Votre proposition" : "Proposition reçue"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="text-muted-foreground">Refusée le:</span>
+                                <span className="font-medium">
+                                  {format(rejectedDate, "d MMM yyyy", { locale: fr })}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 sm:col-span-2">
+                                <XCircle className="w-3.5 h-3.5 text-destructive" />
+                                <span className="font-medium text-destructive">
+                                  {isMyProposal ? "Refusée par le chauffeur" : "Refusée par vous"}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex flex-col gap-1 items-start sm:items-end">
-                            {getStatusBadge(agreement.status, agreement.proposed_by)}
-                            {agreement.company_blocked_driver && (
-                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
-                                Chauffeur bloqué
-                              </Badge>
-                            )}
-                            {agreement.driver_blocked_company && (
-                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
-                                Vous êtes bloqué
-                              </Badge>
-                            )}
+
+                          {/* Motif de refus affiché clairement */}
+                          {agreement.rejection_reason && (
+                            <Alert className="mb-4 bg-muted/50">
+                              <Info className="h-4 w-4" />
+                              <AlertDescription>
+                                <span className="font-medium">Motif du refus:</span> {agreement.rejection_reason}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          {/* Boutons d'action */}
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setActiveTab("search")}
+                            >
+                              <Send className="w-4 h-4 mr-1" />
+                              Relancer
+                            </Button>
+                            
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => openBlockDialog(agreement)}
+                            >
+                              <Ban className="w-4 h-4 mr-1" />
+                              Bloquer ce chauffeur
+                            </Button>
                           </div>
-                        </div>
-
-                        {/* Motif de refus affiché clairement */}
-                        {agreement.rejection_reason && (
-                          <Alert className="mb-3 bg-destructive/5 border-destructive/20">
-                            <Info className="h-4 w-4" />
-                            <AlertDescription>
-                              <span className="font-medium">Motif du refus:</span> {agreement.rejection_reason}
-                            </AlertDescription>
-                          </Alert>
-                        )}
-
-                        {/* Boutons d'action */}
-                        <div className="flex flex-wrap gap-2">
-                          {/* Bouton pour refaire une demande */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setActiveTab("search")}
-                          >
-                            <Send className="w-4 h-4 mr-1" />
-                            Relancer
-                          </Button>
-                          
-                          {/* Bouton pour bloquer le chauffeur */}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => blockDriver.mutate(agreement.id)}
-                            disabled={blockDriver.isPending}
-                          >
-                            {blockDriver.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Ban className="w-4 h-4 mr-1" />
-                                Bloquer
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
               {terminatedAgreements.length > 0 && (
@@ -1194,6 +1237,16 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         partnerType="driver"
         onReject={handleRejectProposal}
         isLoading={isRejecting}
+      />
+
+      {/* Block Reason Dialog */}
+      <BlockReasonDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        partnerName={agreementToBlock?.driverProfile?.full_name || "ce chauffeur"}
+        partnerType="driver"
+        onBlock={handleBlockDriver}
+        isLoading={blockDriver.isPending}
       />
     </div>
   );

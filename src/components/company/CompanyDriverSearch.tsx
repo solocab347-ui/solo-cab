@@ -27,6 +27,7 @@ import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon } from "@/lib/vehicleEquipmentDisplay";
 import { getServiceLabel, getServiceIcon } from "@/lib/serviceLabels";
 import { extractCityDepartment } from "@/lib/addressPrivacy";
+import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
 
 interface DriverVehicle {
   id: string;
@@ -114,6 +115,8 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [driverToBlock, setDriverToBlock] = useState<any>(null);
   
   // Advanced filters state
   const [showFilters, setShowFilters] = useState(false);
@@ -344,7 +347,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
 
   // Block driver mutation - bloquer directement depuis la recherche
   const blockDriverFromSearch = useMutation({
-    mutationFn: async ({ driverId, agreementId }: { driverId: string; agreementId?: string }) => {
+    mutationFn: async ({ driverId, agreementId, blockReason }: { driverId: string; agreementId?: string; blockReason: string }) => {
       if (agreementId) {
         // Mise à jour d'un accord existant
         const { error } = await supabase
@@ -352,6 +355,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           .update({
             company_blocked_driver: true,
             company_blocked_driver_at: new Date().toISOString(),
+            notes: blockReason ? `Motif de blocage: ${blockReason}` : null,
           })
           .eq("id", agreementId);
 
@@ -367,7 +371,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
             status: "rejected",
             company_blocked_driver: true,
             company_blocked_driver_at: new Date().toISOString(),
-            rejection_reason: "Bloqué par l'entreprise",
+            rejection_reason: blockReason || "Bloqué par l'entreprise",
           });
 
         if (error) throw error;
@@ -377,11 +381,25 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
       toast.success("Chauffeur bloqué. Il n'apparaîtra plus dans vos recherches.");
       queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
       queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      setShowBlockDialog(false);
+      setDriverToBlock(null);
     },
     onError: (error: any) => {
       toast.error("Erreur lors du blocage: " + error.message);
     },
   });
+
+  const handleBlockDriver = (reason: string) => {
+    if (driverToBlock) {
+      const agreementId = getAgreementId(driverToBlock.id);
+      blockDriverFromSearch.mutate({ driverId: driverToBlock.id, agreementId, blockReason: reason });
+    }
+  };
+
+  const openBlockDialog = (driver: any) => {
+    setDriverToBlock(driver);
+    setShowBlockDialog(true);
+  };
 
   const resetForm = () => {
     setProposalMessage("");
@@ -845,20 +863,10 @@ ${company?.company_name || ""}`;
                         variant="destructive"
                         size="sm"
                         className="w-full sm:w-auto"
-                        onClick={() => {
-                          const agreementId = getAgreementId(driver.id);
-                          blockDriverFromSearch.mutate({ driverId: driver.id, agreementId });
-                        }}
-                        disabled={blockDriverFromSearch.isPending}
+                        onClick={() => openBlockDialog(driver)}
                       >
-                        {blockDriverFromSearch.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Ban className="w-4 h-4 mr-1" />
-                            Bloquer ce chauffeur
-                          </>
-                        )}
+                        <Ban className="w-4 h-4 mr-1" />
+                        Bloquer
                       </Button>
                     )}
                   </div>
@@ -1387,6 +1395,16 @@ ${company?.company_name || ""}`;
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Block Reason Dialog */}
+      <BlockReasonDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        partnerName={driverToBlock?.profile?.full_name || driverToBlock?.company_name || "ce chauffeur"}
+        partnerType="driver"
+        onBlock={handleBlockDriver}
+        isLoading={blockDriverFromSearch.isPending}
+      />
     </div>
   );
 }
