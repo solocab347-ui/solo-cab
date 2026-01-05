@@ -5,28 +5,70 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, MapPin, Calendar, Euro, Share2, MessageSquare, Mail, Send, Facebook } from "lucide-react";
+import { FileText, Search, Download, MapPin, Calendar, Euro, Share2, MessageSquare, Mail, Send, Facebook, Building2, Check, X, Loader2 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { generateDevisShareMessage } from "@/lib/courseMessageGenerator";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface DriverDevisListProps {
   driverId: string;
 }
 
+// Unified quote type to handle both regular devis and company quotes
+interface UnifiedQuote {
+  id: string;
+  quote_number: string | null;
+  amount: number;
+  status: string;
+  created_at: string;
+  valid_until: string;
+  base_price: number;
+  distance_price: number;
+  time_price: number | null;
+  evening_surcharge_amount: number | null;
+  weekend_surcharge_amount: number | null;
+  discount_amount: number;
+  promo_code: string | null;
+  // Course info
+  pickup_address: string;
+  destination_address: string;
+  scheduled_date: string;
+  distance_km: number | null;
+  duration_minutes: number | null;
+  // Client info (null for company quotes)
+  client_id: string | null;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_photo_url: string | null;
+  // Company info (null for regular devis)
+  company_id: string | null;
+  company_name: string | null;
+  is_company_quote: boolean;
+  request_id: string | null;
+}
+
 const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
-  const [devisList, setDevisList] = useState<any[]>([]);
-  const [filteredDevis, setFilteredDevis] = useState<any[]>([]);
+  const queryClient = useQueryClient();
+  const [devisList, setDevisList] = useState<UnifiedQuote[]>([]);
+  const [filteredDevis, setFilteredDevis] = useState<UnifiedQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [clients, setClients] = useState<any[]>([]);
   const [driverInfo, setDriverInfo] = useState<any>(null);
+  
+  // Dialog for company quote actions
+  const [selectedCompanyQuote, setSelectedCompanyQuote] = useState<UnifiedQuote | null>(null);
+  const [actionType, setActionType] = useState<'accept' | 'refuse' | null>(null);
 
   useEffect(() => {
     fetchDevis();
@@ -41,9 +83,18 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       filtered = filtered.filter((devis) => devis.status === statusFilter);
     }
 
-    // Filter by client
+    // Filter by client/company
     if (clientFilter !== "all") {
-      filtered = filtered.filter((devis) => devis.client_id === clientFilter);
+      filtered = filtered.filter((devis) => 
+        devis.client_id === clientFilter || devis.company_id === clientFilter
+      );
+    }
+
+    // Filter by type (client/company)
+    if (typeFilter !== "all") {
+      filtered = filtered.filter((devis) => 
+        typeFilter === "company" ? devis.is_company_quote : !devis.is_company_quote
+      );
     }
 
     // Filter by date
@@ -80,12 +131,13 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       filtered = filtered.filter(
         (devis) =>
           devis.quote_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          devis.clients?.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+          devis.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          devis.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredDevis(filtered);
-  }, [searchTerm, statusFilter, clientFilter, dateFilter, devisList]);
+  }, [searchTerm, statusFilter, clientFilter, dateFilter, typeFilter, devisList]);
 
   const fetchDriverInfo = async () => {
     try {
@@ -106,7 +158,8 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
   const fetchDevis = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch regular devis
+      const { data: regularDevis, error: devisError } = await supabase
         .from("devis")
         .select(`
           *,
@@ -125,17 +178,112 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         .eq("driver_id", driverId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setDevisList(data || []);
-      setFilteredDevis(data || []);
+      if (devisError) throw devisError;
 
-      // Extract unique clients for filter
-      const uniqueClients = Array.from(
-        new Map(
-          data?.map((d) => [d.clients.id, { id: d.clients.id, name: d.clients.profiles.full_name }])
-        ).values()
+      // Fetch company course quotes
+      const { data: companyQuotes, error: companyError } = await supabase
+        .from("company_course_quotes")
+        .select(`
+          *,
+          company_course_requests!inner(
+            id,
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            company_id,
+            companies!inner(
+              id,
+              company_name
+            )
+          )
+        `)
+        .eq("driver_id", driverId)
+        .eq("status", "sent") // Only show sent quotes (pending for driver)
+        .order("created_at", { ascending: false });
+
+      if (companyError) throw companyError;
+
+      // Transform regular devis to unified format
+      const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => ({
+        id: d.id,
+        quote_number: d.quote_number,
+        amount: d.amount,
+        status: d.status,
+        created_at: d.created_at,
+        valid_until: d.valid_until,
+        base_price: d.base_price,
+        distance_price: d.distance_price,
+        time_price: d.time_price,
+        evening_surcharge_amount: d.evening_surcharge_amount,
+        weekend_surcharge_amount: d.weekend_surcharge_amount,
+        discount_amount: d.discount_amount,
+        promo_code: d.promo_code,
+        pickup_address: d.courses.pickup_address,
+        destination_address: d.courses.destination_address,
+        scheduled_date: d.courses.scheduled_date,
+        distance_km: d.courses.distance_km,
+        duration_minutes: d.courses.duration_minutes,
+        client_id: d.clients.id,
+        client_name: d.clients.profiles.full_name,
+        client_email: d.clients.profiles.email,
+        client_phone: d.clients.profiles.phone,
+        client_photo_url: d.clients.profiles.profile_photo_url,
+        company_id: null,
+        company_name: null,
+        is_company_quote: false,
+        request_id: null,
+      }));
+
+      // Transform company quotes to unified format
+      const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => ({
+        id: q.id,
+        quote_number: `ENT-${q.id.slice(0, 8).toUpperCase()}`,
+        amount: q.total_price,
+        status: "pending", // For the driver, 'sent' = pending response
+        created_at: q.created_at,
+        valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days validity
+        base_price: q.base_price,
+        distance_price: q.distance_price,
+        time_price: q.time_price,
+        evening_surcharge_amount: q.evening_surcharge,
+        weekend_surcharge_amount: q.weekend_surcharge,
+        discount_amount: 0,
+        promo_code: null,
+        pickup_address: q.company_course_requests.pickup_address,
+        destination_address: q.company_course_requests.destination_address,
+        scheduled_date: q.company_course_requests.scheduled_date,
+        distance_km: q.distance_km,
+        duration_minutes: q.duration_minutes,
+        client_id: null,
+        client_name: null,
+        client_email: null,
+        client_phone: null,
+        client_photo_url: null,
+        company_id: q.company_course_requests.company_id,
+        company_name: q.company_course_requests.companies.company_name,
+        is_company_quote: true,
+        request_id: q.request_id,
+      }));
+
+      // Combine and sort by date
+      const allQuotes = [...transformedRegularDevis, ...transformedCompanyQuotes].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      setClients(uniqueClients);
+
+      setDevisList(allQuotes);
+      setFilteredDevis(allQuotes);
+
+      // Extract unique clients/companies for filter
+      const uniqueEntities = new Map();
+      allQuotes.forEach((d) => {
+        if (d.client_id && d.client_name) {
+          uniqueEntities.set(d.client_id, { id: d.client_id, name: d.client_name, type: 'client' });
+        }
+        if (d.company_id && d.company_name) {
+          uniqueEntities.set(d.company_id, { id: d.company_id, name: `🏢 ${d.company_name}`, type: 'company' });
+        }
+      });
+      setClients(Array.from(uniqueEntities.values()));
     } catch (error: any) {
       console.error("Error fetching devis:", error);
       toast.error("Erreur lors du chargement des devis");
@@ -144,9 +292,59 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     }
   };
 
-  const handleDownloadPDF = async (devis: any, forClient: boolean = false) => {
+  // Mutation for accepting/refusing company quotes
+  const respondToQuoteMutation = useMutation({
+    mutationFn: async ({ quoteId, accept }: { quoteId: string; accept: boolean }) => {
+      const { data, error } = await supabase.functions.invoke('accept-company-course-quote', {
+        body: { quote_id: quoteId, accept }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      if (variables.accept) {
+        if (data?.status === 'already_taken') {
+          toast.info("Cette course a déjà été attribuée à un autre chauffeur");
+        } else {
+          toast.success("Devis accepté ! La course a été ajoutée à votre planning");
+        }
+      } else {
+        toast.success("Devis refusé");
+      }
+      queryClient.invalidateQueries({ queryKey: ['driver-courses'] });
+      fetchDevis();
+      setSelectedCompanyQuote(null);
+      setActionType(null);
+    },
+    onError: (error: any) => {
+      console.error("Error responding to quote:", error);
+      toast.error(error.message || "Erreur lors de la réponse au devis");
+    }
+  });
+
+  const handleCompanyQuoteAction = (quote: UnifiedQuote, action: 'accept' | 'refuse') => {
+    setSelectedCompanyQuote(quote);
+    setActionType(action);
+  };
+
+  const confirmCompanyQuoteAction = () => {
+    if (!selectedCompanyQuote) return;
+    respondToQuoteMutation.mutate({
+      quoteId: selectedCompanyQuote.id,
+      accept: actionType === 'accept'
+    });
+  };
+
+  const handleDownloadPDF = async (devis: UnifiedQuote, forClient: boolean = false) => {
     if (!driverInfo) {
       toast.error("Informations chauffeur manquantes");
+      return;
+    }
+
+    // Company quotes don't have PDF download yet
+    if (devis.is_company_quote) {
+      toast.info("Le téléchargement PDF n'est pas disponible pour les devis entreprise");
       return;
     }
 
@@ -204,15 +402,15 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
     
-    const clientName = devis.clients?.profiles?.full_name || "N/A";
+    const clientName = devis.client_name || "N/A";
     doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
     
-    if (devis.clients?.profiles?.email) {
-      doc.text(devis.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+    if (devis.client_email) {
+      doc.text(devis.client_email, pageWidth - 20, 76, { align: 'right' });
     }
     
-    if (devis.clients?.profiles?.phone) {
-      doc.text(`Tél: ${devis.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    if (devis.client_phone) {
+      doc.text(`Tél: ${devis.client_phone}`, pageWidth - 20, 81, { align: 'right' });
     }
 
     // Service details box
@@ -225,8 +423,8 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
     
-    const pickupLines = doc.splitTextToSize(devis.courses.pickup_address, 140);
-    const destLines = doc.splitTextToSize(devis.courses.destination_address, 140);
+    const pickupLines = doc.splitTextToSize(devis.pickup_address, 140);
+    const destLines = doc.splitTextToSize(devis.destination_address, 140);
     
     doc.text("Départ:", 25, 126);
     doc.text(pickupLines, 50, 126);
@@ -236,9 +434,8 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     doc.text(destLines, 50, currentY);
     
     currentY += (destLines.length * 5);
-    doc.text(`Date: ${format(new Date(devis.courses.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
-    doc.text(`Passagers: ${devis.courses.passengers_count}`, 25, currentY + 5);
-    doc.text(`Distance: ${devis.courses.distance_km} km`, 105, currentY + 5);
+    doc.text(`Date: ${format(new Date(devis.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    doc.text(`Distance: ${devis.distance_km || 0} km`, 105, currentY + 5);
 
     // Pricing table
     let yPos = 180;
@@ -270,13 +467,13 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       
       if (isMiseADisposition) {
         // Mise à disposition - afficher durée et tarif horaire
-        const hours = devis.courses.duration_minutes / 60;
-        const hourlyRate = devis.time_price / hours;
+        const hours = (devis.duration_minutes || 60) / 60;
+        const hourlyRate = (devis.time_price || 0) / hours;
         
         doc.setFillColor(245, 245, 245);
         doc.rect(20, yPos, 170, 7, 'F');
         doc.text(`Mise à disposition (${hours}h à ${hourlyRate.toFixed(2)}€/h)`, 25, yPos + 5);
-        doc.text(`${devis.time_price.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        doc.text(`${(devis.time_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
         
         yPos += 9;
       } else {
@@ -495,7 +692,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary" />
             <Input
-              placeholder="Rechercher par numéro ou client..."
+              placeholder="Rechercher par numéro, client ou entreprise..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-background/50"
@@ -512,12 +709,22 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             <SelectItem value="rejected">Refusés</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={clientFilter} onValueChange={setClientFilter}>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Client" />
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les clients</SelectItem>
+            <SelectItem value="all">Tous les types</SelectItem>
+            <SelectItem value="client">Clients</SelectItem>
+            <SelectItem value="company">Entreprises</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Client/Entreprise" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -545,7 +752,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           <FileText className="w-16 h-16 text-white mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2 text-white">Aucun devis</h3>
           <p className="text-white">
-            {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all"
+            {searchTerm || statusFilter !== "all" || clientFilter !== "all" || dateFilter !== "all" || typeFilter !== "all"
               ? "Aucun devis ne correspond à vos critères"
               : "Vos devis apparaîtront ici"}
           </p>
@@ -554,26 +761,38 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         <div className="space-y-4">
           {filteredDevis.map((devis, index) => {
             const gradients = ['bg-gradient-success', 'bg-gradient-premium', 'bg-gradient-trust'];
-            const gradient = gradients[index % 3];
+            const gradient = devis.is_company_quote ? 'bg-gradient-to-br from-amber-600/80 to-orange-700/80' : gradients[index % 3];
             return (
             <Card key={devis.id} className={`p-6 hover:shadow-elegant transition-all ${gradient} border-0`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  {devis.clients?.profiles?.profile_photo_url ? (
+                  {devis.is_company_quote ? (
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white border-2 border-white/30">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                  ) : devis.client_photo_url ? (
                     <img
-                      src={devis.clients.profiles.profile_photo_url}
-                      alt={devis.clients.profiles.full_name}
+                      src={devis.client_photo_url}
+                      alt={devis.client_name || "Client"}
                       className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold border-2 border-white/30">
-                      {devis.clients?.profiles?.full_name?.[0] || "?"}
+                      {devis.client_name?.[0] || "?"}
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg text-white">{devis.quote_number}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg text-white">{devis.quote_number}</h3>
+                      {devis.is_company_quote && (
+                        <Badge className="bg-amber-500/80 text-white border-0 text-xs">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          Entreprise
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-white/80">
-                      {devis.clients?.profiles?.full_name}
+                      {devis.is_company_quote ? devis.company_name : devis.client_name}
                     </p>
                   </div>
                 </div>
@@ -586,19 +805,19 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                   <MapPin className="w-4 h-4 text-cyan-300 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-white">Départ</p>
-                    <p className="text-white/80">{devis.courses.pickup_address}</p>
+                    <p className="text-white/80">{devis.pickup_address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-pink-300 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-white">Arrivée</p>
-                    <p className="text-white/80">{devis.courses.destination_address}</p>
+                    <p className="text-white/80">{devis.destination_address}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-white/80">
                   <Calendar className="w-4 h-4 text-purple-300" />
-                  {format(new Date(devis.courses.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
+                  {format(new Date(devis.scheduled_date), "d MMMM yyyy 'à' HH:mm", {
                     locale: fr,
                   })}
                 </div>
@@ -610,36 +829,36 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                   {/* Détails de la tarification */}
                   <div className="flex justify-between text-white/80">
                     <span>Forfait de base</span>
-                    <span>{parseFloat(devis.base_price).toFixed(2)} €</span>
+                    <span>{devis.base_price.toFixed(2)} €</span>
                   </div>
-                  {parseFloat(devis.distance_price) > 0 && (
+                  {devis.distance_price > 0 && (
                     <div className="flex justify-between text-white/80">
-                      <span>Distance ({devis.courses.distance_km} km)</span>
-                      <span>{parseFloat(devis.distance_price).toFixed(2)} €</span>
+                      <span>Distance ({devis.distance_km} km)</span>
+                      <span>{devis.distance_price.toFixed(2)} €</span>
                     </div>
                   )}
-                  {parseFloat(devis.time_price || 0) > 0 && (
+                  {(devis.time_price || 0) > 0 && (
                     <div className="flex justify-between text-white/80">
-                      <span>Mise à disposition ({Math.round(devis.courses.duration_minutes / 60)}h)</span>
-                      <span>{parseFloat(devis.time_price).toFixed(2)} €</span>
+                      <span>Mise à disposition ({Math.round((devis.duration_minutes || 0) / 60)}h)</span>
+                      <span>{(devis.time_price || 0).toFixed(2)} €</span>
                     </div>
                   )}
-                  {parseFloat(devis.evening_surcharge_amount || 0) > 0 && (
+                  {(devis.evening_surcharge_amount || 0) > 0 && (
                     <div className="flex justify-between text-amber-300">
                       <span>🌙 Augmentation Soir</span>
-                      <span>+{parseFloat(devis.evening_surcharge_amount).toFixed(2)} €</span>
+                      <span>+{(devis.evening_surcharge_amount || 0).toFixed(2)} €</span>
                     </div>
                   )}
-                  {parseFloat(devis.weekend_surcharge_amount || 0) > 0 && (
+                  {(devis.weekend_surcharge_amount || 0) > 0 && (
                     <div className="flex justify-between text-amber-300">
                       <span>📅 Augmentation Weekend</span>
-                      <span>+{parseFloat(devis.weekend_surcharge_amount).toFixed(2)} €</span>
+                      <span>+{(devis.weekend_surcharge_amount || 0).toFixed(2)} €</span>
                     </div>
                   )}
                   {devis.promo_code && devis.discount_amount > 0 && (
                     <div className="flex justify-between text-green-300">
                       <span>🎁 Réduction ({devis.promo_code})</span>
-                      <span>-{parseFloat(devis.discount_amount).toFixed(2)} €</span>
+                      <span>-{devis.discount_amount.toFixed(2)} €</span>
                     </div>
                   )}
                   {/* Total TTC */}
@@ -649,7 +868,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                       <span className="font-bold text-lg text-white drop-shadow-md">Total TTC</span>
                     </div>
                     <span className="text-3xl font-black text-emerald-300 drop-shadow-glow">
-                      {parseFloat(devis.amount).toFixed(2)} €
+                      {devis.amount.toFixed(2)} €
                     </span>
                   </div>
                 </div>
@@ -661,110 +880,160 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                   Créé le {format(new Date(devis.created_at), "d MMMM yyyy", { locale: fr })}
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownloadPDF(devis, false)}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    PDF Détaillé
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownloadPDF(devis, true)}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    PDF Client
-                  </Button>
-                  
-                  {/* Social Share Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                  {/* Company quote actions */}
+                  {devis.is_company_quote && devis.status === "pending" && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleCompanyQuoteAction(devis, 'accept')}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Accepter
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => handleCompanyQuoteAction(devis, 'refuse')}
+                        className="bg-white/20 hover:bg-red-500/20 text-white border-white/30"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Refuser
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Regular devis actions */}
+                  {!devis.is_company_quote && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(devis, false)}
                         className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                       >
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Partager
+                        <Download className="w-4 h-4 mr-2" />
+                        PDF Détaillé
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const message = generateDevisShareMessage(
-                            devis,
-                            devis.courses,
-                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
-                            devis.clients,
-                            true // isDriver
-                          );
-                          window.open(`sms:?body=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                        className="gap-2 cursor-pointer"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(devis, true)}
+                        className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                       >
-                        <MessageSquare className="w-4 h-4" />
-                        SMS
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const message = generateDevisShareMessage(
-                            devis,
-                            devis.courses,
-                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
-                            devis.clients,
-                            true
-                          );
-                          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                        className="gap-2 cursor-pointer"
-                      >
-                        <Send className="w-4 h-4" />
-                        WhatsApp
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const message = generateDevisShareMessage(
-                            devis,
-                            devis.courses,
-                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
-                            devis.clients,
-                            true
-                          );
-                          window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                        className="gap-2 cursor-pointer"
-                      >
-                        <Mail className="w-4 h-4" />
-                        Email
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const message = generateDevisShareMessage(
-                            devis,
-                            devis.courses,
-                            { company_name: driverInfo?.company_name, profiles: driverInfo?.profiles },
-                            devis.clients,
-                            true
-                          );
-                          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(message)}`, '_blank');
-                        }}
-                        className="gap-2 cursor-pointer"
-                      >
-                        <Facebook className="w-4 h-4" />
-                        Facebook
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Download className="w-4 h-4 mr-2" />
+                        PDF Client
+                      </Button>
+                      
+                      {/* Social Share Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Partager
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const shareMessage = `Devis ${devis.quote_number} - ${devis.amount.toFixed(2)}€ TTC - ${devis.client_name || 'Client'}`;
+                              window.open(`sms:?body=${encodeURIComponent(shareMessage)}`, '_blank');
+                            }}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            SMS
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const shareMessage = `Devis ${devis.quote_number} - ${devis.amount.toFixed(2)}€ TTC - ${devis.client_name || 'Client'}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, '_blank');
+                            }}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Send className="w-4 h-4" />
+                            WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const shareMessage = `Devis ${devis.quote_number} - ${devis.amount.toFixed(2)}€ TTC - ${devis.client_name || 'Client'}`;
+                              window.open(`mailto:?subject=Devis ${devis.quote_number}&body=${encodeURIComponent(shareMessage)}`, '_blank');
+                            }}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Mail className="w-4 h-4" />
+                            Email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const shareMessage = `Devis ${devis.quote_number} - ${devis.amount.toFixed(2)}€ TTC - ${devis.client_name || 'Client'}`;
+                              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareMessage)}`, '_blank');
+                            }}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Facebook className="w-4 h-4" />
+                            Facebook
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
           )})}
         </div>
       )}
+
+      {/* Company Quote Action Dialog */}
+      <Dialog open={!!selectedCompanyQuote && !!actionType} onOpenChange={() => { setSelectedCompanyQuote(null); setActionType(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {actionType === 'accept' ? 'Accepter ce devis entreprise ?' : 'Refuser ce devis entreprise ?'}
+            </DialogTitle>
+            <DialogDescription>
+              {actionType === 'accept' 
+                ? "En acceptant, cette course sera ajoutée à votre planning. L'entreprise sera notifiée."
+                : "En refusant, vous ne pourrez plus accepter cette course. L'entreprise sera notifiée."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedCompanyQuote && (
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Building2 className="w-4 h-4 text-amber-500" />
+                <span className="font-medium">{selectedCompanyQuote.company_name}</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Départ:</strong> {selectedCompanyQuote.pickup_address}</p>
+                <p><strong>Arrivée:</strong> {selectedCompanyQuote.destination_address}</p>
+                <p><strong>Date:</strong> {format(new Date(selectedCompanyQuote.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</p>
+                <p><strong>Montant:</strong> {selectedCompanyQuote.amount.toFixed(2)} €</p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setSelectedCompanyQuote(null); setActionType(null); }}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={confirmCompanyQuoteAction}
+              disabled={respondToQuoteMutation.isPending}
+              variant={actionType === 'accept' ? 'default' : 'destructive'}
+            >
+              {respondToQuoteMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {actionType === 'accept' ? 'Accepter' : 'Refuser'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
