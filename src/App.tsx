@@ -41,6 +41,7 @@ import RegisterCompanyEmployee from "./pages/RegisterCompanyEmployee";
 import RegisterCourseInvitation from "./pages/RegisterCourseInvitation";
 import CompanyPartnership from "./pages/CompanyPartnership";
 import RegisterGuestClient from "./pages/RegisterGuestClient";
+import GuestEmployeeCourseTracking from "./pages/GuestEmployeeCourseTracking";
 // Lazy load heavy dashboards and authenticated pages
 const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
@@ -108,6 +109,7 @@ const App = () => (
               <Route path="/register-course-invitation" element={<RegisterCourseInvitation />} />
               <Route path="/company-partnership/:code" element={<CompanyPartnership />} />
               <Route path="/inscription-client" element={<RegisterGuestClient />} />
+              <Route path="/suivi-course-entreprise" element={<GuestEmployeeCourseTracking />} />
               <Route
                 path="/fleet-client-dashboard"
                 element={

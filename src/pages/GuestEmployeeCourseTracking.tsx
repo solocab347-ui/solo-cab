@@ -1,0 +1,493 @@
+import { useEffect, useState } from "react";
+import { useSearchParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { 
+  MapPin, Calendar, Clock, Users, Euro, Building2, Car,
+  CheckCircle, XCircle, Loader2, AlertCircle, Phone, Mail,
+  Star, Route, UserPlus, FileText, RefreshCw
+} from "lucide-react";
+
+interface DriverInfo {
+  id: string;
+  user_id: string;
+  profile?: { full_name?: string; phone?: string; email?: string; profile_photo_url?: string };
+  vehicles?: Array<{ brand?: string; model?: string; license_plate?: string; color?: string }>;
+}
+
+interface TrackingData {
+  id: string;
+  token: string;
+  guest_name: string;
+  guest_phone?: string;
+  guest_email?: string;
+  scheduled_date?: string;
+  pickup_address?: string;
+  destination_address?: string;
+  is_used: boolean;
+  company?: { company_name?: string; logo_url?: string };
+  request?: {
+    id: string;
+    scheduled_date: string;
+    pickup_address: string;
+    destination_address: string;
+    passengers_count?: number;
+    payment_method_requested?: string;
+    status?: string;
+    created_at: string;
+    quotes_generated_at?: string;
+    sent_to_drivers_at?: string;
+    accepted_at?: string;
+    quotes?: Array<{
+      id: string;
+      status: string;
+      total_price: number;
+      distance_km?: number;
+      duration_minutes?: number;
+      driver_response_at?: string;
+      driver?: DriverInfo;
+    }>;
+  };
+  course?: {
+    id: string;
+    status: string;
+    driver?: DriverInfo;
+    devis?: Array<{ amount: number; quote_number?: string }>;
+  };
+}
+
+export default function GuestEmployeeCourseTracking() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+
+  const { data, isLoading, error, refetch, isRefetching } = useQuery<TrackingData | null>({
+    queryKey: ["guest-employee-course-tracking", token],
+    queryFn: async () => {
+      if (!token) throw new Error("Token manquant");
+
+      // Get invitation data
+      const { data: invitation, error: invError } = await supabase
+        .from("company_employee_course_invitations")
+        .select(`
+          id, token, guest_name, guest_phone, guest_email, scheduled_date, pickup_address, destination_address, is_used,
+          company:companies(company_name, logo_url),
+          request:company_course_requests(
+            id, scheduled_date, pickup_address, destination_address, passengers_count, payment_method_requested, status, created_at, quotes_generated_at, sent_to_drivers_at, accepted_at,
+            quotes:company_course_quotes(
+              id, status, total_price, distance_km, duration_minutes, driver_response_at,
+              driver:drivers(id, user_id)
+            )
+          ),
+          course:courses(
+            id, status,
+            driver:drivers(id, user_id),
+            devis(amount, quote_number)
+          )
+        `)
+        .eq("token", token)
+        .maybeSingle();
+
+      if (invError) throw invError;
+      if (!invitation) throw new Error("Lien invalide ou expiré");
+
+      // Fetch driver profiles separately for accepted quotes
+      const result = invitation as any;
+      
+      if (result.request?.quotes) {
+        for (const quote of result.request.quotes) {
+          if (quote.driver?.user_id) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, phone, email, profile_photo_url")
+              .eq("id", quote.driver.user_id)
+              .maybeSingle();
+            quote.driver.profile = profile;
+          }
+        }
+      }
+      
+      if (result.course?.driver?.user_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone, email, profile_photo_url")
+          .eq("id", result.course.driver.user_id)
+          .maybeSingle();
+        result.course.driver.profile = profile;
+      }
+
+      return result as TrackingData;
+    },
+    enabled: !!token,
+    refetchInterval: 30000,
+  });
+
+  const handleRefresh = () => {
+    setLastRefresh(new Date());
+    refetch();
+  };
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Lien invalide</h2>
+            <p className="text-muted-foreground">
+              Le lien de suivi que vous utilisez est invalide ou incomplet.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Lien expiré ou invalide</h2>
+            <p className="text-muted-foreground">
+              Ce lien de suivi n'est plus valide. Contactez votre entreprise pour un nouveau lien.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const request = data.request;
+  const course = data.course;
+  const company = data.company;
+  
+  // Find accepted quote/driver
+  const acceptedQuote = request?.quotes?.find((q: any) => q.status === "accepted");
+  const acceptedDriver = acceptedQuote?.driver || course?.driver;
+  const driverVehicle = acceptedDriver?.vehicles?.[0];
+
+  // Determine current status
+  const getStatus = () => {
+    if (course?.status === "completed") return "completed";
+    if (course?.status === "in_progress") return "in_progress";
+    if (course?.status === "confirmed") return "confirmed";
+    if (acceptedQuote) return "driver_accepted";
+    if (request?.status === "sent_to_drivers") return "waiting_driver";
+    if (request?.status === "quotes_generated") return "quotes_ready";
+    return "pending";
+  };
+
+  const status = getStatus();
+
+  const getStatusBadge = () => {
+    switch (status) {
+      case "completed":
+        return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Course terminée</Badge>;
+      case "in_progress":
+        return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30"><Car className="w-3 h-3 mr-1" />En cours</Badge>;
+      case "confirmed":
+        return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Confirmée</Badge>;
+      case "driver_accepted":
+        return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Chauffeur confirmé</Badge>;
+      case "waiting_driver":
+        return <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30"><Clock className="w-3 h-3 mr-1" />En attente du chauffeur</Badge>;
+      case "quotes_ready":
+        return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30"><FileText className="w-3 h-3 mr-1" />Devis en cours</Badge>;
+      default:
+        return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />En préparation</Badge>;
+    }
+  };
+
+  // Check if billing should be shown (based on payment method)
+  const showBilling = request?.payment_method_requested === "employee_pays" || 
+                      request?.payment_method_requested === "employee_expense";
+
+  const quoteAmount = acceptedQuote?.total_price || course?.devis?.[0]?.amount;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+        <div className="container max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {company?.logo_url ? (
+              <img src={company.logo_url} alt="" className="h-8 w-8 rounded-lg object-cover" />
+            ) : (
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-primary" />
+              </div>
+            )}
+            <span className="font-semibold text-sm">{company?.company_name || "Votre entreprise"}</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefetching}
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefetching ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </header>
+
+      <main className="container max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Status Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-lg">Suivi de votre course</CardTitle>
+              {getStatusBadge()}
+            </div>
+            <CardDescription>
+              Bonjour {data.guest_name}, suivez votre réservation en temps réel
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Course Details */}
+            <div className="space-y-4">
+              {/* Date & Time */}
+              <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg">
+                <Calendar className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-medium">
+                    {format(new Date(data.scheduled_date || request?.scheduled_date), "EEEE d MMMM yyyy", { locale: fr })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(data.scheduled_date || request?.scheduled_date), "HH:mm", { locale: fr })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Addresses */}
+              <div className="space-y-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Départ</p>
+                    <p className="font-medium">{data.pickup_address || request?.pickup_address}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Arrivée</p>
+                    <p className="font-medium">{data.destination_address || request?.destination_address}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Passengers */}
+              {request?.passengers_count && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="w-4 h-4" />
+                  <span>{request.passengers_count} passager{request.passengers_count > 1 ? "s" : ""}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Billing Info - Only if employee should see it */}
+        {showBilling && quoteAmount && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Euro className="w-4 h-4" />
+                Informations tarifaires
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Montant total</span>
+                <span className="text-2xl font-bold text-primary">{quoteAmount.toFixed(2)} €</span>
+              </div>
+              {acceptedQuote && (
+                <div className="mt-3 pt-3 border-t space-y-1 text-sm text-muted-foreground">
+                  {acceptedQuote.distance_km && (
+                    <div className="flex justify-between">
+                      <span>Distance estimée</span>
+                      <span>{acceptedQuote.distance_km.toFixed(1)} km</span>
+                    </div>
+                  )}
+                  {acceptedQuote.duration_minutes && (
+                    <div className="flex justify-between">
+                      <span>Durée estimée</span>
+                      <span>~{acceptedQuote.duration_minutes} min</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Driver Info - Only when driver is confirmed */}
+        {acceptedDriver && (
+          <Card className="border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Car className="w-4 h-4" />
+                Votre chauffeur
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Driver Profile */}
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={acceptedDriver.profile?.profile_photo_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                    {acceptedDriver.profile?.full_name?.charAt(0) || "C"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{acceptedDriver.profile?.full_name}</h3>
+                </div>
+              </div>
+
+              {/* Vehicle Info */}
+              {driverVehicle && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Véhicule</p>
+                  <p className="font-medium">{driverVehicle.brand} {driverVehicle.model}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {driverVehicle.color && `${driverVehicle.color} • `}
+                    {driverVehicle.license_plate}
+                  </p>
+                </div>
+              )}
+
+              {/* Contact Buttons */}
+              <div className="flex gap-2">
+                {acceptedDriver.profile?.phone && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    asChild
+                  >
+                    <a href={`tel:${acceptedDriver.profile.phone}`}>
+                      <Phone className="w-4 h-4 mr-2" />
+                      Appeler
+                    </a>
+                  </Button>
+                )}
+                {acceptedDriver.profile?.email && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    asChild
+                  >
+                    <a href={`mailto:${acceptedDriver.profile.email}`}>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Status Timeline */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Progression</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <TimelineItem 
+                label="Demande créée" 
+                done={true}
+                date={request?.created_at}
+              />
+              <TimelineItem 
+                label="Devis générés" 
+                done={["quotes_ready", "waiting_driver", "driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                date={request?.quotes_generated_at}
+              />
+              <TimelineItem 
+                label="Envoyé au(x) chauffeur(s)" 
+                done={["waiting_driver", "driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                date={request?.sent_to_drivers_at}
+              />
+              <TimelineItem 
+                label="Chauffeur confirmé" 
+                done={["driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                date={acceptedQuote?.driver_response_at || request?.accepted_at}
+              />
+              <TimelineItem 
+                label="Course en cours" 
+                done={["in_progress", "completed"].includes(status)}
+              />
+              <TimelineItem 
+                label="Course terminée" 
+                done={status === "completed"}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Register CTA */}
+        {!data.is_used && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Créez votre espace collaborateur</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Inscrivez-vous pour gérer vos prochaines courses, consulter votre historique et recevoir des notifications.
+                  </p>
+                  <Button asChild>
+                    <Link to={`/register-employee?token=${token}`}>
+                      Créer mon compte
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Footer info */}
+        <p className="text-xs text-center text-muted-foreground">
+          Dernière mise à jour : {format(lastRefresh, "HH:mm:ss")}
+        </p>
+      </main>
+    </div>
+  );
+}
+
+function TimelineItem({ label, done, date }: { label: string; done: boolean; date?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${done ? "bg-primary" : "bg-muted-foreground/30"}`} />
+      <div className="flex-1 flex items-center justify-between gap-2">
+        <span className={done ? "font-medium" : "text-muted-foreground"}>{label}</span>
+        {done && date && (
+          <span className="text-xs text-muted-foreground">
+            {format(new Date(date), "d/MM HH:mm")}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
