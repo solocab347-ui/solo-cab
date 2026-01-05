@@ -31,6 +31,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   // Déterminer le step de reprise selon le statut
   const getResumeStep = (status: string): WizardStep => {
     switch (status) {
+      case "draft":
+        return "details"; // Brouillon, reprendre aux détails du trajet
       case "quotes_generated":
         return "quotes"; // Devis générés, aller à la sélection/envoi
       case "sent_to_drivers":
@@ -314,7 +316,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             )}
 
             {/* Actions for pending requests - allow resume or cancel */}
-            {["quotes_generated", "sent_to_drivers"].includes(request.status) && (
+            {["draft", "quotes_generated", "sent_to_drivers"].includes(request.status) && (
               <div className="flex justify-end gap-2 pt-2 flex-wrap">
                 <Button 
                   variant="default" 
