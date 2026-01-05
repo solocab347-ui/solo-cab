@@ -280,7 +280,10 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
             vehicle_brand,
             rating,
             user_id,
-            total_rides
+            total_rides,
+            show_rating_for_sharing,
+            show_rides_for_sharing,
+            card_photo_url
           )
         `)
         .eq("company_id", companyId)
@@ -795,49 +798,62 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
               {blockedAgreements.map((agreement: any) => {
                 const blockedByCompany = agreement.company_blocked_driver;
                 const blockedByDriver = agreement.driver_blocked_company;
+                const driver = agreement.driver;
+                const driverProfile = agreement.driverProfile;
+                
+                // Respecter les critères de visibilité du chauffeur
+                const showRating = driver?.show_rating_for_sharing !== false;
+                const showRides = driver?.show_rides_for_sharing !== false;
+                
+                // Photo du chauffeur (priorité: profil, puis carte chauffeur)
+                const driverPhoto = driverProfile?.profile_photo_url || driver?.card_photo_url;
+                
+                // Extraire le motif de blocage depuis les notes si présent
+                const blockReasonMatch = agreement.notes?.match(/Motif de blocage: (.+)/);
+                const blockReason = blockReasonMatch ? blockReasonMatch[1] : null;
                 
                 return (
                   <Card key={agreement.id} className="border-destructive/40">
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                         <div className="flex gap-3">
-                          <Avatar className="w-14 h-14 border-2 border-destructive/20">
-                            <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
+                          <Avatar className="w-16 h-16 border-2 border-destructive/20">
+                            <AvatarImage src={driverPhoto} />
                             <AvatarFallback className="bg-destructive/10">
-                              <User className="w-7 h-7 text-destructive" />
+                              <User className="w-8 h-8 text-destructive" />
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-base">
-                              {agreement.driverProfile?.full_name || "Chauffeur inconnu"}
+                            <h4 className="font-semibold text-lg">
+                              {driverProfile?.full_name || "Chauffeur"}
                             </h4>
-                            {agreement.driver?.company_name && (
+                            {driver?.company_name && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Car className="w-3 h-3" />
-                                {agreement.driver.company_name}
+                                <Car className="w-3.5 h-3.5" />
+                                {driver.company_name}
                               </p>
                             )}
                             {/* Véhicule */}
-                            {(agreement.driver?.vehicle_brand || agreement.driver?.vehicle_model) && (
-                              <p className="text-xs text-muted-foreground">
-                                {agreement.driver.vehicle_brand} {agreement.driver.vehicle_model}
+                            {(driver?.vehicle_brand || driver?.vehicle_model) && (
+                              <p className="text-sm text-muted-foreground">
+                                {driver.vehicle_brand} {driver.vehicle_model}
                               </p>
                             )}
-                            {/* Note si disponible */}
-                            {agreement.driver?.rating && (
+                            {/* Note si autorisée par le chauffeur */}
+                            {showRating && driver?.rating && (
                               <div className="flex items-center gap-1 mt-1">
-                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                <span className="text-xs font-medium">{agreement.driver.rating.toFixed(1)}</span>
-                                {agreement.driver?.total_rides && (
-                                  <span className="text-xs text-muted-foreground">
-                                    ({agreement.driver.total_rides} courses)
+                                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                {showRides && driver?.total_rides && (
+                                  <span className="text-sm text-muted-foreground">
+                                    ({driver.total_rides} courses)
                                   </span>
                                 )}
                               </div>
                             )}
                             
                             {/* Badges de blocage */}
-                            <div className="flex flex-wrap gap-2 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-3">
                               {blockedByCompany && (
                                 <Badge variant="destructive" className="text-xs">
                                   <Lock className="w-3 h-3 mr-1" />
@@ -893,12 +909,22 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                         </div>
                       </div>
                       
-                      {/* Motif du refus si existant */}
-                      {agreement.rejection_reason && (
+                      {/* Motif du blocage si existant */}
+                      {blockReason && (
+                        <Alert className="mt-3 bg-destructive/5 border-destructive/20">
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          <AlertDescription className="text-sm">
+                            <span className="font-medium">Motif du blocage:</span> {blockReason}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {/* Motif de refus initial si existant */}
+                      {agreement.rejection_reason && !blockReason && (
                         <Alert className="mt-3 bg-muted/50">
                           <Info className="h-4 w-4" />
                           <AlertDescription className="text-sm">
-                            <span className="font-medium">Motif initial:</span> {agreement.rejection_reason}
+                            <span className="font-medium">Motif initial du refus:</span> {agreement.rejection_reason}
                           </AlertDescription>
                         </Alert>
                       )}
@@ -930,6 +956,15 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                   {rejectedAgreements.map((agreement: any) => {
                     const isMyProposal = agreement.proposed_by === "company";
                     const rejectedDate = new Date(agreement.rejected_at || agreement.updated_at);
+                    const driver = agreement.driver;
+                    const driverProfile = agreement.driverProfile;
+                    
+                    // Respecter les critères de visibilité du chauffeur
+                    const showRating = driver?.show_rating_for_sharing !== false;
+                    const showRides = driver?.show_rides_for_sharing !== false;
+                    
+                    // Photo du chauffeur (priorité: profil, puis carte chauffeur)
+                    const driverPhoto = driverProfile?.profile_photo_url || driver?.card_photo_url;
                     
                     return (
                       <Card key={agreement.id} className="border-destructive/30">
@@ -937,31 +972,37 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                           {/* En-tête avec photo et infos chauffeur */}
                           <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
                             <div className="flex gap-3">
-                              <Avatar className="w-14 h-14 border-2 border-destructive/20">
-                                <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
+                              <Avatar className="w-16 h-16 border-2 border-destructive/20">
+                                <AvatarImage src={driverPhoto} />
                                 <AvatarFallback className="bg-destructive/10">
-                                  <User className="w-7 h-7 text-destructive" />
+                                  <User className="w-8 h-8 text-destructive" />
                                 </AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
-                                <h4 className="font-semibold text-base">
-                                  {agreement.driverProfile?.full_name || "Chauffeur"}
+                                <h4 className="font-semibold text-lg">
+                                  {driverProfile?.full_name || "Chauffeur"}
                                 </h4>
-                                {agreement.driver?.company_name && (
+                                {driver?.company_name && (
                                   <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                    <Car className="w-3 h-3" />
-                                    {agreement.driver.company_name}
+                                    <Car className="w-3.5 h-3.5" />
+                                    {driver.company_name}
                                   </p>
                                 )}
-                                {(agreement.driver?.vehicle_brand || agreement.driver?.vehicle_model) && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {agreement.driver.vehicle_brand} {agreement.driver.vehicle_model}
+                                {(driver?.vehicle_brand || driver?.vehicle_model) && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {driver.vehicle_brand} {driver.vehicle_model}
                                   </p>
                                 )}
-                                {agreement.driver?.rating && (
+                                {/* Note si autorisée par le chauffeur */}
+                                {showRating && driver?.rating && (
                                   <div className="flex items-center gap-1 mt-1">
-                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                    <span className="text-xs font-medium">{agreement.driver.rating.toFixed(1)}</span>
+                                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                                    <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                    {showRides && driver?.total_rides && (
+                                      <span className="text-sm text-muted-foreground">
+                                        ({driver.total_rides} courses)
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
