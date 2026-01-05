@@ -2,24 +2,69 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Check, Send, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { GeneratedQuote } from "./CompanyCourseBookingWizard";
+import { Check, Send, Loader2, CheckCircle, Clock, AlertCircle, Copy, Link2, ExternalLink } from "lucide-react";
+import { GeneratedQuote, CourseFormData } from "./CompanyCourseBookingWizard";
 
 interface BookingConfirmationStepProps {
   requestId: string | null;
   generatedQuotes: GeneratedQuote[];
+  formData: CourseFormData;
+  companyId: string;
   onSuccess: () => void;
 }
 
-export function BookingConfirmationStep({ requestId, generatedQuotes, onSuccess }: BookingConfirmationStepProps) {
+export function BookingConfirmationStep({ 
+  requestId, 
+  generatedQuotes, 
+  formData,
+  companyId,
+  onSuccess 
+}: BookingConfirmationStepProps) {
   const [sent, setSent] = useState(false);
+  const [trackingLink, setTrackingLink] = useState<string | null>(null);
 
   const selectedQuotes = generatedQuotes.filter(q => q.selected);
 
   const sendQuotesMutation = useMutation({
     mutationFn: async () => {
       if (!requestId) throw new Error("Request ID missing");
+
+      // If guest employee, create an invitation with tracking link
+      let invitationToken: string | null = null;
+      
+      if (formData.isGuestEmployee && formData.guestEmployeeName) {
+        // Get request details for the invitation
+        const { data: request } = await supabase
+          .from("company_course_requests")
+          .select("scheduled_date, pickup_address, destination_address")
+          .eq("id", requestId)
+          .single();
+          
+        // Create invitation for guest employee
+        const { data: invitation, error: invError } = await supabase
+          .from("company_employee_course_invitations")
+          .insert({
+            company_id: companyId,
+            request_id: requestId,
+            guest_name: formData.guestEmployeeName,
+            guest_phone: formData.guestEmployeePhone || null,
+            guest_email: formData.guestEmployeeEmail || null,
+            scheduled_date: request?.scheduled_date,
+            pickup_address: request?.pickup_address,
+            destination_address: request?.destination_address,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+          })
+          .select("token")
+          .single();
+
+        if (invError) {
+          console.error("Error creating invitation:", invError);
+        } else if (invitation) {
+          invitationToken = invitation.token;
+        }
+      }
 
       const { data, error } = await supabase.functions.invoke("send-company-quotes-to-drivers", {
         body: {
@@ -29,11 +74,16 @@ export function BookingConfirmationStep({ requestId, generatedQuotes, onSuccess 
       });
 
       if (error) throw error;
-      return data;
+      return { ...data, invitationToken };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSent(true);
       toast.success("Devis envoyés aux chauffeurs !");
+      
+      if (data.invitationToken) {
+        const link = `${window.location.origin}/suivi-course-entreprise?token=${data.invitationToken}`;
+        setTrackingLink(link);
+      }
     },
     onError: (error: any) => {
       console.error("Error sending quotes:", error);
@@ -41,9 +91,16 @@ export function BookingConfirmationStep({ requestId, generatedQuotes, onSuccess 
     },
   });
 
+  const copyTrackingLink = () => {
+    if (trackingLink) {
+      navigator.clipboard.writeText(trackingLink);
+      toast.success("Lien copié !");
+    }
+  };
+
   if (sent) {
     return (
-      <div className="text-center py-12 space-y-6">
+      <div className="text-center py-8 space-y-6">
         <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
           <CheckCircle className="w-10 h-10 text-green-600" />
         </div>
@@ -57,6 +114,34 @@ export function BookingConfirmationStep({ requestId, generatedQuotes, onSuccess 
             }
           </p>
         </div>
+
+        {/* Tracking link for guest employee */}
+        {trackingLink && (
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 text-left max-w-md mx-auto">
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              Lien de suivi pour {formData.guestEmployeeName}
+            </h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Partagez ce lien avec le collaborateur pour qu'il puisse suivre sa course en temps réel.
+            </p>
+            <div className="flex gap-2">
+              <Input 
+                value={trackingLink} 
+                readOnly 
+                className="text-xs bg-background"
+              />
+              <Button variant="outline" size="icon" onClick={copyTrackingLink}>
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" asChild>
+                <a href={trackingLink} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
           <h4 className="font-medium mb-3 flex items-center gap-2 justify-center">

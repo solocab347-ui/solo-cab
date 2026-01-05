@@ -168,6 +168,8 @@ export function CompanyCourseBookingWizard({ companyId, onClose, onSuccess }: Co
           <BookingConfirmationStep
             requestId={requestId}
             generatedQuotes={generatedQuotes}
+            formData={formData}
+            companyId={companyId}
             onSuccess={() => {
               queryClient.invalidateQueries({ queryKey: ["company-course-requests"] });
               if (onSuccess) onSuccess();
