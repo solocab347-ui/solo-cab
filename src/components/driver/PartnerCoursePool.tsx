@@ -522,10 +522,10 @@ export function PartnerCoursePool({ driverId: propDriverId }: PartnerCoursePoolP
       let result;
       
       // For pool mode, use atomic claiming function
-      if (course.sharing_mode === 'pool' && course.pool_group_id) {
+      if (course.sharing_mode === 'pool') {
         const { data, error } = await supabase.rpc('claim_pool_course', {
-          p_pool_group_id: course.pool_group_id,
-          p_receiver_driver_id: driverId
+          p_shared_course_id: course.id,
+          p_claimer_driver_id: driverId
         });
         if (error) throw error;
         result = data as unknown as { success: boolean; message?: string; error?: string };
