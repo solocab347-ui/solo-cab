@@ -14,9 +14,10 @@ import { fr } from "date-fns/locale";
 interface PendingCompanyQuotesInCoursesListProps {
   driverId: string;
   onCountChange?: (count: number) => void;
+  onCourseAccepted?: () => void;
 }
 
-export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: PendingCompanyQuotesInCoursesListProps) {
+export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange, onCourseAccepted }: PendingCompanyQuotesInCoursesListProps) {
   const queryClient = useQueryClient();
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [actionType, setActionType] = useState<'accept' | 'refuse' | null>(null);
@@ -77,6 +78,8 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
           toast.info("Cette course a déjà été attribuée à un autre chauffeur");
         } else {
           toast.success("Course acceptée ! Elle a été ajoutée à vos courses confirmées");
+          // Notify parent to refresh courses list
+          onCourseAccepted?.();
         }
       } else {
         toast.success("Course refusée");

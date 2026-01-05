@@ -1801,7 +1801,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           {/* Demandes entreprises en attente */}
           <PendingCompanyQuotesInCoursesList 
             driverId={driverId} 
-            onCountChange={setPendingCompanyQuotesCount} 
+            onCountChange={setPendingCompanyQuotesCount}
+            onCourseAccepted={fetchCourses}
           />
           
           {pendingCourses.length === 0 && pendingCompanyQuotesCount === 0 ? (
