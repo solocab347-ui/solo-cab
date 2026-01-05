@@ -36,6 +36,15 @@ interface DriverCompanyPaymentsProps {
 interface GroupedPayment {
   companyId: string;
   companyName: string;
+  companyInfo?: {
+    siret?: string;
+    siren?: string;
+    tva_number?: string;
+    address?: string;
+    billing_address?: string;
+    contact_email?: string;
+    contact_phone?: string;
+  };
   agreementId: string;
   paymentFrequency: string;
   paymentMethods: string[];
@@ -63,6 +72,29 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
   const [disputeReason, setDisputeReason] = useState("");
   const queryClient = useQueryClient();
 
+  // Fetch driver info for invoices
+  const { data: driverInfo } = useQuery({
+    queryKey: ["driver-info-for-company-payments", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select(`
+          id,
+          company_name,
+          siret,
+          siren,
+          tva_number,
+          company_address,
+          profiles:user_id(full_name, phone, email)
+        `)
+        .eq("id", driverId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch agreements with companies
   const { data: agreements, isLoading: loadingAgreements } = useQuery({
     queryKey: ["driver-company-agreements", driverId],
@@ -83,7 +115,13 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
             id,
             company_name,
             contact_name,
-            contact_email
+            contact_email,
+            contact_phone,
+            siret,
+            siren,
+            tva_number,
+            address,
+            billing_address
           )
         `)
         .eq("driver_id", driverId)
@@ -297,6 +335,15 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           groups.push({
             companyId: agreement.company_id,
             companyName: agreement.company?.company_name || "Entreprise",
+            companyInfo: {
+              siret: agreement.company?.siret,
+              siren: agreement.company?.siren,
+              tva_number: agreement.company?.tva_number,
+              address: agreement.company?.address,
+              billing_address: agreement.company?.billing_address,
+              contact_email: agreement.company?.contact_email,
+              contact_phone: agreement.company?.contact_phone,
+            },
             agreementId: agreement.id,
             paymentFrequency,
             paymentMethods: agreement.payment_methods || [],
@@ -347,6 +394,15 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           groups.push({
             companyId: agreement.company_id,
             companyName: agreement.company?.company_name || "Entreprise",
+            companyInfo: {
+              siret: agreement.company?.siret,
+              siren: agreement.company?.siren,
+              tva_number: agreement.company?.tva_number,
+              address: agreement.company?.address,
+              billing_address: agreement.company?.billing_address,
+              contact_email: agreement.company?.contact_email,
+              contact_phone: agreement.company?.contact_phone,
+            },
             agreementId: agreement.id,
             paymentFrequency,
             paymentMethods: agreement.payment_methods || [],
@@ -397,6 +453,15 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           groups.push({
             companyId: agreement.company_id,
             companyName: agreement.company?.company_name || "Entreprise",
+            companyInfo: {
+              siret: agreement.company?.siret,
+              siren: agreement.company?.siren,
+              tva_number: agreement.company?.tva_number,
+              address: agreement.company?.address,
+              billing_address: agreement.company?.billing_address,
+              contact_email: agreement.company?.contact_email,
+              contact_phone: agreement.company?.contact_phone,
+            },
             agreementId: agreement.id,
             paymentFrequency,
             paymentMethods: agreement.payment_methods || [],
@@ -487,77 +552,218 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
   const downloadRecap = (payment: GroupedPayment) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     
-    doc.setFillColor(0, 102, 204);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    doc.setFontSize(22);
-    doc.setFont(undefined, 'bold');
+    // Colors
+    const headerColor: [number, number, number] = [46, 125, 50]; // Green for invoices
+    
+    // Header
+    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
     doc.setTextColor(255, 255, 255);
-    doc.text("RÉCAPITULATIF À PERCEVOIR", pageWidth / 2, 18, { align: "center" });
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text("FACTURE CONSOLIDÉE", pageWidth / 2, 22, { align: "center" });
+    
+    const invoiceNumber = payment.consolidatedInvoiceNumber || 
+      `FACT-ENT-${format(payment.periodStart, "yyyyMM")}-${payment.companyId.slice(0, 4).toUpperCase()}`;
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text(getPeriodLabel(payment), pageWidth / 2, 28, { align: "center" });
-    
+    doc.text(`N°: ${invoiceNumber}`, pageWidth / 2, 32, { align: "center" });
+    doc.text(`Période: ${getPeriodLabel(payment)}`, pageWidth / 2, 40, { align: "center" });
+
+    // Driver info (left side) - EMETTEUR
     doc.setTextColor(0, 0, 0);
-    let yPos = 50;
-    
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("Entreprise", 20, yPos);
+    doc.text("ÉMETTEUR (Chauffeur VTC)", 20, 62);
     doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    yPos += 7;
-    doc.text(payment.companyName, 20, yPos);
-    
-    yPos += 15;
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text("Détail des factures", 20, yPos);
-    yPos += 10;
-    
-    doc.setFillColor(240, 240, 240);
-    doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
     doc.setFontSize(9);
-    doc.text("N° Facture", 20, yPos);
-    doc.text("Date", 70, yPos);
-    doc.text("Trajet", 100, yPos);
-    doc.text("Montant", pageWidth - 25, yPos, { align: "right" });
+    
+    let leftY = 69;
+    const driverName = driverInfo?.profiles?.full_name || driverInfo?.company_name || "N/A";
+    doc.text(driverName, 20, leftY);
+    leftY += 5;
+    
+    if (driverInfo?.company_name && driverInfo.company_name !== driverName) {
+      doc.text(driverInfo.company_name, 20, leftY);
+      leftY += 5;
+    }
+    
+    if (driverInfo?.siret) {
+      doc.text(`SIRET: ${driverInfo.siret}`, 20, leftY);
+      leftY += 5;
+    } else if (driverInfo?.siren) {
+      doc.text(`SIREN: ${driverInfo.siren}`, 20, leftY);
+      leftY += 5;
+    }
+    
+    if (driverInfo?.tva_number) {
+      doc.text(`N° TVA: ${driverInfo.tva_number}`, 20, leftY);
+      leftY += 5;
+    }
+    
+    if (driverInfo?.profiles?.phone) {
+      doc.text(`Tél: ${driverInfo.profiles.phone}`, 20, leftY);
+      leftY += 5;
+    }
+    
+    if (driverInfo?.company_address) {
+      const addressLines = doc.splitTextToSize(driverInfo.company_address, 75);
+      doc.text(addressLines, 20, leftY);
+    }
+
+    // Company info (right side) - DESTINATAIRE
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("DESTINATAIRE (Entreprise)", pageWidth - 20, 62, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    let rightY = 69;
+    doc.text(payment.companyName, pageWidth - 20, rightY, { align: 'right' });
+    rightY += 5;
+    
+    if (payment.companyInfo?.siret) {
+      doc.text(`SIRET: ${payment.companyInfo.siret}`, pageWidth - 20, rightY, { align: 'right' });
+      rightY += 5;
+    } else if (payment.companyInfo?.siren) {
+      doc.text(`SIREN: ${payment.companyInfo.siren}`, pageWidth - 20, rightY, { align: 'right' });
+      rightY += 5;
+    }
+    
+    if (payment.companyInfo?.tva_number) {
+      doc.text(`N° TVA: ${payment.companyInfo.tva_number}`, pageWidth - 20, rightY, { align: 'right' });
+      rightY += 5;
+    }
+    
+    if (payment.companyInfo?.contact_email) {
+      doc.text(payment.companyInfo.contact_email, pageWidth - 20, rightY, { align: 'right' });
+      rightY += 5;
+    }
+    
+    if (payment.companyInfo?.contact_phone) {
+      doc.text(`Tél: ${payment.companyInfo.contact_phone}`, pageWidth - 20, rightY, { align: 'right' });
+      rightY += 5;
+    }
+    
+    const companyAddress = payment.companyInfo?.billing_address || payment.companyInfo?.address;
+    if (companyAddress) {
+      const addressLines = doc.splitTextToSize(companyAddress, 75);
+      addressLines.forEach((line: string) => {
+        doc.text(line, pageWidth - 20, rightY, { align: 'right' });
+        rightY += 4;
+      });
+    }
+
+    // Invoices table
+    let yPos = Math.max(leftY, rightY) + 15;
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAIL DES PRESTATIONS", 20, yPos);
     yPos += 8;
     
+    // Table header
+    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.rect(15, yPos - 4, pageWidth - 30, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.text("N° Facture", 20, yPos + 1);
+    doc.text("Date", 60, yPos + 1);
+    doc.text("Trajet", 90, yPos + 1);
+    doc.text("Montant TTC", pageWidth - 20, yPos + 1, { align: "right" });
+    yPos += 10;
+    
+    doc.setTextColor(0, 0, 0);
     doc.setFont(undefined, 'normal');
-    payment.invoices.forEach((invoice: any) => {
-      if (yPos > 270) {
+    
+    // Table rows
+    let subtotal = 0;
+    payment.invoices.forEach((invoice: any, index: number) => {
+      if (yPos > 250) {
         doc.addPage();
         yPos = 20;
       }
       
-      doc.text(invoice.invoice_number_generated || invoice.invoice_number || "N/A", 20, yPos);
-      doc.text(format(new Date(invoice.created_at), "dd/MM/yy"), 70, yPos);
-      const destination = invoice.courses?.destination_address?.substring(0, 25) + "..." || "";
-      doc.text(destination, 100, yPos);
-      doc.text(`${Number(invoice.amount).toFixed(2)} €`, pageWidth - 25, yPos, { align: "right" });
-      yPos += 6;
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.setFillColor(245, 245, 245);
+        doc.rect(15, yPos - 4, pageWidth - 30, 7, 'F');
+      }
+      
+      const invoiceNum = invoice.invoice_number_generated || invoice.invoice_number || "N/A";
+      doc.text(invoiceNum, 20, yPos);
+      doc.text(format(new Date(invoice.created_at), "dd/MM/yyyy"), 60, yPos);
+      
+      const destination = invoice.courses?.destination_address || "";
+      const truncatedDest = destination.length > 30 ? destination.substring(0, 30) + "..." : destination;
+      doc.text(truncatedDest, 90, yPos);
+      
+      const amount = Number(invoice.amount);
+      subtotal += amount;
+      doc.text(`${amount.toFixed(2)} €`, pageWidth - 20, yPos, { align: "right" });
+      yPos += 7;
     });
     
+    // Totals section
+    yPos += 8;
+    doc.setDrawColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.setLineWidth(0.5);
+    doc.line(pageWidth - 90, yPos - 3, pageWidth - 15, yPos - 3);
+    
+    // Calculate TVA (10% for VTC services)
+    const tvaRate = 10;
+    const totalTTC = payment.totalAmount;
+    const totalHT = totalTTC / (1 + tvaRate / 100);
+    const tvaAmount = totalTTC - totalHT;
+    
+    doc.setFontSize(9);
+    doc.text("Total HT:", pageWidth - 90, yPos + 3);
+    doc.text(`${totalHT.toFixed(2)} €`, pageWidth - 20, yPos + 3, { align: "right" });
+    
+    yPos += 7;
+    doc.text(`TVA (${tvaRate}%)`, pageWidth - 90, yPos + 3);
+    doc.text(`${tvaAmount.toFixed(2)} €`, pageWidth - 20, yPos + 3, { align: "right" });
+    
     yPos += 10;
-    doc.setDrawColor(0, 102, 204);
-    doc.setLineWidth(1);
-    doc.line(pageWidth - 80, yPos - 3, pageWidth - 15, yPos - 3);
-    doc.setFontSize(12);
+    doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
+    doc.rect(pageWidth - 95, yPos - 3, 80, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("TOTAL À RECEVOIR:", pageWidth - 80, yPos + 5);
-    doc.setFontSize(14);
-    doc.text(`${payment.totalAmount.toFixed(2)} €`, pageWidth - 25, yPos + 5, { align: "right" });
+    doc.text("TOTAL TTC:", pageWidth - 90, yPos + 4);
+    doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - 20, yPos + 4, { align: "right" });
     
+    // Payment info
     yPos += 20;
+    doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("CONDITIONS DE PAIEMENT", 20, yPos);
     doc.setFont(undefined, 'normal');
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Échéance prévue: ${format(payment.dueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    doc.setFontSize(9);
+    yPos += 7;
     
-    const fileName = `recap-a-percevoir-${payment.companyName.replace(/\s+/g, '-')}-${format(payment.periodStart, "yyyy-MM-dd")}.pdf`;
+    const paymentMethodsText = payment.paymentMethods.length > 0 
+      ? payment.paymentMethods.join(", ") 
+      : "Virement bancaire";
+    doc.text(`Mode de paiement: ${paymentMethodsText}`, 20, yPos);
+    yPos += 5;
+    doc.text(`Échéance: ${format(payment.dueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    yPos += 5;
+    doc.text(`Fréquence: ${getFrequencyLabel(payment.paymentFrequency)}`, 20, yPos);
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Document généré automatiquement - Facture conforme aux mentions légales", pageWidth / 2, pageHeight - 15, { align: "center" });
+    doc.text(`Date d'émission: ${format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    
+    const fileName = `facture-consolidee-${payment.companyName.replace(/\s+/g, '-')}-${format(payment.periodStart, "yyyy-MM")}.pdf`;
     doc.save(fileName);
-    toast.success("Récapitulatif téléchargé");
+    toast.success("Facture consolidée téléchargée");
   };
 
   const getStatusBadge = (status: string) => {
