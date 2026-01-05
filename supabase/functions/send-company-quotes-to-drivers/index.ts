@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
           title: 'Nouvelle demande entreprise',
           message: `${companyName} vous propose une course${employeeName ? ` pour ${employeeName}` : ''}`,
           type: 'company_course_request',
-          link: '/driver-dashboard?tab=courses',
+          link: '/driver-dashboard?tab=devis',
         });
       }
     }
