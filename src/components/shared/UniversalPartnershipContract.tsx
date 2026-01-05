@@ -62,12 +62,10 @@ interface PartyInfo {
 }
 
 interface ContractTerms {
-  commissionPercentage?: number;
-  commissionFixedAmount?: number;
-  commissionType?: 'percentage' | 'fixed';
   paymentSchedule?: string;
   paymentFrequency?: string;
   paymentDay?: number;
+  paymentMethods?: string[];
 }
 
 interface SignatureStatus {
@@ -166,14 +164,15 @@ export function UniversalPartnershipContract({
     return scheduleLabels[schedule] || schedule;
   };
 
-  const getCommissionDisplay = () => {
-    if (terms.commissionType === 'fixed' && terms.commissionFixedAmount) {
-      return `${terms.commissionFixedAmount}€ par course`;
-    }
-    if (terms.commissionPercentage) {
-      return `${terms.commissionPercentage}%`;
-    }
-    return 'Non définie';
+  const getPaymentMethodsLabel = (methods: string[] | undefined) => {
+    if (!methods || methods.length === 0) return 'Non défini';
+    const methodLabels: Record<string, string> = {
+      card: 'Carte bancaire',
+      payment_link: 'Lien de paiement',
+      cash: 'Espèces',
+      bank_transfer: 'Virement bancaire'
+    };
+    return methods.map(m => methodLabels[m] || m).join(', ');
   };
 
   const isFullySigned = () => signatures.party1Signed && signatures.party2Signed;
@@ -342,25 +341,23 @@ export function UniversalPartnershipContract({
       yPos += 5;
 
       doc.setFillColor(239, 246, 255);
-      doc.roundedRect(margin, yPos, contentWidth, 28, 3, 3, 'F');
+      doc.roundedRect(margin, yPos, contentWidth, 36, 3, 3, 'F');
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('Commission:', margin + 5, yPos + 8);
+      doc.text('Rémunération:', margin + 5, yPos + 8);
       doc.setFont('helvetica', 'normal');
-      
-      if (terms.commissionPercentage) {
-        doc.text(`${terms.commissionPercentage}% du montant de chaque course effectuée`, margin + 35, yPos + 8);
-      } else if (terms.commissionFixedAmount) {
-        doc.text(`${terms.commissionFixedAmount}€ par course effectuée (montant fixe)`, margin + 35, yPos + 8);
-      } else {
-        doc.text('À définir selon accord mutuel', margin + 35, yPos + 8);
-      }
+      doc.text('Selon les tarifs de facturation du chauffeur VTC', margin + 40, yPos + 8);
       
       doc.setFont('helvetica', 'bold');
-      doc.text('Paiement:', margin + 5, yPos + 16);
+      doc.text('Fréquence de paiement:', margin + 5, yPos + 16);
       doc.setFont('helvetica', 'normal');
-      doc.text(getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency), margin + 35, yPos + 16);
+      doc.text(getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency), margin + 50, yPos + 16);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text('Moyens de paiement:', margin + 5, yPos + 24);
+      doc.setFont('helvetica', 'normal');
+      doc.text(getPaymentMethodsLabel(terms.paymentMethods), margin + 48, yPos + 24);
       
       if (terms.paymentDay) {
         const dayLabel = (terms.paymentSchedule === 'weekly') 
@@ -369,7 +366,7 @@ export function UniversalPartnershipContract({
         doc.text(`(${dayLabel})`, margin + 100, yPos + 16);
       }
       
-      yPos += 35;
+      yPos += 43;
 
       // ========== CLAUSES DU CONTRAT ==========
       checkNewPage(100);
@@ -381,19 +378,15 @@ export function UniversalPartnershipContract({
       const clauses = [
         {
           title: 'Article 1 - Objet du contrat',
-          content: `Le présent contrat établit les conditions de partenariat entre les parties pour le partage de courses VTC, la transmission de clientèle et la collaboration professionnelle dans le cadre de leurs activités de transport de personnes.`
+          content: `Le présent contrat établit les conditions de partenariat entre ${labels.party1Label} et ${labels.party2Label} pour la fourniture de services de transport VTC. L'entreprise confie au chauffeur la réalisation de courses pour ses employés et/ou clients selon les modalités définies ci-après.`
         },
         {
-          title: 'Article 2 - Commission et rémunération',
-          content: terms.commissionPercentage 
-            ? `${labels.party2Label} s'engage à verser à ${labels.party1Label} une commission de ${terms.commissionPercentage}% du montant total TTC de chaque course transmise. Cette commission est due dès la réalisation effective de la course.`
-            : terms.commissionFixedAmount
-              ? `${labels.party2Label} s'engage à verser à ${labels.party1Label} un montant fixe de ${terms.commissionFixedAmount}€ par course transmise, quel que soit le montant de la course. Cette commission est due dès la réalisation effective de la course.`
-              : 'Les conditions de rémunération seront définies d\'un commun accord entre les parties.'
+          title: 'Article 2 - Rémunération du chauffeur',
+          content: `Le chauffeur VTC facture ses prestations selon sa grille tarifaire en vigueur. L'entreprise s'engage à régler les factures émises par le chauffeur dans les délais et selon les modalités de paiement convenus dans le présent contrat.`
         },
         {
           title: 'Article 3 - Modalités de paiement',
-          content: `Les règlements des commissions seront effectués ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency).toLowerCase()}. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard (taux légal + 10%) et la suspension immédiate du partenariat.`
+          content: `Les règlements des factures seront effectués ${getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency).toLowerCase()}. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard (taux légal + 10%) et la suspension immédiate du partenariat.`
         },
         {
           title: 'Article 4 - PROTECTION DE LA CLIENTÈLE (CLAUSE ESSENTIELLE)',
@@ -401,7 +394,7 @@ export function UniversalPartnershipContract({
         },
         {
           title: 'Article 5 - Obligations des parties',
-          content: 'Chaque partie s\'engage à: (a) respecter scrupuleusement les termes du présent contrat, (b) fournir un service de qualité irréprochable aux clients de son partenaire, (c) effectuer les paiements de commissions dans les délais convenus sans aucun retard, (d) respecter strictement la confidentialité des informations commerciales (tarifs, coordonnées clients, conditions), (e) maintenir ses autorisations professionnelles en cours de validité (carte VTC, assurance, immatriculation), (f) respecter les horaires de prise en charge convenus avec les clients.'
+          content: 'Chaque partie s\'engage à: (a) respecter scrupuleusement les termes du présent contrat, (b) fournir un service de qualité irréprochable, (c) régler les factures dans les délais convenus sans aucun retard, (d) respecter strictement la confidentialité des informations commerciales (tarifs, coordonnées, conditions), (e) maintenir ses autorisations professionnelles en cours de validité (carte VTC, assurance, immatriculation), (f) respecter les horaires de prise en charge convenus.'
         },
         {
           title: 'Article 6 - Confidentialité des informations',
@@ -409,15 +402,15 @@ export function UniversalPartnershipContract({
         },
         {
           title: 'Article 7 - Durée et résiliation',
-          content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les commissions dues. En cas de manquement grave (non-paiement, détournement de clientèle, atteinte à la réputation), la résiliation peut être immédiate et sans préavis. La partie fautive s\'expose à des poursuites judiciaires.'
+          content: 'Le présent contrat est conclu pour une durée indéterminée. Chaque partie peut résilier le contrat avec un préavis de 15 jours et après régularisation complète de toutes les factures en cours. En cas de manquement grave (non-paiement, détournement de clientèle, atteinte à la réputation), la résiliation peut être immédiate et sans préavis. La partie fautive s\'expose à des poursuites judiciaires.'
         },
         {
           title: 'Article 8 - Recours en cas de litige',
-          content: 'En cas de non-respect des obligations du présent contrat, la partie lésée pourra: (a) suspendre immédiatement le partage de courses, (b) résilier le contrat sans préavis pour faute grave. En cas de litige persistant (non-paiement des commissions, détournement de clientèle, non-respect des engagements), la partie lésée pourra saisir les juridictions compétentes pour faire valoir ses droits et obtenir réparation du préjudice subi conformément aux dispositions légales en vigueur.'
+          content: 'En cas de non-respect des obligations du présent contrat, la partie lésée pourra: (a) suspendre immédiatement la collaboration, (b) résilier le contrat sans préavis pour faute grave. En cas de litige persistant (non-paiement des factures, détournement de clientèle, non-respect des engagements), la partie lésée pourra saisir les juridictions compétentes pour faire valoir ses droits et obtenir réparation du préjudice subi conformément aux dispositions légales en vigueur.'
         },
         {
           title: 'Article 9 - Responsabilités',
-          content: 'Chaque partie reste responsable de ses propres actes professionnels, de sa comptabilité et de ses obligations fiscales et sociales. La transmission d\'un client n\'engage pas la responsabilité du transmetteur pour les prestations effectuées. Le partenaire exécutant assume l\'entière responsabilité de la qualité de service fournie.'
+          content: 'Chaque partie reste responsable de ses propres actes professionnels, de sa comptabilité et de ses obligations fiscales et sociales. Le chauffeur VTC assume l\'entière responsabilité de la qualité de service fournie lors des prestations effectuées.'
         }
       ];
 
@@ -672,17 +665,17 @@ export function UniversalPartnershipContract({
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Euro className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Commission</span>
+                    <span className="text-sm">Rémunération</span>
                   </div>
-                  <span className="font-semibold text-primary">
-                    {getCommissionDisplay()}
+                  <span className="font-semibold text-primary text-sm">
+                    Selon tarifs du chauffeur
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Paiement</span>
+                    <span className="text-sm">Fréquence de paiement</span>
                   </div>
                   <span className="font-medium text-sm">
                     {getPaymentScheduleLabel(terms.paymentSchedule || terms.paymentFrequency)}
@@ -726,7 +719,7 @@ export function UniversalPartnershipContract({
                     Obligations de paiement
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Les commissions doivent être versées dans les délais convenus. 
+                    Les factures doivent être réglées dans les délais convenus. 
                     Tout retard supérieur à 15 jours entraîne des pénalités et la suspension du partenariat.
                   </p>
                 </div>

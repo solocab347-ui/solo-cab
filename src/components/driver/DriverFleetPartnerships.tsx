@@ -864,7 +864,6 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           company: selectedContractPartnership?.fleet_manager?.company_name || undefined,
         }}
         terms={{
-          commissionPercentage: selectedContractPartnership?.commission_percentage,
           paymentSchedule: selectedContractPartnership?.payment_schedule,
         }}
         signatures={{
