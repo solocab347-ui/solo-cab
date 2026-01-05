@@ -1741,11 +1741,52 @@ export type Database = {
           },
         ]
       }
+      company_payment_documents: {
+        Row: {
+          document_type: string | null
+          document_url: string
+          file_name: string | null
+          id: string
+          payment_id: string
+          uploaded_at: string | null
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          document_type?: string | null
+          document_url: string
+          file_name?: string | null
+          id?: string
+          payment_id: string
+          uploaded_at?: string | null
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          document_type?: string | null
+          document_url?: string
+          file_name?: string | null
+          id?: string
+          payment_id?: string
+          uploaded_at?: string | null
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_payment_documents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "company_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_payments: {
         Row: {
           agreement_id: string
           amount: number
           company_id: string
+          consolidated_invoice_generated_at: string | null
+          consolidated_invoice_number: string | null
+          consolidated_invoice_url: string | null
           course_ids: string[] | null
           courses_count: number | null
           created_at: string
@@ -1772,6 +1813,9 @@ export type Database = {
           agreement_id: string
           amount: number
           company_id: string
+          consolidated_invoice_generated_at?: string | null
+          consolidated_invoice_number?: string | null
+          consolidated_invoice_url?: string | null
           course_ids?: string[] | null
           courses_count?: number | null
           created_at?: string
@@ -1798,6 +1842,9 @@ export type Database = {
           agreement_id?: string
           amount?: number
           company_id?: string
+          consolidated_invoice_generated_at?: string | null
+          consolidated_invoice_number?: string | null
+          consolidated_invoice_url?: string | null
           course_ids?: string[] | null
           courses_count?: number | null
           created_at?: string
@@ -7977,6 +8024,7 @@ export type Database = {
         Args: { _commission_ids: string[] }
         Returns: undefined
       }
+      notify_overdue_company_payments: { Args: never; Returns: undefined }
       refresh_driver_statistics: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: { _role: string; _user_id: string }

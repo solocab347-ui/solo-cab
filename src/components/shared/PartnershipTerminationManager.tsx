@@ -73,13 +73,8 @@ export function PartnershipTerminationManager({
         termination_requested_by: requestedBy,
         termination_requested_at: new Date().toISOString(),
         termination_pending_payment_validation: outstandingBalance > 0,
+        termination_reason: terminationReason || null,
       };
-
-      if (partnershipType === "company_driver") {
-        updateData.termination_reason = terminationReason || null;
-      } else {
-        updateData.termination_reason = terminationReason || null;
-      }
 
       const { error } = await supabase
         .from(tableName)
@@ -98,7 +93,15 @@ export function PartnershipTerminationManager({
       setTerminationReason("");
       onRefresh();
     },
-    onError: () => toast.error("Erreur lors de la demande"),
+    onError: (error: any) => {
+      // Check if error is about pending courses
+      const errorMessage = error?.message || "";
+      if (errorMessage.includes("course(s) en cours")) {
+        toast.error("Impossible de terminer: des courses sont encore en cours. Veuillez les terminer d'abord.");
+      } else {
+        toast.error("Erreur lors de la demande de fin de partenariat");
+      }
+    },
   });
 
   // Confirm final payment
