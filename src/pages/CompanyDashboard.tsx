@@ -51,6 +51,7 @@ import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
 import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReports";
+import { CompanyCourseRequestsManager } from "@/components/company/CompanyCourseRequestsManager";
 import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
 import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,7 @@ export default function CompanyDashboard() {
 
   const menuItems = [
     { id: "overview", icon: Home, label: t('companyDashboard.menu.dashboard'), color: "text-blue-400" },
+    { id: "course-requests", icon: Car, label: "Demandes de courses", color: "text-primary" },
     { id: "reservations", icon: Calendar, label: t('companyDashboard.menu.rides'), color: "text-violet-400" },
     { id: "employees", icon: Users, label: t('companyDashboard.menu.employees'), color: "text-emerald-400" },
     { id: "divider1", type: "divider", label: t('companyDashboard.menu.finances') },
@@ -194,9 +196,11 @@ export default function CompanyDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
-        return <DashboardOverview stats={stats} company={company} onNavigate={handleTabChange} onCreateCourse={handleCreateCourse} />;
+        return <DashboardOverview stats={stats} company={company} onNavigate={handleTabChange} onCreateCourse={() => handleTabChange("course-requests")} />;
+      case "course-requests":
+        return <CompanyCourseRequestsManager companyId={company.id} />;
       case "reservations":
-        return <CompanyCoursesList companyId={company.id} onCreateCourse={() => handleTabChange("new-course")} />;
+        return <CompanyCoursesList companyId={company.id} onCreateCourse={() => handleTabChange("course-requests")} />;
       case "new-course":
         return <CompanyInlineCourseCreation companyId={company.id} onSuccess={() => handleTabChange("reservations")} onSearchNewDriver={() => handleTabChange("drivers")} />;
       case "devis":

@@ -146,3 +146,12 @@ verify_jwt = true
 
 [functions.register-guest-client]
 verify_jwt = false
+
+[functions.generate-company-quotes]
+verify_jwt = true
+
+[functions.send-company-quotes-to-drivers]
+verify_jwt = true
+
+[functions.accept-company-course-quote]
+verify_jwt = true

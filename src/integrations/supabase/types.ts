@@ -691,6 +691,267 @@ export type Database = {
         }
         Relationships: []
       }
+      company_course_quotes: {
+        Row: {
+          base_price: number
+          created_at: string
+          distance_km: number | null
+          distance_price: number
+          driver_id: string
+          driver_response_at: string | null
+          duration_minutes: number | null
+          evening_surcharge: number | null
+          id: string
+          request_id: string
+          selected_at: string | null
+          sent_at: string | null
+          status: string | null
+          time_price: number | null
+          total_price: number
+          updated_at: string
+          weekend_surcharge: number | null
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          distance_km?: number | null
+          distance_price?: number
+          driver_id: string
+          driver_response_at?: string | null
+          duration_minutes?: number | null
+          evening_surcharge?: number | null
+          id?: string
+          request_id: string
+          selected_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          time_price?: number | null
+          total_price: number
+          updated_at?: string
+          weekend_surcharge?: number | null
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          distance_km?: number | null
+          distance_price?: number
+          driver_id?: string
+          driver_response_at?: string | null
+          duration_minutes?: number | null
+          evening_surcharge?: number | null
+          id?: string
+          request_id?: string
+          selected_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          time_price?: number | null
+          total_price?: number
+          updated_at?: string
+          weekend_surcharge?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "company_course_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_course_requests: {
+        Row: {
+          accepted_at: string | null
+          accepted_driver_id: string | null
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          destination_address: string
+          destination_latitude: number | null
+          destination_longitude: number | null
+          employee_id: string | null
+          final_course_id: string | null
+          guest_employee_email: string | null
+          guest_employee_name: string | null
+          guest_employee_phone: string | null
+          id: string
+          is_guest_employee: boolean | null
+          notes: string | null
+          passengers_count: number | null
+          payment_method_requested: string | null
+          pickup_address: string
+          pickup_latitude: number | null
+          pickup_longitude: number | null
+          quotes_generated_at: string | null
+          scheduled_date: string
+          sent_to_drivers_at: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_driver_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          destination_address: string
+          destination_latitude?: number | null
+          destination_longitude?: number | null
+          employee_id?: string | null
+          final_course_id?: string | null
+          guest_employee_email?: string | null
+          guest_employee_name?: string | null
+          guest_employee_phone?: string | null
+          id?: string
+          is_guest_employee?: boolean | null
+          notes?: string | null
+          passengers_count?: number | null
+          payment_method_requested?: string | null
+          pickup_address: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          quotes_generated_at?: string | null
+          scheduled_date: string
+          sent_to_drivers_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_driver_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          destination_address?: string
+          destination_latitude?: number | null
+          destination_longitude?: number | null
+          employee_id?: string | null
+          final_course_id?: string | null
+          guest_employee_email?: string | null
+          guest_employee_name?: string | null
+          guest_employee_phone?: string | null
+          id?: string
+          is_guest_employee?: boolean | null
+          notes?: string | null
+          passengers_count?: number | null
+          payment_method_requested?: string | null
+          pickup_address?: string
+          pickup_latitude?: number | null
+          pickup_longitude?: number | null
+          quotes_generated_at?: string | null
+          scheduled_date?: string
+          sent_to_drivers_at?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_final_course_id_fkey"
+            columns: ["final_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_courses: {
         Row: {
           approved_at: string | null
@@ -1028,6 +1289,85 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_employee_course_invitations: {
+        Row: {
+          company_id: string
+          course_id: string | null
+          created_at: string
+          destination_address: string | null
+          expires_at: string
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string | null
+          id: string
+          is_used: boolean | null
+          pickup_address: string | null
+          request_id: string | null
+          scheduled_date: string | null
+          token: string
+          used_at: string | null
+          used_by_user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          course_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          expires_at?: string
+          guest_email?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          id?: string
+          is_used?: boolean | null
+          pickup_address?: string | null
+          request_id?: string | null
+          scheduled_date?: string | null
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          course_id?: string | null
+          created_at?: string
+          destination_address?: string | null
+          expires_at?: string
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          id?: string
+          is_used?: boolean | null
+          pickup_address?: string | null
+          request_id?: string | null
+          scheduled_date?: string | null
+          token?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_employee_course_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_employee_course_invitations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_employee_course_invitations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "company_course_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -7209,6 +7549,10 @@ export type Database = {
       check_vehicle_documents_status: {
         Args: { _vehicle_id: string }
         Returns: boolean
+      }
+      claim_company_course_quote: {
+        Args: { p_driver_id: string; p_quote_id: string }
+        Returns: Json
       }
       claim_pool_course: {
         Args: { p_claimer_driver_id: string; p_shared_course_id: string }
