@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +30,61 @@ export function QuotesReviewStep({
   setGeneratedQuotes 
 }: QuotesReviewStepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Fetch existing quotes from database when resuming
+  const { data: existingQuotes, isLoading: isLoadingExisting, refetch: refetchExisting } = useQuery({
+    queryKey: ["company-course-quotes", requestId],
+    queryFn: async () => {
+      if (!requestId) return [];
+      
+      const { data, error } = await supabase
+        .from("company_course_quotes")
+        .select(`
+          id,
+          driver_id,
+          total_price,
+          distance_km,
+          duration_minutes,
+          status,
+          driver:drivers(
+            user_id,
+            company_name
+          )
+        `)
+        .eq("request_id", requestId)
+        .not("status", "eq", "cancelled");
+
+      if (error) throw error;
+
+      // Fetch driver profiles
+      const userIds = data?.map(q => q.driver?.user_id).filter(Boolean) || [];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, profile_photo_url")
+        .in("id", userIds);
+
+      return data?.map(q => ({
+        id: q.id,
+        driverId: q.driver_id,
+        driverName: profiles?.find(p => p.id === q.driver?.user_id)?.full_name || q.driver?.company_name || "Chauffeur",
+        driverPhoto: profiles?.find(p => p.id === q.driver?.user_id)?.profile_photo_url,
+        vehicleInfo: "",
+        totalPrice: q.total_price,
+        distanceKm: q.distance_km || 0,
+        durationMinutes: q.duration_minutes || 0,
+        status: q.status,
+        selected: true,
+      })) || [];
+    },
+    enabled: !!requestId && generatedQuotes.length === 0,
+  });
+
+  // Update generatedQuotes when existingQuotes are fetched
+  useEffect(() => {
+    if (existingQuotes && existingQuotes.length > 0 && generatedQuotes.length === 0) {
+      setGeneratedQuotes(existingQuotes);
+    }
+  }, [existingQuotes, generatedQuotes.length, setGeneratedQuotes]);
 
   // Create request and generate quotes
   const generateQuotesMutation = useMutation({
@@ -138,14 +193,19 @@ export function QuotesReviewStep({
   const selectedCount = generatedQuotes.filter(q => q.selected).length;
   const canRegenerate = selectedDrivers.length > 0;
 
-  if (generateQuotesMutation.isPending || isGenerating) {
+  if (generateQuotesMutation.isPending || isGenerating || isLoadingExisting) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <div className="text-center">
-          <p className="font-medium">Génération des devis en cours...</p>
+          <p className="font-medium">
+            {isLoadingExisting ? "Chargement des devis..." : "Génération des devis en cours..."}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Calcul des prix pour {selectedDrivers.length} chauffeur{selectedDrivers.length > 1 ? "s" : ""}
+            {isLoadingExisting 
+              ? "Récupération des devis existants"
+              : `Calcul des prix pour ${selectedDrivers.length} chauffeur${selectedDrivers.length > 1 ? "s" : ""}`
+            }
           </p>
         </div>
       </div>
@@ -174,17 +234,15 @@ export function QuotesReviewStep({
               {generatedQuotes.every(q => q.selected) ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
           )}
-          {canRegenerate && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => generateQuotesMutation.mutate()}
-              disabled={generateQuotesMutation.isPending}
-            >
-              <RefreshCw className="w-4 h-4 mr-1" />
-              Actualiser
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => canRegenerate ? generateQuotesMutation.mutate() : refetchExisting()}
+            disabled={generateQuotesMutation.isPending || isLoadingExisting}
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Actualiser
+          </Button>
         </div>
       </div>
 
