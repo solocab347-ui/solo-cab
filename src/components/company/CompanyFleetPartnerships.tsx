@@ -6,14 +6,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { 
   Loader2, Search, Users, CheckCircle, XCircle, 
-  Clock, Send, Inbox, Ban, Info, Unlock, Lock, MapPin, Handshake
+  Clock, Send, Inbox, Ban, Info, Unlock, Lock, MapPin, Handshake,
+  ChevronDown, ChevronUp, Euro, CreditCard, RefreshCw, EyeOff
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CompanyFleetSearch } from "./CompanyFleetSearch";
+import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
+import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
+
+const PAYMENT_METHODS = [
+  { value: "card", label: "Carte bancaire", icon: "💳" },
+  { value: "payment_link", label: "Lien de paiement", icon: "🔗" },
+  { value: "cash", label: "Espèces", icon: "💵" },
+  { value: "bank_transfer", label: "Virement bancaire", icon: "🏦" },
+];
+
+const PAYMENT_FREQUENCIES = [
+  { value: "per_course", label: "À la course", description: "Paiement après chaque course" },
+  { value: "weekly", label: "Hebdomadaire", description: "Paiement chaque semaine" },
+  { value: "monthly", label: "Mensuel", description: "Paiement chaque mois" },
+  { value: "mixed", label: "Mixte", description: "Selon l'accord" },
+];
 
 interface CompanyFleetPartnershipsProps {
   companyId: string;
@@ -25,9 +43,174 @@ interface CompanyFleetPartnershipsProps {
   };
 }
 
+// Active Fleet Agreement Card Component
+function ActiveFleetAgreementCard({ 
+  agreement, 
+  companyId, 
+  getStatusBadge, 
+  getDayLabel,
+  onRefresh,
+  onBlock
+}: { 
+  agreement: any; 
+  companyId: string;
+  getStatusBadge: (status: string, proposedBy: string) => React.ReactNode;
+  getDayLabel: (day: number, frequency: string) => string;
+  onRefresh: () => void;
+  onBlock: (agreement: any) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const fetchPayments = async () => {
+    if (payments.length > 0) return;
+    setLoadingPayments(true);
+    try {
+      const { data } = await supabase
+        .from("company_fleet_payments")
+        .select("*")
+        .eq("agreement_id", agreement.id)
+        .order("created_at", { ascending: false });
+      setPayments(data || []);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const handleExpand = (isOpen: boolean) => {
+    setExpanded(isOpen);
+    if (isOpen) fetchPayments();
+  };
+
+  return (
+    <Card className="border-green-200">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex gap-3">
+            <Avatar className="w-14 h-14">
+              <AvatarImage src={agreement.fleet_manager?.logo_url} />
+              <AvatarFallback>
+                <Users className="w-7 h-7" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h4 className="font-semibold text-lg">{agreement.fleet_manager?.company_name}</h4>
+              {agreement.fleet_manager?.address && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {agreement.fleet_manager.address}
+                </p>
+              )}
+              {agreement.fleet_manager?.description && (
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                  {agreement.fleet_manager.description}
+                </p>
+              )}
+              <p className="text-xs text-green-600 mt-2">
+                Partenariat depuis le {format(new Date(agreement.accepted_at || agreement.created_at), "d MMM yyyy", { locale: fr })}
+              </p>
+            </div>
+          </div>
+          {getStatusBadge(agreement.status, agreement.proposed_by)}
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div className="p-3 bg-muted rounded-lg">
+            <h5 className="font-medium mb-2 flex items-center gap-1">
+              <CreditCard className="w-3 h-3" />
+              Paiements
+            </h5>
+            <div className="flex flex-wrap gap-1">
+              {agreement.payment_methods?.map((method: string) => (
+                <Badge key={method} variant="secondary" className="text-xs">
+                  {PAYMENT_METHODS.find((m) => m.value === method)?.icon}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div className="p-3 bg-muted rounded-lg">
+            <h5 className="font-medium mb-2 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Fréquence
+            </h5>
+            <p className="text-xs">
+              {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label || "Non défini"}
+              {agreement.payment_day && ` - ${getDayLabel(agreement.payment_day, agreement.payment_frequency)}`}
+            </p>
+          </div>
+        </div>
+
+        {(agreement.total_amount > 0) && (
+          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+            <div className="flex justify-between text-sm">
+              <span className="font-medium text-yellow-800 dark:text-yellow-200 flex items-center gap-1">
+                <Euro className="w-4 h-4" />
+                Total facturé: {agreement.total_amount?.toFixed(2) || "0.00"}€
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Expandable section for payment management */}
+        <Collapsible open={expanded} onOpenChange={handleExpand} className="mt-4">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full">
+              {expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
+              Gérer le partenariat
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4 space-y-4">
+            {loadingPayments ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Historique des paiements */}
+                {payments.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-sm">Historique des paiements</h5>
+                    {payments.slice(0, 3).map((payment: any) => (
+                      <div key={payment.id} className="p-2 bg-muted rounded-lg text-sm flex justify-between items-center">
+                        <span>{payment.amount?.toFixed(2)}€</span>
+                        <Badge variant={payment.status === "received" ? "default" : "secondary"}>
+                          {payment.status === "received" ? "Reçu" : payment.status === "sent" ? "Envoyé" : payment.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Actions de gestion */}
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => onBlock(agreement)}
+                  >
+                    <Ban className="w-4 h-4 mr-2" />
+                    Bloquer ce gestionnaire
+                  </Button>
+                </div>
+              </>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyFleetPartnershipsProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("search");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
 
   // Fetch existing fleet agreements
   const { data: agreements, isLoading: loadingAgreements } = useQuery({
@@ -76,6 +259,30 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
     },
   });
 
+  // Block fleet mutation
+  const blockFleet = useMutation({
+    mutationFn: async ({ agreementId, reason }: { agreementId: string; reason: string }) => {
+      const { error } = await supabase
+        .from("company_fleet_agreements")
+        .update({
+          status: "blocked",
+          notes: reason ? `Motif de blocage: ${reason}` : null,
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Gestionnaire de flotte bloqué");
+      queryClient.invalidateQueries({ queryKey: ["company-fleet-agreements-full"] });
+      setShowBlockDialog(false);
+      setSelectedAgreement(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors du blocage");
+    },
+  });
+
   // Accept fleet proposal
   const acceptProposal = useMutation({
     mutationFn: async (agreementId: string) => {
@@ -102,25 +309,112 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
 
   // Reject fleet proposal
   const rejectProposal = useMutation({
+    mutationFn: async ({ agreementId, reason, block }: { agreementId: string; reason: string; block: boolean }) => {
+      const updateData: any = {
+        status: block ? "blocked" : "rejected",
+        rejected_at: new Date().toISOString(),
+        rejection_reason: reason,
+      };
+
+      const { error } = await supabase
+        .from("company_fleet_agreements")
+        .update(updateData)
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(variables.block ? "Proposition refusée et gestionnaire bloqué" : "Proposition refusée");
+      queryClient.invalidateQueries({ queryKey: ["company-fleet-agreements-full"] });
+      setShowRejectDialog(false);
+      setSelectedAgreement(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors du refus");
+    },
+  });
+
+  // Cancel sent proposal mutation
+  const cancelProposal = useMutation({
     mutationFn: async (agreementId: string) => {
       const { error } = await supabase
         .from("company_fleet_agreements")
+        .delete()
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Proposition annulée");
+      queryClient.invalidateQueries({ queryKey: ["company-fleet-agreements-full"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'annulation");
+    },
+  });
+
+  // Relaunch rejected proposal
+  const relaunchProposal = useMutation({
+    mutationFn: async ({ agreementId, message }: { agreementId: string; message?: string }) => {
+      const { error } = await supabase
+        .from("company_fleet_agreements")
         .update({
-          status: "rejected",
-          rejected_at: new Date().toISOString(),
+          status: "pending",
+          proposed_by: "company",
+          proposal_message: message,
+          rejected_at: null,
+          rejection_reason: null,
+          created_at: new Date().toISOString(),
         })
         .eq("id", agreementId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Proposition refusée");
+      toast.success("Proposition relancée avec succès");
       queryClient.invalidateQueries({ queryKey: ["company-fleet-agreements-full"] });
     },
     onError: () => {
-      toast.error("Erreur lors du refus");
+      toast.error("Erreur lors de la relance");
     },
   });
+
+  const handleReject = (reason: string, block: boolean) => {
+    if (selectedAgreement) {
+      rejectProposal.mutate({ 
+        agreementId: selectedAgreement.id, 
+        reason, 
+        block 
+      });
+    }
+  };
+
+  const handleBlock = (reason: string) => {
+    if (selectedAgreement) {
+      blockFleet.mutate({ 
+        agreementId: selectedAgreement.id, 
+        reason 
+      });
+    }
+  };
+
+  const openBlockDialog = (agreement: any) => {
+    setSelectedAgreement(agreement);
+    setShowBlockDialog(true);
+  };
+
+  const openRejectDialog = (agreement: any) => {
+    setSelectedAgreement(agreement);
+    setShowRejectDialog(true);
+  };
+
+  const getDayLabel = (day: number, frequency: string) => {
+    if (frequency === "weekly") {
+      const days = ["", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+      return days[day];
+    }
+    return `le ${day} du mois`;
+  };
 
   // Filter agreements by status
   const receivedPending = agreements?.filter(
@@ -339,8 +633,8 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                   </div>
                   
                   {agreement.proposal_message && (
-                    <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                      {agreement.proposal_message}
+                    <p className="text-sm text-muted-foreground mt-3 p-2 bg-muted rounded-lg">
+                      "{agreement.proposal_message}"
                     </p>
                   )}
                   
@@ -348,8 +642,7 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => rejectProposal.mutate(agreement.id)}
-                      disabled={rejectProposal.isPending}
+                      onClick={() => openRejectDialog(agreement)}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       Refuser
@@ -415,6 +708,28 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                     </div>
                     {getStatusBadge(agreement.status, agreement.proposed_by)}
                   </div>
+                  
+                  {agreement.proposal_message && (
+                    <p className="text-sm text-muted-foreground mt-3 p-2 bg-muted rounded-lg">
+                      "{agreement.proposal_message}"
+                    </p>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => cancelProposal.mutate(agreement.id)}
+                    disabled={cancelProposal.isPending}
+                  >
+                    {cancelProposal.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Annuler la proposition
+                      </>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             ))
@@ -436,38 +751,15 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
             </Card>
           ) : (
             activeAgreements.map((agreement) => (
-              <Card key={agreement.id} className="border-green-200">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-3">
-                      <Avatar className="w-14 h-14">
-                        <AvatarImage src={agreement.fleet_manager?.logo_url} />
-                        <AvatarFallback>
-                          <Users className="w-7 h-7" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold text-lg">{agreement.fleet_manager?.company_name}</h4>
-                        {agreement.fleet_manager?.address && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {agreement.fleet_manager.address}
-                          </p>
-                        )}
-                        {agreement.fleet_manager?.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {agreement.fleet_manager.description}
-                          </p>
-                        )}
-                        <p className="text-xs text-green-600 mt-2">
-                          Partenariat depuis le {format(new Date(agreement.accepted_at || agreement.created_at), "d MMM yyyy", { locale: fr })}
-                        </p>
-                      </div>
-                    </div>
-                    {getStatusBadge(agreement.status, agreement.proposed_by)}
-                  </div>
-                </CardContent>
-              </Card>
+              <ActiveFleetAgreementCard
+                key={agreement.id}
+                agreement={agreement}
+                companyId={companyId}
+                getStatusBadge={getStatusBadge}
+                getDayLabel={getDayLabel}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ["company-fleet-agreements-full"] })}
+                onBlock={openBlockDialog}
+              />
             ))
           )}
         </div>
@@ -511,6 +803,11 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               {agreement.fleet_manager.address}
+                            </p>
+                          )}
+                          {agreement.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {agreement.notes}
                             </p>
                           )}
                           <Badge variant="destructive" className="mt-2">
@@ -560,35 +857,83 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
               {rejectedAgreements.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-medium text-muted-foreground">Refusés</h3>
-                  {rejectedAgreements.map((agreement) => (
-                    <Card key={agreement.id} className="border-destructive/30">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex gap-3">
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage src={agreement.fleet_manager?.logo_url} />
-                              <AvatarFallback>
-                                <Users className="w-6 h-6" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-semibold">{agreement.fleet_manager?.company_name}</h4>
-                              {agreement.fleet_manager?.address && (
-                                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <MapPin className="w-3 h-3" />
-                                  {agreement.fleet_manager.address}
-                                </p>
+                  {rejectedAgreements.map((agreement) => {
+                    const isMyProposal = agreement.proposed_by === "company";
+                    const rejectedDate = new Date(agreement.rejected_at || agreement.updated_at);
+                    
+                    return (
+                      <Card key={agreement.id} className="border-destructive/30">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-4">
+                            <div className="flex gap-3">
+                              <Avatar className="w-14 h-14 border-2 border-destructive/20">
+                                <AvatarImage src={agreement.fleet_manager?.logo_url} />
+                                <AvatarFallback className="bg-destructive/10">
+                                  <Users className="w-7 h-7 text-destructive" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h4 className="font-semibold text-lg">{agreement.fleet_manager?.company_name}</h4>
+                                {agreement.fleet_manager?.address && (
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {agreement.fleet_manager.address}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {getStatusBadge(agreement.status, agreement.proposed_by)}
+                          </div>
+
+                          {/* Informations détaillées sur le refus */}
+                          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Type:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {isMyProposal ? "Votre proposition" : "Proposition reçue"}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className="text-muted-foreground">Refusée le:</span>
+                                <span className="font-medium">
+                                  {format(rejectedDate, "d MMM yyyy", { locale: fr })}
+                                </span>
+                              </div>
+                              {agreement.rejection_reason && (
+                                <div className="flex items-start gap-2 sm:col-span-2">
+                                  <XCircle className="w-3.5 h-3.5 text-destructive mt-0.5" />
+                                  <span className="font-medium text-destructive">
+                                    Motif: {agreement.rejection_reason}
+                                  </span>
+                                </div>
                               )}
-                              <p className="text-xs text-destructive mt-1">
-                                Refusé le {format(new Date(agreement.rejected_at || agreement.updated_at), "d MMM yyyy", { locale: fr })}
-                              </p>
                             </div>
                           </div>
-                          {getStatusBadge(agreement.status, agreement.proposed_by)}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+
+                          {/* Bouton relancer si c'était notre proposition */}
+                          {isMyProposal && (
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => relaunchProposal.mutate({ agreementId: agreement.id })}
+                              disabled={relaunchProposal.isPending}
+                            >
+                              {relaunchProposal.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <RefreshCw className="w-4 h-4 mr-2" />
+                                  Relancer la proposition
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
               
@@ -611,6 +956,11 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                               <p className="text-xs text-muted-foreground">
                                 {agreement.termination_reason || "Partenariat terminé"}
                               </p>
+                              {agreement.terminated_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  Terminé le {format(new Date(agreement.terminated_at), "d MMM yyyy", { locale: fr })}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <Badge variant="outline">{agreement.status}</Badge>
@@ -624,6 +974,25 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
           )}
         </div>
       )}
+
+      {/* Dialogs */}
+      <PartnershipRejectDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        onReject={async (reason, block) => handleReject(reason, block)}
+        partnerName={selectedAgreement?.fleet_manager?.company_name || "Gestionnaire"}
+        partnerType="driver"
+        isLoading={rejectProposal.isPending}
+      />
+
+      <BlockReasonDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        onBlock={handleBlock}
+        partnerName={selectedAgreement?.fleet_manager?.company_name || "Gestionnaire"}
+        partnerType="driver"
+        isLoading={blockFleet.isPending}
+      />
     </div>
   );
 }
