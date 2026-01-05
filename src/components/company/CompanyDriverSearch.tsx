@@ -18,8 +18,11 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase, EyeOff
+  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase, EyeOff, AlertTriangle, XCircle, Calendar
 } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon } from "@/lib/vehicleEquipmentDisplay";
 import { getServiceLabel, getServiceIcon } from "@/lib/serviceLabels";
@@ -284,13 +287,13 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     },
   });
 
-  // Check existing proposals and blocked drivers
+  // Check existing proposals and blocked drivers - inclut les détails du rejet
   const { data: existingProposals } = useQuery({
     queryKey: ["company-driver-proposals", companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_driver_agreements")
-        .select("driver_id, status, company_blocked_driver, driver_blocked_company")
+        .select("driver_id, status, company_blocked_driver, driver_blocked_company, proposed_by, rejected_at, rejection_reason")
         .eq("company_id", companyId);
 
       if (error) throw error;
@@ -365,6 +368,17 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
 
   const wasRejected = (driverId: string) => {
     return existingProposals?.find((p) => p.driver_id === driverId)?.status === 'rejected';
+  };
+
+  const getRejectionDetails = (driverId: string) => {
+    const proposal = existingProposals?.find((p) => p.driver_id === driverId && p.status === 'rejected');
+    if (!proposal) return null;
+    return {
+      rejectedAt: proposal.rejected_at,
+      rejectionReason: proposal.rejection_reason,
+      proposedBy: proposal.proposed_by,
+      driverBlockedCompany: proposal.driver_blocked_company
+    };
   };
 
   const handleOpenProposal = (driver: any) => {
@@ -572,9 +586,11 @@ ${company?.company_name || ""}`;
           {filteredDrivers.map((driver: any) => {
             const proposalStatus = getProposalStatus(driver.id);
             const hasProposal = !!proposalStatus;
+            const isRejected = wasRejected(driver.id);
+            const rejectionDetails = getRejectionDetails(driver.id);
 
             return (
-              <Card key={driver.id} className={hasProposal ? "opacity-75" : ""}>
+              <Card key={driver.id} className={hasProposal ? "opacity-75" : isRejected ? "border-destructive/40" : ""}>
                 <CardContent className="p-4">
                   {/* Location badge at top */}
                   {driver.working_sectors?.length > 0 && (
@@ -703,6 +719,32 @@ ${company?.company_name || ""}`;
                     </div>
                   )}
 
+                  {/* Affichage des détails de refus */}
+                  {isRejected && rejectionDetails && (
+                    <Alert variant="destructive" className="mb-4 py-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs space-y-1">
+                        <div className="font-semibold">
+                          Refusé par le chauffeur
+                          {rejectionDetails.rejectedAt && (
+                            <span className="font-normal text-muted-foreground ml-1">
+                              le {format(new Date(rejectionDetails.rejectedAt), "d MMM yyyy", { locale: fr })}
+                            </span>
+                          )}
+                        </div>
+                        {rejectionDetails.rejectionReason && (
+                          <div className="text-xs italic">« {rejectionDetails.rejectionReason} »</div>
+                        )}
+                        {rejectionDetails.driverBlockedCompany && (
+                          <Badge variant="outline" className="text-xs border-destructive text-destructive mt-1">
+                            <EyeOff className="w-3 h-3 mr-1" />
+                            Vous a bloqué
+                          </Badge>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -715,15 +757,22 @@ ${company?.company_name || ""}`;
                     <Button
                       className="flex-1"
                       onClick={() => handleOpenProposal(driver)}
-                      disabled={hasProposal}
+                      disabled={hasProposal || rejectionDetails?.driverBlockedCompany}
                     >
                       {hasProposal ? (
                         "Proposition envoyée"
-                      ) : wasRejected(driver.id) ? (
-                        <>
-                          <Send className="w-4 h-4 mr-1" />
-                          Relancer
-                        </>
+                      ) : isRejected ? (
+                        rejectionDetails?.driverBlockedCompany ? (
+                          <>
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Bloqué
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="w-4 h-4 mr-1" />
+                            Relancer
+                          </>
+                        )
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-1" />
