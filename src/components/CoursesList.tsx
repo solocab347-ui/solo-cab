@@ -33,6 +33,7 @@ import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelec
 import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInCoursesList";
 import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartnerCoursesList";
 import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCompanyQuotesInCoursesList";
+import { CourseClientContact } from "@/components/driver/CourseClientContact";
 
 interface CoursesListProps {
   driverId: string;
@@ -1863,6 +1864,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <Users className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                       {course.passengers_count} passager(s)
                     </div>
+                    {/* Contact du passager */}
+                    <CourseClientContact course={course} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2168,18 +2171,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.passengers_count} passager(s)
                     </div>
                     {/* Contact du client/passager */}
-                    {getClientPhone(course) && (
-                      <div className="flex items-center gap-2 mt-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
-                        <Phone className="w-4 h-4 text-primary" />
-                        <a 
-                          href={`tel:${getClientPhone(course)}`} 
-                          className="text-sm font-medium text-primary hover:underline"
-                        >
-                          {getClientPhone(course)}
-                        </a>
-                        <span className="text-xs text-muted-foreground">- Appeler le passager</span>
-                      </div>
-                    )}
+                    <CourseClientContact course={course} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2432,9 +2424,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <p className="text-muted-foreground">{course.destination_address}</p>
                       </div>
                     </div>
+                    {/* Contact du passager */}
+                    <CourseClientContact course={course} />
                   </div>
-
-                  {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
                   {(() => {
                     const facture = course.factures?.[0];
                     const devis = course.devis?.[0];
@@ -2588,6 +2580,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <p className="text-muted-foreground">{course.destination_address}</p>
                       </div>
                     </div>
+                    {/* Contact du passager */}
+                    <CourseClientContact course={course} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
