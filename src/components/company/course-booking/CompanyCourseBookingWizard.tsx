@@ -108,21 +108,23 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
 
   const [selectedDrivers, setSelectedDrivers] = useState<SelectedDriver[]>([]);
   
-  // Pre-load generated quotes if resuming from quotes step
+  // Pre-load generated quotes if resuming from quotes or confirmation step
   const [generatedQuotes, setGeneratedQuotes] = useState<GeneratedQuote[]>(() => {
-    if (existingRequest?.quotesWithProfiles && resumeStep === "quotes") {
-      return existingRequest.quotesWithProfiles.map((q: any) => ({
-        id: q.id,
-        driverId: q.driver_id,
-        driverName: q.profile?.full_name || q.driver?.company_name || "Chauffeur",
-        driverPhoto: q.profile?.profile_photo_url,
-        vehicleInfo: "",
-        totalPrice: q.total_price,
-        distanceKm: q.distance_km || 0,
-        durationMinutes: q.duration_minutes || 0,
-        status: q.status || "pending",
-        selected: false,
-      }));
+    if (existingRequest?.quotesWithProfiles && (resumeStep === "quotes" || resumeStep === "confirmation")) {
+      return existingRequest.quotesWithProfiles
+        .filter((q: any) => q.status !== "cancelled" && q.status !== "refused")
+        .map((q: any) => ({
+          id: q.id,
+          driverId: q.driver_id,
+          driverName: q.profile?.full_name || q.driver?.company_name || "Chauffeur",
+          driverPhoto: q.profile?.profile_photo_url,
+          vehicleInfo: "",
+          totalPrice: q.total_price,
+          distanceKm: q.distance_km || 0,
+          durationMinutes: q.duration_minutes || 0,
+          status: q.status || "pending",
+          selected: true, // Pre-select existing quotes
+        }));
     }
     return [];
   });

@@ -110,9 +110,9 @@ export function QuotesReviewStep({
     },
   });
 
-  // Auto-generate on mount if no quotes yet
+  // Auto-generate on mount if no quotes yet AND we have selected drivers
   useEffect(() => {
-    if (generatedQuotes.length === 0 && !isGenerating && !generateQuotesMutation.isPending) {
+    if (generatedQuotes.length === 0 && selectedDrivers.length > 0 && !isGenerating && !generateQuotesMutation.isPending) {
       setIsGenerating(true);
       generateQuotesMutation.mutate();
     }
@@ -136,6 +136,7 @@ export function QuotesReviewStep({
   };
 
   const selectedCount = generatedQuotes.filter(q => q.selected).length;
+  const canRegenerate = selectedDrivers.length > 0;
 
   if (generateQuotesMutation.isPending || isGenerating) {
     return (
@@ -173,15 +174,17 @@ export function QuotesReviewStep({
               {generatedQuotes.every(q => q.selected) ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => generateQuotesMutation.mutate()}
-            disabled={generateQuotesMutation.isPending}
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Actualiser
-          </Button>
+          {canRegenerate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => generateQuotesMutation.mutate()}
+              disabled={generateQuotesMutation.isPending}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Actualiser
+            </Button>
+          )}
         </div>
       </div>
 
@@ -256,14 +259,21 @@ export function QuotesReviewStep({
       ) : (
         <div className="text-center py-8">
           <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">Aucun devis généré</p>
-          <Button
-            variant="outline"
-            onClick={() => generateQuotesMutation.mutate()}
-            className="mt-4"
-          >
-            Réessayer
-          </Button>
+          <p className="text-muted-foreground">
+            {selectedDrivers.length === 0 
+              ? "Aucun chauffeur sélectionné. Retournez à l'étape précédente pour sélectionner des chauffeurs."
+              : "Aucun devis généré"
+            }
+          </p>
+          {canRegenerate && (
+            <Button
+              variant="outline"
+              onClick={() => generateQuotesMutation.mutate()}
+              className="mt-4"
+            >
+              Réessayer
+            </Button>
+          )}
         </div>
       )}
 
