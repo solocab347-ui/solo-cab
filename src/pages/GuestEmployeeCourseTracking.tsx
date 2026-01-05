@@ -92,12 +92,10 @@ export default function GuestEmployeeCourseTracking() {
       if (!invitation) throw new Error("Lien invalide ou expiré");
 
       const result = invitation as any;
-      
-      console.log("Invitation loaded:", { request_id: result.request_id });
 
       // Fetch request data separately to avoid join issues
       if (result.request_id) {
-        const { data: requestData, error: reqError } = await supabase
+        const { data: requestData } = await supabase
           .from("company_course_requests")
           .select(`
             id, scheduled_date, pickup_address, destination_address, passengers_count, 
@@ -106,21 +104,17 @@ export default function GuestEmployeeCourseTracking() {
           .eq("id", result.request_id)
           .maybeSingle();
         
-        console.log("Request data loaded:", { requestData, error: reqError });
-        
         if (requestData) {
           result.request = requestData;
 
           // Fetch quotes for this request
-          const { data: quotesData, error: quotesError } = await supabase
+          const { data: quotesData } = await supabase
             .from("company_course_quotes")
             .select(`
               id, status, total_price, distance_km, duration_minutes, driver_response_at,
               driver:drivers(id, user_id)
             `)
             .eq("request_id", result.request_id);
-          
-          console.log("Quotes loaded:", { quotesData, error: quotesError });
           
           result.request.quotes = quotesData || [];
         }
