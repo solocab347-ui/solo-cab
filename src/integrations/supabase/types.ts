@@ -762,6 +762,7 @@ export type Database = {
           company_id: string
           company_signed: boolean | null
           company_signed_at: string | null
+          contract_generated_at: string | null
           created_at: string
           credit_limit: number | null
           discount_percentage: number | null
@@ -783,6 +784,13 @@ export type Database = {
           payment_day: number | null
           payment_frequency: string
           payment_methods: string[]
+          pending_modification: boolean | null
+          pending_modification_at: string | null
+          pending_modification_by: string | null
+          pending_modification_message: string | null
+          pending_new_payment_day: number | null
+          pending_new_payment_frequency: string | null
+          pending_new_payment_methods: string[] | null
           proposed_by: string
           rejected_at: string | null
           rejection_reason: string | null
@@ -805,6 +813,7 @@ export type Database = {
           company_id: string
           company_signed?: boolean | null
           company_signed_at?: string | null
+          contract_generated_at?: string | null
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
@@ -826,6 +835,13 @@ export type Database = {
           payment_day?: number | null
           payment_frequency?: string
           payment_methods?: string[]
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_message?: string | null
+          pending_new_payment_day?: number | null
+          pending_new_payment_frequency?: string | null
+          pending_new_payment_methods?: string[] | null
           proposed_by?: string
           rejected_at?: string | null
           rejection_reason?: string | null
@@ -848,6 +864,7 @@ export type Database = {
           company_id?: string
           company_signed?: boolean | null
           company_signed_at?: string | null
+          contract_generated_at?: string | null
           created_at?: string
           credit_limit?: number | null
           discount_percentage?: number | null
@@ -869,6 +886,13 @@ export type Database = {
           payment_day?: number | null
           payment_frequency?: string
           payment_methods?: string[]
+          pending_modification?: boolean | null
+          pending_modification_at?: string | null
+          pending_modification_by?: string | null
+          pending_modification_message?: string | null
+          pending_new_payment_day?: number | null
+          pending_new_payment_frequency?: string | null
+          pending_new_payment_methods?: string[] | null
           proposed_by?: string
           rejected_at?: string | null
           rejection_reason?: string | null

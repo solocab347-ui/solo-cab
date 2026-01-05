@@ -16,7 +16,8 @@ import { toast } from "sonner";
 import { 
   Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, 
   AlertCircle, Eye, EyeOff, Car, Star, Settings, Search,
-  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp, Users, Info, Unlock, Lock
+  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp, Users, Info, Unlock, Lock,
+  FileText, Edit, AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -28,6 +29,9 @@ import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDi
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
 import { RelaunchPartnershipDialog } from "./RelaunchPartnershipDialog";
 import { notificationService } from "@/lib/notificationService";
+import { CompanyDriverSignatureConfirmation } from "./CompanyDriverSignatureConfirmation";
+import { ModifyCompanyDriverAgreementDialog } from "./ModifyCompanyDriverAgreementDialog";
+import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
 
 interface CompanyDriverAgreementsProps {
   companyId: string;
@@ -64,6 +68,15 @@ function ActiveAgreementCard({
   const [expanded, setExpanded] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+  const [showModifyDialog, setShowModifyDialog] = useState(false);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [signing, setSigning] = useState(false);
+
+  const needsCompanySignature = !agreement.company_signed;
+  const needsDriverSignature = !agreement.driver_signed;
+  const hasPendingModification = agreement.pending_modification;
+  const bothSigned = agreement.company_signed && agreement.driver_signed;
 
   const fetchPayments = async () => {
     if (payments.length > 0) return;
@@ -85,6 +98,43 @@ function ActiveAgreementCard({
   const handleExpand = (isOpen: boolean) => {
     setExpanded(isOpen);
     if (isOpen) fetchPayments();
+  };
+
+  const handleSignContract = async () => {
+    setSigning(true);
+    try {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          company_signed: true,
+          company_signed_at: new Date().toISOString(),
+          contract_generated_at: new Date().toISOString(),
+        })
+        .eq("id", agreement.id);
+
+      if (error) throw error;
+
+      // Notify driver
+      if (agreement.driver?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: agreement.driver.user_id,
+          title: "✅ Contrat signé",
+          message: "L'entreprise a signé le contrat de partenariat.",
+          type: "success",
+          link: "/driver-dashboard?tab=sharing",
+          is_read: false,
+        });
+      }
+
+      toast.success("Contrat signé avec succès !");
+      setShowSignatureDialog(false);
+      onRefresh();
+    } catch (error) {
+      console.error("Error signing contract:", error);
+      toast.error("Erreur lors de la signature");
+    } finally {
+      setSigning(false);
+    }
   };
 
   return (
@@ -121,6 +171,34 @@ function ActiveAgreementCard({
           </div>
         </div>
         
+        {/* Contract Status Alerts */}
+        {needsCompanySignature && (
+          <Alert className="mt-3 border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+              Vous devez signer le contrat pour activer ce partenariat.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!needsCompanySignature && needsDriverSignature && (
+          <Alert className="mt-3 border-blue-500/50 bg-blue-500/10">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+              En attente de la signature du chauffeur.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasPendingModification && (
+          <Alert className="mt-3 border-purple-500/50 bg-purple-500/10">
+            <Edit className="h-4 w-4 text-purple-600" />
+            <AlertDescription className="text-sm text-purple-700 dark:text-purple-300">
+              Une modification du contrat est en attente.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
           <div className="p-3 bg-muted rounded-lg">
             <h5 className="font-medium mb-2 flex items-center gap-1">
@@ -147,6 +225,18 @@ function ActiveAgreementCard({
           </div>
         </div>
 
+        {/* Signature Status */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <Badge variant={agreement.company_signed ? "default" : "outline"} className={agreement.company_signed ? "bg-green-500" : ""}>
+            {agreement.company_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+            Entreprise: {agreement.company_signed ? "Signé" : "En attente"}
+          </Badge>
+          <Badge variant={agreement.driver_signed ? "default" : "outline"} className={agreement.driver_signed ? "bg-green-500" : ""}>
+            {agreement.driver_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+            Chauffeur: {agreement.driver_signed ? "Signé" : "En attente"}
+          </Badge>
+        </div>
+
         {(agreement.outstanding_balance > 0) && (
           <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
             <div className="flex justify-between text-sm">
@@ -157,6 +247,41 @@ function ActiveAgreementCard({
             </div>
           </div>
         )}
+
+        {/* Quick Actions */}
+        <div className="mt-4 flex gap-2 flex-wrap">
+          {needsCompanySignature && (
+            <Button
+              onClick={() => setShowSignatureDialog(true)}
+              className="bg-green-600 hover:bg-green-700"
+              size="sm"
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Signer le contrat
+            </Button>
+          )}
+          
+          {bothSigned && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowContractDialog(true)}
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                Voir le contrat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowModifyDialog(true)}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Modifier
+              </Button>
+            </>
+          )}
+        </div>
 
         {/* Expandable section for payment management */}
         <Collapsible open={expanded} onOpenChange={handleExpand} className="mt-4">
@@ -203,6 +328,75 @@ function ActiveAgreementCard({
           </CollapsibleContent>
         </Collapsible>
       </CardContent>
+
+      {/* Signature Dialog */}
+      <CompanyDriverSignatureConfirmation
+        open={showSignatureDialog}
+        onOpenChange={setShowSignatureDialog}
+        partnerName={agreement.driverProfile?.full_name || "Chauffeur"}
+        partnerType="company"
+        paymentFrequency={agreement.payment_frequency}
+        paymentMethods={agreement.payment_methods}
+        onConfirmSign={handleSignContract}
+        signing={signing}
+      />
+
+      {/* Modify Dialog */}
+      <ModifyCompanyDriverAgreementDialog
+        open={showModifyDialog}
+        onOpenChange={setShowModifyDialog}
+        agreement={{
+          id: agreement.id,
+          partner_id: agreement.driver_id,
+          partner_name: agreement.driverProfile?.full_name || "Chauffeur",
+          payment_frequency: agreement.payment_frequency,
+          payment_methods: agreement.payment_methods || [],
+          payment_day: agreement.payment_day,
+          pending_modification: agreement.pending_modification,
+          pending_new_payment_frequency: agreement.pending_new_payment_frequency,
+          pending_new_payment_methods: agreement.pending_new_payment_methods,
+          pending_new_payment_day: agreement.pending_new_payment_day,
+          pending_modification_by: agreement.pending_modification_by,
+          pending_modification_message: agreement.pending_modification_message,
+        }}
+        currentPartyType="company"
+        currentPartyId={companyId}
+        onSuccess={onRefresh}
+      />
+
+      {/* Contract View Dialog */}
+      <UniversalPartnershipContract
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
+        partnershipId={agreement.id}
+        partnershipType="company_driver"
+        status={agreement.status}
+        createdAt={agreement.created_at}
+        acceptedAt={agreement.accepted_at}
+        terminatedAt={agreement.terminated_at}
+        party1={{
+          name: "Votre entreprise",
+          company: agreement.company_name,
+        }}
+        party2={{
+          name: agreement.driverProfile?.full_name || "Chauffeur",
+          company: agreement.driver?.company_name,
+          vehicle: `${agreement.driver?.vehicle_brand || ''} ${agreement.driver?.vehicle_model || ''}`.trim() || undefined,
+          rating: agreement.driver?.rating,
+          totalRides: agreement.driver?.total_rides,
+          photo: agreement.driverProfile?.profile_photo_url,
+        }}
+        terms={{
+          paymentFrequency: agreement.payment_frequency,
+          paymentDay: agreement.payment_day,
+        }}
+        signatures={{
+          party1Signed: agreement.company_signed || false,
+          party1SignedAt: agreement.company_signed_at,
+          party2Signed: agreement.driver_signed || false,
+          party2SignedAt: agreement.driver_signed_at,
+        }}
+      />
     </Card>
   );
 }
