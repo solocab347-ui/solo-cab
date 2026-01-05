@@ -7175,7 +7175,7 @@ export type Database = {
         Returns: boolean
       }
       claim_pool_course: {
-        Args: { p_pool_group_id: string; p_receiver_driver_id: string }
+        Args: { p_claimer_driver_id: string; p_shared_course_id: string }
         Returns: Json
       }
       claim_pooled_course: {
