@@ -825,9 +825,9 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <h4 className="font-semibold text-lg">
-                              {driverProfile?.full_name || "Chauffeur"}
+                              {driverProfile?.full_name || driver?.company_name || "Chauffeur VTC"}
                             </h4>
-                            {driver?.company_name && (
+                            {driver?.company_name && driverProfile?.full_name && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Car className="w-3.5 h-3.5" />
                                 {driver.company_name}
@@ -908,26 +908,6 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                           )}
                         </div>
                       </div>
-                      
-                      {/* Motif du blocage si existant */}
-                      {blockReason && (
-                        <Alert className="mt-3 bg-destructive/5 border-destructive/20">
-                          <AlertCircle className="h-4 w-4 text-destructive" />
-                          <AlertDescription className="text-sm">
-                            <span className="font-medium">Motif du blocage:</span> {blockReason}
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      
-                      {/* Motif de refus initial si existant */}
-                      {agreement.rejection_reason && !blockReason && (
-                        <Alert className="mt-3 bg-muted/50">
-                          <Info className="h-4 w-4" />
-                          <AlertDescription className="text-sm">
-                            <span className="font-medium">Motif initial du refus:</span> {agreement.rejection_reason}
-                          </AlertDescription>
-                        </Alert>
-                      )}
                     </CardContent>
                   </Card>
                 );
@@ -980,9 +960,9 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                               </Avatar>
                               <div className="min-w-0 flex-1">
                                 <h4 className="font-semibold text-lg">
-                                  {driverProfile?.full_name || "Chauffeur"}
+                                  {driverProfile?.full_name || driver?.company_name || "Chauffeur VTC"}
                                 </h4>
-                                {driver?.company_name && (
+                                {driver?.company_name && driverProfile?.full_name && (
                                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <Car className="w-3.5 h-3.5" />
                                     {driver.company_name}
