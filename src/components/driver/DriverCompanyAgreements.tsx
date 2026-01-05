@@ -8,13 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info, Ban, Unlock, Lock, EyeOff, User } from "lucide-react";
+import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info, Ban, Unlock, Lock, EyeOff, User, FileText, Edit, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { DriverCompanySearch } from "./DriverCompanySearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
+import { CompanyDriverSignatureConfirmation } from "@/components/company/CompanyDriverSignatureConfirmation";
+import { ModifyCompanyDriverAgreementDialog } from "@/components/company/ModifyCompanyDriverAgreementDialog";
+import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
 
 interface DriverCompanyAgreementsProps {
   driverId: string;
@@ -39,6 +42,15 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
   const [expanded, setExpanded] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+  const [showModifyDialog, setShowModifyDialog] = useState(false);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [signing, setSigning] = useState(false);
+
+  const needsDriverSignature = !agreement.driver_signed;
+  const needsCompanySignature = !agreement.company_signed;
+  const hasPendingModification = agreement.pending_modification;
+  const bothSigned = agreement.company_signed && agreement.driver_signed;
 
   const fetchPayments = async () => {
     if (payments.length > 0) return;
@@ -48,6 +60,43 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
       setPayments(data || []);
     } catch (error) { console.error(error); }
     finally { setLoadingPayments(false); }
+  };
+
+  const handleSignContract = async () => {
+    setSigning(true);
+    try {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          driver_signed: true,
+          driver_signed_at: new Date().toISOString(),
+          contract_generated_at: new Date().toISOString(),
+        })
+        .eq("id", agreement.id);
+
+      if (error) throw error;
+
+      // Notify company
+      if (agreement.company?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: agreement.company.user_id,
+          title: "✅ Contrat signé",
+          message: "Le chauffeur a signé le contrat de partenariat.",
+          type: "success",
+          link: "/company-dashboard?tab=partnerships",
+          is_read: false,
+        });
+      }
+
+      toast.success("Contrat signé avec succès !");
+      setShowSignatureDialog(false);
+      onRefresh();
+    } catch (error) {
+      console.error("Error signing contract:", error);
+      toast.error("Erreur lors de la signature");
+    } finally {
+      setSigning(false);
+    }
   };
 
   return (
@@ -71,6 +120,82 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
             {agreement.outstanding_balance > 0 && <p className="text-sm font-medium text-yellow-600 mt-1">À recevoir: {agreement.outstanding_balance.toFixed(2)}€</p>}
           </div>
         </div>
+
+        {/* Contract Status Alerts */}
+        {needsDriverSignature && (
+          <Alert className="mt-3 border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+              Vous devez signer le contrat pour finaliser ce partenariat.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!needsDriverSignature && needsCompanySignature && (
+          <Alert className="mt-3 border-blue-500/50 bg-blue-500/10">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+              En attente de la signature de l'entreprise.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasPendingModification && (
+          <Alert className="mt-3 border-purple-500/50 bg-purple-500/10">
+            <Edit className="h-4 w-4 text-purple-600" />
+            <AlertDescription className="text-sm text-purple-700 dark:text-purple-300">
+              Une modification du contrat est en attente.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Signature Status */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          <Badge variant={agreement.company_signed ? "default" : "outline"} className={agreement.company_signed ? "bg-green-500" : ""}>
+            {agreement.company_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+            Entreprise: {agreement.company_signed ? "Signé" : "En attente"}
+          </Badge>
+          <Badge variant={agreement.driver_signed ? "default" : "outline"} className={agreement.driver_signed ? "bg-green-500" : ""}>
+            {agreement.driver_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+            Vous: {agreement.driver_signed ? "Signé" : "En attente"}
+          </Badge>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-4 flex gap-2 flex-wrap">
+          {needsDriverSignature && (
+            <Button
+              onClick={() => setShowSignatureDialog(true)}
+              className="bg-green-600 hover:bg-green-700"
+              size="sm"
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              Signer le contrat
+            </Button>
+          )}
+          
+          {bothSigned && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowContractDialog(true)}
+              >
+                <FileText className="w-4 h-4 mr-1" />
+                Voir le contrat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowModifyDialog(true)}
+              >
+                <Edit className="w-4 h-4 mr-1" />
+                Modifier
+              </Button>
+            </>
+          )}
+        </div>
+
         <Collapsible open={expanded} onOpenChange={(o) => { setExpanded(o); if (o) fetchPayments(); }} className="mt-4">
           <CollapsibleTrigger asChild>
             <Button variant="outline" className="w-full">{expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}Gérer le partenariat</Button>
@@ -85,6 +210,73 @@ function ActiveDriverAgreementCard({ agreement, driverId, onRefresh }: { agreeme
           </CollapsibleContent>
         </Collapsible>
       </CardContent>
+
+      {/* Signature Dialog */}
+      <CompanyDriverSignatureConfirmation
+        open={showSignatureDialog}
+        onOpenChange={setShowSignatureDialog}
+        partnerName={agreement.company?.company_name || "Entreprise"}
+        partnerType="driver"
+        paymentFrequency={agreement.payment_frequency}
+        paymentMethods={agreement.payment_methods}
+        onConfirmSign={handleSignContract}
+        signing={signing}
+      />
+
+      {/* Modify Dialog */}
+      <ModifyCompanyDriverAgreementDialog
+        open={showModifyDialog}
+        onOpenChange={setShowModifyDialog}
+        agreement={{
+          id: agreement.id,
+          partner_id: agreement.company_id,
+          partner_name: agreement.company?.company_name || "Entreprise",
+          payment_frequency: agreement.payment_frequency,
+          payment_methods: agreement.payment_methods || [],
+          payment_day: agreement.payment_day,
+          pending_modification: agreement.pending_modification,
+          pending_new_payment_frequency: agreement.pending_new_payment_frequency,
+          pending_new_payment_methods: agreement.pending_new_payment_methods,
+          pending_new_payment_day: agreement.pending_new_payment_day,
+          pending_modification_by: agreement.pending_modification_by,
+          pending_modification_message: agreement.pending_modification_message,
+        }}
+        currentPartyType="driver"
+        currentPartyId={driverId}
+        onSuccess={onRefresh}
+      />
+
+      {/* Contract View Dialog */}
+      <UniversalPartnershipContract
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
+        partnershipId={agreement.id}
+        partnershipType="company_driver"
+        status={agreement.status}
+        createdAt={agreement.created_at}
+        acceptedAt={agreement.accepted_at}
+        terminatedAt={agreement.terminated_at}
+        party1={{
+          name: "Vous",
+        }}
+        party2={{
+          name: agreement.company?.company_name || "Entreprise",
+          company: agreement.company?.company_name,
+          phone: agreement.company?.contact_phone,
+          email: agreement.company?.contact_email,
+          address: agreement.company?.address,
+        }}
+        terms={{
+          paymentFrequency: agreement.payment_frequency,
+          paymentDay: agreement.payment_day,
+        }}
+        signatures={{
+          party1Signed: agreement.driver_signed || false,
+          party1SignedAt: agreement.driver_signed_at,
+          party2Signed: agreement.company_signed || false,
+          party2SignedAt: agreement.company_signed_at,
+        }}
+      />
     </Card>
   );
 }
@@ -106,6 +298,7 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
           *,
           company:companies(
             id,
+            user_id,
             company_name,
             contact_name,
             contact_email,
