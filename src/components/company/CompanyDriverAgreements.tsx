@@ -26,6 +26,7 @@ import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymen
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
+import { RelaunchPartnershipDialog } from "./RelaunchPartnershipDialog";
 import { notificationService } from "@/lib/notificationService";
 
 interface CompanyDriverAgreementsProps {
@@ -215,6 +216,8 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const [activeTab, setActiveTab] = useState("search");
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [agreementToBlock, setAgreementToBlock] = useState<any>(null);
+  const [showRelaunchDialog, setShowRelaunchDialog] = useState(false);
+  const [agreementToRelaunch, setAgreementToRelaunch] = useState<any>(null);
 
   // Fetch company settings
   const { data: company } = useQuery({
@@ -293,6 +296,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
 
       // Fetch driver profiles using user_id
       const driverUserIds = data?.map((a: any) => a.driver?.user_id).filter(Boolean) || [];
+      console.log("Driver user IDs:", driverUserIds);
       
       if (driverUserIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
@@ -300,12 +304,15 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
           .select("id, full_name, profile_photo_url")
           .in("id", driverUserIds);
 
+        console.log("Fetched profiles:", profiles);
+        
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);
         }
 
         return data?.map((agreement: any) => {
           const matchedProfile = profiles?.find((p: any) => p.id === agreement.driver?.user_id);
+          console.log("Agreement driver user_id:", agreement.driver?.user_id, "Matched profile:", matchedProfile);
           return {
             ...agreement,
             driverProfile: matchedProfile,
@@ -1042,7 +1049,10 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setActiveTab("search")}
+                              onClick={() => {
+                                setAgreementToRelaunch(agreement);
+                                setShowRelaunchDialog(true);
+                              }}
                             >
                               <Send className="w-4 h-4 mr-1" />
                               Relancer
@@ -1276,10 +1286,19 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
       <BlockReasonDialog
         open={showBlockDialog}
         onOpenChange={setShowBlockDialog}
-        partnerName={agreementToBlock?.driverProfile?.full_name || "ce chauffeur"}
+        partnerName={agreementToBlock?.driverProfile?.full_name || agreementToBlock?.driver?.company_name || "ce chauffeur"}
         partnerType="driver"
         onBlock={handleBlockDriver}
         isLoading={blockDriver.isPending}
+      />
+
+      {/* Relaunch Partnership Dialog */}
+      <RelaunchPartnershipDialog
+        open={showRelaunchDialog}
+        onOpenChange={setShowRelaunchDialog}
+        agreement={agreementToRelaunch}
+        companyId={companyId}
+        companyName={companyFull?.company_name || "Votre entreprise"}
       />
     </div>
   );
