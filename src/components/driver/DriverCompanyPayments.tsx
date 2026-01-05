@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Calendar, 
   Euro, 
@@ -44,6 +45,7 @@ interface GroupedPayment {
     billing_address?: string;
     contact_email?: string;
     contact_phone?: string;
+    logo_url?: string;
   };
   agreementId: string;
   paymentFrequency: string;
@@ -121,7 +123,8 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
             siren,
             tva_number,
             address,
-            billing_address
+            billing_address,
+            logo_url
           )
         `)
         .eq("driver_id", driverId)
@@ -181,53 +184,85 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     },
   });
 
-  // Confirm receipt mutation
+  // Confirm receipt mutation - handles both existing payment records and new ones
   const confirmReceiptMutation = useMutation({
-    mutationFn: async (paymentId: string) => {
+    mutationFn: async (payment: GroupedPayment) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       
-      const { data, error } = await supabase
-        .from("company_payments")
-        .update({
-          status: "received",
-          received_at: new Date().toISOString(),
-          received_confirmed_by_user_id: userId
-        })
-        .eq("id", paymentId)
-        .select()
-        .single();
+      let paymentRecord;
+      
+      if (payment.paymentId) {
+        // Update existing payment record
+        const { data, error } = await supabase
+          .from("company_payments")
+          .update({
+            status: "received",
+            received_at: new Date().toISOString(),
+            received_confirmed_by_user_id: userId
+          })
+          .eq("id", payment.paymentId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        paymentRecord = data;
+      } else {
+        // Create new payment record and mark as received
+        const courseIds = payment.invoices.map((inv: any) => inv.course_id).filter(Boolean);
+        
+        const { data, error } = await supabase
+          .from("company_payments")
+          .insert({
+            agreement_id: payment.agreementId,
+            company_id: payment.companyId,
+            driver_id: driverId,
+            amount: payment.totalAmount,
+            payment_method: payment.paymentMethods[0] || "cash",
+            status: "received",
+            received_at: new Date().toISOString(),
+            received_confirmed_by_user_id: userId,
+            course_ids: courseIds,
+            courses_count: payment.invoiceCount,
+            period_start: payment.periodStart.toISOString(),
+            period_end: payment.periodEnd.toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        paymentRecord = data;
+      }
 
       // Mark related invoices as paid
-      if (data.course_ids && data.course_ids.length > 0) {
+      const courseIds = payment.invoices.map((inv: any) => inv.course_id).filter(Boolean);
+      if (courseIds.length > 0) {
         await supabase
           .from("factures")
           .update({ 
             payment_status: "paid",
             paid_at: new Date().toISOString()
           })
-          .in("course_id", data.course_ids);
+          .in("course_id", courseIds);
       }
 
       // Notify company
       const { data: companyData } = await supabase
         .from("companies")
         .select("user_id")
-        .eq("id", data.company_id)
+        .eq("id", payment.companyId)
         .single();
 
       if (companyData?.user_id) {
         await supabase.from("notifications").insert({
           user_id: companyData.user_id,
           title: "✅ Paiement confirmé",
-          message: `Le chauffeur a confirmé la réception du paiement de ${data.amount}€`,
+          message: `Le chauffeur a confirmé la réception du paiement de ${payment.totalAmount.toFixed(2)}€`,
           type: "payment",
           link: "/company-dashboard?tab=payments"
         });
       }
 
-      return data;
+      return paymentRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["driver-company-payments-tracking"] });
@@ -343,6 +378,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
               billing_address: agreement.company?.billing_address,
               contact_email: agreement.company?.contact_email,
               contact_phone: agreement.company?.contact_phone,
+              logo_url: agreement.company?.logo_url,
             },
             agreementId: agreement.id,
             paymentFrequency,
@@ -402,6 +438,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
               billing_address: agreement.company?.billing_address,
               contact_email: agreement.company?.contact_email,
               contact_phone: agreement.company?.contact_phone,
+              logo_url: agreement.company?.logo_url,
             },
             agreementId: agreement.id,
             paymentFrequency,
@@ -461,6 +498,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
               billing_address: agreement.company?.billing_address,
               contact_email: agreement.company?.contact_email,
               contact_phone: agreement.company?.contact_phone,
+              logo_url: agreement.company?.logo_url,
             },
             agreementId: agreement.id,
             paymentFrequency,
@@ -534,8 +572,8 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
   };
 
   const handleConfirmReceipt = () => {
-    if (!selectedPayment?.paymentId) return;
-    confirmReceiptMutation.mutate(selectedPayment.paymentId);
+    if (!selectedPayment) return;
+    confirmReceiptMutation.mutate(selectedPayment);
   };
 
   const handleDispute = () => {
@@ -809,9 +847,15 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     <Card key={`${payment.companyId}-${payment.periodStart.getTime()}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-full bg-primary/10">
-            <Building2 className="w-6 h-6 text-primary" />
-          </div>
+          {/* Company Logo */}
+          <Avatar className="w-12 h-12 rounded-lg border border-border/50">
+            {payment.companyInfo?.logo_url ? (
+              <AvatarImage src={payment.companyInfo.logo_url} alt={payment.companyName} className="object-cover" />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+              {payment.companyName?.slice(0, 2).toUpperCase() || 'EN'}
+            </AvatarFallback>
+          </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -903,20 +947,34 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                       onClick={() => openConfirmDialog(payment)}
                     >
                       <Check className="w-4 h-4 mr-1" />
-                      Confirmer
+                      Confirmer réception
                     </Button>
                   </>
                 )}
                 
-                {payment.status === 'overdue' && !payment.paymentId && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => openDispute(payment)}
-                  >
-                    <AlertTriangle className="w-4 h-4 mr-1" />
-                    Relancer
-                  </Button>
+                {/* Bouton pour confirmer réception même sans paiement envoyé (paiement direct/espèces) */}
+                {['upcoming', 'due', 'overdue'].includes(payment.status) && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => openConfirmDialog(payment)}
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Confirmer réception
+                    </Button>
+                    {payment.status === 'overdue' && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => openDispute(payment)}
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        Relancer
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
