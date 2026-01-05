@@ -13,9 +13,9 @@ import { fr } from "date-fns/locale";
 import { 
   Plus, MapPin, Calendar, Users, Clock, CheckCircle, 
   XCircle, Send, Loader2, Euro, Car, RefreshCw, AlertTriangle,
-  Copy, ExternalLink
+  Copy, ExternalLink, Play
 } from "lucide-react";
-import { CompanyCourseBookingWizard } from "./course-booking";
+import { CompanyCourseBookingWizard, WizardStep } from "./course-booking";
 
 interface CompanyCourseRequestsManagerProps {
   companyId: string;
@@ -26,6 +26,19 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   const [showWizard, setShowWizard] = useState(false);
   const [requestToResend, setRequestToResend] = useState<any>(null);
   const [requestToCancel, setRequestToCancel] = useState<any>(null);
+  const [requestToResume, setRequestToResume] = useState<{ request: any; step: WizardStep } | null>(null);
+
+  // Déterminer le step de reprise selon le statut
+  const getResumeStep = (status: string): WizardStep => {
+    switch (status) {
+      case "quotes_generated":
+        return "quotes"; // Devis générés, aller à la sélection/envoi
+      case "sent_to_drivers":
+        return "confirmation"; // Envoyés, aller à la confirmation/attente
+      default:
+        return "drivers";
+    }
+  };
 
   // Mutation pour annuler une demande
   const cancelRequestMutation = useMutation({
@@ -300,9 +313,20 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
               </div>
             )}
 
-            {/* Actions for pending requests - allow cancel */}
+            {/* Actions for pending requests - allow resume or cancel */}
             {["quotes_generated", "sent_to_drivers"].includes(request.status) && (
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end gap-2 pt-2 flex-wrap">
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={() => setRequestToResume({ 
+                    request, 
+                    step: getResumeStep(request.status) 
+                  })}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Reprendre
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -310,7 +334,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   onClick={() => setRequestToCancel(request)}
                 >
                   <XCircle className="w-3 h-3 mr-1" />
-                  Annuler cette demande
+                  Annuler
                 </Button>
               </div>
             )}
@@ -486,6 +510,30 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
               Annuler la demande
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog to resume a request */}
+      <Dialog open={!!requestToResume} onOpenChange={() => setRequestToResume(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Reprendre la demande</DialogTitle>
+            <DialogDescription>
+              Continuez le processus de réservation là où vous l'aviez laissé
+            </DialogDescription>
+          </DialogHeader>
+          {requestToResume && (
+            <CompanyCourseBookingWizard 
+              companyId={companyId}
+              existingRequest={requestToResume.request}
+              resumeStep={requestToResume.step}
+              onClose={() => setRequestToResume(null)}
+              onSuccess={() => {
+                setRequestToResume(null);
+                refetch();
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
