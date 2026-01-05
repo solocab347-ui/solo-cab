@@ -77,15 +77,8 @@ export default function GuestEmployeeCourseTracking() {
       const { data: invitation, error: invError } = await supabase
         .from("company_employee_course_invitations")
         .select(`
-          id, token, guest_name, guest_phone, guest_email, scheduled_date, pickup_address, destination_address, is_used,
+          id, token, guest_name, guest_phone, guest_email, scheduled_date, pickup_address, destination_address, is_used, request_id,
           company:companies(company_name, logo_url),
-          request:company_course_requests(
-            id, scheduled_date, pickup_address, destination_address, passengers_count, payment_method_requested, status, created_at, quotes_generated_at, sent_to_drivers_at, accepted_at,
-            quotes:company_course_quotes(
-              id, status, total_price, distance_km, duration_minutes, driver_response_at,
-              driver:drivers(id, user_id)
-            )
-          ),
           course:courses(
             id, status,
             driver:drivers(id, user_id),
@@ -98,9 +91,36 @@ export default function GuestEmployeeCourseTracking() {
       if (invError) throw invError;
       if (!invitation) throw new Error("Lien invalide ou expiré");
 
-      // Fetch driver profiles separately for accepted quotes
       const result = invitation as any;
-      
+
+      // Fetch request data separately to avoid join issues
+      if (result.request_id) {
+        const { data: requestData } = await supabase
+          .from("company_course_requests")
+          .select(`
+            id, scheduled_date, pickup_address, destination_address, passengers_count, 
+            payment_method_requested, status, created_at, quotes_generated_at, sent_to_drivers_at, accepted_at
+          `)
+          .eq("id", result.request_id)
+          .maybeSingle();
+        
+        result.request = requestData;
+
+        // Fetch quotes for this request
+        if (requestData) {
+          const { data: quotesData } = await supabase
+            .from("company_course_quotes")
+            .select(`
+              id, status, total_price, distance_km, duration_minutes, driver_response_at,
+              driver:drivers(id, user_id)
+            `)
+            .eq("request_id", result.request_id);
+          
+          result.request.quotes = quotesData;
+        }
+      }
+
+      // Fetch driver profiles separately for accepted quotes
       if (result.request?.quotes) {
         for (const quote of result.request.quotes) {
           if (quote.driver?.user_id) {
