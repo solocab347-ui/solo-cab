@@ -25,6 +25,34 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
   const [requestToResend, setRequestToResend] = useState<any>(null);
+  const [requestToCancel, setRequestToCancel] = useState<any>(null);
+
+  // Mutation pour annuler une demande
+  const cancelRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      // Annuler tous les devis associés
+      await supabase
+        .from("company_course_quotes")
+        .update({ status: "cancelled" })
+        .eq("request_id", requestId);
+
+      // Mettre à jour le statut de la demande
+      const { error } = await supabase
+        .from("company_course_requests")
+        .update({ status: "cancelled" })
+        .eq("id", requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Demande annulée avec succès");
+      queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+      setRequestToCancel(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'annulation");
+    },
+  });
 
   const { data: requests, isLoading, refetch } = useQuery({
     queryKey: ["company-course-requests", companyId],
@@ -250,14 +278,39 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   <AlertTriangle className="w-4 h-4 text-red-600" />
                   <span className="text-sm text-red-700">Tous les chauffeurs ont refusé cette demande</span>
                 </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setRequestToResend(request)}
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Renvoyer à d'autres chauffeurs
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => setRequestToCancel(request)}
+                  >
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Annuler la demande
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Actions for pending requests - allow cancel */}
+            {["quotes_generated", "sent_to_drivers"].includes(request.status) && (
+              <div className="flex justify-end pt-2">
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="w-fit"
-                  onClick={() => setRequestToResend(request)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => setRequestToCancel(request)}
                 >
-                  <RefreshCw className="w-3 h-3 mr-1" />
-                  Renvoyer à d'autres chauffeurs
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Annuler cette demande
                 </Button>
               </div>
             )}
@@ -395,6 +448,44 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog to confirm cancellation */}
+      <Dialog open={!!requestToCancel} onOpenChange={() => setRequestToCancel(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Annuler cette demande ?</DialogTitle>
+            <DialogDescription>
+              Cette action annulera la demande de course et tous les devis associés. Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          {requestToCancel && (
+            <div className="space-y-3 py-2">
+              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                <p><strong>Collaborateur :</strong> {requestToCancel.is_guest_employee ? requestToCancel.guest_employee_name : requestToCancel.employeeProfile?.full_name}</p>
+                <p><strong>Date :</strong> {format(new Date(requestToCancel.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}</p>
+                <p><strong>Trajet :</strong> {requestToCancel.pickup_address} → {requestToCancel.destination_address}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRequestToCancel(null)}>
+              Retour
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => requestToCancel && cancelRequestMutation.mutate(requestToCancel.id)}
+              disabled={cancelRequestMutation.isPending}
+            >
+              {cancelRequestMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-2" />
+              )}
+              Annuler la demande
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
