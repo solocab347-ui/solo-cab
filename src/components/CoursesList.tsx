@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake, Building2, Truck, User } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake, Building2, Truck, User, Phone } from "lucide-react";
 import { CourseNavigationButtons } from "@/components/course/CourseNavigationButtons";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -2167,6 +2167,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <Users className="w-4 h-4 text-muted-foreground/70" />
                       {course.passengers_count} passager(s)
                     </div>
+                    {/* Contact du client/passager */}
+                    {getClientPhone(course) && (
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                        <Phone className="w-4 h-4 text-primary" />
+                        <a 
+                          href={`tel:${getClientPhone(course)}`} 
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
+                          {getClientPhone(course)}
+                        </a>
+                        <span className="text-xs text-muted-foreground">- Appeler le passager</span>
+                      </div>
+                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
