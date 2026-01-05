@@ -32,13 +32,21 @@ Deno.serve(async (req) => {
       .from('company_course_requests')
       .select(`
         *,
-        company:companies(company_name, contact_name),
-        employee:company_employees(user_id, profiles:user_id(full_name))
+        company:companies(company_name, contact_name)
       `)
       .eq('id', request_id)
-      .single();
+      .maybeSingle();
 
-    if (requestError || !request) {
+    if (requestError) {
+      console.error('❌ Request query error:', requestError);
+      return new Response(
+        JSON.stringify({ error: 'Request query failed', details: requestError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!request) {
+      console.error('❌ Request not found:', request_id);
       return new Response(
         JSON.stringify({ error: 'Request not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,9 +54,25 @@ Deno.serve(async (req) => {
     }
 
     const companyName = request.company?.company_name || 'Une entreprise';
-    const employeeName = request.is_guest_employee 
-      ? request.guest_employee_name 
-      : request.employee?.profiles?.full_name;
+    
+    // Get employee name - handle both registered and guest employees
+    let employeeName = request.guest_employee_name;
+    if (!request.is_guest_employee && request.employee_id) {
+      const { data: employee } = await supabaseClient
+        .from('company_employees')
+        .select('user_id')
+        .eq('id', request.employee_id)
+        .maybeSingle();
+      
+      if (employee?.user_id) {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('full_name')
+          .eq('id', employee.user_id)
+          .maybeSingle();
+        employeeName = profile?.full_name;
+      }
+    }
 
     // Update quotes to 'sent' status
     const { data: quotes, error: updateError } = await supabaseClient
