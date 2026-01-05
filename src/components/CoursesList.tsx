@@ -32,6 +32,7 @@ import { CourseTypeBadge, CourseTypeIndicator } from "@/components/driver/Course
 import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelector";
 import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInCoursesList";
 import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartnerCoursesList";
+import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCompanyQuotesInCoursesList";
 
 interface CoursesListProps {
   driverId: string;
@@ -78,6 +79,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [receivedSharedCoursesCount, setReceivedSharedCoursesCount] = useState(0);
   // État pour le compteur de courses partagées terminées (sender side + receiver side)
   const [completedPartnerCoursesCount, setCompletedPartnerCoursesCount] = useState(0);
+  // État pour le compteur de devis entreprise en attente
+  const [pendingCompanyQuotesCount, setPendingCompanyQuotesCount] = useState(0);
   const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
   // État pour le signalement
@@ -1766,7 +1769,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           >
             <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-xs sm:text-sm font-bold">En attente</span>
-            <Badge className="bg-yellow-500/30 text-yellow-200 text-xs font-bold">{pendingCourses.length}</Badge>
+            <Badge className="bg-yellow-500/30 text-yellow-200 text-xs font-bold">{pendingCourses.length + pendingCompanyQuotesCount}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="confirmed"
@@ -1795,9 +1798,15 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3 sm:space-y-4 mt-4">
-          {pendingCourses.length === 0 ? (
+          {/* Demandes entreprises en attente */}
+          <PendingCompanyQuotesInCoursesList 
+            driverId={driverId} 
+            onCountChange={setPendingCompanyQuotesCount} 
+          />
+          
+          {pendingCourses.length === 0 && pendingCompanyQuotesCount === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
-          ) : (
+          ) : pendingCourses.length > 0 ? (
             pendingCourses.map((course) => {
               const courseTypeInfo = getCourseTypeInfo(course);
               return (
@@ -2095,7 +2104,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               </Card>
               );
             })
-          )}
+          ) : null}
         </TabsContent>
 
         <TabsContent value="confirmed" className="space-y-4">
