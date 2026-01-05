@@ -21,7 +21,7 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CompanyDriverSearch } from "./CompanyDriverSearch";
-import { CompanyFleetSearch } from "./CompanyFleetSearch";
+import { CompanyFleetPartnerships } from "./CompanyFleetPartnerships";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
@@ -1180,7 +1180,7 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
         {/* Fleet Managers Tab Content */}
         <TabsContent value="fleets" className="space-y-6">
           {companyFull && (
-            <CompanyFleetSearch 
+            <CompanyFleetPartnerships 
               companyId={companyId} 
               companyProfile={{
                 company_name: companyFull.company_name,
