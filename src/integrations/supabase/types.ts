@@ -7490,42 +7490,28 @@ export type Database = {
           tva_amount: number
         }[]
       }
-      calculate_course_price:
-        | {
-            Args: {
-              _distance_km: number
-              _driver_id: string
-              _duration_minutes: number
-              _use_hourly_rate?: boolean
-            }
-            Returns: {
-              base_price: number
-              distance_price: number
-              subtotal: number
-              time_price: number
-              total_price: number
-              tva_amount: number
-            }[]
-          }
-        | {
-            Args: {
-              _distance_km: number
-              _driver_id: string
-              _duration_minutes: number
-              _scheduled_date?: string
-              _use_hourly_rate?: boolean
-            }
-            Returns: {
-              base_price: number
-              distance_price: number
-              subtotal: number
-              surcharge_evening: number
-              surcharge_weekend: number
-              time_price: number
-              total_price: number
-              tva_amount: number
-            }[]
-          }
+      calculate_course_price: {
+        Args: {
+          _destination_address?: string
+          _distance_km: number
+          _driver_id: string
+          _duration_minutes: number
+          _pickup_address?: string
+          _scheduled_date?: string
+          _use_hourly_rate?: boolean
+        }
+        Returns: {
+          airport_fee: number
+          base_price: number
+          distance_price: number
+          subtotal: number
+          surcharge_evening: number
+          surcharge_weekend: number
+          time_price: number
+          total_price: number
+          tva_amount: number
+        }[]
+      }
       calculate_driver_fleet_commissions: {
         Args: { _driver_id: string }
         Returns: {
