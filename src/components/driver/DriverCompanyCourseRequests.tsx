@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
   Building2, MapPin, Calendar, Users, Euro, Clock, 
-  CheckCircle, XCircle, Loader2, AlertCircle, Car
+  CheckCircle, XCircle, Loader2, AlertCircle, Car, Ban
 } from "lucide-react";
 
 interface DriverCompanyCourseRequestsProps {
@@ -61,7 +61,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
           toast.success("Course acceptée ! Elle apparaît maintenant dans vos courses confirmées.");
         }
       } else {
-        toast.success("Course refusée");
+        toast.success("Course refusée. L'entreprise a été notifiée.");
       }
       queryClient.invalidateQueries({ queryKey: ["driver-company-quotes"] });
       queryClient.invalidateQueries({ queryKey: ["driver-courses"] });
@@ -92,13 +92,13 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
   const getQuoteStatusBadge = (status: string) => {
     switch (status) {
       case "sent":
-        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600"><Clock className="w-3 h-3 mr-1" />En attente</Badge>;
+        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30"><Clock className="w-3 h-3 mr-1" />En attente</Badge>;
       case "accepted":
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600"><CheckCircle className="w-3 h-3 mr-1" />Accepté</Badge>;
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Accepté</Badge>;
       case "refused":
-        return <Badge variant="outline" className="bg-red-500/10 text-red-600"><XCircle className="w-3 h-3 mr-1" />Refusé</Badge>;
+        return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Refusé</Badge>;
       case "taken_by_other":
-        return <Badge variant="outline" className="bg-gray-500/10 text-gray-600"><AlertCircle className="w-3 h-3 mr-1" />Pris par un autre</Badge>;
+        return <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-500/30"><Ban className="w-3 h-3 mr-1" />Attribué à un autre</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -116,7 +116,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
   }
 
   const renderQuoteCard = (quote: any, showActions: boolean = false) => (
-    <Card key={quote.id} className={showActions ? "border-primary/50" : ""}>
+    <Card key={quote.id} className={showActions ? "border-primary/30 shadow-sm" : ""}>
       <CardContent className="pt-4">
         <div className="space-y-4">
           {/* Header */}
@@ -173,28 +173,44 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
               {quote.request?.passengers_count || 1} passager{(quote.request?.passengers_count || 1) > 1 ? "s" : ""}
             </span>
             {quote.distance_km && (
-              <span>{quote.distance_km.toFixed(1)} km</span>
+              <span className="flex items-center gap-1">
+                <Car className="w-4 h-4" />
+                {quote.distance_km.toFixed(1)} km
+              </span>
             )}
             {quote.duration_minutes && (
-              <span>~{quote.duration_minutes} min</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                ~{quote.duration_minutes} min
+              </span>
             )}
           </div>
 
           {/* Price */}
           <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-sm font-medium">Montant</span>
+            <span className="text-sm font-medium">Montant de la course</span>
             <span className="text-2xl font-bold text-primary flex items-center gap-1">
               {quote.total_price?.toFixed(2)}
               <Euro className="w-5 h-5" />
             </span>
           </div>
 
+          {/* Taken by other message */}
+          {quote.status === "taken_by_other" && (
+            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-muted-foreground">
+                Cette course a été attribuée à un autre chauffeur.
+              </p>
+            </div>
+          )}
+
           {/* Actions */}
           {showActions && quote.status === "sent" && (
             <div className="flex gap-2 pt-2">
               <Button 
                 variant="outline" 
-                className="flex-1"
+                className="flex-1 border-red-500/30 text-red-600 hover:bg-red-500/10"
                 onClick={() => handleAction(quote, "refuse")}
               >
                 <XCircle className="w-4 h-4 mr-2" />
@@ -223,7 +239,10 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
             Demandes Entreprises
           </CardTitle>
           <CardDescription>
-            Courses proposées par vos entreprises partenaires
+            Courses proposées par vos entreprises partenaires. 
+            {pendingQuotes.length > 0 && (
+              <span className="text-primary font-medium"> {pendingQuotes.length} en attente de réponse</span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,6 +250,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
             <div className="text-center py-8 text-muted-foreground">
               <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <p>Aucune demande entreprise pour le moment</p>
+              <p className="text-sm mt-2">Les demandes de vos entreprises partenaires apparaîtront ici</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -238,7 +258,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
               {pendingQuotes.length > 0 && (
                 <div>
                   <h3 className="font-medium mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
+                    <Clock className="w-4 h-4 text-amber-500" />
                     En attente de réponse ({pendingQuotes.length})
                   </h3>
                   <div className="space-y-4">
@@ -250,9 +270,17 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
               {/* History */}
               {historyQuotes.length > 0 && (
                 <div>
-                  <h3 className="font-medium mb-3 text-muted-foreground">Historique</h3>
+                  <h3 className="font-medium mb-3 text-muted-foreground flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Historique ({historyQuotes.length})
+                  </h3>
                   <div className="space-y-3">
-                    {historyQuotes.slice(0, 5).map(quote => renderQuoteCard(quote, false))}
+                    {historyQuotes.slice(0, 10).map(quote => renderQuoteCard(quote, false))}
+                    {historyQuotes.length > 10 && (
+                      <p className="text-center text-sm text-muted-foreground">
+                        Et {historyQuotes.length - 10} autres demandes...
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -270,8 +298,8 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
             </DialogTitle>
             <DialogDescription>
               {actionType === "accept" 
-                ? "Confirmez-vous l'acceptation de cette course entreprise ?"
-                : "Confirmez-vous le refus de cette course entreprise ?"
+                ? "Confirmez-vous l'acceptation de cette course entreprise ? Elle sera ajoutée à vos courses confirmées."
+                : "Confirmez-vous le refus de cette course entreprise ? L'entreprise sera notifiée de votre décision."
               }
             </DialogDescription>
           </DialogHeader>
@@ -280,7 +308,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
             <div className="p-4 bg-muted/50 rounded-lg space-y-2">
               <p className="font-medium">{selectedQuote.request?.company?.company_name}</p>
               <p className="text-sm text-muted-foreground">
-                {format(new Date(selectedQuote.request?.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                {format(new Date(selectedQuote.request?.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
               </p>
               <p className="text-lg font-bold text-primary">{selectedQuote.total_price?.toFixed(2)} €</p>
             </div>
@@ -290,7 +318,17 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
             <div className="flex items-start gap-2 p-3 bg-amber-500/10 rounded-lg text-sm">
               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-amber-800">
-                Si d'autres chauffeurs ont reçu cette demande, le premier à accepter remporte la course.
+                Si d'autres chauffeurs ont reçu cette demande, le premier à accepter remporte la course. 
+                Les autres seront notifiés que la course a été attribuée.
+              </p>
+            </div>
+          )}
+
+          {actionType === "refuse" && (
+            <div className="flex items-start gap-2 p-3 bg-muted rounded-lg text-sm">
+              <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <p className="text-muted-foreground">
+                L'entreprise sera informée de votre refus et pourra proposer la course à d'autres chauffeurs.
               </p>
             </div>
           )}

@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
   Plus, MapPin, Calendar, Users, Clock, CheckCircle, 
-  XCircle, Send, Loader2, Euro, Car 
+  XCircle, Send, Loader2, Euro, Car, RefreshCw, AlertTriangle,
+  Copy, ExternalLink
 } from "lucide-react";
 import { CompanyCourseBookingWizard } from "./course-booking";
 
@@ -20,7 +22,9 @@ interface CompanyCourseRequestsManagerProps {
 }
 
 export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequestsManagerProps) {
+  const queryClient = useQueryClient();
   const [showWizard, setShowWizard] = useState(false);
+  const [requestToResend, setRequestToResend] = useState<any>(null);
 
   const { data: requests, isLoading, refetch } = useQuery({
     queryKey: ["company-course-requests", companyId],
@@ -43,6 +47,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             driver_id,
             total_price,
             status,
+            driver_response_at,
             driver:drivers(user_id, company_name)
           )
         `)
@@ -66,10 +71,18 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         .select("id, full_name, profile_photo_url")
         .in("id", Array.from(userIds));
 
+      // Fetch tracking invitations for guest employees
+      const requestIds = data?.map((r: any) => r.id) || [];
+      const { data: invitations } = await supabase
+        .from("company_employee_course_invitations")
+        .select("request_id, token")
+        .in("request_id", requestIds);
+
       return data?.map((r: any) => ({
         ...r,
         employeeProfile: profiles?.find(p => p.id === r.employee?.user_id),
         driverProfile: profiles?.find(p => p.id === r.accepted_driver?.user_id),
+        trackingToken: invitations?.find(i => i.request_id === r.id)?.token,
         quotesWithProfiles: r.quotes?.map((q: any) => ({
           ...q,
           profile: profiles?.find(p => p.id === q.driver?.user_id),
@@ -81,21 +94,45 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "draft":
-        return <Badge variant="outline" className="bg-gray-500/10 text-gray-600"><Clock className="w-3 h-3 mr-1" />Brouillon</Badge>;
+        return <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-500/30"><Clock className="w-3 h-3 mr-1" />Brouillon</Badge>;
       case "quotes_generated":
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600"><Clock className="w-3 h-3 mr-1" />Devis générés</Badge>;
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30"><Clock className="w-3 h-3 mr-1" />Devis générés</Badge>;
       case "sent_to_drivers":
-        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600"><Send className="w-3 h-3 mr-1" />Envoyé aux chauffeurs</Badge>;
+        return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30"><Send className="w-3 h-3 mr-1" />Envoyé aux chauffeurs</Badge>;
       case "accepted":
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600"><CheckCircle className="w-3 h-3 mr-1" />Accepté</Badge>;
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Accepté</Badge>;
+      case "all_refused":
+        return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Tous refusés</Badge>;
       case "cancelled":
-        return <Badge variant="outline" className="bg-red-500/10 text-red-600"><XCircle className="w-3 h-3 mr-1" />Annulé</Badge>;
+        return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Annulé</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
+  const getQuoteStatusBadge = (status: string) => {
+    switch (status) {
+      case "sent":
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[10px]">En attente</Badge>;
+      case "accepted":
+        return <Badge className="bg-green-500/10 text-green-600 border-green-500/30 text-[10px]">Accepté</Badge>;
+      case "refused":
+        return <Badge className="bg-red-500/10 text-red-600 border-red-500/30 text-[10px]">Refusé</Badge>;
+      case "taken_by_other":
+        return <Badge className="bg-gray-500/10 text-gray-500 border-gray-500/30 text-[10px]">Non retenu</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const copyTrackingLink = (token: string) => {
+    const link = `${window.location.origin}/suivi-course-entreprise?token=${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Lien de suivi copié !");
+  };
+
   const pendingRequests = requests?.filter(r => ["draft", "quotes_generated", "sent_to_drivers"].includes(r.status)) || [];
+  const allRefusedRequests = requests?.filter(r => r.status === "all_refused") || [];
   const completedRequests = requests?.filter(r => ["accepted", "cancelled"].includes(r.status)) || [];
 
   if (isLoading) {
@@ -106,10 +143,46 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     );
   }
 
+  const renderQuotesList = (quotesWithProfiles: any[]) => {
+    if (!quotesWithProfiles || quotesWithProfiles.length === 0) return null;
+
+    return (
+      <div className="pt-2 border-t mt-3">
+        <p className="text-sm font-medium mb-2">Chauffeurs ({quotesWithProfiles.length})</p>
+        <div className="flex flex-wrap gap-2">
+          {quotesWithProfiles.map((quote: any) => (
+            <div 
+              key={quote.id}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs border ${
+                quote.status === "accepted" 
+                  ? "bg-green-500/10 text-green-700 border-green-500/30"
+                  : quote.status === "refused"
+                    ? "bg-red-500/10 text-red-700 border-red-500/30"
+                    : quote.status === "taken_by_other"
+                      ? "bg-gray-500/10 text-gray-600 border-gray-500/30"
+                      : "bg-muted border-border"
+              }`}
+            >
+              <Avatar className="w-5 h-5">
+                <AvatarImage src={quote.profile?.profile_photo_url} />
+                <AvatarFallback className="text-[10px]">
+                  {quote.profile?.full_name?.charAt(0) || "C"}
+                </AvatarFallback>
+              </Avatar>
+              <span>{quote.profile?.full_name || quote.driver?.company_name || "Chauffeur"}</span>
+              <span className="font-medium">{quote.total_price?.toFixed(0)}€</span>
+              {getQuoteStatusBadge(quote.status)}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderRequestCard = (request: any) => (
     <Card key={request.id} className="mb-4">
       <CardContent className="pt-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           <div className="flex-1 space-y-3">
             {/* Status and Date */}
             <div className="flex items-center gap-3 flex-wrap">
@@ -142,43 +215,50 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
               </div>
             </div>
 
-            {/* Quotes info */}
-            {request.quotesWithProfiles && request.quotesWithProfiles.length > 0 && (
-              <div className="pt-2 border-t">
-                <p className="text-sm font-medium mb-2">Chauffeurs ({request.quotesWithProfiles.length})</p>
-                <div className="flex flex-wrap gap-2">
-                  {request.quotesWithProfiles.map((quote: any) => (
-                    <div 
-                      key={quote.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${
-                        quote.status === "accepted" 
-                          ? "bg-green-500/10 text-green-700 border border-green-500/30"
-                          : quote.status === "refused"
-                            ? "bg-red-500/10 text-red-700 border border-red-500/30"
-                            : quote.status === "taken_by_other"
-                              ? "bg-gray-500/10 text-gray-600 border border-gray-500/30"
-                              : "bg-muted border border-border"
-                      }`}
-                    >
-                      <Avatar className="w-5 h-5">
-                        <AvatarImage src={quote.profile?.profile_photo_url} />
-                        <AvatarFallback className="text-[10px]">
-                          {quote.profile?.full_name?.charAt(0) || "C"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{quote.profile?.full_name || "Chauffeur"}</span>
-                      <span className="font-medium">{quote.total_price?.toFixed(0)}€</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Tracking link for guest employees */}
+            {request.is_guest_employee && request.trackingToken && (
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Lien de suivi</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-auto h-7"
+                  onClick={() => copyTrackingLink(request.trackingToken)}
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  Copier
+                </Button>
               </div>
             )}
 
+            {/* Quotes info */}
+            {renderQuotesList(request.quotesWithProfiles)}
+
             {/* Accepted driver */}
             {request.status === "accepted" && request.driverProfile && (
-              <div className="flex items-center gap-2 p-2 bg-green-500/10 rounded-lg">
+              <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg">
                 <CheckCircle className="w-4 h-4 text-green-600" />
                 <span className="text-sm">Accepté par <strong>{request.driverProfile.full_name}</strong></span>
+              </div>
+            )}
+
+            {/* All refused - action to resend */}
+            {request.status === "all_refused" && (
+              <div className="flex flex-col gap-2 p-3 bg-red-500/10 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                  <span className="text-sm text-red-700">Tous les chauffeurs ont refusé cette demande</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setRequestToResend(request)}
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Renvoyer à d'autres chauffeurs
+                </Button>
               </div>
             )}
           </div>
@@ -228,23 +308,43 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pending" className="relative">
               En cours
-              {pendingRequests.length > 0 && (
+              {(pendingRequests.length + allRefusedRequests.length) > 0 && (
                 <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {pendingRequests.length}
+                  {pendingRequests.length + allRefusedRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="completed">Terminées</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="mt-4">
-            {pendingRequests.length === 0 ? (
+          <TabsContent value="pending" className="mt-4 space-y-4">
+            {/* All refused requests - prioritize display */}
+            {allRefusedRequests.length > 0 && (
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="w-4 h-4" />
+                  Demandes refusées ({allRefusedRequests.length})
+                </h3>
+                {allRefusedRequests.map(renderRequestCard)}
+              </div>
+            )}
+
+            {/* Pending requests */}
+            {pendingRequests.length > 0 && (
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  En attente de réponse ({pendingRequests.length})
+                </h3>
+                {pendingRequests.map(renderRequestCard)}
+              </div>
+            )}
+
+            {pendingRequests.length === 0 && allRefusedRequests.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p>Aucune demande en cours</p>
               </div>
-            ) : (
-              pendingRequests.map(renderRequestCard)
             )}
           </TabsContent>
 
@@ -274,6 +374,29 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog to resend to other drivers */}
+      <Dialog open={!!requestToResend} onOpenChange={() => setRequestToResend(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Renvoyer la demande</DialogTitle>
+            <DialogDescription>
+              Sélectionnez d'autres chauffeurs partenaires pour cette course
+            </DialogDescription>
+          </DialogHeader>
+          {requestToResend && (
+            <CompanyCourseBookingWizard 
+              companyId={companyId}
+              existingRequest={requestToResend}
+              onClose={() => setRequestToResend(null)}
+              onSuccess={() => {
+                setRequestToResend(null);
+                refetch();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

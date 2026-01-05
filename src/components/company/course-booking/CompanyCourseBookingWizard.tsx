@@ -16,6 +16,7 @@ import { BookingConfirmationStep } from "./BookingConfirmationStep";
 
 interface CompanyCourseBookingWizardProps {
   companyId: string;
+  existingRequest?: any; // For resending a refused request
   onClose?: () => void;
   onSuccess?: () => void;
 }
@@ -71,25 +72,30 @@ const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
   { key: "confirmation", label: "Confirmation", icon: Check },
 ];
 
-export function CompanyCourseBookingWizard({ companyId, onClose, onSuccess }: CompanyCourseBookingWizardProps) {
+export function CompanyCourseBookingWizard({ companyId, existingRequest, onClose, onSuccess }: CompanyCourseBookingWizardProps) {
   const queryClient = useQueryClient();
-  const [currentStep, setCurrentStep] = useState<WizardStep>("employee");
-  const [requestId, setRequestId] = useState<string | null>(null);
+  // Start at drivers step if resending an existing request
+  const [currentStep, setCurrentStep] = useState<WizardStep>(existingRequest ? "drivers" : "employee");
+  const [requestId, setRequestId] = useState<string | null>(existingRequest?.id || null);
 
   const [formData, setFormData] = useState<CourseFormData>({
-    employeeId: null,
-    isGuestEmployee: false,
-    guestEmployeeName: "",
-    guestEmployeePhone: "",
-    guestEmployeeEmail: "",
-    pickupAddress: "",
-    pickupCoordinates: null,
-    destinationAddress: "",
-    destinationCoordinates: null,
-    scheduledDate: "",
-    passengersCount: "1",
-    notes: "",
-    paymentMethod: "not_specified",
+    employeeId: existingRequest?.employee_id || null,
+    isGuestEmployee: existingRequest?.is_guest_employee || false,
+    guestEmployeeName: existingRequest?.guest_employee_name || "",
+    guestEmployeePhone: existingRequest?.guest_employee_phone || "",
+    guestEmployeeEmail: existingRequest?.guest_employee_email || "",
+    pickupAddress: existingRequest?.pickup_address || "",
+    pickupCoordinates: existingRequest?.pickup_latitude && existingRequest?.pickup_longitude 
+      ? { latitude: existingRequest.pickup_latitude, longitude: existingRequest.pickup_longitude } 
+      : null,
+    destinationAddress: existingRequest?.destination_address || "",
+    destinationCoordinates: existingRequest?.destination_latitude && existingRequest?.destination_longitude 
+      ? { latitude: existingRequest.destination_latitude, longitude: existingRequest.destination_longitude } 
+      : null,
+    scheduledDate: existingRequest?.scheduled_date || "",
+    passengersCount: existingRequest?.passengers_count?.toString() || "1",
+    notes: existingRequest?.notes || "",
+    paymentMethod: existingRequest?.payment_method_requested || "not_specified",
   });
 
   const [selectedDrivers, setSelectedDrivers] = useState<SelectedDriver[]>([]);

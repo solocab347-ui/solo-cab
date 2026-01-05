@@ -59,10 +59,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`🎯 Driver ${driver.id} ${action}ing quote ${quote_id}`);
+    // Get quote with request and company info
+    const { data: quote } = await supabaseClient
+      .from('company_course_quotes')
+      .select(`
+        *,
+        request:company_course_requests(
+          *,
+          company:companies(user_id, company_name)
+        )
+      `)
+      .eq('id', quote_id)
+      .single();
+
+    if (!quote) {
+      return new Response(
+        JSON.stringify({ error: 'Quote not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get driver profile for notifications
+    const { data: driverProfile } = await supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    const driverName = driverProfile?.full_name || 'Un chauffeur';
+
+    console.log(`🎯 Driver ${driver.id} (${driverName}) ${action}ing quote ${quote_id}`);
 
     if (action === 'refuse') {
-      // Simple refusal
+      // Update quote status to refused
       const { error: refuseError } = await supabaseClient
         .from('company_course_quotes')
         .update({ 
@@ -78,6 +107,42 @@ Deno.serve(async (req) => {
           JSON.stringify({ error: 'Failed to refuse quote' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      }
+
+      // Notify company that driver refused
+      if (quote.request?.company?.user_id) {
+        await supabaseClient.from('notifications').insert({
+          user_id: quote.request.company.user_id,
+          title: 'Chauffeur a refusé la course',
+          message: `${driverName} a refusé votre demande de course`,
+          type: 'company_course_refused',
+          link: '/company-dashboard?tab=reservations',
+        });
+      }
+
+      // Check if all quotes are refused - if so, update request status
+      const { data: allQuotes } = await supabaseClient
+        .from('company_course_quotes')
+        .select('status')
+        .eq('request_id', quote.request_id);
+
+      const allRefused = allQuotes?.every(q => q.status === 'refused');
+      if (allRefused) {
+        await supabaseClient
+          .from('company_course_requests')
+          .update({ status: 'all_refused' })
+          .eq('id', quote.request_id);
+
+        // Notify company that all drivers refused
+        if (quote.request?.company?.user_id) {
+          await supabaseClient.from('notifications').insert({
+            user_id: quote.request.company.user_id,
+            title: 'Tous les chauffeurs ont refusé',
+            message: 'Aucun chauffeur n\'a accepté votre demande. Vous pouvez la renvoyer à d\'autres chauffeurs.',
+            type: 'company_course_all_refused',
+            link: '/company-dashboard?tab=reservations',
+          });
+        }
       }
 
       return new Response(
@@ -114,115 +179,134 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create actual course from request
-    const { data: quote } = await supabaseClient
+    // Mark other pending quotes as "taken_by_other" and notify their drivers
+    const { data: otherQuotes } = await supabaseClient
       .from('company_course_quotes')
-      .select('*, request:company_course_requests(*)')
-      .eq('id', quote_id)
-      .single();
+      .select('id, driver_id, driver:drivers(user_id)')
+      .eq('request_id', quote.request_id)
+      .neq('id', quote_id)
+      .eq('status', 'sent');
 
-    if (quote?.request) {
-      const request = quote.request;
-      
-      // Create the course
-      const { data: course, error: courseError } = await supabaseClient
-        .from('courses')
-        .insert({
-          driver_id: driver.id,
-          pickup_address: request.pickup_address,
-          pickup_latitude: request.pickup_latitude,
-          pickup_longitude: request.pickup_longitude,
-          destination_address: request.destination_address,
-          destination_latitude: request.destination_latitude,
-          destination_longitude: request.destination_longitude,
-          scheduled_date: request.scheduled_date,
-          passengers_count: request.passengers_count,
-          notes: request.notes,
-          status: 'accepted',
-          distance_km: quote.distance_km,
-          duration_minutes: quote.duration_minutes,
-          is_guest_booking: request.is_guest_employee,
-          guest_name: request.guest_employee_name,
-          guest_phone: request.guest_employee_phone,
-          guest_email: request.guest_employee_email,
-          payment_method_requested: request.payment_method_requested,
+    if (otherQuotes && otherQuotes.length > 0) {
+      // Update status to taken_by_other
+      await supabaseClient
+        .from('company_course_quotes')
+        .update({ 
+          status: 'taken_by_other',
+          updated_at: new Date().toISOString()
         })
-        .select()
-        .single();
+        .eq('request_id', quote.request_id)
+        .neq('id', quote_id)
+        .eq('status', 'sent');
 
-      if (!courseError && course) {
-        // Link course to company
-        await supabaseClient
-          .from('company_courses')
-          .insert({
-            company_id: request.company_id,
-            course_id: course.id,
-            employee_id: request.employee_id,
-            invoice_to_company: true,
-            created_by_employee: !!request.employee_id,
-          });
-
-        // Update request with final course
-        await supabaseClient
-          .from('company_course_requests')
-          .update({ final_course_id: course.id })
-          .eq('id', request.id);
-
-        // Create devis for the course
-        try {
-          await supabaseClient.functions.invoke('create-devis-auto', {
-            body: { course_id: course.id, driver_id: driver.id }
-          });
-        } catch (e) {
-          console.warn('⚠️ Devis auto creation failed:', e);
-        }
-
-        // Notify company
-        const { data: company } = await supabaseClient
-          .from('companies')
-          .select('user_id, company_name')
-          .eq('id', request.company_id)
-          .single();
-
-        if (company?.user_id) {
-          const { data: driverProfile } = await supabaseClient
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .single();
-
+      // Notify each driver that the course was taken by another
+      for (const otherQuote of otherQuotes) {
+        const otherDriverUserId = (otherQuote.driver as any)?.user_id;
+        if (otherDriverUserId) {
           await supabaseClient.from('notifications').insert({
-            user_id: company.user_id,
-            title: 'Course acceptée',
-            message: `${driverProfile?.full_name || 'Un chauffeur'} a accepté votre demande de course`,
-            type: 'course_accepted',
-            link: '/company-dashboard?tab=reservations',
+            user_id: otherDriverUserId,
+            title: 'Course attribuée à un autre chauffeur',
+            message: `La demande de ${quote.request?.company?.company_name || 'l\'entreprise'} a été prise par un autre chauffeur`,
+            type: 'company_course_taken_by_other',
+            link: '/driver-dashboard?tab=courses',
           });
         }
-
-        // Create guest employee invitation if needed
-        if (request.is_guest_employee && request.guest_employee_name) {
-          await supabaseClient
-            .from('company_employee_course_invitations')
-            .insert({
-              company_id: request.company_id,
-              request_id: request.id,
-              course_id: course.id,
-              guest_name: request.guest_employee_name,
-              guest_phone: request.guest_employee_phone,
-              guest_email: request.guest_employee_email,
-              pickup_address: request.pickup_address,
-              destination_address: request.destination_address,
-              scheduled_date: request.scheduled_date,
-            });
-        }
-
-        console.log('✅ Course created:', course.id);
       }
     }
 
+    // Create actual course from request
+    const request = quote.request;
+    
+    // Create the course
+    const { data: course, error: courseError } = await supabaseClient
+      .from('courses')
+      .insert({
+        driver_id: driver.id,
+        pickup_address: request.pickup_address,
+        pickup_latitude: request.pickup_latitude,
+        pickup_longitude: request.pickup_longitude,
+        destination_address: request.destination_address,
+        destination_latitude: request.destination_latitude,
+        destination_longitude: request.destination_longitude,
+        scheduled_date: request.scheduled_date,
+        passengers_count: request.passengers_count,
+        notes: request.notes,
+        status: 'accepted',
+        distance_km: quote.distance_km,
+        duration_minutes: quote.duration_minutes,
+        is_guest_booking: request.is_guest_employee,
+        guest_name: request.guest_employee_name,
+        guest_phone: request.guest_employee_phone,
+        guest_email: request.guest_employee_email,
+        payment_method_requested: request.payment_method_requested,
+      })
+      .select()
+      .single();
+
+    if (courseError) {
+      console.error('❌ Course creation error:', courseError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create course', details: courseError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Course created:', course.id);
+
+    // Link course to company
+    await supabaseClient
+      .from('company_courses')
+      .insert({
+        company_id: request.company_id,
+        course_id: course.id,
+        employee_id: request.employee_id,
+        invoice_to_company: true,
+        created_by_employee: !!request.employee_id,
+      });
+
+    // Update request with final course and accepted driver
+    await supabaseClient
+      .from('company_course_requests')
+      .update({ 
+        final_course_id: course.id,
+        accepted_driver_id: driver.id,
+        accepted_at: new Date().toISOString(),
+        status: 'accepted'
+      })
+      .eq('id', request.id);
+
+    // Create devis for the course
+    try {
+      await supabaseClient.functions.invoke('create-devis-auto', {
+        body: { course_id: course.id, driver_id: driver.id }
+      });
+    } catch (e) {
+      console.warn('⚠️ Devis auto creation failed:', e);
+    }
+
+    // Notify company
+    if (request.company?.user_id) {
+      await supabaseClient.from('notifications').insert({
+        user_id: request.company.user_id,
+        title: 'Course acceptée',
+        message: `${driverName} a accepté votre demande de course`,
+        type: 'course_accepted',
+        link: '/company-dashboard?tab=reservations',
+      });
+    }
+
+    // Update guest employee invitation with course_id if exists
+    if (request.is_guest_employee && request.guest_employee_name) {
+      await supabaseClient
+        .from('company_employee_course_invitations')
+        .update({ 
+          course_id: course.id 
+        })
+        .eq('request_id', request.id);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, action: 'accepted' }),
+      JSON.stringify({ success: true, action: 'accepted', course_id: course.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
