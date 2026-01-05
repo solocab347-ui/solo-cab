@@ -2427,6 +2427,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
                   </div>
+
+                  {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
                   {(() => {
                     const facture = course.factures?.[0];
                     const devis = course.devis?.[0];
