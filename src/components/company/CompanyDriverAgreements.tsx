@@ -291,18 +291,26 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
 
       if (error) throw error;
 
-      // Fetch driver profiles
+      // Fetch driver profiles using user_id
       const driverUserIds = data?.map((a: any) => a.driver?.user_id).filter(Boolean) || [];
+      
       if (driverUserIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
           .select("id, full_name, profile_photo_url")
           .in("id", driverUserIds);
 
-        return data?.map((agreement: any) => ({
-          ...agreement,
-          driverProfile: profiles?.find((p: any) => p.id === agreement.driver?.user_id),
-        }));
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+        }
+
+        return data?.map((agreement: any) => {
+          const matchedProfile = profiles?.find((p: any) => p.id === agreement.driver?.user_id);
+          return {
+            ...agreement,
+            driverProfile: matchedProfile,
+          };
+        });
       }
 
       return data;
@@ -824,10 +832,12 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
+                            {/* Nom du chauffeur - priorité au full_name */}
                             <h4 className="font-semibold text-lg">
-                              {driverProfile?.full_name || driver?.company_name || "Chauffeur VTC"}
+                              {driverProfile?.full_name || "Chauffeur VTC"}
                             </h4>
-                            {driver?.company_name && driverProfile?.full_name && (
+                            {/* Entreprise du chauffeur - toujours affichée si disponible */}
+                            {driver?.company_name && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Car className="w-3.5 h-3.5" />
                                 {driver.company_name}
@@ -959,10 +969,12 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                                 </AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
+                                {/* Nom du chauffeur - priorité au full_name */}
                                 <h4 className="font-semibold text-lg">
-                                  {driverProfile?.full_name || driver?.company_name || "Chauffeur VTC"}
+                                  {driverProfile?.full_name || "Chauffeur VTC"}
                                 </h4>
-                                {driver?.company_name && driverProfile?.full_name && (
+                                {/* Entreprise du chauffeur - toujours affichée si disponible */}
+                                {driver?.company_name && (
                                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <Car className="w-3.5 h-3.5" />
                                     {driver.company_name}
