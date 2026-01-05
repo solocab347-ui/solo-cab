@@ -7812,6 +7812,7 @@ export type Database = {
         Args: { p_course_id: string; p_driver_id: string }
         Returns: Json
       }
+      get_current_driver_id: { Args: never; Returns: string }
       get_driver_clients_count: {
         Args: { _driver_id: string }
         Returns: number
@@ -7821,6 +7822,10 @@ export type Database = {
         Returns: number
       }
       get_driver_id: { Args: { _user_id: string }; Returns: string }
+      get_driver_quote_request_ids: {
+        Args: { _driver_id: string }
+        Returns: string[]
+      }
       get_employee_company_id: { Args: { p_user_id: string }; Returns: string }
       get_fleet_driver_count: {
         Args: { _fleet_manager_id: string }
