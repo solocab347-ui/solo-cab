@@ -16,8 +16,10 @@ import { toast } from "sonner";
 import { 
   Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, 
   AlertCircle, Eye, EyeOff, Car, Star, Settings, Search,
-  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp, Users, Info
+  Send, Inbox, Ban, User, Euro, ChevronDown, ChevronUp, Users, Info, Unlock, Lock
 } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { CompanyDriverSearch } from "./CompanyDriverSearch";
 import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
@@ -423,8 +425,61 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
   const receivedPending = agreements?.filter((a: any) => a.status === "pending" && a.proposed_by === "driver") || [];
   const sentPending = agreements?.filter((a: any) => a.status === "pending" && a.proposed_by === "company") || [];
   const activeAgreements = agreements?.filter((a: any) => a.status === "accepted") || [];
-  const rejectedAgreements = agreements?.filter((a: any) => a.status === "rejected") || [];
+  // Refusés mais non bloqués
+  const rejectedAgreements = agreements?.filter((a: any) => 
+    a.status === "rejected" && !a.company_blocked_driver && !a.driver_blocked_company
+  ) || [];
+  // Bloqués (par l'un ou l'autre)
+  const blockedAgreements = agreements?.filter((a: any) => 
+    a.company_blocked_driver || a.driver_blocked_company
+  ) || [];
   const terminatedAgreements = agreements?.filter((a: any) => a.status === "terminated" || a.status === "suspended") || [];
+
+  // Block driver mutation
+  const blockDriver = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          company_blocked_driver: true,
+          company_blocked_driver_at: new Date().toISOString(),
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Chauffeur bloqué. Il ne vous verra plus dans les recherches.");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du blocage");
+    },
+  });
+
+  // Unblock driver mutation
+  const unblockDriver = useMutation({
+    mutationFn: async (agreementId: string) => {
+      const { error } = await supabase
+        .from("company_driver_agreements")
+        .update({
+          company_blocked_driver: false,
+          company_blocked_driver_at: null,
+        })
+        .eq("id", agreementId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Chauffeur débloqué. Vous pouvez à nouveau vous voir mutuellement.");
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+    },
+    onError: () => {
+      toast.error("Erreur lors du déblocage");
+    },
+  });
 
 
   return (
@@ -497,36 +552,43 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="search" className="flex items-center gap-2">
             <Search className="w-4 h-4" />
-            Rechercher
+            <span className="hidden sm:inline">Rechercher</span>
           </TabsTrigger>
           <TabsTrigger value="received" className="flex items-center gap-2">
             <Inbox className="w-4 h-4" />
-            Reçues
+            <span className="hidden sm:inline">Reçues</span>
             {receivedPending.length > 0 && (
               <Badge className="bg-blue-500 ml-1">{receivedPending.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="sent" className="flex items-center gap-2">
             <Send className="w-4 h-4" />
-            Envoyées
+            <span className="hidden sm:inline">Envoyées</span>
             {sentPending.length > 0 && (
               <Badge className="bg-yellow-500 ml-1">{sentPending.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="active" className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
-            Actifs
+            <span className="hidden sm:inline">Actifs</span>
             {activeAgreements.length > 0 && (
               <Badge className="bg-green-500 ml-1">{activeAgreements.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="blocked" className="flex items-center gap-2">
+            <Ban className="w-4 h-4" />
+            <span className="hidden sm:inline">Bloqués</span>
+            {blockedAgreements.length > 0 && (
+              <Badge variant="destructive" className="ml-1">{blockedAgreements.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            Historique
+            <span className="hidden sm:inline">Historique</span>
           </TabsTrigger>
         </TabsList>
 
@@ -691,6 +753,122 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
           )}
         </TabsContent>
 
+        {/* Blocked Drivers Tab */}
+        <TabsContent value="blocked" className="mt-6 space-y-4">
+          {blockedAgreements.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Ban className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">Aucun chauffeur bloqué</h3>
+                <p className="text-muted-foreground">
+                  Les chauffeurs que vous bloquez ou qui vous bloquent apparaîtront ici
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <Alert className="bg-muted/50">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Les chauffeurs bloqués ne peuvent plus vous voir dans les recherches et vice-versa. 
+                  Vous pouvez débloquer ceux que vous avez bloqués.
+                </AlertDescription>
+              </Alert>
+              
+              {blockedAgreements.map((agreement: any) => {
+                const blockedByCompany = agreement.company_blocked_driver;
+                const blockedByDriver = agreement.driver_blocked_company;
+                
+                return (
+                  <Card key={agreement.id} className="border-destructive/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                        <div className="flex gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={agreement.driverProfile?.profile_photo_url} />
+                            <AvatarFallback>
+                              <User className="w-6 h-6" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold">{agreement.driverProfile?.full_name || "Chauffeur"}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {agreement.driver?.company_name}
+                            </p>
+                            {/* Informations de blocage */}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {blockedByCompany && (
+                                <Badge variant="destructive" className="text-xs">
+                                  <Lock className="w-3 h-3 mr-1" />
+                                  Bloqué par vous
+                                  {agreement.company_blocked_driver_at && (
+                                    <span className="ml-1 opacity-70">
+                                      le {format(new Date(agreement.company_blocked_driver_at), "d MMM yyyy", { locale: fr })}
+                                    </span>
+                                  )}
+                                </Badge>
+                              )}
+                              {blockedByDriver && (
+                                <Badge variant="outline" className="text-xs border-destructive text-destructive">
+                                  <EyeOff className="w-3 h-3 mr-1" />
+                                  Vous a bloqué
+                                  {agreement.driver_blocked_company_at && (
+                                    <span className="ml-1 opacity-70">
+                                      le {format(new Date(agreement.driver_blocked_company_at), "d MMM yyyy", { locale: fr })}
+                                    </span>
+                                  )}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 w-full sm:w-auto">
+                          {/* Débloquer seulement si bloqué par l'entreprise */}
+                          {blockedByCompany && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => unblockDriver.mutate(agreement.id)}
+                              disabled={unblockDriver.isPending}
+                              className="w-full sm:w-auto"
+                            >
+                              {unblockDriver.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Unlock className="w-4 h-4 mr-1" />
+                                  Débloquer
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {/* Si bloqué par le chauffeur, on ne peut rien faire */}
+                          {blockedByDriver && !blockedByCompany && (
+                            <p className="text-xs text-muted-foreground text-center sm:text-right">
+                              Seul le chauffeur peut vous débloquer
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Motif du refus si existant */}
+                      {agreement.rejection_reason && (
+                        <Alert className="mt-3 bg-muted/50">
+                          <Info className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            <span className="font-medium">Motif initial:</span> {agreement.rejection_reason}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
         {/* History Tab */}
         <TabsContent value="history" className="mt-6 space-y-4">
           {rejectedAgreements.length === 0 && terminatedAgreements.length === 0 ? (
@@ -751,17 +929,35 @@ export function CompanyDriverAgreements({ companyId }: CompanyDriverAgreementsPr
                           </Alert>
                         )}
 
-                        {/* Bouton pour refaire une demande (si non bloqué) */}
-                        {!agreement.company_blocked_driver && !agreement.driver_blocked_company && (
+                        {/* Boutons d'action */}
+                        <div className="flex flex-wrap gap-2">
+                          {/* Bouton pour refaire une demande */}
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setActiveTab("search")}
                           >
                             <Send className="w-4 h-4 mr-1" />
-                            Refaire une demande
+                            Relancer
                           </Button>
-                        )}
+                          
+                          {/* Bouton pour bloquer le chauffeur */}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => blockDriver.mutate(agreement.id)}
+                            disabled={blockDriver.isPending}
+                          >
+                            {blockDriver.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Ban className="w-4 h-4 mr-1" />
+                                Bloquer
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
