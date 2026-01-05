@@ -16,14 +16,17 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { request_id, driver_ids } = await req.json();
+    const { request_id, driver_ids: rawDriverIds } = await req.json();
 
-    if (!request_id || !driver_ids || !Array.isArray(driver_ids) || driver_ids.length === 0) {
+    if (!request_id || !rawDriverIds || !Array.isArray(rawDriverIds) || rawDriverIds.length === 0) {
       return new Response(
         JSON.stringify({ error: 'request_id et driver_ids requis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Deduplicate driver IDs
+    const driver_ids = [...new Set(rawDriverIds)];
 
     console.log('🔍 Generating quotes for request:', request_id, 'drivers:', driver_ids);
 
@@ -49,7 +52,7 @@ Deno.serve(async (req) => {
     if (request.pickup_latitude && request.pickup_longitude && 
         request.destination_latitude && request.destination_longitude) {
       
-      const mapboxToken = Deno.env.get('MAPBOX_ACCESS_TOKEN');
+      const mapboxToken = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
       if (mapboxToken) {
         try {
           const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${request.pickup_longitude},${request.pickup_latitude};${request.destination_longitude},${request.destination_latitude}?access_token=${mapboxToken}`;
