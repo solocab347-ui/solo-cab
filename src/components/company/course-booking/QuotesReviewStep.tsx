@@ -199,10 +199,16 @@ export function QuotesReviewStep({
             <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
             <span className="truncate">{formData.destinationAddress}</span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
-            <span>{generatedQuotes[0]?.distanceKm.toFixed(1)} km</span>
-            <span>~{generatedQuotes[0]?.durationMinutes} min</span>
-          </div>
+          {(generatedQuotes[0]?.distanceKm > 0 || generatedQuotes[0]?.durationMinutes > 0) ? (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
+              <span>{generatedQuotes[0]?.distanceKm.toFixed(1)} km</span>
+              <span>~{generatedQuotes[0]?.durationMinutes} min</span>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-600 pt-1">
+              Distance non calculée - le prix correspond au tarif minimum du chauffeur
+            </p>
+          )}
         </div>
       )}
 
