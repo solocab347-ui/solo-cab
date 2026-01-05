@@ -3509,7 +3509,7 @@ export type Database = {
       factures: {
         Row: {
           amount: number
-          client_id: string
+          client_id: string | null
           company_employee_id: string | null
           company_id: string | null
           course_id: string
@@ -3529,7 +3529,7 @@ export type Database = {
         }
         Insert: {
           amount: number
-          client_id: string
+          client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id: string
@@ -3549,7 +3549,7 @@ export type Database = {
         }
         Update: {
           amount?: number
-          client_id?: string
+          client_id?: string | null
           company_employee_id?: string | null
           company_id?: string | null
           course_id?: string
@@ -7538,6 +7538,7 @@ export type Database = {
         Args: { p_driver_id: string; p_shared_course_id: string }
         Returns: Json
       }
+      check_company_payment_reminders: { Args: never; Returns: undefined }
       check_driver_availability: {
         Args: {
           p_driver_id: string

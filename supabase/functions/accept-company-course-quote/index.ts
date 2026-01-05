@@ -275,13 +275,33 @@ Deno.serve(async (req) => {
       })
       .eq('id', request.id);
 
-    // Create devis for the course
+    // Create devis directly from the company quote (more reliable than calling create-devis-auto)
     try {
-      await supabaseClient.functions.invoke('create-devis-auto', {
-        body: { course_id: course.id, driver_id: driver.id }
-      });
+      const quoteNumber = `ENT-${quote_id.slice(0, 8).toUpperCase()}`;
+      
+      await supabaseClient
+        .from('devis')
+        .insert({
+          course_id: course.id,
+          driver_id: driver.id,
+          company_id: request.company_id,
+          company_employee_id: request.employee_id,
+          amount: quote.total_price,
+          base_price: quote.base_price || 0,
+          distance_price: quote.distance_price || 0,
+          time_price: quote.time_price || 0,
+          evening_surcharge_amount: quote.evening_surcharge || 0,
+          weekend_surcharge_amount: quote.weekend_surcharge || 0,
+          discount_amount: 0,
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+          valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          quote_number: quoteNumber
+        });
+      
+      console.log('✅ Devis created for company course:', quoteNumber);
     } catch (e) {
-      console.warn('⚠️ Devis auto creation failed:', e);
+      console.warn('⚠️ Devis creation failed:', e);
     }
 
     // Notify company
