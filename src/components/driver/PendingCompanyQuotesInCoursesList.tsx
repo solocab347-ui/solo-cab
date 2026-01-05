@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,7 +40,8 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
             company_id,
             companies!inner(
               id,
-              company_name
+              company_name,
+              logo_url
             )
           )
         `)
@@ -134,8 +136,18 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
               
               <div className="space-y-3 pl-2">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                  <div className="space-y-1 w-full">
+                <div className="flex items-start gap-3">
+                  {/* Company Logo */}
+                  <Avatar className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 border border-border/50">
+                    {company.logo_url ? (
+                      <AvatarImage src={company.logo_url} alt={company.company_name} className="object-cover" />
+                    ) : null}
+                    <AvatarFallback className="bg-purple-500/20 text-purple-400 rounded-lg text-sm font-semibold">
+                      {company.company_name?.slice(0, 2).toUpperCase() || 'EN'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="space-y-1 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-sm sm:text-base text-foreground">
                         ENT-{quote.id.slice(0, 8).toUpperCase()}
@@ -148,7 +160,7 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange }: P
                         En attente
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{company.company_name}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{company.company_name}</p>
                     {request.guest_employee_name && (
                       <p className="text-xs text-muted-foreground">Passager: {request.guest_employee_name}</p>
                     )}
