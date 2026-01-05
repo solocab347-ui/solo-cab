@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Car, MapPin, Star, Send, 
   CreditCard, Clock, User, Languages, 
-  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase, EyeOff, AlertTriangle, XCircle, Calendar
+  Eye, Phone, Filter, Building2, RotateCcw, Euro, Briefcase, EyeOff, AlertTriangle, XCircle, Calendar, Ban
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -293,7 +293,7 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_driver_agreements")
-        .select("driver_id, status, company_blocked_driver, driver_blocked_company, proposed_by, rejected_at, rejection_reason")
+        .select("id, driver_id, status, company_blocked_driver, driver_blocked_company, proposed_by, rejected_at, rejection_reason")
         .eq("company_id", companyId);
 
       if (error) throw error;
@@ -342,6 +342,47 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     },
   });
 
+  // Block driver mutation - bloquer directement depuis la recherche
+  const blockDriverFromSearch = useMutation({
+    mutationFn: async ({ driverId, agreementId }: { driverId: string; agreementId?: string }) => {
+      if (agreementId) {
+        // Mise à jour d'un accord existant
+        const { error } = await supabase
+          .from("company_driver_agreements")
+          .update({
+            company_blocked_driver: true,
+            company_blocked_driver_at: new Date().toISOString(),
+          })
+          .eq("id", agreementId);
+
+        if (error) throw error;
+      } else {
+        // Créer un nouvel accord pour bloquer
+        const { error } = await supabase
+          .from("company_driver_agreements")
+          .insert({
+            company_id: companyId,
+            driver_id: driverId,
+            proposed_by: "company",
+            status: "rejected",
+            company_blocked_driver: true,
+            company_blocked_driver_at: new Date().toISOString(),
+            rejection_reason: "Bloqué par l'entreprise",
+          });
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Chauffeur bloqué. Il n'apparaîtra plus dans vos recherches.");
+      queryClient.invalidateQueries({ queryKey: ["company-driver-proposals"] });
+      queryClient.invalidateQueries({ queryKey: ["company-agreements"] });
+    },
+    onError: (error: any) => {
+      toast.error("Erreur lors du blocage: " + error.message);
+    },
+  });
+
   const resetForm = () => {
     setProposalMessage("");
     setPaymentMethods(["card"]);
@@ -374,11 +415,17 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     const proposal = existingProposals?.find((p) => p.driver_id === driverId && p.status === 'rejected');
     if (!proposal) return null;
     return {
+      id: (proposal as any).id, // récupérer l'ID pour le blocage
       rejectedAt: proposal.rejected_at,
       rejectionReason: proposal.rejection_reason,
       proposedBy: proposal.proposed_by,
       driverBlockedCompany: proposal.driver_blocked_company
     };
+  };
+
+  const getAgreementId = (driverId: string) => {
+    const proposal = existingProposals?.find((p) => p.driver_id === driverId);
+    return (proposal as any)?.id;
   };
 
   const handleOpenProposal = (driver: any) => {
@@ -754,17 +801,19 @@ ${company?.company_name || ""}`;
                     </Alert>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 min-w-[100px]"
                       onClick={() => handleViewProfile(driver)}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Voir profil
                     </Button>
+                    
+                    {/* Bouton principal : Proposer / Relancer */}
                     <Button
-                      className="flex-1"
+                      className="flex-1 min-w-[100px]"
                       onClick={() => handleOpenProposal(driver)}
                       disabled={hasProposal || rejectionDetails?.driverBlockedCompany}
                     >
@@ -789,6 +838,29 @@ ${company?.company_name || ""}`;
                         </>
                       )}
                     </Button>
+                    
+                    {/* Bouton Bloquer - visible seulement si refusé et pas déjà bloqué par le chauffeur */}
+                    {isRejected && !rejectionDetails?.driverBlockedCompany && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={() => {
+                          const agreementId = getAgreementId(driver.id);
+                          blockDriverFromSearch.mutate({ driverId: driver.id, agreementId });
+                        }}
+                        disabled={blockDriverFromSearch.isPending}
+                      >
+                        {blockDriverFromSearch.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Ban className="w-4 h-4 mr-1" />
+                            Bloquer ce chauffeur
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
