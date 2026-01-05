@@ -154,9 +154,7 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
     }
   };
 
-  // Note: Badge supprimé pour affichage uniforme - le statut est affiché dans l'encart en bas
   const getStatusBadge = () => {
-    // Only show badge for active shares (accepted/in_progress), not for pending
     if (status.active_share) {
       switch (status.active_share.status) {
         case 'in_progress':
@@ -176,7 +174,45 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
       }
     }
 
-    // Don't show badge for pending shares - the alert box below handles this
+    if (status.pending_share) {
+      if (status.pending_share.sharing_mode === 'pool') {
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
+              <Users className="w-3 h-3 mr-1" />
+              Proposée à {status.pending_share.pending_count} partenaires
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
+              onClick={handleQuickCancel}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+            </Button>
+          </div>
+        );
+      }
+      return (
+        <div className="flex items-center gap-1 flex-wrap">
+          <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
+            <Clock className="w-3 h-3 mr-1" />
+            Partagée - En attente
+          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
+            onClick={handleQuickCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+          </Button>
+        </div>
+      );
+    }
+
     return null;
   };
 
