@@ -23,6 +23,7 @@ interface PricingData {
   tva_included: boolean;
   evening_surcharge: number;
   weekend_surcharge: number;
+  airport_surcharge: number;
   default_commission_percentage: number;
   assignment_mode: string;
   favorite_driver_priority: boolean;
@@ -40,6 +41,7 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
     tva_included: false,
     evening_surcharge: 0,
     weekend_surcharge: 0,
+    airport_surcharge: 0,
     default_commission_percentage: 0,
     assignment_mode: "manual",
     favorite_driver_priority: true,
@@ -62,6 +64,7 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           tva_included,
           evening_surcharge,
           weekend_surcharge,
+          airport_surcharge,
           default_commission_percentage,
           assignment_mode,
           favorite_driver_priority
@@ -71,18 +74,20 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
 
       if (error) throw error;
       if (data) {
+        const d = data as any;
         setPricing({
-          base_fare: data.base_fare || 0,
-          per_km_rate: data.per_km_rate || 0,
-          hourly_rate: data.hourly_rate || 0,
-          minimum_price: data.minimum_price || 0,
-          tva_rate: data.tva_rate || 20,
-          tva_included: data.tva_included || false,
-          evening_surcharge: data.evening_surcharge || 0,
-          weekend_surcharge: data.weekend_surcharge || 0,
-          default_commission_percentage: data.default_commission_percentage || 0,
-          assignment_mode: data.assignment_mode || "manual",
-          favorite_driver_priority: data.favorite_driver_priority !== false,
+          base_fare: d.base_fare || 0,
+          per_km_rate: d.per_km_rate || 0,
+          hourly_rate: d.hourly_rate || 0,
+          minimum_price: d.minimum_price || 0,
+          tva_rate: d.tva_rate || 20,
+          tva_included: d.tva_included || false,
+          evening_surcharge: d.evening_surcharge || 0,
+          weekend_surcharge: d.weekend_surcharge || 0,
+          airport_surcharge: d.airport_surcharge || 0,
+          default_commission_percentage: d.default_commission_percentage || 0,
+          assignment_mode: d.assignment_mode || "manual",
+          favorite_driver_priority: d.favorite_driver_priority !== false,
         });
       }
     } catch (error) {
@@ -106,10 +111,11 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           tva_included: pricing.tva_included,
           evening_surcharge: pricing.evening_surcharge,
           weekend_surcharge: pricing.weekend_surcharge,
+          airport_surcharge: pricing.airport_surcharge,
           default_commission_percentage: pricing.default_commission_percentage,
           assignment_mode: pricing.assignment_mode,
           favorite_driver_priority: pricing.favorite_driver_priority,
-        })
+        } as any)
         .eq("id", fleetManagerId);
 
       if (error) throw error;
@@ -149,10 +155,9 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               <Label htmlFor="base_fare">Prise en charge (€)</Label>
               <Input
                 id="base_fare"
-                type="number"
-                min="0"
-                step="0.01"
-                value={pricing.base_fare}
+                type="text"
+                inputMode="decimal"
+                value={pricing.base_fare || ""}
                 onChange={(e) => setPricing({ ...pricing, base_fare: parseFloat(e.target.value) || 0 })}
               />
             </div>
@@ -160,10 +165,9 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               <Label htmlFor="per_km_rate">Prix au kilomètre (€/km)</Label>
               <Input
                 id="per_km_rate"
-                type="number"
-                min="0"
-                step="0.01"
-                value={pricing.per_km_rate}
+                type="text"
+                inputMode="decimal"
+                value={pricing.per_km_rate || ""}
                 onChange={(e) => setPricing({ ...pricing, per_km_rate: parseFloat(e.target.value) || 0 })}
               />
             </div>
@@ -174,10 +178,9 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               </Label>
               <Input
                 id="hourly_rate"
-                type="number"
-                min="0"
-                step="0.01"
-                value={pricing.hourly_rate}
+                type="text"
+                inputMode="decimal"
+                value={pricing.hourly_rate || ""}
                 onChange={(e) => setPricing({ ...pricing, hourly_rate: parseFloat(e.target.value) || 0 })}
               />
             </div>
@@ -185,10 +188,9 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               <Label htmlFor="minimum_price">Prix minimum (€)</Label>
               <Input
                 id="minimum_price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={pricing.minimum_price}
+                type="text"
+                inputMode="decimal"
+                value={pricing.minimum_price || ""}
                 onChange={(e) => setPricing({ ...pricing, minimum_price: parseFloat(e.target.value) || 0 })}
               />
             </div>
@@ -230,11 +232,9 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                 </Label>
                 <Input
                   id="evening_surcharge"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={pricing.evening_surcharge}
+                  type="text"
+                  inputMode="decimal"
+                  value={pricing.evening_surcharge || ""}
                   onChange={(e) => setPricing({ ...pricing, evening_surcharge: parseFloat(e.target.value) || 0 })}
                 />
               </div>
@@ -245,14 +245,30 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                 </Label>
                 <Input
                   id="weekend_surcharge"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={pricing.weekend_surcharge}
+                  type="text"
+                  inputMode="decimal"
+                  value={pricing.weekend_surcharge || ""}
                   onChange={(e) => setPricing({ ...pricing, weekend_surcharge: parseFloat(e.target.value) || 0 })}
                 />
               </div>
+            </div>
+
+            {/* Forfait Aéroport */}
+            <div className="space-y-2 border-t pt-4">
+              <Label htmlFor="airport_surcharge" className="flex items-center gap-2">
+                ✈️ Forfait Aéroport (€)
+              </Label>
+              <Input
+                id="airport_surcharge"
+                type="text"
+                inputMode="decimal"
+                value={pricing.airport_surcharge}
+                onChange={(e) => setPricing({ ...pricing, airport_surcharge: parseFloat(e.target.value) || 0 })}
+                className="max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">
+                Forfait ajouté automatiquement pour les courses depuis/vers un aéroport français
+              </p>
             </div>
           </div>
         </CardContent>

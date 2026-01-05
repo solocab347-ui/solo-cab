@@ -158,6 +158,7 @@ const DriverDashboard = () => {
   const [eveningSurcharge, setEveningSurcharge] = useState("0");
   const [weekendSurcharge, setWeekendSurcharge] = useState("0");
   const [minimumPrice, setMinimumPrice] = useState("0");
+  const [airportSurcharge, setAirportSurcharge] = useState("0");
   const [vehiclePhotos, setVehiclePhotos] = useState<string[]>([]);
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [visibleToFleetManagers, setVisibleToFleetManagers] = useState(false);
@@ -221,6 +222,7 @@ const DriverDashboard = () => {
     setEveningSurcharge(driver.evening_surcharge?.toString() || "0");
     setWeekendSurcharge(driver.weekend_surcharge?.toString() || "0");
     setMinimumPrice((driver as any).minimum_price?.toString() || "0");
+    setAirportSurcharge((driver as any).airport_surcharge?.toString() || "0");
     setProfilePhotoUrl(driverProfile.profile_photo_url || null);
     setCardPhotoUrl(driver.card_photo_url || null);
     setVehiclePhotos(driver.vehicle_photos || []);
@@ -341,6 +343,7 @@ const DriverDashboard = () => {
         evening_surcharge: eveningSurcharge ? parseFloat(eveningSurcharge) : 0,
         weekend_surcharge: weekendSurcharge ? parseFloat(weekendSurcharge) : 0,
         minimum_price: minimumPrice ? parseFloat(minimumPrice) : 0,
+        airport_surcharge: airportSurcharge ? parseFloat(airportSurcharge) : 0,
         vehicle_photos: vehiclePhotos,
         gallery_photos: galleryPhotos,
         card_photo_url: cardPhotoUrl,
@@ -706,8 +709,8 @@ const DriverDashboard = () => {
                   <Label htmlFor="baseFare" className="text-white">Forfait de base (€)</Label>
                   <Input
                     id="baseFare"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={baseFare}
                     onChange={(e) => setBaseFare(e.target.value)}
                     placeholder="10.00"
@@ -719,8 +722,8 @@ const DriverDashboard = () => {
                   <Label htmlFor="perKm" className="text-white">Prix par kilomètre (€)</Label>
                   <Input
                     id="perKm"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={perKmRate}
                     onChange={(e) => setPerKmRate(e.target.value)}
                     placeholder="1.50"
@@ -732,8 +735,8 @@ const DriverDashboard = () => {
                   <Label htmlFor="hourly" className="text-white">Tarif horaire (€)</Label>
                   <Input
                     id="hourly"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(e.target.value)}
                     placeholder="45.00"
@@ -746,9 +749,8 @@ const DriverDashboard = () => {
                   <Label htmlFor="minimumPrice" className="text-white">Prix minimum par course (€)</Label>
                   <Input
                     id="minimumPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={minimumPrice}
                     onChange={(e) => setMinimumPrice(e.target.value)}
                     placeholder="15.00"
@@ -798,16 +800,13 @@ const DriverDashboard = () => {
                   <p className="text-xs mt-2 italic text-white">La TVA est calculée automatiquement selon le type de course</p>
                 </div>
 
-                {/* Augmentations soir et weekend */}
                 <div className="grid md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
                   <div className="space-y-2">
                     <Label htmlFor="eveningSurcharge" className="text-white">Augmentation Soir (%)</Label>
                     <Input
                       id="eveningSurcharge"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
+                      type="text"
+                      inputMode="decimal"
                       value={eveningSurcharge}
                       onChange={(e) => setEveningSurcharge(e.target.value)}
                       placeholder="0"
@@ -819,10 +818,8 @@ const DriverDashboard = () => {
                     <Label htmlFor="weekendSurcharge" className="text-white">Augmentation Weekend (%)</Label>
                     <Input
                       id="weekendSurcharge"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
+                      type="text"
+                      inputMode="decimal"
                       value={weekendSurcharge}
                       onChange={(e) => setWeekendSurcharge(e.target.value)}
                       placeholder="0"
@@ -830,6 +827,29 @@ const DriverDashboard = () => {
                     <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
                   </div>
                 </div>
+
+                {/* Forfait Aéroport */}
+                <div className="space-y-2 border-t border-white/10 pt-6">
+                  <Label htmlFor="airportSurcharge" className="text-white flex items-center gap-2">
+                    ✈️ Forfait Aéroport (€)
+                  </Label>
+                  <Input
+                    id="airportSurcharge"
+                    type="text"
+                    inputMode="decimal"
+                    value={airportSurcharge}
+                    onChange={(e) => setAirportSurcharge(e.target.value)}
+                    placeholder="0"
+                    className="max-w-xs"
+                  />
+                  <p className="text-xs text-white/70">
+                    Forfait fixe ajouté automatiquement pour toutes les courses depuis/vers un aéroport français (Roissy CDG, Orly, Lyon Saint-Exupéry, Nice, Marseille, etc.)
+                  </p>
+                  <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10 mt-2">
+                    💡 <span className="font-medium">Détection automatique :</span> Le système détecte automatiquement si l'adresse de départ ou de destination contient un aéroport et applique ce forfait.
+                  </p>
+                </div>
+
                 <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10">
                   💡 <span className="font-medium">Info :</span> Mettez 0 si vous ne souhaitez pas appliquer d'augmentation. Les pourcentages sont appliqués automatiquement lors du calcul des prix.
                 </p>

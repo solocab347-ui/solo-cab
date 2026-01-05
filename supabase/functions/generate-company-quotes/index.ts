@@ -88,6 +88,8 @@ Deno.serve(async (req) => {
             _duration_minutes: durationMinutes,
             _use_hourly_rate: false,
             _scheduled_date: request.scheduled_date,
+            _pickup_address: request.pickup_address || null,
+            _destination_address: request.destination_address || null,
           });
 
         if (priceError || !priceData || priceData.length === 0) {
