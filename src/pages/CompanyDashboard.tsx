@@ -43,7 +43,7 @@ import { CompanyCoursesList } from "@/components/company/CompanyCoursesList";
 import { CompanyDevisList } from "@/components/company/CompanyDevisList";
 import { CompanyFacturesList } from "@/components/company/CompanyFacturesList";
 import { CompanyBillingSettings } from "@/components/company/CompanyBillingSettings";
-import { CompanyPaymentsDue } from "@/components/company/CompanyPaymentsDue";
+import { CompanyPaymentsHub } from "@/components/company/CompanyPaymentsHub";
 import { CompanyPaymentAlerts } from "@/components/company/CompanyPaymentAlerts";
 import { CompanyPublicProfile } from "@/components/company/CompanyPublicProfile";
 import { CompanyStatisticsComplete } from "@/components/company/CompanyStatisticsComplete";
@@ -210,7 +210,7 @@ export default function CompanyDashboard() {
       case "expenses":
         return <CompanyExpenseReports companyId={company.id} />;
       case "payments":
-        return <CompanyPaymentsDue companyId={company.id} />;
+        return <CompanyPaymentsHub companyId={company.id} />;
       case "partnerships":
         return <CompanyDriverAgreements companyId={company.id} />;
       case "drivers":
