@@ -30,6 +30,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   const [requestToResume, setRequestToResume] = useState<{ request: any; step: WizardStep } | null>(null);
 
   // Realtime subscription pour synchronisation instantanée
+  // Note: on désactive les invalidations quand le wizard est ouvert pour éviter les rechargements intempestifs
   useEffect(() => {
     const channel = supabase
       .channel('company-course-requests-realtime')
@@ -42,8 +43,10 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           filter: `company_id=eq.${companyId}`
         },
         () => {
-          // Invalider le cache pour refresh instantané
-          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          // Ne pas invalider si le wizard est ouvert (évite le reset du wizard)
+          if (!showWizard && !requestToResend && !requestToResume) {
+            queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          }
         }
       )
       .on(
@@ -54,7 +57,10 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           table: 'company_course_quotes'
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          // Ne pas invalider si le wizard est ouvert
+          if (!showWizard && !requestToResend && !requestToResume) {
+            queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          }
         }
       )
       .on(
@@ -65,7 +71,10 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           table: 'courses'
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          // Ne pas invalider si le wizard est ouvert
+          if (!showWizard && !requestToResend && !requestToResume) {
+            queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+          }
         }
       )
       .subscribe();
@@ -73,7 +82,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [companyId, queryClient]);
+  }, [companyId, queryClient, showWizard, requestToResend, requestToResume]);
 
   // Déterminer le step de reprise selon le statut
   const getResumeStep = (status: string): WizardStep => {
