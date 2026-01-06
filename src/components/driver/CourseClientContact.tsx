@@ -10,11 +10,19 @@ interface CourseClientContactProps {
       };
     };
   };
+  // Props pour les courses entreprise (employé)
+  employeePhone?: string | null;
 }
 
-export function CourseClientContact({ course }: CourseClientContactProps) {
-  // Helper pour obtenir le téléphone du client (enregistré ou invité)
+export function CourseClientContact({ course, employeePhone }: CourseClientContactProps) {
+  // Helper pour obtenir le téléphone du client (employé entreprise, enregistré ou invité)
   const getClientPhone = (): string | null => {
+    // Priorité 1: Téléphone de l'employé entreprise (passé en props)
+    if (employeePhone) {
+      return employeePhone;
+    }
+    
+    // Priorité 2: Client invité ou client classique
     if (course.is_guest_booking || !course.clients?.profiles?.phone) {
       return course.guest_phone || null;
     }
