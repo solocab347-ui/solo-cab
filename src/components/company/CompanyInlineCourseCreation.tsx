@@ -139,20 +139,29 @@ export function CompanyInlineCourseCreation({
 
       console.log("[CompanyInlineCourseCreation] Course created successfully:", data);
 
-      // Try to auto-create devis (non-blocking)
-      try {
-        await supabase.functions.invoke("create-devis-auto", {
-          body: { course_id: data.course.id, driver_id: selectedDriver.driver_id }
-        });
-      } catch (e) {
-        console.warn("Devis auto failed:", e);
+      // Créer le devis automatiquement (BLOQUANT - on attend le résultat)
+      console.log("[CompanyInlineCourseCreation] Creating devis for course:", data.course.id);
+      const { data: devisResult, error: devisError } = await supabase.functions.invoke("create-devis-auto", {
+        body: { course_id: data.course.id, driver_id: selectedDriver.driver_id }
+      });
+
+      if (devisError) {
+        console.error("[CompanyInlineCourseCreation] Devis creation error:", devisError);
+        // Course créée mais pas de devis - informer l'utilisateur
+        return { course: data.course, devisCreated: false };
       }
 
-      return data.course;
+      console.log("[CompanyInlineCourseCreation] Devis created:", devisResult);
+      return { course: data.course, devisCreated: true, devis: devisResult?.devis };
     },
-    onSuccess: () => {
-      toast.success("Demande de course envoyée au chauffeur");
+    onSuccess: (result) => {
+      if (result.devisCreated) {
+        toast.success("Devis généré ! Consultez l'onglet Courses pour l'accepter ou le refuser.");
+      } else {
+        toast.warning("Course créée mais le devis n'a pas pu être généré. Veuillez réessayer.");
+      }
       queryClient.invalidateQueries({ queryKey: ["company-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-courses"] });
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
