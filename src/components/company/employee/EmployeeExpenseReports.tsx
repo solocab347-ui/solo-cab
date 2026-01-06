@@ -19,6 +19,9 @@ import {
   Upload,
   FileText,
   AlertCircle,
+  Car,
+  MapPin,
+  User,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -58,7 +61,11 @@ interface ExpenseReport {
     pickup_address: string;
     destination_address: string;
     scheduled_date: string;
+    started_at: string | null;
+    completed_at: string | null;
+    driver_id: string | null;
   } | null;
+  driver_name?: string | null;
 }
 
 interface EmployeeExpenseReportsProps {
@@ -105,14 +112,41 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
             id,
             pickup_address,
             destination_address,
-            scheduled_date
+            scheduled_date,
+            started_at,
+            completed_at,
+            driver_id
           )
         `)
         .eq("employee_id", employeeId)
         .order("submitted_at", { ascending: false });
 
       if (error) throw error;
-      setExpenses((data as any) || []);
+
+      // Fetch driver names for each expense with a course
+      const enrichedExpenses = await Promise.all(
+        (data || []).map(async (expense: any) => {
+          if (expense.course?.driver_id) {
+            const { data: driver } = await supabase
+              .from("drivers")
+              .select("user_id")
+              .eq("id", expense.course.driver_id)
+              .maybeSingle();
+            
+            if (driver?.user_id) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", driver.user_id)
+                .maybeSingle();
+              return { ...expense, driver_name: profile?.full_name || null };
+            }
+          }
+          return expense;
+        })
+      );
+
+      setExpenses(enrichedExpenses);
     } catch (error) {
       console.error("Error fetching expenses:", error);
     } finally {
@@ -286,17 +320,65 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
 
                       {/* Course info if linked */}
                       {expense.course && (
-                        <div className="mb-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                            <span className="font-medium">{expense.course.pickup_address.split(",")[0]}</span>
-                            <span className="text-muted-foreground">→</span>
-                            <div className="w-2 h-2 rounded-full bg-red-500" />
-                            <span className="font-medium">{expense.course.destination_address.split(",")[0]}</span>
+                        <div className="mb-3 p-3 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                          {/* Route */}
+                          <div className="flex items-start gap-2 mb-2">
+                            <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 text-sm flex-wrap">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  <span className="font-medium">{expense.course.pickup_address.split(",")[0]}</span>
+                                </div>
+                                <span className="text-muted-foreground">→</span>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                                  <span className="font-medium">{expense.course.destination_address.split(",")[0]}</span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Course du {format(new Date(expense.course.scheduled_date), "dd MMM yyyy", { locale: fr })}
+
+                          {/* Date & Time details */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>
+                                {format(new Date(expense.course.scheduled_date), "EEEE dd MMM yyyy", { locale: fr })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>
+                                Prévu à {format(new Date(expense.course.scheduled_date), "HH:mm", { locale: fr })}
+                              </span>
+                            </div>
+                            {expense.course.started_at && (
+                              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>
+                                  Départ: {format(new Date(expense.course.started_at), "HH:mm", { locale: fr })}
+                                </span>
+                              </div>
+                            )}
+                            {expense.course.completed_at && (
+                              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>
+                                  Arrivée: {format(new Date(expense.course.completed_at), "HH:mm", { locale: fr })}
+                                </span>
+                              </div>
+                            )}
                           </div>
+
+                          {/* Driver info */}
+                          {expense.driver_name && (
+                            <div className="mt-2 pt-2 border-t border-primary/10 flex items-center gap-1.5 text-xs">
+                              <User className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-muted-foreground">Chauffeur :</span>
+                              <span className="font-medium">{expense.driver_name}</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
