@@ -7770,6 +7770,7 @@ export type Database = {
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
       get_company_id: { Args: { _user_id: string }; Returns: string }
+      get_company_id_for_user: { Args: { user_id: string }; Returns: string }
       get_course_invitation_by_token: {
         Args: { _token: string }
         Returns: {
