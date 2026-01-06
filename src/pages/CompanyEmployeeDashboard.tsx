@@ -590,6 +590,17 @@ export default function CompanyEmployeeDashboard() {
           </TabsContent>
 
 
+          {/* Drivers Tab */}
+          {employee.can_create_courses && (
+            <TabsContent value="drivers">
+              <EmployeeCompanyDrivers 
+                companyId={employee.company_id}
+                canInviteDrivers={employee.can_invite_drivers}
+                canCreateCourses={employee.can_create_courses}
+              />
+            </TabsContent>
+          )}
+
           {/* Invoices Tab */}
           {employee.can_view_invoices && (
             <TabsContent value="invoices">
