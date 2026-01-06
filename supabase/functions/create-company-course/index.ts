@@ -129,13 +129,14 @@ serve(async (req) => {
 
     console.log('[create-company-course] Course created:', course.id);
 
-    // Link to company
+    // Link to company with employee_id
     const { error: linkError } = await supabaseAdmin
       .from('company_courses')
       .insert({
         company_id,
         course_id: course.id,
         invoice_to_company: true,
+        employee_id: isEmployee ? employee.id : null, // Link to employee for filtering
       });
 
     if (linkError) {
