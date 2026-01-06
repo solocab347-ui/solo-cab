@@ -221,30 +221,65 @@ export default function GuestEmployeeCourseTracking() {
 
   // Setup realtime subscription for course updates
   useEffect(() => {
-    if (!data?.course_id) return;
+    // Also subscribe if we have a request_id (course might be created later)
+    const courseId = data?.course_id;
+    const requestId = data?.request?.id;
+    
+    if (!courseId && !requestId) return;
 
-    const channel = supabase
-      .channel(`course-tracking-${data.course_id}`)
-      .on(
+    const channelName = courseId 
+      ? `course-tracking-${courseId}` 
+      : `request-tracking-${requestId}`;
+
+    console.log('[GuestTracking] Setting up realtime subscription:', { courseId, requestId, channelName });
+
+    const channel = supabase.channel(channelName);
+    
+    // Subscribe to course updates if we have a course_id
+    if (courseId) {
+      channel.on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'courses',
-          filter: `id=eq.${data.course_id}`
+          filter: `id=eq.${courseId}`
         },
-        () => {
-          console.log('Course update received, refreshing...');
+        (payload) => {
+          console.log('[GuestTracking] Course update received:', payload);
           setLastRefresh(new Date());
           queryClient.invalidateQueries({ queryKey: ["guest-employee-course-tracking", token] });
         }
-      )
-      .subscribe();
+      );
+    }
+
+    // Also subscribe to request updates (e.g., when course is first assigned)
+    if (requestId) {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'company_course_requests',
+          filter: `id=eq.${requestId}`
+        },
+        (payload) => {
+          console.log('[GuestTracking] Request update received:', payload);
+          setLastRefresh(new Date());
+          queryClient.invalidateQueries({ queryKey: ["guest-employee-course-tracking", token] });
+        }
+      );
+    }
+
+    channel.subscribe((status) => {
+      console.log('[GuestTracking] Subscription status:', status);
+    });
 
     return () => {
+      console.log('[GuestTracking] Cleaning up realtime subscription');
       supabase.removeChannel(channel);
     };
-  }, [data?.course_id, token, queryClient]);
+  }, [data?.course_id, data?.request?.id, token, queryClient]);
 
   const handleRefresh = () => {
     setLastRefresh(new Date());

@@ -648,14 +648,25 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   Courses confirmées ({acceptedRequests.length})
                 </h3>
                 {acceptedRequests.map((request) => (
-                  <Card key={request.id} className="mb-4 border-green-500/30 bg-green-500/5">
+                  <Card key={request.id} className={`mb-4 ${
+                    request.final_course?.status === "in_progress" 
+                      ? "border-blue-500/30 bg-blue-500/5" 
+                      : "border-green-500/30 bg-green-500/5"
+                  }`}>
                     <CardContent className="pt-4 space-y-4">
-                      {/* Header with status */}
+                      {/* Header with status - show in_progress status if course is in progress */}
                       <div className="flex items-center justify-between flex-wrap gap-2">
-                        <Badge className="bg-green-600 text-white">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Confirmée
-                        </Badge>
+                        {request.final_course?.status === "in_progress" ? (
+                          <Badge className="bg-blue-600 text-white">
+                            <Car className="w-3 h-3 mr-1" />
+                            En cours
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-600 text-white">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Confirmée
+                          </Badge>
+                        )}
                         <span className="text-sm text-muted-foreground">
                           {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
                         </span>
@@ -789,28 +800,62 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
                       {/* Timeline */}
                       <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">Historique</p>
+                        <p className="text-xs text-muted-foreground mb-2">Progression</p>
                         <div className="space-y-1 text-xs">
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                             <span>Demande créée le {format(new Date(request.created_at), "d MMM à HH:mm", { locale: fr })}</span>
                           </div>
                           {request.quotes_generated_at && (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                               <span>Devis générés le {format(new Date(request.quotes_generated_at), "d MMM à HH:mm", { locale: fr })}</span>
                             </div>
                           )}
                           {request.sent_to_drivers_at && (
                             <div className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
                               <span>Envoyé aux chauffeurs le {format(new Date(request.sent_to_drivers_at), "d MMM à HH:mm", { locale: fr })}</span>
                             </div>
                           )}
                           {request.accepted_at && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                              <span>Chauffeur confirmé le {format(new Date(request.accepted_at), "d MMM à HH:mm", { locale: fr })}</span>
+                            </div>
+                          )}
+                          {/* Course en cours - check final_course.status */}
+                          {request.final_course?.status === "in_progress" && (
+                            <div className="flex items-center gap-2 text-blue-600 font-medium">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                              <span>🚗 Course en cours</span>
+                            </div>
+                          )}
+                          {/* Course terminée - check final_course.status */}
+                          {request.final_course?.status === "completed" && (
                             <div className="flex items-center gap-2 text-green-600 font-medium">
                               <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                              <span>Accepté le {format(new Date(request.accepted_at), "d MMM à HH:mm", { locale: fr })}</span>
+                              <span>✓ Course terminée</span>
+                            </div>
+                          )}
+                          {/* Show pending steps for non-in_progress courses */}
+                          {request.accepted_at && request.final_course?.status !== "in_progress" && request.final_course?.status !== "completed" && (
+                            <>
+                              <div className="flex items-center gap-2 text-muted-foreground/50">
+                                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
+                                <span>Course en cours</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-muted-foreground/50">
+                                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
+                                <span>Course terminée</span>
+                              </div>
+                            </>
+                          )}
+                          {/* Show only Course terminée as pending when in_progress */}
+                          {request.final_course?.status === "in_progress" && (
+                            <div className="flex items-center gap-2 text-muted-foreground/50">
+                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
+                              <span>Course terminée</span>
                             </div>
                           )}
                         </div>
