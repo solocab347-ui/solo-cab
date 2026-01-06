@@ -146,23 +146,16 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
   // Fetch ALL data in one combined query for reliability
   const { data: combinedData, isLoading: loadingCombinedData } = useQuery({
-    queryKey: ["company-payments-combined-data-v2", companyId],
-    staleTime: 0, // Always refetch
+    queryKey: ["company-payments-combined-data-v3", companyId],
+    staleTime: 0,
     queryFn: async () => {
-      console.log("Fetching combined data for company:", companyId);
-      
       // Step 1: Get company_courses to find all courses belonging to this company
       const { data: companyCoursesLinks, error: linksError } = await supabase
         .from("company_courses")
         .select("course_id, employee_id")
         .eq("company_id", companyId);
       
-      if (linksError) {
-        console.error("Error fetching company_courses:", linksError);
-        throw linksError;
-      }
-      
-      console.log("Company courses links:", companyCoursesLinks);
+      if (linksError) throw linksError;
       
       const courseIds = companyCoursesLinks?.map(cc => cc.course_id) || [];
       
@@ -187,13 +180,10 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         
         if (!error && data) {
           coursesData = data;
-          console.log("Courses data fetched:", coursesData);
-        } else {
-          console.error("Error fetching courses:", error);
         }
       }
       
-      // Step 3: Fetch invoices
+      // Step 3: Fetch invoices (now allowed by new RLS policy)
       const { data: invoices, error: invoicesError } = await supabase
         .from("factures")
         .select(`
@@ -209,12 +199,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
       
-      if (invoicesError) {
-        console.error("Error fetching invoices:", invoicesError);
-        throw invoicesError;
-      }
-      
-      console.log("Invoices fetched:", invoices);
+      if (invoicesError) throw invoicesError;
       
       // Step 4: Create course map and merge with invoices
       const courseMap: Record<string, any> = {};
@@ -222,18 +207,10 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         courseMap[course.id] = course;
       });
       
-      console.log("Course map:", courseMap);
-      
-      const invoicesWithCourses = (invoices || []).map((inv: any) => {
-        const courseData = courseMap[inv.course_id] || null;
-        console.log(`Invoice ${inv.id} course_id: ${inv.course_id}, has course data:`, !!courseData);
-        return {
-          ...inv,
-          courses: courseData
-        };
-      });
-      
-      console.log("Invoices with courses:", invoicesWithCourses);
+      const invoicesWithCourses = (invoices || []).map((inv: any) => ({
+        ...inv,
+        courses: courseMap[inv.course_id] || null
+      }));
       
       return {
         courses: coursesData,
