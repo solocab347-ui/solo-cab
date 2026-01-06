@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Loader2, Handshake, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, Building2, Euro, Search, ChevronDown, ChevronUp, Info, Ban, Unlock, Lock, EyeOff, User, FileText, Edit, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
@@ -102,22 +103,33 @@ function ActiveDriverAgreementCard({ agreement, driverId, driverInfo, onRefresh 
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h4 className="font-semibold">{agreement.company?.company_name}</h4>
-            <p className="text-sm text-muted-foreground">{agreement.company?.contact_name} • {agreement.company?.contact_phone}</p>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {agreement.payment_methods?.map((method: string) => (
-                <Badge key={method} variant="secondary" className="text-xs">
-                  {PAYMENT_METHODS.find((m) => m.value === method)?.icon} {PAYMENT_METHODS.find((m) => m.value === method)?.label}
-                </Badge>
-              ))}
-              <Badge variant="outline" className="text-xs"><Clock className="w-3 h-3 mr-1" />{PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}</Badge>
+        <div className="flex items-start gap-4">
+          {/* Company Logo */}
+          <Avatar className="w-14 h-14 rounded-lg border border-border/50 flex-shrink-0">
+            {agreement.company?.logo_url ? (
+              <AvatarImage src={agreement.company.logo_url} alt={agreement.company?.company_name} className="object-cover" />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+              {agreement.company?.company_name?.slice(0, 2).toUpperCase() || 'EN'}
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-semibold">{agreement.company?.company_name}</h4>
+                <p className="text-sm text-muted-foreground">{agreement.company?.contact_name} • {agreement.company?.contact_phone}</p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {agreement.payment_methods?.map((method: string) => (
+                    <Badge key={method} variant="secondary" className="text-xs">
+                      {PAYMENT_METHODS.find((m) => m.value === method)?.icon} {PAYMENT_METHODS.find((m) => m.value === method)?.label}
+                    </Badge>
+                  ))}
+                  <Badge variant="outline" className="text-xs"><Clock className="w-3 h-3 mr-1" />{PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}</Badge>
+                </div>
+              </div>
+              <Badge className="bg-green-500 flex-shrink-0"><CheckCircle className="w-3 h-3 mr-1" />Actif</Badge>
             </div>
-          </div>
-          <div className="text-right">
-            <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Actif</Badge>
-            {agreement.outstanding_balance > 0 && <p className="text-sm font-medium text-yellow-600 mt-1">À recevoir: {agreement.outstanding_balance.toFixed(2)}€</p>}
           </div>
         </div>
 
