@@ -33,6 +33,7 @@ interface Driver {
   user_id: string;
   full_name: string;
   avatar_url: string | null;
+  card_photo_url: string | null;
   working_sectors: string[] | null;
   vehicle_model: string | null;
   rating: number | null;
@@ -40,6 +41,8 @@ interface Driver {
   contact_email: string | null;
   show_phone: boolean;
   show_email: boolean;
+  display_driver_name: boolean;
+  display_company_name: boolean;
   services_offered: string[] | null;
   company_name: string | null;
 }
@@ -95,7 +98,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       // Récupérer les chauffeurs
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, company_name")
+        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, company_name")
         .in("id", driverIds);
 
       if (driversError) {
@@ -117,6 +120,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           user_id: driver.user_id,
           full_name: profile?.full_name || "Chauffeur",
           avatar_url: profile?.avatar_url || null,
+          card_photo_url: driver.card_photo_url || null,
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
@@ -124,6 +128,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           contact_email: driver.contact_email,
           show_phone: driver.show_phone ?? false,
           show_email: driver.show_email ?? false,
+          display_driver_name: driver.display_driver_name ?? true,
+          display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
         });
@@ -163,7 +169,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Afficher tous les chauffeurs visibles aux entreprises
         const { data, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .limit(20);
@@ -183,7 +189,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Chauffeurs trouvés par nom d'entreprise ou secteur
         const { data: byCompany, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .ilike("company_name", `%${searchQuery}%`)
@@ -196,7 +202,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
+            .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -228,6 +234,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           user_id: driver.user_id,
           full_name: profile?.full_name || "Chauffeur",
           avatar_url: profile?.avatar_url || null,
+          card_photo_url: driver.card_photo_url || null,
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
@@ -235,6 +242,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           contact_email: driver.contact_email,
           show_phone: driver.show_phone ?? false,
           show_email: driver.show_email ?? false,
+          display_driver_name: driver.display_driver_name ?? true,
+          display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
         });
@@ -300,6 +309,21 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const getMainSector = (sectors: string[] | null) => {
     if (!sectors || sectors.length === 0) return null;
     return sectors[0];
+  };
+
+  // Helper pour calculer le nom d'affichage en respectant les préférences du chauffeur
+  const getDisplayName = (driver: Driver): string => {
+    if (driver.display_driver_name) {
+      return driver.full_name;
+    } else if (driver.display_company_name && driver.company_name) {
+      return driver.company_name;
+    }
+    return "Chauffeur VTC";
+  };
+
+  // Helper pour obtenir la meilleure photo disponible
+  const getDriverPhoto = (driver: Driver): string | null => {
+    return driver.card_photo_url || driver.avatar_url || null;
   };
 
   if (loading) {
@@ -388,14 +412,14 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                       <CardContent className="pt-6 relative">
                         <div className="flex items-start gap-4">
                           <Avatar className="w-14 h-14 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-                            <AvatarImage src={driver.avatar_url || undefined} />
+                            <AvatarImage src={getDriverPhoto(driver) || undefined} />
                             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
-                              {driver.full_name.slice(0, 2).toUpperCase()}
+                              {getDisplayName(driver).slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-bold truncate">{driver.full_name}</h3>
-                            {driver.company_name && (
+                            <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
+                            {driver.display_company_name && driver.company_name && driver.display_driver_name && (
                               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                 <Building2 className="w-3 h-3" />
                                 {driver.company_name}
@@ -531,13 +555,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                           <CardContent className="pt-6">
                             <div className="flex items-start gap-4">
                               <Avatar className="w-12 h-12 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
-                                <AvatarImage src={driver.avatar_url || undefined} />
+                                <AvatarImage src={getDriverPhoto(driver) || undefined} />
                                 <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
-                                  {driver.full_name.slice(0, 2).toUpperCase()}
+                                  {getDisplayName(driver).slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-bold truncate">{driver.full_name}</h3>
+                                <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
                                 {getMainSector(driver.working_sectors) && (
                                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
@@ -553,7 +577,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                               </div>
                             </div>
 
-                            {driver.company_name && (
+                            {driver.display_company_name && driver.company_name && (
                               <Badge variant="outline" className="mt-3 text-xs">
                                 <Building2 className="w-3 h-3 mr-1" />
                                 {driver.company_name}
