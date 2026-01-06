@@ -37,6 +37,7 @@ interface TrackingData {
   pickup_address?: string;
   destination_address?: string;
   is_used: boolean;
+  course_id?: string;
   company?: { company_name?: string; logo_url?: string };
   request?: {
     id: string;
@@ -79,16 +80,12 @@ export default function GuestEmployeeCourseTracking() {
       if (!token) throw new Error("Token manquant");
 
       // Get invitation data
+      // Get invitation data without course join to avoid stale data
       const { data: invitation, error: invError } = await supabase
         .from("company_employee_course_invitations")
         .select(`
-          id, token, guest_name, guest_phone, guest_email, scheduled_date, pickup_address, destination_address, is_used, request_id,
-          company:companies(company_name, logo_url),
-          course:courses(
-            id, status,
-            driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email),
-            devis(amount, quote_number)
-          )
+          id, token, guest_name, guest_phone, guest_email, scheduled_date, pickup_address, destination_address, is_used, request_id, course_id,
+          company:companies(company_name, logo_url)
         `)
         .eq("token", token)
         .maybeSingle();
@@ -97,6 +94,33 @@ export default function GuestEmployeeCourseTracking() {
       if (!invitation) throw new Error("Lien invalide ou expiré");
 
       const result = invitation as any;
+
+      // Fetch course data separately to always get fresh status
+      if (result.course_id) {
+        const { data: courseData } = await supabase
+          .from("courses")
+          .select(`
+            id, status,
+            driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email),
+            devis(amount, quote_number)
+          `)
+          .eq("id", result.course_id)
+          .maybeSingle();
+        
+        if (courseData) {
+          result.course = courseData;
+          
+          // Fetch driver profile
+          if (courseData.driver?.user_id) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, phone, email, profile_photo_url")
+              .eq("id", courseData.driver.user_id)
+              .maybeSingle();
+            result.course.driver.profile = profile;
+          }
+        }
+      }
 
       // Fetch request data separately to avoid join issues
       if (result.request_id) {
@@ -138,20 +162,11 @@ export default function GuestEmployeeCourseTracking() {
           }
         }
       }
-      
-      if (result.course?.driver?.user_id) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, phone, email, profile_photo_url")
-          .eq("id", result.course.driver.user_id)
-          .maybeSingle();
-        result.course.driver.profile = profile;
-      }
 
       return result as TrackingData;
     },
     enabled: !!token,
-    refetchInterval: 30000,
+    refetchInterval: 15000, // Refresh more frequently for live tracking
   });
 
   const handleRefresh = () => {
@@ -208,12 +223,15 @@ export default function GuestEmployeeCourseTracking() {
   const acceptedDriver = acceptedQuote?.driver || course?.driver;
   const driverVehicle = acceptedDriver?.vehicles?.[0];
 
-  // Determine current status
+  // Determine current status - check course status first for accurate tracking
   const getStatus = () => {
-    if (course?.status === "completed") return "completed";
+    // Course statuses take priority
+    if (course?.status === "completed" || course?.status === "cancelled") return "completed";
     if (course?.status === "in_progress") return "in_progress";
-    if (course?.status === "confirmed") return "confirmed";
-    if (acceptedQuote) return "driver_accepted";
+    if (course?.status === "accepted" || course?.status === "confirmed") return "confirmed";
+    
+    // Fall back to quote/request status
+    if (acceptedQuote || request?.status === "accepted") return "driver_accepted";
     if (request?.status === "sent_to_drivers") return "waiting_driver";
     if (request?.status === "quotes_generated") return "quotes_ready";
     return "pending";

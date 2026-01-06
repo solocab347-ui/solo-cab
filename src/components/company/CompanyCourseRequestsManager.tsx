@@ -188,7 +188,15 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     },
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, courseStatus?: string) => {
+    // Vérifier d'abord le statut de la course finale
+    if (courseStatus === "in_progress") {
+      return <Badge className="bg-blue-600 text-white"><Play className="w-3 h-3 mr-1" />En cours</Badge>;
+    }
+    if (courseStatus === "completed") {
+      return <Badge className="bg-green-600 text-white"><CheckCircle className="w-3 h-3 mr-1" />Terminée</Badge>;
+    }
+    
     switch (status) {
       case "draft":
         return <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-500/30"><Clock className="w-3 h-3 mr-1" />Brouillon</Badge>;
@@ -197,7 +205,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
       case "sent_to_drivers":
         return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30"><Send className="w-3 h-3 mr-1" />Envoyé aux chauffeurs</Badge>;
       case "accepted":
-        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Accepté</Badge>;
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Chauffeur confirmé</Badge>;
       case "all_refused":
         return <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Tous refusés</Badge>;
       case "cancelled":
@@ -289,21 +297,22 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   };
 
   const renderRequestCard = (request: any) => {
-    // Déterminer si c'est une course terminée
-    const isCompleted = request.status === "accepted" && request.final_course?.status === "completed";
+    // Déterminer le statut de la course finale
+    const courseStatus = request.final_course?.status;
+    const isCompleted = courseStatus === "completed" || courseStatus === "cancelled";
+    const isInProgress = courseStatus === "in_progress";
     
     return (
-    <Card key={request.id} className={`mb-4 ${isCompleted ? 'bg-green-500/5 border-green-500/20' : ''}`}>
+    <Card key={request.id} className={`mb-4 ${
+      isCompleted ? 'bg-green-500/5 border-green-500/20' : 
+      isInProgress ? 'bg-blue-500/5 border-blue-500/20' : ''
+    }`}>
       <CardContent className="pt-4">
         <div className="flex flex-col gap-4">
           <div className="flex-1 space-y-3">
             {/* Status and Date */}
             <div className="flex items-center gap-3 flex-wrap">
-              {isCompleted ? (
-                <Badge className="bg-green-600 text-white">
-                  <CheckCircle className="w-3 h-3 mr-1" />Terminée
-                </Badge>
-              ) : getStatusBadge(request.status)}
+              {getStatusBadge(request.status, courseStatus)}
               <span className="text-sm text-muted-foreground">
                 {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
               </span>
