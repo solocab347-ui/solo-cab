@@ -185,6 +185,12 @@ export default function CompanyEmployeeDashboard() {
         console.log("[CompanyEmployeeDashboard] Filtered courses:", filteredCourses.length);
 
         const enrichedCourses: Course[] = [];
+        let totalSpent = 0;
+        
+        // Get current month bounds
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         
         for (const cc of filteredCourses) {
           const course = cc.course as any;
@@ -218,6 +224,14 @@ export default function CompanyEmployeeDashboard() {
             .maybeSingle();
           
           amount = devis?.amount || null;
+          
+          // Calculate monthly spent from completed courses or accepted devis
+          const courseDate = new Date(course.scheduled_date);
+          if (courseDate >= startOfMonth && courseDate <= endOfMonth && amount) {
+            if (course.status === 'completed' || devis?.status === 'accepted') {
+              totalSpent += Number(amount);
+            }
+          }
 
           enrichedCourses.push({
             ...course,
@@ -227,6 +241,12 @@ export default function CompanyEmployeeDashboard() {
         }
 
         setCourses(enrichedCourses);
+        
+        // Update the employee object with calculated stats
+        setEmployee(prev => prev ? {
+          ...prev,
+          current_month_spent: totalSpent
+        } : null);
       }
     } catch (error) {
       console.error("Erreur:", error);
