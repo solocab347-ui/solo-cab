@@ -153,6 +153,23 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       const courseIds = (regularFactures || []).map(f => f.course_id);
       let companyCoursesMap = new Map();
       let companyCourseRequestsMap = new Map();
+      let directCompaniesMap = new Map();
+      
+      // Also gather company_ids directly from factures for direct company lookup
+      const directCompanyIds = (regularFactures || [])
+        .filter(f => f.company_id)
+        .map(f => f.company_id);
+      
+      if (directCompanyIds.length > 0) {
+        const { data: directCompanyData } = await supabase
+          .from("companies")
+          .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
+          .in("id", [...new Set(directCompanyIds)]);
+        
+        directCompanyData?.forEach(company => {
+          directCompaniesMap.set(company.id, company);
+        });
+      }
       
       if (courseIds.length > 0) {
         // Fetch company_courses with company info
@@ -209,6 +226,8 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       const enrichedFactures = (regularFactures || []).map(f => {
         const companyInfo = companyCoursesMap.get(f.course_id);
         const requestInfo = companyCourseRequestsMap.get(f.course_id);
+        // Direct company from facture.company_id takes priority
+        const directCompany = f.company_id ? directCompaniesMap.get(f.company_id) : null;
         
         let employeeName = null;
         let employeePhone = null;
@@ -232,9 +251,12 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           employeeEmail = companyInfo.employee.profiles.email;
         }
         
+        // Use direct company from facture.company_id, fallback to company_courses
+        const finalCompanyInfo = directCompany || companyInfo?.company || null;
+        
         return {
           ...f,
-          companyInfo: companyInfo?.company || null,
+          companyInfo: finalCompanyInfo,
           employeeName,
           employeePhone,
           employeeEmail,
