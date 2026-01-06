@@ -27,6 +27,7 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
 
   const fetchFactures = async () => {
     try {
+      // Fetch factures with basic relations
       const { data, error } = await supabase
         .from("factures")
         .select(`
@@ -36,14 +37,7 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
             pickup_address,
             destination_address,
             scheduled_date,
-            distance_km,
-            company_courses(
-              employee_id,
-              company_employees(
-                user_id,
-                profiles:user_id(full_name, phone)
-              )
-            )
+            distance_km
           ),
           drivers!inner(
             company_name,
@@ -51,7 +45,7 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
             siret,
             siren,
             tva_number,
-            profiles:user_id(full_name, phone)
+            user_id
           ),
           companies!factures_company_id_fkey(
             company_name,
@@ -68,7 +62,52 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setFactures(data || []);
+      
+      // Enrich with driver profiles and employee names
+      const enrichedFactures = await Promise.all((data || []).map(async (facture: any) => {
+        // Get driver profile
+        let driverProfile = null;
+        if (facture.drivers?.user_id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, phone")
+            .eq("id", facture.drivers.user_id)
+            .maybeSingle();
+          driverProfile = profile;
+        }
+        
+        // Get employee name for this course
+        let employeeName = null;
+        const { data: companyCourse } = await supabase
+          .from("company_courses")
+          .select("employee_id")
+          .eq("course_id", facture.courses.id)
+          .maybeSingle();
+        
+        if (companyCourse?.employee_id) {
+          try {
+            const { data: empData } = await supabase.rpc('get_employee_profile_for_course', { 
+              p_employee_id: companyCourse.employee_id 
+            });
+            if (empData && empData.length > 0) {
+              employeeName = empData[0].full_name;
+            }
+          } catch (e) {
+            console.error("Error fetching employee name:", e);
+          }
+        }
+        
+        return {
+          ...facture,
+          drivers: {
+            ...facture.drivers,
+            profiles: driverProfile
+          },
+          employee_name: employeeName
+        };
+      }));
+      
+      setFactures(enrichedFactures);
     } catch (error: any) {
       console.error("Error fetching factures:", error);
       toast.error("Erreur lors du chargement des factures");
@@ -184,10 +223,8 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
       rightYPos += 4;
       
       // Afficher le nom du collaborateur
-      const companyCourse = facture.courses?.company_courses?.[0];
-      const employeeName = companyCourse?.company_employees?.profiles?.full_name;
-      if (employeeName) {
-        doc.text(`Collaborateur: ${employeeName}`, pageWidth - 20, rightYPos, { align: 'right' });
+      if (facture.employee_name) {
+        doc.text(`Collaborateur: ${facture.employee_name}`, pageWidth - 20, rightYPos, { align: 'right' });
         rightYPos += 4;
       }
       
@@ -411,11 +448,11 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
                                 {facture.drivers?.profiles?.full_name || facture.drivers?.company_name}
                               </span>
                             </div>
-                            {facture.courses?.company_courses?.[0]?.company_employees?.profiles?.full_name && (
+                            {facture.employee_name && (
                               <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">Collaborateur:</span>
                                 <span className="text-sm font-medium">
-                                  {facture.courses.company_courses[0].company_employees.profiles.full_name}
+                                  {facture.employee_name}
                                 </span>
                               </div>
                             )}
