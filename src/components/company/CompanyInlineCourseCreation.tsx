@@ -105,6 +105,12 @@ export function CompanyInlineCourseCreation({
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non connecté");
+      
+      console.log("[CompanyInlineCourseCreation] Creating course with:", {
+        driver_id: selectedDriver.driver_id,
+        user_id: user.id,
+        company_id: companyId
+      });
 
       // Create course
       const { data: course, error: courseError } = await supabase
