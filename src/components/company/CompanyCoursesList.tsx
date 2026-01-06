@@ -101,6 +101,8 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
             company_name,
             vehicle_model,
             vehicle_color,
+            vehicle_brand,
+            contact_phone,
             profiles:user_id(full_name, phone, profile_photo_url)
           )
         `)
@@ -336,10 +338,35 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
                             )}
                           </div>
 
+                          {/* Info passager */}
+                          {(course.guest_name || course.guest_phone) && (
+                            <div className="flex items-center gap-3 pt-2 border-t">
+                              <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                                <span className="text-sm font-semibold">
+                                  {course.guest_name?.charAt(0).toUpperCase() || "?"}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{course.guest_name || "Passager"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {course.is_guest_booking ? "Invité" : "Collaborateur"}
+                                </p>
+                              </div>
+                              {course.guest_phone && (
+                                <a 
+                                  href={`tel:${course.guest_phone}`}
+                                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+
                           {/* Info chauffeur */}
                           {course.drivers && (
                             <div className="flex items-center gap-3 pt-2 border-t">
-                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                                 {course.drivers.profiles?.profile_photo_url ? (
                                   <img 
                                     src={course.drivers.profiles.profile_photo_url} 
@@ -350,18 +377,21 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
                                   <Car className="w-5 h-5 text-muted-foreground" />
                                 )}
                               </div>
-                              <div>
-                                <p className="text-sm font-medium">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
                                   {course.drivers.profiles?.full_name || course.drivers.company_name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {course.drivers.vehicle_model} {course.drivers.vehicle_color && `- ${course.drivers.vehicle_color}`}
+                                  {course.drivers.vehicle_brand && course.drivers.vehicle_brand}
+                                  {course.drivers.vehicle_model && ` ${course.drivers.vehicle_model}`}
+                                  {course.drivers.vehicle_color && ` - ${course.drivers.vehicle_color}`}
+                                  {!course.drivers.vehicle_brand && !course.drivers.vehicle_model && course.drivers.company_name}
                                 </p>
                               </div>
-                              {course.drivers.profiles?.phone && (
+                              {(course.drivers.contact_phone || course.drivers.profiles?.phone) && (
                                 <a 
-                                  href={`tel:${course.drivers.profiles.phone}`}
-                                  className="ml-auto p-2 rounded-full hover:bg-muted"
+                                  href={`tel:${course.drivers.contact_phone || course.drivers.profiles?.phone}`}
+                                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary shrink-0"
                                 >
                                   <Phone className="w-4 h-4" />
                                 </a>

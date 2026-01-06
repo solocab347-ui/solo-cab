@@ -33,7 +33,9 @@ import {
   History,
   Eye,
   Filter,
-  Search
+  Search,
+  Phone,
+  User
 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -82,6 +84,7 @@ interface CourseDetails {
   driverCompany: string;
   passengers_count: number | null;
   guest_name: string | null;
+  guest_phone: string | null;
   status: string | null;
   payment_status: string;
 }
@@ -164,37 +167,32 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       if (error) throw error;
       if (!invoices || invoices.length === 0) return [];
 
-      // Get course IDs and fetch courses separately via company_courses
+      // Get course IDs and fetch courses directly
       const courseIds = invoices.map(inv => inv.course_id).filter(Boolean);
       
       if (courseIds.length > 0) {
-        // Fetch courses via company_courses to bypass RLS issues
-        const { data: companyCourses } = await supabase
-          .from("company_courses")
+        // Fetch courses directly - RLS should allow via is_company_course function
+        const { data: coursesData } = await supabase
+          .from("courses")
           .select(`
-            course_id,
-            courses:course_id(
-              id,
-              pickup_address,
-              destination_address,
-              scheduled_date,
-              distance_km,
-              duration_minutes,
-              passengers_count,
-              guest_name,
-              status,
-              notes
-            )
+            id,
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            distance_km,
+            duration_minutes,
+            passengers_count,
+            guest_name,
+            guest_phone,
+            status,
+            notes
           `)
-          .eq("company_id", companyId)
-          .in("course_id", courseIds);
+          .in("id", courseIds);
 
         // Create a map of course data
         const courseMap: Record<string, any> = {};
-        companyCourses?.forEach((cc: any) => {
-          if (cc.courses) {
-            courseMap[cc.course_id] = cc.courses;
-          }
+        coursesData?.forEach((course: any) => {
+          courseMap[course.id] = course;
         });
 
         // Merge course data with invoices
@@ -264,6 +262,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       driverCompany: driverMap[invoice.driver_id]?.company || "",
       passengers_count: invoice.courses?.passengers_count || null,
       guest_name: invoice.courses?.guest_name || null,
+      guest_phone: invoice.courses?.guest_phone || null,
       status: invoice.courses?.status || null,
       payment_status: invoice.payment_status || "pending"
     }));
@@ -831,19 +830,27 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                       {/* Passager info */}
                       {invoice.courses?.guest_name && (
                         <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/30">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <span className="text-primary font-semibold text-sm">
                               {invoice.courses.guest_name.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">{invoice.courses.guest_name}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{invoice.courses.guest_name}</p>
                             <p className="text-xs text-muted-foreground">Passager</p>
                           </div>
                           {invoice.courses?.passengers_count > 1 && (
-                            <Badge variant="secondary" className="text-xs ml-auto">
-                              {invoice.courses.passengers_count} passagers
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {invoice.courses.passengers_count} pers.
                             </Badge>
+                          )}
+                          {invoice.courses?.guest_phone && (
+                            <a 
+                              href={`tel:${invoice.courses.guest_phone}`}
+                              className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary shrink-0"
+                            >
+                              <Phone className="w-4 h-4" />
+                            </a>
                           )}
                         </div>
                       )}
@@ -925,16 +932,24 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             {/* Passager */}
             {course.guest_name && (
               <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium">
                     {course.guest_name.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <span className="text-sm font-medium">{course.guest_name}</span>
+                <span className="text-sm font-medium truncate flex-1">{course.guest_name}</span>
                 {course.passengers_count && course.passengers_count > 1 && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs shrink-0">
                     {course.passengers_count} pers.
                   </Badge>
+                )}
+                {course.guest_phone && (
+                  <a 
+                    href={`tel:${course.guest_phone}`}
+                    className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary shrink-0"
+                  >
+                    <Phone className="w-3 h-3" />
+                  </a>
                 )}
               </div>
             )}
