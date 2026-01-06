@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Loader2, 
-  MapPin, 
   CheckCircle2,
   Building2,
   User,
@@ -15,8 +13,9 @@ import {
   Banknote,
   Receipt,
   AlertTriangle,
-  Clock,
   Car,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -38,6 +37,7 @@ interface CompletedCourse {
   company_course_id: string;
   driver_declared_paid: boolean;
   company_payment_status: string | null;
+  employee_confirmed: boolean;
 }
 
 interface EmployeeCoursePaymentDeclarationProps {
@@ -79,8 +79,7 @@ export function EmployeeCoursePaymentDeclaration({
             driver_declared_payment_received
           )
         `)
-        .eq("employee_id", employeeId)
-        .is("client_confirmed_payment_method", null);
+        .eq("employee_id", employeeId);
 
       if (error) throw error;
 
@@ -89,6 +88,9 @@ export function EmployeeCoursePaymentDeclaration({
       for (const cc of companyCourses || []) {
         const course = cc.course as any;
         if (course.status !== "completed") continue;
+
+        // Skip if already confirmed by employee
+        if (cc.client_confirmed_payment_method) continue;
 
         let driverName = null;
         let amount = null;
@@ -132,6 +134,7 @@ export function EmployeeCoursePaymentDeclaration({
           company_course_id: cc.id,
           driver_declared_paid: driverDeclaredPaid,
           company_payment_status: course.company_payment_status,
+          employee_confirmed: !!cc.client_confirmed_payment_method,
         });
       }
 
@@ -150,6 +153,7 @@ export function EmployeeCoursePaymentDeclaration({
     try {
       const paymentMethod = confirmedPaidByEmployee ? "paid_on_spot" : "company_will_pay";
 
+      // Update company_courses with employee confirmation
       const { error: updateError } = await supabase
         .from("company_courses")
         .update({
@@ -162,6 +166,7 @@ export function EmployeeCoursePaymentDeclaration({
 
       if (updateError) throw updateError;
 
+      // Update course with confirmation
       await supabase
         .from("courses")
         .update({
@@ -171,7 +176,9 @@ export function EmployeeCoursePaymentDeclaration({
         })
         .eq("id", selectedCourse.id);
 
+      // If employee paid personally
       if (confirmedPaidByEmployee) {
+        // Mark invoice as paid
         await supabase
           .from("factures")
           .update({
@@ -180,6 +187,7 @@ export function EmployeeCoursePaymentDeclaration({
           })
           .eq("course_id", selectedCourse.id);
 
+        // Create expense report for employee AND company
         if (selectedCourse.amount) {
           const { error: expenseError } = await supabase
             .from("expense_reports")
@@ -190,7 +198,7 @@ export function EmployeeCoursePaymentDeclaration({
               amount: selectedCourse.amount,
               description: `Course VTC - ${selectedCourse.pickup_address.split(",")[0]} → ${selectedCourse.destination_address.split(",")[0]}`,
               payment_method: "card",
-              status: "pending",
+              status: "pending", // Pending company approval/reimbursement
               submitted_at: new Date().toISOString(),
             } as any);
 
@@ -199,14 +207,14 @@ export function EmployeeCoursePaymentDeclaration({
           }
 
           toast.success("Note de frais créée !", {
-            description: `${selectedCourse.amount.toFixed(2)} € en attente de remboursement`
+            description: `${selectedCourse.amount.toFixed(2)} € transmise à l'entreprise pour remboursement`
           });
           
           onExpenseCreated?.();
         }
       } else {
-        toast.success("Confirmation enregistrée", {
-          description: "Cette course sera facturée à l'entreprise"
+        toast.success("Double vérification validée ✓", {
+          description: "Facturation entreprise confirmée"
         });
       }
 
@@ -222,8 +230,8 @@ export function EmployeeCoursePaymentDeclaration({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-6">
+        <Loader2 className="w-5 h-5 animate-spin text-primary" />
       </div>
     );
   }
@@ -248,18 +256,26 @@ export function EmployeeCoursePaymentDeclaration({
             </span>
           </div>
 
-          <div className="flex items-start gap-4 mb-5">
+          <div className="flex items-start gap-4 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shrink-0">
               <Receipt className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">
-                Confirmez vos paiements
+                Double vérification
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {courses.length} course{courses.length > 1 ? 's' : ''} en attente de confirmation
+                Confirmez la déclaration du chauffeur pour {courses.length} course{courses.length > 1 ? 's' : ''}
               </p>
             </div>
+          </div>
+
+          {/* Info message */}
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mb-4">
+            <ShieldCheck className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              <strong>Note :</strong> Les factures sont déjà transmises à l'entreprise. Votre confirmation ajoute une double vérification sécurisée.
+            </p>
           </div>
 
           {/* Course Cards */}
