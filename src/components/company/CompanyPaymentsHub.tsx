@@ -704,18 +704,21 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                   </p>
                 )}
                 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-3 border-t border-border/50 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      Échéance: {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
+                      Échéance:
                     </p>
-                    <p className="text-2xl font-bold text-primary mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
+                    </p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary mt-1">
                       {payment.totalAmount.toFixed(2)} €
                     </p>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
@@ -735,10 +738,10 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                       <Button
                         size="sm"
                         onClick={() => openSendPaymentDialog(payment)}
-                        className="bg-primary hover:bg-primary/90"
+                        className="bg-primary hover:bg-primary/90 text-xs sm:text-sm"
                       >
-                        <Send className="w-4 h-4 mr-1" />
-                        Notifier l'envoi
+                        <Send className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Notifier l'envoi</span>
                       </Button>
                     )}
                   </div>
@@ -905,29 +908,29 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pending" className="relative">
-            À payer
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="pending" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">À payer</span>
             {pendingPayments.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-yellow-500 text-white rounded-full">
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-yellow-500 text-white rounded-full shrink-0">
                 {pendingPayments.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="sent">
-            Envoyés
+          <TabsTrigger value="sent" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">Envoyés</span>
             {sentPayments.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full">
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full shrink-0">
                 {sentPayments.length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="received">
-            Confirmés
+          <TabsTrigger value="received" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">Confirmés</span>
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="w-4 h-4 mr-1" />
-            Historique
+          <TabsTrigger value="history" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <History className="w-3 h-3 sm:w-4 sm:h-4 mr-1 shrink-0" />
+            <span className="truncate">Historique</span>
           </TabsTrigger>
         </TabsList>
 
