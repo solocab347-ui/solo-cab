@@ -60,6 +60,7 @@ interface GroupedPayment {
   status: 'upcoming' | 'due' | 'overdue' | 'sent' | 'received' | 'disputed';
   paymentId?: string;
   sentAt?: Date;
+  receivedAt?: Date;
   paymentReference?: string;
   consolidatedInvoiceNumber?: string;
   consolidatedInvoiceGeneratedAt?: Date;
@@ -397,6 +398,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
         status: 'received',
         paymentId: payment.id,
         sentAt: payment.sent_at ? new Date(payment.sent_at) : undefined,
+        receivedAt: payment.received_at ? new Date(payment.received_at) : undefined,
         paymentReference: payment.payment_reference,
         consolidatedInvoiceNumber: payment.consolidated_invoice_number,
         consolidatedInvoiceGeneratedAt: payment.consolidated_invoice_generated_at ? new Date(payment.consolidated_invoice_generated_at) : undefined,
@@ -972,7 +974,8 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
               </Badge>
             </div>
 
-            {payment.sentAt && (
+            {/* Payment sent info */}
+            {payment.sentAt && payment.status !== 'received' && (
               <div className="mt-3 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
                 <p className="text-xs text-blue-600 font-medium">
                   💸 Paiement envoyé le {format(payment.sentAt, "d MMM yyyy à HH:mm", { locale: fr })}
@@ -1002,6 +1005,61 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                 {/* Facture consolidée */}
                 {payment.consolidatedInvoiceNumber && (
                   <Badge variant="secondary" className="mt-2 text-xs bg-blue-500/10 text-blue-600 border-0">
+                    📄 {payment.consolidatedInvoiceNumber}
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Received payment info */}
+            {payment.status === 'received' && (
+              <div className="mt-3 p-3 bg-green-500/5 rounded-lg border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <p className="text-sm font-medium text-green-600">Paiement reçu</p>
+                </div>
+                
+                <div className="space-y-1 text-xs">
+                  {payment.receivedAt && (
+                    <p className="text-green-600">
+                      ✅ Réception confirmée le {format(payment.receivedAt, "d MMM yyyy à HH:mm", { locale: fr })}
+                    </p>
+                  )}
+                  
+                  {payment.sentAt && (
+                    <p className="text-muted-foreground">
+                      💸 Envoyé le {format(payment.sentAt, "d MMM yyyy", { locale: fr })}
+                      {payment.paymentReference && (
+                        <span className="ml-1">(Réf: {payment.paymentReference})</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Justificatifs attachés */}
+                {payment.documents && payment.documents.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-green-500/10">
+                    <p className="text-xs text-muted-foreground mb-1.5">Justificatifs:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {payment.documents.map((doc: any) => (
+                        <a
+                          key={doc.id}
+                          href={doc.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-green-500/10 text-green-600 rounded-md hover:bg-green-500/20 transition-colors"
+                        >
+                          <FileText className="w-3 h-3" />
+                          {doc.file_name?.substring(0, 20) || "Justificatif"}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Facture consolidée */}
+                {payment.consolidatedInvoiceNumber && (
+                  <Badge variant="secondary" className="mt-2 text-xs bg-green-500/10 text-green-600 border-0">
                     📄 {payment.consolidatedInvoiceNumber}
                   </Badge>
                 )}
