@@ -1824,20 +1824,49 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     });
   };
 
-  // Helper pour obtenir le nom du client (enregistré ou invité)
+  // Helper pour obtenir le nom du client (enregistré, invité ou employé entreprise)
   const getClientDisplayName = (course: any): string => {
+    // Vérifier si c'est une course entreprise - utiliser le nom de l'employé
+    const companyCourseInfo = getCompanyCourseInfo(course.id);
+    if (companyCourseInfo?.employeeName) {
+      return companyCourseInfo.employeeName;
+    }
+    
+    // Fallback pour client classique
     if (course.is_guest_booking || !course.clients?.profiles?.full_name) {
       return course.guest_name || "Client invité";
     }
     return course.clients.profiles.full_name;
   };
 
-  // Helper pour obtenir le téléphone du client (enregistré ou invité)
+  // Helper pour obtenir le téléphone du client (enregistré, invité ou employé entreprise)
   const getClientPhone = (course: any): string | null => {
+    // Vérifier si c'est une course entreprise - utiliser le téléphone de l'employé
+    const companyCourseInfo = getCompanyCourseInfo(course.id);
+    if (companyCourseInfo?.employeePhone) {
+      return companyCourseInfo.employeePhone;
+    }
+    
+    // Fallback pour client classique
     if (course.is_guest_booking || !course.clients?.profiles?.phone) {
       return course.guest_phone || null;
     }
     return course.clients.profiles.phone;
+  };
+
+  // Helper pour obtenir le devis le plus récent (accepté en priorité, sinon le plus récent par date)
+  const getLatestDevis = (course: any): any | null => {
+    if (!course.devis || course.devis.length === 0) return null;
+    
+    // D'abord chercher un devis accepté
+    const acceptedDevis = course.devis.find((d: any) => d.status === 'accepted');
+    if (acceptedDevis) return acceptedDevis;
+    
+    // Sinon, trier par date de création et prendre le plus récent
+    const sortedDevis = [...course.devis].sort((a: any, b: any) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    return sortedDevis[0];
   };
 
   const pendingCourses = sortByDate(applyAllFilters(courses.filter(c => c.status === "pending")));
@@ -2225,21 +2254,27 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     <CourseClientContact course={course} />
                   </div>
 
-                  {course.devis && course.devis.length > 0 && (
-                    <div className="p-3 sm:p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm font-medium text-foreground">Montant du devis</span>
-                        <span className="text-2xl sm:text-3xl font-bold text-primary">{course.devis[0].amount.toFixed(2)}€</span>
-                      </div>
-                      {course.devis[0].quote_number && (
-                        <p className="text-xs text-muted-foreground mt-1">Réf: {course.devis[0].quote_number}</p>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const devis = getLatestDevis(course);
+                    if (course.devis && course.devis.length > 0 && devis) {
+                      return (
+                        <div className="p-3 sm:p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs sm:text-sm font-medium text-foreground">Montant du devis</span>
+                            <span className="text-2xl sm:text-3xl font-bold text-primary">{devis.amount.toFixed(2)}€</span>
+                          </div>
+                          {devis.quote_number && (
+                            <p className="text-xs text-muted-foreground mt-1">Réf: {devis.quote_number}</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   {/* FLUX SYSTÉMATIQUE D'ACCEPTATION */}
                   {(() => {
-                    const devis = course.devis?.[0];
+                    const devis = getLatestDevis(course);
                     
                     // CAS SPÉCIAL: Pas de devis → Erreur lors de la création
                     if (!devis) {
