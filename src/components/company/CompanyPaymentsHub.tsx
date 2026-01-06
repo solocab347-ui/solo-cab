@@ -386,59 +386,55 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       });
 
       // Add pending payments from outstanding balance (not yet tracked in company_payments)
-      if (agreement.outstanding_balance > 0) {
-        // Check if there's already a pending payment for this
-        const hasPendingPaymentForBalance = driverPayments.some((p: any) => 
-          p.status !== 'received' && Number(p.amount) === Number(agreement.outstanding_balance)
+      // Skip if there's already any payment tracked for this driver (sent or received)
+      const hasAnyPaymentTracked = driverPayments.length > 0;
+      
+      if (agreement.outstanding_balance > 0 && !hasAnyPaymentTracked) {
+        // Find unpaid invoices for this driver
+        const unpaidDriverInvoices = driverInvoices.filter((inv: any) => 
+          inv.payment_status !== 'paid'
         );
+        
+        // If no unpaid invoices found, create from outstanding balance
+        const invoicesToUse = unpaidDriverInvoices.length > 0 
+          ? unpaidDriverInvoices 
+          : driverInvoices.slice(0, 1);
 
-        if (!hasPendingPaymentForBalance) {
-          // Find unpaid invoices for this driver
-          const unpaidDriverInvoices = driverInvoices.filter((inv: any) => 
-            inv.payment_status !== 'paid'
-          );
+        const periodStart = invoicesToUse[0]?.courses?.scheduled_date 
+          ? new Date(invoicesToUse[0].courses.scheduled_date) 
+          : new Date();
+        const dueDate = addDays(periodStart, 7);
+
+        groups.push({
+          driverId: agreement.driver_id,
+          driverName: agreement.driverProfile?.full_name || "Chauffeur",
+          driverCompany: agreement.driver?.company_name || "",
+          driverPhoto: agreement.driverProfile?.profile_photo_url,
           
-          // If no unpaid invoices found, create from outstanding balance
-          const invoicesToUse = unpaidDriverInvoices.length > 0 
-            ? unpaidDriverInvoices 
-            : driverInvoices.slice(0, 1);
-
-          const periodStart = invoicesToUse[0]?.courses?.scheduled_date 
-            ? new Date(invoicesToUse[0].courses.scheduled_date) 
-            : new Date();
-          const dueDate = addDays(periodStart, 7);
-
-          groups.push({
-            driverId: agreement.driver_id,
-            driverName: agreement.driverProfile?.full_name || "Chauffeur",
-            driverCompany: agreement.driver?.company_name || "",
-            driverPhoto: agreement.driverProfile?.profile_photo_url,
-            
-            agreementId: agreement.id,
-            paymentFrequency,
-            paymentMethods: agreement.payment_methods || [],
-            paymentDay,
-            totalAmount: Number(agreement.outstanding_balance),
-            invoiceCount: unpaidDriverInvoices.length || 1,
-            invoices: invoicesToUse.length > 0 ? invoicesToUse : [{
-              amount: agreement.outstanding_balance,
-              created_at: new Date().toISOString(),
-              courses: { 
-                scheduled_date: new Date().toISOString(),
-                pickup_address: "Course effectuée",
-                destination_address: ""
-              }
-            }],
-            periodStart,
-            periodEnd: periodStart,
-            dueDate,
-            status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
-            paymentId: undefined,
-            sentAt: undefined,
-            paymentReference: undefined,
-            documentsCount: 0
-          });
-        }
+          agreementId: agreement.id,
+          paymentFrequency,
+          paymentMethods: agreement.payment_methods || [],
+          paymentDay,
+          totalAmount: Number(agreement.outstanding_balance),
+          invoiceCount: unpaidDriverInvoices.length || 1,
+          invoices: invoicesToUse.length > 0 ? invoicesToUse : [{
+            amount: agreement.outstanding_balance,
+            created_at: new Date().toISOString(),
+            courses: { 
+              scheduled_date: new Date().toISOString(),
+              pickup_address: "Course effectuée",
+              destination_address: ""
+            }
+          }],
+          periodStart,
+          periodEnd: periodStart,
+          dueDate,
+          status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
+          paymentId: undefined,
+          sentAt: undefined,
+          paymentReference: undefined,
+          documentsCount: 0
+        });
       }
     });
 
