@@ -1853,6 +1853,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                           <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                         </p>
+                        {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
+                        {getCompanyCourseInfo(course.id) && (
+                          <CompanyCourseIndicator 
+                            companyName={getCompanyCourseInfo(course.id)!.companyName}
+                            companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                          />
+                        )}
                       </div>
                   </div>
 
@@ -1877,13 +1884,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
-                    {/* Indicateur entreprise si applicable */}
-                    {getCompanyCourseInfo(course.id) && (
-                      <CompanyCourseIndicator 
-                        companyName={getCompanyCourseInfo(course.id)!.companyName}
-                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
-                      />
-                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2166,6 +2166,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
+                      {getCompanyCourseInfo(course.id) && (
+                        <CompanyCourseIndicator 
+                          companyName={getCompanyCourseInfo(course.id)!.companyName}
+                          companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -2190,13 +2197,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du client/passager */}
                     <CourseClientContact course={course} />
-                    {/* Indicateur entreprise si applicable */}
-                    {getCompanyCourseInfo(course.id) && (
-                      <CompanyCourseIndicator 
-                        companyName={getCompanyCourseInfo(course.id)!.companyName}
-                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
-                      />
-                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2431,6 +2431,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
+                      {getCompanyCourseInfo(course.id) && (
+                        <CompanyCourseIndicator 
+                          companyName={getCompanyCourseInfo(course.id)!.companyName}
+                          companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -2451,13 +2458,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
-                    {/* Indicateur entreprise si applicable */}
-                    {getCompanyCourseInfo(course.id) && (
-                      <CompanyCourseIndicator 
-                        companyName={getCompanyCourseInfo(course.id)!.companyName}
-                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
-                      />
-                    )}
                   </div>
 
                   {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
@@ -2596,6 +2596,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
+                      {getCompanyCourseInfo(course.id) && (
+                        <CompanyCourseIndicator 
+                          companyName={getCompanyCourseInfo(course.id)!.companyName}
+                          companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -2616,13 +2623,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
-                    {/* Indicateur entreprise si applicable */}
-                    {getCompanyCourseInfo(course.id) && (
-                      <CompanyCourseIndicator 
-                        companyName={getCompanyCourseInfo(course.id)!.companyName}
-                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
-                      />
-                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
