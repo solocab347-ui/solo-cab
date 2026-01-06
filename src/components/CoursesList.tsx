@@ -220,17 +220,81 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         setSharedCoursesData(sharedData || []);
 
-        // Fetch company courses data avec logo
+        // Fetch company courses data avec logo et infos collaborateur
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
             course_id,
             company_id,
+            employee_id,
             company:companies(company_name, logo_url)
           `)
           .in("course_id", courseIds);
         
-        setCompanyCoursesData(companyData || []);
+        // Enrichir avec les données des company_course_requests pour les guest employees
+        const { data: requestsData } = await supabase
+          .from("company_course_requests")
+          .select(`
+            final_course_id,
+            guest_employee_name,
+            guest_employee_phone,
+            is_guest_employee,
+            employee_id
+          `)
+          .in("final_course_id", courseIds);
+        
+        // Fetch employee profiles if needed
+        const employeeIds = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
+        let employeeProfiles: Record<string, { name: string; phone?: string }> = {};
+        
+        if (employeeIds.length > 0) {
+          const { data: employees } = await supabase
+            .from("company_employees")
+            .select("id, user_id")
+            .in("id", employeeIds);
+          
+          if (employees && employees.length > 0) {
+            const userIds = employees.map(e => e.user_id);
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, full_name, phone")
+              .in("id", userIds);
+            
+            if (profiles) {
+              employees.forEach(e => {
+                const profile = profiles.find(p => p.id === e.user_id);
+                if (profile) {
+                  employeeProfiles[e.id] = { name: profile.full_name || '', phone: profile.phone || undefined };
+                }
+              });
+            }
+          }
+        }
+        
+        // Merge company data with employee info
+        const enrichedCompanyData = companyData?.map(cc => {
+          const request = requestsData?.find(r => r.final_course_id === cc.course_id);
+          let employeeName = null;
+          let employeePhone = null;
+          
+          if (request) {
+            if (request.is_guest_employee) {
+              employeeName = request.guest_employee_name;
+              employeePhone = request.guest_employee_phone;
+            } else if (request.employee_id && employeeProfiles[request.employee_id]) {
+              employeeName = employeeProfiles[request.employee_id].name;
+              employeePhone = employeeProfiles[request.employee_id].phone || null;
+            }
+          }
+          
+          return {
+            ...cc,
+            employeeName,
+            employeePhone
+          };
+        }) || [];
+        
+        setCompanyCoursesData(enrichedCompanyData);
       }
       
       // Fetch received shared courses count (courses partenaires acceptées/en cours)
@@ -271,13 +335,20 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
   }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
 
-  // Helper pour récupérer les infos entreprise d'une course
-  const getCompanyCourseInfo = (courseId: string): { companyName: string; logoUrl?: string | null } | null => {
+  // Helper pour récupérer les infos entreprise d'une course (avec collaborateur)
+  const getCompanyCourseInfo = (courseId: string): { 
+    companyName: string; 
+    logoUrl?: string | null; 
+    employeeName?: string | null;
+    employeePhone?: string | null;
+  } | null => {
     const companyCourse = companyCoursesData.find(cc => cc.course_id === courseId);
     if (!companyCourse?.company) return null;
     return {
       companyName: companyCourse.company.company_name,
-      logoUrl: companyCourse.company.logo_url
+      logoUrl: companyCourse.company.logo_url,
+      employeeName: companyCourse.employeeName,
+      employeePhone: companyCourse.employeePhone
     };
   };
 
@@ -1858,6 +1929,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <CompanyCourseIndicator 
                             companyName={getCompanyCourseInfo(course.id)!.companyName}
                             companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                            employeeName={getCompanyCourseInfo(course.id)!.employeeName}
+                            employeePhone={getCompanyCourseInfo(course.id)!.employeePhone}
                           />
                         )}
                       </div>
@@ -2171,6 +2244,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <CompanyCourseIndicator 
                           companyName={getCompanyCourseInfo(course.id)!.companyName}
                           companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                          employeeName={getCompanyCourseInfo(course.id)!.employeeName}
+                          employeePhone={getCompanyCourseInfo(course.id)!.employeePhone}
                         />
                       )}
                     </div>
@@ -2436,6 +2511,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <CompanyCourseIndicator 
                           companyName={getCompanyCourseInfo(course.id)!.companyName}
                           companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                          employeeName={getCompanyCourseInfo(course.id)!.employeeName}
+                          employeePhone={getCompanyCourseInfo(course.id)!.employeePhone}
                         />
                       )}
                     </div>
@@ -2601,6 +2678,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <CompanyCourseIndicator 
                           companyName={getCompanyCourseInfo(course.id)!.companyName}
                           companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                          employeeName={getCompanyCourseInfo(course.id)!.employeeName}
+                          employeePhone={getCompanyCourseInfo(course.id)!.employeePhone}
                         />
                       )}
                     </div>

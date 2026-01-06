@@ -131,15 +131,40 @@ export default function CompanyDashboard() {
       setCompany(data);
 
       if (data) {
-        const [coursesRes, driversRes, employeesRes] = await Promise.all([
-          supabase.from("company_courses").select("course_id").eq("company_id", data.id),
+        // Calculate date range for current month
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        
+        const [coursesRes, driversRes, employeesRes, paymentsRes] = await Promise.all([
+          // Courses for this month
+          supabase.from("company_courses")
+            .select("course_id, courses:course_id(scheduled_date)")
+            .eq("company_id", data.id),
           supabase.from("company_driver_agreements").select("id").eq("company_id", data.id).eq("status", "accepted"),
           supabase.from("company_employees").select("id").eq("company_id", data.id).eq("is_active", true),
+          // Payments for this month
+          supabase.from("company_payments")
+            .select("amount")
+            .eq("company_id", data.id)
+            .gte("created_at", startOfMonth.toISOString())
+            .lte("created_at", endOfMonth.toISOString()),
         ]);
 
+        // Filter courses for current month
+        const monthCourses = coursesRes.data?.filter(cc => {
+          const courseDate = cc.courses?.scheduled_date;
+          if (!courseDate) return false;
+          const date = new Date(courseDate);
+          return date >= startOfMonth && date <= endOfMonth;
+        }) || [];
+
+        // Calculate total spending for the month
+        const totalSpent = paymentsRes.data?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
+
         setStats({
-          courses: coursesRes.data?.length || 0,
-          spent: 0,
+          courses: monthCourses.length,
+          spent: Math.round(totalSpent * 100) / 100,
           drivers: driversRes.data?.length || 0,
           employees: employeesRes.data?.length || 0,
         });
