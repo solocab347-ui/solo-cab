@@ -39,6 +39,8 @@ interface Driver {
   card_photo_url: string | null;
   working_sectors: string[] | null;
   vehicle_model: string | null;
+  vehicle_brand: string | null;
+  vehicle_color: string | null;
   rating: number | null;
   total_rides: number | null;
   contact_phone: string | null;
@@ -50,6 +52,8 @@ interface Driver {
   display_company_name: boolean;
   services_offered: string[] | null;
   company_name: string | null;
+  bio: string | null;
+  vehicle_equipment: string[] | null;
 }
 
 interface EmployeeCompanyDriversProps {
@@ -107,7 +111,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       // Récupérer les chauffeurs
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, user_id, working_sectors, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, company_name")
+        .select("id, user_id, working_sectors, vehicle_model, vehicle_brand, vehicle_color, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, company_name, bio, vehicle_equipment")
         .in("id", driverIds);
 
       if (driversError) {
@@ -132,6 +136,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           card_photo_url: driver.card_photo_url || null,
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
+          vehicle_brand: driver.vehicle_brand,
+          vehicle_color: driver.vehicle_color,
           rating: driver.rating,
           total_rides: driver.total_rides,
           contact_phone: driver.contact_phone,
@@ -143,6 +149,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
+          bio: driver.bio,
+          vehicle_equipment: driver.vehicle_equipment,
         });
       }
 
@@ -180,7 +188,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       // Construire la requête de base - sans city et department qui n'existent pas dans la table drivers
       let query = supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_color, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, bio, vehicle_equipment")
         .eq("status", "validated")
         .eq("visible_to_companies", true);
 
@@ -231,7 +239,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+            .select("id, user_id, vehicle_model, vehicle_brand, vehicle_color, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, bio, vehicle_equipment")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -267,6 +275,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           card_photo_url: driver.card_photo_url || null,
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
+          vehicle_brand: driver.vehicle_brand || null,
+          vehicle_color: driver.vehicle_color || null,
           rating: driver.rating,
           total_rides: driver.total_rides,
           contact_phone: driver.contact_phone,
@@ -278,6 +288,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
+          bio: driver.bio || null,
+          vehicle_equipment: driver.vehicle_equipment || null,
         });
       }
 
@@ -298,6 +310,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           card_photo_url: driver.card_photo_url || null,
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
+          vehicle_brand: driver.vehicle_brand || null,
+          vehicle_color: driver.vehicle_color || null,
           rating: driver.rating,
           total_rides: driver.total_rides,
           contact_phone: driver.contact_phone,
@@ -309,6 +323,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
+          bio: driver.bio || null,
+          vehicle_equipment: driver.vehicle_equipment || null,
         });
       }
 
@@ -375,11 +391,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
     return sectors[0];
   };
 
-  // Helper pour calculer le nom d'affichage en respectant les préférences du chauffeur
+  // Helper pour calculer le nom d'affichage - contexte B2B, on affiche toujours le nom complet
   const getDisplayName = (driver: Driver): string => {
-    if (driver.display_driver_name) {
+    // En contexte B2B partenariat, le nom complet est toujours affiché
+    if (driver.full_name && driver.full_name !== "Chauffeur") {
       return driver.full_name;
-    } else if (driver.display_company_name && driver.company_name) {
+    }
+    if (driver.display_company_name && driver.company_name) {
       return driver.company_name;
     }
     return "Chauffeur VTC";
@@ -668,57 +686,80 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                               <h3 className="font-semibold text-sm">Chauffeurs disponibles ({searchResults.length})</h3>
                             </div>
                           )}
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
                             {searchResults.map((driver, index) => (
                               <Card 
                                 key={driver.id}
-                                className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all hover:scale-[1.02]"
+                                className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all"
                                 style={{ animationDelay: `${index * 50}ms` }}
                               >
-                                <CardContent className="pt-6">
-                                  <div className="flex items-start gap-4">
-                                    <Avatar className="w-12 h-12 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="w-14 h-14 ring-2 ring-accent/20 ring-offset-2 ring-offset-background flex-shrink-0">
                                       <AvatarImage src={getDriverPhoto(driver) || undefined} />
                                       <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
                                         {getDisplayName(driver).slice(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                      <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
+                                      <h3 className="font-bold text-sm truncate">{getDisplayName(driver)}</h3>
+                                      {driver.company_name && (
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                          <Building2 className="w-3 h-3 flex-shrink-0" />
+                                          {driver.company_name}
+                                        </p>
+                                      )}
                                       {getMainSector(driver.working_sectors) && (
-                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                          <MapPin className="w-3 h-3" />
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                          <MapPin className="w-3 h-3 flex-shrink-0" />
                                           {getMainSector(driver.working_sectors)}
                                         </p>
                                       )}
                                       {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
                                         <div className="flex items-center gap-1 mt-1">
-                                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                          <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                          <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
                                         </div>
                                       )}
                                     </div>
                                   </div>
 
-                                  {driver.display_company_name && driver.company_name && (
-                                    <Badge variant="outline" className="mt-3 text-xs">
-                                      <Building2 className="w-3 h-3 mr-1" />
-                                      {driver.company_name}
-                                    </Badge>
+                                  {/* Contacts visibles */}
+                                  {(driver.show_phone || driver.show_email) && (
+                                    <div className="flex flex-wrap gap-1.5 mt-3">
+                                      {driver.show_phone && driver.contact_phone && (
+                                        <a
+                                          href={`tel:${driver.contact_phone}`}
+                                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs hover:bg-primary/20 transition-colors"
+                                        >
+                                          <Phone className="w-3 h-3" />
+                                          Appeler
+                                        </a>
+                                      )}
+                                      {driver.show_email && driver.contact_email && (
+                                        <a
+                                          href={`mailto:${driver.contact_email}`}
+                                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-accent/10 text-accent text-xs hover:bg-accent/20 transition-colors"
+                                        >
+                                          <Mail className="w-3 h-3" />
+                                          Email
+                                        </a>
+                                      )}
+                                    </div>
                                   )}
 
-                                  <div className="flex gap-2 mt-4">
+                                  <div className="flex gap-2 mt-3">
                                     <Button
                                       size="sm"
                                       onClick={() => proposeDriver(driver.id)}
                                       disabled={proposingDriver === driver.id}
-                                      className="flex-1 bg-gradient-to-r from-accent to-success"
+                                      className="flex-1 h-8 text-xs bg-gradient-to-r from-accent to-success"
                                     >
                                       {proposingDriver === driver.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="w-3 h-3 animate-spin" />
                                       ) : (
                                         <>
-                                          <UserPlus className="w-4 h-4 mr-1" />
+                                          <UserPlus className="w-3 h-3 mr-1" />
                                           Inviter
                                         </>
                                       )}
@@ -727,9 +768,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                       size="sm"
                                       variant="outline"
                                       onClick={() => setSelectedDriver(driver)}
-                                      className="border-accent/20 hover:bg-accent/10"
+                                      className="h-8 border-accent/20 hover:bg-accent/10"
                                     >
-                                      <Eye className="w-4 h-4" />
+                                      <Eye className="w-3 h-3" />
                                     </Button>
                                   </div>
                                 </CardContent>
@@ -773,56 +814,108 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         </CardContent>
       </Card>
 
-      {/* Dialog de détail chauffeur */}
+      {/* Dialog de détail chauffeur amélioré */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Profil du chauffeur</DialogTitle>
+            <DialogTitle className="text-lg">Profil du chauffeur</DialogTitle>
           </DialogHeader>
           {selectedDriver && (
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={selectedDriver.avatar_url || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
-                    {selectedDriver.full_name.slice(0, 2).toUpperCase()}
+              {/* Header avec photo et nom */}
+              <div className="flex items-start gap-4">
+                <Avatar className="w-20 h-20 ring-2 ring-primary/20">
+                  <AvatarImage src={getDriverPhoto(selectedDriver) || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-xl font-bold">
+                    {getDisplayName(selectedDriver).slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-bold text-lg">{selectedDriver.full_name}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-lg">{getDisplayName(selectedDriver)}</h3>
+                  {selectedDriver.display_company_name && selectedDriver.company_name && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <Building2 className="w-3 h-3" />
+                      {selectedDriver.company_name}
+                    </p>
+                  )}
                   {getMainSector(selectedDriver.working_sectors) && (
-                    <p className="text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3" />
                       {getMainSector(selectedDriver.working_sectors)}
                     </p>
                   )}
                 </div>
               </div>
 
+              {/* Bio / Présentation */}
+              {selectedDriver.bio && (
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Présentation</p>
+                  <p className="text-sm">{selectedDriver.bio}</p>
+                </div>
+              )}
+
+              {/* Infos contacts (selon visibilité) */}
+              {(selectedDriver.show_phone || selectedDriver.show_email) && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDriver.show_phone && selectedDriver.contact_phone && (
+                    <a
+                      href={`tel:${selectedDriver.contact_phone}`}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {selectedDriver.contact_phone}
+                    </a>
+                  )}
+                  {selectedDriver.show_email && selectedDriver.contact_email && (
+                    <a
+                      href={`mailto:${selectedDriver.contact_email}`}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm"
+                    >
+                      <Mail className="w-4 h-4" />
+                      {selectedDriver.contact_email}
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Note et véhicule */}
               <div className="grid grid-cols-2 gap-3">
-                {selectedDriver.rating && selectedDriver.rating > 0 && (
+                {selectedDriver.show_rating_partners && selectedDriver.rating && selectedDriver.rating > 0 && (
                   <div className="p-3 rounded-xl bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Note</p>
+                    <p className="text-xs text-muted-foreground">Note partenaires</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                       <span className="font-bold">{selectedDriver.rating.toFixed(1)}</span>
+                      {selectedDriver.total_rides && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ({selectedDriver.total_rides} courses)
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
                 {selectedDriver.vehicle_model && (
                   <div className="p-3 rounded-xl bg-muted/30">
                     <p className="text-xs text-muted-foreground">Véhicule</p>
-                    <p className="font-medium mt-1">{selectedDriver.vehicle_model}</p>
+                    <p className="font-medium mt-1">
+                      {selectedDriver.vehicle_brand && `${selectedDriver.vehicle_brand} `}
+                      {selectedDriver.vehicle_model}
+                    </p>
+                    {selectedDriver.vehicle_color && (
+                      <p className="text-xs text-muted-foreground">{selectedDriver.vehicle_color}</p>
+                    )}
                   </div>
                 )}
               </div>
 
+              {/* Services proposés */}
               {selectedDriver.services_offered && selectedDriver.services_offered.length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Services proposés</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedDriver.services_offered.slice(0, 5).map((service, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDriver.services_offered.map((service, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
                         {service}
                       </Badge>
                     ))}
@@ -830,18 +923,65 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                 </div>
               )}
 
-              <DialogFooter>
+              {/* Équipements véhicule */}
+              {selectedDriver.vehicle_equipment && selectedDriver.vehicle_equipment.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Équipements</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDriver.vehicle_equipment.slice(0, 6).map((equip, i) => (
+                      <Badge key={i} variant="outline" className="text-xs">
+                        {equip}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Zones d'intervention */}
+              {selectedDriver.working_sectors && selectedDriver.working_sectors.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Zones d'intervention</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedDriver.working_sectors.slice(0, 5).map((sector, i) => (
+                      <Badge key={i} variant="outline" className="text-xs bg-accent/5 border-accent/20 text-accent">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        {sector}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Indicateur statut partenariat */}
+              {pendingProposals.includes(selectedDriver.id) && (
+                <div className="p-3 rounded-xl bg-amber-100/50 border border-amber-200 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <span className="text-sm text-amber-700">Invitation en attente de réponse</span>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2 sm:gap-0">
                 <Button
-                  onClick={() => {
-                    proposeDriver(selectedDriver.id);
-                    setSelectedDriver(null);
-                  }}
-                  disabled={proposingDriver === selectedDriver.id}
-                  className="w-full bg-gradient-to-r from-accent to-success"
+                  variant="outline"
+                  onClick={() => setProfileDialogDriverId(selectedDriver.id)}
+                  className="flex-1"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Inviter ce chauffeur
+                  <Eye className="w-4 h-4 mr-2" />
+                  Profil complet
                 </Button>
+                {!pendingProposals.includes(selectedDriver.id) && !drivers.some(d => d.id === selectedDriver.id) && (
+                  <Button
+                    onClick={() => {
+                      proposeDriver(selectedDriver.id);
+                      setSelectedDriver(null);
+                    }}
+                    disabled={proposingDriver === selectedDriver.id}
+                    className="flex-1 bg-gradient-to-r from-accent to-success"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Inviter
+                  </Button>
+                )}
               </DialogFooter>
             </div>
           )}
