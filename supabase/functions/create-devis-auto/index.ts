@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
             driver_id: driver_id,
             client_id: course.client_id || null,
             company_id: companyId || null, // Pour les courses d'entreprise
+            company_employee_id: companyEmployeeId || null, // IMPORTANT: Lier le devis à l'employé
             quote_number: reservationNumber, // RES-001, RES-002, etc.
             base_price: pricing.base_price,
             distance_price: pricing.distance_price,
