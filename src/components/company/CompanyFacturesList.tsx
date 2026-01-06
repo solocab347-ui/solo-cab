@@ -32,10 +32,18 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
         .select(`
           *,
           courses!inner(
+            id,
             pickup_address,
             destination_address,
             scheduled_date,
-            distance_km
+            distance_km,
+            company_courses(
+              employee_id,
+              company_employees(
+                user_id,
+                profiles:user_id(full_name, phone)
+              )
+            )
           ),
           drivers!inner(
             company_name,
@@ -174,6 +182,14 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
     if (company) {
       doc.text(company.company_name || "N/A", pageWidth - 20, rightYPos, { align: 'right' });
       rightYPos += 4;
+      
+      // Afficher le nom du collaborateur
+      const companyCourse = facture.courses?.company_courses?.[0];
+      const employeeName = companyCourse?.company_employees?.profiles?.full_name;
+      if (employeeName) {
+        doc.text(`Collaborateur: ${employeeName}`, pageWidth - 20, rightYPos, { align: 'right' });
+        rightYPos += 4;
+      }
       
       if (company.siret) {
         doc.text(`SIRET: ${company.siret}`, pageWidth - 20, rightYPos, { align: 'right' });
@@ -388,11 +404,21 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 pt-2 border-t">
-                            <span className="text-sm text-muted-foreground">Chauffeur:</span>
-                            <span className="text-sm font-medium">
-                              {facture.drivers?.profiles?.full_name || facture.drivers?.company_name}
-                            </span>
+                          <div className="flex flex-col gap-1 pt-2 border-t">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Chauffeur:</span>
+                              <span className="text-sm font-medium">
+                                {facture.drivers?.profiles?.full_name || facture.drivers?.company_name}
+                              </span>
+                            </div>
+                            {facture.courses?.company_courses?.[0]?.company_employees?.profiles?.full_name && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Collaborateur:</span>
+                                <span className="text-sm font-medium">
+                                  {facture.courses.company_courses[0].company_employees.profiles.full_name}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           {facture.payment_method && (
