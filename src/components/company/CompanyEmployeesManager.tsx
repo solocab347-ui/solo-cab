@@ -688,9 +688,9 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="text-sm">{emp.job_title || "-"}</p>
-                        {emp.department && (
-                          <p className="text-xs text-muted-foreground">{emp.department}</p>
+                        <p className="text-sm">{emp.department || "-"}</p>
+                        {emp.job_title && (
+                          <p className="text-xs text-muted-foreground">{emp.job_title}</p>
                         )}
                       </div>
                     </TableCell>
