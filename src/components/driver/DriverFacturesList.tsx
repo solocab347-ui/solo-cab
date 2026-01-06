@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, Euro, CheckCircle, CreditCard, Share2, MessageSquare, Mail, Send, Facebook } from "lucide-react";
+import { FileText, Search, Download, Euro, CheckCircle, CreditCard, Share2, MessageSquare, Mail, Send, Facebook, Building2, Phone, User } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -149,29 +149,93 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
       if (regularError) throw regularError;
 
-      // Fetch company course info for factures
+      // Fetch company course info for factures including employee info
       const courseIds = (regularFactures || []).map(f => f.course_id);
       let companyCoursesMap = new Map();
+      let companyCourseRequestsMap = new Map();
       
       if (courseIds.length > 0) {
+        // Fetch company_courses with company info
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
             course_id,
-            company:companies(id, company_name, logo_url)
+            employee_id,
+            company:companies(id, company_name, logo_url, contact_email, contact_phone),
+            employee:company_employees(
+              id,
+              user_id,
+              profiles:user_id(full_name, phone, email)
+            )
           `)
           .in("course_id", courseIds);
         
         companyData?.forEach(cc => {
-          companyCoursesMap.set(cc.course_id, cc.company);
+          companyCoursesMap.set(cc.course_id, {
+            company: cc.company,
+            employee: cc.employee
+          });
+        });
+
+        // Fetch company_course_requests for guest employees
+        const { data: requestsData } = await supabase
+          .from("company_course_requests")
+          .select(`
+            final_course_id,
+            is_guest_employee,
+            guest_employee_name,
+            guest_employee_phone,
+            guest_employee_email,
+            employee_id,
+            company_employees(
+              id,
+              user_id,
+              profiles:user_id(full_name, phone, email)
+            )
+          `)
+          .in("final_course_id", courseIds);
+        
+        requestsData?.forEach(req => {
+          companyCourseRequestsMap.set(req.final_course_id, req);
         });
       }
 
-      // Enrich factures with company info
-      const enrichedFactures = (regularFactures || []).map(f => ({
-        ...f,
-        companyInfo: companyCoursesMap.get(f.course_id) || null
-      }));
+      // Enrich factures with company info and employee info
+      const enrichedFactures = (regularFactures || []).map(f => {
+        const companyInfo = companyCoursesMap.get(f.course_id);
+        const requestInfo = companyCourseRequestsMap.get(f.course_id);
+        
+        let employeeName = null;
+        let employeePhone = null;
+        let employeeEmail = null;
+        let isGuestEmployee = false;
+        
+        if (requestInfo) {
+          isGuestEmployee = requestInfo.is_guest_employee || false;
+          if (isGuestEmployee) {
+            employeeName = requestInfo.guest_employee_name;
+            employeePhone = requestInfo.guest_employee_phone;
+            employeeEmail = requestInfo.guest_employee_email;
+          } else if (requestInfo.company_employees?.profiles) {
+            employeeName = requestInfo.company_employees.profiles.full_name;
+            employeePhone = requestInfo.company_employees.profiles.phone;
+            employeeEmail = requestInfo.company_employees.profiles.email;
+          }
+        } else if (companyInfo?.employee?.profiles) {
+          employeeName = companyInfo.employee.profiles.full_name;
+          employeePhone = companyInfo.employee.profiles.phone;
+          employeeEmail = companyInfo.employee.profiles.email;
+        }
+        
+        return {
+          ...f,
+          companyInfo: companyInfo?.company || null,
+          employeeName,
+          employeePhone,
+          employeeEmail,
+          isGuestEmployee
+        };
+      });
 
       setFactures(enrichedFactures);
       setFilteredFactures(enrichedFactures);
@@ -652,10 +716,22 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             const gradients = ['bg-gradient-success', 'bg-gradient-premium', 'bg-gradient-trust'];
             const gradient = gradients[index % 3];
             return (
-            <Card key={facture.id} className={`p-6 hover:shadow-elegant transition-all ${gradient} border-0`}>
+            <Card key={facture.id} className={`p-6 hover:shadow-elegant transition-all ${facture.companyInfo ? 'bg-gradient-to-br from-amber-600/80 to-orange-700/80' : gradient} border-0`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  {facture.clients?.profiles?.profile_photo_url ? (
+                  {facture.companyInfo ? (
+                    facture.companyInfo.logo_url ? (
+                      <img
+                        src={facture.companyInfo.logo_url}
+                        alt={facture.companyInfo.company_name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white border-2 border-white/30">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                    )
+                  ) : facture.clients?.profiles?.profile_photo_url ? (
                     <img
                       src={facture.clients.profiles.profile_photo_url}
                       alt={facture.clients.profiles.full_name}
@@ -663,20 +739,81 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold border-2 border-white/30">
-                      {facture.clients?.profiles?.full_name?.[0] || "?"}
+                      {facture.clients?.profiles?.full_name?.[0] || facture.courses?.guest_name?.[0] || "?"}
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg text-white">
-                      {facture.invoice_number_generated || facture.invoice_number}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg text-white">
+                        {facture.invoice_number_generated || facture.invoice_number}
+                      </h3>
+                      {facture.companyInfo && (
+                        <Badge className="bg-amber-500/80 text-white border-0 text-xs">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          Entreprise
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-white/80">
-                      {facture.clients?.profiles?.full_name}
+                      {facture.companyInfo?.company_name || 
+                       facture.clients?.profiles?.full_name || 
+                       facture.courses?.guest_name || 
+                       "Client"}
                     </p>
                   </div>
                 </div>
                 {getStatusBadge(facture.payment_status)}
               </div>
+
+              {/* Company/Employee Info Section */}
+              {facture.companyInfo && (
+                <div className="bg-gradient-to-br from-amber-500/20 to-orange-500/10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-amber-400/30">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {facture.employeeName || facture.courses?.guest_name || "Collaborateur non spécifié"}
+                          {(facture.isGuestEmployee || (facture.courses?.is_guest_booking && !facture.employeeName)) && (
+                            <Badge variant="outline" className="ml-2 text-xs border-white/30 text-white/80">
+                              Non inscrit
+                            </Badge>
+                          )}
+                        </p>
+                        {facture.employeeEmail && (
+                          <p className="text-xs text-white/70">{facture.employeeEmail}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {(facture.employeePhone || facture.courses?.guest_phone) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-emerald-500/20 border-emerald-400/40 text-white hover:bg-emerald-500/40"
+                          onClick={() => window.open(`tel:${facture.employeePhone || facture.courses?.guest_phone}`, '_self')}
+                        >
+                          <Phone className="w-3 h-3 mr-1" />
+                          Appeler
+                        </Button>
+                      )}
+                      {facture.companyInfo.contact_phone && !(facture.employeePhone || facture.courses?.guest_phone) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-blue-500/20 border-blue-400/40 text-white hover:bg-blue-500/40"
+                          onClick={() => window.open(`tel:${facture.companyInfo.contact_phone}`, '_self')}
+                        >
+                          <Phone className="w-3 h-3 mr-1" />
+                          Entreprise
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Course info */}
               <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 text-sm border border-white/20">
