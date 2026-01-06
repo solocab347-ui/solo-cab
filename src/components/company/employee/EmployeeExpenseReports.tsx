@@ -146,6 +146,7 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
 
     setSubmitting(true);
     try {
+      // Use raw insert to bypass type constraints until types are regenerated
       const { error } = await supabase
         .from("expense_reports")
         .insert({
@@ -157,7 +158,8 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
           notes: formData.notes || null,
           receipt_url: formData.receipt_url,
           status: "pending",
-        });
+          course_id: null,
+        } as any);
 
       if (error) throw error;
 

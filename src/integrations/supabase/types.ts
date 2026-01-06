@@ -3708,7 +3708,7 @@ export type Database = {
         Row: {
           amount: number
           company_id: string
-          course_id: string
+          course_id: string | null
           created_at: string | null
           description: string | null
           employee_id: string
@@ -3728,7 +3728,7 @@ export type Database = {
         Insert: {
           amount: number
           company_id: string
-          course_id: string
+          course_id?: string | null
           created_at?: string | null
           description?: string | null
           employee_id: string
@@ -3748,7 +3748,7 @@ export type Database = {
         Update: {
           amount?: number
           company_id?: string
-          course_id?: string
+          course_id?: string | null
           created_at?: string | null
           description?: string | null
           employee_id?: string
