@@ -145,37 +145,56 @@ export function EmployeeCoursePaymentDeclaration({
         .from("company_courses")
         .update({
           actual_payment_method: paymentBy === "company" ? "company_account" : "employee_personal",
+          client_confirmed_payment_method: paymentBy === "company" ? "company_will_pay" : "paid_on_spot",
+          client_confirmed_at: new Date().toISOString(),
           payment_declared_at: new Date().toISOString(),
         })
         .eq("id", selectedCourse.company_course_id);
 
       if (updateError) throw updateError;
 
-      // Si payé par l'employé, créer automatiquement une note de frais
-      if (paymentBy === "employee" && selectedCourse.amount) {
-        const { error: expenseError } = await supabase
-          .from("expense_reports")
-          .insert({
-            company_id: companyId,
-            employee_id: employeeId,
-            course_id: selectedCourse.id,
-            amount: selectedCourse.amount,
-            description: `Course VTC - ${selectedCourse.pickup_address.split(",")[0]} → ${selectedCourse.destination_address.split(",")[0]}`,
-            payment_method: "card",
-            status: "pending",
-            submitted_at: new Date().toISOString(),
-          } as any);
+      // Si payé par l'employé directement (paid_on_spot), marquer la facture comme payée
+      if (paymentBy === "employee") {
+        // Mettre à jour le statut de la facture en "paid"
+        const { error: factureError } = await supabase
+          .from("factures")
+          .update({
+            payment_status: "paid",
+            paid_at: new Date().toISOString()
+          })
+          .eq("course_id", selectedCourse.id);
 
-        if (expenseError) throw expenseError;
+        if (factureError) {
+          console.error("Error updating facture:", factureError);
+        }
 
-        toast.success("Note de frais créée automatiquement !", {
-          description: `${selectedCourse.amount.toFixed(2)} € en attente de validation`
-        });
-        
-        onExpenseCreated?.();
+        // Créer automatiquement une note de frais
+        if (selectedCourse.amount) {
+          const { error: expenseError } = await supabase
+            .from("expense_reports")
+            .insert({
+              company_id: companyId,
+              employee_id: employeeId,
+              course_id: selectedCourse.id,
+              amount: selectedCourse.amount,
+              description: `Course VTC - ${selectedCourse.pickup_address.split(",")[0]} → ${selectedCourse.destination_address.split(",")[0]}`,
+              payment_method: "card",
+              status: "pending",
+              submitted_at: new Date().toISOString(),
+            } as any);
+
+          if (expenseError) throw expenseError;
+
+          toast.success("Facture réglée & note de frais créée !", {
+            description: `${selectedCourse.amount.toFixed(2)} € en attente de remboursement`
+          });
+          
+          onExpenseCreated?.();
+        }
       } else {
+        // Réglée par l'entreprise - la facture reste en attente pour le chauffeur
         toast.success("Paiement déclaré !", {
-          description: "La course a été marquée comme réglée par l'entreprise"
+          description: "La course sera facturée à l'entreprise"
         });
       }
 
