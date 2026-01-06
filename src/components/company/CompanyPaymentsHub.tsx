@@ -305,31 +305,54 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     mutationFn: async ({ payment, reference, document }: { payment: GroupedPayment; reference: string; document?: File }) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       
-      const { data, error } = await supabase
-        .from("company_payments")
-        .insert({
-          company_id: companyId,
-          driver_id: payment.driverId,
-          agreement_id: payment.agreementId,
-          amount: payment.totalAmount,
-          payment_method: payment.paymentMethods[0] || "virement",
-          status: "sent",
-          sent_at: new Date().toISOString(),
-          sent_by_user_id: userId,
-          payment_reference: reference,
-          period_start: payment.periodStart.toISOString(),
-          period_end: payment.periodEnd.toISOString(),
-          course_ids: payment.invoices.map((i: any) => i.course_id),
-          courses_count: payment.invoiceCount
-        })
-        .select()
-        .single();
+      let paymentRecord;
+      
+      // Si un paiement existe déjà (paymentId), le mettre à jour
+      if (payment.paymentId) {
+        const { data, error } = await supabase
+          .from("company_payments")
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            sent_by_user_id: userId,
+            payment_reference: reference
+          })
+          .eq("id", payment.paymentId)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        paymentRecord = data;
+      } else {
+        // Sinon créer un nouveau paiement
+        const { data, error } = await supabase
+          .from("company_payments")
+          .insert({
+            company_id: companyId,
+            driver_id: payment.driverId,
+            agreement_id: payment.agreementId,
+            amount: payment.totalAmount,
+            payment_method: payment.paymentMethods[0] || "virement",
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            sent_by_user_id: userId,
+            payment_reference: reference,
+            period_start: payment.periodStart.toISOString(),
+            period_end: payment.periodEnd.toISOString(),
+            course_ids: payment.invoices.map((i: any) => i.course_id).filter(Boolean),
+            courses_count: payment.invoiceCount
+          })
+          .select()
+          .single();
 
-      if (document && data) {
+        if (error) throw error;
+        paymentRecord = data;
+      }
+
+      // Upload document if provided
+      if (document && paymentRecord) {
         const fileExt = document.name.split('.').pop();
-        const fileName = `${data.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${paymentRecord.id}/${Date.now()}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('payment-documents')
@@ -343,7 +366,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           await supabase
             .from('company_payment_documents')
             .insert({
-              payment_id: data.id,
+              payment_id: paymentRecord.id,
               document_url: urlData.publicUrl,
               document_type: 'proof_of_payment',
               file_name: document.name,
@@ -369,12 +392,13 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         });
       }
 
-      return data;
+      return paymentRecord;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-payments-tracking"] });
+      queryClient.invalidateQueries({ queryKey: ["company-payments-combined-data-v4"] });
       queryClient.invalidateQueries({ queryKey: ["company-unpaid-invoices"] });
-      toast.success("Paiement marqué comme envoyé");
+      toast.success("Paiement notifié au chauffeur");
       setShowSendPaymentDialog(false);
       setSelectedPayment(null);
       setPaymentReference("");
@@ -417,7 +441,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       const paymentFrequency = agreement.payment_frequency || "per_course";
       const paymentDay = agreement.payment_day || 1;
 
-      // Add existing payments (sent or received)
+      // Add existing payments from company_payments table
       driverPayments.forEach((payment: any) => {
         const periodStart = payment.period_start ? new Date(payment.period_start) : new Date(payment.created_at);
         const periodEnd = payment.period_end ? new Date(payment.period_end) : periodStart;
@@ -436,9 +460,24 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         }
 
         // Build proper course data from invoices if available
-        const invoicesWithCourses = relatedInvoices.length > 0 ? relatedInvoices : driverInvoices.filter((inv: any) => 
+        const invoicesWithCoursesLocal = relatedInvoices.length > 0 ? relatedInvoices : driverInvoices.filter((inv: any) => 
           inv.driver_id === agreement.driver_id
         );
+
+        // Déterminer le statut correct :
+        // - "received" = confirmé par le chauffeur
+        // - "sent" = l'entreprise a notifié l'envoi (sent_at non null)
+        // - "pending" = créé mais pas encore envoyé → traiter comme "due" ou "overdue"
+        let mappedStatus: 'upcoming' | 'due' | 'overdue' | 'sent' | 'received';
+        
+        if (payment.status === "received") {
+          mappedStatus = 'received';
+        } else if (payment.status === "sent" && payment.sent_at) {
+          mappedStatus = 'sent';
+        } else {
+          // Status "pending" ou "sent" sans sent_at → paiement à effectuer
+          mappedStatus = dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming';
+        }
 
         groups.push({
           driverId: agreement.driver_id,
@@ -450,8 +489,8 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           paymentMethods: agreement.payment_methods || [],
           paymentDay,
           totalAmount: Number(payment.amount),
-          invoiceCount: payment.courses_count || invoicesWithCourses.length || 1,
-          invoices: invoicesWithCourses.length > 0 ? invoicesWithCourses : [{
+          invoiceCount: payment.courses_count || invoicesWithCoursesLocal.length || 1,
+          invoices: invoicesWithCoursesLocal.length > 0 ? invoicesWithCoursesLocal : [{
             amount: payment.amount,
             created_at: payment.created_at,
             invoice_number_generated: null,
@@ -460,7 +499,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           periodStart,
           periodEnd,
           dueDate,
-          status: payment.status === "received" ? 'received' : 'sent',
+          status: mappedStatus,
           paymentId: payment.id,
           sentAt: payment.sent_at ? new Date(payment.sent_at) : undefined,
           paymentReference: payment.payment_reference,
