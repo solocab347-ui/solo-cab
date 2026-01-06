@@ -12,13 +12,15 @@ interface ProtectedRouteProps {
   allowedRoles?: ("admin" | "driver" | "client" | "company" | "fleet_manager")[];
   requireValidatedDriver?: boolean;
   requireCompanyAdmin?: boolean; // Pour vérifier si l'utilisateur est admin d'entreprise
+  requireCompanyEmployee?: boolean; // Pour vérifier si l'utilisateur est un collaborateur d'entreprise
 }
 
 export const ProtectedRoute = ({ 
   children, 
   allowedRoles,
   requireValidatedDriver = false,
-  requireCompanyAdmin = false 
+  requireCompanyAdmin = false,
+  requireCompanyEmployee = false
 }: ProtectedRouteProps) => {
   const { user, userRole, loading } = useAuth();
   const location = useLocation();
@@ -26,9 +28,12 @@ export const ProtectedRoute = ({
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
   const [checkingDriver, setCheckingDriver] = useState(requireValidatedDriver);
   const [checkingCompanyAdmin, setCheckingCompanyAdmin] = useState(false);
+  const [checkingCompanyEmployee, setCheckingCompanyEmployee] = useState(false);
   const [isCompanyAdmin, setIsCompanyAdmin] = useState<boolean | null>(null);
+  const [isCompanyEmployee, setIsCompanyEmployee] = useState<boolean | null>(null);
   const hasChecked = useRef(false); // Éviter les vérifications multiples
   const hasCheckedCompanyAdmin = useRef(false);
+  const hasCheckedCompanyEmployee = useRef(false);
 
   // Vérification du statut admin entreprise
   useEffect(() => {
@@ -83,6 +88,46 @@ export const ProtectedRoute = ({
       setIsCompanyAdmin(false);
     } finally {
       setCheckingCompanyAdmin(false);
+    }
+  };
+
+  // Vérification du statut collaborateur d'entreprise
+  useEffect(() => {
+    if (requireCompanyEmployee && user && !hasCheckedCompanyEmployee.current) {
+      hasCheckedCompanyEmployee.current = true;
+      checkCompanyEmployeeStatus();
+    } else if (!requireCompanyEmployee || !user) {
+      setCheckingCompanyEmployee(false);
+      hasCheckedCompanyEmployee.current = false;
+    }
+  }, [user?.id, requireCompanyEmployee]);
+
+  const checkCompanyEmployeeStatus = async () => {
+    if (!user) {
+      setCheckingCompanyEmployee(false);
+      return;
+    }
+
+    setCheckingCompanyEmployee(true);
+    try {
+      const { data: employeeData } = await supabase
+        .from("company_employees")
+        .select("id, is_active, is_suspended")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .eq("is_suspended", false)
+        .maybeSingle();
+
+      if (employeeData) {
+        setIsCompanyEmployee(true);
+      } else {
+        setIsCompanyEmployee(false);
+      }
+    } catch (error) {
+      logger.error("Error checking company employee status", { error });
+      setIsCompanyEmployee(false);
+    } finally {
+      setCheckingCompanyEmployee(false);
     }
   };
 
@@ -147,7 +192,7 @@ export const ProtectedRoute = ({
   };
 
   // Utiliser un loader minimal et cohérent pour éviter les flash
-  if (loading || checkingDriver || checkingCompanyAdmin) {
+  if (loading || checkingDriver || checkingCompanyAdmin || checkingCompanyEmployee) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background auth-loading-screen">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -166,6 +211,12 @@ export const ProtectedRoute = ({
   // Vérifier si l'utilisateur essaie d'accéder au company-dashboard sans être admin
   if (requireCompanyAdmin && isCompanyAdmin === false) {
     return <Navigate to="/company-employee-dashboard" replace />;
+  }
+
+  // Vérifier si l'utilisateur essaie d'accéder à l'espace collaborateur sans être collaborateur
+  if (requireCompanyEmployee && isCompanyEmployee === false) {
+    // Rediriger vers le client dashboard s'il n'est pas un vrai collaborateur
+    return <Navigate to="/client-dashboard" replace />;
   }
 
   // Rediriger les chauffeurs sans paiement vers une page d'erreur claire
