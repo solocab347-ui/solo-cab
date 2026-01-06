@@ -125,7 +125,7 @@ export function DriverSearchFilters({
   return (
     <div className="space-y-3">
       {/* Barre de recherche principale */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="flex flex-col gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -133,7 +133,7 @@ export function DriverSearchFilters({
             value={filters.searchQuery}
             onChange={(e) => updateFilter("searchQuery", e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSearch()}
-            className="pl-9 h-10 sm:h-12 rounded-xl border-border/50 bg-muted/30 text-sm"
+            className="pl-9 h-10 rounded-xl border-border/50 bg-muted/30 text-sm"
           />
           {filters.searchQuery && (
             <button
@@ -147,13 +147,14 @@ export function DriverSearchFilters({
         <Button
           onClick={onSearch}
           disabled={searching}
-          className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-accent to-accent-light text-sm"
+          className="w-full h-10 bg-gradient-to-r from-accent to-accent-light text-sm font-medium"
         >
           {searching ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
           ) : (
-            "Rechercher"
+            <Search className="w-4 h-4 mr-2" />
           )}
+          Rechercher
         </Button>
       </div>
 

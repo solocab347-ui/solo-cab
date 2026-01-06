@@ -56,6 +56,13 @@ interface Driver {
   vehicle_equipment: string[] | null;
 }
 
+interface PendingAgreement {
+  driver_id: string;
+  created_by_user_id: string | null;
+  created_by_name: string | null;
+  is_admin: boolean;
+}
+
 interface EmployeeCompanyDriversProps {
   companyId: string;
   canInviteDrivers: boolean;
@@ -71,7 +78,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [pendingDriversInSearch, setPendingDriversInSearch] = useState<Driver[]>([]);
   const [searching, setSearching] = useState(false);
   const [proposingDriver, setProposingDriver] = useState<string | null>(null);
-  const [pendingProposals, setPendingProposals] = useState<string[]>([]);
+  const [pendingProposals, setPendingProposals] = useState<PendingAgreement[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"partners" | "search">("partners");
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [profileDialogDriverId, setProfileDialogDriverId] = useState<string | null>(null);
@@ -80,8 +88,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
 
   useEffect(() => {
-    fetchCompanyDrivers();
-    fetchPendingProposals();
+    const initData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+      fetchCompanyDrivers();
+      fetchPendingProposals();
+    };
+    initData();
   }, [companyId]);
 
   const fetchCompanyDrivers = async () => {
@@ -167,16 +182,78 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
     try {
       const { data, error } = await supabase
         .from("company_driver_agreements")
-        .select("driver_id")
+        .select("driver_id, created_by_user_id")
         .eq("company_id", companyId)
         .eq("status", "pending");
 
       if (!error && data) {
-        setPendingProposals(data.map(d => d.driver_id));
+        // Enrichir avec les infos de l'utilisateur qui a créé la demande
+        const enrichedProposals: PendingAgreement[] = [];
+        for (const proposal of data) {
+          let creatorName: string | null = null;
+          let isAdmin = false;
+          
+          if (proposal.created_by_user_id) {
+            // Vérifier si c'est un administrateur
+            const { data: adminData } = await supabase
+              .from("company_administrators")
+              .select("admin_type, user_id")
+              .eq("company_id", companyId)
+              .eq("user_id", proposal.created_by_user_id)
+              .eq("is_active", true)
+              .maybeSingle();
+            
+            if (adminData) {
+              isAdmin = true;
+            }
+            
+            // Récupérer le nom
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", proposal.created_by_user_id)
+              .maybeSingle();
+            
+            creatorName = profile?.full_name || null;
+          }
+          
+          enrichedProposals.push({
+            driver_id: proposal.driver_id,
+            created_by_user_id: proposal.created_by_user_id,
+            created_by_name: creatorName,
+            is_admin: isAdmin,
+          });
+        }
+        setPendingProposals(enrichedProposals);
       }
     } catch (error) {
       console.error("Erreur récupération propositions:", error);
     }
+  };
+  
+  // Helper pour obtenir le label de qui a fait la demande
+  const getRequestedByLabel = (driverId: string): string | null => {
+    const proposal = pendingProposals.find(p => p.driver_id === driverId);
+    if (!proposal) return null;
+    
+    if (proposal.created_by_user_id === currentUserId) {
+      return "Demande faite par vous";
+    }
+    
+    if (proposal.is_admin) {
+      return "Demande faite par l'administrateur";
+    }
+    
+    if (proposal.created_by_name) {
+      return `Demande faite par ${proposal.created_by_name}`;
+    }
+    
+    return "Demande en cours";
+  };
+  
+  // Helper pour vérifier si un chauffeur est en attente
+  const isPendingDriver = (driverId: string): boolean => {
+    return pendingProposals.some(p => p.driver_id === driverId);
   };
 
   const searchPublicDrivers = async () => {
@@ -255,8 +332,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
       // Séparer les chauffeurs déjà partenaires et ceux en attente
       const partnerIds = drivers.map(d => d.id);
-      const availableDrivers = driversData.filter(d => !partnerIds.includes(d.id) && !pendingProposals.includes(d.id));
-      const pendingDrivers = driversData.filter(d => pendingProposals.includes(d.id));
+      const pendingDriverIds = pendingProposals.map(p => p.driver_id);
+      const availableDrivers = driversData.filter(d => !partnerIds.includes(d.id) && !pendingDriverIds.includes(d.id));
+      const pendingDrivers = driversData.filter(d => pendingDriverIds.includes(d.id));
 
       // Enrichir les chauffeurs disponibles
       const enriched: Driver[] = [];
@@ -349,6 +427,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           status: "pending",
           proposed_by: "company",
           payment_methods: ["transfer", "card"],
+          created_by_user_id: currentUserId,
         });
 
       if (error) {
@@ -365,7 +444,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       });
       
       // Mettre à jour les états
-      setPendingProposals(prev => [...prev, driverId]);
+      const newProposal: PendingAgreement = {
+        driver_id: driverId,
+        created_by_user_id: currentUserId,
+        created_by_name: "Vous",
+        is_admin: false, // sera mis à jour au prochain fetch
+      };
+      setPendingProposals(prev => [...prev, newProposal]);
       setSearchResults(prev => prev.filter(d => d.id !== driverId));
     } catch (error) {
       console.error("Erreur proposition:", error);
@@ -428,34 +513,34 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       {/* Header avec onglets */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
         <div className="h-1 bg-gradient-to-r from-primary via-accent to-success" />
-        <CardContent className="p-6">
-          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "partners" | "search")} className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <CardContent className="p-3 sm:p-6">
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "partners" | "search")} className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
               <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   Chauffeurs de l'entreprise
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Gérez les chauffeurs partenaires de votre entreprise
                 </p>
               </div>
               
-              <TabsList className="bg-muted/50 p-1 rounded-xl">
+              <TabsList className="bg-muted/50 p-1 rounded-xl w-full grid grid-cols-2 h-auto">
                 <TabsTrigger 
                   value="partners" 
-                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs sm:text-sm py-2 px-2 sm:px-4"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Partenaires ({drivers.length})
+                  <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                  <span className="truncate">Partenaires ({drivers.length})</span>
                 </TabsTrigger>
                 {canInviteDrivers && (
                   <TabsTrigger 
                     value="search" 
-                    className="rounded-lg data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+                    className="rounded-lg data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-xs sm:text-sm py-2 px-2 sm:px-4"
                   >
-                    <Search className="w-4 h-4 mr-2" />
-                    Rechercher un partenaire
+                    <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                    <span className="truncate">Rechercher</span>
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -603,15 +688,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                       <p className="text-muted-foreground">Recherche en cours...</p>
                     </div>
                   ) : (searchResults.length > 0 || pendingDriversInSearch.length > 0) ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {/* Section des demandes en attente */}
                       {pendingDriversInSearch.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-amber-500" />
-                            <h3 className="font-semibold text-sm text-amber-600">Demandes en attente ({pendingDriversInSearch.length})</h3>
+                            <h3 className="font-semibold text-xs sm:text-sm text-amber-600">Demandes en attente ({pendingDriversInSearch.length})</h3>
                           </div>
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                             {pendingDriversInSearch.map((driver, index) => (
                               <Card 
                                 key={driver.id}
@@ -656,18 +741,24 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     </Badge>
                                   )}
 
-                                  <div className="flex gap-2 mt-4">
-                                    <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-100/50 text-amber-700 text-xs">
-                                      <AlertCircle className="w-4 h-4" />
-                                      <span>Invitation envoyée</span>
+                                  <div className="mt-4 space-y-2">
+                                    <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-100/50 text-amber-700 text-xs">
+                                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                      <div className="flex-1 min-w-0">
+                                        <span className="font-medium">Invitation envoyée</span>
+                                        {getRequestedByLabel(driver.id) && (
+                                          <p className="text-amber-600 truncate">{getRequestedByLabel(driver.id)}</p>
+                                        )}
+                                      </div>
                                     </div>
                                     <Button
                                       size="sm"
                                       variant="outline"
                                       onClick={() => setSelectedDriver(driver)}
-                                      className="border-amber-200 hover:bg-amber-50"
+                                      className="w-full border-amber-200 hover:bg-amber-50"
                                     >
-                                      <Eye className="w-4 h-4" />
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      Voir le profil
                                     </Button>
                                   </div>
                                 </CardContent>
@@ -679,14 +770,14 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
                       {/* Section des chauffeurs disponibles */}
                       {searchResults.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           {pendingDriversInSearch.length > 0 && (
                             <div className="flex items-center gap-2">
                               <UserPlus className="w-4 h-4 text-accent" />
-                              <h3 className="font-semibold text-sm">Chauffeurs disponibles ({searchResults.length})</h3>
+                              <h3 className="font-semibold text-xs sm:text-sm">Chauffeurs disponibles ({searchResults.length})</h3>
                             </div>
                           )}
-                          <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                             {searchResults.map((driver, index) => (
                               <Card 
                                 key={driver.id}
@@ -953,10 +1044,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
               )}
 
               {/* Indicateur statut partenariat */}
-              {pendingProposals.includes(selectedDriver.id) && (
-                <div className="p-3 rounded-xl bg-amber-100/50 border border-amber-200 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm text-amber-700">Invitation en attente de réponse</span>
+              {isPendingDriver(selectedDriver.id) && (
+                <div className="p-3 rounded-xl bg-amber-100/50 border border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm text-amber-700">Invitation en attente de réponse</span>
+                  </div>
+                  {getRequestedByLabel(selectedDriver.id) && (
+                    <p className="text-xs text-amber-600 mt-1 ml-6">{getRequestedByLabel(selectedDriver.id)}</p>
+                  )}
                 </div>
               )}
 
@@ -969,7 +1065,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                   <Eye className="w-4 h-4 mr-2" />
                   Profil complet
                 </Button>
-                {!pendingProposals.includes(selectedDriver.id) && !drivers.some(d => d.id === selectedDriver.id) && (
+                {!isPendingDriver(selectedDriver.id) && !drivers.some(d => d.id === selectedDriver.id) && (
                   <Button
                     onClick={() => {
                       proposeDriver(selectedDriver.id);
