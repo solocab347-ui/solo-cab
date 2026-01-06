@@ -59,6 +59,7 @@ interface Employee {
   job_title: string | null;
   can_create_courses: boolean;
   can_view_invoices: boolean;
+  can_invite_drivers: boolean;
   can_view_all_company_courses?: boolean;
   is_active: boolean;
   is_suspended?: boolean;
@@ -88,6 +89,8 @@ interface Invitation {
   employee_name: string | null;
   department: string | null;
   can_create_courses: boolean;
+  can_view_invoices: boolean;
+  can_invite_drivers: boolean;
   is_used: boolean;
   expires_at: string;
   created_at: string;
@@ -113,6 +116,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
     department: "",
     canCreateCourses: true,
     canViewInvoices: true,
+    canInviteDrivers: false,
   });
 
   useEffect(() => {
@@ -176,6 +180,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
           department: inviteForm.department || null,
           can_create_courses: inviteForm.canCreateCourses,
           can_view_invoices: inviteForm.canViewInvoices,
+          can_invite_drivers: inviteForm.canInviteDrivers,
         })
         .select()
         .single();
@@ -190,6 +195,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
         department: "",
         canCreateCourses: true,
         canViewInvoices: true,
+        canInviteDrivers: false,
       });
       
       toast.success("Invitation créée avec succès");
@@ -233,7 +239,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
     }
   };
 
-  const toggleEmployeePermission = async (employeeId: string, field: "can_create_courses" | "can_view_invoices", value: boolean) => {
+  const toggleEmployeePermission = async (employeeId: string, field: "can_create_courses" | "can_view_invoices" | "can_invite_drivers", value: boolean) => {
     try {
       const { error } = await supabase
         .from("company_employees")
@@ -364,6 +370,18 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
                     <Switch
                       checked={inviteForm.canViewInvoices}
                       onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canViewInvoices: checked })}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal">Proposer des chauffeurs</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Peut rechercher et proposer des chauffeurs partenaires
+                      </p>
+                    </div>
+                    <Switch
+                      checked={inviteForm.canInviteDrivers}
+                      onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canInviteDrivers: checked })}
                     />
                   </div>
                 </div>

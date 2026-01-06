@@ -20,6 +20,7 @@ interface InvitationData {
   department: string | null;
   can_create_courses: boolean;
   can_view_invoices: boolean;
+  can_invite_drivers: boolean;
   company_name: string;
 }
 
@@ -67,6 +68,7 @@ export default function RegisterCompanyEmployee() {
           department,
           can_create_courses,
           can_view_invoices,
+          can_invite_drivers,
           companies!inner(company_name)
         `)
         .eq("token", token)
@@ -89,6 +91,7 @@ export default function RegisterCompanyEmployee() {
         department: data.department,
         can_create_courses: data.can_create_courses,
         can_view_invoices: data.can_view_invoices,
+        can_invite_drivers: data.can_invite_drivers || false,
         company_name: companyData.company_name,
       });
       
@@ -168,6 +171,7 @@ export default function RegisterCompanyEmployee() {
           job_title: formData.jobTitle ? sanitizeString(formData.jobTitle) : null,
           can_create_courses: invitation.can_create_courses,
           can_view_invoices: invitation.can_view_invoices,
+          can_invite_drivers: invitation.can_invite_drivers,
         });
 
       if (employeeError) throw employeeError;

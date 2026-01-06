@@ -45,6 +45,7 @@ interface Employee {
   job_title: string | null;
   can_create_courses: boolean;
   can_view_invoices: boolean;
+  can_invite_drivers: boolean;
   can_view_all_company_courses?: boolean;
   is_active: boolean;
   is_suspended?: boolean;
@@ -95,6 +96,7 @@ export function EmployeeSupervisionDialog({
   const [formData, setFormData] = useState({
     can_create_courses: true,
     can_view_invoices: false,
+    can_invite_drivers: false,
     can_view_all_company_courses: false,
     max_monthly_budget: "",
     max_monthly_courses: "",
@@ -110,6 +112,7 @@ export function EmployeeSupervisionDialog({
       setFormData({
         can_create_courses: employee.can_create_courses ?? true,
         can_view_invoices: employee.can_view_invoices ?? false,
+        can_invite_drivers: employee.can_invite_drivers ?? false,
         can_view_all_company_courses: employee.can_view_all_company_courses ?? false,
         max_monthly_budget: employee.max_monthly_budget?.toString() || "",
         max_monthly_courses: employee.max_monthly_courses?.toString() || "",
@@ -188,6 +191,7 @@ export function EmployeeSupervisionDialog({
       const updateData: any = {
         can_create_courses: formData.can_create_courses,
         can_view_invoices: formData.can_view_invoices,
+        can_invite_drivers: formData.can_invite_drivers,
         can_view_all_company_courses: formData.can_view_all_company_courses,
         max_monthly_budget: formData.max_monthly_budget ? parseFloat(formData.max_monthly_budget) : null,
         max_monthly_courses: formData.max_monthly_courses ? parseInt(formData.max_monthly_courses) : null,
@@ -351,6 +355,17 @@ export function EmployeeSupervisionDialog({
                 <Switch
                   checked={formData.can_view_all_company_courses}
                   onCheckedChange={(checked) => setFormData({ ...formData, can_view_all_company_courses: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <Label>Proposer des chauffeurs</Label>
+                  <p className="text-xs text-muted-foreground">Peut rechercher et proposer des chauffeurs partenaires</p>
+                </div>
+                <Switch
+                  checked={formData.can_invite_drivers}
+                  onCheckedChange={(checked) => setFormData({ ...formData, can_invite_drivers: checked })}
                 />
               </div>
             </div>
