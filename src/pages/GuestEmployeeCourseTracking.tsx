@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ interface TrackingData {
   course?: {
     id: string;
     status: string;
+    updated_at?: string;
     driver?: DriverInfo;
     devis?: Array<{ amount: number; quote_number?: string }>;
   };
@@ -73,6 +74,7 @@ export default function GuestEmployeeCourseTracking() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery<TrackingData | null>({
     queryKey: ["guest-employee-course-tracking", token],
@@ -80,7 +82,6 @@ export default function GuestEmployeeCourseTracking() {
       if (!token) throw new Error("Token manquant");
 
       // Get invitation data
-      // Get invitation data without course join to avoid stale data
       const { data: invitation, error: invError } = await supabase
         .from("company_employee_course_invitations")
         .select(`
@@ -100,9 +101,7 @@ export default function GuestEmployeeCourseTracking() {
         const { data: courseData } = await supabase
           .from("courses")
           .select(`
-            id, status,
-            driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email),
-            devis(amount, quote_number)
+            id, status, updated_at, driver_id
           `)
           .eq("id", result.course_id)
           .maybeSingle();
@@ -110,19 +109,50 @@ export default function GuestEmployeeCourseTracking() {
         if (courseData) {
           result.course = courseData;
           
-          // Fetch driver profile
-          if (courseData.driver?.user_id) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, phone, email, profile_photo_url")
-              .eq("id", courseData.driver.user_id)
+          // Fetch full driver info if course has a driver
+          if (courseData.driver_id) {
+            const { data: driverData } = await supabase
+              .from("drivers")
+              .select(`
+                id, user_id, company_name, contact_phone, contact_email, show_phone, show_email
+              `)
+              .eq("id", courseData.driver_id)
               .maybeSingle();
-            result.course.driver.profile = profile;
+            
+            if (driverData) {
+              result.course.driver = driverData;
+              
+              // Fetch driver profile
+              if (driverData.user_id) {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("full_name, phone, email, profile_photo_url")
+                  .eq("id", driverData.user_id)
+                  .maybeSingle();
+                result.course.driver.profile = profile;
+              }
+              
+              // Fetch driver vehicles
+              const { data: vehicles } = await supabase
+                .from("driver_vehicles")
+                .select("brand, model, license_plate, color")
+                .eq("driver_id", driverData.id)
+                .eq("is_active", true)
+                .limit(1);
+              result.course.driver.vehicles = vehicles || [];
+            }
           }
+          
+          // Fetch devis
+          const { data: devisData } = await supabase
+            .from("devis")
+            .select("amount, quote_number")
+            .eq("course_id", result.course_id);
+          result.course.devis = devisData || [];
         }
       }
 
-      // Fetch request data separately to avoid join issues
+      // Fetch request data separately
       if (result.request_id) {
         const { data: requestData } = await supabase
           .from("company_course_requests")
@@ -136,29 +166,50 @@ export default function GuestEmployeeCourseTracking() {
         if (requestData) {
           result.request = requestData;
 
-          // Fetch quotes for this request with driver visibility info
+          // Fetch quotes for this request with driver info
           const { data: quotesData } = await supabase
             .from("company_course_quotes")
             .select(`
-              id, status, total_price, distance_km, duration_minutes, driver_response_at,
-              driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email)
+              id, status, total_price, distance_km, duration_minutes, driver_response_at, driver_id
             `)
             .eq("request_id", result.request_id);
           
-          result.request.quotes = quotesData || [];
-        }
-      }
-
-      // Fetch driver profiles separately for accepted quotes
-      if (result.request?.quotes) {
-        for (const quote of result.request.quotes) {
-          if (quote.driver?.user_id) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("full_name, phone, email, profile_photo_url")
-              .eq("id", quote.driver.user_id)
-              .maybeSingle();
-            quote.driver.profile = profile;
+          // Enrich quotes with driver data
+          if (quotesData) {
+            const enrichedQuotes = await Promise.all(quotesData.map(async (quote: any) => {
+              if (quote.driver_id) {
+                const { data: driverData } = await supabase
+                  .from("drivers")
+                  .select(`id, user_id, company_name, contact_phone, contact_email, show_phone, show_email`)
+                  .eq("id", quote.driver_id)
+                  .maybeSingle();
+                
+                if (driverData) {
+                  quote.driver = driverData;
+                  
+                  // Fetch profile
+                  if (driverData.user_id) {
+                    const { data: profile } = await supabase
+                      .from("profiles")
+                      .select("full_name, phone, email, profile_photo_url")
+                      .eq("id", driverData.user_id)
+                      .maybeSingle();
+                    quote.driver.profile = profile;
+                  }
+                  
+                  // Fetch vehicles
+                  const { data: vehicles } = await supabase
+                    .from("driver_vehicles")
+                    .select("brand, model, license_plate, color")
+                    .eq("driver_id", driverData.id)
+                    .eq("is_active", true)
+                    .limit(1);
+                  quote.driver.vehicles = vehicles || [];
+                }
+              }
+              return quote;
+            }));
+            result.request.quotes = enrichedQuotes;
           }
         }
       }
@@ -166,8 +217,35 @@ export default function GuestEmployeeCourseTracking() {
       return result as TrackingData;
     },
     enabled: !!token,
-    refetchInterval: 15000, // Refresh more frequently for live tracking
+    refetchInterval: 10000, // Refresh every 10 seconds for live tracking
   });
+
+  // Setup realtime subscription for course updates
+  useEffect(() => {
+    if (!data?.course_id) return;
+
+    const channel = supabase
+      .channel(`course-tracking-${data.course_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'courses',
+          filter: `id=eq.${data.course_id}`
+        },
+        () => {
+          console.log('Course update received, refreshing...');
+          setLastRefresh(new Date());
+          queryClient.invalidateQueries({ queryKey: ["guest-employee-course-tracking", token] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [data?.course_id, token, queryClient]);
 
   const handleRefresh = () => {
     setLastRefresh(new Date());
