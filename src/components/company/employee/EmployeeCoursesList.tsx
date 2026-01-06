@@ -880,64 +880,72 @@ export function EmployeeCoursesList({
     const StatusIcon = statusConfig.icon;
 
     return (
-      <Card key={course.id} className="overflow-hidden">
-        <CardContent className="p-4 sm:p-6">
-          {/* Header avec statut */}
+      <Card key={course.id} className="group overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300">
+        <CardContent className="p-4 sm:p-5">
+          {/* Header avec statut et prix */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${statusConfig.bgColor} flex items-center justify-center`}>
+              <div className={`w-11 h-11 rounded-xl ${statusConfig.bgColor} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
                 <StatusIcon className={`w-5 h-5 ${statusConfig.color}`} />
               </div>
               <div>
-                <Badge className={`${statusConfig.bgColor} ${statusConfig.color} border-0`}>
+                <Badge className={`${statusConfig.bgColor} ${statusConfig.color} border-0 font-semibold`}>
                   {statusConfig.label}
                 </Badge>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(course.scheduled_date), "EEEE d MMMM 'à' HH:mm", { locale: fr })}
+                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3" />
+                  {format(new Date(course.scheduled_date), "EEE d MMM • HH:mm", { locale: fr })}
                 </p>
               </div>
             </div>
             {course.devis && (
               <div className="text-right">
-                <p className="text-lg font-bold">{course.devis.amount.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{course.devis.quote_number}</p>
+                <p className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {course.devis.amount.toFixed(0)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground font-mono">{course.devis.quote_number}</p>
               </div>
             )}
           </div>
 
-          {/* Adresses */}
-          <div className="space-y-2 mb-4">
-            <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-              <p className="text-sm">{course.pickup_address}</p>
+          {/* Adresses avec ligne de connexion */}
+          <div className="relative space-y-0 mb-4 pl-3">
+            <div className="absolute left-0.5 top-2 bottom-2 w-0.5 bg-gradient-to-b from-green-500 via-muted to-red-500 rounded-full" />
+            <div className="flex items-start gap-3 py-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 -ml-[5px] ring-2 ring-green-500/20" />
+              <p className="text-sm text-foreground/90 leading-relaxed">{course.pickup_address}</p>
             </div>
-            <div className="flex items-start gap-2">
-              <MapPin className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-              <p className="text-sm">{course.destination_address}</p>
+            <div className="flex items-start gap-3 py-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 -ml-[5px] ring-2 ring-red-500/20" />
+              <p className="text-sm text-foreground/90 leading-relaxed">{course.destination_address}</p>
             </div>
           </div>
 
           {/* Info chauffeur */}
           {course.driver && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 mb-4">
-              <Avatar className="h-10 w-10">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30 mb-4 border border-border/30">
+              <Avatar className="h-11 w-11 ring-2 ring-primary/20">
                 <AvatarImage src={course.driver.profile?.profile_photo_url || undefined} />
-                <AvatarFallback className="bg-primary/10">
+                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
                   <Car className="w-5 h-5 text-primary" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">
+                <p className="font-semibold truncate text-sm">
                   {course.driver.profile?.full_name || course.driver.company_name || "Chauffeur"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Car className="w-3 h-3" />
                   {course.driver.vehicle_brand} {course.driver.vehicle_model}
+                  {course.driver.vehicle_color && (
+                    <span className="text-muted-foreground/60">• {course.driver.vehicle_color}</span>
+                  )}
                 </p>
               </div>
               {course.driver.profile?.phone && (
                 <a 
                   href={`tel:${course.driver.profile.phone}`}
-                  className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary"
+                  className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                 </a>
@@ -1068,138 +1076,255 @@ export function EmployeeCoursesList({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Car className="w-5 h-5 text-primary" />
-            Mes courses
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Gérez et suivez vos déplacements professionnels
-          </p>
+    <div className="space-y-4">
+      {/* Header moderne */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-card via-card to-card/80 border border-border/50 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+            <Car className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+              Mes courses
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Gérez et suivez vos déplacements professionnels
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+            className="rounded-xl border-border/50 hover:bg-muted/50"
+          >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={onCreateCourse} className="bg-gradient-to-r from-primary to-accent">
+          <Button 
+            onClick={onCreateCourse} 
+            className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/25"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle course
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 h-auto">
-          <TabsTrigger value="pending" className="text-xs py-2 flex flex-col gap-1">
-            <span>Devis</span>
-            <Badge variant="secondary" className="text-xs">{allPendingQuotes.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="awaiting" className="text-xs py-2 flex flex-col gap-1">
-            <span>En attente</span>
-            <Badge variant="secondary" className="text-xs">{awaitingDriver.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="confirmed" className="text-xs py-2 flex flex-col gap-1">
-            <span>Confirmées</span>
-            <Badge variant="secondary" className="text-xs">{confirmedCourses.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="text-xs py-2 flex flex-col gap-1">
-            <span>Terminées</span>
-            <Badge variant="secondary" className="text-xs">{completedCourses.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="cancelled" className="text-xs py-2 flex flex-col gap-1">
-            <span>Annulées</span>
-            <Badge variant="secondary" className="text-xs">{cancelledCourses.length}</Badge>
-          </TabsTrigger>
-        </TabsList>
+      {/* Status Pills modernes */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+            activeTab === "pending"
+              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Devis
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === "pending" ? "bg-white/20" : "bg-amber-500/20 text-amber-500"
+          }`}>
+            {allPendingQuotes.length}
+          </span>
+        </button>
 
-        <TabsContent value="pending" className="space-y-4 mt-4">
-          {allPendingQuotes.length === 0 ? (
-            <Card>
+        <button
+          onClick={() => setActiveTab("awaiting")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+            activeTab === "awaiting"
+              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Timer className="w-4 h-4" />
+          En attente
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === "awaiting" ? "bg-white/20" : "bg-orange-500/20 text-orange-500"
+          }`}>
+            {awaitingDriver.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("confirmed")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+            activeTab === "confirmed"
+              ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <CheckCircle className="w-4 h-4" />
+          Confirmées
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === "confirmed" ? "bg-white/20" : "bg-green-500/20 text-green-500"
+          }`}>
+            {confirmedCourses.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("completed")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+            activeTab === "completed"
+              ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Car className="w-4 h-4" />
+          Terminées
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === "completed" ? "bg-white/20" : "bg-purple-500/20 text-purple-500"
+          }`}>
+            {completedCourses.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("cancelled")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+            activeTab === "cancelled"
+              ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <XCircle className="w-4 h-4" />
+          Annulées
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            activeTab === "cancelled" ? "bg-white/20" : "bg-red-500/20 text-red-500"
+          }`}>
+            {cancelledCourses.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Hidden Tabs for functionality */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
+        <TabsList>
+          <TabsTrigger value="pending">Devis</TabsTrigger>
+          <TabsTrigger value="awaiting">En attente</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmées</TabsTrigger>
+          <TabsTrigger value="completed">Terminées</TabsTrigger>
+          <TabsTrigger value="cancelled">Annulées</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Content sections */}
+      <div className="space-y-4">
+        {/* Pending Quotes */}
+        {activeTab === "pending" && (
+          allPendingQuotes.length === 0 ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucun devis en attente</h3>
-                <p className="text-muted-foreground mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-amber-500" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Aucun devis en attente</h3>
+                <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
                   Réservez une course pour recevoir un devis automatique
                 </p>
-                <Button onClick={onCreateCourse}>
+                <Button 
+                  onClick={onCreateCourse}
+                  className="rounded-xl bg-gradient-to-r from-primary to-accent"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Réserver une course
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            allPendingQuotes.map(renderCourseCard)
-          )}
-        </TabsContent>
+            <div className="space-y-4">
+              {allPendingQuotes.map(renderCourseCard)}
+            </div>
+          )
+        )}
 
-        <TabsContent value="awaiting" className="space-y-4 mt-4">
-          {awaitingDriver.length === 0 ? (
-            <Card>
+        {/* Awaiting Driver */}
+        {activeTab === "awaiting" && (
+          awaitingDriver.length === 0 ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
-                <Timer className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune course en attente</h3>
-                <p className="text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Timer className="w-8 h-8 text-orange-500" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Aucune course en attente</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                   Les courses acceptées par vous en attente de confirmation du chauffeur apparaîtront ici
                 </p>
               </CardContent>
             </Card>
           ) : (
-            awaitingDriver.map(renderCourseCard)
-          )}
-        </TabsContent>
+            <div className="space-y-4">
+              {awaitingDriver.map(renderCourseCard)}
+            </div>
+          )
+        )}
 
-        <TabsContent value="confirmed" className="space-y-4 mt-4">
-          {confirmedCourses.length === 0 ? (
-            <Card>
+        {/* Confirmed */}
+        {activeTab === "confirmed" && (
+          confirmedCourses.length === 0 ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
-                <CheckCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune course confirmée</h3>
-                <p className="text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Aucune course confirmée</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                   Vos prochaines courses confirmées apparaîtront ici
                 </p>
               </CardContent>
             </Card>
           ) : (
-            confirmedCourses.map(renderCourseCard)
-          )}
-        </TabsContent>
+            <div className="space-y-4">
+              {confirmedCourses.map(renderCourseCard)}
+            </div>
+          )
+        )}
 
-        <TabsContent value="completed" className="space-y-4 mt-4">
-          {completedCourses.length === 0 ? (
-            <Card>
+        {/* Completed */}
+        {activeTab === "completed" && (
+          completedCourses.length === 0 ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
-                <Car className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune course terminée</h3>
-                <p className="text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-violet-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Car className="w-8 h-8 text-purple-500" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Aucune course terminée</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                   Votre historique de courses apparaîtra ici
                 </p>
               </CardContent>
             </Card>
           ) : (
-            completedCourses.map(renderCourseCard)
-          )}
-        </TabsContent>
+            <div className="space-y-4">
+              {completedCourses.map(renderCourseCard)}
+            </div>
+          )
+        )}
 
-        <TabsContent value="cancelled" className="space-y-4 mt-4">
-          {cancelledCourses.length === 0 ? (
-            <Card>
+        {/* Cancelled */}
+        {activeTab === "cancelled" && (
+          cancelledCourses.length === 0 ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
-                <XCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">Aucune course annulée</h3>
-                <p className="text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-500/20 flex items-center justify-center mx-auto mb-4">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Aucune course annulée</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                   Les courses annulées apparaîtront ici
                 </p>
               </CardContent>
             </Card>
           ) : (
-            cancelledCourses.map(renderCourseCard)
-          )}
-        </TabsContent>
-      </Tabs>
+            <div className="space-y-4">
+              {cancelledCourses.map(renderCourseCard)}
+            </div>
+          )
+        )}
+      </div>
 
       {/* Dialog annulation */}
       <AlertDialog open={!!cancelCourseId} onOpenChange={() => setCancelCourseId(null)}>
