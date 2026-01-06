@@ -476,7 +476,7 @@ export function CompanyStatisticsComplete({ companyId }: CompanyStatisticsComple
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold text-sm">{partner.totalSpent.toFixed(0)} €</p>
+        <p className="font-semibold text-sm">{partner.totalSpent.toFixed(2)} €</p>
       </div>
     </div>
   );
@@ -494,7 +494,7 @@ export function CompanyStatisticsComplete({ companyId }: CompanyStatisticsComple
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold text-sm">{employee.totalSpent.toFixed(0)} €</p>
+        <p className="font-semibold text-sm">{employee.totalSpent.toFixed(2)} €</p>
       </div>
     </div>
   );
@@ -584,7 +584,7 @@ export function CompanyStatisticsComplete({ companyId }: CompanyStatisticsComple
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total dépensé</p>
-                <p className="text-3xl font-bold text-red-500">{spendingStats.total.toFixed(0)} €</p>
+                <p className="text-3xl font-bold text-red-500">{spendingStats.total.toFixed(2)} €</p>
                 <GrowthIndicator value={growthStats.spendingGrowth} />
               </div>
               <div className="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center">

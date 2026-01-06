@@ -529,7 +529,7 @@ export function FleetStatisticsComplete({ fleetManagerId }: FleetStatisticsCompl
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold text-sm">{partner.revenue.toFixed(0)} €</p>
+        <p className="font-semibold text-sm">{partner.revenue.toFixed(2)} €</p>
       </div>
     </div>
   );
@@ -604,7 +604,7 @@ export function FleetStatisticsComplete({ fleetManagerId }: FleetStatisticsCompl
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
-                <p className="text-3xl font-bold text-green-500">{revenueStats.total.toFixed(0)} €</p>
+                <p className="text-3xl font-bold text-green-500">{revenueStats.total.toFixed(2)} €</p>
                 <GrowthIndicator value={growthStats.revenueGrowth} />
               </div>
               <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center">
@@ -648,7 +648,7 @@ export function FleetStatisticsComplete({ fleetManagerId }: FleetStatisticsCompl
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Commissions</p>
-                <p className="text-3xl font-bold text-orange-500">{revenueStats.commissionsReceived.toFixed(0)} €</p>
+                <p className="text-3xl font-bold text-orange-500">{revenueStats.commissionsReceived.toFixed(2)} €</p>
               </div>
               <div className="w-14 h-14 bg-orange-500/20 rounded-xl flex items-center justify-center">
                 <HandCoins className="w-7 h-7 text-orange-500" />
@@ -816,7 +816,7 @@ export function FleetStatisticsComplete({ fleetManagerId }: FleetStatisticsCompl
                       <p className="text-sm text-muted-foreground">{driver.vehicle}</p>
                     </div>
                     <div className="text-right space-y-1">
-                      <p className="font-bold text-green-500">{driver.revenue.toFixed(0)} €</p>
+                      <p className="font-bold text-green-500">{driver.revenue.toFixed(2)} €</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{driver.coursesCount} courses</span>
                         {driver.rating > 0 && (
@@ -828,7 +828,7 @@ export function FleetStatisticsComplete({ fleetManagerId }: FleetStatisticsCompl
                       </div>
                       {!driver.isSalaried && driver.commissionPercentage > 0 && (
                         <Badge variant="outline" className="text-xs">
-                          {driver.commissionPercentage}% - {driver.commissionAmount.toFixed(0)} €
+                          {driver.commissionPercentage}% - {driver.commissionAmount.toFixed(2)} €
                         </Badge>
                       )}
                     </div>

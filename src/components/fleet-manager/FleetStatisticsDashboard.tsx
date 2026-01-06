@@ -555,7 +555,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
             </div>
             <div className="p-4 rounded-xl bg-card/50 border border-border/50 text-center">
               <Euro className="w-6 h-6 mx-auto mb-2 text-success" />
-              <p className="text-2xl font-bold">{globalStats.average_course_value.toFixed(0)}€</p>
+              <p className="text-2xl font-bold">{globalStats.average_course_value.toFixed(2)}€</p>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Panier moyen</p>
             </div>
           </div>
@@ -606,7 +606,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
                         <p className="text-xs text-muted-foreground truncate">{driver.vehicle}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-bold text-success">{driver.total_revenue.toFixed(0)}€</p>
+                        <p className="font-bold text-success">{driver.total_revenue.toFixed(2)}€</p>
                         <p className="text-xs text-muted-foreground">{driver.completed_courses} courses</p>
                       </div>
                     </div>
@@ -678,7 +678,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
                   
                   <div className="hidden md:grid grid-cols-5 gap-4 text-center shrink-0">
                     <div>
-                      <p className="text-lg font-bold text-success">{driver.total_revenue.toFixed(0)}€</p>
+                      <p className="text-lg font-bold text-success">{driver.total_revenue.toFixed(2)}€</p>
                       <p className="text-xs text-muted-foreground">CA</p>
                     </div>
                     <div>
@@ -690,7 +690,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
                       <p className="text-xs text-muted-foreground">En attente</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-primary">{driver.commission_earned.toFixed(0)}€</p>
+                      <p className="text-lg font-bold text-primary">{driver.commission_earned.toFixed(2)}€</p>
                       <p className="text-xs text-muted-foreground">Commission</p>
                     </div>
                     <div className="flex items-center gap-1 justify-center">
@@ -702,7 +702,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
                   {/* Mobile stats */}
                   <div className="md:hidden flex items-center gap-2">
                     <Badge variant="secondary" className="text-success bg-success/10">
-                      {driver.total_revenue.toFixed(0)}€
+                      {driver.total_revenue.toFixed(2)}€
                     </Badge>
                     <div className="flex items-center gap-0.5">
                       <Star className="w-3 h-3 text-warning fill-warning" />
@@ -786,7 +786,7 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="text-center p-3 bg-muted/30 rounded-lg">
-                          <p className="text-xl font-bold text-primary">{driver.total_revenue.toFixed(0)}€</p>
+                          <p className="text-xl font-bold text-primary">{driver.total_revenue.toFixed(2)}€</p>
                           <p className="text-xs text-muted-foreground">CA généré</p>
                         </div>
                         <div className="text-center p-3 bg-success/10 rounded-lg border border-success/20">

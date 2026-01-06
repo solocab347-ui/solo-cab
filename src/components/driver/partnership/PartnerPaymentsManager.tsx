@@ -974,14 +974,14 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           <CardContent className="p-3 text-center">
             <TrendingDown className="h-4 w-4 text-orange-600 mx-auto mb-1" />
             <p className="text-xs text-muted-foreground">Total payé</p>
-            <p className="text-lg font-bold text-orange-600">{globalStats.totalPaid.toFixed(0)}€</p>
+            <p className="text-lg font-bold text-orange-600">{globalStats.totalPaid.toFixed(2)}€</p>
           </CardContent>
         </Card>
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-3 text-center">
             <TrendingUp className="h-4 w-4 text-green-600 mx-auto mb-1" />
             <p className="text-xs text-muted-foreground">Total reçu</p>
-            <p className="text-lg font-bold text-green-600">{globalStats.totalReceived.toFixed(0)}€</p>
+            <p className="text-lg font-bold text-green-600">{globalStats.totalReceived.toFixed(2)}€</p>
           </CardContent>
         </Card>
         <Card className={cn(
@@ -991,14 +991,14 @@ export function PartnerPaymentsManager({ driverId }: Props) {
           <CardContent className="p-3 text-center">
             <ArrowUpRight className="h-4 w-4 text-orange-600 mx-auto mb-1" />
             <p className="text-xs text-muted-foreground">À payer</p>
-            <p className="text-lg font-bold text-orange-600">{globalStats.pendingOutgoing.toFixed(0)}€</p>
+            <p className="text-lg font-bold text-orange-600">{globalStats.pendingOutgoing.toFixed(2)}€</p>
           </CardContent>
         </Card>
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-3 text-center">
             <ArrowDownLeft className="h-4 w-4 text-green-600 mx-auto mb-1" />
             <p className="text-xs text-muted-foreground">À recevoir</p>
-            <p className="text-lg font-bold text-green-600">{globalStats.pendingIncoming.toFixed(0)}€</p>
+            <p className="text-lg font-bold text-green-600">{globalStats.pendingIncoming.toFixed(2)}€</p>
           </CardContent>
         </Card>
       </div>
@@ -1201,19 +1201,19 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="p-2 bg-orange-500/10 rounded-lg text-center">
                           <p className="text-xs text-muted-foreground">Payé</p>
-                          <p className="font-bold text-orange-600">{summary.totalPaid.toFixed(0)}€</p>
+                          <p className="font-bold text-orange-600">{summary.totalPaid.toFixed(2)}€</p>
                           {summary.pendingOutgoing > 0 && (
                             <Badge className="bg-red-500/20 text-red-600 text-[10px] mt-1">
-                              +{summary.pendingOutgoing.toFixed(0)}€ en attente
+                              +{summary.pendingOutgoing.toFixed(2)}€ en attente
                             </Badge>
                           )}
                         </div>
                         <div className="p-2 bg-green-500/10 rounded-lg text-center">
                           <p className="text-xs text-muted-foreground">Reçu</p>
-                          <p className="font-bold text-green-600">{summary.totalReceived.toFixed(0)}€</p>
+                          <p className="font-bold text-green-600">{summary.totalReceived.toFixed(2)}€</p>
                           {summary.pendingIncoming > 0 && (
                             <Badge className="bg-green-500/20 text-green-600 text-[10px] mt-1">
-                              +{summary.pendingIncoming.toFixed(0)}€ à recevoir
+                              +{summary.pendingIncoming.toFixed(2)}€ à recevoir
                             </Badge>
                           )}
                         </div>
@@ -1228,7 +1228,7 @@ export function PartnerPaymentsManager({ driverId }: Props) {
                             (summary.totalReceived - summary.totalPaid) >= 0 ? "text-green-600" : "text-orange-600"
                           )}>
                             {(summary.totalReceived - summary.totalPaid) >= 0 ? "+" : ""}
-                            {(summary.totalReceived - summary.totalPaid).toFixed(0)}€
+                            {(summary.totalReceived - summary.totalPaid).toFixed(2)}€
                           </span>
                         </div>
                       </div>

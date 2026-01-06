@@ -538,7 +538,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold text-sm">{partner.revenue.toFixed(0)} €</p>
+        <p className="font-semibold text-sm">{partner.revenue.toFixed(2)} €</p>
       </div>
     </div>
   );
@@ -620,7 +620,7 @@ export function DriverStatisticsComplete({ driverProfile }: DriverStatisticsComp
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
-                <p className="text-3xl font-bold text-green-500">{revenueStats.total.toFixed(0)} €</p>
+                <p className="text-3xl font-bold text-green-500">{revenueStats.total.toFixed(2)} €</p>
                 <GrowthIndicator value={growthStats.revenueGrowth} />
               </div>
               <div className="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center">

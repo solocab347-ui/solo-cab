@@ -334,7 +334,7 @@ const FleetFacturesList = ({ fleetManagerId }: FleetFacturesListProps) => {
         </Card>
         <Card className="p-4 bg-gradient-to-br from-accent/20 to-accent/5 border-accent/20">
           <div className="text-center">
-            <h3 className="text-2xl font-bold">{stats.totalAmount.toFixed(0)}€</h3>
+            <h3 className="text-2xl font-bold">{stats.totalAmount.toFixed(2)}€</h3>
             <p className="text-xs text-muted-foreground">Montant total</p>
           </div>
         </Card>

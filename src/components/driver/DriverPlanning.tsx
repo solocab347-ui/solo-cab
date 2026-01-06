@@ -561,7 +561,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
             )}
             {course.devis?.[0] && (
               <span className="text-xs font-semibold text-primary">
-                {course.devis[0].amount.toFixed(0)}€
+                {course.devis[0].amount.toFixed(2)}€
               </span>
             )}
           </div>
