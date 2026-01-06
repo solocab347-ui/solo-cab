@@ -240,22 +240,6 @@ function ActiveAgreementCard({
           </Badge>
         </div>
 
-        {(agreement.outstanding_balance > 0) && (
-          <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-950/50 rounded-lg border border-orange-200 dark:border-orange-800/50">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-orange-700 dark:text-orange-300 flex items-center gap-2 text-sm">
-                <Euro className="w-4 h-4" />
-                Vous devez au chauffeur:
-              </span>
-              <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                {agreement.outstanding_balance?.toFixed(2) || "0.00"}€
-              </span>
-            </div>
-            <p className="text-xs text-orange-600/80 dark:text-orange-400/80 mt-1">
-              Rendez-vous dans l'onglet "Paiements" du menu pour gérer ce paiement
-            </p>
-          </div>
-        )}
 
         {/* Quick Actions */}
         <div className="mt-4 flex gap-2 flex-wrap">
