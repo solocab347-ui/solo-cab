@@ -171,19 +171,20 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
   const fetchDevis = async () => {
     try {
-      // Fetch regular devis
+      // Fetch regular devis (with client)
       const { data: regularDevis, error: devisError } = await supabase
         .from("devis")
         .select(`
           *,
-          courses!inner(
+          courses(
+            id,
             pickup_address,
             destination_address,
             scheduled_date,
             distance_km,
             duration_minutes
           ),
-          clients!inner(
+          clients(
             id,
             profiles:user_id(full_name, email, phone, profile_photo_url)
           )
@@ -229,76 +230,102 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
       if (companyError) throw companyError;
 
-      // Fetch employee profiles for company quotes that have employee_id
-      const employeeIds = (companyQuotes || [])
+      // Fetch company info for regular devis that have company_id or company_employee_id
+      const devisWithCompany = (regularDevis || []).filter((d: any) => d.company_id || d.company_employee_id);
+      const companyIds = [...new Set(devisWithCompany.map((d: any) => d.company_id).filter(Boolean))];
+      const employeeIdsFromDevis = [...new Set(devisWithCompany.map((d: any) => d.company_employee_id).filter(Boolean))];
+      
+      let companyInfoMap = new Map();
+      if (companyIds.length > 0) {
+        const { data: companies } = await supabase
+          .from("companies")
+          .select("id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address")
+          .in("id", companyIds);
+        
+        companies?.forEach(c => companyInfoMap.set(c.id, c));
+      }
+
+      // Fetch employee profiles using RPC function for all employee IDs
+      const employeeIdsFromQuotes = (companyQuotes || [])
         .map((q: any) => q.company_course_requests?.employee_id)
         .filter(Boolean);
       
+      const allEmployeeIds = [...new Set([...employeeIdsFromQuotes, ...employeeIdsFromDevis])];
+      
       let employeeProfiles = new Map();
-      if (employeeIds.length > 0) {
-        const { data: employees } = await supabase
-          .from("company_employees")
-          .select("id, user_id")
-          .in("id", employeeIds);
-        
-        if (employees && employees.length > 0) {
-          const userIds = employees.map(e => e.user_id).filter(Boolean);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, phone, email")
-            .in("id", userIds);
-          
-          employees.forEach(emp => {
-            const profile = profiles?.find(p => p.id === emp.user_id);
-            if (profile) {
-              employeeProfiles.set(emp.id, profile);
-            }
+      if (allEmployeeIds.length > 0) {
+        // Use RPC function to bypass RLS
+        const employeePromises = allEmployeeIds.map(async (empId) => {
+          const { data } = await supabase.rpc('get_employee_profile_for_course', { 
+            p_employee_id: empId 
           });
-        }
+          if (data && data.length > 0) {
+            return { 
+              id: empId, 
+              full_name: data[0].full_name, 
+              phone: data[0].phone 
+            };
+          }
+          return null;
+        });
+        
+        const employeeResults = await Promise.all(employeePromises);
+        employeeResults.forEach(result => {
+          if (result) {
+            employeeProfiles.set(result.id, result);
+          }
+        });
       }
 
       // Transform regular devis to unified format
-      const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => ({
-        id: d.id,
-        quote_number: d.quote_number,
-        amount: d.amount,
-        status: d.status,
-        created_at: d.created_at,
-        valid_until: d.valid_until,
-        base_price: d.base_price,
-        distance_price: d.distance_price,
-        time_price: d.time_price,
-        evening_surcharge_amount: d.evening_surcharge_amount,
-        weekend_surcharge_amount: d.weekend_surcharge_amount,
-        discount_amount: d.discount_amount,
-        promo_code: d.promo_code,
-        pickup_address: d.courses.pickup_address,
-        destination_address: d.courses.destination_address,
-        scheduled_date: d.courses.scheduled_date,
-        distance_km: d.courses.distance_km,
-        duration_minutes: d.courses.duration_minutes,
-        client_id: d.clients.id,
-        client_name: d.clients.profiles.full_name,
-        client_email: d.clients.profiles.email,
-        client_phone: d.clients.profiles.phone,
-        client_photo_url: d.clients.profiles.profile_photo_url,
-        company_id: null,
-        company_name: null,
-        company_logo_url: null,
-        company_contact_email: null,
-        company_contact_phone: null,
-        company_siret: null,
-        company_siren: null,
-        company_tva_number: null,
-        company_address: null,
-        company_billing_address: null,
-        employee_name: null,
-        employee_phone: null,
-        employee_email: null,
-        is_guest_employee: false,
-        is_company_quote: false,
-        request_id: null,
-      }));
+      const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => {
+        // Check if this is a company devis
+        const companyInfo = d.company_id ? companyInfoMap.get(d.company_id) : null;
+        const employeeInfo = d.company_employee_id ? employeeProfiles.get(d.company_employee_id) : null;
+        const isCompanyDevis = !!(d.company_id || d.company_employee_id);
+        
+        return {
+          id: d.id,
+          quote_number: d.quote_number,
+          amount: d.amount,
+          status: d.status,
+          created_at: d.created_at,
+          valid_until: d.valid_until,
+          base_price: d.base_price,
+          distance_price: d.distance_price,
+          time_price: d.time_price,
+          evening_surcharge_amount: d.evening_surcharge_amount,
+          weekend_surcharge_amount: d.weekend_surcharge_amount,
+          discount_amount: d.discount_amount,
+          promo_code: d.promo_code,
+          pickup_address: d.courses?.pickup_address || "",
+          destination_address: d.courses?.destination_address || "",
+          scheduled_date: d.courses?.scheduled_date || d.created_at,
+          distance_km: d.courses?.distance_km,
+          duration_minutes: d.courses?.duration_minutes,
+          client_id: isCompanyDevis ? null : d.clients?.id,
+          client_name: isCompanyDevis ? null : d.clients?.profiles?.full_name,
+          client_email: isCompanyDevis ? null : d.clients?.profiles?.email,
+          client_phone: isCompanyDevis ? null : d.clients?.profiles?.phone,
+          client_photo_url: isCompanyDevis ? null : d.clients?.profiles?.profile_photo_url,
+          company_id: d.company_id || (employeeInfo ? d.company_employee_id : null),
+          company_name: companyInfo?.company_name || null,
+          company_logo_url: companyInfo?.logo_url || null,
+          company_contact_email: companyInfo?.contact_email || null,
+          company_contact_phone: companyInfo?.contact_phone || null,
+          company_siret: companyInfo?.siret || null,
+          company_siren: companyInfo?.siren || null,
+          company_tva_number: companyInfo?.tva_number || null,
+          company_address: companyInfo?.address || null,
+          company_billing_address: companyInfo?.billing_address || null,
+          employee_name: employeeInfo?.full_name || null,
+          employee_phone: employeeInfo?.phone || null,
+          employee_email: null,
+          is_guest_employee: false,
+          is_company_quote: isCompanyDevis,
+          request_id: null,
+        };
+      });
 
       // Transform company quotes to unified format - map statuses correctly
       const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => {
