@@ -251,15 +251,9 @@ function ActiveAgreementCard({
                 {agreement.outstanding_balance?.toFixed(2) || "0.00"}€
               </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2 w-full border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-900/50"
-              onClick={() => handleExpand(true)}
-            >
-              <Send className="w-4 h-4 mr-1" />
-              Gérer les paiements
-            </Button>
+            <p className="text-xs text-orange-600/80 dark:text-orange-400/80 mt-1">
+              Rendez-vous dans l'onglet "Paiements" du menu pour gérer ce paiement
+            </p>
           </div>
         )}
 
