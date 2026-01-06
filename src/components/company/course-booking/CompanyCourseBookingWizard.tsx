@@ -205,7 +205,8 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
             formData={formData}
             companyId={companyId}
             onSuccess={() => {
-              queryClient.invalidateQueries({ queryKey: ["company-course-requests"] });
+              // Invalider avec la clé complète incluant companyId
+              queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
               if (onSuccess) onSuccess();
               if (onClose) onClose();
             }}
