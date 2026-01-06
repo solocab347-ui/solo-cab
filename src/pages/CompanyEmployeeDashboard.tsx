@@ -429,6 +429,9 @@ export default function CompanyEmployeeDashboard() {
                         <Badge variant={employee.can_view_invoices ? "default" : "secondary"} className={employee.can_view_invoices ? "bg-primary/20 text-primary border-primary/30" : ""}>
                           {employee.can_view_invoices ? "✓" : "✗"} Factures
                         </Badge>
+                        <Badge variant={employee.can_invite_drivers ? "default" : "secondary"} className={employee.can_invite_drivers ? "bg-accent/20 text-accent border-accent/30" : ""}>
+                          {employee.can_invite_drivers ? "✓" : "✗"} Chauffeurs
+                        </Badge>
                       </div>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-success/20 flex items-center justify-center">
