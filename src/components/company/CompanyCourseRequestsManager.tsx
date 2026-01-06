@@ -147,7 +147,9 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           final_course:courses(
             id,
             status,
-            driver_id
+            driver_id,
+            started_at,
+            updated_at
           )
         `)
         .eq("company_id", companyId)
@@ -497,6 +499,11 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                         courseStatus === "in_progress" || courseStatus === "completed"
                           ? "font-medium text-blue-600" : "text-muted-foreground"
                       }`}>Course en cours</span>
+                      {request.final_course?.started_at && (courseStatus === "in_progress" || courseStatus === "completed") && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(request.final_course.started_at), "d/MM HH:mm")}
+                        </span>
+                      )}
                     </div>
                     {/* Course terminée */}
                     <div className="flex items-center gap-2">
@@ -508,6 +515,11 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                         courseStatus === "completed"
                           ? "font-medium text-green-600" : "text-muted-foreground"
                       }`}>Course terminée</span>
+                      {request.final_course?.updated_at && courseStatus === "completed" && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(request.final_course.updated_at), "d/MM HH:mm")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
