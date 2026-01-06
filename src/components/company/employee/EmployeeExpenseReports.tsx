@@ -50,6 +50,15 @@ interface ExpenseReport {
   notes: string | null;
   course_id: string | null;
   facture_id: string | null;
+  reimbursement_method: string | null;
+  reimbursement_month: string | null;
+  reimbursed_at: string | null;
+  course?: {
+    id: string;
+    pickup_address: string;
+    destination_address: string;
+    scheduled_date: string;
+  } | null;
 }
 
 interface EmployeeExpenseReportsProps {
@@ -90,12 +99,20 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
     try {
       const { data, error } = await supabase
         .from("expense_reports")
-        .select("*")
+        .select(`
+          *,
+          course:courses(
+            id,
+            pickup_address,
+            destination_address,
+            scheduled_date
+          )
+        `)
         .eq("employee_id", employeeId)
         .order("submitted_at", { ascending: false });
 
       if (error) throw error;
-      setExpenses(data || []);
+      setExpenses((data as any) || []);
     } catch (error) {
       console.error("Error fetching expenses:", error);
     } finally {
@@ -184,18 +201,19 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
     }
   };
 
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status: string, reimbursementMethod?: string | null) => {
     switch (status) {
       case "pending":
-        return { label: "En attente", icon: Clock, color: "bg-amber-100 text-amber-700 border-amber-200" };
+        return { label: "En attente", icon: Clock, color: "bg-amber-100 text-amber-700 border-amber-200", description: "En attente de validation" };
       case "approved":
-        return { label: "Approuvée", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700 border-emerald-200" };
+        return { label: "Approuvée", icon: CheckCircle2, color: "bg-blue-100 text-blue-700 border-blue-200", description: "Approuvée, remboursement à venir" };
       case "rejected":
-        return { label: "Refusée", icon: XCircle, color: "bg-red-100 text-red-700 border-red-200" };
+        return { label: "Refusée", icon: XCircle, color: "bg-red-100 text-red-700 border-red-200", description: null };
       case "reimbursed":
-        return { label: "Remboursée", icon: Euro, color: "bg-primary/10 text-primary border-primary/20" };
+        const methodLabel = reimbursementMethod === "payroll" ? "Avec la paye" : "Paiement direct";
+        return { label: "Remboursée", icon: Euro, color: "bg-emerald-100 text-emerald-700 border-emerald-200", description: methodLabel };
       default:
-        return { label: status, icon: AlertCircle, color: "bg-muted text-muted-foreground" };
+        return { label: status, icon: AlertCircle, color: "bg-muted text-muted-foreground", description: null };
     }
   };
 
@@ -248,7 +266,7 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
         ) : (
           <div className="space-y-3">
             {expenses.map((expense) => {
-              const statusConfig = getStatusConfig(expense.status);
+              const statusConfig = getStatusConfig(expense.status, expense.reimbursement_method);
               const StatusIcon = statusConfig.icon;
               
               return (
@@ -258,20 +276,38 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-2">
                         <span className="font-bold text-lg">{expense.amount.toFixed(2)} €</span>
                         <Badge variant="outline" className={statusConfig.color}>
                           <StatusIcon className="w-3 h-3 mr-1" />
                           {statusConfig.label}
                         </Badge>
                       </div>
-                      {expense.description && (
+
+                      {/* Course info if linked */}
+                      {expense.course && (
+                        <div className="mb-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="font-medium">{expense.course.pickup_address.split(",")[0]}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <div className="w-2 h-2 rounded-full bg-red-500" />
+                            <span className="font-medium">{expense.course.destination_address.split(",")[0]}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Course du {format(new Date(expense.course.scheduled_date), "dd MMM yyyy", { locale: fr })}
+                          </div>
+                        </div>
+                      )}
+
+                      {expense.description && !expense.course && (
                         <p className="text-sm text-muted-foreground mb-2">{expense.description}</p>
                       )}
+
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(expense.submitted_at), "dd MMM yyyy", { locale: fr })}
+                          Soumise le {format(new Date(expense.submitted_at), "dd MMM yyyy", { locale: fr })}
                         </span>
                         {expense.receipt_url && (
                           <a
@@ -285,6 +321,25 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
                           </a>
                         )}
                       </div>
+
+                      {/* Status description / reimbursement info */}
+                      {statusConfig.description && expense.status === "reimbursed" && (
+                        <div className="mt-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                          <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                            <Euro className="w-4 h-4" />
+                            <span className="font-medium">{statusConfig.description}</span>
+                            {expense.reimbursement_month && (
+                              <span>• Paye de {format(new Date(expense.reimbursement_month + "-01"), "MMMM yyyy", { locale: fr })}</span>
+                            )}
+                          </div>
+                          {expense.reimbursed_at && (
+                            <div className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
+                              Remboursée le {format(new Date(expense.reimbursed_at), "dd MMM yyyy", { locale: fr })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {expense.rejection_reason && (
                         <p className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded-lg">
                           Motif: {expense.rejection_reason}

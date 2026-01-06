@@ -3721,6 +3721,9 @@ export type Database = {
           payment_method: string
           receipt_url: string | null
           reimbursed_at: string | null
+          reimbursement_method: string | null
+          reimbursement_month: string | null
+          reimbursement_notes: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -3741,6 +3744,9 @@ export type Database = {
           payment_method: string
           receipt_url?: string | null
           reimbursed_at?: string | null
+          reimbursement_method?: string | null
+          reimbursement_month?: string | null
+          reimbursement_notes?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -3761,6 +3767,9 @@ export type Database = {
           payment_method?: string
           receipt_url?: string | null
           reimbursed_at?: string | null
+          reimbursement_method?: string | null
+          reimbursement_month?: string | null
+          reimbursement_notes?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
