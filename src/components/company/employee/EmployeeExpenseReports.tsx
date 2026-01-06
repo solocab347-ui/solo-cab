@@ -67,8 +67,7 @@ interface ExpenseReport {
     pickup_address: string;
     destination_address: string;
     scheduled_date: string;
-    started_at: string | null;
-    completed_at: string | null;
+    status: string;
     driver_id: string | null;
   } | null;
   driver_name?: string | null;
@@ -162,8 +161,7 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
             pickup_address,
             destination_address,
             scheduled_date,
-            started_at,
-            completed_at,
+            status,
             driver_id
           )
         `)
@@ -442,20 +440,10 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
                                 Prévu à {format(new Date(expense.course.scheduled_date), "HH:mm", { locale: fr })}
                               </span>
                             </div>
-                            {expense.course.started_at && (
-                              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>
-                                  Départ: {format(new Date(expense.course.started_at), "HH:mm", { locale: fr })}
-                                </span>
-                              </div>
-                            )}
-                            {expense.course.completed_at && (
+                            {expense.course.status === "completed" && (
                               <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>
-                                  Arrivée: {format(new Date(expense.course.completed_at), "HH:mm", { locale: fr })}
-                                </span>
+                                <span>Course terminée</span>
                               </div>
                             )}
                           </div>
