@@ -35,9 +35,11 @@ import {
   Filter,
   Search,
   Phone,
-  User
+  User,
+  AlertTriangle,
+  Timer
 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, differenceInDays, differenceInHours } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
@@ -152,10 +154,27 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       // Step 1: Get company_courses to find all courses belonging to this company
       const { data: companyCoursesLinks, error: linksError } = await supabase
         .from("company_courses")
-        .select("course_id, employee_id, actual_payment_method, payment_declared_by")
+        .select("course_id, employee_id, actual_payment_method, payment_declared_by, client_confirmed_payment_method")
         .eq("company_id", companyId);
       
       if (linksError) throw linksError;
+      
+      // Fetch employee names using RPC function to bypass RLS
+      const employeeIds = [...new Set(companyCoursesLinks?.map(cc => cc.employee_id).filter(Boolean) || [])];
+      const employeeMap: Record<string, string> = {};
+      
+      for (const empId of employeeIds) {
+        try {
+          const { data: empData } = await supabase.rpc('get_employee_profile_for_course', { 
+            p_employee_id: empId 
+          });
+          if (empData && empData.length > 0) {
+            employeeMap[empId] = empData[0].full_name || "Collaborateur";
+          }
+        } catch (e) {
+          console.error("Error fetching employee name:", e);
+        }
+      }
       
       const courseIds = companyCoursesLinks?.map(cc => cc.course_id) || [];
       
@@ -179,13 +198,16 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           .in("id", courseIds);
         
         if (!error && data) {
-          // Enrichir avec les infos de company_courses
+          // Enrichir avec les infos de company_courses + nom du collaborateur
           coursesData = data.map((course: any) => {
             const ccLink = companyCoursesLinks?.find(cc => cc.course_id === course.id);
             return {
               ...course,
               actual_payment_method: ccLink?.actual_payment_method,
-              payment_declared_by: ccLink?.payment_declared_by
+              payment_declared_by: ccLink?.payment_declared_by,
+              client_confirmed_payment_method: ccLink?.client_confirmed_payment_method,
+              employee_id: ccLink?.employee_id,
+              employee_name: ccLink?.employee_id ? employeeMap[ccLink.employee_id] : null
             };
           });
         }
@@ -648,6 +670,60 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
   // Fonction helper pour valider les dates
   const isValidDate = (date: Date) => date && date.getTime() > 0 && date.getFullYear() > 2000;
 
+  // Fonction pour afficher le compte à rebours de l'échéance
+  const getDueDateCountdown = (dueDate: Date, status: string) => {
+    if (!isValidDate(dueDate) || status === 'sent' || status === 'received') {
+      return null;
+    }
+    
+    const now = new Date();
+    const daysLeft = differenceInDays(dueDate, now);
+    const hoursLeft = differenceInHours(dueDate, now);
+    
+    if (daysLeft < 0) {
+      const overdueDays = Math.abs(daysLeft);
+      return {
+        text: `En retard de ${overdueDays} jour${overdueDays > 1 ? 's' : ''}`,
+        color: 'text-red-600',
+        bgColor: 'bg-red-500/10',
+        icon: AlertTriangle,
+        urgency: 'critical'
+      };
+    } else if (daysLeft === 0) {
+      return {
+        text: `Échéance aujourd'hui (${hoursLeft}h restantes)`,
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-500/10',
+        icon: Timer,
+        urgency: 'urgent'
+      };
+    } else if (daysLeft <= 3) {
+      return {
+        text: `${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}`,
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-500/10',
+        icon: Clock,
+        urgency: 'warning'
+      };
+    } else if (daysLeft <= 7) {
+      return {
+        text: `${daysLeft} jours restants`,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-500/10',
+        icon: Calendar,
+        urgency: 'info'
+      };
+    }
+    
+    return {
+      text: `${daysLeft} jours avant échéance`,
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
+      icon: Clock,
+      urgency: 'normal'
+    };
+  };
+
   const getPeriodLabel = (payment: GroupedPayment) => {
     // Vérifier si la date est valide avant de l'utiliser
     if (!isValidDate(payment.periodStart)) {
@@ -740,8 +816,8 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
     doc.setFontSize(9);
     doc.text("N° Facture", 20, yPos);
-    doc.text("Date", 55, yPos);
-    doc.text("Trajet", 85, yPos);
+    doc.text("Collaborateur", 50, yPos);
+    doc.text("Date", 95, yPos);
     doc.text("Montant", pageWidth - 25, yPos, { align: "right" });
     yPos += 8;
     
@@ -753,9 +829,9 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       }
       
       doc.text(invoice.invoice_number_generated || invoice.invoice_number || "N/A", 20, yPos);
-      doc.text(format(new Date(invoice.courses?.scheduled_date || invoice.created_at), "dd/MM/yy"), 55, yPos);
-      const destination = invoice.courses?.destination_address?.substring(0, 30) + "..." || "";
-      doc.text(destination, 85, yPos);
+      const collaborateurName = (invoice.courses?.employee_name || invoice.courses?.guest_name || "N/A").substring(0, 20);
+      doc.text(collaborateurName, 50, yPos);
+      doc.text(format(new Date(invoice.courses?.scheduled_date || invoice.created_at), "dd/MM/yy"), 95, yPos);
       doc.text(`${Number(invoice.amount).toFixed(2)} €`, pageWidth - 25, yPos, { align: "right" });
       yPos += 6;
     });
@@ -809,10 +885,22 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
   const PaymentCard = ({ payment }: { payment: GroupedPayment }) => {
     const paymentKey = `${payment.driverId}-${payment.periodStart.getTime()}`;
     const isExpanded = expandedPayments.has(paymentKey);
+    const countdown = getDueDateCountdown(payment.dueDate, payment.status);
+    const CountdownIcon = countdown?.icon || Clock;
     
     return (
       <Card className={`overflow-hidden ${payment.status === 'overdue' ? 'border-destructive/50 bg-destructive/5' : ''}`}>
         <CardContent className="p-0">
+          {/* Countdown banner for urgent payments */}
+          {countdown && (countdown.urgency === 'critical' || countdown.urgency === 'urgent') && (
+            <div className={`px-4 py-2 ${countdown.bgColor} flex items-center gap-2 ${countdown.urgency === 'critical' ? 'animate-pulse' : ''}`}>
+              <CountdownIcon className={`w-4 h-4 ${countdown.color}`} />
+              <span className={`text-sm font-medium ${countdown.color}`}>
+                {countdown.text}
+              </span>
+            </div>
+          )}
+          
           <div className="p-4">
             <div className="flex items-start gap-4">
               <Avatar className="h-14 w-14 border-2 border-border">
@@ -864,14 +952,21 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                   </p>
                 )}
                 
+                {/* Countdown warning for less urgent */}
+                {countdown && (countdown.urgency === 'warning' || countdown.urgency === 'info') && (
+                  <div className={`mt-2 px-2 py-1.5 rounded-md ${countdown.bgColor} flex items-center gap-2`}>
+                    <CountdownIcon className={`w-3.5 h-3.5 ${countdown.color}`} />
+                    <span className={`text-xs font-medium ${countdown.color}`}>
+                      {countdown.text}
+                    </span>
+                  </div>
+                )}
+                
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-3 border-t border-border/50 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      Échéance:
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
+                      Échéance: {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold text-primary mt-1">
                       {payment.totalAmount.toFixed(2)} €
@@ -936,17 +1031,19 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                         </span>
                       </div>
                       
-                      {/* Passager info */}
-                      {invoice.courses?.guest_name && (
+                      {/* Collaborateur / Passager info */}
+                      {(invoice.courses?.employee_name || invoice.courses?.guest_name) && (
                         <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/30">
                           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-primary font-semibold text-sm">
-                              {invoice.courses.guest_name.charAt(0).toUpperCase()}
-                            </span>
+                            <User className="w-4 h-4 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{invoice.courses.guest_name}</p>
-                            <p className="text-xs text-muted-foreground">Passager</p>
+                            <p className="text-sm font-medium truncate">
+                              {invoice.courses?.employee_name || invoice.courses?.guest_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {invoice.courses?.employee_name ? 'Collaborateur' : 'Passager'}
+                            </p>
                           </div>
                           {invoice.courses?.passengers_count > 1 && (
                             <Badge variant="secondary" className="text-xs shrink-0">
