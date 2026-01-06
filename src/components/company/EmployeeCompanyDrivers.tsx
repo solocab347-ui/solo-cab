@@ -907,36 +907,38 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
       {/* Dialog de détail chauffeur amélioré */}
       <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Profil du chauffeur</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
           {selectedDriver && (
-            <div className="space-y-4">
-              {/* Header avec photo et nom */}
-              <div className="flex items-start gap-4">
-                <Avatar className="w-20 h-20 ring-2 ring-primary/20">
-                  <AvatarImage src={getDriverPhoto(selectedDriver) || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-xl font-bold">
-                    {getDisplayName(selectedDriver).slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg">{getDisplayName(selectedDriver)}</h3>
-                  {selectedDriver.display_company_name && selectedDriver.company_name && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Building2 className="w-3 h-3" />
-                      {selectedDriver.company_name}
-                    </p>
-                  )}
-                  {getMainSector(selectedDriver.working_sectors) && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3" />
-                      {getMainSector(selectedDriver.working_sectors)}
-                    </p>
-                  )}
+            <>
+              {/* Header fixe avec photo et nom */}
+              <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 border-b border-border/50">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-14 h-14 sm:w-16 sm:h-16 ring-2 ring-primary/20 flex-shrink-0">
+                    <AvatarImage src={getDriverPhoto(selectedDriver) || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
+                      {getDisplayName(selectedDriver).slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base sm:text-lg truncate">{getDisplayName(selectedDriver)}</h3>
+                    {selectedDriver.display_company_name && selectedDriver.company_name && (
+                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                        <Building2 className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{selectedDriver.company_name}</span>
+                      </p>
+                    )}
+                    {getMainSector(selectedDriver.working_sectors) && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{getMainSector(selectedDriver.working_sectors)}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Contenu scrollable */}
+              <div className="p-4 space-y-4">
 
               {/* Bio / Présentation */}
               {selectedDriver.bio && (
@@ -1056,7 +1058,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                 </div>
               )}
 
-              <DialogFooter className="gap-2 sm:gap-0">
+              {/* Boutons d'action */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setProfileDialogDriverId(selectedDriver.id)}
@@ -1078,8 +1081,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                     Inviter
                   </Button>
                 )}
-              </DialogFooter>
-            </div>
+              </div>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
