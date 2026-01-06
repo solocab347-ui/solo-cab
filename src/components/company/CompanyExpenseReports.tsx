@@ -58,6 +58,8 @@ interface ExpenseReport {
   notes: string | null;
   employee: {
     id: string;
+    department: string | null;
+    job_title: string | null;
     profile: {
       full_name: string;
       email: string;
@@ -101,7 +103,9 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
           *,
           employee:company_employees(
             id,
-            user_id
+            user_id,
+            department,
+            job_title
           ),
           course:courses(
             id,
@@ -118,11 +122,22 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
       // Récupérer les profils des employés
       const reportsWithProfiles = await Promise.all(
         (data || []).map(async (report: any) => {
+          if (!report.employee?.user_id) {
+            return {
+              ...report,
+              employee: {
+                ...report.employee,
+                profile: { full_name: "N/A", email: "" }
+              }
+            };
+          }
+          
           const { data: profile } = await supabase
             .from("profiles")
             .select("full_name, email")
-            .eq("id", report.employee?.user_id)
-            .single();
+            .eq("id", report.employee.user_id)
+            .maybeSingle();
+            
           return {
             ...report,
             employee: {
@@ -300,8 +315,15 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
                     <TableRow key={report.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{report.employee?.profile?.full_name}</span>
+                          <User className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="font-medium">{report.employee?.profile?.full_name || "N/A"}</p>
+                            {(report.employee?.job_title || report.employee?.department) && (
+                              <p className="text-xs text-muted-foreground">
+                                {report.employee?.job_title}{report.employee?.job_title && report.employee?.department && " • "}{report.employee?.department}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
