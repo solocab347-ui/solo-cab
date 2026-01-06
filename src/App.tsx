@@ -235,7 +235,7 @@ const App = () => (
               <Route
                 path="/company-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={["company"]}>
+                  <ProtectedRoute allowedRoles={["company"]} requireCompanyAdmin>
                     <Suspense fallback={<LoadingFallback />}>
                       <CompanyDashboard />
                   </Suspense>
