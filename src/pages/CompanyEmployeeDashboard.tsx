@@ -713,6 +713,7 @@ export default function CompanyEmployeeDashboard() {
               userId={user?.id || ""}
               companyId={employee.company_id}
               onCreateCourse={() => setShowCourseCreation(true)}
+              canCreateCourses={employee.can_create_courses}
             />
           </TabsContent>
 
