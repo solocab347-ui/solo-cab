@@ -144,12 +144,51 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     },
   });
 
-  // Fetch ALL invoices for this company (paid and unpaid) with course details
-  const { data: allCompanyInvoices, isLoading: loadingInvoices } = useQuery({
-    queryKey: ["company-all-invoices", companyId],
+  // Fetch ALL data in one combined query for reliability
+  const { data: combinedData, isLoading: loadingCombinedData } = useQuery({
+    queryKey: ["company-payments-combined-data", companyId],
     queryFn: async () => {
-      // Fetch invoices
-      const { data: invoices, error } = await supabase
+      // Step 1: Get company_courses to find all courses belonging to this company
+      const { data: companyCoursesLinks, error: linksError } = await supabase
+        .from("company_courses")
+        .select("course_id, employee_id")
+        .eq("company_id", companyId);
+      
+      if (linksError) {
+        console.error("Error fetching company_courses:", linksError);
+        throw linksError;
+      }
+      
+      const courseIds = companyCoursesLinks?.map(cc => cc.course_id) || [];
+      
+      // Step 2: Fetch courses with driver details
+      let coursesData: any[] = [];
+      if (courseIds.length > 0) {
+        const { data, error } = await supabase
+          .from("courses")
+          .select(`
+            *,
+            drivers:driver_id(
+              id,
+              company_name,
+              vehicle_model,
+              vehicle_color,
+              vehicle_brand,
+              contact_phone,
+              profiles:user_id(full_name, phone, profile_photo_url)
+            )
+          `)
+          .in("id", courseIds);
+        
+        if (!error && data) {
+          coursesData = data;
+        } else {
+          console.error("Error fetching courses:", error);
+        }
+      }
+      
+      // Step 3: Fetch invoices
+      const { data: invoices, error: invoicesError } = await supabase
         .from("factures")
         .select(`
           id,
@@ -163,57 +202,34 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         `)
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      if (!invoices || invoices.length === 0) return [];
-
-      // Get course IDs
-      const courseIds = invoices.map(inv => inv.course_id).filter(Boolean);
       
-      if (courseIds.length > 0) {
-        // Fetch company_courses first to get course IDs linked to company
-        const { data: companyCourses } = await supabase
-          .from("company_courses")
-          .select("course_id")
-          .eq("company_id", companyId)
-          .in("course_id", courseIds);
-        
-        const validCourseIds = companyCourses?.map(cc => cc.course_id) || [];
-        
-        // Now fetch courses directly with the validated course IDs
-        const { data: coursesData } = await supabase
-          .from("courses")
-          .select(`
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes,
-            passengers_count,
-            guest_name,
-            guest_phone,
-            status,
-            notes
-          `)
-          .in("id", validCourseIds);
-
-        // Create a map of course data
-        const courseMap: Record<string, any> = {};
-        coursesData?.forEach((course: any) => {
-          courseMap[course.id] = course;
-        });
-
-        // Merge course data with invoices
-        return invoices.map(inv => ({
-          ...inv,
-          courses: courseMap[inv.course_id] || null
-        }));
+      if (invoicesError) {
+        console.error("Error fetching invoices:", invoicesError);
+        throw invoicesError;
       }
-
-      return invoices;
+      
+      // Step 4: Create course map and merge with invoices
+      const courseMap: Record<string, any> = {};
+      coursesData.forEach((course: any) => {
+        courseMap[course.id] = course;
+      });
+      
+      const invoicesWithCourses = (invoices || []).map((inv: any) => ({
+        ...inv,
+        courses: courseMap[inv.course_id] || null
+      }));
+      
+      return {
+        courses: coursesData,
+        invoices: invoicesWithCourses,
+        courseMap
+      };
     },
   });
+
+  // Extract data from combined query
+  const invoicesWithCourses = combinedData?.invoices || [];
+  const companyCourseData = combinedData?.courses || [];
 
   // Fetch existing company payments
   const { data: companyPayments, isLoading: loadingPayments } = useQuery({
@@ -254,28 +270,34 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
   // Build course details with driver info for history
   const courseDetails = useMemo<CourseDetails[]>(() => {
-    if (!allCompanyInvoices) return [];
+    if (!invoicesWithCourses || invoicesWithCourses.length === 0) return [];
     
-    return allCompanyInvoices.map((invoice: any) => ({
-      id: invoice.id,
-      pickup_address: invoice.courses?.pickup_address || "",
-      destination_address: invoice.courses?.destination_address || "",
-      scheduled_date: invoice.courses?.scheduled_date || invoice.created_at,
-      distance_km: invoice.courses?.distance_km,
-      duration_minutes: invoice.courses?.duration_minutes,
-      amount: invoice.amount,
-      invoice_number: invoice.invoice_number_generated || invoice.invoice_number || "N/A",
-      driver_id: invoice.driver_id,
-      driverName: driverMap[invoice.driver_id]?.name || "Chauffeur",
-      driverPhoto: driverMap[invoice.driver_id]?.photo || null,
-      driverCompany: driverMap[invoice.driver_id]?.company || "",
-      passengers_count: invoice.courses?.passengers_count || null,
-      guest_name: invoice.courses?.guest_name || null,
-      guest_phone: invoice.courses?.guest_phone || null,
-      status: invoice.courses?.status || null,
-      payment_status: invoice.payment_status || "pending"
-    }));
-  }, [allCompanyInvoices, driverMap]);
+    return invoicesWithCourses.map((invoice: any) => {
+      const course = invoice.courses;
+      const driver = course?.drivers;
+      const driverProfile = driver?.profiles;
+      
+      return {
+        id: invoice.id,
+        pickup_address: course?.pickup_address || "",
+        destination_address: course?.destination_address || "",
+        scheduled_date: course?.scheduled_date || invoice.created_at,
+        distance_km: course?.distance_km,
+        duration_minutes: course?.duration_minutes,
+        amount: invoice.amount,
+        invoice_number: invoice.invoice_number_generated || invoice.invoice_number || "N/A",
+        driver_id: invoice.driver_id,
+        driverName: driverProfile?.full_name || driverMap[invoice.driver_id]?.name || "Chauffeur",
+        driverPhoto: driverProfile?.profile_photo_url || driverMap[invoice.driver_id]?.photo || null,
+        driverCompany: driver?.company_name || driverMap[invoice.driver_id]?.company || "",
+        passengers_count: course?.passengers_count || null,
+        guest_name: course?.guest_name || null,
+        guest_phone: course?.guest_phone || null,
+        status: course?.status || null,
+        payment_status: invoice.payment_status || "pending"
+      };
+    });
+  }, [invoicesWithCourses, driverMap]);
 
   // Mark payment as sent mutation
   const markPaymentSentMutation = useMutation({
@@ -379,8 +401,8 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       return acc;
     }, {});
 
-    // Get invoices by driver for building payment details
-    const invoicesByDriver = (allCompanyInvoices || []).reduce((acc: any, invoice: any) => {
+    // Get invoices by driver for building payment details - use invoicesWithCourses which has course data
+    const invoicesByDriver = (invoicesWithCourses || []).reduce((acc: any, invoice: any) => {
       if (!acc[invoice.driver_id]) {
         acc[invoice.driver_id] = [];
       }
@@ -506,7 +528,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       // Then by date
       return a.dueDate.getTime() - b.dueDate.getTime();
     });
-  }, [agreements, allCompanyInvoices, companyPayments]);
+  }, [agreements, invoicesWithCourses, companyPayments]);
 
   const pendingPayments = groupedPayments.filter(p => !['sent', 'received'].includes(p.status));
   const sentPayments = groupedPayments.filter(p => p.status === 'sent');
@@ -700,7 +722,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     }
   };
 
-  if (loadingAgreements || loadingInvoices || loadingPayments) {
+  if (loadingAgreements || loadingCombinedData || loadingPayments) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
