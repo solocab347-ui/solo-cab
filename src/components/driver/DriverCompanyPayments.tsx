@@ -438,11 +438,21 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
       }
     });
 
-    // Build a map of pending/sent payments by their period
+    // Build a map of pending/sent payments by their period AND by course_ids
     const pendingPaymentsByKey: { [key: string]: any } = {};
+    const pendingPaymentsByCourseId: { [courseId: string]: any } = {};
     (companyPayments || []).filter((p: any) => p.status !== 'received').forEach((payment: any) => {
-      const key = `${payment.company_id}-${payment.period_start?.split('T')[0]}`;
-      pendingPaymentsByKey[key] = payment;
+      // Map by period_start if available
+      if (payment.period_start) {
+        const key = `${payment.company_id}-${payment.period_start?.split('T')[0]}`;
+        pendingPaymentsByKey[key] = payment;
+      }
+      // Also map by course_ids for payments created by trigger (without period_start)
+      if (payment.course_ids) {
+        payment.course_ids.forEach((courseId: string) => {
+          pendingPaymentsByCourseId[courseId] = payment;
+        });
+      }
     });
 
     // Group invoices by company
@@ -472,7 +482,8 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           const invoiceDate = new Date(invoice.created_at);
           const dueDate = addDays(invoiceDate, 7);
           const paymentKey = `${agreement.company_id}-${format(invoiceDate, 'yyyy-MM-dd')}`;
-          const existingPayment = pendingPaymentsByKey[paymentKey];
+          // Try to find existing payment by period_start OR by course_id
+          const existingPayment = pendingPaymentsByKey[paymentKey] || pendingPaymentsByCourseId[invoice.course_id];
           
           groups.push({
             companyId: agreement.company_id,
@@ -529,7 +540,12 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           const weekEnd = endOfWeek(invoiceDate, { weekStartsOn: 1 });
           const dueDate = addDays(weekEnd, paymentDay);
           const paymentKey = `${agreement.company_id}-${format(weekStart, 'yyyy-MM-dd')}`;
-          const existingPayment = pendingPaymentsByKey[paymentKey];
+          // Try to find existing payment by period_start OR by any course_id in the group
+          const existingPaymentByKey = pendingPaymentsByKey[paymentKey];
+          const existingPaymentByCourse = invoices.find((inv: any) => pendingPaymentsByCourseId[inv.course_id])
+            ? pendingPaymentsByCourseId[invoices.find((inv: any) => pendingPaymentsByCourseId[inv.course_id])?.course_id]
+            : undefined;
+          const existingPayment = existingPaymentByKey || existingPaymentByCourse;
 
           const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
 
@@ -588,7 +604,12 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
           const nextMonth = addDays(monthEnd, 1);
           const dueDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay);
           const paymentKey = `${agreement.company_id}-${format(monthStart, 'yyyy-MM-dd')}`;
-          const existingPayment = pendingPaymentsByKey[paymentKey];
+          // Try to find existing payment by period_start OR by any course_id in the group
+          const existingPaymentByKey = pendingPaymentsByKey[paymentKey];
+          const existingPaymentByCourse = invoices.find((inv: any) => pendingPaymentsByCourseId[inv.course_id])
+            ? pendingPaymentsByCourseId[invoices.find((inv: any) => pendingPaymentsByCourseId[inv.course_id])?.course_id]
+            : undefined;
+          const existingPayment = existingPaymentByKey || existingPaymentByCourse;
 
           const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
 
