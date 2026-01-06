@@ -885,17 +885,17 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'overdue':
-        return <Badge variant="destructive">En retard</Badge>;
+        return <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-sm">En retard</Badge>;
       case 'due':
-        return <Badge className="bg-yellow-500">À recevoir</Badge>;
+        return <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-sm">À recevoir</Badge>;
       case 'sent':
-        return <Badge className="bg-blue-500">Paiement envoyé</Badge>;
+        return <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 shadow-sm">Envoyé</Badge>;
       case 'received':
-        return <Badge className="bg-green-500">Reçu</Badge>;
+        return <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm">Reçu</Badge>;
       case 'disputed':
-        return <Badge variant="destructive">Contesté</Badge>;
+        return <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white border-0 shadow-sm">Contesté</Badge>;
       default:
-        return <Badge variant="outline">À venir</Badge>;
+        return <Badge variant="outline" className="bg-muted/50">À venir</Badge>;
     }
   };
 
@@ -922,61 +922,78 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
   }
 
   const PaymentCard = ({ payment }: { payment: GroupedPayment }) => (
-    <Card key={`${payment.companyId}-${payment.periodStart.getTime()}`}>
-      <CardContent className="p-4">
+    <Card 
+      key={`${payment.companyId}-${payment.periodStart.getTime()}`}
+      className="overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-lg hover:shadow-xl transition-all duration-300"
+    >
+      <div className={`h-1 ${
+        payment.status === 'received' 
+          ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+          : payment.status === 'sent'
+          ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+          : payment.status === 'overdue'
+          ? 'bg-gradient-to-r from-red-500 to-orange-500'
+          : 'bg-gradient-to-r from-amber-500 to-yellow-500'
+      }`} />
+      <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          {/* Company Logo */}
-          <Avatar className="w-12 h-12 rounded-lg border border-border/50">
-            {payment.companyInfo?.logo_url ? (
-              <AvatarImage src={payment.companyInfo.logo_url} alt={payment.companyName} className="object-cover" />
-            ) : null}
-            <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
-              {payment.companyName?.slice(0, 2).toUpperCase() || 'EN'}
-            </AvatarFallback>
-          </Avatar>
+          {/* Company Logo with glow effect */}
+          <div className="relative group">
+            <div className={`absolute -inset-1 rounded-xl blur-sm group-hover:blur-md transition-all ${
+              payment.status === 'received' ? 'bg-green-500/20' : 'bg-primary/20'
+            }`} />
+            <Avatar className="relative w-14 h-14 rounded-xl border-2 border-border/50 shadow-md">
+              {payment.companyInfo?.logo_url ? (
+                <AvatarImage src={payment.companyInfo.logo_url} alt={payment.companyName} className="object-cover rounded-xl" />
+              ) : null}
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary rounded-xl text-lg font-bold">
+                {payment.companyName?.slice(0, 2).toUpperCase() || 'EN'}
+              </AvatarFallback>
+            </Avatar>
+          </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h4 className="font-medium truncate">{payment.companyName}</h4>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <h4 className="font-bold text-lg truncate">{payment.companyName}</h4>
               {getStatusBadge(payment.status)}
             </div>
             
-            <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="flex items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                 <Calendar className="w-3 h-3" />
                 {getPeriodLabel(payment)}
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                 <FileText className="w-3 h-3" />
                 {payment.invoiceCount} facture(s)
               </span>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="bg-muted/50 border-border/50">
                 {getFrequencyLabel(payment.paymentFrequency)}
               </Badge>
             </div>
 
             {payment.sentAt && (
-              <div className="mt-2 space-y-1">
-                <p className="text-xs text-blue-600">
+              <div className="mt-3 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                <p className="text-xs text-blue-600 font-medium">
                   💸 Paiement envoyé le {format(payment.sentAt, "d MMM yyyy à HH:mm", { locale: fr })}
                   {payment.paymentReference && (
-                    <span className="block text-muted-foreground">Réf: {payment.paymentReference}</span>
+                    <span className="block text-blue-500/70 mt-0.5">Réf: {payment.paymentReference}</span>
                   )}
                 </p>
                 
                 {/* Justificatifs */}
                 {payment.documents && payment.documents.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 mt-2">
                     {payment.documents.map((doc: any) => (
                       <a
                         key={doc.id}
                         href={doc.document_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-muted rounded hover:bg-muted/80"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-blue-500/10 text-blue-600 rounded-md hover:bg-blue-500/20 transition-colors"
                       >
                         <FileText className="w-3 h-3" />
-                        {doc.file_name?.substring(0, 15) || "Justificatif"}...
+                        {doc.file_name?.substring(0, 15) || "Justificatif"}
                       </a>
                     ))}
                   </div>
@@ -984,28 +1001,33 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                 
                 {/* Facture consolidée */}
                 {payment.consolidatedInvoiceNumber && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="mt-2 text-xs bg-blue-500/10 text-blue-600 border-0">
                     📄 {payment.consolidatedInvoiceNumber}
                   </Badge>
                 )}
               </div>
             )}
             
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
               <div>
                 <p className="text-xs text-muted-foreground">
                   Échéance: {format(payment.dueDate, "d MMM yyyy", { locale: fr })}
                 </p>
-                <p className="text-lg font-bold text-primary">
+                <p className={`text-xl font-bold ${
+                  payment.status === 'received' 
+                    ? 'text-green-500' 
+                    : 'bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent'
+                }`}>
                   {payment.totalAmount.toFixed(2)} €
                 </p>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => downloadRecap(payment)}
+                  className="bg-muted/30 hover:bg-muted/50"
                 >
                   <Download className="w-4 h-4" />
                 </Button>
@@ -1016,6 +1038,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                       size="sm"
                       variant="outline"
                       onClick={() => openDispute(payment)}
+                      className="text-red-500 border-red-500/30 hover:bg-red-500/10"
                     >
                       <X className="w-4 h-4 mr-1" />
                       Contester
@@ -1023,9 +1046,10 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                     <Button
                       size="sm"
                       onClick={() => openConfirmDialog(payment)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md"
                     >
                       <Check className="w-4 h-4 mr-1" />
-                      Confirmer réception
+                      Confirmer
                     </Button>
                   </>
                 )}
@@ -1035,18 +1059,18 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                   <>
                     <Button
                       size="sm"
-                      variant="default"
-                      className="bg-green-600 hover:bg-green-700"
                       onClick={() => openConfirmDialog(payment)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md"
                     >
                       <Check className="w-4 h-4 mr-1" />
-                      Confirmer réception
+                      Confirmer
                     </Button>
                     {payment.status === 'overdue' && (
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => openDispute(payment)}
+                        className="bg-gradient-to-r from-red-500 to-orange-500"
                       >
                         <AlertTriangle className="w-4 h-4 mr-1" />
                         Relancer
@@ -1064,54 +1088,36 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Paiements entreprises</h2>
-        <p className="text-sm text-muted-foreground">
-          Suivi des montants à percevoir de vos entreprises partenaires
-        </p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className={pendingPayments.filter(p => p.status === 'overdue').length > 0 ? "border-destructive" : ""}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-yellow-500/10">
-                <Clock className="w-5 h-5 text-yellow-500" />
+      {/* Summary Cards - Modern Design */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card className="overflow-hidden border-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 backdrop-blur-sm">
+                <Euro className="w-6 h-6 text-blue-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En attente</p>
-                <p className="text-xl font-bold">{totalPending.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{pendingPayments.length} paiement(s)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <Euro className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">À confirmer</p>
-                <p className="text-xl font-bold">{totalSent.toFixed(2)} €</p>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground font-medium">À confirmer</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                  {totalSent.toFixed(2)} €
+                </p>
                 <p className="text-xs text-muted-foreground">{sentPayments.length} paiement(s)</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-500/10">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+        <Card className="overflow-hidden border-0 bg-gradient-to-br from-green-500/10 to-emerald-500/5 shadow-lg">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-sm">
+                <CheckCircle className="w-6 h-6 text-green-500" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Reçus</p>
-                <p className="text-xl font-bold">{totalReceived.toFixed(2)} €</p>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground font-medium">Reçus</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                  {totalReceived.toFixed(2)} €
+                </p>
                 <p className="text-xs text-muted-foreground">{receivedPayments.length} paiement(s)</p>
               </div>
             </div>
@@ -1119,16 +1125,16 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
         </Card>
       </div>
 
-      {/* Payment List */}
+      {/* Payment List - Modern Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending">
+        <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-xl">
+          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             En attente ({pendingPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="sent" className={sentPayments.length > 0 ? "text-blue-600" : ""}>
+          <TabsTrigger value="sent" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
             À confirmer ({sentPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="received">
+          <TabsTrigger value="received" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
             Historique ({receivedPayments.length})
           </TabsTrigger>
         </TabsList>

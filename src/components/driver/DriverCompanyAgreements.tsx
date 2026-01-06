@@ -101,126 +101,174 @@ function ActiveDriverAgreementCard({ agreement, driverId, driverInfo, onRefresh 
   };
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          {/* Company Logo */}
-          <Avatar className="w-14 h-14 rounded-lg border border-border/50 flex-shrink-0">
-            {agreement.company?.logo_url ? (
-              <AvatarImage src={agreement.company.logo_url} alt={agreement.company?.company_name} className="object-cover" />
-            ) : null}
-            <AvatarFallback className="bg-primary/10 text-primary rounded-lg text-sm font-semibold">
-              {agreement.company?.company_name?.slice(0, 2).toUpperCase() || 'EN'}
-            </AvatarFallback>
-          </Avatar>
+    <Card className="overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-lg hover:shadow-xl transition-all duration-300">
+      <CardContent className="p-0">
+        {/* Header with gradient accent */}
+        <div className="relative">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
           
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-semibold">{agreement.company?.company_name}</h4>
-                <p className="text-sm text-muted-foreground">{agreement.company?.contact_name} • {agreement.company?.contact_phone}</p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {agreement.payment_methods?.map((method: string) => (
-                    <Badge key={method} variant="secondary" className="text-xs">
-                      {PAYMENT_METHODS.find((m) => m.value === method)?.icon} {PAYMENT_METHODS.find((m) => m.value === method)?.label}
-                    </Badge>
-                  ))}
-                  <Badge variant="outline" className="text-xs"><Clock className="w-3 h-3 mr-1" />{PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}</Badge>
+          <div className="p-5">
+            <div className="flex items-start gap-4">
+              {/* Company Logo with glow effect */}
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl blur-sm group-hover:blur-md transition-all" />
+                <Avatar className="relative w-16 h-16 rounded-xl border-2 border-border/50 shadow-md">
+                  {agreement.company?.logo_url ? (
+                    <AvatarImage src={agreement.company.logo_url} alt={agreement.company?.company_name} className="object-cover rounded-xl" />
+                  ) : null}
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary rounded-xl text-lg font-bold">
+                    {agreement.company?.company_name?.slice(0, 2).toUpperCase() || 'EN'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-lg truncate">{agreement.company?.company_name}</h4>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {agreement.company?.contact_name}
+                    </p>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-sm self-start">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Actif
+                  </Badge>
                 </div>
               </div>
-              <Badge className="bg-green-500 flex-shrink-0"><CheckCircle className="w-3 h-3 mr-1" />Actif</Badge>
+            </div>
+
+            {/* Payment Info Pills */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {agreement.payment_methods?.map((method: string) => {
+                const methodInfo = PAYMENT_METHODS.find((m) => m.value === method);
+                return (
+                  <Badge 
+                    key={method} 
+                    variant="secondary" 
+                    className="bg-orange-500/10 text-orange-600 border border-orange-500/20 font-medium"
+                  >
+                    {methodInfo?.icon} {methodInfo?.label}
+                  </Badge>
+                );
+              })}
+              <Badge variant="outline" className="bg-muted/50 border-border/50">
+                <Clock className="w-3 h-3 mr-1" />
+                {PAYMENT_FREQUENCIES.find((f) => f.value === agreement.payment_frequency)?.label}
+              </Badge>
+            </div>
+
+            {/* Signature Status - Modern Pills */}
+            <div className="mt-4 flex items-center gap-2 flex-wrap">
+              <Badge 
+                variant={agreement.company_signed ? "default" : "outline"} 
+                className={agreement.company_signed 
+                  ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0" 
+                  : "bg-muted/50"
+                }
+              >
+                {agreement.company_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                Entreprise: {agreement.company_signed ? "Signé" : "En attente"}
+              </Badge>
+              <Badge 
+                variant={agreement.driver_signed ? "default" : "outline"} 
+                className={agreement.driver_signed 
+                  ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0" 
+                  : "bg-muted/50"
+                }
+              >
+                {agreement.driver_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                Vous: {agreement.driver_signed ? "Signé" : "En attente"}
+              </Badge>
             </div>
           </div>
         </div>
 
         {/* Contract Status Alerts */}
         {needsDriverSignature && (
-          <Alert className="mt-3 border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+          <Alert className="mx-5 mb-4 border-amber-500/30 bg-amber-500/5 rounded-lg">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-sm text-amber-600 dark:text-amber-400">
               Vous devez signer le contrat pour finaliser ce partenariat.
             </AlertDescription>
           </Alert>
         )}
 
         {!needsDriverSignature && needsCompanySignature && (
-          <Alert className="mt-3 border-blue-500/50 bg-blue-500/10">
-            <Clock className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+          <Alert className="mx-5 mb-4 border-blue-500/30 bg-blue-500/5 rounded-lg">
+            <Clock className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-sm text-blue-600 dark:text-blue-400">
               En attente de la signature de l'entreprise.
             </AlertDescription>
           </Alert>
         )}
 
         {hasPendingModification && (
-          <Alert className="mt-3 border-purple-500/50 bg-purple-500/10">
-            <Edit className="h-4 w-4 text-purple-600" />
-            <AlertDescription className="text-sm text-purple-700 dark:text-purple-300">
+          <Alert className="mx-5 mb-4 border-purple-500/30 bg-purple-500/5 rounded-lg">
+            <Edit className="h-4 w-4 text-purple-500" />
+            <AlertDescription className="text-sm text-purple-600 dark:text-purple-400">
               Une modification du contrat est en attente.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Signature Status */}
-        <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <Badge variant={agreement.company_signed ? "default" : "outline"} className={agreement.company_signed ? "bg-green-500" : ""}>
-            {agreement.company_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-            Entreprise: {agreement.company_signed ? "Signé" : "En attente"}
-          </Badge>
-          <Badge variant={agreement.driver_signed ? "default" : "outline"} className={agreement.driver_signed ? "bg-green-500" : ""}>
-            {agreement.driver_signed ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-            Vous: {agreement.driver_signed ? "Signé" : "En attente"}
-          </Badge>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-4 flex gap-2 flex-wrap">
-          {needsDriverSignature && (
-            <Button
-              onClick={() => setShowSignatureDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
-              size="sm"
-            >
-              <FileText className="w-4 h-4 mr-1" />
-              Signer le contrat
-            </Button>
-          )}
-          
-          {bothSigned && (
-            <>
+        {/* Actions */}
+        <div className="px-5 pb-5 space-y-3">
+          {/* Quick Actions */}
+          <div className="flex gap-2 flex-wrap">
+            {needsDriverSignature && (
               <Button
-                variant="outline"
+                onClick={() => setShowSignatureDialog(true)}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md"
                 size="sm"
-                onClick={() => setShowContractDialog(true)}
               >
                 <FileText className="w-4 h-4 mr-1" />
-                Voir le contrat
+                Signer le contrat
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowModifyDialog(true)}
-              >
-                <Edit className="w-4 h-4 mr-1" />
-                Modifier
-              </Button>
-            </>
-          )}
-        </div>
-
-        <Collapsible open={expanded} onOpenChange={(o) => { setExpanded(o); if (o) fetchPayments(); }} className="mt-4">
-          <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full">{expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}Gérer le partenariat</Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-4 space-y-4">
-            {loadingPayments ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
+            )}
+            
+            {bothSigned && (
               <>
-                <PartnershipPaymentManager payments={payments} partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} onRefresh={() => { fetchPayments(); onRefresh(); }} />
-                <PartnershipTerminationManager partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} terminationPending={agreement.termination_pending_payment_validation || false} terminationRequestedBy={agreement.termination_requested_by} ownConfirmedFinalPayment={agreement.driver_confirmed_final_payment || false} partnerConfirmedFinalPayment={agreement.company_confirmed_final_payment || false} onRefresh={onRefresh} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowContractDialog(true)}
+                  className="bg-muted/30 hover:bg-muted/50"
+                >
+                  <FileText className="w-4 h-4 mr-1" />
+                  Voir le contrat
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowModifyDialog(true)}
+                  className="bg-muted/30 hover:bg-muted/50"
+                >
+                  <Edit className="w-4 h-4 mr-1" />
+                  Modifier
+                </Button>
               </>
             )}
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+
+          <Collapsible open={expanded} onOpenChange={(o) => { setExpanded(o); if (o) fetchPayments(); }}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full bg-muted/20 hover:bg-muted/40 border-border/50">
+                {expanded ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
+                Gérer le partenariat
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4 space-y-4">
+              {loadingPayments ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div> : (
+                <>
+                  <PartnershipPaymentManager payments={payments} partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} onRefresh={() => { fetchPayments(); onRefresh(); }} />
+                  <PartnershipTerminationManager partnershipId={agreement.id} partnershipType="company_driver" userRole="receiver" partnerName={agreement.company?.company_name || "Entreprise"} outstandingBalance={agreement.outstanding_balance || 0} terminationPending={agreement.termination_pending_payment_validation || false} terminationRequestedBy={agreement.termination_requested_by} ownConfirmedFinalPayment={agreement.driver_confirmed_final_payment || false} partnerConfirmedFinalPayment={agreement.company_confirmed_final_payment || false} onRefresh={onRefresh} />
+                </>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </CardContent>
 
       {/* Signature Dialog */}
@@ -356,7 +404,8 @@ export function DriverCompanyAgreements({ driverId }: DriverCompanyAgreementsPro
             siret,
             siren,
             tva_number,
-            billing_address
+            billing_address,
+            logo_url
           )
         `)
         .eq("driver_id", driverId)
