@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Search, Download, MapPin, Calendar, Euro, Share2, MessageSquare, Mail, Send, Facebook, Building2, Check, X, Loader2 } from "lucide-react";
+import { FileText, Search, Download, MapPin, Calendar, Euro, Share2, MessageSquare, Mail, Send, Facebook, Building2, Check, X, Loader2, Phone, User } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import jsPDF from "jspdf";
@@ -49,6 +49,14 @@ interface UnifiedQuote {
   // Company info (null for regular devis)
   company_id: string | null;
   company_name: string | null;
+  company_logo_url: string | null;
+  company_contact_email: string | null;
+  company_contact_phone: string | null;
+  // Employee/collaborator info
+  employee_name: string | null;
+  employee_phone: string | null;
+  employee_email: string | null;
+  is_guest_employee: boolean;
   is_company_quote: boolean;
   request_id: string | null;
 }
@@ -191,9 +199,22 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             destination_address,
             scheduled_date,
             company_id,
+            is_guest_employee,
+            guest_employee_name,
+            guest_employee_phone,
+            guest_employee_email,
+            employee_id,
+            company_employees(
+              id,
+              user_id,
+              profiles:user_id(full_name, phone, email)
+            ),
             companies!inner(
               id,
-              company_name
+              company_name,
+              logo_url,
+              contact_email,
+              contact_phone
             )
           )
         `)
@@ -230,6 +251,13 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         client_photo_url: d.clients.profiles.profile_photo_url,
         company_id: null,
         company_name: null,
+        company_logo_url: null,
+        company_contact_email: null,
+        company_contact_phone: null,
+        employee_name: null,
+        employee_phone: null,
+        employee_email: null,
+        is_guest_employee: false,
         is_company_quote: false,
         request_id: null,
       }));
@@ -242,6 +270,19 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         else if (q.status === "accepted") mappedStatus = "accepted";
         else if (q.status === "refused") mappedStatus = "refused";
         else if (q.status === "taken_by_other") mappedStatus = "expired"; // Map to expired for display
+        
+        // Get employee info - either guest or registered
+        const req = q.company_course_requests;
+        const isGuest = req.is_guest_employee || false;
+        const employeeName = isGuest 
+          ? req.guest_employee_name 
+          : req.company_employees?.profiles?.full_name;
+        const employeePhone = isGuest 
+          ? req.guest_employee_phone 
+          : req.company_employees?.profiles?.phone;
+        const employeeEmail = isGuest 
+          ? req.guest_employee_email 
+          : req.company_employees?.profiles?.email;
         
         return {
           id: q.id,
@@ -257,9 +298,9 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           weekend_surcharge_amount: q.weekend_surcharge,
           discount_amount: 0,
           promo_code: null,
-          pickup_address: q.company_course_requests.pickup_address,
-          destination_address: q.company_course_requests.destination_address,
-          scheduled_date: q.company_course_requests.scheduled_date,
+          pickup_address: req.pickup_address,
+          destination_address: req.destination_address,
+          scheduled_date: req.scheduled_date,
           distance_km: q.distance_km,
           duration_minutes: q.duration_minutes,
           client_id: null,
@@ -267,8 +308,15 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           client_email: null,
           client_phone: null,
           client_photo_url: null,
-          company_id: q.company_course_requests.company_id,
-          company_name: q.company_course_requests.companies.company_name,
+          company_id: req.company_id,
+          company_name: req.companies.company_name,
+          company_logo_url: req.companies.logo_url,
+          company_contact_email: req.companies.contact_email,
+          company_contact_phone: req.companies.contact_phone,
+          employee_name: employeeName || null,
+          employee_phone: employeePhone || null,
+          employee_email: employeeEmail || null,
+          is_guest_employee: isGuest,
           is_company_quote: true,
           request_id: q.request_id,
         };
@@ -776,9 +824,17 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {devis.is_company_quote ? (
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white border-2 border-white/30">
-                      <Building2 className="w-6 h-6" />
-                    </div>
+                    devis.company_logo_url ? (
+                      <img
+                        src={devis.company_logo_url}
+                        alt={devis.company_name || "Entreprise"}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white/30"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white border-2 border-white/30">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                    )
                   ) : devis.client_photo_url ? (
                     <img
                       src={devis.client_photo_url}
@@ -808,6 +864,55 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
                 {getStatusBadge(devis.status, devis.valid_until)}
               </div>
 
+              {/* Company/Employee Info Section */}
+              {devis.is_company_quote && (
+                <div className="bg-gradient-to-br from-amber-500/20 to-orange-500/10 backdrop-blur-sm rounded-lg p-4 mb-4 border border-amber-400/30">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {devis.employee_name || "Collaborateur non spécifié"}
+                          {devis.is_guest_employee && (
+                            <Badge variant="outline" className="ml-2 text-xs border-white/30 text-white/80">
+                              Non inscrit
+                            </Badge>
+                          )}
+                        </p>
+                        {devis.employee_email && (
+                          <p className="text-xs text-white/70">{devis.employee_email}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {devis.employee_phone && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-emerald-500/20 border-emerald-400/40 text-white hover:bg-emerald-500/40"
+                          onClick={() => window.open(`tel:${devis.employee_phone}`, '_self')}
+                        >
+                          <Phone className="w-3 h-3 mr-1" />
+                          Appeler
+                        </Button>
+                      )}
+                      {devis.company_contact_phone && !devis.employee_phone && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-blue-500/20 border-blue-400/40 text-white hover:bg-blue-500/40"
+                          onClick={() => window.open(`tel:${devis.company_contact_phone}`, '_self')}
+                        >
+                          <Phone className="w-3 h-3 mr-1" />
+                          Entreprise
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Course Details */}
               <div className="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm rounded-lg p-4 mb-4 space-y-2 border border-white/20">
                 <div className="flex items-start gap-2 text-sm">
