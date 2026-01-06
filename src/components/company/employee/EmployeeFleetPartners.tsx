@@ -23,8 +23,7 @@ interface FleetPartner {
     id: string;
     company_name: string;
     logo_url: string | null;
-    city: string | null;
-    department: string | null;
+    address: string | null;
     contact_phone: string | null;
     contact_email: string | null;
   };
@@ -55,8 +54,7 @@ export function EmployeeFleetPartners({ companyId }: EmployeeFleetPartnersProps)
             id,
             company_name,
             logo_url,
-            city,
-            department,
+            address,
             contact_phone,
             contact_email
           )
@@ -130,10 +128,10 @@ export function EmployeeFleetPartners({ companyId }: EmployeeFleetPartnersProps)
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold truncate">{partner.fleet_manager.company_name}</h3>
-                      {(partner.fleet_manager.city || partner.fleet_manager.department) && (
+                      {partner.fleet_manager.address && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {partner.fleet_manager.city || partner.fleet_manager.department}
+                          {partner.fleet_manager.address.split(",")[0]}
                         </p>
                       )}
                     </div>

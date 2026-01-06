@@ -442,7 +442,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                     className="rounded-lg data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
                   >
                     <Search className="w-4 h-4 mr-2" />
-                    Rechercher
+                    Rechercher un partenaire
                   </TabsTrigger>
                 )}
               </TabsList>
