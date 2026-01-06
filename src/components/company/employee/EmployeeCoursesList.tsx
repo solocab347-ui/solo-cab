@@ -126,6 +126,7 @@ export function EmployeeCoursesList({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
+  const [generatingDevisId, setGeneratingDevisId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -416,7 +417,35 @@ export function EmployeeCoursesList({
   };
 
   const handleRegenerateDevis = async (courseId: string) => {
+    // Empêcher les doubles clics
+    if (generatingDevisId === courseId) {
+      console.log("[EmployeeCoursesList] Devis generation already in progress for course:", courseId);
+      return;
+    }
+    
     try {
+      setGeneratingDevisId(courseId);
+      
+      // Vérifier si un devis existe déjà pour cette course
+      const { data: existingDevis, error: checkError } = await supabase
+        .from("devis")
+        .select("id, quote_number, status")
+        .eq("course_id", courseId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("[EmployeeCoursesList] Error checking existing devis:", checkError);
+      }
+      
+      if (existingDevis) {
+        console.log("[EmployeeCoursesList] Devis already exists:", existingDevis.quote_number);
+        toast.info(`Un devis existe déjà (${existingDevis.quote_number})`);
+        fetchCourses();
+        return;
+      }
+      
       // Récupérer la course pour avoir le driver_id
       const course = courses.find(c => c.id === courseId);
       if (!course?.driver?.id) {
@@ -445,6 +474,8 @@ export function EmployeeCoursesList({
     } catch (error: any) {
       console.error("Error regenerating devis:", error);
       toast.error("Erreur lors de la génération du devis");
+    } finally {
+      setGeneratingDevisId(null);
     }
   };
 
@@ -895,10 +926,15 @@ export function EmployeeCoursesList({
                   variant="outline" 
                   size="sm" 
                   onClick={() => handleRegenerateDevis(course.id)}
+                  disabled={generatingDevisId === course.id}
                   className="w-full"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Générer le devis
+                  {generatingDevisId === course.id ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  {generatingDevisId === course.id ? "Génération..." : "Générer le devis"}
                 </Button>
               </div>
             )}
