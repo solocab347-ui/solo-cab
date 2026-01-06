@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -27,6 +27,52 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   const [requestToResend, setRequestToResend] = useState<any>(null);
   const [requestToCancel, setRequestToCancel] = useState<any>(null);
   const [requestToResume, setRequestToResume] = useState<{ request: any; step: WizardStep } | null>(null);
+
+  // Realtime subscription pour synchronisation instantanée
+  useEffect(() => {
+    const channel = supabase
+      .channel('company-course-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'company_course_requests',
+          filter: `company_id=eq.${companyId}`
+        },
+        () => {
+          // Invalider le cache pour refresh instantané
+          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'company_course_quotes'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'courses'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [companyId, queryClient]);
 
   // Déterminer le step de reprise selon le statut
   const getResumeStep = (status: string): WizardStep => {
