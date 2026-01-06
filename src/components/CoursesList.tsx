@@ -223,6 +223,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         setSharedCoursesData(sharedData || []);
 
         // Fetch company courses data avec logo et infos collaborateur (enrichi avec toutes les infos de facturation)
+        // Utilisation d'une jointure directe pour récupérer l'employé et son profil
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
@@ -240,6 +241,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               billing_address,
               contact_email,
               contact_phone
+            ),
+            employee:company_employees!company_courses_employee_id_fkey(
+              id,
+              user_id,
+              profile:profiles!company_employees_user_id_fkey(
+                full_name,
+                phone
+              )
             )
           `)
           .in("course_id", courseIds);
@@ -252,42 +261,19 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             guest_employee_name,
             guest_employee_phone,
             is_guest_employee,
-            employee_id
+            employee_id,
+            employee:company_employees(
+              id,
+              user_id,
+              profile:profiles!company_employees_user_id_fkey(
+                full_name,
+                phone
+              )
+            )
           `)
           .in("final_course_id", courseIds);
         
-        // Collect all employee_ids: from requests AND from company_courses
-        const employeeIdsFromRequests = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
-        const employeeIdsFromCompanyCourses = companyData?.filter(cc => cc.employee_id).map(cc => cc.employee_id) || [];
-        const employeeIds = [...new Set([...employeeIdsFromRequests, ...employeeIdsFromCompanyCourses])];
-        
-        let employeeProfiles: Record<string, { name: string; phone?: string }> = {};
-        
-        if (employeeIds.length > 0) {
-          const { data: employees } = await supabase
-            .from("company_employees")
-            .select("id, user_id")
-            .in("id", employeeIds);
-          
-          if (employees && employees.length > 0) {
-            const userIds = employees.map(e => e.user_id);
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, full_name, phone")
-              .in("id", userIds);
-            
-            if (profiles) {
-              employees.forEach(e => {
-                const profile = profiles.find(p => p.id === e.user_id);
-                if (profile) {
-                  employeeProfiles[e.id] = { name: profile.full_name || '', phone: profile.phone || undefined };
-                }
-              });
-            }
-          }
-        }
-        
-        // Also fetch profiles for courses created_by_user_id (for inline employee course creation)
+        // Also fetch profiles for courses created_by_user_id (for inline employee course creation - fallback)
         const createdByUserIds = coursesData
           ?.filter(c => c.created_by_user_id && companyData?.some(cc => cc.course_id === c.id))
           .map(c => c.created_by_user_id)
@@ -308,28 +294,40 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           }
         }
         
-        // Merge company data with employee info
+        // Merge company data with employee info - utiliser les jointures directes
         const enrichedCompanyData = companyData?.map(cc => {
           const request = requestsData?.find(r => r.final_course_id === cc.course_id);
           const course = coursesData?.find(c => c.id === cc.course_id);
-          let employeeName = null;
-          let employeePhone = null;
+          let employeeName: string | null = null;
+          let employeePhone: string | null = null;
           
           // Priority 1: from company_course_requests (guest or registered employee)
           if (request) {
             if (request.is_guest_employee) {
               employeeName = request.guest_employee_name;
               employeePhone = request.guest_employee_phone;
-            } else if (request.employee_id && employeeProfiles[request.employee_id]) {
-              employeeName = employeeProfiles[request.employee_id].name;
-              employeePhone = employeeProfiles[request.employee_id].phone || null;
+            } else if (request.employee) {
+              // profile peut être un tableau ou un objet selon la relation Supabase
+              const profile = Array.isArray(request.employee.profile) 
+                ? request.employee.profile[0] 
+                : request.employee.profile;
+              if (profile) {
+                employeeName = profile.full_name || null;
+                employeePhone = profile.phone || null;
+              }
             }
           }
           
-          // Priority 2: from company_courses.employee_id (inline creation)
-          if (!employeeName && cc.employee_id && employeeProfiles[cc.employee_id]) {
-            employeeName = employeeProfiles[cc.employee_id].name;
-            employeePhone = employeeProfiles[cc.employee_id].phone || null;
+          // Priority 2: from company_courses.employee jointure directe (inline creation)
+          if (!employeeName && cc.employee) {
+            // profile peut être un tableau ou un objet selon la relation Supabase
+            const profile = Array.isArray(cc.employee.profile) 
+              ? cc.employee.profile[0] 
+              : cc.employee.profile;
+            if (profile) {
+              employeeName = profile.full_name || null;
+              employeePhone = profile.phone || null;
+            }
           }
           
           // Priority 3: from courses.created_by_user_id (fallback)
@@ -2251,7 +2249,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.passengers_count} passager(s)
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
                   </div>
 
                   {(() => {
@@ -2572,7 +2570,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       {course.passengers_count} passager(s)
                     </div>
                     {/* Contact du client/passager */}
-                    <CourseClientContact course={course} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2835,7 +2833,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       </div>
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
                   </div>
 
                   {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
@@ -3002,7 +3000,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       </div>
                     </div>
                     {/* Contact du passager */}
-                    <CourseClientContact course={course} />
+                    <CourseClientContact course={course} employeePhone={getCompanyCourseInfo(course.id)?.employeePhone} />
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
