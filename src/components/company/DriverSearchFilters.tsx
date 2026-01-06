@@ -84,7 +84,9 @@ export function DriverSearchFilters({
     key: K,
     value: DriverSearchFiltersState[K]
   ) => {
-    const newFilters = { ...filters, [key]: value };
+    // Convert "all" back to empty string for the actual filter value
+    const actualValue = value === "all" ? "" : value;
+    const newFilters = { ...filters, [key]: actualValue as DriverSearchFiltersState[K] };
     // Reset department when region changes
     if (key === "region") {
       newFilters.department = "";
@@ -121,17 +123,17 @@ export function DriverSearchFilters({
   const availableDepartments = filters.region ? DEPARTMENTS[filters.region] || [] : [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Barre de recherche principale */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher par nom, entreprise..."
             value={filters.searchQuery}
             onChange={(e) => updateFilter("searchQuery", e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSearch()}
-            className="pl-10 h-12 rounded-xl border-border/50 bg-muted/30"
+            className="pl-9 h-10 sm:h-12 rounded-xl border-border/50 bg-muted/30 text-sm"
           />
           {filters.searchQuery && (
             <button
@@ -145,22 +147,21 @@ export function DriverSearchFilters({
         <Button
           onClick={onSearch}
           disabled={searching}
-          className="h-12 px-6 bg-gradient-to-r from-accent to-accent-light"
+          className="h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-accent to-accent-light text-sm"
         >
           {searching ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             "Rechercher"
           )}
         </Button>
       </div>
 
-      {/* Filtres avancés */}
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
         <CollapsibleTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between h-11 border-border/50 bg-muted/20 hover:bg-muted/40"
+            className="w-full justify-between h-10 border-border/50 bg-muted/20 hover:bg-muted/40 text-sm"
           >
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4" />
@@ -176,24 +177,24 @@ export function DriverSearchFilters({
             />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-4 animate-fade-in">
-          <div className="p-4 rounded-xl border border-border/50 bg-muted/10 space-y-5">
+        <CollapsibleContent className="pt-3 animate-fade-in">
+          <div className="p-3 sm:p-4 rounded-xl border border-border/50 bg-muted/10 space-y-4">
             {/* Région et département */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <Navigation className="w-3.5 h-3.5" />
+            <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                  <Navigation className="w-3 h-3" />
                   Région
                 </Label>
                 <Select
-                  value={filters.region}
+                  value={filters.region || "all"}
                   onValueChange={(value) => updateFilter("region", value)}
                 >
-                  <SelectTrigger className="h-10 border-border/50 bg-background">
+                  <SelectTrigger className="h-9 sm:h-10 border-border/50 bg-background text-sm">
                     <SelectValue placeholder="Toutes les régions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes les régions</SelectItem>
+                    <SelectItem value="all">Toutes les régions</SelectItem>
                     {REGIONS.map((region) => (
                       <SelectItem key={region} value={region}>
                         {region}
@@ -203,21 +204,21 @@ export function DriverSearchFilters({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3" />
                   Département
                 </Label>
                 <Select
-                  value={filters.department}
+                  value={filters.department || "all"}
                   onValueChange={(value) => updateFilter("department", value)}
                   disabled={!filters.region}
                 >
-                  <SelectTrigger className="h-10 border-border/50 bg-background">
+                  <SelectTrigger className="h-9 sm:h-10 border-border/50 bg-background text-sm">
                     <SelectValue placeholder={filters.region ? "Tous les départements" : "Sélectionnez une région"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les départements</SelectItem>
+                    <SelectItem value="all">Tous les départements</SelectItem>
                     {availableDepartments.map((dept) => (
                       <SelectItem key={dept} value={dept}>
                         {dept}
@@ -229,27 +230,27 @@ export function DriverSearchFilters({
             </div>
 
             {/* Ville */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5" />
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                <Building2 className="w-3 h-3" />
                 Ville
               </Label>
               <Input
                 placeholder="Ex: Paris, Lyon, Marseille..."
                 value={filters.city}
                 onChange={(e) => updateFilter("city", e.target.value)}
-                className="h-10 border-border/50 bg-background"
+                className="h-9 sm:h-10 border-border/50 bg-background text-sm"
               />
             </div>
 
             {/* Rayon kilométrique */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
+                <Label className="text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                  <MapPin className="w-3 h-3" />
                   Rayon de recherche
                 </Label>
-                <span className="text-sm font-semibold text-primary">
+                <span className="text-xs sm:text-sm font-semibold text-primary">
                   {filters.radiusKm} km
                 </span>
               </div>
@@ -269,17 +270,17 @@ export function DriverSearchFilters({
             </div>
 
             {/* Type de véhicule */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Type de véhicule</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm font-medium">Type de véhicule</Label>
               <Select
-                value={filters.vehicleType}
+                value={filters.vehicleType || "all"}
                 onValueChange={(value) => updateFilter("vehicleType", value)}
               >
-                <SelectTrigger className="h-10 border-border/50 bg-background">
+                <SelectTrigger className="h-9 sm:h-10 border-border/50 bg-background text-sm">
                   <SelectValue placeholder="Tous les véhicules" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous les véhicules</SelectItem>
+                  <SelectItem value="all">Tous les véhicules</SelectItem>
                   <SelectItem value="berline">Berline</SelectItem>
                   <SelectItem value="van">Van</SelectItem>
                   <SelectItem value="suv">SUV</SelectItem>

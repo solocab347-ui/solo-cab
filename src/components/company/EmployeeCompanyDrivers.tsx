@@ -50,8 +50,6 @@ interface Driver {
   display_company_name: boolean;
   services_offered: string[] | null;
   company_name: string | null;
-  city?: string | null;
-  department?: string | null;
 }
 
 interface EmployeeCompanyDriversProps {
@@ -179,25 +177,26 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       let driversData: any[] = [];
       const { searchQuery, region, department, city, vehicleType } = searchFilters;
 
-      // Construire la requête de base
+      // Construire la requête de base - sans city et department qui n'existent pas dans la table drivers
       let query = supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, city, department")
+        .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
         .eq("status", "validated")
         .eq("visible_to_companies", true);
 
-      // Filtres géographiques
+      // Filtres géographiques basés sur working_sectors
       if (city) {
-        query = query.ilike("city", `%${city}%`);
+        query = query.contains("working_sectors", [city]);
       }
       if (department) {
         // Extraire le numéro de département si présent (ex: "Essonne (91)" -> "91")
         const deptMatch = department.match(/\((\d+[AB]?)\)/);
         const deptCode = deptMatch ? deptMatch[1] : department;
-        query = query.or(`department.ilike.%${deptCode}%,working_sectors.cs.{"${department}"}`);
+        // Rechercher dans working_sectors avec le département complet ou le code
+        query = query.or(`working_sectors.cs.{"${department}"},working_sectors.cs.{"${deptCode}"}`);
       }
       if (region) {
-        query = query.or(`working_sectors.cs.{"${region}"}`);
+        query = query.contains("working_sectors", [region]);
       }
       
       // Filtre type de véhicule
@@ -232,7 +231,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, city, department")
+            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -279,8 +278,6 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
-          city: driver.city,
-          department: driver.department,
         });
       }
 
@@ -312,8 +309,6 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
-          city: driver.city,
-          department: driver.department,
         });
       }
 
@@ -621,10 +616,10 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                       <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
-                                      {(driver.city || getMainSector(driver.working_sectors)) && (
+                                      {getMainSector(driver.working_sectors) && (
                                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                                           <MapPin className="w-3 h-3" />
-                                          {driver.city || getMainSector(driver.working_sectors)}
+                                          {getMainSector(driver.working_sectors)}
                                         </p>
                                       )}
                                       {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
@@ -690,10 +685,10 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
                                       <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
-                                      {(driver.city || getMainSector(driver.working_sectors)) && (
+                                      {getMainSector(driver.working_sectors) && (
                                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                                           <MapPin className="w-3 h-3" />
-                                          {driver.city || getMainSector(driver.working_sectors)}
+                                          {getMainSector(driver.working_sectors)}
                                         </p>
                                       )}
                                       {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
