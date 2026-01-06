@@ -521,11 +521,25 @@ export default function GuestEmployeeCourseTracking() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">
-                    {acceptedDriver.profile?.full_name || acceptedDriver.company_name || "Chauffeur"}
-                  </h3>
-                  {acceptedDriver.company_name && acceptedDriver.profile?.full_name && (
-                    <p className="text-sm text-muted-foreground">{acceptedDriver.company_name}</p>
+                  {/* Always show driver's full name if available */}
+                  {acceptedDriver.profile?.full_name && (
+                    <h3 className="font-semibold text-lg">
+                      {acceptedDriver.profile.full_name}
+                    </h3>
+                  )}
+                  {/* Show company name below or as main title if no full name */}
+                  {acceptedDriver.company_name && (
+                    <p className={acceptedDriver.profile?.full_name ? "text-sm text-muted-foreground" : "font-semibold text-lg"}>
+                      {acceptedDriver.company_name}
+                    </p>
+                  )}
+                  {/* Fallback if neither exists */}
+                  {!acceptedDriver.profile?.full_name && !acceptedDriver.company_name && (
+                    <h3 className="font-semibold text-lg">Chauffeur</h3>
+                  )}
+                  {/* Show quote price if available */}
+                  {quoteAmount && (
+                    <p className="text-primary font-bold mt-1">{quoteAmount.toFixed(2)} €</p>
                   )}
                 </div>
               </div>

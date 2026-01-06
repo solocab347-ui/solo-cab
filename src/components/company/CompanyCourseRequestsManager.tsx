@@ -13,8 +13,9 @@ import { fr } from "date-fns/locale";
 import { 
   Plus, MapPin, Calendar, Users, Clock, CheckCircle, 
   XCircle, Send, Loader2, Euro, Car, RefreshCw, AlertTriangle,
-  Copy, ExternalLink, Play, Phone, Mail
+  Copy, ExternalLink, Play, Phone, Mail, ChevronDown, ChevronUp
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CompanyCourseBookingWizard, WizardStep } from "./course-booking";
 
 interface CompanyCourseRequestsManagerProps {
@@ -329,227 +330,278 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     );
   };
 
-  const renderRequestCard = (request: any) => {
-    // Déterminer le statut de la course finale
+  // Composant de carte repliable pour les demandes
+  const CollapsibleRequestCard = ({ request }: { request: any }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    
     const courseStatus = request.final_course?.status;
     const isCompleted = courseStatus === "completed" || courseStatus === "cancelled";
     const isInProgress = courseStatus === "in_progress";
     
+    // Informations essentielles pour l'affichage compact
+    const employeeName = request.is_guest_employee 
+      ? request.guest_employee_name 
+      : request.employeeProfile?.full_name || "Collaborateur";
+    const acceptedPrice = request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price;
+    
     return (
-    <Card key={request.id} className={`mb-4 ${
-      isCompleted ? 'bg-green-500/5 border-green-500/20' : 
-      isInProgress ? 'bg-blue-500/5 border-blue-500/20' : ''
-    }`}>
-      <CardContent className="pt-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex-1 space-y-3">
-            {/* Status and Date */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {getStatusBadge(request.status, courseStatus)}
-              <span className="text-sm text-muted-foreground">
-                {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-              </span>
-            </div>
-
-            {/* Employee */}
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="font-medium">
-                {request.is_guest_employee 
-                  ? `${request.guest_employee_name} (non-inscrit)`
-                  : request.employeeProfile?.full_name || "Collaborateur"
-                }
-              </span>
-            </div>
-
-            {/* Addresses */}
-            <div className="space-y-1 text-sm">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="truncate">{request.pickup_address}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                <span className="truncate">{request.destination_address}</span>
-              </div>
-            </div>
-
-            {/* Tracking link for guest employees */}
-            {request.is_guest_employee && request.trackingToken && (
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Lien de suivi</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="ml-auto h-7"
-                  onClick={() => copyTrackingLink(request.trackingToken)}
-                >
-                  <Copy className="w-3 h-3 mr-1" />
-                  Copier
-                </Button>
-              </div>
-            )}
-
-            {/* Quotes info */}
-            {renderQuotesList(request.quotesWithProfiles)}
-
-            {/* Driver info - use courseDriver for in_progress/completed, otherwise accepted_driver */}
-            {(request.status === "accepted" || isInProgress || isCompleted) && (() => {
-              // Prioritize courseDriver (from the actual course) over accepted_driver (from the request)
-              const driver = request.courseDriver || request.accepted_driver;
-              const profile = request.courseDriver?.profile || request.driverProfile;
-              
-              if (!driver && !profile) return null;
-              
-              const bgColor = isInProgress ? 'bg-blue-500/10' : 'bg-green-500/10';
-              const borderColor = isInProgress ? 'border-blue-500/20' : 'border-green-500/20';
-              const fallbackBgColor = isInProgress ? 'bg-blue-600/20 text-blue-600' : 'bg-green-600/20 text-green-600';
-              
-              const phoneNumber = (driver?.show_phone && driver?.contact_phone) 
-                ? driver.contact_phone 
-                : profile?.phone;
-              const emailAddress = (driver?.show_email && driver?.contact_email) 
-                ? driver.contact_email 
-                : profile?.email;
-              
-              const showPhone = driver?.show_phone || !!profile?.phone;
-              const showEmail = driver?.show_email || !!profile?.email;
-              
-              return (
-                <div className={`p-3 ${bgColor} rounded-lg space-y-2`}>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={profile?.profile_photo_url} />
-                      <AvatarFallback className={`${fallbackBgColor} text-sm`}>
-                        {profile?.full_name?.charAt(0) || driver?.company_name?.charAt(0) || "C"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <span className="text-sm font-medium">{profile?.full_name || driver?.company_name || "Chauffeur"}</span>
-                      {driver?.company_name && profile?.full_name && (
-                        <p className="text-xs text-muted-foreground">{driver.company_name}</p>
-                      )}
-                      {isInProgress && (
-                        <p className="text-xs text-blue-600 font-medium">🚗 En route</p>
-                      )}
-                    </div>
-                    {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
-                      <span className="text-sm font-bold text-primary">
-                        {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
-                      </span>
+      <Card className={`mb-3 ${
+        isCompleted ? 'bg-green-500/5 border-green-500/20' : 
+        isInProgress ? 'bg-blue-500/5 border-blue-500/20' : ''
+      }`}>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          {/* En-tête compact cliquable */}
+          <CollapsibleTrigger asChild>
+            <CardContent className="pt-3 pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                {/* Status badge */}
+                <div className="flex-shrink-0">
+                  {getStatusBadge(request.status, courseStatus)}
+                </div>
+                
+                {/* Infos principales */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm truncate">{employeeName}</span>
+                    {request.is_guest_employee && (
+                      <span className="text-xs text-muted-foreground">(non-inscrit)</span>
                     )}
                   </div>
-                  {/* Contact buttons */}
-                  {(showPhone || showEmail) && (phoneNumber || emailAddress) && (
-                    <div className={`flex gap-2 flex-wrap pt-2 border-t ${borderColor}`}>
-                      {showPhone && phoneNumber && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex-1 min-w-[100px] h-8 text-xs"
-                          asChild
-                        >
-                          <a href={`tel:${phoneNumber}`}>
-                            <Phone className="w-3 h-3 mr-1" />
-                            Appeler
-                          </a>
-                        </Button>
-                      )}
-                      {showEmail && emailAddress && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex-1 min-w-[100px] h-8 text-xs"
-                          asChild
-                        >
-                          <a href={`mailto:${emailAddress}`}>
-                            <Mail className="w-3 h-3 mr-1" />
-                            Email
-                          </a>
-                        </Button>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                    <span>{format(new Date(request.scheduled_date), "d MMM 'à' HH:mm", { locale: fr })}</span>
+                    {acceptedPrice && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-medium text-primary">{acceptedPrice.toFixed(2)} €</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Chevron */}
+                <div className="flex-shrink-0">
+                  {isOpen ? (
+                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
                   )}
                 </div>
-              );
-            })()}
-
-            {/* All refused - action to resend */}
-            {request.status === "all_refused" && (
-              <div className="flex flex-col gap-2 p-3 bg-red-500/10 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm text-red-700">Tous les chauffeurs ont refusé cette demande</span>
+              </div>
+            </CardContent>
+          </CollapsibleTrigger>
+          
+          {/* Contenu déplié */}
+          <CollapsibleContent>
+            <CardContent className="pt-0 pb-4 border-t">
+              <div className="space-y-3 pt-3">
+                {/* Addresses */}
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="truncate">{request.pickup_address}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <span className="truncate">{request.destination_address}</span>
+                  </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setRequestToResend(request)}
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" />
-                    Renvoyer à d'autres chauffeurs
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => setRequestToCancel(request)}
-                  >
-                    <XCircle className="w-3 h-3 mr-1" />
-                    Annuler la demande
-                  </Button>
-                </div>
-              </div>
-            )}
 
-            {/* Actions for draft/quotes_generated - allow resume */}
-            {["draft", "quotes_generated"].includes(request.status) && (
-              <div className="flex justify-end gap-2 pt-2 flex-wrap">
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={() => setRequestToResume({ 
-                    request, 
-                    step: getResumeStep(request.status) 
-                  })}
-                >
-                  <Play className="w-3 h-3 mr-1" />
-                  Reprendre
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => setRequestToCancel(request)}
-                >
-                  <XCircle className="w-3 h-3 mr-1" />
-                  Annuler
-                </Button>
-              </div>
-            )}
+                {/* Tracking link for guest employees */}
+                {request.is_guest_employee && request.trackingToken && (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Lien de suivi</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-auto h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyTrackingLink(request.trackingToken);
+                      }}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copier
+                    </Button>
+                  </div>
+                )}
 
-            {/* Actions for sent_to_drivers - only cancel, no resume */}
-            {request.status === "sent_to_drivers" && (
-              <div className="flex justify-end gap-2 pt-2 flex-wrap">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => setRequestToCancel(request)}
-                >
-                  <XCircle className="w-3 h-3 mr-1" />
-                  Annuler
-                </Button>
+                {/* Quotes info */}
+                {renderQuotesList(request.quotesWithProfiles)}
+
+                {/* Driver info - use courseDriver for in_progress/completed, otherwise accepted_driver */}
+                {(request.status === "accepted" || isInProgress || isCompleted) && (() => {
+                  const driver = request.courseDriver || request.accepted_driver;
+                  const profile = request.courseDriver?.profile || request.driverProfile;
+                  
+                  if (!driver && !profile) return null;
+                  
+                  const bgColor = isInProgress ? 'bg-blue-500/10' : 'bg-green-500/10';
+                  const borderColor = isInProgress ? 'border-blue-500/20' : 'border-green-500/20';
+                  const fallbackBgColor = isInProgress ? 'bg-blue-600/20 text-blue-600' : 'bg-green-600/20 text-green-600';
+                  
+                  const phoneNumber = (driver?.show_phone && driver?.contact_phone) 
+                    ? driver.contact_phone 
+                    : profile?.phone;
+                  const emailAddress = (driver?.show_email && driver?.contact_email) 
+                    ? driver.contact_email 
+                    : profile?.email;
+                  
+                  const showPhone = driver?.show_phone || !!profile?.phone;
+                  const showEmail = driver?.show_email || !!profile?.email;
+                  
+                  return (
+                    <div className={`p-3 ${bgColor} rounded-lg space-y-2`}>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={profile?.profile_photo_url} />
+                          <AvatarFallback className={`${fallbackBgColor} text-sm`}>
+                            {profile?.full_name?.charAt(0) || driver?.company_name?.charAt(0) || "C"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <span className="text-sm font-medium">{profile?.full_name || driver?.company_name || "Chauffeur"}</span>
+                          {driver?.company_name && profile?.full_name && (
+                            <p className="text-xs text-muted-foreground">{driver.company_name}</p>
+                          )}
+                          {isInProgress && (
+                            <p className="text-xs text-blue-600 font-medium">🚗 En route</p>
+                          )}
+                        </div>
+                        {acceptedPrice && (
+                          <span className="text-sm font-bold text-primary">
+                            {acceptedPrice.toFixed(2)} €
+                          </span>
+                        )}
+                      </div>
+                      {/* Contact buttons */}
+                      {(showPhone || showEmail) && (phoneNumber || emailAddress) && (
+                        <div className={`flex gap-2 flex-wrap pt-2 border-t ${borderColor}`}>
+                          {showPhone && phoneNumber && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1 min-w-[100px] h-8 text-xs"
+                              asChild
+                            >
+                              <a href={`tel:${phoneNumber}`} onClick={(e) => e.stopPropagation()}>
+                                <Phone className="w-3 h-3 mr-1" />
+                                Appeler
+                              </a>
+                            </Button>
+                          )}
+                          {showEmail && emailAddress && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1 min-w-[100px] h-8 text-xs"
+                              asChild
+                            >
+                              <a href={`mailto:${emailAddress}`} onClick={(e) => e.stopPropagation()}>
+                                <Mail className="w-3 h-3 mr-1" />
+                                Email
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* All refused - action to resend */}
+                {request.status === "all_refused" && (
+                  <div className="flex flex-col gap-2 p-3 bg-red-500/10 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <span className="text-sm text-red-700">Tous les chauffeurs ont refusé</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRequestToResend(request);
+                        }}
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Renvoyer
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRequestToCancel(request);
+                        }}
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Annuler
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions for draft/quotes_generated - allow resume */}
+                {["draft", "quotes_generated"].includes(request.status) && (
+                  <div className="flex justify-end gap-2 pt-2 flex-wrap">
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRequestToResume({ request, step: getResumeStep(request.status) });
+                      }}
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Reprendre
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRequestToCancel(request);
+                      }}
+                    >
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Annuler
+                    </Button>
+                  </div>
+                )}
+
+                {/* Actions for sent_to_drivers - only cancel */}
+                {request.status === "sent_to_drivers" && (
+                  <div className="flex justify-end gap-2 pt-2 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRequestToCancel(request);
+                      }}
+                    >
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Annuler
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    );
   };
+
+  const renderRequestCard = (request: any) => (
+    <CollapsibleRequestCard key={request.id} request={request} />
+  );
 
   return (
     <div className="space-y-6">
@@ -647,222 +699,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   <CheckCircle className="w-4 h-4" />
                   Courses confirmées ({acceptedRequests.length})
                 </h3>
-                {acceptedRequests.map((request) => (
-                  <Card key={request.id} className={`mb-4 ${
-                    request.final_course?.status === "in_progress" 
-                      ? "border-blue-500/30 bg-blue-500/5" 
-                      : "border-green-500/30 bg-green-500/5"
-                  }`}>
-                    <CardContent className="pt-4 space-y-4">
-                      {/* Header with status - show in_progress status if course is in progress */}
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        {request.final_course?.status === "in_progress" ? (
-                          <Badge className="bg-blue-600 text-white">
-                            <Car className="w-3 h-3 mr-1" />
-                            En cours
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-green-600 text-white">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Confirmée
-                          </Badge>
-                        )}
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                        </span>
-                      </div>
-
-                      {/* Driver info avec coordonnées */}
-                      {request.driverProfile && (
-                        <div className="p-3 bg-background rounded-lg border space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-12 h-12 border-2 border-primary/20">
-                              <AvatarImage src={request.driverProfile.profile_photo_url} />
-                              <AvatarFallback className="bg-primary/10 text-primary">
-                                {request.driverProfile.full_name?.charAt(0) || "C"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <p className="font-semibold">{request.driverProfile.full_name}</p>
-                              {request.accepted_driver?.company_name && (
-                                <p className="text-xs text-muted-foreground">{request.accepted_driver.company_name}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground">Chauffeur assigné</p>
-                            </div>
-                            {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-primary">
-                                  {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
-                                </p>
-                                <p className="text-xs text-muted-foreground">Prix confirmé</p>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Boutons de contact - respecter la visibilité */}
-                          {(() => {
-                            const driver = request.accepted_driver;
-                            const profile = request.driverProfile;
-                            if (!driver || !profile) return null;
-                            
-                            // Priorité: contact B2B si show activé, sinon profil
-                            const phoneNumber = (driver.show_phone && driver.contact_phone) 
-                              ? driver.contact_phone 
-                              : profile.phone;
-                            const emailAddress = (driver.show_email && driver.contact_email) 
-                              ? driver.contact_email 
-                              : profile.email;
-                            
-                            const showPhone = driver.show_phone || !!profile.phone;
-                            const showEmail = driver.show_email || !!profile.email;
-                            
-                            if (!showPhone && !showEmail) return null;
-                            
-                            return (
-                              <div className="flex gap-2 flex-wrap pt-2 border-t">
-                                {showPhone && phoneNumber && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="flex-1 min-w-[120px] h-9"
-                                    asChild
-                                  >
-                                    <a href={`tel:${phoneNumber}`}>
-                                      <Phone className="w-4 h-4 mr-2" />
-                                      Appeler
-                                    </a>
-                                  </Button>
-                                )}
-                                {showEmail && emailAddress && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    className="flex-1 min-w-[120px] h-9"
-                                    asChild
-                                  >
-                                    <a href={`mailto:${emailAddress}`}>
-                                      <Mail className="w-4 h-4 mr-2" />
-                                      Email
-                                    </a>
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-
-                      {/* Employee */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="w-4 h-4 text-primary" />
-                        <span>
-                          <strong>Collaborateur :</strong> {request.is_guest_employee 
-                            ? `${request.guest_employee_name} (non-inscrit)`
-                            : request.employeeProfile?.full_name || "Collaborateur"
-                          }
-                        </span>
-                      </div>
-
-                      {/* Addresses */}
-                      <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-start gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Départ</p>
-                            <p className="font-medium">{request.pickup_address}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2 text-sm">
-                          <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Arrivée</p>
-                            <p className="font-medium">{request.destination_address}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tracking link for guest employees */}
-                      {request.is_guest_employee && request.trackingToken && (
-                        <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                          <ExternalLink className="w-4 h-4 text-primary" />
-                          <span className="text-sm flex-1">Lien de suivi collaborateur</span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="h-8"
-                            onClick={() => copyTrackingLink(request.trackingToken)}
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copier
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Timeline */}
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">Progression</p>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                            <span>Demande créée le {format(new Date(request.created_at), "d MMM à HH:mm", { locale: fr })}</span>
-                          </div>
-                          {request.quotes_generated_at && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                              <span>Devis générés le {format(new Date(request.quotes_generated_at), "d MMM à HH:mm", { locale: fr })}</span>
-                            </div>
-                          )}
-                          {request.sent_to_drivers_at && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                              <span>Envoyé aux chauffeurs le {format(new Date(request.sent_to_drivers_at), "d MMM à HH:mm", { locale: fr })}</span>
-                            </div>
-                          )}
-                          {request.accepted_at && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                              <span>Chauffeur confirmé le {format(new Date(request.accepted_at), "d MMM à HH:mm", { locale: fr })}</span>
-                            </div>
-                          )}
-                          {/* Course en cours - check final_course.status */}
-                          {request.final_course?.status === "in_progress" && (
-                            <div className="flex items-center gap-2 text-blue-600 font-medium">
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                              <span>🚗 Course en cours</span>
-                            </div>
-                          )}
-                          {/* Course terminée - check final_course.status */}
-                          {request.final_course?.status === "completed" && (
-                            <div className="flex items-center gap-2 text-green-600 font-medium">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                              <span>✓ Course terminée</span>
-                            </div>
-                          )}
-                          {/* Show pending steps for non-in_progress courses */}
-                          {request.accepted_at && request.final_course?.status !== "in_progress" && request.final_course?.status !== "completed" && (
-                            <>
-                              <div className="flex items-center gap-2 text-muted-foreground/50">
-                                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
-                                <span>Course en cours</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-muted-foreground/50">
-                                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
-                                <span>Course terminée</span>
-                              </div>
-                            </>
-                          )}
-                          {/* Show only Course terminée as pending when in_progress */}
-                          {request.final_course?.status === "in_progress" && (
-                            <div className="flex items-center gap-2 text-muted-foreground/50">
-                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></div>
-                              <span>Course terminée</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {acceptedRequests.map(renderRequestCard)}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
