@@ -157,7 +157,8 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
   const setupRealtimeSubscription = () => {
     if (!companyId) return () => {};
 
-    return subscriptionManager.subscribe(
+    // Subscribe to company_courses changes
+    const unsubCompanyCourses = subscriptionManager.subscribe(
       `courses-company-${companyId}`,
       {
         table: "company_courses",
@@ -167,6 +168,22 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
       },
       () => fetchCourses()
     );
+
+    // Also subscribe to courses changes for status updates (in_progress, completed, etc.)
+    const unsubCourses = subscriptionManager.subscribe(
+      `courses-status-company-${companyId}`,
+      {
+        table: "courses",
+        event: "UPDATE",
+        debounceMs: 1000
+      },
+      () => fetchCourses()
+    );
+
+    return () => {
+      unsubCompanyCourses?.();
+      unsubCourses?.();
+    };
   };
 
   const handleCancelConfirm = async () => {
@@ -217,7 +234,12 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
       case "pending":
         return courses.filter(c => c.status === "pending");
       case "upcoming":
-        return courses.filter(c => c.status === "accepted" && new Date(c.scheduled_date) > new Date());
+        // Include accepted AND in_progress courses
+        return courses.filter(c => 
+          (c.status === "accepted" || c.status === "in_progress") && 
+          c.status !== "completed" && 
+          c.status !== "cancelled"
+        );
       case "completed":
         return courses.filter(c => c.status === "completed");
       case "cancelled":
