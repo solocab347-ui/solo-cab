@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,6 +29,7 @@ export function QuotesReviewStep({
   generatedQuotes, 
   setGeneratedQuotes 
 }: QuotesReviewStepProps) {
+  const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch existing quotes from database when resuming
@@ -124,6 +125,9 @@ export function QuotesReviewStep({
         if (requestError) throw requestError;
         currentRequestId = request.id;
         setRequestId(request.id);
+        
+        // Invalider immédiatement le cache pour que la nouvelle demande apparaisse
+        queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
       }
 
       // Generate quotes for all selected drivers
