@@ -411,7 +411,7 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
                             <Euro className="w-4 h-4" />
                             <span className="font-medium">{statusConfig.description}</span>
                             {expense.reimbursement_month && (
-                              <span>• Paye de {format(new Date(expense.reimbursement_month + "-01"), "MMMM yyyy", { locale: fr })}</span>
+                              <span>• Paie de {format(new Date(expense.reimbursement_month + "-01"), "MMMM yyyy", { locale: fr })}</span>
                             )}
                           </div>
                           {expense.reimbursed_at && (
