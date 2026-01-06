@@ -1490,6 +1490,7 @@ export type Database = {
       company_employee_invitations: {
         Row: {
           can_create_courses: boolean | null
+          can_invite_drivers: boolean | null
           can_view_invoices: boolean | null
           company_id: string
           created_at: string | null
@@ -1507,6 +1508,7 @@ export type Database = {
         }
         Insert: {
           can_create_courses?: boolean | null
+          can_invite_drivers?: boolean | null
           can_view_invoices?: boolean | null
           company_id: string
           created_at?: string | null
@@ -1524,6 +1526,7 @@ export type Database = {
         }
         Update: {
           can_create_courses?: boolean | null
+          can_invite_drivers?: boolean | null
           can_view_invoices?: boolean | null
           company_id?: string
           created_at?: string | null
@@ -1552,6 +1555,7 @@ export type Database = {
       company_employees: {
         Row: {
           can_create_courses: boolean | null
+          can_invite_drivers: boolean | null
           can_view_all_company_courses: boolean | null
           can_view_invoices: boolean | null
           company_id: string
@@ -1579,6 +1583,7 @@ export type Database = {
         }
         Insert: {
           can_create_courses?: boolean | null
+          can_invite_drivers?: boolean | null
           can_view_all_company_courses?: boolean | null
           can_view_invoices?: boolean | null
           company_id: string
@@ -1606,6 +1611,7 @@ export type Database = {
         }
         Update: {
           can_create_courses?: boolean | null
+          can_invite_drivers?: boolean | null
           can_view_all_company_courses?: boolean | null
           can_view_invoices?: boolean | null
           company_id?: string
