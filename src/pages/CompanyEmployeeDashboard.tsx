@@ -38,10 +38,10 @@ import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
-import { EmployeeCompanyDrivers } from "@/components/company/EmployeeCompanyDrivers";
 import { EmployeePhotoUpload } from "@/components/company/employee/EmployeePhotoUpload";
 import { EmployeeExpenseReports } from "@/components/company/employee/EmployeeExpenseReports";
-import { EmployeeFleetPartners } from "@/components/company/employee/EmployeeFleetPartners";
+import { EmployeePartnersHub } from "@/components/company/employee/EmployeePartnersHub";
+import { EmployeeCoursePaymentDeclaration } from "@/components/company/employee/EmployeeCoursePaymentDeclaration";
 
 interface EmployeeData {
   id: string;
@@ -710,7 +710,17 @@ export default function CompanyEmployeeDashboard() {
           )}
 
           {/* Expenses Tab */}
-          <TabsContent value="expenses" className="animate-fade-in">
+          <TabsContent value="expenses" className="animate-fade-in space-y-6">
+            {/* Déclaration de paiement des courses */}
+            <EmployeeCoursePaymentDeclaration 
+              employeeId={employee.id}
+              companyId={employee.company_id}
+              onExpenseCreated={() => {
+                // Rafraîchir les notes de frais si nécessaire
+              }}
+            />
+            
+            {/* Notes de frais */}
             <EmployeeExpenseReports 
               employeeId={employee.id}
               companyId={employee.company_id}
@@ -718,12 +728,8 @@ export default function CompanyEmployeeDashboard() {
           </TabsContent>
 
           {/* Partners Tab */}
-          <TabsContent value="partners" className="animate-fade-in space-y-6">
-            {/* Fleet Partners */}
-            <EmployeeFleetPartners companyId={employee.company_id} />
-            
-            {/* Driver Partners - reuse the existing component in view-only mode if no invite permission */}
-            <EmployeeCompanyDrivers 
+          <TabsContent value="partners" className="animate-fade-in">
+            <EmployeePartnersHub 
               companyId={employee.company_id}
               canInviteDrivers={employee.can_invite_drivers}
               canCreateCourses={employee.can_create_courses}

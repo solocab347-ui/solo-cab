@@ -94,32 +94,25 @@ export function EmployeeFleetPartners({ companyId }: EmployeeFleetPartnersProps)
   }
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
-      <div className="h-1 bg-gradient-to-r from-primary via-accent to-success" />
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-primary" />
-          Gestionnaires de flotte partenaires
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {partners.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <Building2 className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="font-semibold mb-2">Aucun partenariat flotte</h3>
-            <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-              Votre entreprise n'a pas encore de partenariats avec des gestionnaires de flotte.
-              Seuls les administrateurs peuvent établir ces partenariats.
-            </p>
+    <div className="space-y-4">
+      {partners.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
+            <Building2 className="w-8 h-8 text-accent" />
           </div>
-        ) : (
+          <h3 className="font-semibold mb-2">Aucun partenariat flotte</h3>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+            Votre entreprise n'a pas encore de partenariats avec des gestionnaires de flotte.
+            Seuls les administrateurs peuvent établir ces partenariats.
+          </p>
+        </div>
+      ) : (
+        <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {partners.map((partner) => (
               <Card 
                 key={partner.id}
-                className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-primary/5 to-transparent hover:shadow-lg transition-all"
+                className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all"
               >
                 <div className="absolute top-2 right-2">
                   <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
@@ -129,9 +122,9 @@ export function EmployeeFleetPartners({ companyId }: EmployeeFleetPartnersProps)
                 </div>
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
-                    <Avatar className="w-14 h-14 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                    <Avatar className="w-14 h-14 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
                       <AvatarImage src={partner.fleet_manager.logo_url || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
                         {partner.fleet_manager.company_name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -177,15 +170,15 @@ export function EmployeeFleetPartners({ companyId }: EmployeeFleetPartnersProps)
               </Card>
             ))}
           </div>
-        )}
 
-        <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Note :</strong> Seuls les administrateurs de l'entreprise peuvent établir ou modifier les partenariats avec les gestionnaires de flotte. 
-            Vous pouvez cependant contacter ces partenaires et réserver des courses avec leurs chauffeurs.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">Note :</strong> Seuls les administrateurs de l'entreprise peuvent établir ou modifier les partenariats avec les gestionnaires de flotte. 
+              Vous pouvez cependant contacter ces partenaires et réserver des courses avec leurs chauffeurs.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
