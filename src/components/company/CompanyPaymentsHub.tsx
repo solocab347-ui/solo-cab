@@ -313,19 +313,24 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       
       // Si un paiement existe déjà (paymentId), le mettre à jour
       if (payment.paymentId) {
+        console.log("Updating existing payment:", payment.paymentId);
         const { data, error } = await supabase
           .from("company_payments")
           .update({
             status: "sent",
             sent_at: new Date().toISOString(),
             sent_by_user_id: userId,
-            payment_reference: reference
+            payment_reference: reference || null
           })
           .eq("id", payment.paymentId)
+          .eq("company_id", companyId)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating payment:", error, "paymentId:", payment.paymentId);
+          throw error;
+        }
         paymentRecord = data;
       } else {
         // Créer un nouveau paiement
