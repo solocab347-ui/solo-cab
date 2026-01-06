@@ -126,8 +126,8 @@ export function QuotesReviewStep({
         currentRequestId = request.id;
         setRequestId(request.id);
         
-        // Invalider immédiatement le cache pour que la nouvelle demande apparaisse
-        queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+        // NOTE: N'invalidez PAS le cache ici - cela cause un rechargement de la liste parent
+        // et peut réinitialiser le wizard. L'invalidation sera faite à la fin du processus (onSuccess).
       }
 
       // Generate quotes for all selected drivers
