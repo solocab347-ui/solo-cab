@@ -1051,6 +1051,7 @@ export type Database = {
       }
       company_courses: {
         Row: {
+          actual_payment_method: string | null
           approved_at: string | null
           approved_by: string | null
           company_id: string
@@ -1060,9 +1061,12 @@ export type Database = {
           employee_id: string | null
           id: string
           invoice_to_company: boolean | null
+          payment_declared_at: string | null
+          payment_declared_by: string | null
           payment_handled_by: string | null
         }
         Insert: {
+          actual_payment_method?: string | null
           approved_at?: string | null
           approved_by?: string | null
           company_id: string
@@ -1072,9 +1076,12 @@ export type Database = {
           employee_id?: string | null
           id?: string
           invoice_to_company?: boolean | null
+          payment_declared_at?: string | null
+          payment_declared_by?: string | null
           payment_handled_by?: string | null
         }
         Update: {
+          actual_payment_method?: string | null
           approved_at?: string | null
           approved_by?: string | null
           company_id?: string
@@ -1084,6 +1091,8 @@ export type Database = {
           employee_id?: string | null
           id?: string
           invoice_to_company?: boolean | null
+          payment_declared_at?: string | null
+          payment_declared_by?: string | null
           payment_handled_by?: string | null
         }
         Relationships: [
@@ -2326,6 +2335,7 @@ export type Database = {
         Row: {
           client_id: string | null
           client_rating: number | null
+          company_payment_status: string | null
           course_number: string | null
           created_at: string
           created_by_user_id: string | null
@@ -2334,9 +2344,12 @@ export type Database = {
           destination_longitude: number | null
           discount_amount: number | null
           distance_km: number | null
+          driver_declared_payment_at: string | null
+          driver_declared_payment_received: boolean | null
           driver_id: string | null
           driver_ids: string[] | null
           duration_minutes: number | null
+          employee_declared_paid_at: string | null
           guest_email: string | null
           guest_estimated_price: number | null
           guest_name: string | null
@@ -2362,6 +2375,7 @@ export type Database = {
         Insert: {
           client_id?: string | null
           client_rating?: number | null
+          company_payment_status?: string | null
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -2370,9 +2384,12 @@ export type Database = {
           destination_longitude?: number | null
           discount_amount?: number | null
           distance_km?: number | null
+          driver_declared_payment_at?: string | null
+          driver_declared_payment_received?: boolean | null
           driver_id?: string | null
           driver_ids?: string[] | null
           duration_minutes?: number | null
+          employee_declared_paid_at?: string | null
           guest_email?: string | null
           guest_estimated_price?: number | null
           guest_name?: string | null
@@ -2398,6 +2415,7 @@ export type Database = {
         Update: {
           client_id?: string | null
           client_rating?: number | null
+          company_payment_status?: string | null
           course_number?: string | null
           created_at?: string
           created_by_user_id?: string | null
@@ -2406,9 +2424,12 @@ export type Database = {
           destination_longitude?: number | null
           discount_amount?: number | null
           distance_km?: number | null
+          driver_declared_payment_at?: string | null
+          driver_declared_payment_received?: boolean | null
           driver_id?: string | null
           driver_ids?: string[] | null
           duration_minutes?: number | null
+          employee_declared_paid_at?: string | null
           guest_email?: string | null
           guest_estimated_price?: number | null
           guest_name?: string | null

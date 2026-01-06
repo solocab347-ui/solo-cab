@@ -14,6 +14,7 @@ import {
   CheckCircle, XCircle, Loader2, AlertCircle, Phone, Mail,
   Star, Route, UserPlus, FileText, RefreshCw
 } from "lucide-react";
+import { CompanyPaymentDeclarationCard } from "@/components/company/CompanyPaymentDeclarationCard";
 
 interface DriverInfo {
   id: string;
@@ -65,6 +66,9 @@ interface TrackingData {
     id: string;
     status: string;
     updated_at?: string;
+    company_payment_status?: string;
+    employee_declared_paid_at?: string;
+    driver_declared_payment_received?: boolean;
     driver?: DriverInfo;
     devis?: Array<{ amount: number; quote_number?: string }>;
   };
@@ -101,7 +105,7 @@ export default function GuestEmployeeCourseTracking() {
         console.log('[GuestTracking] Fetching course data for course_id:', result.course_id);
         const { data: courseData, error: courseError } = await supabase
           .from("courses")
-          .select(`id, status, updated_at, driver_id`)
+          .select(`id, status, updated_at, driver_id, company_payment_status, employee_declared_paid_at, driver_declared_payment_received`)
           .eq("id", result.course_id)
           .maybeSingle();
         
@@ -643,6 +647,20 @@ export default function GuestEmployeeCourseTracking() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payment Declaration Card - Only for completed courses */}
+        {course?.id && (
+          <CompanyPaymentDeclarationCard
+            courseId={course.id}
+            requestId={request?.id}
+            invitationToken={token || undefined}
+            status={status}
+            currentPaymentStatus={course.company_payment_status}
+            employeeDeclaredPaidAt={course.employee_declared_paid_at}
+            driverDeclaredPaymentReceived={course.driver_declared_payment_received}
+            onPaymentDeclared={() => refetch()}
+          />
+        )}
 
         {/* Register CTA */}
         {!data.is_used && (

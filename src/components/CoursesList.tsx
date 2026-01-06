@@ -35,6 +35,7 @@ import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartne
 import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCompanyQuotesInCoursesList";
 import { CourseClientContact } from "@/components/driver/CourseClientContact";
 import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicator";
+import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
 
 interface CoursesListProps {
   driverId: string;
@@ -50,6 +51,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [companyPaymentStatus, setCompanyPaymentStatus] = useState<string>("");
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [customReason, setCustomReason] = useState<string>("");
@@ -508,12 +510,33 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleEndCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
+    // Réinitialiser les états
+    setPaymentMethod("");
+    setCompanyPaymentStatus("");
     setShowPaymentDialog(true);
   };
+
+  // Vérifier si la course sélectionnée est une course entreprise
+  const isSelectedCourseCompany = useMemo(() => {
+    if (!selectedCourseId) return false;
+    return companyCoursesData.some(cc => cc.course_id === selectedCourseId);
+  }, [selectedCourseId, companyCoursesData]);
+
+  const selectedCourseCompanyName = useMemo(() => {
+    if (!selectedCourseId) return "";
+    const companyCourse = companyCoursesData.find(cc => cc.course_id === selectedCourseId);
+    return companyCourse?.company?.company_name || "";
+  }, [selectedCourseId, companyCoursesData]);
 
   const handleCompleteCourse = async () => {
     if (!selectedCourseId || !paymentMethod) {
       toast.error("Veuillez sélectionner un moyen de paiement");
+      return;
+    }
+
+    // Pour les courses entreprise, vérifier le statut de paiement
+    if (isSelectedCourseCompany && !companyPaymentStatus) {
+      toast.error("Veuillez indiquer si le paiement a été reçu ou est en attente");
       return;
     }
 
@@ -528,13 +551,37 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         c.id === selectedCourseId ? { ...c, status: "completed" as const } : c
       ));
 
+      // Préparer les données de mise à jour
+      const updateData: any = { status: "completed" };
+      
+      // Pour les courses entreprise, enregistrer le statut de paiement
+      if (isSelectedCourseCompany) {
+        const isPaidOnSpot = companyPaymentStatus === "received";
+        updateData.company_payment_status = isPaidOnSpot ? "paid_on_spot" : "company_will_pay";
+        updateData.driver_declared_payment_received = isPaidOnSpot;
+        updateData.driver_declared_payment_at = new Date().toISOString();
+      }
+
       // Update course status to completed
       const { error: courseError } = await supabase
         .from("courses")
-        .update({ status: "completed" })
+        .update(updateData)
         .eq("id", selectedCourseId);
 
       if (courseError) throw courseError;
+
+      // Mettre à jour company_courses si c'est une course entreprise
+      if (isSelectedCourseCompany) {
+        const isPaidOnSpot = companyPaymentStatus === "received";
+        await supabase
+          .from("company_courses")
+          .update({
+            actual_payment_method: isPaidOnSpot ? "employee_paid_spot" : "company_deferred",
+            payment_declared_at: new Date().toISOString(),
+            payment_declared_by: "driver"
+          })
+          .eq("course_id", selectedCourseId);
+      }
 
       // First, get the course to find the most recent devis
       const { data: courseData } = await supabase
@@ -567,6 +614,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (factureError) throw factureError;
 
+      // Si paiement reçu sur place pour course entreprise, marquer la facture comme payée
+      if (isSelectedCourseCompany && companyPaymentStatus === "received") {
+        await supabase
+          .from("factures")
+          .update({ 
+            payment_status: "paid",
+            paid_at: new Date().toISOString()
+          })
+          .eq("course_id", selectedCourseId);
+      }
+
       // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
 
       // Notifier l'entreprise si la course est liée à une entreprise
@@ -575,6 +633,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       // Fermer le dialog de paiement
       setShowPaymentDialog(false);
       setPaymentMethod("");
+      setCompanyPaymentStatus("");
 
       // Refetch courses to get the new facture data
       await fetchCourses();
@@ -2794,33 +2853,58 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       </Tabs>
 
       {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => {
+        setShowPaymentDialog(open);
+        if (!open) {
+          setPaymentMethod("");
+          setCompanyPaymentStatus("");
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Finaliser la course</DialogTitle>
             <DialogDescription>
-              Sélectionnez le moyen de paiement utilisé par le client
+              {isSelectedCourseCompany 
+                ? "Indiquez le moyen de paiement et si le paiement a été reçu"
+                : "Sélectionnez le moyen de paiement utilisé par le client"
+              }
             </DialogDescription>
           </DialogHeader>
-          <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Carte bancaire" id="card" />
-              <Label htmlFor="card">Carte bancaire</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Espèces" id="cash" />
-              <Label htmlFor="cash">Espèces</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Virement" id="transfer" />
-              <Label htmlFor="transfer">Virement</Label>
-            </div>
-          </RadioGroup>
+          
+          <div className="space-y-4">
+            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Carte bancaire" id="card" />
+                <Label htmlFor="card">Carte bancaire</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Espèces" id="cash" />
+                <Label htmlFor="cash">Espèces</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Virement" id="transfer" />
+                <Label htmlFor="transfer">Virement</Label>
+              </div>
+            </RadioGroup>
+
+            {/* Section spécifique pour les courses entreprise */}
+            {isSelectedCourseCompany && (
+              <CompanyPaymentStatusSelector
+                value={companyPaymentStatus}
+                onChange={setCompanyPaymentStatus}
+                companyName={selectedCourseCompanyName}
+              />
+            )}
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
               Annuler
             </Button>
-            <Button onClick={handleCompleteCourse} disabled={!paymentMethod}>
+            <Button 
+              onClick={handleCompleteCourse} 
+              disabled={!paymentMethod || (isSelectedCourseCompany && !companyPaymentStatus)}
+            >
               Confirmer
             </Button>
           </DialogFooter>
