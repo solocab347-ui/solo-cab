@@ -12,10 +12,12 @@ interface AuthContextType {
   session: Session | null;
   userRole: UserRole;
   userRoles: string[];
+  isCompanyEmployee: boolean;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: "driver" | "client", additionalData?: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshRole: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,9 +27,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [isCompanyEmployee, setIsCompanyEmployee] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
+
+  // Fonction pour vérifier si c'est un employé d'entreprise
+  const checkIsCompanyEmployee = async (userId: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase
+        .from("company_employees")
+        .select("id, is_active")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+      
+      const isEmployee = !!data;
+      setIsCompanyEmployee(isEmployee);
+      return isEmployee;
+    } catch (error) {
+      logger.error("Error checking company employee", { error });
+      setIsCompanyEmployee(false);
+      return false;
+    }
+  };
 
   // Fonction simple pour récupérer le rôle - SANS CACHE
   const fetchUserRole = async (userId: string): Promise<UserRole> => {
@@ -56,12 +79,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setUserRoles(roles);
       setUserRole(primaryRole);
+      
+      // Si le rôle principal est client, vérifier s'il est employé d'entreprise
+      if (primaryRole === "client") {
+        await checkIsCompanyEmployee(userId);
+      } else {
+        setIsCompanyEmployee(false);
+      }
+      
       return primaryRole;
     } catch (error) {
       logger.error("Error fetching user role", { error });
       setUserRoles([]);
       setUserRole(null);
+      setIsCompanyEmployee(false);
       return null;
+    }
+  };
+
+  // Fonction publique pour forcer le rafraîchissement du rôle
+  const refreshRole = async () => {
+    if (user) {
+      await fetchUserRole(user.id);
     }
   };
 
@@ -197,16 +236,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ? "client"
             : null;
           
+          // Vérifier si c'est un employé d'entreprise pour les clients
+          let employeeStatus = false;
+          if (primaryRole === "client") {
+            const { data: empData } = await supabase
+              .from("company_employees")
+              .select("id, is_active")
+              .eq("user_id", session.user.id)
+              .eq("is_active", true)
+              .maybeSingle();
+            employeeStatus = !!empData;
+          }
+          
           // Une seule mise à jour groupée
           setSession(session);
           setUser(session.user);
           setUserRoles(roles);
           setUserRole(primaryRole);
+          setIsCompanyEmployee(employeeStatus);
         } else {
           setSession(null);
           setUser(null);
           setUserRoles([]);
           setUserRole(null);
+          setIsCompanyEmployee(false);
         }
       } catch (error) {
         logger.error("Init error", { error });
@@ -412,10 +465,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         session,
         userRole,
         userRoles,
+        isCompanyEmployee,
         loading,
         signUp,
         signIn,
         signOut,
+        refreshRole,
       }}
     >
       {children}
