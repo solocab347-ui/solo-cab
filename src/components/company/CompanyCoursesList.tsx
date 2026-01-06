@@ -247,18 +247,22 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pending">
-            En attente ({filterCourses("pending").length})
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="pending" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">En attente</span>
+            <span className="ml-1 shrink-0">({filterCourses("pending").length})</span>
           </TabsTrigger>
-          <TabsTrigger value="upcoming">
-            À venir ({filterCourses("upcoming").length})
+          <TabsTrigger value="upcoming" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">À venir</span>
+            <span className="ml-1 shrink-0">({filterCourses("upcoming").length})</span>
           </TabsTrigger>
-          <TabsTrigger value="completed">
-            Terminées ({filterCourses("completed").length})
+          <TabsTrigger value="completed" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">Terminées</span>
+            <span className="ml-1 shrink-0">({filterCourses("completed").length})</span>
           </TabsTrigger>
-          <TabsTrigger value="cancelled">
-            Annulées ({filterCourses("cancelled").length})
+          <TabsTrigger value="cancelled" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
+            <span className="truncate">Annulées</span>
+            <span className="ml-1 shrink-0">({filterCourses("cancelled").length})</span>
           </TabsTrigger>
         </TabsList>
 
