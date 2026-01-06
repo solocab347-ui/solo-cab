@@ -100,27 +100,24 @@ export default function GuestEmployeeCourseTracking() {
       if (result.course_id) {
         const { data: courseData } = await supabase
           .from("courses")
-          .select(`
-            id, status, updated_at, driver_id
-          `)
+          .select(`id, status, updated_at, driver_id`)
           .eq("id", result.course_id)
           .maybeSingle();
         
         if (courseData) {
-          result.course = courseData;
+          result.course = { ...courseData };
+          const driverId = (courseData as any).driver_id;
           
           // Fetch full driver info if course has a driver
-          if (courseData.driver_id) {
+          if (driverId) {
             const { data: driverData } = await supabase
               .from("drivers")
-              .select(`
-                id, user_id, company_name, contact_phone, contact_email, show_phone, show_email
-              `)
-              .eq("id", courseData.driver_id)
+              .select(`id, user_id, company_name, contact_phone, contact_email, show_phone, show_email`)
+              .eq("id", driverId)
               .maybeSingle();
             
             if (driverData) {
-              result.course.driver = driverData;
+              result.course.driver = { ...driverData };
               
               // Fetch driver profile
               if (driverData.user_id) {
@@ -129,7 +126,9 @@ export default function GuestEmployeeCourseTracking() {
                   .select("full_name, phone, email, profile_photo_url")
                   .eq("id", driverData.user_id)
                   .maybeSingle();
-                result.course.driver.profile = profile;
+                if (profile) {
+                  result.course.driver.profile = profile;
+                }
               }
               
               // Fetch driver vehicles
@@ -296,9 +295,10 @@ export default function GuestEmployeeCourseTracking() {
   const course = data.course;
   const company = data.company;
   
-  // Find accepted quote/driver
+  // Find accepted quote/driver - prioritize course driver (has real-time status)
   const acceptedQuote = request?.quotes?.find((q: any) => q.status === "accepted");
-  const acceptedDriver = acceptedQuote?.driver || course?.driver;
+  // PRIORITY: course.driver over acceptedQuote.driver (course driver is more accurate for in_progress/completed)
+  const acceptedDriver = course?.driver || acceptedQuote?.driver;
   const driverVehicle = acceptedDriver?.vehicles?.[0];
 
   // Determine current status - check course status first for accurate tracking

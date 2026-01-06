@@ -145,7 +145,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           ),
           final_course:courses(
             id,
-            status
+            status,
+            driver_id
           )
         `)
         .eq("company_id", companyId)
@@ -153,15 +154,36 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
       if (error) throw error;
 
-      // Fetch profiles
+      // Fetch profiles - include final_course driver
       const userIds = new Set<string>();
+      const courseDriverIds = new Set<string>();
+      
       data?.forEach((r: any) => {
         if (r.employee?.user_id) userIds.add(r.employee.user_id);
         if (r.accepted_driver?.user_id) userIds.add(r.accepted_driver.user_id);
         r.quotes?.forEach((q: any) => {
           if (q.driver?.user_id) userIds.add(q.driver.user_id);
         });
+        // Collect course driver IDs
+        if (r.final_course?.driver_id) {
+          courseDriverIds.add(r.final_course.driver_id);
+        }
       });
+
+      // Fetch course drivers separately
+      let courseDrivers: any[] = [];
+      if (courseDriverIds.size > 0) {
+        const { data: driversData } = await supabase
+          .from("drivers")
+          .select("id, user_id, company_name, contact_phone, contact_email, show_phone, show_email")
+          .in("id", Array.from(courseDriverIds));
+        courseDrivers = driversData || [];
+        
+        // Add their user_ids to fetch profiles
+        courseDrivers.forEach(d => {
+          if (d.user_id) userIds.add(d.user_id);
+        });
+      }
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -175,16 +197,27 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         .select("request_id, token")
         .in("request_id", requestIds);
 
-      return data?.map((r: any) => ({
-        ...r,
-        employeeProfile: profiles?.find(p => p.id === r.employee?.user_id),
-        driverProfile: profiles?.find(p => p.id === r.accepted_driver?.user_id),
-        trackingToken: invitations?.find(i => i.request_id === r.id)?.token,
-        quotesWithProfiles: r.quotes?.map((q: any) => ({
-          ...q,
-          profile: profiles?.find(p => p.id === q.driver?.user_id),
-        })),
-      })) || [];
+      return data?.map((r: any) => {
+        // Get course driver info
+        const courseDriver = courseDrivers.find(d => d.id === r.final_course?.driver_id);
+        const courseDriverProfile = courseDriver ? profiles?.find(p => p.id === courseDriver.user_id) : null;
+        
+        return {
+          ...r,
+          employeeProfile: profiles?.find(p => p.id === r.employee?.user_id),
+          driverProfile: profiles?.find(p => p.id === r.accepted_driver?.user_id),
+          // Add course driver info for real-time status tracking
+          courseDriver: courseDriver ? {
+            ...courseDriver,
+            profile: courseDriverProfile
+          } : null,
+          trackingToken: invitations?.find(i => i.request_id === r.id)?.token,
+          quotesWithProfiles: r.quotes?.map((q: any) => ({
+            ...q,
+            profile: profiles?.find(p => p.id === q.driver?.user_id),
+          })),
+        };
+      }) || [];
     },
   });
 
@@ -361,48 +394,55 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             {/* Quotes info */}
             {renderQuotesList(request.quotesWithProfiles)}
 
-            {/* Accepted driver - info complète avec contact pour historique */}
-            {request.status === "accepted" && request.driverProfile && (
-              <div className="p-3 bg-green-500/10 rounded-lg space-y-2">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={request.driverProfile.profile_photo_url} />
-                    <AvatarFallback className="bg-green-600/20 text-green-600 text-sm">
-                      {request.driverProfile.full_name?.charAt(0) || "C"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <span className="text-sm font-medium">{request.driverProfile.full_name}</span>
-                    {request.accepted_driver?.company_name && (
-                      <p className="text-xs text-muted-foreground">{request.accepted_driver.company_name}</p>
+            {/* Driver info - use courseDriver for in_progress/completed, otherwise accepted_driver */}
+            {(request.status === "accepted" || isInProgress || isCompleted) && (() => {
+              // Prioritize courseDriver (from the actual course) over accepted_driver (from the request)
+              const driver = request.courseDriver || request.accepted_driver;
+              const profile = request.courseDriver?.profile || request.driverProfile;
+              
+              if (!driver && !profile) return null;
+              
+              const bgColor = isInProgress ? 'bg-blue-500/10' : 'bg-green-500/10';
+              const borderColor = isInProgress ? 'border-blue-500/20' : 'border-green-500/20';
+              const fallbackBgColor = isInProgress ? 'bg-blue-600/20 text-blue-600' : 'bg-green-600/20 text-green-600';
+              
+              const phoneNumber = (driver?.show_phone && driver?.contact_phone) 
+                ? driver.contact_phone 
+                : profile?.phone;
+              const emailAddress = (driver?.show_email && driver?.contact_email) 
+                ? driver.contact_email 
+                : profile?.email;
+              
+              const showPhone = driver?.show_phone || !!profile?.phone;
+              const showEmail = driver?.show_email || !!profile?.email;
+              
+              return (
+                <div className={`p-3 ${bgColor} rounded-lg space-y-2`}>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={profile?.profile_photo_url} />
+                      <AvatarFallback className={`${fallbackBgColor} text-sm`}>
+                        {profile?.full_name?.charAt(0) || driver?.company_name?.charAt(0) || "C"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">{profile?.full_name || driver?.company_name || "Chauffeur"}</span>
+                      {driver?.company_name && profile?.full_name && (
+                        <p className="text-xs text-muted-foreground">{driver.company_name}</p>
+                      )}
+                      {isInProgress && (
+                        <p className="text-xs text-blue-600 font-medium">🚗 En route</p>
+                      )}
+                    </div>
+                    {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
+                      <span className="text-sm font-bold text-primary">
+                        {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
+                      </span>
                     )}
                   </div>
-                  {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
-                    <span className="text-sm font-bold text-primary">
-                      {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
-                    </span>
-                  )}
-                </div>
-                {/* Boutons de contact pour l'historique aussi */}
-                {(() => {
-                  const driver = request.accepted_driver;
-                  const profile = request.driverProfile;
-                  if (!driver || !profile) return null;
-                  
-                  const phoneNumber = (driver.show_phone && driver.contact_phone) 
-                    ? driver.contact_phone 
-                    : profile.phone;
-                  const emailAddress = (driver.show_email && driver.contact_email) 
-                    ? driver.contact_email 
-                    : profile.email;
-                  
-                  const showPhone = driver.show_phone || !!profile.phone;
-                  const showEmail = driver.show_email || !!profile.email;
-                  
-                  if (!showPhone && !showEmail) return null;
-                  
-                  return (
-                    <div className="flex gap-2 flex-wrap pt-2 border-t border-green-500/20">
+                  {/* Contact buttons */}
+                  {(showPhone || showEmail) && (phoneNumber || emailAddress) && (
+                    <div className={`flex gap-2 flex-wrap pt-2 border-t ${borderColor}`}>
                       {showPhone && phoneNumber && (
                         <Button 
                           variant="outline" 
@@ -430,10 +470,10 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                         </Button>
                       )}
                     </div>
-                  );
-                })()}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })()}
 
             {/* All refused - action to resend */}
             {request.status === "all_refused" && (
