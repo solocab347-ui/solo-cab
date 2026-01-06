@@ -303,13 +303,14 @@ export default function GuestEmployeeCourseTracking() {
 
   // Determine current status - check course status first for accurate tracking
   const getStatus = () => {
-    // Course statuses take priority
-    if (course?.status === "completed" || course?.status === "cancelled") return "completed";
+    // Course statuses take priority - these are the real-time status from the driver
+    if (course?.status === "completed") return "completed";
+    if (course?.status === "cancelled") return "cancelled";
     if (course?.status === "in_progress") return "in_progress";
     if (course?.status === "accepted" || course?.status === "confirmed") return "confirmed";
     
     // Fall back to quote/request status
-    if (acceptedQuote || request?.status === "accepted") return "driver_accepted";
+    if (acceptedQuote || request?.status === "accepted") return "confirmed";
     if (request?.status === "sent_to_drivers") return "waiting_driver";
     if (request?.status === "quotes_generated") return "quotes_ready";
     return "pending";
@@ -324,8 +325,6 @@ export default function GuestEmployeeCourseTracking() {
       case "in_progress":
         return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30"><Car className="w-3 h-3 mr-1" />En cours</Badge>;
       case "confirmed":
-        return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Confirmée</Badge>;
-      case "driver_accepted":
         return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Chauffeur confirmé</Badge>;
       case "waiting_driver":
         return <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30"><Clock className="w-3 h-3 mr-1" />En attente du chauffeur</Badge>;
@@ -562,17 +561,17 @@ export default function GuestEmployeeCourseTracking() {
               />
               <TimelineItem 
                 label="Devis générés" 
-                done={["quotes_ready", "waiting_driver", "driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                done={["quotes_ready", "waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
                 date={request?.quotes_generated_at}
               />
               <TimelineItem 
                 label="Envoyé au(x) chauffeur(s)" 
-                done={["waiting_driver", "driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                done={["waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
                 date={request?.sent_to_drivers_at}
               />
               <TimelineItem 
                 label="Chauffeur confirmé" 
-                done={["driver_accepted", "confirmed", "in_progress", "completed"].includes(status)}
+                done={["confirmed", "in_progress", "completed"].includes(status)}
                 date={acceptedQuote?.driver_response_at || request?.accepted_at}
               />
               <TimelineItem 
