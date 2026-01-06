@@ -416,9 +416,10 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
         totalAmount: Number(payment.amount),
         invoiceCount: payment.courses_count || relatedInvoices.length,
         invoices: relatedInvoices,
-        periodStart: new Date(payment.period_start),
-        periodEnd: new Date(payment.period_end),
-        dueDate: new Date(payment.period_end),
+        // Utiliser des dates valides avec fallback sur created_at ou la date actuelle
+        periodStart: payment.period_start ? new Date(payment.period_start) : new Date(payment.created_at),
+        periodEnd: payment.period_end ? new Date(payment.period_end) : new Date(payment.created_at),
+        dueDate: payment.period_end ? addDays(new Date(payment.period_end), 7) : addDays(new Date(payment.created_at), 7),
         status: 'received',
         paymentId: payment.id,
         sentAt: payment.sent_at ? new Date(payment.sent_at) : undefined,
@@ -675,11 +676,20 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     }
   };
 
+  // Fonction helper pour valider les dates (éviter epoch 1970)
+  const isValidDate = (date: Date) => date && date.getTime() > 0 && date.getFullYear() > 2000;
+
   const getPeriodLabel = (payment: GroupedPayment) => {
+    // Vérifier si la date est valide avant de l'utiliser
+    if (!isValidDate(payment.periodStart)) {
+      return format(new Date(), "d MMM yyyy", { locale: fr });
+    }
+    
     if (payment.paymentFrequency === "per_course") {
       return format(payment.periodStart, "d MMM yyyy", { locale: fr });
     } else if (payment.paymentFrequency === "weekly") {
-      return `Semaine du ${format(payment.periodStart, "d", { locale: fr })} au ${format(payment.periodEnd, "d MMM", { locale: fr })}`;
+      const validEnd = isValidDate(payment.periodEnd) ? payment.periodEnd : payment.periodStart;
+      return `Semaine du ${format(payment.periodStart, "d", { locale: fr })} au ${format(validEnd, "d MMM", { locale: fr })}`;
     } else {
       return format(payment.periodStart, "MMMM yyyy", { locale: fr });
     }
@@ -717,6 +727,11 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
+    // Valider les dates - utiliser la date actuelle si dates invalides (epoch 1970)
+    const isValidDate = (date: Date) => date && date.getTime() > 0 && date.getFullYear() > 2000;
+    const validPeriodStart = isValidDate(payment.periodStart) ? payment.periodStart : new Date();
+    const validDueDate = isValidDate(payment.dueDate) ? payment.dueDate : addDays(new Date(), 7);
+    
     // Colors
     const headerColor: [number, number, number] = [46, 125, 50]; // Green for invoices
     
@@ -730,11 +745,14 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     doc.text("FACTURE CONSOLIDÉE", pageWidth / 2, 22, { align: "center" });
     
     const invoiceNumber = payment.consolidatedInvoiceNumber || 
-      `FACT-ENT-${format(payment.periodStart, "yyyyMM")}-${payment.companyId.slice(0, 4).toUpperCase()}`;
+      `FACT-ENT-${format(validPeriodStart, "yyyyMM")}-${payment.companyId.slice(0, 4).toUpperCase()}`;
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.text(`N°: ${invoiceNumber}`, pageWidth / 2, 32, { align: "center" });
-    doc.text(`Période: ${getPeriodLabel(payment)}`, pageWidth / 2, 40, { align: "center" });
+    
+    // Période valide pour l'affichage
+    const periodLabel = isValidDate(payment.periodStart) ? getPeriodLabel(payment) : format(new Date(), "d MMM yyyy", { locale: fr });
+    doc.text(`Période: ${periodLabel}`, pageWidth / 2, 40, { align: "center" });
 
     // Driver info (left side) - EMETTEUR
     doc.setTextColor(0, 0, 0);
@@ -914,7 +932,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
       : "Virement bancaire";
     doc.text(`Mode de paiement: ${paymentMethodsText}`, 20, yPos);
     yPos += 5;
-    doc.text(`Échéance: ${format(payment.dueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    doc.text(`Échéance: ${format(validDueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
     yPos += 5;
     doc.text(`Fréquence: ${getFrequencyLabel(payment.paymentFrequency)}`, 20, yPos);
     
@@ -924,7 +942,7 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
     doc.text("Document généré automatiquement - Facture conforme aux mentions légales", pageWidth / 2, pageHeight - 15, { align: "center" });
     doc.text(`Date d'émission: ${format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, pageWidth / 2, pageHeight - 10, { align: "center" });
     
-    const fileName = `facture-consolidee-${payment.companyName.replace(/\s+/g, '-')}-${format(payment.periodStart, "yyyy-MM")}.pdf`;
+    const fileName = `facture-consolidee-${payment.companyName.replace(/\s+/g, '-')}-${format(validPeriodStart, "yyyy-MM")}.pdf`;
     doc.save(fileName);
     toast.success("Facture consolidée téléchargée");
   };

@@ -645,11 +645,20 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     }
   };
 
+  // Fonction helper pour valider les dates
+  const isValidDate = (date: Date) => date && date.getTime() > 0 && date.getFullYear() > 2000;
+
   const getPeriodLabel = (payment: GroupedPayment) => {
+    // Vérifier si la date est valide avant de l'utiliser
+    if (!isValidDate(payment.periodStart)) {
+      return format(new Date(), "d MMM yyyy", { locale: fr });
+    }
+    
     if (payment.paymentFrequency === "per_course") {
       return format(payment.periodStart, "d MMM yyyy", { locale: fr });
     } else if (payment.paymentFrequency === "weekly") {
-      return `Semaine du ${format(payment.periodStart, "d", { locale: fr })} au ${format(payment.periodEnd, "d MMM", { locale: fr })}`;
+      const validEnd = isValidDate(payment.periodEnd) ? payment.periodEnd : payment.periodStart;
+      return `Semaine du ${format(payment.periodStart, "d", { locale: fr })} au ${format(validEnd, "d MMM", { locale: fr })}`;
     } else {
       return format(payment.periodStart, "MMMM yyyy", { locale: fr });
     }
@@ -765,9 +774,11 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(150, 150, 150);
-    doc.text(`Date d'échéance: ${format(payment.dueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
+    const validDueDate = isValidDate(payment.dueDate) ? payment.dueDate : addDays(new Date(), 7);
+    const validPeriodStart = isValidDate(payment.periodStart) ? payment.periodStart : new Date();
+    doc.text(`Date d'échéance: ${format(validDueDate, "d MMMM yyyy", { locale: fr })}`, 20, yPos);
     
-    const fileName = `recap-paiement-${payment.driverName.replace(/\s+/g, '-')}-${format(payment.periodStart, "yyyy-MM-dd")}.pdf`;
+    const fileName = `recap-paiement-${payment.driverName.replace(/\s+/g, '-')}-${format(validPeriodStart, "yyyy-MM-dd")}.pdf`;
     doc.save(fileName);
     toast.success("Récapitulatif téléchargé");
   };
