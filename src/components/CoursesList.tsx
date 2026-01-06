@@ -576,6 +576,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       setShowPaymentDialog(false);
       setPaymentMethod("");
 
+      // Refetch courses to get the new facture data
+      await fetchCourses();
+
       // AFFICHER LE RAPPEL DE COMMISSION
       if (courseToComplete) {
         setCompletedCourseInfo({
