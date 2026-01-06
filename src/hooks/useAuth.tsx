@@ -338,8 +338,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         navigate("/fleet-dashboard", { replace: true });
       } else if (role === "driver") {
         navigate("/driver-dashboard", { replace: true });
+      } else if (role === "company") {
+        navigate("/company-dashboard", { replace: true });
       } else if (role === "client") {
-        navigate("/client-dashboard", { replace: true });
+        // Vérifier si c'est un collaborateur d'entreprise
+        const { data: employeeData } = await supabase
+          .from("company_employees")
+          .select("id, is_active")
+          .eq("user_id", data.user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        
+        if (employeeData) {
+          navigate("/company-employee-dashboard", { replace: true });
+        } else {
+          navigate("/client-dashboard", { replace: true });
+        }
       } else {
         logger.warn("Unknown role, redirecting to home");
         navigate("/", { replace: true });
