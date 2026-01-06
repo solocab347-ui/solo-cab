@@ -37,10 +37,12 @@ interface Driver {
   working_sectors: string[] | null;
   vehicle_model: string | null;
   rating: number | null;
+  total_rides: number | null;
   contact_phone: string | null;
   contact_email: string | null;
   show_phone: boolean;
   show_email: boolean;
+  show_rating_partners: boolean;
   display_driver_name: boolean;
   display_company_name: boolean;
   services_offered: string[] | null;
@@ -98,7 +100,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       // Récupérer les chauffeurs
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, company_name")
+        .select("id, user_id, working_sectors, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, company_name")
         .in("id", driverIds);
 
       if (driversError) {
@@ -124,10 +126,12 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
+          total_rides: driver.total_rides,
           contact_phone: driver.contact_phone,
           contact_email: driver.contact_email,
           show_phone: driver.show_phone ?? false,
           show_email: driver.show_email ?? false,
+          show_rating_partners: driver.show_rating_partners ?? false,
           display_driver_name: driver.display_driver_name ?? true,
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
@@ -169,7 +173,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Afficher tous les chauffeurs visibles aux entreprises
         const { data, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .limit(20);
@@ -189,7 +193,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Chauffeurs trouvés par nom d'entreprise ou secteur
         const { data: byCompany, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .ilike("company_name", `%${searchQuery}%`)
@@ -202,7 +206,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -238,10 +242,12 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           working_sectors: driver.working_sectors,
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
+          total_rides: driver.total_rides,
           contact_phone: driver.contact_phone,
           contact_email: driver.contact_email,
           show_phone: driver.show_phone ?? false,
           show_email: driver.show_email ?? false,
+          show_rating_partners: driver.show_rating_partners ?? false,
           display_driver_name: driver.display_driver_name ?? true,
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
@@ -431,7 +437,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                 {getMainSector(driver.working_sectors)}
                               </p>
                             )}
-                            {driver.rating && driver.rating > 0 && (
+                            {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
                               <div className="flex items-center gap-1 mt-1">
                                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                 <span className="text-sm font-semibold">{driver.rating.toFixed(1)}</span>
@@ -568,7 +574,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     {getMainSector(driver.working_sectors)}
                                   </p>
                                 )}
-                                {driver.rating && driver.rating > 0 && (
+                                {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
                                   <div className="flex items-center gap-1 mt-1">
                                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                                     <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
