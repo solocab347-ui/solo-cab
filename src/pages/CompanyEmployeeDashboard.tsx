@@ -37,7 +37,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/NotificationBell";
-import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
+import { EmployeeDocumentsHub } from "@/components/company/employee/EmployeeDocumentsHub";
 import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
 import { EmployeePhotoUpload } from "@/components/company/employee/EmployeePhotoUpload";
 import { EmployeeExpenseReports } from "@/components/company/employee/EmployeeExpenseReports";
@@ -379,11 +379,11 @@ export default function CompanyEmployeeDashboard() {
             
             {hasInvoicesTab && (
               <TabsTrigger 
-                value="invoices" 
+                value="documents" 
                 className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
               >
                 <FileText className="w-6 h-6" />
-                <span className="text-xs sm:text-sm">Factures</span>
+                <span className="text-xs sm:text-sm">Documents</span>
               </TabsTrigger>
             )}
 
@@ -587,11 +587,12 @@ export default function CompanyEmployeeDashboard() {
           </TabsContent>
 
 
-          {/* Invoices Tab */}
+          {/* Documents Tab (Devis + Factures) */}
           {hasInvoicesTab && (
-            <TabsContent value="invoices" className="animate-fade-in">
-              <CompanyEmployeeFactures 
-                employeeId={employee.id} 
+            <TabsContent value="documents" className="animate-fade-in">
+              <EmployeeDocumentsHub 
+                employeeId={employee.id}
+                companyId={employee.company_id}
                 companyName={employee.company.company_name} 
               />
             </TabsContent>
