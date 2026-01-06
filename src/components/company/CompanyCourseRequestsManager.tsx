@@ -174,9 +174,11 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     toast.success("Lien de suivi copié !");
   };
 
+  // Séparer: en attente de réponse, confirmées/en cours, et terminées
   const pendingRequests = requests?.filter(r => ["draft", "quotes_generated", "sent_to_drivers"].includes(r.status)) || [];
   const allRefusedRequests = requests?.filter(r => r.status === "all_refused") || [];
-  const completedRequests = requests?.filter(r => ["accepted", "cancelled"].includes(r.status)) || [];
+  const acceptedRequests = requests?.filter(r => r.status === "accepted") || [];
+  const completedRequests = requests?.filter(r => r.status === "cancelled") || [];
 
   if (isLoading) {
     return (
@@ -399,23 +401,31 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
       {requests && requests.length > 0 ? (
         <Tabs defaultValue="pending">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="pending" className="relative">
-              En cours
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="pending" className="relative text-xs sm:text-sm">
+              En attente
               {(pendingRequests.length + allRefusedRequests.length) > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs">
                   {pendingRequests.length + allRefusedRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="completed">Terminées</TabsTrigger>
+            <TabsTrigger value="accepted" className="relative text-xs sm:text-sm">
+              Confirmées
+              {acceptedRequests.length > 0 && (
+                <Badge className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs bg-green-600">
+                  {acceptedRequests.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="text-xs sm:text-sm">Historique</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending" className="mt-4 space-y-4">
             {/* All refused requests - prioritize display */}
             {allRefusedRequests.length > 0 && (
               <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2 text-red-600">
+                <h3 className="font-medium mb-3 flex items-center gap-2 text-red-600 text-sm">
                   <AlertTriangle className="w-4 h-4" />
                   Demandes refusées ({allRefusedRequests.length})
                 </h3>
@@ -426,7 +436,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             {/* Pending requests */}
             {pendingRequests.length > 0 && (
               <div>
-                <h3 className="font-medium mb-3 flex items-center gap-2">
+                <h3 className="font-medium mb-3 flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-amber-500" />
                   En attente de réponse ({pendingRequests.length})
                 </h3>
@@ -437,7 +447,139 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             {pendingRequests.length === 0 && allRefusedRequests.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p>Aucune demande en cours</p>
+                <p>Aucune demande en attente</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="accepted" className="mt-4 space-y-4">
+            {acceptedRequests.length > 0 ? (
+              <div>
+                <h3 className="font-medium mb-3 flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  Courses confirmées ({acceptedRequests.length})
+                </h3>
+                {acceptedRequests.map((request) => (
+                  <Card key={request.id} className="mb-4 border-green-500/30 bg-green-500/5">
+                    <CardContent className="pt-4 space-y-4">
+                      {/* Header with status */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <Badge className="bg-green-600 text-white">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Confirmée
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                        </span>
+                      </div>
+
+                      {/* Driver info */}
+                      {request.driverProfile && (
+                        <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={request.driverProfile.profile_photo_url} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {request.driverProfile.full_name?.charAt(0) || "C"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-semibold">{request.driverProfile.full_name}</p>
+                            <p className="text-sm text-muted-foreground">Chauffeur assigné</p>
+                          </div>
+                          {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-primary">
+                                {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
+                              </p>
+                              <p className="text-xs text-muted-foreground">Prix confirmé</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Employee */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span>
+                          <strong>Collaborateur :</strong> {request.is_guest_employee 
+                            ? `${request.guest_employee_name} (non-inscrit)`
+                            : request.employeeProfile?.full_name || "Collaborateur"
+                          }
+                        </span>
+                      </div>
+
+                      {/* Addresses */}
+                      <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Départ</p>
+                            <p className="font-medium">{request.pickup_address}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm">
+                          <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Arrivée</p>
+                            <p className="font-medium">{request.destination_address}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tracking link for guest employees */}
+                      {request.is_guest_employee && request.trackingToken && (
+                        <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                          <ExternalLink className="w-4 h-4 text-primary" />
+                          <span className="text-sm flex-1">Lien de suivi collaborateur</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="h-8"
+                            onClick={() => copyTrackingLink(request.trackingToken)}
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copier
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Timeline */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Historique</p>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>
+                            <span>Demande créée le {format(new Date(request.created_at), "d MMM à HH:mm", { locale: fr })}</span>
+                          </div>
+                          {request.quotes_generated_at && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                              <span>Devis générés le {format(new Date(request.quotes_generated_at), "d MMM à HH:mm", { locale: fr })}</span>
+                            </div>
+                          )}
+                          {request.sent_to_drivers_at && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                              <span>Envoyé aux chauffeurs le {format(new Date(request.sent_to_drivers_at), "d MMM à HH:mm", { locale: fr })}</span>
+                            </div>
+                          )}
+                          {request.accepted_at && (
+                            <div className="flex items-center gap-2 text-green-600 font-medium">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                              <span>Accepté le {format(new Date(request.accepted_at), "d MMM à HH:mm", { locale: fr })}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Aucune course confirmée</p>
+                <p className="text-sm mt-1">Les courses acceptées par un chauffeur apparaîtront ici</p>
               </div>
             )}
           </TabsContent>
@@ -445,8 +587,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           <TabsContent value="completed" className="mt-4">
             {completedRequests.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p>Aucune demande terminée</p>
+                <Clock className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Aucune demande dans l'historique</p>
               </div>
             ) : (
               completedRequests.map(renderRequestCard)
