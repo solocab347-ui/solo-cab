@@ -8215,6 +8215,10 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_company_admin_for_employees: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
       is_company_course: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
@@ -8230,6 +8234,10 @@ export type Database = {
           p_driver_id?: string
           p_fleet_manager_id?: string
         }
+        Returns: boolean
+      }
+      is_valid_employee_invitation: {
+        Args: { p_company_id: string; p_invitation_id: string }
         Returns: boolean
       }
       mark_commission_paid: {
