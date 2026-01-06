@@ -138,9 +138,9 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     },
   });
 
-  // Fetch unpaid invoices for this company
-  const { data: unpaidInvoices, isLoading: loadingInvoices } = useQuery({
-    queryKey: ["company-unpaid-invoices", companyId],
+  // Fetch ALL invoices for this company (paid and unpaid)
+  const { data: allCompanyInvoices, isLoading: loadingInvoices } = useQuery({
+    queryKey: ["company-all-invoices", companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("factures")
@@ -153,40 +153,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           created_at,
           driver_id,
           course_id,
-          courses!inner(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes
-          )
-        `)
-        .eq("company_id", companyId)
-        .neq("payment_status", "paid")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch all invoices for history
-  const { data: allInvoices, isLoading: loadingAllInvoices } = useQuery({
-    queryKey: ["company-all-invoices-history", companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("factures")
-        .select(`
-          id,
-          invoice_number,
-          invoice_number_generated,
-          amount,
-          payment_status,
-          created_at,
-          driver_id,
-          course_id,
-          courses!inner(
+          courses(
             id,
             pickup_address,
             destination_address,
@@ -242,9 +209,9 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
   // Build course details with driver info for history
   const courseDetails = useMemo<CourseDetails[]>(() => {
-    if (!allInvoices) return [];
+    if (!allCompanyInvoices) return [];
     
-    return allInvoices.map((invoice: any) => ({
+    return allCompanyInvoices.map((invoice: any) => ({
       id: invoice.id,
       pickup_address: invoice.courses?.pickup_address || "",
       destination_address: invoice.courses?.destination_address || "",
@@ -258,7 +225,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       driverPhoto: driverMap[invoice.driver_id]?.photo || null,
       driverCompany: driverMap[invoice.driver_id]?.company || ""
     }));
-  }, [allInvoices, driverMap]);
+  }, [allCompanyInvoices, driverMap]);
 
   // Mark payment as sent mutation
   const markPaymentSentMutation = useMutation({
@@ -346,14 +313,24 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     }
   });
 
-  // Group invoices by driver and payment period
+  // Build payment groups from company_payments + outstanding balances from agreements
   const groupedPayments = useMemo(() => {
-    if (!agreements || !unpaidInvoices) return [];
+    if (!agreements) return [];
 
     const today = new Date();
     const groups: GroupedPayment[] = [];
 
-    const invoicesByDriver = unpaidInvoices.reduce((acc: any, invoice: any) => {
+    // Create a map of existing payments by driver
+    const paymentsByDriver = (companyPayments || []).reduce((acc: Record<string, any[]>, payment: any) => {
+      if (!acc[payment.driver_id]) {
+        acc[payment.driver_id] = [];
+      }
+      acc[payment.driver_id].push(payment);
+      return acc;
+    }, {});
+
+    // Get invoices by driver for building payment details
+    const invoicesByDriver = (allCompanyInvoices || []).reduce((acc: any, invoice: any) => {
       if (!acc[invoice.driver_id]) {
         acc[invoice.driver_id] = [];
       }
@@ -361,77 +338,77 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       return acc;
     }, {});
 
-    const sentPaymentsByDriver = (companyPayments || []).reduce((acc: any, payment: any) => {
-      if (payment.status === "sent" || payment.status === "received") {
-        const key = `${payment.driver_id}-${payment.period_start}`;
-        acc[key] = payment;
-      }
-      return acc;
-    }, {});
-
     agreements?.forEach((agreement: any) => {
+      const driverPayments = paymentsByDriver[agreement.driver_id] || [];
       const driverInvoices = invoicesByDriver[agreement.driver_id] || [];
-      if (driverInvoices.length === 0) return;
-
       const paymentFrequency = agreement.payment_frequency || "per_course";
       const paymentDay = agreement.payment_day || 1;
 
-      if (paymentFrequency === "per_course") {
-        driverInvoices.forEach((invoice: any) => {
-          const invoiceDate = new Date(invoice.created_at);
-          const dueDate = addDays(invoiceDate, 7);
-          const paymentKey = `${agreement.driver_id}-${invoiceDate.toISOString()}`;
-          const existingPayment = sentPaymentsByDriver[paymentKey];
-          
-          groups.push({
-            driverId: agreement.driver_id,
-            driverName: agreement.driverProfile?.full_name || "Chauffeur",
-            driverCompany: agreement.driver?.company_name || "",
-            driverPhoto: agreement.driverProfile?.profile_photo_url,
-            driverPhone: agreement.driver?.phone,
-            agreementId: agreement.id,
-            paymentFrequency,
-            paymentMethods: agreement.payment_methods || [],
-            paymentDay,
-            totalAmount: invoice.amount,
-            invoiceCount: 1,
-            invoices: [invoice],
-            periodStart: invoiceDate,
-            periodEnd: invoiceDate,
-            dueDate,
-            status: existingPayment?.status === "received" ? 'received' : 
-                   existingPayment?.status === "sent" ? 'sent' :
-                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
-            paymentId: existingPayment?.id,
-            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference,
-            documentsCount: existingPayment?.company_payment_documents?.length || 0
-          });
-        });
-      } else if (paymentFrequency === "weekly") {
-        const weeklyGroups: { [key: string]: any[] } = {};
+      // Add existing payments (sent or received)
+      driverPayments.forEach((payment: any) => {
+        const periodStart = payment.period_start ? new Date(payment.period_start) : new Date(payment.created_at);
+        const periodEnd = payment.period_end ? new Date(payment.period_end) : periodStart;
+        const dueDate = addDays(periodEnd, 7);
         
-        driverInvoices.forEach((invoice: any) => {
-          const invoiceDate = new Date(invoice.courses?.scheduled_date || invoice.created_at);
-          const weekStart = startOfWeek(invoiceDate, { weekStartsOn: 1 });
-          const weekKey = format(weekStart, "yyyy-ww");
-          
-          if (!weeklyGroups[weekKey]) {
-            weeklyGroups[weekKey] = [];
-          }
-          weeklyGroups[weekKey].push(invoice);
+        // Find related invoices for this payment
+        const relatedInvoices = payment.course_ids 
+          ? driverInvoices.filter((inv: any) => payment.course_ids.includes(inv.course_id))
+          : [];
+
+        groups.push({
+          driverId: agreement.driver_id,
+          driverName: agreement.driverProfile?.full_name || "Chauffeur",
+          driverCompany: agreement.driver?.company_name || "",
+          driverPhoto: agreement.driverProfile?.profile_photo_url,
+          driverPhone: agreement.driver?.phone,
+          agreementId: agreement.id,
+          paymentFrequency,
+          paymentMethods: agreement.payment_methods || [],
+          paymentDay,
+          totalAmount: Number(payment.amount),
+          invoiceCount: payment.courses_count || relatedInvoices.length || 1,
+          invoices: relatedInvoices.length > 0 ? relatedInvoices : [{
+            amount: payment.amount,
+            created_at: payment.created_at,
+            courses: { 
+              scheduled_date: payment.period_start,
+              pickup_address: "Course effectuée",
+              destination_address: ""
+            }
+          }],
+          periodStart,
+          periodEnd,
+          dueDate,
+          status: payment.status === "received" ? 'received' : 'sent',
+          paymentId: payment.id,
+          sentAt: payment.sent_at ? new Date(payment.sent_at) : undefined,
+          paymentReference: payment.payment_reference,
+          documentsCount: payment.company_payment_documents?.length || 0
         });
+      });
 
-        Object.entries(weeklyGroups).forEach(([_, invoices]) => {
-          const firstInvoice = invoices[0];
-          const invoiceDate = new Date(firstInvoice.courses?.scheduled_date || firstInvoice.created_at);
-          const weekStart = startOfWeek(invoiceDate, { weekStartsOn: 1 });
-          const weekEnd = endOfWeek(invoiceDate, { weekStartsOn: 1 });
-          const dueDate = addDays(weekEnd, paymentDay);
-          const paymentKey = `${agreement.driver_id}-${weekStart.toISOString()}`;
-          const existingPayment = sentPaymentsByDriver[paymentKey];
+      // Add pending payments from outstanding balance (not yet tracked in company_payments)
+      if (agreement.outstanding_balance > 0) {
+        // Check if there's already a pending payment for this
+        const hasPendingPaymentForBalance = driverPayments.some((p: any) => 
+          p.status !== 'received' && Number(p.amount) === Number(agreement.outstanding_balance)
+        );
 
-          const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
+        if (!hasPendingPaymentForBalance) {
+          // Find unpaid invoices for this driver
+          const unpaidDriverInvoices = driverInvoices.filter((inv: any) => 
+            inv.payment_status !== 'paid'
+          );
+          
+          // If no unpaid invoices found, create from outstanding balance
+          const invoicesToUse = unpaidDriverInvoices.length > 0 
+            ? unpaidDriverInvoices 
+            : driverInvoices.slice(0, 1);
+
+          const periodStart = invoicesToUse[0]?.courses?.scheduled_date 
+            ? new Date(invoicesToUse[0].courses.scheduled_date) 
+            : new Date();
+          const dueDate = addDays(periodStart, 7);
 
           groups.push({
             driverId: agreement.driver_id,
@@ -443,76 +420,39 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             paymentFrequency,
             paymentMethods: agreement.payment_methods || [],
             paymentDay,
-            totalAmount,
-            invoiceCount: invoices.length,
-            invoices,
-            periodStart: weekStart,
-            periodEnd: weekEnd,
+            totalAmount: Number(agreement.outstanding_balance),
+            invoiceCount: unpaidDriverInvoices.length || 1,
+            invoices: invoicesToUse.length > 0 ? invoicesToUse : [{
+              amount: agreement.outstanding_balance,
+              created_at: new Date().toISOString(),
+              courses: { 
+                scheduled_date: new Date().toISOString(),
+                pickup_address: "Course effectuée",
+                destination_address: ""
+              }
+            }],
+            periodStart,
+            periodEnd: periodStart,
             dueDate,
-            status: existingPayment?.status === "received" ? 'received' : 
-                   existingPayment?.status === "sent" ? 'sent' :
-                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
-            paymentId: existingPayment?.id,
-            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference,
-            documentsCount: existingPayment?.company_payment_documents?.length || 0
+            status: dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
+            paymentId: undefined,
+            sentAt: undefined,
+            paymentReference: undefined,
+            documentsCount: 0
           });
-        });
-      } else if (paymentFrequency === "monthly") {
-        const monthlyGroups: { [key: string]: any[] } = {};
-        
-        driverInvoices.forEach((invoice: any) => {
-          const invoiceDate = new Date(invoice.courses?.scheduled_date || invoice.created_at);
-          const monthKey = format(invoiceDate, "yyyy-MM");
-          
-          if (!monthlyGroups[monthKey]) {
-            monthlyGroups[monthKey] = [];
-          }
-          monthlyGroups[monthKey].push(invoice);
-        });
-
-        Object.entries(monthlyGroups).forEach(([_, invoices]) => {
-          const firstInvoice = invoices[0];
-          const invoiceDate = new Date(firstInvoice.courses?.scheduled_date || firstInvoice.created_at);
-          const monthStart = startOfMonth(invoiceDate);
-          const monthEnd = endOfMonth(invoiceDate);
-          const nextMonth = addDays(monthEnd, 1);
-          const dueDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), paymentDay);
-          const paymentKey = `${agreement.driver_id}-${monthStart.toISOString()}`;
-          const existingPayment = sentPaymentsByDriver[paymentKey];
-
-          const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
-
-          groups.push({
-            driverId: agreement.driver_id,
-            driverName: agreement.driverProfile?.full_name || "Chauffeur",
-            driverCompany: agreement.driver?.company_name || "",
-            driverPhoto: agreement.driverProfile?.profile_photo_url,
-            driverPhone: agreement.driver?.phone,
-            agreementId: agreement.id,
-            paymentFrequency,
-            paymentMethods: agreement.payment_methods || [],
-            paymentDay,
-            totalAmount,
-            invoiceCount: invoices.length,
-            invoices,
-            periodStart: monthStart,
-            periodEnd: monthEnd,
-            dueDate,
-            status: existingPayment?.status === "received" ? 'received' : 
-                   existingPayment?.status === "sent" ? 'sent' :
-                   dueDate < today ? 'overdue' : dueDate <= addDays(today, 3) ? 'due' : 'upcoming',
-            paymentId: existingPayment?.id,
-            sentAt: existingPayment?.sent_at ? new Date(existingPayment.sent_at) : undefined,
-            paymentReference: existingPayment?.payment_reference,
-            documentsCount: existingPayment?.company_payment_documents?.length || 0
-          });
-        });
+        }
       }
     });
 
-    return groups.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
-  }, [agreements, unpaidInvoices, companyPayments]);
+    return groups.sort((a, b) => {
+      // Sort by status priority first (overdue > due > upcoming > sent > received)
+      const statusOrder = { overdue: 0, due: 1, upcoming: 2, sent: 3, received: 4 };
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status];
+      if (statusDiff !== 0) return statusDiff;
+      // Then by date
+      return a.dueDate.getTime() - b.dueDate.getTime();
+    });
+  }, [agreements, allCompanyInvoices, companyPayments]);
 
   const pendingPayments = groupedPayments.filter(p => !['sent', 'received'].includes(p.status));
   const sentPayments = groupedPayments.filter(p => p.status === 'sent');
@@ -704,7 +644,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     }
   };
 
-  if (loadingAgreements || loadingInvoices || loadingPayments || loadingAllInvoices) {
+  if (loadingAgreements || loadingInvoices || loadingPayments) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
