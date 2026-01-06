@@ -18,6 +18,11 @@ import {
 interface DriverInfo {
   id: string;
   user_id: string;
+  company_name?: string;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  show_phone?: boolean;
+  show_email?: boolean;
   profile?: { full_name?: string; phone?: string; email?: string; profile_photo_url?: string };
   vehicles?: Array<{ brand?: string; model?: string; license_plate?: string; color?: string }>;
 }
@@ -81,7 +86,7 @@ export default function GuestEmployeeCourseTracking() {
           company:companies(company_name, logo_url),
           course:courses(
             id, status,
-            driver:drivers(id, user_id),
+            driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email),
             devis(amount, quote_number)
           )
         `)
@@ -107,12 +112,12 @@ export default function GuestEmployeeCourseTracking() {
         if (requestData) {
           result.request = requestData;
 
-          // Fetch quotes for this request
+          // Fetch quotes for this request with driver visibility info
           const { data: quotesData } = await supabase
             .from("company_course_quotes")
             .select(`
               id, status, total_price, distance_km, duration_minutes, driver_response_at,
-              driver:drivers(id, user_id)
+              driver:drivers(id, user_id, company_name, contact_phone, contact_email, show_phone, show_email)
             `)
             .eq("request_id", result.request_id);
           
@@ -370,14 +375,19 @@ export default function GuestEmployeeCourseTracking() {
             <CardContent className="space-y-4">
               {/* Driver Profile */}
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-16 w-16 border-2 border-primary/20">
                   <AvatarImage src={acceptedDriver.profile?.profile_photo_url || undefined} />
                   <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                    {acceptedDriver.profile?.full_name?.charAt(0) || "C"}
+                    {acceptedDriver.profile?.full_name?.charAt(0) || acceptedDriver.company_name?.charAt(0) || "C"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{acceptedDriver.profile?.full_name}</h3>
+                  <h3 className="font-semibold text-lg">
+                    {acceptedDriver.profile?.full_name || acceptedDriver.company_name || "Chauffeur"}
+                  </h3>
+                  {acceptedDriver.company_name && acceptedDriver.profile?.full_name && (
+                    <p className="text-sm text-muted-foreground">{acceptedDriver.company_name}</p>
+                  )}
                 </div>
               </div>
 
@@ -393,33 +403,51 @@ export default function GuestEmployeeCourseTracking() {
                 </div>
               )}
 
-              {/* Contact Buttons */}
-              <div className="flex gap-2">
-                {acceptedDriver.profile?.phone && (
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    asChild
-                  >
-                    <a href={`tel:${acceptedDriver.profile.phone}`}>
-                      <Phone className="w-4 h-4 mr-2" />
-                      Appeler
-                    </a>
-                  </Button>
-                )}
-                {acceptedDriver.profile?.email && (
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    asChild
-                  >
-                    <a href={`mailto:${acceptedDriver.profile.email}`}>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                )}
-              </div>
+              {/* Contact Buttons - Respecter la visibilité définie par le chauffeur */}
+              {(() => {
+                // Priorité: contact_phone/email B2B si show_phone/email activé, sinon profil
+                const phoneNumber = (acceptedDriver.show_phone && acceptedDriver.contact_phone) 
+                  ? acceptedDriver.contact_phone 
+                  : acceptedDriver.profile?.phone;
+                const emailAddress = (acceptedDriver.show_email && acceptedDriver.contact_email) 
+                  ? acceptedDriver.contact_email 
+                  : acceptedDriver.profile?.email;
+                
+                // Afficher seulement si le chauffeur a activé la visibilité OU si c'est dans le profil
+                const showPhone = acceptedDriver.show_phone || !!acceptedDriver.profile?.phone;
+                const showEmail = acceptedDriver.show_email || !!acceptedDriver.profile?.email;
+                
+                if (!showPhone && !showEmail) return null;
+                
+                return (
+                  <div className="flex gap-2 flex-wrap">
+                    {showPhone && phoneNumber && (
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 min-w-[140px]"
+                        asChild
+                      >
+                        <a href={`tel:${phoneNumber}`}>
+                          <Phone className="w-4 h-4 mr-2" />
+                          Appeler
+                        </a>
+                      </Button>
+                    )}
+                    {showEmail && emailAddress && (
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 min-w-[140px]"
+                        asChild
+                      >
+                        <a href={`mailto:${emailAddress}`}>
+                          <Mail className="w-4 h-4 mr-2" />
+                          Email
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         )}

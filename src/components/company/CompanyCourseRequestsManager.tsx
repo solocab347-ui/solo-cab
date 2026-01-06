@@ -13,7 +13,7 @@ import { fr } from "date-fns/locale";
 import { 
   Plus, MapPin, Calendar, Users, Clock, CheckCircle, 
   XCircle, Send, Loader2, Euro, Car, RefreshCw, AlertTriangle,
-  Copy, ExternalLink, Play
+  Copy, ExternalLink, Play, Phone, Mail
 } from "lucide-react";
 import { CompanyCourseBookingWizard, WizardStep } from "./course-booking";
 
@@ -129,7 +129,11 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           accepted_driver:drivers(
             id,
             company_name,
-            user_id
+            user_id,
+            contact_phone,
+            contact_email,
+            show_phone,
+            show_email
           ),
           quotes:company_course_quotes(
             id,
@@ -137,7 +141,11 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             total_price,
             status,
             driver_response_at,
-            driver:drivers(user_id, company_name)
+            driver:drivers(user_id, company_name, contact_phone, contact_email, show_phone, show_email)
+          ),
+          final_course:courses(
+            id,
+            status
           )
         `)
         .eq("company_id", companyId)
@@ -157,7 +165,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, profile_photo_url")
+        .select("id, full_name, profile_photo_url, phone, email")
         .in("id", Array.from(userIds));
 
       // Fetch tracking invitations for guest employees
@@ -221,10 +229,20 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
   };
 
   // Séparer: en attente de réponse, confirmées/en cours, et terminées
+  // Prendre en compte le statut de la course finale (completed = historique)
   const pendingRequests = requests?.filter(r => ["draft", "quotes_generated", "sent_to_drivers"].includes(r.status)) || [];
   const allRefusedRequests = requests?.filter(r => r.status === "all_refused") || [];
-  const acceptedRequests = requests?.filter(r => r.status === "accepted") || [];
-  const completedRequests = requests?.filter(r => r.status === "cancelled") || [];
+  // Courses acceptées mais pas encore terminées (course en cours ou confirmée)
+  const acceptedRequests = requests?.filter(r => 
+    r.status === "accepted" && 
+    r.final_course?.status !== "completed" && 
+    r.final_course?.status !== "cancelled"
+  ) || [];
+  // Historique: annulées OU terminées (course.status === completed)
+  const completedRequests = requests?.filter(r => 
+    r.status === "cancelled" || 
+    (r.status === "accepted" && (r.final_course?.status === "completed" || r.final_course?.status === "cancelled"))
+  ) || [];
 
   if (isLoading) {
     return (
@@ -270,14 +288,22 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
     );
   };
 
-  const renderRequestCard = (request: any) => (
-    <Card key={request.id} className="mb-4">
+  const renderRequestCard = (request: any) => {
+    // Déterminer si c'est une course terminée
+    const isCompleted = request.status === "accepted" && request.final_course?.status === "completed";
+    
+    return (
+    <Card key={request.id} className={`mb-4 ${isCompleted ? 'bg-green-500/5 border-green-500/20' : ''}`}>
       <CardContent className="pt-4">
         <div className="flex flex-col gap-4">
           <div className="flex-1 space-y-3">
             {/* Status and Date */}
             <div className="flex items-center gap-3 flex-wrap">
-              {getStatusBadge(request.status)}
+              {isCompleted ? (
+                <Badge className="bg-green-600 text-white">
+                  <CheckCircle className="w-3 h-3 mr-1" />Terminée
+                </Badge>
+              ) : getStatusBadge(request.status)}
               <span className="text-sm text-muted-foreground">
                 {format(new Date(request.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
               </span>
@@ -326,11 +352,77 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             {/* Quotes info */}
             {renderQuotesList(request.quotesWithProfiles)}
 
-            {/* Accepted driver */}
+            {/* Accepted driver - info complète avec contact pour historique */}
             {request.status === "accepted" && request.driverProfile && (
-              <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm">Accepté par <strong>{request.driverProfile.full_name}</strong></span>
+              <div className="p-3 bg-green-500/10 rounded-lg space-y-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={request.driverProfile.profile_photo_url} />
+                    <AvatarFallback className="bg-green-600/20 text-green-600 text-sm">
+                      {request.driverProfile.full_name?.charAt(0) || "C"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">{request.driverProfile.full_name}</span>
+                    {request.accepted_driver?.company_name && (
+                      <p className="text-xs text-muted-foreground">{request.accepted_driver.company_name}</p>
+                    )}
+                  </div>
+                  {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
+                    <span className="text-sm font-bold text-primary">
+                      {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
+                    </span>
+                  )}
+                </div>
+                {/* Boutons de contact pour l'historique aussi */}
+                {(() => {
+                  const driver = request.accepted_driver;
+                  const profile = request.driverProfile;
+                  if (!driver || !profile) return null;
+                  
+                  const phoneNumber = (driver.show_phone && driver.contact_phone) 
+                    ? driver.contact_phone 
+                    : profile.phone;
+                  const emailAddress = (driver.show_email && driver.contact_email) 
+                    ? driver.contact_email 
+                    : profile.email;
+                  
+                  const showPhone = driver.show_phone || !!profile.phone;
+                  const showEmail = driver.show_email || !!profile.email;
+                  
+                  if (!showPhone && !showEmail) return null;
+                  
+                  return (
+                    <div className="flex gap-2 flex-wrap pt-2 border-t border-green-500/20">
+                      {showPhone && phoneNumber && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-1 min-w-[100px] h-8 text-xs"
+                          asChild
+                        >
+                          <a href={`tel:${phoneNumber}`}>
+                            <Phone className="w-3 h-3 mr-1" />
+                            Appeler
+                          </a>
+                        </Button>
+                      )}
+                      {showEmail && emailAddress && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-1 min-w-[100px] h-8 text-xs"
+                          asChild
+                        >
+                          <a href={`mailto:${emailAddress}`}>
+                            <Mail className="w-3 h-3 mr-1" />
+                            Email
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -408,6 +500,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
       </CardContent>
     </Card>
   );
+  };
 
   return (
     <div className="space-y-6">
@@ -519,27 +612,83 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                         </span>
                       </div>
 
-                      {/* Driver info */}
+                      {/* Driver info avec coordonnées */}
                       {request.driverProfile && (
-                        <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={request.driverProfile.profile_photo_url} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {request.driverProfile.full_name?.charAt(0) || "C"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="font-semibold">{request.driverProfile.full_name}</p>
-                            <p className="text-sm text-muted-foreground">Chauffeur assigné</p>
-                          </div>
-                          {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-primary">
-                                {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
-                              </p>
-                              <p className="text-xs text-muted-foreground">Prix confirmé</p>
+                        <div className="p-3 bg-background rounded-lg border space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-12 h-12 border-2 border-primary/20">
+                              <AvatarImage src={request.driverProfile.profile_photo_url} />
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {request.driverProfile.full_name?.charAt(0) || "C"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-semibold">{request.driverProfile.full_name}</p>
+                              {request.accepted_driver?.company_name && (
+                                <p className="text-xs text-muted-foreground">{request.accepted_driver.company_name}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">Chauffeur assigné</p>
                             </div>
-                          )}
+                            {request.quotesWithProfiles?.find((q: any) => q.status === "accepted")?.total_price && (
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-primary">
+                                  {request.quotesWithProfiles.find((q: any) => q.status === "accepted")?.total_price?.toFixed(2)} €
+                                </p>
+                                <p className="text-xs text-muted-foreground">Prix confirmé</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Boutons de contact - respecter la visibilité */}
+                          {(() => {
+                            const driver = request.accepted_driver;
+                            const profile = request.driverProfile;
+                            if (!driver || !profile) return null;
+                            
+                            // Priorité: contact B2B si show activé, sinon profil
+                            const phoneNumber = (driver.show_phone && driver.contact_phone) 
+                              ? driver.contact_phone 
+                              : profile.phone;
+                            const emailAddress = (driver.show_email && driver.contact_email) 
+                              ? driver.contact_email 
+                              : profile.email;
+                            
+                            const showPhone = driver.show_phone || !!profile.phone;
+                            const showEmail = driver.show_email || !!profile.email;
+                            
+                            if (!showPhone && !showEmail) return null;
+                            
+                            return (
+                              <div className="flex gap-2 flex-wrap pt-2 border-t">
+                                {showPhone && phoneNumber && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex-1 min-w-[120px] h-9"
+                                    asChild
+                                  >
+                                    <a href={`tel:${phoneNumber}`}>
+                                      <Phone className="w-4 h-4 mr-2" />
+                                      Appeler
+                                    </a>
+                                  </Button>
+                                )}
+                                {showEmail && emailAddress && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="flex-1 min-w-[120px] h-9"
+                                    asChild
+                                  >
+                                    <a href={`mailto:${emailAddress}`}>
+                                      <Mail className="w-4 h-4 mr-2" />
+                                      Email
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
