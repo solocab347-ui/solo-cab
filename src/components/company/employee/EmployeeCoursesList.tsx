@@ -346,6 +346,35 @@ export function EmployeeCoursesList({
     }
   };
 
+  const handleRegenerateDevis = async (courseId: string) => {
+    try {
+      // Récupérer la course pour avoir le driver_id
+      const course = courses.find(c => c.id === courseId);
+      if (!course?.driver?.id) {
+        toast.error("Chauffeur non trouvé pour cette course");
+        return;
+      }
+
+      toast.info("Génération du devis en cours...");
+
+      const { data, error } = await supabase.functions.invoke("create-devis-auto", {
+        body: { course_id: courseId, driver_id: course.driver.id }
+      });
+
+      if (error) {
+        console.error("Error generating devis:", error);
+        toast.error("Erreur lors de la génération du devis");
+        return;
+      }
+
+      toast.success("Devis généré avec succès !");
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error regenerating devis:", error);
+      toast.error("Erreur lors de la génération du devis");
+    }
+  };
+
   const handleDownloadDevis = (course: CourseData) => {
     if (!course.devis) return;
     
@@ -427,12 +456,21 @@ export function EmployeeCoursesList({
   };
 
   // Filtrer les courses par catégorie
+  // Devis à valider: course pending avec devis pending
   const pendingQuotes = courses.filter(c => 
     c.status === "pending" && c.devis?.status === "pending"
   );
+  // En attente du chauffeur: devis accepté, course pending
   const awaitingDriver = courses.filter(c => 
     c.status === "pending" && c.devis?.status === "accepted"
   );
+  // Courses sans devis (en attente de génération)
+  const awaitingQuote = courses.filter(c => 
+    c.status === "pending" && !c.devis
+  );
+  // Combiner les devis à valider avec ceux en attente de génération
+  const allPendingQuotes = [...pendingQuotes, ...awaitingQuote];
+  
   const confirmedCourses = courses.filter(c => 
     c.status === "accepted" || c.status === "in_progress"
   );
@@ -519,6 +557,27 @@ export function EmployeeCoursesList({
 
           {/* Actions selon le statut */}
           <div className="flex flex-wrap gap-2">
+            {/* Course sans devis - proposer de régénérer */}
+            {course.status === "pending" && !course.devis && (
+              <div className="w-full space-y-2">
+                <div className="p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    En attente de génération du devis...
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleRegenerateDevis(course.id)}
+                  className="w-full"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Générer le devis
+                </Button>
+              </div>
+            )}
+
             {/* Devis en attente de validation */}
             {course.status === "pending" && course.devis?.status === "pending" && (
               <>
@@ -605,7 +664,7 @@ export function EmployeeCoursesList({
         <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="pending" className="text-xs py-2 flex flex-col gap-1">
             <span>Devis</span>
-            <Badge variant="secondary" className="text-xs">{pendingQuotes.length}</Badge>
+            <Badge variant="secondary" className="text-xs">{allPendingQuotes.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="awaiting" className="text-xs py-2 flex flex-col gap-1">
             <span>En attente</span>
@@ -626,7 +685,7 @@ export function EmployeeCoursesList({
         </TabsList>
 
         <TabsContent value="pending" className="space-y-4 mt-4">
-          {pendingQuotes.length === 0 ? (
+          {allPendingQuotes.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -641,7 +700,7 @@ export function EmployeeCoursesList({
               </CardContent>
             </Card>
           ) : (
-            pendingQuotes.map(renderCourseCard)
+            allPendingQuotes.map(renderCourseCard)
           )}
         </TabsContent>
 

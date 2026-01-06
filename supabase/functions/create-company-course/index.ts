@@ -148,34 +148,13 @@ serve(async (req) => {
 
     console.log('[create-company-course] Course linked to company');
 
-    // Try to create devis (non-blocking)
-    try {
-      const { data: driver } = await supabaseAdmin
-        .from('drivers')
-        .select('user_id')
-        .eq('id', driver_id)
-        .single();
-
-      if (driver?.user_id) {
-        const { data: companyData } = await supabaseAdmin
-          .from('companies')
-          .select('company_name')
-          .eq('id', company_id)
-          .single();
-
-        await supabaseAdmin.from('notifications').insert({
-          user_id: driver.user_id,
-          title: 'Nouvelle demande entreprise',
-          message: `${companyData?.company_name || 'Une entreprise'} demande une course`,
-          type: 'course_request',
-          link: '/driver-dashboard?tab=courses',
-        });
-
-        console.log('[create-company-course] Driver notified');
-      }
-    } catch (e) {
-      console.warn('[create-company-course] Notification failed:', e);
-    }
+    // IMPORTANT: Ne PAS notifier le chauffeur ici
+    // Le flux correct est :
+    // 1. Course créée + devis généré automatiquement
+    // 2. Collaborateur voit le devis et peut l'accepter/refuser
+    // 3. Quand le collaborateur accepte le devis → on notifie le chauffeur
+    // 4. Le chauffeur accepte → course confirmée
+    console.log('[create-company-course] Course created, waiting for employee to accept quote before notifying driver');
 
     return new Response(JSON.stringify({ success: true, course }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
