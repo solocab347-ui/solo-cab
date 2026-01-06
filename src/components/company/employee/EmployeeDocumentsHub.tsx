@@ -164,36 +164,58 @@ export const EmployeeDocumentsHub = ({
         .eq("id", companyId)
         .maybeSingle();
 
-      // Fetch devis for this employee
-      const { data: devisData, error: devisError } = await supabase
-        .from("devis")
-        .select(`
-          id,
-          quote_number,
-          amount,
-          status,
-          valid_until,
-          created_at,
-          base_price,
-          distance_price,
-          time_price,
-          evening_surcharge_amount,
-          weekend_surcharge_amount,
-          discount_amount,
-          promo_code,
-          course_id,
-          driver_id
-        `)
-        .eq("company_employee_id", employeeId)
-        .order("created_at", { ascending: false });
+      // Fetch employee courses first - this is the source of truth
+      const { data: employeeCourses } = await supabase
+        .from("company_courses")
+        .select("course_id")
+        .eq("employee_id", employeeId);
 
-      if (devisError) {
-        console.error("[EmployeeDocumentsHub] Devis error:", devisError);
+      const courseIds = employeeCourses?.map(c => c.course_id) || [];
+      console.log("[EmployeeDocumentsHub] Employee course IDs:", courseIds);
+
+      // Fetch devis for this employee's courses - deduplicate by course_id
+      let devisData: any[] = [];
+      if (courseIds.length > 0) {
+        const { data, error: devisError } = await supabase
+          .from("devis")
+          .select(`
+            id,
+            quote_number,
+            amount,
+            status,
+            valid_until,
+            created_at,
+            base_price,
+            distance_price,
+            time_price,
+            evening_surcharge_amount,
+            weekend_surcharge_amount,
+            discount_amount,
+            promo_code,
+            course_id,
+            driver_id
+          `)
+          .in("course_id", courseIds)
+          .order("created_at", { ascending: false });
+
+        if (devisError) {
+          console.error("[EmployeeDocumentsHub] Devis error:", devisError);
+        }
+        
+        // Deduplicate by course_id - keep only the latest devis per course
+        const seenCourseIds = new Set<string>();
+        devisData = (data || []).filter(d => {
+          if (seenCourseIds.has(d.course_id)) {
+            return false;
+          }
+          seenCourseIds.add(d.course_id);
+          return true;
+        });
       }
 
       // Enrich devis with course and driver info
       const enrichedDevis: DevisData[] = [];
-      for (const devis of devisData || []) {
+      for (const devis of devisData) {
         // Fetch course
         const { data: course } = await supabase
           .from("courses")
@@ -236,15 +258,8 @@ export const EmployeeDocumentsHub = ({
 
       setDevisList(enrichedDevis);
 
-      // Fetch factures - get course IDs for this employee first
-      const { data: employeeCourses } = await supabase
-        .from("company_courses")
-        .select("course_id")
-        .eq("employee_id", employeeId);
-
-      if (employeeCourses && employeeCourses.length > 0) {
-        const courseIds = employeeCourses.map(c => c.course_id);
-
+      // Fetch factures for this employee's courses
+      if (courseIds.length > 0) {
         const { data: facturesData, error: facturesError } = await supabase
           .from("factures")
           .select(`
@@ -263,6 +278,8 @@ export const EmployeeDocumentsHub = ({
         if (facturesError) {
           console.error("[EmployeeDocumentsHub] Factures error:", facturesError);
         }
+
+        console.log("[EmployeeDocumentsHub] Factures found:", facturesData?.length);
 
         // Enrich factures
         const enrichedFactures: FactureData[] = [];
@@ -301,6 +318,8 @@ export const EmployeeDocumentsHub = ({
         }
 
         setFacturesList(enrichedFactures);
+      } else {
+        setFacturesList([]);
       }
     } catch (error: any) {
       console.error("[EmployeeDocumentsHub] Error:", error);
