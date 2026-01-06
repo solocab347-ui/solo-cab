@@ -29,6 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
+import { getDriverGlobalStats } from "@/hooks/useDriverGlobalStats";
 
 interface DriverProfile {
   id: string;
@@ -141,28 +142,11 @@ export const DriverProfileDialog = ({
           profile_photo_url: driverData.profiles?.profile_photo_url
         });
 
-        const { data: completedCourses } = await supabase
-          .from("courses")
-          .select("client_rating")
-          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-          .eq("status", "completed");
-
-        let totalRides = 0;
-        let averageRating = 0;
-
-        if (completedCourses && completedCourses.length > 0) {
-          totalRides = completedCourses.length;
-          const ratingsWithValues = completedCourses.filter(
-            (c) => c.client_rating !== null
-          );
-          if (ratingsWithValues.length > 0) {
-            const sum = ratingsWithValues.reduce(
-              (acc, c) => acc + (c.client_rating || 0),
-              0
-            );
-            averageRating = sum / ratingsWithValues.length;
-          }
-        }
+        // Statistiques globales (incluant toutes les sources de courses)
+        const globalStats = await getDriverGlobalStats(driverId);
+        
+        const totalRides = globalStats.totalRides;
+        const averageRating = globalStats.averageRating;
 
         if (!isMounted) return;
 
