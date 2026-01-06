@@ -102,6 +102,35 @@ serve(async (req) => {
       throw new Error('No active agreement with this driver');
     }
 
+    // Calculate distance and duration using coordinates
+    let distance_km = null;
+    let duration_minutes = null;
+    
+    if (pickup_latitude && pickup_longitude && destination_latitude && destination_longitude) {
+      try {
+        // Haversine formula for distance calculation
+        const R = 6371; // Earth's radius in km
+        const dLat = (destination_latitude - pickup_latitude) * Math.PI / 180;
+        const dLon = (destination_longitude - pickup_longitude) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(pickup_latitude * Math.PI / 180) * Math.cos(destination_latitude * Math.PI / 180) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const straightLineDistance = R * c;
+        
+        // Apply a road factor (roads are typically 1.3-1.4 times longer than straight line)
+        distance_km = Math.round(straightLineDistance * 1.35 * 10) / 10;
+        
+        // Estimate duration: average 40 km/h in urban areas
+        duration_minutes = Math.round((distance_km / 40) * 60);
+        
+        console.log('[create-company-course] Calculated distance:', distance_km, 'km, duration:', duration_minutes, 'min');
+      } catch (e) {
+        console.warn('[create-company-course] Distance calculation failed:', e);
+      }
+    }
+
     // Create the course with service role (bypasses RLS)
     const { data: course, error: courseError } = await supabaseAdmin
       .from('courses')
@@ -118,6 +147,8 @@ serve(async (req) => {
         notes,
         status: 'pending',
         created_by_user_id: user.id,
+        distance_km,
+        duration_minutes,
       })
       .select()
       .single();
@@ -127,7 +158,7 @@ serve(async (req) => {
       throw new Error(`Failed to create course: ${courseError.message}`);
     }
 
-    console.log('[create-company-course] Course created:', course.id);
+    console.log('[create-company-course] Course created:', course.id, 'with distance:', distance_km);
 
     // Link to company with employee_id
     const { error: linkError } = await supabaseAdmin
