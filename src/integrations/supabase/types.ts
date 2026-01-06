@@ -1554,6 +1554,7 @@ export type Database = {
       }
       company_employees: {
         Row: {
+          avatar_url: string | null
           can_create_courses: boolean | null
           can_invite_drivers: boolean | null
           can_view_all_company_courses: boolean | null
@@ -1582,6 +1583,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           can_create_courses?: boolean | null
           can_invite_drivers?: boolean | null
           can_view_all_company_courses?: boolean | null
@@ -1610,6 +1612,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           can_create_courses?: boolean | null
           can_invite_drivers?: boolean | null
           can_view_all_company_courses?: boolean | null
