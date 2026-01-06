@@ -215,7 +215,7 @@ const App = () => (
               <Route
                 path="/client-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={["client"]}>
+                  <ProtectedRoute allowedRoles={["client"]} blockCompanyEmployees>
                     <Suspense fallback={<LoadingFallback />}>
                       <ClientDashboard />
                     </Suspense>
