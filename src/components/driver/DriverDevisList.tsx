@@ -204,11 +204,6 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
             guest_employee_phone,
             guest_employee_email,
             employee_id,
-            company_employees(
-              id,
-              user_id,
-              profiles:user_id(full_name, phone, email)
-            ),
             companies!inner(
               id,
               company_name,
@@ -219,10 +214,38 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           )
         `)
         .eq("driver_id", driverId)
-        .in("status", ["sent", "accepted", "refused", "taken_by_other"]) // Include all statuses
+        .in("status", ["sent", "accepted", "refused", "taken_by_other"])
         .order("created_at", { ascending: false });
 
       if (companyError) throw companyError;
+
+      // Fetch employee profiles for company quotes that have employee_id
+      const employeeIds = (companyQuotes || [])
+        .map((q: any) => q.company_course_requests?.employee_id)
+        .filter(Boolean);
+      
+      let employeeProfiles = new Map();
+      if (employeeIds.length > 0) {
+        const { data: employees } = await supabase
+          .from("company_employees")
+          .select("id, user_id")
+          .in("id", employeeIds);
+        
+        if (employees && employees.length > 0) {
+          const userIds = employees.map(e => e.user_id).filter(Boolean);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, phone, email")
+            .in("id", userIds);
+          
+          employees.forEach(emp => {
+            const profile = profiles?.find(p => p.id === emp.user_id);
+            if (profile) {
+              employeeProfiles.set(emp.id, profile);
+            }
+          });
+        }
+      }
 
       // Transform regular devis to unified format
       const transformedRegularDevis: UnifiedQuote[] = (regularDevis || []).map((d: any) => ({
@@ -271,18 +294,19 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         else if (q.status === "refused") mappedStatus = "refused";
         else if (q.status === "taken_by_other") mappedStatus = "expired"; // Map to expired for display
         
-        // Get employee info - either guest or registered
+        // Get employee info - either guest or registered (using fetched profiles)
         const req = q.company_course_requests;
         const isGuest = req.is_guest_employee || false;
+        const empProfile = req.employee_id ? employeeProfiles.get(req.employee_id) : null;
         const employeeName = isGuest 
           ? req.guest_employee_name 
-          : req.company_employees?.profiles?.full_name;
+          : empProfile?.full_name || null;
         const employeePhone = isGuest 
           ? req.guest_employee_phone 
-          : req.company_employees?.profiles?.phone;
+          : empProfile?.phone || null;
         const employeeEmail = isGuest 
           ? req.guest_employee_email 
-          : req.company_employees?.profiles?.email;
+          : empProfile?.email || null;
         
         return {
           id: q.id,
