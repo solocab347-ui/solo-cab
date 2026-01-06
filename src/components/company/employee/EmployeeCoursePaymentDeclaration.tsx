@@ -14,6 +14,9 @@ import {
   User,
   Calendar,
   ArrowRight,
+  AlertCircle,
+  Banknote,
+  Receipt,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -34,6 +37,9 @@ interface CompletedCourse {
   amount: number | null;
   driver_name: string | null;
   company_course_id: string;
+  // Driver's declaration
+  driver_declared_paid: boolean; // true = paid_on_spot, false = company_will_pay
+  company_payment_status: string | null;
 }
 
 interface EmployeeCoursePaymentDeclarationProps {
@@ -53,27 +59,31 @@ export function EmployeeCoursePaymentDeclaration({
   const [declaring, setDeclaring] = useState(false);
 
   useEffect(() => {
-    fetchUnpaidCourses();
+    fetchUnconfirmedCourses();
   }, [employeeId]);
 
-  const fetchUnpaidCourses = async () => {
+  const fetchUnconfirmedCourses = async () => {
     try {
-      // Récupérer les courses terminées qui n'ont pas encore de déclaration de paiement
+      // Récupérer les courses terminées sans confirmation du collaborateur
       const { data: companyCourses, error } = await supabase
         .from("company_courses")
         .select(`
           id,
+          actual_payment_method,
+          client_confirmed_payment_method,
           course:courses!inner(
             id,
             pickup_address,
             destination_address,
             scheduled_date,
             status,
-            driver_id
+            driver_id,
+            company_payment_status,
+            driver_declared_payment_received
           )
         `)
         .eq("employee_id", employeeId)
-        .is("actual_payment_method", null); // Pas encore déclaré
+        .is("client_confirmed_payment_method", null);
 
       if (error) throw error;
 
@@ -116,6 +126,10 @@ export function EmployeeCoursePaymentDeclaration({
         
         amount = devis?.amount || null;
 
+        // Déterminer ce que le chauffeur a déclaré
+        const driverDeclaredPaid = course.driver_declared_payment_received === true ||
+          course.company_payment_status === "paid_on_spot";
+
         enrichedCourses.push({
           id: course.id,
           pickup_address: course.pickup_address,
@@ -124,6 +138,8 @@ export function EmployeeCoursePaymentDeclaration({
           amount,
           driver_name: driverName,
           company_course_id: cc.id,
+          driver_declared_paid: driverDeclaredPaid,
+          company_payment_status: course.company_payment_status,
         });
       }
 
@@ -135,17 +151,19 @@ export function EmployeeCoursePaymentDeclaration({
     }
   };
 
-  const handleDeclarePayment = async (paymentBy: "company" | "employee") => {
+  const handleConfirmPayment = async (confirmedPaidByEmployee: boolean) => {
     if (!selectedCourse) return;
 
     setDeclaring(true);
     try {
-      // Mettre à jour la course avec le mode de paiement
+      const paymentMethod = confirmedPaidByEmployee ? "paid_on_spot" : "company_will_pay";
+
+      // Mettre à jour company_courses avec la confirmation du collaborateur
       const { error: updateError } = await supabase
         .from("company_courses")
         .update({
-          actual_payment_method: paymentBy === "company" ? "company_account" : "employee_personal",
-          client_confirmed_payment_method: paymentBy === "company" ? "company_will_pay" : "paid_on_spot",
+          actual_payment_method: confirmedPaidByEmployee ? "employee_personal" : "company_account",
+          client_confirmed_payment_method: paymentMethod,
           client_confirmed_at: new Date().toISOString(),
           payment_declared_at: new Date().toISOString(),
         })
@@ -153,20 +171,26 @@ export function EmployeeCoursePaymentDeclaration({
 
       if (updateError) throw updateError;
 
-      // Si payé par l'employé directement (paid_on_spot), marquer la facture comme payée
-      if (paymentBy === "employee") {
-        // Mettre à jour le statut de la facture en "paid"
-        const { error: factureError } = await supabase
+      // Mettre à jour courses.client_payment_confirmation
+      await supabase
+        .from("courses")
+        .update({
+          client_payment_confirmation: paymentMethod,
+          client_payment_confirmation_at: new Date().toISOString(),
+          company_payment_status: paymentMethod,
+        })
+        .eq("id", selectedCourse.id);
+
+      // Si le collaborateur confirme avoir payé
+      if (confirmedPaidByEmployee) {
+        // Mettre la facture en "paid"
+        await supabase
           .from("factures")
           .update({
             payment_status: "paid",
             paid_at: new Date().toISOString()
           })
           .eq("course_id", selectedCourse.id);
-
-        if (factureError) {
-          console.error("Error updating facture:", factureError);
-        }
 
         // Créer automatiquement une note de frais
         if (selectedCourse.amount) {
@@ -183,26 +207,28 @@ export function EmployeeCoursePaymentDeclaration({
               submitted_at: new Date().toISOString(),
             } as any);
 
-          if (expenseError) throw expenseError;
+          if (expenseError) {
+            console.error("Expense error:", expenseError);
+          }
 
-          toast.success("Facture réglée & note de frais créée !", {
+          toast.success("Note de frais créée !", {
             description: `${selectedCourse.amount.toFixed(2)} € en attente de remboursement`
           });
           
           onExpenseCreated?.();
         }
       } else {
-        // Réglée par l'entreprise - la facture reste en attente pour le chauffeur
-        toast.success("Paiement déclaré !", {
-          description: "La course sera facturée à l'entreprise"
+        // Payé par l'entreprise - facture reste en attente
+        toast.success("Confirmation enregistrée", {
+          description: "Cette course sera facturée à l'entreprise"
         });
       }
 
       setSelectedCourse(null);
-      fetchUnpaidCourses();
+      fetchUnconfirmedCourses();
     } catch (error) {
       console.error("Error declaring payment:", error);
-      toast.error("Erreur lors de la déclaration");
+      toast.error("Erreur lors de la confirmation");
     } finally {
       setDeclaring(false);
     }
@@ -219,7 +245,7 @@ export function EmployeeCoursePaymentDeclaration({
   }
 
   if (courses.length === 0) {
-    return null; // Ne rien afficher s'il n'y a pas de courses à déclarer
+    return null;
   }
 
   return (
@@ -229,25 +255,40 @@ export function EmployeeCoursePaymentDeclaration({
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
             <Car className="w-5 h-5" />
-            Courses à déclarer ({courses.length})
+            Courses à confirmer ({courses.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Indiquez qui a réglé ces courses. Si vous avez payé personnellement, une note de frais sera créée automatiquement.
+            Confirmez le mode de paiement de ces courses. Une note de frais sera créée automatiquement si vous avez payé personnellement.
           </p>
           <div className="space-y-3">
             {courses.map((course) => (
               <div
                 key={course.id}
-                className="p-4 rounded-xl bg-white/50 dark:bg-black/20 border border-amber-200/50 hover:border-amber-300 transition-all cursor-pointer"
+                className="p-4 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-200/50 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => setSelectedCourse(course)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
+                    {/* Driver's declaration badge */}
+                    <div className="mb-2">
+                      {course.driver_declared_paid ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          <Banknote className="w-3 h-3 mr-1" />
+                          Chauffeur: payé sur place
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          Chauffeur: à facturer entreprise
+                        </Badge>
+                      )}
+                    </div>
+                    
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <Calendar className="w-3 h-3" />
-                      {format(new Date(course.scheduled_date), "dd MMM yyyy à HH:mm", { locale: fr })}
+                      {format(new Date(course.scheduled_date), "dd MMM yyyy 'à' HH:mm", { locale: fr })}
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
@@ -261,12 +302,15 @@ export function EmployeeCoursePaymentDeclaration({
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-2">
                     {course.amount && (
                       <Badge className="bg-primary/10 text-primary border-primary/20">
                         {course.amount.toFixed(2)} €
                       </Badge>
                     )}
+                    <Button size="sm" variant="outline" className="text-xs">
+                      Confirmer
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -275,71 +319,136 @@ export function EmployeeCoursePaymentDeclaration({
         </CardContent>
       </Card>
 
-      {/* Dialog de déclaration */}
+      {/* Dialog de confirmation */}
       <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Euro className="w-5 h-5 text-primary" />
-              Qui a réglé cette course ?
+              <Receipt className="w-5 h-5 text-primary" />
+              Confirmer le paiement
             </DialogTitle>
             <DialogDescription>
-              Cette information permet de gérer correctement les notes de frais.
+              Vérifiez la déclaration du chauffeur et confirmez.
             </DialogDescription>
           </DialogHeader>
 
           {selectedCourse && (
-            <div className="p-4 rounded-xl bg-muted/30 border border-border/50 my-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <Calendar className="w-3 h-3" />
-                {format(new Date(selectedCourse.scheduled_date), "dd MMMM yyyy", { locale: fr })}
-              </div>
-              <p className="font-medium">
-                {selectedCourse.pickup_address.split(",")[0]} → {selectedCourse.destination_address.split(",")[0]}
-              </p>
-              {selectedCourse.amount && (
-                <p className="text-lg font-bold text-primary mt-2">
-                  {selectedCourse.amount.toFixed(2)} €
+            <>
+              {/* Course details */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <Calendar className="w-3 h-3" />
+                  {format(new Date(selectedCourse.scheduled_date), "EEEE dd MMMM yyyy", { locale: fr })}
+                </div>
+                <p className="font-medium">
+                  {selectedCourse.pickup_address.split(",")[0]} → {selectedCourse.destination_address.split(",")[0]}
                 </p>
-              )}
-            </div>
+                {selectedCourse.driver_name && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Chauffeur: {selectedCourse.driver_name}
+                  </p>
+                )}
+                {selectedCourse.amount && (
+                  <p className="text-xl font-bold text-primary mt-2">
+                    {selectedCourse.amount.toFixed(2)} €
+                  </p>
+                )}
+              </div>
+
+              {/* Driver's declaration */}
+              <div className={`p-4 rounded-xl border-2 ${
+                selectedCourse.driver_declared_paid 
+                  ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
+                  : "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className={`w-4 h-4 ${selectedCourse.driver_declared_paid ? "text-emerald-600" : "text-blue-600"}`} />
+                  <span className="font-semibold text-sm">
+                    Déclaration du chauffeur
+                  </span>
+                </div>
+                <p className={`text-sm ${selectedCourse.driver_declared_paid ? "text-emerald-700 dark:text-emerald-400" : "text-blue-700 dark:text-blue-400"}`}>
+                  {selectedCourse.driver_declared_paid 
+                    ? "Le passager a réglé la course sur place"
+                    : "La course sera facturée à l'entreprise"
+                  }
+                </p>
+              </div>
+
+              {/* Confirmation buttons */}
+              <div className="space-y-3 mt-2">
+                <p className="text-sm font-medium text-center">Confirmez-vous cette information ?</p>
+                
+                {selectedCourse.driver_declared_paid ? (
+                  // Driver said paid on spot - employee confirms
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button
+                      className="flex items-center justify-center gap-2 h-auto py-4 bg-emerald-600 hover:bg-emerald-700"
+                      onClick={() => handleConfirmPayment(true)}
+                      disabled={declaring}
+                    >
+                      {declaring ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-5 h-5" />
+                          <div className="text-left">
+                            <span className="block font-semibold">Oui, j'ai payé</span>
+                            <span className="text-xs opacity-80">Créer une note de frais</span>
+                          </div>
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex items-center justify-center gap-2 h-auto py-4"
+                      onClick={() => handleConfirmPayment(false)}
+                      disabled={declaring}
+                    >
+                      <Building2 className="w-5 h-5" />
+                      <div className="text-left">
+                        <span className="block font-semibold">Non, facturer l'entreprise</span>
+                        <span className="text-xs text-muted-foreground">Corriger la déclaration</span>
+                      </div>
+                    </Button>
+                  </div>
+                ) : (
+                  // Driver said company will pay - employee confirms
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button
+                      className="flex items-center justify-center gap-2 h-auto py-4 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleConfirmPayment(false)}
+                      disabled={declaring}
+                    >
+                      {declaring ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Building2 className="w-5 h-5" />
+                          <div className="text-left">
+                            <span className="block font-semibold">Confirmer: facturer l'entreprise</span>
+                            <span className="text-xs opacity-80">Paiement différé</span>
+                          </div>
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex items-center justify-center gap-2 h-auto py-4"
+                      onClick={() => handleConfirmPayment(true)}
+                      disabled={declaring}
+                    >
+                      <User className="w-5 h-5" />
+                      <div className="text-left">
+                        <span className="block font-semibold">J'ai payé personnellement</span>
+                        <span className="text-xs text-muted-foreground">Créer une note de frais</span>
+                      </div>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="flex flex-col items-center gap-2 h-auto py-6 border-2 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-              onClick={() => handleDeclarePayment("company")}
-              disabled={declaring}
-            >
-              {declaring ? (
-                <Loader2 className="w-8 h-8 animate-spin" />
-              ) : (
-                <>
-                  <Building2 className="w-8 h-8 text-emerald-600" />
-                  <span className="font-semibold">Réglée par l'entreprise</span>
-                  <span className="text-xs text-muted-foreground">Paiement société</span>
-                </>
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="flex flex-col items-center gap-2 h-auto py-6 border-2 hover:border-primary hover:bg-primary/5"
-              onClick={() => handleDeclarePayment("employee")}
-              disabled={declaring}
-            >
-              {declaring ? (
-                <Loader2 className="w-8 h-8 animate-spin" />
-              ) : (
-                <>
-                  <User className="w-8 h-8 text-primary" />
-                  <span className="font-semibold">Réglée par moi</span>
-                  <span className="text-xs text-muted-foreground">Génère une note de frais</span>
-                </>
-              )}
-            </Button>
-          </div>
 
           <DialogFooter className="mt-4">
             <Button
