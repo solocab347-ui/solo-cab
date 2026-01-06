@@ -34,6 +34,7 @@ import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInC
 import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartnerCoursesList";
 import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCompanyQuotesInCoursesList";
 import { CourseClientContact } from "@/components/driver/CourseClientContact";
+import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicator";
 
 interface CoursesListProps {
   driverId: string;
@@ -219,13 +220,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         setSharedCoursesData(sharedData || []);
 
-        // Fetch company courses data
+        // Fetch company courses data avec logo
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
             course_id,
             company_id,
-            company:companies(company_name)
+            company:companies(company_name, logo_url)
           `)
           .in("course_id", courseIds);
         
@@ -269,6 +270,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       });
     };
   }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
+
+  // Helper pour récupérer les infos entreprise d'une course
+  const getCompanyCourseInfo = (courseId: string): { companyName: string; logoUrl?: string | null } | null => {
+    const companyCourse = companyCoursesData.find(cc => cc.course_id === courseId);
+    if (!companyCourse?.company) return null;
+    return {
+      companyName: companyCourse.company.company_name,
+      logoUrl: companyCourse.company.logo_url
+    };
+  };
 
   // Helper to check if course is being handled by a partner (sender can't act on it)
   const isCourseHandledByPartner = (courseId: string): boolean => {
@@ -1866,6 +1877,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
+                    {/* Indicateur entreprise si applicable */}
+                    {getCompanyCourseInfo(course.id) && (
+                      <CompanyCourseIndicator 
+                        companyName={getCompanyCourseInfo(course.id)!.companyName}
+                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                      />
+                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2172,6 +2190,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du client/passager */}
                     <CourseClientContact course={course} />
+                    {/* Indicateur entreprise si applicable */}
+                    {getCompanyCourseInfo(course.id) && (
+                      <CompanyCourseIndicator 
+                        companyName={getCompanyCourseInfo(course.id)!.companyName}
+                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                      />
+                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
@@ -2426,6 +2451,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
+                    {/* Indicateur entreprise si applicable */}
+                    {getCompanyCourseInfo(course.id) && (
+                      <CompanyCourseIndicator 
+                        companyName={getCompanyCourseInfo(course.id)!.companyName}
+                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                      />
+                    )}
                   </div>
 
                   {/* Affichage SYSTÉMATIQUE du prix - Facture en priorité, sinon Devis */}
@@ -2584,6 +2616,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </div>
                     {/* Contact du passager */}
                     <CourseClientContact course={course} />
+                    {/* Indicateur entreprise si applicable */}
+                    {getCompanyCourseInfo(course.id) && (
+                      <CompanyCourseIndicator 
+                        companyName={getCompanyCourseInfo(course.id)!.companyName}
+                        companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
+                      />
+                    )}
                   </div>
 
                   {course.devis && course.devis.length > 0 && (
