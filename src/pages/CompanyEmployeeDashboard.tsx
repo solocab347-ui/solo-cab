@@ -861,7 +861,7 @@ export default function CompanyEmployeeDashboard() {
               onClose={() => setShowCourseCreation(false)}
               onSuccess={() => {
                 setShowCourseCreation(false);
-                fetchCourses();
+                fetchEmployeeData();
               }}
             />
           </DialogContent>

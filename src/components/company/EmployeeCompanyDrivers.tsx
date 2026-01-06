@@ -944,7 +944,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                     {/* Nom du chauffeur - toujours affiché en B2B */}
                     <h3 className="font-bold text-base sm:text-lg truncate flex items-center gap-2">
                       <User className="w-4 h-4 text-primary flex-shrink-0" />
-                      {selectedDriver.full_name || "Chauffeur"}
+                      {getDisplayName(selectedDriver)}
                     </h3>
                     {/* Nom de l'entreprise si différent */}
                     {selectedDriver.display_company_name && selectedDriver.company_name && (
