@@ -44,6 +44,7 @@ import { EmployeeExpenseReports } from "@/components/company/employee/EmployeeEx
 import { EmployeePartnersHub } from "@/components/company/employee/EmployeePartnersHub";
 import { EmployeeCoursePaymentDeclaration } from "@/components/company/employee/EmployeeCoursePaymentDeclaration";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
+import { EmployeeCoursesList } from "@/components/company/employee/EmployeeCoursesList";
 
 interface EmployeeData {
   id: string;
@@ -577,159 +578,12 @@ export default function CompanyEmployeeDashboard() {
 
           {/* Courses Tab */}
           <TabsContent value="courses" className="animate-fade-in">
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Car className="w-5 h-5 text-primary" />
-                    Mes courses
-                  </CardTitle>
-                  <CardDescription>
-                    {employee.can_create_courses 
-                      ? "Gérez et suivez vos déplacements professionnels"
-                      : "Suivez les courses réservées pour vous"
-                    }
-                  </CardDescription>
-                </div>
-                {employee.can_create_courses && (
-                  <Button onClick={() => setShowCourseCreation(true)} className="bg-gradient-to-r from-primary to-accent">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouvelle course
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                {courses.length === 0 ? (
-                  <div className="text-center py-16">
-                    <div className="w-20 h-20 mx-auto rounded-3xl bg-muted/50 flex items-center justify-center mb-6">
-                      <Car className="w-10 h-10 text-muted-foreground" />
-                    </div>
-                    <h3 className="font-bold text-lg mb-2">Aucune course</h3>
-                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                      {employee.can_create_courses 
-                        ? "Vous n'avez pas encore réservé de course."
-                        : "Aucune course n'a été réservée pour vous."
-                      }
-                    </p>
-                    {employee.can_create_courses && (
-                      <Button onClick={() => setShowCourseCreation(true)} className="bg-gradient-to-r from-primary to-accent">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Réserver maintenant
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {courses.map((course, index) => {
-                      const status = getStatusConfig(course.status);
-                      const StatusIcon = status.icon;
-                      return (
-                        <div
-                          key={course.id}
-                          className="p-5 rounded-2xl bg-muted/20 border border-border/50 hover:border-primary/30 transition-all"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {/* Header */}
-                          <div className="flex items-start justify-between gap-4 mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-2xl ${status.bgColor} flex items-center justify-center`}>
-                                <StatusIcon className={`w-6 h-6 ${status.color}`} />
-                              </div>
-                              <div>
-                                <p className="font-bold">
-                                  {format(new Date(course.scheduled_date), "EEEE d MMMM", { locale: fr })}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  à {format(new Date(course.scheduled_date), "HH:mm")}
-                                  {course.driver_name && ` • ${course.driver_name}`}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <Badge className={`${status.bgColor} ${status.color} border-0`}>
-                                {status.label}
-                              </Badge>
-                              {course.amount && (
-                                <p className="text-lg font-bold mt-1">{course.amount.toFixed(0)}€</p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Addresses */}
-                          <div className="space-y-2 text-sm mb-4">
-                            <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/10">
-                              <MapPin className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-muted-foreground">{course.pickup_address}</span>
-                            </div>
-                            <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10">
-                              <MapPin className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-muted-foreground">{course.destination_address}</span>
-                            </div>
-                          </div>
-
-                          {/* Timeline */}
-                          <div className="p-4 rounded-xl bg-muted/30">
-                            <div className="flex items-center justify-between gap-2">
-                              {["pending", "accepted", "in_progress", "completed"].map((step, i) => {
-                                const isCompleted = 
-                                  (step === "pending" && course.status !== "cancelled") ||
-                                  (step === "accepted" && ["accepted", "in_progress", "completed"].includes(course.status)) ||
-                                  (step === "in_progress" && ["in_progress", "completed"].includes(course.status)) ||
-                                  (step === "completed" && course.status === "completed");
-                                const isActive = course.status === step;
-                                const stepLabels: Record<string, string> = {
-                                  pending: "Confirmée",
-                                  accepted: "Acceptée",
-                                  in_progress: "En cours",
-                                  completed: "Terminée"
-                                };
-                                return (
-                                  <div key={step} className="flex flex-col items-center gap-1.5 flex-1">
-                                    <div className={`w-3 h-3 rounded-full transition-all ${
-                                      isCompleted ? "bg-primary scale-110" : 
-                                      isActive ? "bg-primary animate-pulse" : 
-                                      "bg-muted-foreground/30"
-                                    }`} />
-                                    <span className={`text-xs text-center ${
-                                      isActive ? "font-semibold text-primary" : 
-                                      isCompleted ? "text-muted-foreground" : 
-                                      "text-muted-foreground/50"
-                                    }`}>
-                                      {stepLabels[step]}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Payment Status */}
-                          {course.status === "completed" && (
-                            <div className={`mt-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
-                              course.company_payment_status === "paid_on_spot" 
-                                ? "bg-emerald-500/10 text-emerald-400"
-                                : "bg-primary/10 text-primary"
-                            }`}>
-                              {course.company_payment_status === "paid_on_spot" ? (
-                                <>
-                                  <CheckCircle2 className="w-4 h-4" />
-                                  <span>Payée sur place</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Building2 className="w-4 h-4" />
-                                  <span>Paiement géré par l'entreprise</span>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <EmployeeCoursesList
+              employeeId={employee.id}
+              userId={user?.id || ""}
+              companyId={employee.company_id}
+              onCreateCourse={() => setShowCourseCreation(true)}
+            />
           </TabsContent>
 
 
