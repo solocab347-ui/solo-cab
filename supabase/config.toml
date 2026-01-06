@@ -155,3 +155,9 @@ verify_jwt = true
 
 [functions.accept-company-course-quote]
 verify_jwt = true
+
+[functions.send-company-employee-welcome]
+verify_jwt = false
+
+[functions.send-company-payment-reminder]
+verify_jwt = true
