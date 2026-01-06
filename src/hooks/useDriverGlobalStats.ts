@@ -26,11 +26,11 @@ export async function getDriverGlobalStats(driverId: string): Promise<DriverGlob
       console.error("Erreur requête courses driver_id:", error1);
     }
 
-    // 2. Courses où le chauffeur est dans driver_ids (array)
+    // 2. Courses où le chauffeur est dans driver_ids (array) - utiliser filter cs
     const { data: directByDriverIds, error: error2 } = await supabase
       .from("courses")
       .select("id, client_rating")
-      .contains("driver_ids", [driverId])
+      .filter("driver_ids", "cs", `{${driverId}}`)
       .eq("status", "completed");
     
     if (error2) {
