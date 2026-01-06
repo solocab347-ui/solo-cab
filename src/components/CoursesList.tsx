@@ -256,8 +256,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           `)
           .in("final_course_id", courseIds);
         
-        // Fetch employee profiles if needed
-        const employeeIds = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
+        // Collect all employee_ids: from requests AND from company_courses
+        const employeeIdsFromRequests = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
+        const employeeIdsFromCompanyCourses = companyData?.filter(cc => cc.employee_id).map(cc => cc.employee_id) || [];
+        const employeeIds = [...new Set([...employeeIdsFromRequests, ...employeeIdsFromCompanyCourses])];
+        
         let employeeProfiles: Record<string, { name: string; phone?: string }> = {};
         
         if (employeeIds.length > 0) {
@@ -284,12 +287,35 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           }
         }
         
+        // Also fetch profiles for courses created_by_user_id (for inline employee course creation)
+        const createdByUserIds = coursesData
+          ?.filter(c => c.created_by_user_id && companyData?.some(cc => cc.course_id === c.id))
+          .map(c => c.created_by_user_id)
+          .filter(Boolean) || [];
+        
+        let createdByProfiles: Record<string, { name: string; phone?: string }> = {};
+        
+        if (createdByUserIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, phone")
+            .in("id", createdByUserIds);
+          
+          if (profiles) {
+            profiles.forEach(p => {
+              createdByProfiles[p.id] = { name: p.full_name || '', phone: p.phone || undefined };
+            });
+          }
+        }
+        
         // Merge company data with employee info
         const enrichedCompanyData = companyData?.map(cc => {
           const request = requestsData?.find(r => r.final_course_id === cc.course_id);
+          const course = coursesData?.find(c => c.id === cc.course_id);
           let employeeName = null;
           let employeePhone = null;
           
+          // Priority 1: from company_course_requests (guest or registered employee)
           if (request) {
             if (request.is_guest_employee) {
               employeeName = request.guest_employee_name;
@@ -298,6 +324,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               employeeName = employeeProfiles[request.employee_id].name;
               employeePhone = employeeProfiles[request.employee_id].phone || null;
             }
+          }
+          
+          // Priority 2: from company_courses.employee_id (inline creation)
+          if (!employeeName && cc.employee_id && employeeProfiles[cc.employee_id]) {
+            employeeName = employeeProfiles[cc.employee_id].name;
+            employeePhone = employeeProfiles[cc.employee_id].phone || null;
+          }
+          
+          // Priority 3: from courses.created_by_user_id (fallback)
+          if (!employeeName && course?.created_by_user_id && createdByProfiles[course.created_by_user_id]) {
+            employeeName = createdByProfiles[course.created_by_user_id].name;
+            employeePhone = createdByProfiles[course.created_by_user_id].phone || null;
           }
           
           return {
