@@ -305,6 +305,10 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     mutationFn: async ({ payment, reference, document }: { payment: GroupedPayment; reference: string; document?: File }) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       
+      if (!payment.agreementId) {
+        throw new Error("Aucun contrat trouvé pour ce chauffeur");
+      }
+      
       let paymentRecord;
       
       // Si un paiement existe déjà (paymentId), le mettre à jour
@@ -324,28 +328,39 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         if (error) throw error;
         paymentRecord = data;
       } else {
-        // Sinon créer un nouveau paiement
+        // Créer un nouveau paiement
+        const courseIds = payment.invoices
+          .map((i: any) => i.course_id)
+          .filter(Boolean);
+        
+        const insertData = {
+          company_id: companyId,
+          driver_id: payment.driverId,
+          agreement_id: payment.agreementId,
+          amount: payment.totalAmount,
+          payment_method: payment.paymentMethods[0] || "virement",
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          sent_by_user_id: userId,
+          payment_reference: reference || null,
+          period_start: payment.periodStart.toISOString(),
+          period_end: payment.periodEnd.toISOString(),
+          course_ids: courseIds.length > 0 ? courseIds : null,
+          courses_count: payment.invoiceCount
+        };
+        
+        console.log("Creating new payment:", insertData);
+        
         const { data, error } = await supabase
           .from("company_payments")
-          .insert({
-            company_id: companyId,
-            driver_id: payment.driverId,
-            agreement_id: payment.agreementId,
-            amount: payment.totalAmount,
-            payment_method: payment.paymentMethods[0] || "virement",
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            sent_by_user_id: userId,
-            payment_reference: reference,
-            period_start: payment.periodStart.toISOString(),
-            period_end: payment.periodEnd.toISOString(),
-            course_ids: payment.invoices.map((i: any) => i.course_id).filter(Boolean),
-            courses_count: payment.invoiceCount
-          })
+          .insert(insertData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating payment:", error);
+          throw error;
+        }
         paymentRecord = data;
       }
 
