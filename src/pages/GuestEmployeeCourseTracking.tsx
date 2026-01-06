@@ -126,15 +126,18 @@ export default function GuestEmployeeCourseTracking() {
             if (driverData) {
               result.course.driver = { ...driverData };
               
-              // Fetch driver profile
+              // Fetch driver profile via RPC function (bypasses RLS for guest access)
               if (driverData.user_id) {
-                const { data: profile } = await supabase
-                  .from("profiles")
-                  .select("full_name, phone, email, profile_photo_url")
-                  .eq("id", driverData.user_id)
-                  .maybeSingle();
-                if (profile) {
-                  result.course.driver.profile = profile;
+                const { data: profileData } = await supabase
+                  .rpc('get_company_course_driver_profile', { driver_user_id: driverData.user_id });
+                
+                if (profileData && profileData.length > 0) {
+                  result.course.driver.profile = {
+                    full_name: profileData[0].full_name,
+                    profile_photo_url: profileData[0].profile_photo_url,
+                    phone: profileData[0].phone,
+                    email: profileData[0].email
+                  };
                 }
               }
               
@@ -193,14 +196,19 @@ export default function GuestEmployeeCourseTracking() {
                 if (driverData) {
                   quote.driver = driverData;
                   
-                  // Fetch profile
+                  // Fetch profile via RPC function (bypasses RLS for guest access)
                   if (driverData.user_id) {
-                    const { data: profile } = await supabase
-                      .from("profiles")
-                      .select("full_name, phone, email, profile_photo_url")
-                      .eq("id", driverData.user_id)
-                      .maybeSingle();
-                    quote.driver.profile = profile;
+                    const { data: profileData } = await supabase
+                      .rpc('get_company_course_driver_profile', { driver_user_id: driverData.user_id });
+                    
+                    if (profileData && profileData.length > 0) {
+                      quote.driver.profile = {
+                        full_name: profileData[0].full_name,
+                        profile_photo_url: profileData[0].profile_photo_url,
+                        phone: profileData[0].phone,
+                        email: profileData[0].email
+                      };
+                    }
                   }
                   
                   // Fetch vehicles
