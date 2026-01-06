@@ -21,6 +21,8 @@ import {
   X,
   Eye,
   ArrowRight,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,6 +66,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState<DriverSearchFiltersState>(defaultFilters);
   const [searchResults, setSearchResults] = useState<Driver[]>([]);
+  const [pendingDriversInSearch, setPendingDriversInSearch] = useState<Driver[]>([]);
   const [searching, setSearching] = useState(false);
   const [proposingDriver, setProposingDriver] = useState<string | null>(null);
   const [pendingProposals, setPendingProposals] = useState<string[]>([]);
@@ -243,13 +246,14 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         );
       }
 
-      // Exclure les chauffeurs déjà partenaires ou en attente
-      const existingIds = [...drivers.map(d => d.id), ...pendingProposals];
-      const filteredDrivers = driversData.filter(d => !existingIds.includes(d.id));
+      // Séparer les chauffeurs déjà partenaires et ceux en attente
+      const partnerIds = drivers.map(d => d.id);
+      const availableDrivers = driversData.filter(d => !partnerIds.includes(d.id) && !pendingProposals.includes(d.id));
+      const pendingDrivers = driversData.filter(d => pendingProposals.includes(d.id));
 
-      // Enrichir avec les profils
+      // Enrichir les chauffeurs disponibles
       const enriched: Driver[] = [];
-      for (const driver of filteredDrivers) {
+      for (const driver of availableDrivers) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, avatar_url")
@@ -280,7 +284,41 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         });
       }
 
+      // Enrichir les chauffeurs en attente
+      const enrichedPending: Driver[] = [];
+      for (const driver of pendingDrivers) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, avatar_url")
+          .eq("id", driver.user_id)
+          .maybeSingle();
+
+        enrichedPending.push({
+          id: driver.id,
+          user_id: driver.user_id,
+          full_name: profile?.full_name || "Chauffeur",
+          avatar_url: profile?.avatar_url || null,
+          card_photo_url: driver.card_photo_url || null,
+          working_sectors: driver.working_sectors,
+          vehicle_model: driver.vehicle_model,
+          rating: driver.rating,
+          total_rides: driver.total_rides,
+          contact_phone: driver.contact_phone,
+          contact_email: driver.contact_email,
+          show_phone: driver.show_phone ?? false,
+          show_email: driver.show_email ?? false,
+          show_rating_partners: driver.show_rating_partners ?? false,
+          display_driver_name: driver.display_driver_name ?? true,
+          display_company_name: driver.display_company_name ?? true,
+          services_offered: driver.services_offered,
+          company_name: driver.company_name,
+          city: driver.city,
+          department: driver.department,
+        });
+      }
+
       setSearchResults(enriched);
+      setPendingDriversInSearch(enrichedPending);
     } catch (error) {
       console.error("Erreur recherche:", error);
       toast.error("Erreur lors de la recherche");
@@ -551,74 +589,160 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                       <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
                       <p className="text-muted-foreground">Recherche en cours...</p>
                     </div>
-                  ) : searchResults.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {searchResults.map((driver, index) => (
-                        <Card 
-                          key={driver.id}
-                          className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all hover:scale-[1.02]"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          <CardContent className="pt-6">
-                            <div className="flex items-start gap-4">
-                              <Avatar className="w-12 h-12 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
-                                <AvatarImage src={getDriverPhoto(driver) || undefined} />
-                                <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
-                                  {getDisplayName(driver).slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
-                                {(driver.city || getMainSector(driver.working_sectors)) && (
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {driver.city || getMainSector(driver.working_sectors)}
-                                  </p>
-                                )}
-                                {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                    <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                  ) : (searchResults.length > 0 || pendingDriversInSearch.length > 0) ? (
+                    <div className="space-y-6">
+                      {/* Section des demandes en attente */}
+                      {pendingDriversInSearch.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-amber-500" />
+                            <h3 className="font-semibold text-sm text-amber-600">Demandes en attente ({pendingDriversInSearch.length})</h3>
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {pendingDriversInSearch.map((driver, index) => (
+                              <Card 
+                                key={driver.id}
+                                className="group relative overflow-hidden border-amber-200/50 bg-gradient-to-br from-amber-50/50 to-transparent"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                <div className="absolute top-2 right-2">
+                                  <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-xs">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    En attente
+                                  </Badge>
+                                </div>
+                                <CardContent className="pt-6">
+                                  <div className="flex items-start gap-4">
+                                    <Avatar className="w-12 h-12 ring-2 ring-amber-200 ring-offset-2 ring-offset-background">
+                                      <AvatarImage src={getDriverPhoto(driver) || undefined} />
+                                      <AvatarFallback className="bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 font-bold">
+                                        {getDisplayName(driver).slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
+                                      {(driver.city || getMainSector(driver.working_sectors)) && (
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                          <MapPin className="w-3 h-3" />
+                                          {driver.city || getMainSector(driver.working_sectors)}
+                                        </p>
+                                      )}
+                                      {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                          <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                            </div>
 
-                            {driver.display_company_name && driver.company_name && (
-                              <Badge variant="outline" className="mt-3 text-xs">
-                                <Building2 className="w-3 h-3 mr-1" />
-                                {driver.company_name}
-                              </Badge>
-                            )}
+                                  {driver.display_company_name && driver.company_name && (
+                                    <Badge variant="outline" className="mt-3 text-xs">
+                                      <Building2 className="w-3 h-3 mr-1" />
+                                      {driver.company_name}
+                                    </Badge>
+                                  )}
 
-                            <div className="flex gap-2 mt-4">
-                              <Button
-                                size="sm"
-                                onClick={() => proposeDriver(driver.id)}
-                                disabled={proposingDriver === driver.id}
-                                className="flex-1 bg-gradient-to-r from-accent to-success"
-                              >
-                                {proposingDriver === driver.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <UserPlus className="w-4 h-4 mr-1" />
-                                    Inviter
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedDriver(driver)}
-                                className="border-accent/20 hover:bg-accent/10"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
+                                  <div className="flex gap-2 mt-4">
+                                    <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-100/50 text-amber-700 text-xs">
+                                      <AlertCircle className="w-4 h-4" />
+                                      <span>Invitation envoyée</span>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setSelectedDriver(driver)}
+                                      className="border-amber-200 hover:bg-amber-50"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Section des chauffeurs disponibles */}
+                      {searchResults.length > 0 && (
+                        <div className="space-y-3">
+                          {pendingDriversInSearch.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              <UserPlus className="w-4 h-4 text-accent" />
+                              <h3 className="font-semibold text-sm">Chauffeurs disponibles ({searchResults.length})</h3>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                          )}
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {searchResults.map((driver, index) => (
+                              <Card 
+                                key={driver.id}
+                                className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all hover:scale-[1.02]"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                              >
+                                <CardContent className="pt-6">
+                                  <div className="flex items-start gap-4">
+                                    <Avatar className="w-12 h-12 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
+                                      <AvatarImage src={getDriverPhoto(driver) || undefined} />
+                                      <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
+                                        {getDisplayName(driver).slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
+                                      {(driver.city || getMainSector(driver.working_sectors)) && (
+                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                          <MapPin className="w-3 h-3" />
+                                          {driver.city || getMainSector(driver.working_sectors)}
+                                        </p>
+                                      )}
+                                      {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
+                                        <div className="flex items-center gap-1 mt-1">
+                                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                          <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {driver.display_company_name && driver.company_name && (
+                                    <Badge variant="outline" className="mt-3 text-xs">
+                                      <Building2 className="w-3 h-3 mr-1" />
+                                      {driver.company_name}
+                                    </Badge>
+                                  )}
+
+                                  <div className="flex gap-2 mt-4">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => proposeDriver(driver.id)}
+                                      disabled={proposingDriver === driver.id}
+                                      className="flex-1 bg-gradient-to-r from-accent to-success"
+                                    >
+                                      {proposingDriver === driver.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <UserPlus className="w-4 h-4 mr-1" />
+                                          Inviter
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setSelectedDriver(driver)}
+                                      className="border-accent/20 hover:bg-accent/10"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-12">
