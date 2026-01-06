@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { 
   Car, 
   Phone, 
+  Mail,
   Star, 
   MapPin, 
   Loader2, 
@@ -25,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 
 interface Driver {
   id: string;
@@ -35,6 +37,9 @@ interface Driver {
   vehicle_model: string | null;
   rating: number | null;
   contact_phone: string | null;
+  contact_email: string | null;
+  show_phone: boolean;
+  show_email: boolean;
   services_offered: string[] | null;
   company_name: string | null;
 }
@@ -56,6 +61,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [pendingProposals, setPendingProposals] = useState<string[]>([]);
   const [activeView, setActiveView] = useState<"partners" | "search">("partners");
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [profileDialogDriverId, setProfileDialogDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanyDrivers();
@@ -89,7 +95,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       // Récupérer les chauffeurs
       const { data: driversData, error: driversError } = await supabase
         .from("drivers")
-        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, services_offered, company_name")
+        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, company_name")
         .in("id", driverIds);
 
       if (driversError) {
@@ -115,6 +121,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
           contact_phone: driver.contact_phone,
+          contact_email: driver.contact_email,
+          show_phone: driver.show_phone ?? false,
+          show_email: driver.show_email ?? false,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
         });
@@ -154,7 +163,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Afficher tous les chauffeurs visibles aux entreprises
         const { data, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .limit(20);
@@ -174,7 +183,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         // Chauffeurs trouvés par nom d'entreprise ou secteur
         const { data: byCompany, error } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+          .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
           .eq("status", "validated")
           .eq("visible_to_companies", true)
           .ilike("company_name", `%${searchQuery}%`)
@@ -187,7 +196,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+            .select("id, user_id, vehicle_model, rating, contact_phone, contact_email, show_phone, show_email, services_offered, working_sectors, company_name")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -223,6 +232,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           vehicle_model: driver.vehicle_model,
           rating: driver.rating,
           contact_phone: driver.contact_phone,
+          contact_email: driver.contact_email,
+          show_phone: driver.show_phone ?? false,
+          show_email: driver.show_email ?? false,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
         });
@@ -383,8 +395,14 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-bold truncate">{driver.full_name}</h3>
+                            {driver.company_name && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Building2 className="w-3 h-3" />
+                                {driver.company_name}
+                              </p>
+                            )}
                             {getMainSector(driver.working_sectors) && (
-                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
                                 {getMainSector(driver.working_sectors)}
                               </p>
@@ -399,13 +417,40 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                         </div>
 
                         {driver.vehicle_model && (
-                          <Badge variant="secondary" className="mt-4 bg-primary/10 text-primary border-primary/20">
+                          <Badge variant="secondary" className="mt-3 bg-primary/10 text-primary border-primary/20">
                             <Car className="w-3 h-3 mr-1" />
                             {driver.vehicle_model}
                           </Badge>
                         )}
 
-                        <div className="flex gap-2 mt-4">
+                        {/* Contact buttons */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {driver.show_phone && driver.contact_phone && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-8 text-xs border-primary/20 hover:bg-primary/10"
+                              onClick={() => window.open(`tel:${driver.contact_phone}`, "_blank")}
+                            >
+                              <Phone className="w-3 h-3 mr-1" />
+                              Appeler
+                            </Button>
+                          )}
+                          {driver.show_email && driver.contact_email && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-8 text-xs border-primary/20 hover:bg-primary/10"
+                              onClick={() => window.open(`mailto:${driver.contact_email}`, "_blank")}
+                            >
+                              <Mail className="w-3 h-3 mr-1" />
+                              Email
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2 mt-3">
                           {canCreateCourses && (
                             <Button 
                               size="sm" 
@@ -416,16 +461,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                               <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
                           )}
-                          {driver.contact_phone && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="border-primary/20 hover:bg-primary/10"
-                              onClick={() => window.open(`tel:${driver.contact_phone}`, "_blank")}
-                            >
-                              <Phone className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="border-accent/30 hover:bg-accent/10"
+                            onClick={() => setProfileDialogDriverId(driver.id)}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Profil
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -653,6 +697,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog profil public complet */}
+      <DriverProfileDialog
+        driverId={profileDialogDriverId}
+        open={!!profileDialogDriverId}
+        onOpenChange={(open) => !open && setProfileDialogDriverId(null)}
+      />
     </div>
   );
 }
