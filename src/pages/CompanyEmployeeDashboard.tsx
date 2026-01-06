@@ -28,6 +28,7 @@ import logo from "@/assets/logo-solocab.png";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EmployeeExpenseReports } from "@/components/company/EmployeeExpenseReports";
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
+import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
 
 interface EmployeeData {
   id: string;
@@ -229,6 +230,9 @@ export default function CompanyEmployeeDashboard() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Confirmations de paiement en attente */}
+            <EmployeePaymentConfirmation employeeId={employee.id} />
+
             {/* Carte entreprise */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
               <CardContent className="pt-6">
