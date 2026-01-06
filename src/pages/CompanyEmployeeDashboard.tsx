@@ -13,12 +13,13 @@ import {
   Clock,
   MapPin,
   Calendar,
-  
   Euro,
   FileText,
   Plus,
   Loader2,
   XCircle,
+  Users,
+  Search,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -29,6 +30,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
+import { EmployeeCompanyDrivers } from "@/components/company/EmployeeCompanyDrivers";
 
 interface EmployeeData {
   id: string;
@@ -38,6 +40,7 @@ interface EmployeeData {
   job_title: string | null;
   can_create_courses: boolean;
   can_view_invoices: boolean;
+  can_invite_drivers: boolean;
   current_month_spent: number;
   max_monthly_budget: number | null;
   company: {
@@ -47,7 +50,9 @@ interface EmployeeData {
     address: string;
     contact_name: string;
     contact_email: string;
+    logo_url: string | null;
   };
+  user_name: string | null;
 }
 
 interface Course {
@@ -91,7 +96,8 @@ export default function CompanyEmployeeDashboard() {
             siret,
             address,
             contact_name,
-            contact_email
+            contact_email,
+            logo_url
           )
         `)
         .eq("user_id", user?.id)
@@ -100,10 +106,18 @@ export default function CompanyEmployeeDashboard() {
 
       if (empError) throw empError;
 
+      // Récupérer le nom de l'utilisateur
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user?.id)
+        .maybeSingle();
+
       const companyData = empData.company as unknown as EmployeeData["company"];
       setEmployee({
         ...empData,
         company: companyData,
+        user_name: profileData?.full_name || null,
       });
 
       // Récupérer les courses de l'employé avec détails enrichis
@@ -233,16 +247,28 @@ export default function CompanyEmployeeDashboard() {
       <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="SoloCab" className="w-10 h-10" />
+            {/* Logo entreprise ou SoloCab par défaut */}
+            {employee.company.logo_url ? (
+              <img 
+                src={employee.company.logo_url} 
+                alt={employee.company.company_name} 
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-primary" />
-                <span className="font-semibold">{employee.company.company_name}</span>
+                <span className="font-semibold text-sm sm:text-base">
+                  Bonjour, {employee.user_name?.split(" ")[0] || "Collaborateur"}
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground">Espace Collaborateur</p>
+              <p className="text-xs text-muted-foreground">{employee.company.company_name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
@@ -257,26 +283,34 @@ export default function CompanyEmployeeDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Calcul dynamique du nombre d'onglets */}
           {(() => {
-            const tabCount = 2 + // Accueil + Profil (toujours présents)
-              1 + // Mes courses (toujours présent - suivi)
-              (employee.can_create_courses ? 0 : 0) + // Le bouton "nouvelle course" est dans l'onglet
-              (employee.can_view_invoices ? 1 : 0); // Factures si permission
+            const hasDriversTab = employee.can_create_courses; // Voir chauffeurs si peut réserver
+            const hasInvoicesTab = employee.can_view_invoices;
+            const tabCount = 3 + // Accueil + Courses + Profil
+              (hasDriversTab ? 1 : 0) +
+              (hasInvoicesTab ? 1 : 0);
             
             return (
               <TabsList className={`grid w-full mb-6 ${
                 tabCount === 3 ? 'grid-cols-3' : 
                 tabCount === 4 ? 'grid-cols-4' : 
-                'grid-cols-3'
+                tabCount === 5 ? 'grid-cols-5' :
+                'grid-cols-4'
               }`}>
                 <TabsTrigger value="overview" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   <span className="hidden sm:inline">Accueil</span>
                 </TabsTrigger>
+                {hasDriversTab && (
+                  <TabsTrigger value="drivers" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Chauffeurs</span>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="courses" className="flex items-center gap-2">
                   <Car className="w-4 h-4" />
                   <span className="hidden sm:inline">Mes courses</span>
                 </TabsTrigger>
-                {employee.can_view_invoices && (
+                {hasInvoicesTab && (
                   <TabsTrigger value="invoices" className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     <span className="hidden sm:inline">Factures</span>
