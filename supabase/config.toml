@@ -164,3 +164,6 @@ verify_jwt = true
 
 [functions.send-company-admin-welcome]
 verify_jwt = false
+
+[functions.create-company-course]
+verify_jwt = false

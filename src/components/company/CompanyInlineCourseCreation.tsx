@@ -94,7 +94,7 @@ export function CompanyInlineCourseCreation({
     },
   });
 
-  // Create course mutation
+  // Create course mutation using edge function
   const createCourseMutation = useMutation({
     mutationFn: async () => {
       if (!selectedDriver?.driver_id) throw new Error("Aucun chauffeur sélectionné");
@@ -103,19 +103,18 @@ export function CompanyInlineCourseCreation({
       }
       if (!scheduledDate) throw new Error("Veuillez sélectionner une date");
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non connecté");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Non connecté");
       
-      console.log("[CompanyInlineCourseCreation] Creating course with:", {
+      console.log("[CompanyInlineCourseCreation] Creating course via edge function:", {
         driver_id: selectedDriver.driver_id,
-        user_id: user.id,
         company_id: companyId
       });
 
-      // Create course
-      const { data: course, error: courseError } = await supabase
-        .from("courses")
-        .insert({
+      // Use edge function to bypass RLS issues
+      const { data, error } = await supabase.functions.invoke('create-company-course', {
+        body: {
+          company_id: companyId,
           driver_id: selectedDriver.driver_id,
           pickup_address: sanitizeAddress(pickupAddress),
           pickup_latitude: pickupCoordinates!.latitude,
@@ -126,52 +125,30 @@ export function CompanyInlineCourseCreation({
           scheduled_date: scheduledDate,
           passengers_count: sanitizeInteger(passengersCount, 1, selectedDriver.driver?.max_passengers || 4),
           notes: sanitizeString(notes),
-          status: "pending",
-          created_by_user_id: user.id,
-        })
-        .select()
-        .single();
+        }
+      });
 
-      if (courseError) throw courseError;
+      if (error) {
+        console.error("[CompanyInlineCourseCreation] Edge function error:", error);
+        throw new Error(error.message || "Erreur lors de la création");
+      }
 
-      // Link to company
-      const { error: linkError } = await supabase
-        .from("company_courses")
-        .insert({
-          company_id: companyId,
-          course_id: course.id,
-          invoice_to_company: true,
-        });
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-      if (linkError) throw linkError;
+      console.log("[CompanyInlineCourseCreation] Course created successfully:", data);
 
-      // Auto-create devis
+      // Try to auto-create devis (non-blocking)
       try {
         await supabase.functions.invoke("create-devis-auto", {
-          body: { course_id: course.id, driver_id: selectedDriver.driver_id }
+          body: { course_id: data.course.id, driver_id: selectedDriver.driver_id }
         });
       } catch (e) {
         console.warn("Devis auto failed:", e);
       }
 
-      // Notify driver
-      if (selectedDriver.driver?.user_id) {
-        const { data: companyData } = await supabase
-          .from("companies")
-          .select("company_name")
-          .eq("id", companyId)
-          .single();
-
-        await supabase.from("notifications").insert({
-          user_id: selectedDriver.driver.user_id,
-          title: "Nouvelle demande entreprise",
-          message: `${companyData?.company_name || "Une entreprise"} demande une course`,
-          type: "course_request",
-          link: "/driver-dashboard?tab=courses",
-        });
-      }
-
-      return course;
+      return data.course;
     },
     onSuccess: () => {
       toast.success("Demande de course envoyée au chauffeur");
