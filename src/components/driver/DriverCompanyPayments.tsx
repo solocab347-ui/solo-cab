@@ -1053,6 +1053,13 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
                     📄 {payment.consolidatedInvoiceNumber}
                   </Badge>
                 )}
+                
+                {/* Message d'information sur les délais de réception */}
+                <div className="mt-3 pt-2 border-t border-blue-500/10">
+                  <p className="text-xs text-muted-foreground italic leading-relaxed">
+                    💡 Pour les virements bancaires et certains moyens de paiement, un délai de 2 à 3 jours ouvrés peut être nécessaire avant réception. Veuillez patienter avant de confirmer ou contester pour éviter tout malentendu.
+                  </p>
+                </div>
               </div>
             )}
 
