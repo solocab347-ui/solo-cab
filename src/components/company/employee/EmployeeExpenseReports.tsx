@@ -22,6 +22,10 @@ import {
   Car,
   MapPin,
   User,
+  Bell,
+  Send,
+  History,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -56,6 +60,8 @@ interface ExpenseReport {
   reimbursement_method: string | null;
   reimbursement_month: string | null;
   reimbursed_at: string | null;
+  last_reminder_at: string | null;
+  reminder_count: number;
   course?: {
     id: string;
     pickup_address: string;
@@ -87,6 +93,8 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -101,6 +109,47 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
   useEffect(() => {
     fetchExpenses();
   }, [employeeId]);
+
+  const sendReminder = async (expenseId: string) => {
+    setSendingReminder(expenseId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      // Insert reminder
+      const { error: reminderError } = await supabase
+        .from("expense_report_reminders")
+        .insert({
+          expense_report_id: expenseId,
+          sent_by_user_id: user.id,
+          message: "Relance pour remboursement de note de frais",
+        } as any);
+
+      if (reminderError) throw reminderError;
+
+      // Update expense report
+      const { error: updateError } = await supabase
+        .from("expense_reports")
+        .update({
+          last_reminder_at: new Date().toISOString(),
+          reminder_count: expenses.find(e => e.id === expenseId)?.reminder_count || 0 + 1,
+        } as any)
+        .eq("id", expenseId);
+
+      if (updateError) throw updateError;
+
+      toast.success("Relance envoyée !", {
+        description: "L'entreprise a été notifiée de votre demande"
+      });
+
+      fetchExpenses();
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      toast.error("Erreur lors de l'envoi de la relance");
+    } finally {
+      setSendingReminder(null);
+    }
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -261,24 +310,60 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
     );
   }
 
+  // Filter expenses by tab
+  const pendingExpenses = expenses.filter(e => e.status === "pending" || e.status === "approved");
+  const historyExpenses = expenses.filter(e => e.status === "reimbursed" || e.status === "rejected");
+  const displayedExpenses = activeTab === "pending" ? pendingExpenses : historyExpenses;
+
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
       <div className="h-1 bg-gradient-to-r from-accent via-primary to-success" />
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="flex items-center gap-2">
           <Receipt className="w-5 h-5 text-accent" />
           Notes de frais
         </CardTitle>
-        <Button
-          onClick={() => setShowCreateDialog(true)}
-          className="bg-gradient-to-r from-accent to-success"
-          size="sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle note
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchExpenses}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="bg-gradient-to-r from-accent to-success"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle note
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={activeTab === "pending" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("pending")}
+            className="flex-1 sm:flex-none"
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            En cours ({pendingExpenses.length})
+          </Button>
+          <Button
+            variant={activeTab === "history" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveTab("history")}
+            className="flex-1 sm:flex-none"
+          >
+            <History className="w-4 h-4 mr-2" />
+            Historique ({historyExpenses.length})
+          </Button>
+        </div>
+
         {expenses.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
@@ -297,9 +382,13 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
               Créer une note de frais
             </Button>
           </div>
+        ) : displayedExpenses.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>{activeTab === "pending" ? "Aucune note de frais en cours" : "Aucun historique"}</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {expenses.map((expense) => {
+            {displayedExpenses.map((expense) => {
               const statusConfig = getStatusConfig(expense.status, expense.reimbursement_method);
               const StatusIcon = statusConfig.icon;
               
@@ -419,6 +508,41 @@ export function EmployeeExpenseReports({ employeeId, companyId }: EmployeeExpens
                               Remboursée le {format(new Date(expense.reimbursed_at), "dd MMM yyyy", { locale: fr })}
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Reminder button for pending/approved expenses */}
+                      {(expense.status === "pending" || expense.status === "approved") && (
+                        <div className="mt-3 pt-3 border-t border-border/50">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-xs text-muted-foreground">
+                              {expense.last_reminder_at ? (
+                                <span className="flex items-center gap-1">
+                                  <Bell className="w-3 h-3" />
+                                  Dernière relance: {format(new Date(expense.last_reminder_at), "dd MMM", { locale: fr })}
+                                  {expense.reminder_count > 1 && ` (${expense.reminder_count}x)`}
+                                </span>
+                              ) : (
+                                <span>Pas encore de relance</span>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => sendReminder(expense.id)}
+                              disabled={sendingReminder === expense.id}
+                              className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                            >
+                              {sendingReminder === expense.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Relancer
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       )}
 

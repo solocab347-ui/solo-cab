@@ -39,6 +39,8 @@ import {
   Calendar,
   User,
   Download,
+  Bell,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -56,6 +58,8 @@ interface ExpenseReport {
   reimbursed_at: string | null;
   rejection_reason: string | null;
   notes: string | null;
+  last_reminder_at: string | null;
+  reminder_count: number;
   employee: {
     id: string;
     department: string | null;
@@ -343,7 +347,17 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
                           <span className="text-sm">{getPaymentMethodLabel(report.payment_method)}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{getStatusBadge(report.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(report.status)}
+                          {report.reminder_count > 0 && (report.status === "pending" || report.status === "approved") && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                              <Bell className="w-3 h-3 mr-1" />
+                              {report.reminder_count}x
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
