@@ -52,6 +52,11 @@ interface UnifiedQuote {
   company_logo_url: string | null;
   company_contact_email: string | null;
   company_contact_phone: string | null;
+  company_siret: string | null;
+  company_siren: string | null;
+  company_tva_number: string | null;
+  company_address: string | null;
+  company_billing_address: string | null;
   // Employee/collaborator info
   employee_name: string | null;
   employee_phone: string | null;
@@ -209,7 +214,12 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
               company_name,
               logo_url,
               contact_email,
-              contact_phone
+              contact_phone,
+              siret,
+              siren,
+              tva_number,
+              address,
+              billing_address
             )
           )
         `)
@@ -277,6 +287,11 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         company_logo_url: null,
         company_contact_email: null,
         company_contact_phone: null,
+        company_siret: null,
+        company_siren: null,
+        company_tva_number: null,
+        company_address: null,
+        company_billing_address: null,
         employee_name: null,
         employee_phone: null,
         employee_email: null,
@@ -337,6 +352,11 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           company_logo_url: req.companies.logo_url,
           company_contact_email: req.companies.contact_email,
           company_contact_phone: req.companies.contact_phone,
+          company_siret: req.companies.siret || null,
+          company_siren: req.companies.siren || null,
+          company_tva_number: req.companies.tva_number || null,
+          company_address: req.companies.address || null,
+          company_billing_address: req.companies.billing_address || null,
           employee_name: employeeName || null,
           employee_phone: employeePhone || null,
           employee_email: employeeEmail || null,
@@ -423,12 +443,6 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       return;
     }
 
-    // Company quotes don't have PDF download yet
-    if (devis.is_company_quote) {
-      toast.info("Le téléchargement PDF n'est pas disponible pour les devis entreprise");
-      return;
-    }
-
     const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -476,22 +490,83 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
       doc.text(addressLines, 20, infoY + 5);
     }
 
-    // Client info (right side)
+    // Client/Company info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
     
-    const clientName = devis.client_name || "N/A";
-    doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+    const isCompanyQuote = devis.is_company_quote && devis.company_name;
     
-    if (devis.client_email) {
-      doc.text(devis.client_email, pageWidth - 20, 76, { align: 'right' });
-    }
-    
-    if (devis.client_phone) {
-      doc.text(`Tél: ${devis.client_phone}`, pageWidth - 20, 81, { align: 'right' });
+    if (isCompanyQuote) {
+      // Display company information
+      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      doc.text(devis.company_name || "N/A", pageWidth - 20, 71, { align: 'right' });
+      
+      let companyInfoY = 76;
+      
+      if (devis.company_siret) {
+        doc.text(`SIRET: ${devis.company_siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      } else if (devis.company_siren) {
+        doc.text(`SIREN: ${devis.company_siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (devis.company_tva_number) {
+        doc.text(`TVA: ${devis.company_tva_number}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      const companyAddress = devis.company_billing_address || devis.company_address;
+      if (companyAddress) {
+        const addressLines = doc.splitTextToSize(companyAddress, 75);
+        addressLines.forEach((line: string, index: number) => {
+          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+        });
+        companyInfoY += addressLines.length * 4;
+      }
+      
+      if (devis.company_contact_email) {
+        doc.text(devis.company_contact_email, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (devis.company_contact_phone) {
+        doc.text(`Tél: ${devis.company_contact_phone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      // Display collaborator info
+      if (devis.employee_name) {
+        companyInfoY += 2;
+        doc.setFont(undefined, 'bold');
+        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        companyInfoY += 5;
+        doc.text(devis.employee_name, pageWidth - 20, companyInfoY, { align: 'right' });
+        if (devis.employee_phone) {
+          companyInfoY += 4;
+          doc.text(`Tél: ${devis.employee_phone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        }
+      }
+    } else {
+      // Regular client
+      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      const clientName = devis.client_name || "N/A";
+      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+      
+      if (devis.client_email) {
+        doc.text(devis.client_email, pageWidth - 20, 76, { align: 'right' });
+      }
+      
+      if (devis.client_phone) {
+        doc.text(`Tél: ${devis.client_phone}`, pageWidth - 20, 81, { align: 'right' });
+      }
     }
 
     // Service details box

@@ -42,7 +42,18 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
             company_address,
             siret,
             siren,
+            tva_number,
             profiles:user_id(full_name, phone)
+          ),
+          companies!factures_company_id_fkey(
+            company_name,
+            siret,
+            siren,
+            tva_number,
+            address,
+            billing_address,
+            contact_email,
+            contact_phone
           )
         `)
         .eq("company_id", companyId)
@@ -116,7 +127,7 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
     
     let yPos = 50;
     
-    // Chauffeur
+    // Chauffeur / Émetteur (left side)
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text("ÉMETTEUR", 20, yPos);
@@ -140,12 +151,64 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
     
     if (facture.drivers?.siret) {
       doc.text(`SIRET: ${facture.drivers.siret}`, 20, yPos);
+      yPos += 4;
     } else if (facture.drivers?.siren) {
       doc.text(`SIREN: ${facture.drivers.siren}`, 20, yPos);
+      yPos += 4;
+    }
+    
+    if (facture.drivers?.tva_number) {
+      doc.text(`TVA: ${facture.drivers.tva_number}`, 20, yPos);
+    }
+    
+    // Entreprise / Destinataire (right side)
+    let rightYPos = 50;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("DESTINATAIRE", pageWidth - 20, rightYPos, { align: 'right' });
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    rightYPos += 5;
+    
+    const company = facture.companies;
+    if (company) {
+      doc.text(company.company_name || "N/A", pageWidth - 20, rightYPos, { align: 'right' });
+      rightYPos += 4;
+      
+      if (company.siret) {
+        doc.text(`SIRET: ${company.siret}`, pageWidth - 20, rightYPos, { align: 'right' });
+        rightYPos += 4;
+      } else if (company.siren) {
+        doc.text(`SIREN: ${company.siren}`, pageWidth - 20, rightYPos, { align: 'right' });
+        rightYPos += 4;
+      }
+      
+      if (company.tva_number) {
+        doc.text(`TVA: ${company.tva_number}`, pageWidth - 20, rightYPos, { align: 'right' });
+        rightYPos += 4;
+      }
+      
+      const companyAddress = company.billing_address || company.address;
+      if (companyAddress) {
+        const addressLines = doc.splitTextToSize(companyAddress, 75);
+        addressLines.forEach((line: string, index: number) => {
+          doc.text(line, pageWidth - 20, rightYPos + (index * 4), { align: 'right' });
+        });
+        rightYPos += addressLines.length * 4;
+      }
+      
+      if (company.contact_email) {
+        doc.text(company.contact_email, pageWidth - 20, rightYPos, { align: 'right' });
+        rightYPos += 4;
+      }
+      
+      if (company.contact_phone) {
+        doc.text(`Tél: ${company.contact_phone}`, pageWidth - 20, rightYPos, { align: 'right' });
+      }
     }
     
     // Détails de la course
-    yPos = 95;
+    yPos = 105;
     doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.5);
     doc.rect(15, yPos, pageWidth - 30, 40);
@@ -173,7 +236,7 @@ export const CompanyFacturesList = ({ companyId }: CompanyFacturesListProps) => 
     doc.text(format(new Date(facture.courses.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 45, yPos);
     
     // Montant
-    yPos = 155;
+    yPos = 165;
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
     
