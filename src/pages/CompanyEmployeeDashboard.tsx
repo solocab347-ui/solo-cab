@@ -134,11 +134,12 @@ export default function CompanyEmployeeDashboard() {
         user_name: profileData?.full_name || null,
       });
 
-      // Fetch courses - either created by this employee OR all company courses if admin/can_view_all
-      // First, try to get courses linked to this employee
-      let coursesQuery = supabase
+      // Fetch courses - simplified query without started_at column that doesn't exist
+      const { data: coursesData, error: coursesError } = await supabase
         .from("company_courses")
         .select(`
+          course_id,
+          employee_id,
           course:courses!inner(
             id,
             pickup_address,
@@ -146,20 +147,14 @@ export default function CompanyEmployeeDashboard() {
             scheduled_date,
             status,
             distance_km,
-            started_at,
             updated_at,
-            company_payment_status,
             driver_id,
             created_by_user_id
-          ),
-          employee_id
+          )
         `)
         .eq("company_id", empData.company.id)
         .order("created_at", { ascending: false })
         .limit(50);
-
-      // For regular employees, filter by their employee_id OR courses they created
-      const { data: coursesData, error: coursesError } = await coursesQuery;
 
       console.log("[CompanyEmployeeDashboard] Courses query result:", {
         coursesData: coursesData?.length || 0,
@@ -174,8 +169,6 @@ export default function CompanyEmployeeDashboard() {
       }
 
       if (!coursesError && coursesData) {
-        console.log("[CompanyEmployeeDashboard] Raw courses:", coursesData);
-        
         // Filter courses: either assigned to this employee OR created by this user
         const filteredCourses = coursesData.filter((cc: any) => 
           cc.employee_id === empData.id || 
@@ -184,47 +177,68 @@ export default function CompanyEmployeeDashboard() {
 
         console.log("[CompanyEmployeeDashboard] Filtered courses:", filteredCourses.length);
 
-        const enrichedCourses: Course[] = [];
-        let totalSpent = 0;
+        // Get all course IDs and driver IDs for batch fetching
+        const courseIds = filteredCourses.map((cc: any) => cc.course.id);
+        const driverIds = [...new Set(filteredCourses.map((cc: any) => cc.course.driver_id).filter(Boolean))];
+
+        // Batch fetch all devis and driver info in parallel
+        const [devisResult, driversResult] = await Promise.all([
+          courseIds.length > 0 
+            ? supabase
+                .from("devis")
+                .select("course_id, amount, status")
+                .in("course_id", courseIds)
+            : Promise.resolve({ data: [] }),
+          driverIds.length > 0
+            ? supabase
+                .from("drivers")
+                .select("id, user_id")
+                .in("id", driverIds)
+            : Promise.resolve({ data: [] })
+        ]);
+
+        // Fetch driver profiles in batch
+        const driverUserIds = driversResult.data?.map((d: any) => d.user_id).filter(Boolean) || [];
+        const profilesResult = driverUserIds.length > 0
+          ? await supabase.from("profiles").select("id, full_name").in("id", driverUserIds)
+          : { data: [] };
+
+        // Create lookup maps for fast access
+        const driversMap = new Map<string, { id: string; user_id: string }>();
+        for (const d of (driversResult.data || [])) {
+          driversMap.set(d.id, d);
+        }
         
+        const profilesMap = new Map<string, { id: string; full_name: string | null }>();
+        for (const p of (profilesResult.data || [])) {
+          profilesMap.set(p.id, p);
+        }
+        
+        // Group devis by course_id and get the latest one
+        const devisMap = new Map<string, any>();
+        for (const d of (devisResult.data || [])) {
+          const existing = devisMap.get(d.course_id);
+          if (!existing || d.created_at > existing.created_at) {
+            devisMap.set(d.course_id, d);
+          }
+        }
+
         // Get current month bounds
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        
+
+        let totalSpent = 0;
+        const enrichedCourses: Course[] = [];
+
         for (const cc of filteredCourses) {
           const course = cc.course as any;
-          let driverName = null;
-          let amount = null;
+          const devis = devisMap.get(course.id);
+          const driver = driversMap.get(course.driver_id);
+          const profile = driver ? profilesMap.get(driver.user_id) : null;
+          const driverName = profile?.full_name || null;
+          const amount = devis?.amount || null;
 
-          if (course.driver_id) {
-            const { data: driver } = await supabase
-              .from("drivers")
-              .select("user_id")
-              .eq("id", course.driver_id)
-              .maybeSingle();
-            
-            if (driver?.user_id) {
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("id", driver.user_id)
-                .maybeSingle();
-              driverName = profile?.full_name || null;
-            }
-          }
-
-          // Get devis - either accepted or pending
-          const { data: devis } = await supabase
-            .from("devis")
-            .select("amount, status")
-            .eq("course_id", course.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          
-          amount = devis?.amount || null;
-          
           // Calculate monthly spent from completed courses or accepted devis
           const courseDate = new Date(course.scheduled_date);
           if (courseDate >= startOfMonth && courseDate <= endOfMonth && amount) {
@@ -235,6 +249,8 @@ export default function CompanyEmployeeDashboard() {
 
           enrichedCourses.push({
             ...course,
+            started_at: null, // Not used but kept for type compatibility
+            company_payment_status: null,
             driver_name: driverName,
             amount
           });
