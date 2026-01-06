@@ -199,99 +199,144 @@ export function EmployeeCoursesList({
 
       console.log("[EmployeeCoursesList] My courses after filter:", myCourses.length);
 
-      // Fetch company info
-      const { data: companyData } = await supabase
-        .from("companies")
-        .select("id, company_name, siret, siren, tva_number, address, billing_address, contact_email")
-        .eq("id", companyId)
-        .maybeSingle();
+      if (myCourses.length === 0) {
+        setCourses([]);
+        return;
+      }
 
-      // Enrichir avec driver, devis, facture, companyCourse
-      const enrichedCourses: CourseData[] = [];
+      // Batch fetch all data in parallel for performance
+      const myCourseIds = myCourses.map(c => c.id);
+      const driverIds = [...new Set(myCourses.map(c => c.driver_id).filter(Boolean))] as string[];
 
-      for (const course of myCourses) {
-        let driver = null;
-        let devis = null;
-        let facture = null;
-        let companyCourse = null;
-        let agreement = null;
-
-        // Get company_course info for payment method
-        const cc = companyCourses.find(c => c.course_id === course.id);
-        if (cc) {
-          const { data: ccData } = await supabase
-            .from("company_courses")
-            .select("actual_payment_method, client_confirmed_payment_method")
-            .eq("course_id", course.id)
-            .maybeSingle();
-          companyCourse = ccData;
-        }
-
-        // Get driver info with legal details
-        if (course.driver_id) {
-          const { data: driverData } = await supabase
-            .from("drivers")
-            .select("id, company_name, company_address, siret, siren, tva_number, vehicle_brand, vehicle_model, vehicle_color, user_id")
-            .eq("id", course.driver_id)
-            .single();
-
-          if (driverData) {
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("full_name, phone, profile_photo_url")
-              .eq("id", driverData.user_id)
-              .single();
-
-            driver = {
-              id: driverData.id,
-              company_name: driverData.company_name,
-              company_address: driverData.company_address,
-              siret: driverData.siret,
-              siren: driverData.siren,
-              tva_number: driverData.tva_number,
-              vehicle_brand: driverData.vehicle_brand,
-              vehicle_model: driverData.vehicle_model,
-              vehicle_color: driverData.vehicle_color,
-              profile: profileData
-            };
-
-            // Get agreement for payment frequency
-            const { data: agreementData } = await supabase
+      const [companyResult, companyCourseResult, driversResult, devisResult, facturesResult, agreementsResult] = await Promise.all([
+        // Company info
+        supabase
+          .from("companies")
+          .select("id, company_name, siret, siren, tva_number, address, billing_address, contact_email")
+          .eq("id", companyId)
+          .maybeSingle(),
+        // Company courses payment info
+        supabase
+          .from("company_courses")
+          .select("course_id, actual_payment_method, client_confirmed_payment_method")
+          .in("course_id", myCourseIds),
+        // Drivers
+        driverIds.length > 0
+          ? supabase
+              .from("drivers")
+              .select("id, company_name, company_address, siret, siren, tva_number, vehicle_brand, vehicle_model, vehicle_color, user_id")
+              .in("id", driverIds)
+          : Promise.resolve({ data: [] as any[] }),
+        // Devis - only select columns that exist
+        supabase
+          .from("devis")
+          .select("id, course_id, quote_number, amount, status, valid_until, base_price, distance_price, created_at")
+          .in("course_id", myCourseIds),
+        // Factures - only select columns that exist
+        supabase
+          .from("factures")
+          .select("id, course_id, invoice_number, invoice_number_generated, amount, payment_status")
+          .in("course_id", myCourseIds),
+        // Agreements
+        driverIds.length > 0
+          ? supabase
               .from("company_driver_agreements")
-              .select("payment_frequency, payment_day")
-              .eq("driver_id", course.driver_id)
+              .select("driver_id, payment_frequency, payment_day")
+              .in("driver_id", driverIds)
               .eq("company_id", companyId)
               .eq("status", "accepted")
-              .maybeSingle();
-            agreement = agreementData;
-          }
+          : Promise.resolve({ data: [] as any[] })
+      ]);
+
+      // Fetch driver profiles in batch
+      const driverUserIds = driversResult.data?.map((d: any) => d.user_id).filter(Boolean) || [];
+      const profilesResult = driverUserIds.length > 0
+        ? await supabase.from("profiles").select("id, full_name, phone, profile_photo_url").in("id", driverUserIds)
+        : { data: [] };
+
+      // Create lookup maps
+      const companyData = companyResult.data;
+      
+      const companyCourseMap = new Map<string, any>();
+      for (const cc of (companyCourseResult.data || [])) {
+        companyCourseMap.set(cc.course_id, cc);
+      }
+
+      const driversMap = new Map<string, any>();
+      for (const d of (driversResult.data || [])) {
+        driversMap.set(d.id, d);
+      }
+
+      const profilesMap = new Map<string, any>();
+      for (const p of (profilesResult.data || [])) {
+        profilesMap.set(p.id, p);
+      }
+
+      // Group devis by course_id, keep only the latest
+      const devisMap = new Map<string, any>();
+      for (const d of (devisResult.data || [])) {
+        const existing = devisMap.get(d.course_id);
+        if (!existing || new Date(d.created_at) > new Date(existing.created_at)) {
+          devisMap.set(d.course_id, d);
         }
+      }
 
-        // Get devis with pricing details
-        const { data: devisData } = await supabase
-          .from("devis")
-          .select("id, quote_number, amount, status, valid_until, base_price, distance_price, tva_rate, tva_amount")
-          .eq("course_id", course.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      const facturesMap = new Map<string, any>();
+      for (const f of (facturesResult.data || [])) {
+        facturesMap.set(f.course_id, f);
+      }
 
-        if (devisData) {
-          devis = devisData;
-        }
+      const agreementsMap = new Map<string, any>();
+      for (const a of (agreementsResult.data || [])) {
+        agreementsMap.set(a.driver_id, a);
+      }
 
-        // Get facture with details
-        const { data: factureData } = await supabase
-          .from("factures")
-          .select("id, invoice_number, invoice_number_generated, amount, payment_status, tva_rate, tva_amount")
-          .eq("course_id", course.id)
-          .maybeSingle();
+      // Build enriched courses
+      const enrichedCourses: CourseData[] = myCourses.map(course => {
+        const driverData = driversMap.get(course.driver_id);
+        const profileData = driverData ? profilesMap.get(driverData.user_id) : null;
+        
+        const driver = driverData ? {
+          id: driverData.id,
+          company_name: driverData.company_name,
+          company_address: driverData.company_address,
+          siret: driverData.siret,
+          siren: driverData.siren,
+          tva_number: driverData.tva_number,
+          vehicle_brand: driverData.vehicle_brand,
+          vehicle_model: driverData.vehicle_model,
+          vehicle_color: driverData.vehicle_color,
+          profile: profileData
+        } : null;
 
-        if (factureData) {
-          facture = factureData;
-        }
+        const devisData = devisMap.get(course.id);
+        const devis = devisData ? {
+          id: devisData.id,
+          quote_number: devisData.quote_number,
+          amount: devisData.amount,
+          status: devisData.status,
+          valid_until: devisData.valid_until,
+          base_price: devisData.base_price,
+          distance_price: devisData.distance_price,
+          tva_rate: null,
+          tva_amount: null
+        } : null;
 
-        enrichedCourses.push({
+        const factureData = facturesMap.get(course.id);
+        const facture = factureData ? {
+          id: factureData.id,
+          invoice_number: factureData.invoice_number,
+          invoice_number_generated: factureData.invoice_number_generated,
+          amount: factureData.amount,
+          payment_status: factureData.payment_status,
+          tva_rate: null,
+          tva_amount: null
+        } : null;
+
+        const companyCourse = companyCourseMap.get(course.id) || null;
+        const agreement = driverData ? agreementsMap.get(driverData.id) : null;
+
+        return {
           ...course,
           driver,
           devis,
@@ -299,8 +344,8 @@ export function EmployeeCoursesList({
           companyCourse,
           company: companyData,
           agreement
-        });
-      }
+        };
+      });
 
       setCourses(enrichedCourses);
     } catch (error: any) {
@@ -313,16 +358,34 @@ export function EmployeeCoursesList({
   };
 
   const setupRealtimeSubscription = () => {
-    return subscriptionManager.subscribe(
+    // Subscribe to company_courses changes
+    const unsubscribeCourses = subscriptionManager.subscribe(
       `employee-courses-${employeeId}`,
       {
         table: "company_courses",
         event: "*",
         filter: `company_id=eq.${companyId}`,
-        debounceMs: 1000
+        debounceMs: 500
       },
       () => fetchCourses()
     );
+
+    // Also subscribe to devis changes to see new quotes instantly
+    const unsubscribeDevis = subscriptionManager.subscribe(
+      `employee-devis-${employeeId}`,
+      {
+        table: "devis",
+        event: "*",
+        debounceMs: 500
+      },
+      () => fetchCourses()
+    );
+
+    // Return combined cleanup
+    return () => {
+      unsubscribeCourses?.();
+      unsubscribeDevis?.();
+    };
   };
 
   const handleRefresh = () => {
