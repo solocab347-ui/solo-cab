@@ -1140,6 +1140,7 @@ export type Database = {
           company_signed_at: string | null
           contract_generated_at: string | null
           created_at: string
+          created_by_user_id: string | null
           credit_limit: number | null
           discount_percentage: number | null
           driver_blocked_company: boolean | null
@@ -1191,6 +1192,7 @@ export type Database = {
           company_signed_at?: string | null
           contract_generated_at?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           credit_limit?: number | null
           discount_percentage?: number | null
           driver_blocked_company?: boolean | null
@@ -1242,6 +1244,7 @@ export type Database = {
           company_signed_at?: string | null
           contract_generated_at?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           credit_limit?: number | null
           discount_percentage?: number | null
           driver_blocked_company?: boolean | null
