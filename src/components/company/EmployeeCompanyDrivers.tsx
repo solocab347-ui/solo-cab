@@ -23,13 +23,15 @@ import {
   ArrowRight,
   Clock,
   AlertCircle,
+  User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import { DriverSearchFilters, DriverSearchFiltersState, defaultFilters } from "./DriverSearchFilters";
+import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 
 interface Driver {
   id: string;
@@ -700,54 +702,53 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                             {pendingDriversInSearch.map((driver, index) => (
                               <Card 
                                 key={driver.id}
-                                className="group relative overflow-hidden border-amber-200/50 bg-gradient-to-br from-amber-50/50 to-transparent"
+                                className="group relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5"
                                 style={{ animationDelay: `${index * 50}ms` }}
                               >
                                 <div className="absolute top-2 right-2">
-                                  <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-xs">
+                                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">
                                     <Clock className="w-3 h-3 mr-1" />
                                     En attente
                                   </Badge>
                                 </div>
-                                <CardContent className="pt-6">
-                                  <div className="flex items-start gap-4">
-                                    <Avatar className="w-12 h-12 ring-2 ring-amber-200 ring-offset-2 ring-offset-background">
+                                <CardContent className="pt-6 pb-4">
+                                  <div className="flex items-start gap-3">
+                                    <Avatar className="w-12 h-12 ring-2 ring-primary/30 ring-offset-2 ring-offset-background flex-shrink-0">
                                       <AvatarImage src={getDriverPhoto(driver) || undefined} />
-                                      <AvatarFallback className="bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 font-bold">
+                                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
                                         {getDisplayName(driver).slice(0, 2).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                      <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
+                                      <h3 className="font-bold text-sm truncate">{getDisplayName(driver)}</h3>
+                                      {driver.display_company_name && driver.company_name && (
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                          <Building2 className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate">{driver.company_name}</span>
+                                        </p>
+                                      )}
                                       {getMainSector(driver.working_sectors) && (
-                                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                          <MapPin className="w-3 h-3" />
-                                          {getMainSector(driver.working_sectors)}
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate">{getMainSector(driver.working_sectors)}</span>
                                         </p>
                                       )}
                                       {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
                                         <div className="flex items-center gap-1 mt-1">
-                                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                          <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                          <span className="text-xs font-medium">{driver.rating.toFixed(1)}</span>
                                         </div>
                                       )}
                                     </div>
                                   </div>
 
-                                  {driver.display_company_name && driver.company_name && (
-                                    <Badge variant="outline" className="mt-3 text-xs">
-                                      <Building2 className="w-3 h-3 mr-1" />
-                                      {driver.company_name}
-                                    </Badge>
-                                  )}
-
-                                  <div className="mt-4 space-y-2">
-                                    <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-100/50 text-amber-700 text-xs">
-                                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                  <div className="mt-3 space-y-2">
+                                    <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs">
+                                      <Clock className="w-4 h-4 flex-shrink-0 text-primary mt-0.5" />
                                       <div className="flex-1 min-w-0">
-                                        <span className="font-medium">Invitation envoyée</span>
+                                        <span className="font-medium text-primary">Invitation envoyée</span>
                                         {getRequestedByLabel(driver.id) && (
-                                          <p className="text-amber-600 truncate">{getRequestedByLabel(driver.id)}</p>
+                                          <p className="text-primary/80 truncate">{getRequestedByLabel(driver.id)}</p>
                                         )}
                                       </div>
                                     </div>
@@ -755,9 +756,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                       size="sm"
                                       variant="outline"
                                       onClick={() => setSelectedDriver(driver)}
-                                      className="w-full border-amber-200 hover:bg-amber-50"
+                                      className="w-full border-primary/30 hover:bg-primary/10 text-xs"
                                     >
-                                      <Eye className="w-4 h-4 mr-2" />
+                                      <Eye className="w-3 h-3 mr-2" />
                                       Voir le profil
                                     </Button>
                                   </div>
@@ -784,17 +785,22 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                 className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all"
                                 style={{ animationDelay: `${index * 50}ms` }}
                               >
-                                <CardContent className="p-4">
+                                <CardContent className="p-3 sm:p-4">
                                   <div className="flex items-start gap-3">
-                                    <Avatar className="w-14 h-14 ring-2 ring-accent/20 ring-offset-2 ring-offset-background flex-shrink-0">
+                                    <Avatar className="w-12 h-12 sm:w-14 sm:h-14 ring-2 ring-accent/20 ring-offset-2 ring-offset-background flex-shrink-0">
                                       <AvatarImage src={getDriverPhoto(driver) || undefined} />
-                                      <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
-                                        {getDisplayName(driver).slice(0, 2).toUpperCase()}
+                                      <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold text-sm">
+                                        {driver.full_name?.slice(0, 2).toUpperCase() || "CH"}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1 min-w-0">
-                                      <h3 className="font-bold text-sm truncate">{getDisplayName(driver)}</h3>
-                                      {driver.company_name && (
+                                      {/* Nom du chauffeur */}
+                                      <h3 className="font-bold text-sm truncate flex items-center gap-1">
+                                        <User className="w-3 h-3 text-accent flex-shrink-0" />
+                                        {driver.full_name || "Chauffeur"}
+                                      </h3>
+                                      {/* Entreprise */}
+                                      {driver.display_company_name && driver.company_name && (
                                         <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                                           <Building2 className="w-3 h-3 flex-shrink-0" />
                                           {driver.company_name}
@@ -916,11 +922,16 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                   <Avatar className="w-14 h-14 sm:w-16 sm:h-16 ring-2 ring-primary/20 flex-shrink-0">
                     <AvatarImage src={getDriverPhoto(selectedDriver) || undefined} />
                     <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
-                      {getDisplayName(selectedDriver).slice(0, 2).toUpperCase()}
+                      {selectedDriver.full_name?.slice(0, 2).toUpperCase() || "CH"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base sm:text-lg truncate">{getDisplayName(selectedDriver)}</h3>
+                    {/* Nom du chauffeur - toujours affiché en B2B */}
+                    <h3 className="font-bold text-base sm:text-lg truncate flex items-center gap-2">
+                      <User className="w-4 h-4 text-primary flex-shrink-0" />
+                      {selectedDriver.full_name || "Chauffeur"}
+                    </h3>
+                    {/* Nom de l'entreprise si différent */}
                     {selectedDriver.display_company_name && selectedDriver.company_name && (
                       <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
                         <Building2 className="w-3 h-3 flex-shrink-0" />
@@ -1007,11 +1018,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Services proposés</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedDriver.services_offered.map((service, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                        {service}
-                      </Badge>
-                    ))}
+                    {selectedDriver.services_offered.map((serviceId, i) => {
+                      const service = DRIVER_SERVICES.find(s => s.id === serviceId);
+                      return (
+                        <Badge key={i} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                          <span className="mr-1">{service?.icon || "🚗"}</span>
+                          {service?.label || serviceId}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1021,11 +1036,15 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Équipements</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedDriver.vehicle_equipment.slice(0, 6).map((equip, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {equip}
-                      </Badge>
-                    ))}
+                    {selectedDriver.vehicle_equipment.map((equipId, i) => {
+                      const equip = VEHICLE_EQUIPMENT.find(e => e.id === equipId);
+                      return (
+                        <Badge key={i} variant="outline" className="text-xs bg-muted/50">
+                          <span className="mr-1">{equip?.icon || "✓"}</span>
+                          {equip?.label || equipId}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1047,13 +1066,16 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
               {/* Indicateur statut partenariat */}
               {isPendingDriver(selectedDriver.id) && (
-                <div className="p-3 rounded-xl bg-amber-100/50 border border-amber-200">
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm text-amber-700">Invitation en attente de réponse</span>
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Invitation en attente de réponse</span>
                   </div>
                   {getRequestedByLabel(selectedDriver.id) && (
-                    <p className="text-xs text-amber-600 mt-1 ml-6">{getRequestedByLabel(selectedDriver.id)}</p>
+                    <p className="text-xs text-primary/80 mt-1 ml-6 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {getRequestedByLabel(selectedDriver.id)}
+                    </p>
                   )}
                 </div>
               )}
