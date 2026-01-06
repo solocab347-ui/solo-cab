@@ -1876,6 +1876,108 @@ export type Database = {
           },
         ]
       }
+      company_payment_reminders: {
+        Row: {
+          agreement_id: string
+          amount_due: number
+          company_id: string
+          created_at: string
+          driver_id: string
+          email_sent: boolean | null
+          id: string
+          notification_sent: boolean | null
+          period_end: string | null
+          period_start: string | null
+          reminder_level: number
+          sent_at: string
+        }
+        Insert: {
+          agreement_id: string
+          amount_due: number
+          company_id: string
+          created_at?: string
+          driver_id: string
+          email_sent?: boolean | null
+          id?: string
+          notification_sent?: boolean | null
+          period_end?: string | null
+          period_start?: string | null
+          reminder_level?: number
+          sent_at?: string
+        }
+        Update: {
+          agreement_id?: string
+          amount_due?: number
+          company_id?: string
+          created_at?: string
+          driver_id?: string
+          email_sent?: boolean | null
+          id?: string
+          notification_sent?: boolean | null
+          period_end?: string | null
+          period_start?: string | null
+          reminder_level?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_payment_reminders_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "company_driver_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_payments: {
         Row: {
           agreement_id: string
@@ -7789,6 +7891,7 @@ export type Database = {
       format_sharing_number: { Args: { _number: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
+      generate_periodic_payment_summaries: { Args: never; Returns: undefined }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
       generate_reservation_number: {
         Args: { _driver_id: string }
@@ -8222,6 +8325,7 @@ export type Database = {
           working_sectors: string[]
         }[]
       }
+      send_graduated_payment_reminders: { Args: never; Returns: undefined }
       set_favorite_vehicle: {
         Args: { _driver_id: string; _vehicle_id: string }
         Returns: boolean
