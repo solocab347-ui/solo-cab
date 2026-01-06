@@ -98,11 +98,14 @@ export default function GuestEmployeeCourseTracking() {
 
       // Fetch course data separately to always get fresh status
       if (result.course_id) {
-        const { data: courseData } = await supabase
+        console.log('[GuestTracking] Fetching course data for course_id:', result.course_id);
+        const { data: courseData, error: courseError } = await supabase
           .from("courses")
           .select(`id, status, updated_at, driver_id`)
           .eq("id", result.course_id)
           .maybeSingle();
+        
+        console.log('[GuestTracking] Course data received:', { courseData, courseError });
         
         if (courseData) {
           result.course = { ...courseData };
@@ -213,6 +216,12 @@ export default function GuestEmployeeCourseTracking() {
         }
       }
 
+      console.log('[GuestTracking] Final result:', { 
+        course_id: result.course_id, 
+        course_status: result.course?.status,
+        request_status: result.request?.status
+      });
+      
       return result as TrackingData;
     },
     enabled: !!token,
