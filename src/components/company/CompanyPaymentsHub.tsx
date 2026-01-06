@@ -146,20 +146,20 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
   // Fetch ALL data in one combined query for reliability
   const { data: combinedData, isLoading: loadingCombinedData } = useQuery({
-    queryKey: ["company-payments-combined-data-v3", companyId],
+    queryKey: ["company-payments-combined-data-v4", companyId],
     staleTime: 0,
     queryFn: async () => {
       // Step 1: Get company_courses to find all courses belonging to this company
       const { data: companyCoursesLinks, error: linksError } = await supabase
         .from("company_courses")
-        .select("course_id, employee_id")
+        .select("course_id, employee_id, actual_payment_method, payment_declared_by")
         .eq("company_id", companyId);
       
       if (linksError) throw linksError;
       
       const courseIds = companyCoursesLinks?.map(cc => cc.course_id) || [];
       
-      // Step 2: Fetch courses with driver details
+      // Step 2: Fetch courses with driver details AND payment status fields
       let coursesData: any[] = [];
       if (courseIds.length > 0) {
         const { data, error } = await supabase
@@ -179,7 +179,15 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           .in("id", courseIds);
         
         if (!error && data) {
-          coursesData = data;
+          // Enrichir avec les infos de company_courses
+          coursesData = data.map((course: any) => {
+            const ccLink = companyCoursesLinks?.find(cc => cc.course_id === course.id);
+            return {
+              ...course,
+              actual_payment_method: ccLink?.actual_payment_method,
+              payment_declared_by: ccLink?.payment_declared_by
+            };
+          });
         }
       }
       
@@ -466,17 +474,30 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       
       if (agreement.outstanding_balance > 0 && !hasAnyPaymentTracked) {
         // Find unpaid invoices for this driver
-        const unpaidDriverInvoices = driverInvoices.filter((inv: any) => 
-          inv.payment_status !== 'paid'
+        // IMPORTANT: Exclure les courses où le paiement a été reçu sur place
+        const unpaidDriverInvoices = driverInvoices.filter((inv: any) => {
+          if (inv.payment_status === 'paid') return false;
+          
+          // Vérifier si la course a été marquée comme payée sur place
+          const courseData = inv.courses;
+          if (courseData?.company_payment_status === 'paid_on_spot') return false;
+          if (courseData?.actual_payment_method === 'employee_paid_spot') return false;
+          
+          return true;
+        });
+        
+        // Si toutes les courses ont été payées sur place, ne pas créer de paiement en attente
+        if (unpaidDriverInvoices.length === 0) return;
+        
+        // Calculate the actual amount due (excluding paid on spot)
+        const actualAmountDue = unpaidDriverInvoices.reduce((sum: number, inv: any) => 
+          sum + Number(inv.amount), 0
         );
         
-        // If no unpaid invoices found, create from outstanding balance
-        const invoicesToUse = unpaidDriverInvoices.length > 0 
-          ? unpaidDriverInvoices 
-          : driverInvoices.slice(0, 1);
+        if (actualAmountDue <= 0) return;
 
-        const periodStart = invoicesToUse[0]?.courses?.scheduled_date 
-          ? new Date(invoicesToUse[0].courses.scheduled_date) 
+        const periodStart = unpaidDriverInvoices[0]?.courses?.scheduled_date 
+          ? new Date(unpaidDriverInvoices[0].courses.scheduled_date) 
           : new Date();
         const dueDate = addDays(periodStart, 7);
 
@@ -490,17 +511,9 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           paymentFrequency,
           paymentMethods: agreement.payment_methods || [],
           paymentDay,
-          totalAmount: Number(agreement.outstanding_balance),
-          invoiceCount: unpaidDriverInvoices.length || 1,
-          invoices: invoicesToUse.length > 0 ? invoicesToUse : [{
-            amount: agreement.outstanding_balance,
-            created_at: new Date().toISOString(),
-            courses: { 
-              scheduled_date: new Date().toISOString(),
-              pickup_address: "Course effectuée",
-              destination_address: ""
-            }
-          }],
+          totalAmount: actualAmountDue,
+          invoiceCount: unpaidDriverInvoices.length,
+          invoices: unpaidDriverInvoices,
           periodStart,
           periodEnd: periodStart,
           dueDate,
@@ -1043,6 +1056,23 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           Gérez vos paiements et consultez l'historique des courses effectuées
         </p>
       </div>
+
+      {/* Info Banner about payment flow */}
+      <Card className="bg-blue-500/5 border-blue-500/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium text-blue-700 dark:text-blue-400">Fonctionnement des paiements</p>
+              <p className="text-muted-foreground mt-1">
+                À la fin de chaque course, le chauffeur ou le collaborateur déclare si le paiement a été effectué sur place ou s'il est à votre charge. 
+                Seules les courses en attente de paiement par l'entreprise apparaissent ici. 
+                Les paiements effectués directement par le collaborateur ne nécessitent aucune action de votre part.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
