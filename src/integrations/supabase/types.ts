@@ -8277,6 +8277,7 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
       }
+      is_company_employee: { Args: { p_company_id: string }; Returns: boolean }
       is_course_shared_locked: { Args: { p_course_id: string }; Returns: Json }
       is_driver_assigned_to_course: {
         Args: { _course_id: string; _user_id: string }
