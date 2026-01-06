@@ -142,8 +142,11 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
             .from("profiles")
             .select("full_name, email, phone, profile_photo_url")
             .eq("id", emp.user_id)
-            .single();
-          return { ...emp, profile: profile || { full_name: "", email: "", phone: null, profile_photo_url: null } };
+            .maybeSingle();
+          return { 
+            ...emp, 
+            profile: profile || { full_name: "Non renseigné", email: "", phone: null, profile_photo_url: null } 
+          };
         })
       );
 
