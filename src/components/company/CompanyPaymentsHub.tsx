@@ -49,7 +49,7 @@ interface GroupedPayment {
   driverName: string;
   driverCompany: string;
   driverPhoto: string | null;
-  driverPhone?: string | null;
+  
   agreementId: string;
   paymentFrequency: string;
   paymentMethods: string[];
@@ -112,8 +112,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           driver:drivers(
             id,
             company_name,
-            user_id,
-            phone
+            user_id
           )
         `)
         .eq("company_id", companyId)
@@ -360,7 +359,6 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           driverName: agreement.driverProfile?.full_name || "Chauffeur",
           driverCompany: agreement.driver?.company_name || "",
           driverPhoto: agreement.driverProfile?.profile_photo_url,
-          driverPhone: agreement.driver?.phone,
           agreementId: agreement.id,
           paymentFrequency,
           paymentMethods: agreement.payment_methods || [],
@@ -415,7 +413,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             driverName: agreement.driverProfile?.full_name || "Chauffeur",
             driverCompany: agreement.driver?.company_name || "",
             driverPhoto: agreement.driverProfile?.profile_photo_url,
-            driverPhone: agreement.driver?.phone,
+            
             agreementId: agreement.id,
             paymentFrequency,
             paymentMethods: agreement.payment_methods || [],
