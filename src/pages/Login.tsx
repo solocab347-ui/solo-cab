@@ -15,7 +15,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Login = () => {
   const { t } = useLocale();
-  const { signIn, user, userRole, loading: authLoading } = useAuth();
+  const { signIn, user, userRole, isCompanyEmployee, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
@@ -49,47 +49,33 @@ const Login = () => {
     
     // Rediriger seulement si user ET userRole sont définis
     if (user && userRole) {
-      logger.info("Redirecting to dashboard", { userRole });
+      logger.info("Redirecting to dashboard", { userRole, isCompanyEmployee });
       setHasRedirected(true);
       
-      // Vérifier si l'utilisateur est un collaborateur d'entreprise
-      const checkEmployeeAndRedirect = async () => {
-        if (userRole === "client") {
-          // Vérifier si c'est un collaborateur d'entreprise
-          const { data: employeeData } = await supabase
-            .from("company_employees")
-            .select("id, is_active")
-            .eq("user_id", user.id)
-            .eq("is_active", true)
-            .maybeSingle();
-          
-          if (employeeData) {
-            navigate("/company-employee-dashboard", { replace: true });
-            return;
-          }
-        }
-        
-        let path: string;
-        if (userRole === "admin") {
-          path = "/admin-dashboard";
-        } else if (userRole === "driver") {
-          path = "/driver-dashboard";
-        } else if (userRole === "fleet_manager") {
-          path = "/fleet-manager-dashboard";
-        } else if (userRole === "company") {
-          path = "/company-dashboard";
-        } else if (userRole === "client") {
-          path = "/client-dashboard";
-        } else {
-          path = "/client-dashboard";
-        }
-        
-        navigate(path, { replace: true });
-      };
+      // Si c'est un collaborateur d'entreprise, rediriger vers son dashboard
+      if (userRole === "client" && isCompanyEmployee) {
+        navigate("/company-employee-dashboard", { replace: true });
+        return;
+      }
       
-      checkEmployeeAndRedirect();
+      let path: string;
+      if (userRole === "admin") {
+        path = "/admin-dashboard";
+      } else if (userRole === "driver") {
+        path = "/driver-dashboard";
+      } else if (userRole === "fleet_manager") {
+        path = "/fleet-manager-dashboard";
+      } else if (userRole === "company") {
+        path = "/company-dashboard";
+      } else if (userRole === "client") {
+        path = "/client-dashboard";
+      } else {
+        path = "/client-dashboard";
+      }
+      
+      navigate(path, { replace: true });
     }
-  }, [user, userRole, authLoading, navigate, loading, hasRedirected]);
+  }, [user, userRole, isCompanyEmployee, authLoading, navigate, loading, hasRedirected]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
