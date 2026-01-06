@@ -46,6 +46,7 @@ interface EmployeeCoursesListProps {
   userId: string;
   companyId: string;
   onCreateCourse: () => void;
+  canCreateCourses?: boolean;
 }
 
 interface CourseData {
@@ -119,7 +120,8 @@ export function EmployeeCoursesList({
   employeeId, 
   userId, 
   companyId, 
-  onCreateCourse 
+  onCreateCourse,
+  canCreateCourses = true
 }: EmployeeCoursesListProps) {
   const [activeTab, setActiveTab] = useState("pending");
   const [courses, setCourses] = useState<CourseData[]>([]);
@@ -1101,104 +1103,159 @@ export function EmployeeCoursesList({
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Button 
-              onClick={onCreateCourse} 
-              size="sm"
-              className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/25 h-9 sm:h-10 px-3 sm:px-4"
-            >
-              <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Nouvelle course</span>
-            </Button>
+            {canCreateCourses && (
+              <Button 
+                onClick={onCreateCourse} 
+                size="sm"
+                className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/25 h-9 sm:h-10 px-3 sm:px-4"
+              >
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nouvelle course</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Status Pills modernes - Grille 3x2 en mobile, ligne en desktop */}
-      <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
-            activeTab === "pending"
-              ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Devis</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
-            activeTab === "pending" ? "bg-white/20" : "bg-amber-500/20 text-amber-500"
-          }`}>
-            {allPendingQuotes.length}
-          </span>
-        </button>
+      {/* Status Pills modernes - Grille 3+2 en mobile, ligne en desktop */}
+      <div className="space-y-2">
+        {/* Première ligne: 3 boutons */}
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2">
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
+              activeTab === "pending"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <FileText className="w-4 h-4" />
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === "pending" ? "bg-white/20" : "bg-amber-500/20 text-amber-500"
+              }`}>
+                {allPendingQuotes.length}
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-xs font-semibold">Devis</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("awaiting")}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
-            activeTab === "awaiting"
-              ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Attente</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
-            activeTab === "awaiting" ? "bg-white/20" : "bg-orange-500/20 text-orange-500"
-          }`}>
-            {awaitingDriver.length}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab("awaiting")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
+              activeTab === "awaiting"
+                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Timer className="w-4 h-4" />
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === "awaiting" ? "bg-white/20" : "bg-orange-500/20 text-orange-500"
+              }`}>
+                {awaitingDriver.length}
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-xs font-semibold">Attente</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("confirmed")}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
-            activeTab === "confirmed"
-              ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Confirmées</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
-            activeTab === "confirmed" ? "bg-white/20" : "bg-green-500/20 text-green-500"
-          }`}>
-            {confirmedCourses.length}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab("confirmed")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 py-2.5 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
+              activeTab === "confirmed"
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4" />
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === "confirmed" ? "bg-white/20" : "bg-green-500/20 text-green-500"
+              }`}>
+                {confirmedCourses.length}
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-xs font-semibold">Confirmées</span>
+          </button>
+        </div>
 
-        <button
-          onClick={() => setActiveTab("completed")}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
-            activeTab === "completed"
-              ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Terminées</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
-            activeTab === "completed" ? "bg-white/20" : "bg-purple-500/20 text-purple-500"
-          }`}>
-            {completedCourses.length}
-          </span>
-        </button>
+        {/* Deuxième ligne: 2 boutons */}
+        <div className="grid grid-cols-2 gap-2 sm:hidden">
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl font-medium text-xs transition-all ${
+              activeTab === "completed"
+                ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <Car className="w-4 h-4" />
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === "completed" ? "bg-white/20" : "bg-purple-500/20 text-purple-500"
+              }`}>
+                {completedCourses.length}
+              </span>
+            </div>
+            <span className="text-[10px] font-semibold">Terminées</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("cancelled")}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all col-span-2 sm:col-span-1 ${
-            activeTab === "cancelled"
-              ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25"
-              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden xs:inline">Annulées</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
-            activeTab === "cancelled" ? "bg-white/20" : "bg-red-500/20 text-red-500"
-          }`}>
-            {cancelledCourses.length}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab("cancelled")}
+            className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-xl font-medium text-xs transition-all ${
+              activeTab === "cancelled"
+                ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <XCircle className="w-4 h-4" />
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === "cancelled" ? "bg-white/20" : "bg-red-500/20 text-red-500"
+              }`}>
+                {cancelledCourses.length}
+              </span>
+            </div>
+            <span className="text-[10px] font-semibold">Annulées</span>
+          </button>
+        </div>
+
+        {/* Version desktop pour les 2 derniers boutons (hidden en mobile) */}
+        <div className="hidden sm:contents">
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+              activeTab === "completed"
+                ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <Car className="w-4 h-4" />
+            <span className="text-xs font-semibold">Terminées</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === "completed" ? "bg-white/20" : "bg-purple-500/20 text-purple-500"
+            }`}>
+              {completedCourses.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("cancelled")}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+              activeTab === "cancelled"
+                ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            <XCircle className="w-4 h-4" />
+            <span className="text-xs font-semibold">Annulées</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === "cancelled" ? "bg-white/20" : "bg-red-500/20 text-red-500"
+            }`}>
+              {cancelledCourses.length}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Hidden Tabs for functionality */}
@@ -1224,15 +1281,20 @@ export function EmployeeCoursesList({
                 </div>
                 <h3 className="font-semibold text-lg mb-2">Aucun devis en attente</h3>
                 <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
-                  Réservez une course pour recevoir un devis automatique
+                  {canCreateCourses 
+                    ? "Réservez une course pour recevoir un devis automatique"
+                    : "Les courses vous seront assignées par votre gestionnaire"
+                  }
                 </p>
-                <Button 
-                  onClick={onCreateCourse}
-                  className="rounded-xl bg-gradient-to-r from-primary to-accent"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Réserver une course
-                </Button>
+                {canCreateCourses && (
+                  <Button 
+                    onClick={onCreateCourse}
+                    className="rounded-xl bg-gradient-to-r from-primary to-accent"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Réserver une course
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
