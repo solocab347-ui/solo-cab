@@ -116,15 +116,28 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
         supabase.from("factures").select("*").in("course_id", courseIds)
       ]);
 
-      // Récupérer les employés si nécessaire
+      // Récupérer les employés et leurs profils si nécessaire
       const employeeIds = data.map((item: any) => item.employee_id).filter(Boolean);
       let employeesData: any[] = [];
       if (employeeIds.length > 0) {
         const { data: empData } = await supabase
           .from("company_employees")
-          .select("id, profiles:user_id(full_name)")
+          .select("id, user_id")
           .in("id", employeeIds);
-        employeesData = empData || [];
+        
+        // Fetch profiles separately for employees
+        if (empData && empData.length > 0) {
+          const userIds = empData.map(e => e.user_id).filter(Boolean);
+          const { data: profilesData } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", userIds);
+          
+          employeesData = empData.map(emp => ({
+            ...emp,
+            profile: profilesData?.find(p => p.id === emp.user_id)
+          }));
+        }
       }
 
       // Transformer les données pour les rendre plus faciles à utiliser
@@ -138,7 +151,7 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
           ...course,
           company_course_id: item.id,
           invoice_to_company: item.invoice_to_company,
-          employee_name: employee?.profiles?.full_name,
+          employee_name: employee?.profile?.full_name || null,
           approved_at: item.approved_at,
           devis: courseDevis,
           factures: courseFactures
