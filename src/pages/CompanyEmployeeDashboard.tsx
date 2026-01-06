@@ -31,6 +31,8 @@ import {
   Zap,
   Receipt,
   Handshake,
+  Home,
+  Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -401,58 +403,152 @@ export default function CompanyEmployeeDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Modern Tabs */}
+        {/* Modern Navigation Tabs - 2 lines layout */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full bg-card/50 backdrop-blur-sm border border-border/50 p-1.5 rounded-2xl h-auto flex-wrap gap-1">
-            <TabsTrigger 
-              value="overview" 
-              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-            >
-              <Calendar className="w-6 h-6" />
-              <span className="text-xs sm:text-sm">Accueil</span>
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="courses" 
-              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-            >
-              <Car className="w-6 h-6" />
-              <span className="text-xs sm:text-sm">Courses</span>
-            </TabsTrigger>
-            
-            {hasInvoicesTab && (
-              <TabsTrigger 
-                value="documents" 
-                className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+          <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-3 shadow-xl">
+            {/* First row - Main navigation */}
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  activeTab === "overview"
+                    ? "bg-gradient-to-br from-primary via-primary to-primary-light text-primary-foreground shadow-lg shadow-primary/25 scale-[1.02]"
+                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}
               >
-                <FileText className="w-6 h-6" />
-                <span className="text-xs sm:text-sm">Documents</span>
-              </TabsTrigger>
-            )}
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`p-2 rounded-xl transition-all ${
+                    activeTab === "overview" ? "bg-white/20" : "bg-primary/10 group-hover:bg-primary/20"
+                  }`}>
+                    <Home className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Accueil</span>
+                </div>
+                {activeTab === "overview" && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                )}
+              </button>
 
-            <TabsTrigger 
-              value="expenses" 
-              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-            >
-              <Receipt className="w-6 h-6" />
-              <span className="text-xs sm:text-sm">Frais</span>
-            </TabsTrigger>
+              <button
+                onClick={() => setActiveTab("courses")}
+                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  activeTab === "courses"
+                    ? "bg-gradient-to-br from-accent via-accent to-accent-light text-accent-foreground shadow-lg shadow-accent/25 scale-[1.02]"
+                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`p-2 rounded-xl transition-all ${
+                    activeTab === "courses" ? "bg-white/20" : "bg-accent/10 group-hover:bg-accent/20"
+                  }`}>
+                    <Car className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Courses</span>
+                </div>
+                {activeTab === "courses" && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                )}
+              </button>
 
-            <TabsTrigger 
-              value="partners" 
-              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-            >
-              <Handshake className="w-6 h-6" />
-              <span className="text-xs sm:text-sm">Partenaires</span>
-            </TabsTrigger>
-            
-            <TabsTrigger 
-              value="profile" 
-              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-            >
-              <User className="w-6 h-6" />
-              <span className="text-xs sm:text-sm">Profil</span>
-            </TabsTrigger>
+              <button
+                onClick={() => setActiveTab("partners")}
+                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  activeTab === "partners"
+                    ? "bg-gradient-to-br from-emerald-500 via-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]"
+                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`p-2 rounded-xl transition-all ${
+                    activeTab === "partners" ? "bg-white/20" : "bg-emerald-500/10 group-hover:bg-emerald-500/20"
+                  }`}>
+                    <Handshake className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide text-center leading-tight">Partenaire<br/>chauffeur</span>
+                </div>
+                {activeTab === "partners" && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                )}
+              </button>
+            </div>
+
+            {/* Second row - Secondary navigation */}
+            <div className={`grid gap-2 ${hasInvoicesTab ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              <button
+                onClick={() => setActiveTab("expenses")}
+                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  activeTab === "expenses"
+                    ? "bg-gradient-to-br from-amber-500 via-amber-500 to-orange-400 text-white shadow-lg shadow-amber-500/25 scale-[1.02]"
+                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`p-2 rounded-xl transition-all ${
+                    activeTab === "expenses" ? "bg-white/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"
+                  }`}>
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide text-center leading-tight">Notes de<br/>frais</span>
+                </div>
+                {activeTab === "expenses" && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                )}
+              </button>
+
+              {hasInvoicesTab && (
+                <button
+                  onClick={() => setActiveTab("documents")}
+                  className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                    activeTab === "documents"
+                      ? "bg-gradient-to-br from-blue-500 via-blue-500 to-cyan-400 text-white shadow-lg shadow-blue-500/25 scale-[1.02]"
+                      : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`p-2 rounded-xl transition-all ${
+                      activeTab === "documents" ? "bg-white/20" : "bg-blue-500/10 group-hover:bg-blue-500/20"
+                    }`}>
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold tracking-wide">Documents</span>
+                  </div>
+                  {activeTab === "documents" && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                  )}
+                </button>
+              )}
+
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                  activeTab === "profile"
+                    ? "bg-gradient-to-br from-violet-500 via-violet-500 to-purple-400 text-white shadow-lg shadow-violet-500/25 scale-[1.02]"
+                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`p-2 rounded-xl transition-all ${
+                    activeTab === "profile" ? "bg-white/20" : "bg-violet-500/10 group-hover:bg-violet-500/20"
+                  }`}>
+                    <User className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold tracking-wide">Profil</span>
+                </div>
+                {activeTab === "profile" && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Hidden TabsList for Radix functionality */}
+          <TabsList className="hidden">
+            <TabsTrigger value="overview">Accueil</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="partners">Partenaires</TabsTrigger>
+            <TabsTrigger value="expenses">Notes de frais</TabsTrigger>
+            {hasInvoicesTab && <TabsTrigger value="documents">Documents</TabsTrigger>}
+            <TabsTrigger value="profile">Profil</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
