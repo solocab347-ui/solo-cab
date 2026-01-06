@@ -250,7 +250,7 @@ export default function CompanyEmployeeDashboard() {
   }
 
   const firstName = employee.user_name?.split(" ")[0] || "Collaborateur";
-  const hasDriversTab = employee.can_create_courses;
+  const hasDriversTab = employee.can_invite_drivers || employee.can_create_courses;
   const hasInvoicesTab = employee.can_view_invoices;
 
   return (
@@ -457,7 +457,7 @@ export default function CompanyEmployeeDashboard() {
                       </p>
                     </div>
                     <Button 
-                      onClick={() => navigate("/chauffeurs")}
+                      onClick={() => setActiveTab("drivers")}
                       className="bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg group"
                     >
                       <Plus className="w-4 h-4 mr-2" />
