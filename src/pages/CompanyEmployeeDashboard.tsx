@@ -45,6 +45,7 @@ import { EmployeePartnersHub } from "@/components/company/employee/EmployeePartn
 import { EmployeeCoursePaymentDeclaration } from "@/components/company/employee/EmployeeCoursePaymentDeclaration";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { EmployeeCoursesList } from "@/components/company/employee/EmployeeCoursesList";
+import { EmployeeBudgetGauge } from "@/components/company/employee/EmployeeBudgetGauge";
 
 interface EmployeeData {
   id: string;
@@ -461,28 +462,11 @@ export default function CompanyEmployeeDashboard() {
 
             {/* Stats Cards */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-              {/* Dépenses */}
-              <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                <CardContent className="pt-6 relative">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Dépenses ce mois</p>
-                      <p className="text-3xl font-bold mt-2 bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-                        {employee.current_month_spent.toFixed(0)}€
-                      </p>
-                      {employee.max_monthly_budget && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          sur {employee.max_monthly_budget}€ de budget
-                        </p>
-                      )}
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                      <Euro className="w-6 h-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Budget Gauge */}
+              <EmployeeBudgetGauge 
+                currentSpent={employee.current_month_spent} 
+                maxBudget={employee.max_monthly_budget}
+              />
 
               {/* Courses */}
               <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
