@@ -8086,6 +8086,14 @@ export type Database = {
         Returns: string[]
       }
       get_employee_company_id: { Args: { p_user_id: string }; Returns: string }
+      get_employee_profile_for_course: {
+        Args: { p_employee_id: string }
+        Returns: {
+          employee_id: string
+          full_name: string
+          phone: string
+        }[]
+      }
       get_fleet_driver_count: {
         Args: { _fleet_manager_id: string }
         Returns: number
