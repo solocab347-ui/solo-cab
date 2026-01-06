@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
+import { DriverSearchFilters, DriverSearchFiltersState, defaultFilters } from "./DriverSearchFilters";
 
 interface Driver {
   id: string;
@@ -47,6 +48,8 @@ interface Driver {
   display_company_name: boolean;
   services_offered: string[] | null;
   company_name: string | null;
+  city?: string | null;
+  department?: string | null;
 }
 
 interface EmployeeCompanyDriversProps {
@@ -59,7 +62,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const navigate = useNavigate();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilters, setSearchFilters] = useState<DriverSearchFiltersState>(defaultFilters);
   const [searchResults, setSearchResults] = useState<Driver[]>([]);
   const [searching, setSearching] = useState(false);
   const [proposingDriver, setProposingDriver] = useState<string | null>(null);
@@ -67,6 +70,9 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [activeView, setActiveView] = useState<"partners" | "search">("partners");
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [profileDialogDriverId, setProfileDialogDriverId] = useState<string | null>(null);
+  
+  // Filtres pour les partenaires
+  const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
 
   useEffect(() => {
     fetchCompanyDrivers();
@@ -168,16 +174,37 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
     setSearching(true);
     try {
       let driversData: any[] = [];
+      const { searchQuery, region, department, city, vehicleType } = searchFilters;
+
+      // Construire la requête de base
+      let query = supabase
+        .from("drivers")
+        .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, city, department")
+        .eq("status", "validated")
+        .eq("visible_to_companies", true);
+
+      // Filtres géographiques
+      if (city) {
+        query = query.ilike("city", `%${city}%`);
+      }
+      if (department) {
+        // Extraire le numéro de département si présent (ex: "Essonne (91)" -> "91")
+        const deptMatch = department.match(/\((\d+[AB]?)\)/);
+        const deptCode = deptMatch ? deptMatch[1] : department;
+        query = query.or(`department.ilike.%${deptCode}%,working_sectors.cs.{"${department}"}`);
+      }
+      if (region) {
+        query = query.or(`working_sectors.cs.{"${region}"}`);
+      }
+      
+      // Filtre type de véhicule
+      if (vehicleType) {
+        query = query.ilike("vehicle_model", `%${vehicleType}%`);
+      }
 
       if (!searchQuery.trim()) {
         // Afficher tous les chauffeurs visibles aux entreprises
-        const { data, error } = await supabase
-          .from("drivers")
-          .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
-          .eq("status", "validated")
-          .eq("visible_to_companies", true)
-          .limit(20);
-
+        const { data, error } = await query.limit(50);
         if (error) throw error;
         driversData = data || [];
       } else {
@@ -186,18 +213,14 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           .from("profiles")
           .select("id, full_name, avatar_url")
           .ilike("full_name", `%${searchQuery}%`)
-          .limit(20);
+          .limit(50);
 
         const profileUserIds = (profiles || []).map(p => p.id);
         
-        // Chauffeurs trouvés par nom d'entreprise ou secteur
-        const { data: byCompany, error } = await supabase
-          .from("drivers")
-          .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
-          .eq("status", "validated")
-          .eq("visible_to_companies", true)
+        // Chauffeurs trouvés par nom d'entreprise
+        const { data: byCompany, error } = await query
           .ilike("company_name", `%${searchQuery}%`)
-          .limit(20);
+          .limit(50);
 
         if (error) throw error;
 
@@ -206,7 +229,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         if (profileUserIds.length > 0) {
           const { data: nameData } = await supabase
             .from("drivers")
-            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name")
+            .select("id, user_id, vehicle_model, rating, total_rides, contact_phone, contact_email, show_phone, show_email, show_rating_partners, display_driver_name, display_company_name, card_photo_url, services_offered, working_sectors, company_name, city, department")
             .eq("status", "validated")
             .eq("visible_to_companies", true)
             .in("user_id", profileUserIds);
@@ -252,6 +275,8 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           display_company_name: driver.display_company_name ?? true,
           services_offered: driver.services_offered,
           company_name: driver.company_name,
+          city: driver.city,
+          department: driver.department,
         });
       }
 
@@ -512,37 +537,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
             {canInviteDrivers && (
               <TabsContent value="search" className="mt-6 animate-fade-in">
                 <div className="space-y-6">
-                  {/* Barre de recherche */}
-                  <div className="flex gap-3">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        placeholder="Rechercher par nom, entreprise..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && searchPublicDrivers()}
-                        className="pl-10 h-12 rounded-xl border-border/50 bg-muted/30"
-                      />
-                      {searchQuery && (
-                        <button 
-                          onClick={() => {
-                            setSearchQuery("");
-                            searchPublicDrivers();
-                          }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    <Button 
-                      onClick={searchPublicDrivers} 
-                      disabled={searching}
-                      className="h-12 px-6 bg-gradient-to-r from-accent to-accent-light"
-                    >
-                      {searching ? <Loader2 className="w-5 h-5 animate-spin" /> : "Rechercher"}
-                    </Button>
-                  </div>
+                  {/* Filtres de recherche avancés */}
+                  <DriverSearchFilters
+                    filters={searchFilters}
+                    onFiltersChange={setSearchFilters}
+                    onSearch={searchPublicDrivers}
+                    searching={searching}
+                  />
 
                   {/* Résultats */}
                   {searching ? (
@@ -568,10 +569,10 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                               </Avatar>
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-bold truncate">{getDisplayName(driver)}</h3>
-                                {getMainSector(driver.working_sectors) && (
+                                {(driver.city || getMainSector(driver.working_sectors)) && (
                                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
-                                    {getMainSector(driver.working_sectors)}
+                                    {driver.city || getMainSector(driver.working_sectors)}
                                   </p>
                                 )}
                                 {driver.show_rating_partners && driver.rating && driver.rating > 0 && (
@@ -625,12 +626,12 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                         <Search className="w-8 h-8 text-muted-foreground" />
                       </div>
                       <h3 className="font-semibold mb-2">
-                        {searchQuery ? "Aucun résultat" : "Recherchez des chauffeurs"}
+                        {searchFilters.searchQuery || searchFilters.region || searchFilters.city ? "Aucun résultat" : "Recherchez des chauffeurs"}
                       </h3>
                       <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                        {searchQuery 
-                          ? "Aucun chauffeur disponible ne correspond à votre recherche."
-                          : "Tapez un nom ou une entreprise pour trouver des chauffeurs à inviter dans votre cercle."
+                        {searchFilters.searchQuery || searchFilters.region || searchFilters.city 
+                          ? "Aucun chauffeur disponible ne correspond à vos critères."
+                          : "Utilisez les filtres pour trouver des chauffeurs à inviter dans votre cercle."
                         }
                       </p>
                     </div>
