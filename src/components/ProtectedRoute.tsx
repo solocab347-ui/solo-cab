@@ -13,6 +13,7 @@ interface ProtectedRouteProps {
   requireValidatedDriver?: boolean;
   requireCompanyAdmin?: boolean; // Pour vérifier si l'utilisateur est admin d'entreprise
   requireCompanyEmployee?: boolean; // Pour vérifier si l'utilisateur est un collaborateur d'entreprise
+  blockCompanyEmployees?: boolean; // Pour bloquer les collaborateurs d'entreprise (ex: client-dashboard)
 }
 
 export const ProtectedRoute = ({ 
@@ -20,7 +21,8 @@ export const ProtectedRoute = ({
   allowedRoles,
   requireValidatedDriver = false,
   requireCompanyAdmin = false,
-  requireCompanyEmployee = false
+  requireCompanyEmployee = false,
+  blockCompanyEmployees = false
 }: ProtectedRouteProps) => {
   const { user, userRole, isCompanyEmployee: authIsCompanyEmployee, isCompanyEmployeeChecked, loading } = useAuth();
   const location = useLocation();
@@ -150,8 +152,8 @@ export const ProtectedRoute = ({
   };
 
   // Utiliser un loader minimal et cohérent pour éviter les flash
-  // CRITIQUE: Attendre que isCompanyEmployeeChecked soit true si requireCompanyEmployee est true
-  const needsEmployeeCheck = requireCompanyEmployee && !isCompanyEmployeeChecked && userRole === "client";
+  // CRITIQUE: Attendre que isCompanyEmployeeChecked soit true si on doit vérifier le statut collaborateur
+  const needsEmployeeCheck = (requireCompanyEmployee || blockCompanyEmployees) && !isCompanyEmployeeChecked && userRole === "client";
   
   if (loading || checkingDriver || checkingCompanyAdmin || needsEmployeeCheck) {
     return (
@@ -167,6 +169,13 @@ export const ProtectedRoute = ({
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
     return <Navigate to="/login" replace />;
+  }
+
+  // CRITIQUE: Bloquer les collaborateurs d'entreprise et les rediriger vers leur dashboard
+  // Cette vérification doit être faite AVANT d'afficher le contenu
+  if (blockCompanyEmployees && isCompanyEmployeeChecked && authIsCompanyEmployee === true) {
+    logger.info("Collaborateur entreprise bloqué sur client-dashboard, redirection");
+    return <Navigate to="/company-employee-dashboard" replace />;
   }
 
   // Vérifier si l'utilisateur essaie d'accéder au company-dashboard sans être admin

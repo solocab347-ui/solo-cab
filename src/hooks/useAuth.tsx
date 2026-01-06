@@ -260,6 +260,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserRoles(roles);
           setUserRole(primaryRole);
           setIsCompanyEmployee(employeeStatus);
+          setIsCompanyEmployeeChecked(true); // CRITIQUE: Marquer comme vérifié après le batch
         } else {
           setSession(null);
           setUser(null);
@@ -401,7 +402,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (role === "company") {
         navigate("/company-dashboard", { replace: true });
       } else if (role === "client") {
-        // Vérifier si c'est un collaborateur d'entreprise
+        // La vérification est déjà faite par fetchUserRole, utiliser directement isCompanyEmployee
+        // On attend un petit délai pour laisser le temps aux états de se mettre à jour
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Relire l'état depuis la vérification déjà effectuée par fetchUserRole
         const { data: employeeData } = await supabase
           .from("company_employees")
           .select("id, is_active")
@@ -409,7 +414,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("is_active", true)
           .maybeSingle();
         
-        if (employeeData) {
+        const isEmployee = !!employeeData;
+        // CRITIQUE: S'assurer que les états sont synchronisés
+        setIsCompanyEmployee(isEmployee);
+        setIsCompanyEmployeeChecked(true);
+        
+        if (isEmployee) {
           navigate("/company-employee-dashboard", { replace: true });
         } else {
           navigate("/client-dashboard", { replace: true });
