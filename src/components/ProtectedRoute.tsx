@@ -22,7 +22,7 @@ export const ProtectedRoute = ({
   requireCompanyAdmin = false,
   requireCompanyEmployee = false
 }: ProtectedRouteProps) => {
-  const { user, userRole, isCompanyEmployee: authIsCompanyEmployee, loading } = useAuth();
+  const { user, userRole, isCompanyEmployee: authIsCompanyEmployee, isCompanyEmployeeChecked, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
@@ -150,7 +150,10 @@ export const ProtectedRoute = ({
   };
 
   // Utiliser un loader minimal et cohérent pour éviter les flash
-  if (loading || checkingDriver || checkingCompanyAdmin) {
+  // CRITIQUE: Attendre que isCompanyEmployeeChecked soit true si requireCompanyEmployee est true
+  const needsEmployeeCheck = requireCompanyEmployee && !isCompanyEmployeeChecked && userRole === "client";
+  
+  if (loading || checkingDriver || checkingCompanyAdmin || needsEmployeeCheck) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background auth-loading-screen">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -172,7 +175,8 @@ export const ProtectedRoute = ({
   }
 
   // Vérifier si l'utilisateur essaie d'accéder à l'espace collaborateur sans être collaborateur
-  if (requireCompanyEmployee && authIsCompanyEmployee === false) {
+  // CRITIQUE: Ne rediriger que si la vérification est TERMINÉE et que l'utilisateur n'est pas collaborateur
+  if (requireCompanyEmployee && isCompanyEmployeeChecked && authIsCompanyEmployee === false) {
     // Rediriger vers le client dashboard s'il n'est pas un vrai collaborateur
     return <Navigate to="/client-dashboard" replace />;
   }

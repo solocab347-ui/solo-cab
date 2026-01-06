@@ -15,7 +15,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Login = () => {
   const { t } = useLocale();
-  const { signIn, user, userRole, isCompanyEmployee, loading: authLoading } = useAuth();
+  const { signIn, user, userRole, isCompanyEmployee, isCompanyEmployeeChecked, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [emergencyOverride, setEmergencyOverride] = useState(false);
@@ -49,7 +49,13 @@ const Login = () => {
     
     // Rediriger seulement si user ET userRole sont définis
     if (user && userRole) {
-      logger.info("Redirecting to dashboard", { userRole, isCompanyEmployee });
+      // CRITIQUE: Pour les clients, attendre que isCompanyEmployeeChecked soit true
+      if (userRole === "client" && !isCompanyEmployeeChecked) {
+        logger.info("Waiting for company employee check to complete");
+        return;
+      }
+      
+      logger.info("Redirecting to dashboard", { userRole, isCompanyEmployee, isCompanyEmployeeChecked });
       setHasRedirected(true);
       
       // Si c'est un collaborateur d'entreprise, rediriger vers son dashboard
@@ -75,7 +81,7 @@ const Login = () => {
       
       navigate(path, { replace: true });
     }
-  }, [user, userRole, isCompanyEmployee, authLoading, navigate, loading, hasRedirected]);
+  }, [user, userRole, isCompanyEmployee, isCompanyEmployeeChecked, authLoading, navigate, loading, hasRedirected]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
