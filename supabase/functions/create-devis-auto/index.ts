@@ -49,9 +49,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Vérifier si c'est une course d'entreprise (company_courses)
+    let companyId = null;
+    if (!course.client_id) {
+      const { data: companyCourse } = await supabaseClient
+        .from('company_courses')
+        .select('company_id')
+        .eq('course_id', course_id)
+        .maybeSingle();
+      
+      if (companyCourse?.company_id) {
+        companyId = companyCourse.company_id;
+        console.log('🏢 Course d\'entreprise détectée, company_id:', companyId);
+      }
+    }
+
     console.log('✅ Course trouvée:', { 
       id: course.id, 
       client_id: course.client_id, 
+      company_id: companyId,
       driver_id: course.driver_id,
       distance_km: course.distance_km,
       duration_minutes: course.duration_minutes,
@@ -243,7 +259,8 @@ Deno.serve(async (req) => {
           .insert({
             course_id: course_id,
             driver_id: driver_id,
-            client_id: course.client_id,
+            client_id: course.client_id || null,
+            company_id: companyId || null, // Pour les courses d'entreprise
             quote_number: reservationNumber, // RES-001, RES-002, etc.
             base_price: pricing.base_price,
             distance_price: pricing.distance_price,
