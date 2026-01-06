@@ -160,13 +160,28 @@ export default function CompanyEmployeeDashboard() {
       // For regular employees, filter by their employee_id OR courses they created
       const { data: coursesData, error: coursesError } = await coursesQuery;
 
+      console.log("[CompanyEmployeeDashboard] Courses query result:", {
+        coursesData: coursesData?.length || 0,
+        coursesError,
+        employeeId: empData.id,
+        userId: user?.id,
+        companyId: empData.company.id
+      });
+
+      if (coursesError) {
+        console.error("[CompanyEmployeeDashboard] Courses error:", coursesError);
+      }
+
       if (!coursesError && coursesData) {
+        console.log("[CompanyEmployeeDashboard] Raw courses:", coursesData);
+        
         // Filter courses: either assigned to this employee OR created by this user
         const filteredCourses = coursesData.filter((cc: any) => 
           cc.employee_id === empData.id || 
-          cc.course?.created_by_user_id === user?.id ||
-          !cc.employee_id // Include courses without employee assignment (legacy)
+          cc.course?.created_by_user_id === user?.id
         );
+
+        console.log("[CompanyEmployeeDashboard] Filtered courses:", filteredCourses.length);
 
         const enrichedCourses: Course[] = [];
         
