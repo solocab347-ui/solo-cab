@@ -3707,6 +3707,44 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_report_reminders: {
+        Row: {
+          expense_report_id: string
+          id: string
+          message: string | null
+          read_at: string | null
+          read_by_user_id: string | null
+          sent_at: string
+          sent_by_user_id: string
+        }
+        Insert: {
+          expense_report_id: string
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          read_by_user_id?: string | null
+          sent_at?: string
+          sent_by_user_id: string
+        }
+        Update: {
+          expense_report_id?: string
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          read_by_user_id?: string | null
+          sent_at?: string
+          sent_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_report_reminders_expense_report_id_fkey"
+            columns: ["expense_report_id"]
+            isOneToOne: false
+            referencedRelation: "expense_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_reports: {
         Row: {
           amount: number
@@ -3717,6 +3755,7 @@ export type Database = {
           employee_id: string
           facture_id: string | null
           id: string
+          last_reminder_at: string | null
           notes: string | null
           payment_method: string
           receipt_url: string | null
@@ -3725,6 +3764,7 @@ export type Database = {
           reimbursement_month: string | null
           reimbursement_notes: string | null
           rejection_reason: string | null
+          reminder_count: number | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -3740,6 +3780,7 @@ export type Database = {
           employee_id: string
           facture_id?: string | null
           id?: string
+          last_reminder_at?: string | null
           notes?: string | null
           payment_method: string
           receipt_url?: string | null
@@ -3748,6 +3789,7 @@ export type Database = {
           reimbursement_month?: string | null
           reimbursement_notes?: string | null
           rejection_reason?: string | null
+          reminder_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -3763,6 +3805,7 @@ export type Database = {
           employee_id?: string
           facture_id?: string | null
           id?: string
+          last_reminder_at?: string | null
           notes?: string | null
           payment_method?: string
           receipt_url?: string | null
@@ -3771,6 +3814,7 @@ export type Database = {
           reimbursement_month?: string | null
           reimbursement_notes?: string | null
           rejection_reason?: string | null
+          reminder_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
