@@ -13,7 +13,7 @@ import {
   Clock,
   MapPin,
   Calendar,
-  Receipt,
+  
   Euro,
   FileText,
   Plus,
@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import logo from "@/assets/logo-solocab.png";
 import { NotificationBell } from "@/components/NotificationBell";
-import { EmployeeExpenseReports } from "@/components/company/EmployeeExpenseReports";
+
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
 
@@ -57,6 +57,11 @@ interface Course {
   scheduled_date: string;
   status: string;
   distance_km: number | null;
+  started_at: string | null;
+  updated_at: string | null;
+  company_payment_status: string | null;
+  driver_name: string | null;
+  amount: number | null;
 }
 
 export default function CompanyEmployeeDashboard() {
@@ -101,7 +106,7 @@ export default function CompanyEmployeeDashboard() {
         company: companyData,
       });
 
-      // Récupérer les courses de l'employé
+      // Récupérer les courses de l'employé avec détails enrichis
       const { data: coursesData, error: coursesError } = await supabase
         .from("company_courses")
         .select(`
@@ -111,15 +116,62 @@ export default function CompanyEmployeeDashboard() {
             destination_address,
             scheduled_date,
             status,
-            distance_km
+            distance_km,
+            started_at,
+            updated_at,
+            company_payment_status,
+            driver_id
           )
         `)
         .eq("employee_id", empData.id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (!coursesError && coursesData) {
-        setCourses(coursesData.map(c => c.course as unknown as Course));
+        // Enrichir avec les noms des chauffeurs et montants
+        const enrichedCourses: Course[] = [];
+        
+        for (const cc of coursesData) {
+          const course = cc.course as any;
+          let driverName = null;
+          let amount = null;
+
+          // Récupérer le nom du chauffeur
+          if (course.driver_id) {
+            const { data: driver } = await supabase
+              .from("drivers")
+              .select("user_id")
+              .eq("id", course.driver_id)
+              .maybeSingle();
+            
+            if (driver?.user_id) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", driver.user_id)
+                .maybeSingle();
+              driverName = profile?.full_name || null;
+            }
+          }
+
+          // Récupérer le montant du devis
+          const { data: devis } = await supabase
+            .from("devis")
+            .select("amount")
+            .eq("course_id", course.id)
+            .eq("status", "accepted")
+            .maybeSingle();
+          
+          amount = devis?.amount || null;
+
+          enrichedCourses.push({
+            ...course,
+            driver_name: driverName,
+            amount
+          });
+        }
+
+        setCourses(enrichedCourses);
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -203,30 +255,40 @@ export default function CompanyEmployeeDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Accueil</span>
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="flex items-center gap-2">
-              <Car className="w-4 h-4" />
-              <span className="hidden sm:inline">Courses</span>
-            </TabsTrigger>
-            <TabsTrigger value="expenses" className="flex items-center gap-2">
-              <Receipt className="w-4 h-4" />
-              <span className="hidden sm:inline">Notes de frais</span>
-            </TabsTrigger>
-            {employee.can_view_invoices && (
-              <TabsTrigger value="invoices" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Factures</span>
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">Profil</span>
-            </TabsTrigger>
-          </TabsList>
+          {/* Calcul dynamique du nombre d'onglets */}
+          {(() => {
+            const tabCount = 2 + // Accueil + Profil (toujours présents)
+              1 + // Mes courses (toujours présent - suivi)
+              (employee.can_create_courses ? 0 : 0) + // Le bouton "nouvelle course" est dans l'onglet
+              (employee.can_view_invoices ? 1 : 0); // Factures si permission
+            
+            return (
+              <TabsList className={`grid w-full mb-6 ${
+                tabCount === 3 ? 'grid-cols-3' : 
+                tabCount === 4 ? 'grid-cols-4' : 
+                'grid-cols-3'
+              }`}>
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Accueil</span>
+                </TabsTrigger>
+                <TabsTrigger value="courses" className="flex items-center gap-2">
+                  <Car className="w-4 h-4" />
+                  <span className="hidden sm:inline">Mes courses</span>
+                </TabsTrigger>
+                {employee.can_view_invoices && (
+                  <TabsTrigger value="invoices" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden sm:inline">Factures</span>
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="profile" className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">Profil</span>
+                </TabsTrigger>
+              </TabsList>
+            );
+          })()}
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -359,10 +421,15 @@ export default function CompanyEmployeeDashboard() {
           {/* Courses Tab */}
           <TabsContent value="courses">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
                 <div>
                   <CardTitle>Mes courses</CardTitle>
-                  <CardDescription>Historique de vos déplacements professionnels</CardDescription>
+                  <CardDescription>
+                    {employee.can_create_courses 
+                      ? "Gérez et suivez vos déplacements professionnels"
+                      : "Suivez les courses réservées pour vous"
+                    }
+                  </CardDescription>
                 </div>
                 {employee.can_create_courses && (
                   <Button onClick={() => navigate("/chauffeurs")}>
@@ -377,7 +444,10 @@ export default function CompanyEmployeeDashboard() {
                     <Car className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                     <h3 className="font-medium mb-2">Aucune course</h3>
                     <p className="text-muted-foreground mb-4">
-                      Vous n'avez pas encore effectué de course.
+                      {employee.can_create_courses 
+                        ? "Vous n'avez pas encore réservé de course."
+                        : "Aucune course n'a été réservée pour vous."
+                      }
                     </p>
                     {employee.can_create_courses && (
                       <Button onClick={() => navigate("/chauffeurs")}>
@@ -387,34 +457,96 @@ export default function CompanyEmployeeDashboard() {
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {courses.map((course) => (
                       <div
                         key={course.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors space-y-3"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Car className="w-6 h-6 text-primary" />
+                        {/* En-tête de la course */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                              <Car className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {format(new Date(course.scheduled_date), "EEEE d MMMM", { locale: fr })}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                à {format(new Date(course.scheduled_date), "HH:mm")}
+                                {course.driver_name && ` • ${course.driver_name}`}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{course.pickup_address.split(",")[0]}</p>
-                            <p className="text-sm text-muted-foreground">
-                              → {course.destination_address.split(",")[0]}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(course.scheduled_date).toLocaleDateString("fr-FR", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "long",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                              {course.distance_km && ` • ${course.distance_km.toFixed(1)} km`}
-                            </p>
+                          <div className="flex flex-col items-end gap-1">
+                            {getStatusBadge(course.status)}
+                            {course.amount && (
+                              <span className="text-sm font-semibold">{course.amount.toFixed(2)}€</span>
+                            )}
                           </div>
                         </div>
-                        {getStatusBadge(course.status)}
+
+                        {/* Adresses */}
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-muted-foreground">{course.pickup_address}</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-muted-foreground">{course.destination_address}</span>
+                          </div>
+                        </div>
+
+                        {/* Timeline de progression */}
+                        <div className="p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-2 h-2 rounded-full ${course.status !== "pending" ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                              <span className={course.status !== "pending" ? "font-medium" : "text-muted-foreground"}>Confirmée</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-2 h-2 rounded-full ${course.status === "in_progress" || course.status === "completed" ? "bg-blue-500" : "bg-muted-foreground/30"}`} />
+                              <span className={course.status === "in_progress" || course.status === "completed" ? "font-medium text-blue-600" : "text-muted-foreground"}>
+                                En cours
+                                {course.started_at && (course.status === "in_progress" || course.status === "completed") && (
+                                  <span className="ml-1">({format(new Date(course.started_at), "HH:mm")})</span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-2 h-2 rounded-full ${course.status === "completed" ? "bg-green-500" : "bg-muted-foreground/30"}`} />
+                              <span className={course.status === "completed" ? "font-medium text-green-600" : "text-muted-foreground"}>
+                                Terminée
+                                {course.updated_at && course.status === "completed" && (
+                                  <span className="ml-1">({format(new Date(course.updated_at), "HH:mm")})</span>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Statut paiement si terminée */}
+                        {course.status === "completed" && (
+                          <div className={`p-2 rounded-lg text-xs flex items-center gap-2 ${
+                            course.company_payment_status === "paid_on_spot" 
+                              ? "bg-green-500/10 text-green-700"
+                              : "bg-blue-500/10 text-blue-700"
+                          }`}>
+                            {course.company_payment_status === "paid_on_spot" ? (
+                              <>
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Payée sur place</span>
+                              </>
+                            ) : (
+                              <>
+                                <Building2 className="w-3.5 h-3.5" />
+                                <span>Paiement géré par l'entreprise</span>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -423,10 +555,6 @@ export default function CompanyEmployeeDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Expenses Tab */}
-          <TabsContent value="expenses">
-            <EmployeeExpenseReports employeeId={employee.id} />
-          </TabsContent>
 
           {/* Invoices Tab */}
           {employee.can_view_invoices && (
