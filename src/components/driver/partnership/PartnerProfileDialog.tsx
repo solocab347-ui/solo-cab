@@ -37,8 +37,10 @@ import {
   Newspaper,
   Droplet,
   Zap,
+  Trophy,
 } from 'lucide-react';
 import { getServiceLabel, getServiceIcon } from '@/lib/serviceLabels';
+import { getDriverGlobalStats, DriverGlobalStats } from '@/hooks/useDriverGlobalStats';
 
 interface PartnerProfileDialogProps {
   open: boolean;
@@ -98,12 +100,24 @@ export function PartnerProfileDialog({
 }: PartnerProfileDialogProps) {
   const [profile, setProfile] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [globalStats, setGlobalStats] = useState<DriverGlobalStats | null>(null);
 
   useEffect(() => {
     if (open && driverId) {
       loadProfile();
+      loadGlobalStats();
     }
   }, [open, driverId]);
+
+  const loadGlobalStats = async () => {
+    if (!driverId) return;
+    try {
+      const stats = await getDriverGlobalStats(driverId);
+      setGlobalStats(stats);
+    } catch (error) {
+      console.error("Erreur chargement stats globales:", error);
+    }
+  };
 
   const loadProfile = async () => {
     if (!driverId) return;
@@ -238,11 +252,11 @@ export function PartnerProfileDialog({
                         {profile.rating?.toFixed(1) || 'N/A'}
                       </Badge>
                     )}
-                    {/* Total rides visible uniquement si show_rides_for_sharing est true */}
-                    {profile.show_rides_for_sharing && (
+                    {/* Total rides global - visible uniquement si show_rides_for_sharing est true */}
+                    {profile.show_rides_for_sharing && globalStats && (
                       <Badge className="gap-1 bg-emerald-500/20 text-emerald-500 border-emerald-500/30">
-                        <Car className="h-3 w-3" />
-                        {profile.total_rides || 0} courses
+                        <Trophy className="h-3 w-3" />
+                        {globalStats.totalRides} courses
                       </Badge>
                     )}
                   </div>
