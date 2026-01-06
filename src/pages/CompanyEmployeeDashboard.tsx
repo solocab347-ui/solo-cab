@@ -89,6 +89,7 @@ export default function CompanyEmployeeDashboard() {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<EmployeeData | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [completedCoursesThisMonth, setCompletedCoursesThisMonth] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [showCourseCreation, setShowCourseCreation] = useState(false);
@@ -229,6 +230,7 @@ export default function CompanyEmployeeDashboard() {
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
         let totalSpent = 0;
+        let completedCoursesCount = 0;
         const enrichedCourses: Course[] = [];
 
         for (const cc of filteredCourses) {
@@ -239,11 +241,14 @@ export default function CompanyEmployeeDashboard() {
           const driverName = profile?.full_name || null;
           const amount = devis?.amount || null;
 
-          // Calculate monthly spent from completed courses or accepted devis
+          // Calculate monthly stats from COMPLETED courses only
           const courseDate = new Date(course.scheduled_date);
-          if (courseDate >= startOfMonth && courseDate <= endOfMonth && amount) {
-            if (course.status === 'completed' || devis?.status === 'accepted') {
-              totalSpent += Number(amount);
+          if (courseDate >= startOfMonth && courseDate <= endOfMonth) {
+            if (course.status === 'completed') {
+              completedCoursesCount++;
+              if (amount) {
+                totalSpent += Number(amount);
+              }
             }
           }
 
@@ -257,6 +262,7 @@ export default function CompanyEmployeeDashboard() {
         }
 
         setCourses(enrichedCourses);
+        setCompletedCoursesThisMonth(completedCoursesCount);
         
         // Update the employee object with calculated stats
         setEmployee(prev => prev ? {
@@ -486,9 +492,9 @@ export default function CompanyEmployeeDashboard() {
                     <div>
                       <p className="text-sm text-muted-foreground font-medium">Courses ce mois</p>
                       <p className="text-3xl font-bold mt-2 bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent">
-                        {courses.length}
+                        {completedCoursesThisMonth}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">réservations</p>
+                      <p className="text-xs text-muted-foreground mt-1">terminées ce mois</p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center">
                       <Car className="w-6 h-6 text-accent" />
