@@ -52,6 +52,7 @@ interface Administrator {
   id: string;
   user_id: string;
   role: string;
+  admin_type: string;
   is_active: boolean;
   invited_at: string;
   accepted_at: string | null;
@@ -107,6 +108,7 @@ export function CompanyAdministratorsManager({ companyId, companyName }: Company
           id,
           user_id,
           role,
+          admin_type,
           is_active,
           invited_at,
           accepted_at
@@ -324,42 +326,51 @@ export function CompanyAdministratorsManager({ companyId, companyName }: Company
       </div>
 
       {/* Propriétaire de l'entreprise */}
-      <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Crown className="w-4 h-4 text-amber-400" />
-            Propriétaire du compte
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <Crown className="w-5 h-5 text-amber-400" />
+      {administrators.filter(a => a.admin_type === 'owner').map((owner) => (
+        <Card key={owner.id} className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-400" />
+              Administrateur principal
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white">
+                    {owner.profiles?.full_name || "Administrateur principal"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {owner.profiles?.email || "Propriétaire de l'entreprise"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-white">Compte principal</p>
-                <p className="text-sm text-muted-foreground">Propriétaire de l'entreprise</p>
-              </div>
+              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                Propriétaire
+              </Badge>
             </div>
-            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-              Propriétaire
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ))}
 
-      {/* Liste des administrateurs */}
-      {administrators.length > 0 && (
+      {/* Liste des sous-administrateurs (excluant le owner) */}
+      {administrators.filter(a => a.admin_type !== 'owner').length > 0 && (
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
-              Administrateurs actifs ({administrators.length})
+              Sous-administrateurs ({administrators.filter(a => a.admin_type !== 'owner').length})
             </CardTitle>
+            <CardDescription>
+              Ces administrateurs ont les mêmes droits de gestion que le propriétaire
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {administrators.map((admin) => (
+            {administrators.filter(a => a.admin_type !== 'owner').map((admin) => (
               <div 
                 key={admin.id}
                 className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"

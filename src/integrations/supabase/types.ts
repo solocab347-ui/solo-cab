@@ -744,6 +744,7 @@ export type Database = {
       company_administrators: {
         Row: {
           accepted_at: string | null
+          admin_type: string
           company_id: string
           created_at: string
           id: string
@@ -756,6 +757,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          admin_type?: string
           company_id: string
           created_at?: string
           id?: string
@@ -768,6 +770,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          admin_type?: string
           company_id?: string
           created_at?: string
           id?: string
