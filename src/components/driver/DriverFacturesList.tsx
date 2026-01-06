@@ -161,7 +161,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           .select(`
             course_id,
             employee_id,
-            company:companies(id, company_name, logo_url, contact_email, contact_phone),
+            company:companies(id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address),
             employee:company_employees(
               id,
               user_id,
@@ -336,22 +336,83 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       doc.text(addressLines, 20, infoY + 5);
     }
 
-    // Client info (right side)
+    // Client/Company info (right side)
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
     
-    const clientName = facture.clients?.profiles?.full_name || "N/A";
-    doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+    const isCompanyCourse = !!facture.companyInfo;
     
-    if (facture.clients?.profiles?.email) {
-      doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
-    }
-    
-    if (facture.clients?.profiles?.phone) {
-      doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+    if (isCompanyCourse) {
+      // Display company information
+      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      doc.text(facture.companyInfo.company_name || "N/A", pageWidth - 20, 71, { align: 'right' });
+      
+      let companyInfoY = 76;
+      
+      if (facture.companyInfo.siret) {
+        doc.text(`SIRET: ${facture.companyInfo.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      } else if (facture.companyInfo.siren) {
+        doc.text(`SIREN: ${facture.companyInfo.siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (facture.companyInfo.tva_number) {
+        doc.text(`TVA: ${facture.companyInfo.tva_number}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      const companyAddress = facture.companyInfo.billing_address || facture.companyInfo.address;
+      if (companyAddress) {
+        const addressLines = doc.splitTextToSize(companyAddress, 75);
+        addressLines.forEach((line: string, index: number) => {
+          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+        });
+        companyInfoY += addressLines.length * 4;
+      }
+      
+      if (facture.companyInfo.contact_email) {
+        doc.text(facture.companyInfo.contact_email, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (facture.companyInfo.contact_phone) {
+        doc.text(`Tél: ${facture.companyInfo.contact_phone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      // Display collaborator info
+      if (facture.employeeName) {
+        companyInfoY += 2;
+        doc.setFont(undefined, 'bold');
+        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        companyInfoY += 5;
+        doc.text(facture.employeeName, pageWidth - 20, companyInfoY, { align: 'right' });
+        if (facture.employeePhone) {
+          companyInfoY += 4;
+          doc.text(`Tél: ${facture.employeePhone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        }
+      }
+    } else {
+      // Regular client
+      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      const clientName = facture.clients?.profiles?.full_name || "N/A";
+      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+      
+      if (facture.clients?.profiles?.email) {
+        doc.text(facture.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+      }
+      
+      if (facture.clients?.profiles?.phone) {
+        doc.text(`Tél: ${facture.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+      }
     }
 
     // Service details box

@@ -60,14 +60,28 @@ export const CompanyEmployeeFactures = ({ employeeId, companyName }: CompanyEmpl
             company_address,
             siret,
             siren,
-            profiles:user_id(full_name, phone)
+            tva_number,
+            profiles:user_id(full_name, phone, email)
           )
         `)
         .in("course_id", courseIds)
         .order("created_at", { ascending: false });
 
+      // Fetch company info for billing details
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("id, company_name, siret, siren, tva_number, address, billing_address, contact_email, contact_phone")
+        .eq("company_name", companyName)
+        .maybeSingle();
+
+      // Enrich factures with company info
+      const enrichedFactures = (data || []).map(f => ({
+        ...f,
+        companyBillingInfo: companyData
+      }));
+
       if (error) throw error;
-      setFactures(data || []);
+      setFactures(enrichedFactures);
     } catch (error: any) {
       console.error("Error fetching factures:", error);
       toast.error("Erreur lors du chargement des factures");
@@ -133,7 +147,7 @@ export const CompanyEmployeeFactures = ({ employeeId, companyName }: CompanyEmpl
     
     let yPos = 50;
     
-    // Chauffeur
+    // Chauffeur (ÉMETTEUR - left side)
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text("ÉMETTEUR", 20, yPos);
@@ -150,13 +164,63 @@ export const CompanyEmployeeFactures = ({ employeeId, companyName }: CompanyEmpl
       yPos += 4;
     }
     
-    // Destinataire
-    yPos = 50;
+    if (facture.drivers?.siret) {
+      doc.text(`SIRET: ${facture.drivers.siret}`, 20, yPos);
+      yPos += 4;
+    } else if (facture.drivers?.siren) {
+      doc.text(`SIREN: ${facture.drivers.siren}`, 20, yPos);
+      yPos += 4;
+    }
+    
+    if (facture.drivers?.tva_number) {
+      doc.text(`TVA: ${facture.drivers.tva_number}`, 20, yPos);
+      yPos += 4;
+    }
+    
+    if (facture.drivers?.profiles?.phone) {
+      doc.text(`Tél: ${facture.drivers.profiles.phone}`, 20, yPos);
+      yPos += 4;
+    }
+    
+    if (facture.drivers?.company_address) {
+      const addressLines = doc.splitTextToSize(facture.drivers.company_address, 75);
+      doc.text(addressLines, 20, yPos);
+    }
+    
+    // Destinataire (ENTREPRISE - right side)
+    let rightYPos = 50;
     doc.setFont(undefined, 'bold');
-    doc.text("DESTINATAIRE", pageWidth - 80, yPos);
+    doc.text("DESTINATAIRE", pageWidth - 80, rightYPos);
     doc.setFont(undefined, 'normal');
-    yPos += 5;
-    doc.text(companyName, pageWidth - 80, yPos);
+    rightYPos += 5;
+    
+    const companyInfo = facture.companyBillingInfo;
+    doc.text(companyInfo?.company_name || companyName, pageWidth - 80, rightYPos);
+    rightYPos += 4;
+    
+    if (companyInfo?.siret) {
+      doc.text(`SIRET: ${companyInfo.siret}`, pageWidth - 80, rightYPos);
+      rightYPos += 4;
+    } else if (companyInfo?.siren) {
+      doc.text(`SIREN: ${companyInfo.siren}`, pageWidth - 80, rightYPos);
+      rightYPos += 4;
+    }
+    
+    if (companyInfo?.tva_number) {
+      doc.text(`TVA: ${companyInfo.tva_number}`, pageWidth - 80, rightYPos);
+      rightYPos += 4;
+    }
+    
+    if (companyInfo?.contact_phone) {
+      doc.text(`Tél: ${companyInfo.contact_phone}`, pageWidth - 80, rightYPos);
+      rightYPos += 4;
+    }
+    
+    const companyAddress = companyInfo?.billing_address || companyInfo?.address;
+    if (companyAddress) {
+      const addressLines = doc.splitTextToSize(companyAddress, 75);
+      doc.text(addressLines, pageWidth - 80, rightYPos);
+    }
     
     // Détails de la course
     yPos = 95;
