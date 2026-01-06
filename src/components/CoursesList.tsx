@@ -222,14 +222,25 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         setSharedCoursesData(sharedData || []);
 
-        // Fetch company courses data avec logo et infos collaborateur
+        // Fetch company courses data avec logo et infos collaborateur (enrichi avec toutes les infos de facturation)
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
             course_id,
             company_id,
             employee_id,
-            company:companies(company_name, logo_url)
+            company:companies(
+              id,
+              company_name, 
+              logo_url,
+              siret,
+              siren,
+              tva_number,
+              address,
+              billing_address,
+              contact_email,
+              contact_phone
+            )
           `)
           .in("course_id", courseIds);
         
@@ -337,18 +348,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     };
   }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
 
-  // Helper pour récupérer les infos entreprise d'une course (avec collaborateur)
+  // Helper pour récupérer les infos entreprise complètes d'une course (pour facturation)
   const getCompanyCourseInfo = (courseId: string): { 
+    companyId: string;
     companyName: string; 
     logoUrl?: string | null; 
+    siret?: string | null;
+    siren?: string | null;
+    tvaNumber?: string | null;
+    address?: string | null;
+    billingAddress?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
     employeeName?: string | null;
     employeePhone?: string | null;
   } | null => {
     const companyCourse = companyCoursesData.find(cc => cc.course_id === courseId);
     if (!companyCourse?.company) return null;
     return {
+      companyId: companyCourse.company.id,
       companyName: companyCourse.company.company_name,
       logoUrl: companyCourse.company.logo_url,
+      siret: companyCourse.company.siret,
+      siren: companyCourse.company.siren,
+      tvaNumber: companyCourse.company.tva_number,
+      address: companyCourse.company.address,
+      billingAddress: companyCourse.company.billing_address,
+      contactEmail: companyCourse.company.contact_email,
+      contactPhone: companyCourse.company.contact_phone,
       employeeName: companyCourse.employeeName,
       employeePhone: companyCourse.employeePhone
     };
@@ -840,7 +867,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       return;
     }
     
-    // Récupérer le nom du client (enregistré ou invité)
+    // Vérifier si c'est une course entreprise et récupérer les infos
+    const companyInfo = getCompanyCourseInfo(course.id);
+    const isCompanyCourse = !!companyInfo;
+    
+    // Récupérer le nom du client (enregistré ou invité) - seulement si pas une course entreprise
     const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name 
       ? (course.guest_name || "Client invité") 
       : course.clients.profiles.full_name;
@@ -885,13 +916,75 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       doc.text(addressLines, 20, 91);
     }
 
-    // Client info (right side) - utilise clientName défini plus haut
+    // Client/Company info (right side) - adapté selon le type de course
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", 145, 65);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    doc.text(clientName, 145, 71);
+    
+    if (isCompanyCourse) {
+      // Afficher les informations de l'entreprise
+      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      doc.text(companyInfo.companyName || "N/A", pageWidth - 20, 71, { align: 'right' });
+      
+      let companyInfoY = 76;
+      
+      if (companyInfo.siret) {
+        doc.text(`SIRET: ${companyInfo.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      } else if (companyInfo.siren) {
+        doc.text(`SIREN: ${companyInfo.siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (companyInfo.tvaNumber) {
+        doc.text(`TVA: ${companyInfo.tvaNumber}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      const companyAddress = companyInfo.billingAddress || companyInfo.address;
+      if (companyAddress) {
+        const addressLines = doc.splitTextToSize(companyAddress, 75);
+        addressLines.forEach((line: string, index: number) => {
+          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+        });
+        companyInfoY += addressLines.length * 4;
+      }
+      
+      if (companyInfo.contactEmail) {
+        doc.text(companyInfo.contactEmail, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      // Afficher le collaborateur
+      if (companyInfo.employeeName) {
+        companyInfoY += 2;
+        doc.setFont(undefined, 'bold');
+        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        companyInfoY += 5;
+        doc.text(companyInfo.employeeName, pageWidth - 20, companyInfoY, { align: 'right' });
+        if (companyInfo.employeePhone) {
+          companyInfoY += 4;
+          doc.text(`Tél: ${companyInfo.employeePhone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        }
+      }
+    } else {
+      // Client classique
+      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+      
+      if (course.clients?.profiles?.email) {
+        doc.text(course.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+      }
+      
+      if (course.clients?.profiles?.phone) {
+        doc.text(`Tél: ${course.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+      }
+    }
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
@@ -1083,7 +1176,11 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       return;
     }
     
-    // Récupérer le nom du client (enregistré ou invité)
+    // Vérifier si c'est une course entreprise et récupérer les infos
+    const companyInfo = getCompanyCourseInfo(course.id);
+    const isCompanyCourse = !!companyInfo;
+    
+    // Récupérer le nom du client (enregistré ou invité) - seulement si pas une course entreprise
     const clientName = course.is_guest_booking || !course.clients?.profiles?.full_name 
       ? (course.guest_name || "Client invité") 
       : course.clients.profiles.full_name;
@@ -1131,14 +1228,75 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       doc.text(addressLines, 20, 91);
     }
 
-    // Client info (right side)
-    // Client info (right side) - utilise clientName défini plus haut
+    // Client/Company info (right side) - adapté selon le type de course
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text("CLIENT", 145, 65);
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    doc.text(clientName, 145, 71);
+    
+    if (isCompanyCourse) {
+      // Afficher les informations de l'entreprise
+      doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      
+      doc.text(companyInfo.companyName || "N/A", pageWidth - 20, 71, { align: 'right' });
+      
+      let companyInfoY = 76;
+      
+      if (companyInfo.siret) {
+        doc.text(`SIRET: ${companyInfo.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      } else if (companyInfo.siren) {
+        doc.text(`SIREN: ${companyInfo.siren}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      if (companyInfo.tvaNumber) {
+        doc.text(`TVA: ${companyInfo.tvaNumber}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      const companyAddress = companyInfo.billingAddress || companyInfo.address;
+      if (companyAddress) {
+        const addressLines = doc.splitTextToSize(companyAddress, 75);
+        addressLines.forEach((line: string, index: number) => {
+          doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+        });
+        companyInfoY += addressLines.length * 4;
+      }
+      
+      if (companyInfo.contactEmail) {
+        doc.text(companyInfo.contactEmail, pageWidth - 20, companyInfoY, { align: 'right' });
+        companyInfoY += 5;
+      }
+      
+      // Afficher le collaborateur
+      if (companyInfo.employeeName) {
+        companyInfoY += 2;
+        doc.setFont(undefined, 'bold');
+        doc.text("COLLABORATEUR", pageWidth - 20, companyInfoY, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        companyInfoY += 5;
+        doc.text(companyInfo.employeeName, pageWidth - 20, companyInfoY, { align: 'right' });
+        if (companyInfo.employeePhone) {
+          companyInfoY += 4;
+          doc.text(`Tél: ${companyInfo.employeePhone}`, pageWidth - 20, companyInfoY, { align: 'right' });
+        }
+      }
+    } else {
+      // Client classique
+      doc.text("CLIENT", pageWidth - 20, 65, { align: 'right' });
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.text(clientName, pageWidth - 20, 71, { align: 'right' });
+      
+      if (course.clients?.profiles?.email) {
+        doc.text(course.clients.profiles.email, pageWidth - 20, 76, { align: 'right' });
+      }
+      
+      if (course.clients?.profiles?.phone) {
+        doc.text(`Tél: ${course.clients.profiles.phone}`, pageWidth - 20, 81, { align: 'right' });
+      }
+    }
 
     // Service details box
     doc.setDrawColor(200, 200, 200);
