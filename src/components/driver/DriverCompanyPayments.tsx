@@ -266,6 +266,30 @@ export function DriverCompanyPayments({ driverId }: DriverCompanyPaymentsProps) 
         }
       }
 
+      // Update the agreement's outstanding_balance and total_paid
+      const { data: currentAgreement } = await supabase
+        .from("company_driver_agreements")
+        .select("outstanding_balance, total_paid")
+        .eq("id", payment.agreementId)
+        .single();
+
+      if (currentAgreement) {
+        const currentOutstanding = Number(currentAgreement.outstanding_balance) || 0;
+        const currentTotalPaid = Number(currentAgreement.total_paid) || 0;
+        const newOutstanding = Math.max(0, currentOutstanding - payment.totalAmount);
+        
+        await supabase
+          .from("company_driver_agreements")
+          .update({
+            outstanding_balance: newOutstanding,
+            total_paid: currentTotalPaid + payment.totalAmount,
+            last_payment_date: new Date().toISOString().split('T')[0]
+          })
+          .eq("id", payment.agreementId);
+        
+        console.log("Agreement balance updated:", { newOutstanding, totalPaid: currentTotalPaid + payment.totalAmount });
+      }
+
       // Notify company
       const { data: companyData } = await supabase
         .from("companies")
