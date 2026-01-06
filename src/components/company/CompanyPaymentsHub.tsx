@@ -867,10 +867,11 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                       <Button
                         size="sm"
                         onClick={() => openSendPaymentDialog(payment)}
-                        className="bg-primary hover:bg-primary/90 text-xs sm:text-sm"
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all text-xs sm:text-sm"
                       >
-                        <Send className="w-4 h-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Notifier l'envoi</span>
+                        <Send className="w-4 h-4 mr-1.5" />
+                        <span className="hidden sm:inline">Envoyer au chauffeur</span>
+                        <span className="sm:hidden">Envoyer</span>
                       </Button>
                     )}
                   </div>
@@ -1293,9 +1294,12 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       <Dialog open={showSendPaymentDialog} onOpenChange={setShowSendPaymentDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Notifier l'envoi du paiement</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-green-600" />
+              Confirmer l'envoi au chauffeur
+            </DialogTitle>
             <DialogDescription>
-              Confirmez l'envoi du paiement à {selectedPayment?.driverName}
+              Notifiez {selectedPayment?.driverName} que vous avez effectué le paiement
             </DialogDescription>
           </DialogHeader>
           
@@ -1370,13 +1374,14 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             <Button 
               onClick={handleSendPayment}
               disabled={markPaymentSentMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md"
             >
               {markPaymentSentMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Send className="w-4 h-4 mr-2" />
               )}
-              Confirmer l'envoi
+              Confirmer l'envoi au chauffeur
             </Button>
           </DialogFooter>
         </DialogContent>
