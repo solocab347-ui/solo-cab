@@ -320,49 +320,49 @@ export default function CompanyEmployeeDashboard() {
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Modern Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full bg-card/50 backdrop-blur-sm border border-border/50 p-1 rounded-2xl h-auto flex-wrap">
+          <TabsList className="w-full bg-card/50 backdrop-blur-sm border border-border/50 p-1.5 rounded-2xl h-auto flex-wrap gap-1">
             <TabsTrigger 
               value="overview" 
-              className="flex-1 min-w-[80px] rounded-xl py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
             >
-              <Calendar className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Accueil</span>
+              <Calendar className="w-6 h-6" />
+              <span className="text-xs sm:text-sm">Accueil</span>
             </TabsTrigger>
             
             {hasDriversTab && (
               <TabsTrigger 
                 value="drivers" 
-                className="flex-1 min-w-[80px] rounded-xl py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
               >
-                <Users className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Chauffeurs</span>
+                <Users className="w-6 h-6" />
+                <span className="text-xs sm:text-sm">Chauffeurs</span>
               </TabsTrigger>
             )}
             
             <TabsTrigger 
               value="courses" 
-              className="flex-1 min-w-[80px] rounded-xl py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
             >
-              <Car className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Courses</span>
+              <Car className="w-6 h-6" />
+              <span className="text-xs sm:text-sm">Courses</span>
             </TabsTrigger>
             
             {hasInvoicesTab && (
               <TabsTrigger 
                 value="invoices" 
-                className="flex-1 min-w-[80px] rounded-xl py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
               >
-                <FileText className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Factures</span>
+                <FileText className="w-6 h-6" />
+                <span className="text-xs sm:text-sm">Factures</span>
               </TabsTrigger>
             )}
             
             <TabsTrigger 
               value="profile" 
-              className="flex-1 min-w-[80px] rounded-xl py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
             >
-              <User className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Profil</span>
+              <User className="w-6 h-6" />
+              <span className="text-xs sm:text-sm">Profil</span>
             </TabsTrigger>
           </TabsList>
 
