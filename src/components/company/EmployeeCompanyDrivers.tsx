@@ -237,23 +237,26 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   };
   
   // Helper pour obtenir le label de qui a fait la demande
-  const getRequestedByLabel = (driverId: string): string | null => {
+  const getRequestedByLabel = (driverId: string): string => {
     const proposal = pendingProposals.find(p => p.driver_id === driverId);
-    if (!proposal) return null;
+    if (!proposal) return "Demande en cours";
     
-    if (proposal.created_by_user_id === currentUserId) {
+    // Si la demande a été faite par l'utilisateur actuel
+    if (proposal.created_by_user_id && proposal.created_by_user_id === currentUserId) {
       return "Demande faite par vous";
     }
     
-    if (proposal.is_admin) {
+    // Si c'est un administrateur (ou si pas d'info sur le créateur, c'est probablement l'admin)
+    if (proposal.is_admin || !proposal.created_by_user_id) {
       return "Demande faite par l'administrateur";
     }
     
+    // Si on a le nom du créateur
     if (proposal.created_by_name) {
       return `Demande faite par ${proposal.created_by_name}`;
     }
     
-    return "Demande en cours";
+    return "Demande faite par l'administrateur";
   };
   
   // Helper pour vérifier si un chauffeur est en attente
@@ -483,11 +486,12 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
   // Helper pour calculer le nom d'affichage - contexte B2B, on affiche toujours le nom complet
   const getDisplayName = (driver: Driver): string => {
-    // En contexte B2B partenariat, le nom complet est toujours affiché
-    if (driver.full_name && driver.full_name !== "Chauffeur") {
+    // En contexte B2B partenariat, le nom complet est prioritaire
+    // S'il n'y a pas de nom complet, on utilise le nom de l'entreprise
+    if (driver.full_name && driver.full_name !== "Chauffeur" && driver.full_name.trim() !== "") {
       return driver.full_name;
     }
-    if (driver.display_company_name && driver.company_name) {
+    if (driver.company_name && driver.company_name.trim() !== "") {
       return driver.company_name;
     }
     return "Chauffeur VTC";

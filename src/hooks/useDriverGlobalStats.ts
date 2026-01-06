@@ -15,32 +15,54 @@ export interface DriverGlobalStats {
  */
 export async function getDriverGlobalStats(driverId: string): Promise<DriverGlobalStats> {
   try {
-    // 1. Courses directes (personnelles + entreprises) - status completed
-    // Utilise OR pour combiner driver_id et driver_ids (array contains)
-    const { data: directCourses, error: directError } = await supabase
+    // 1. Courses directes où driver_id = driverId
+    const { data: directByDriverId, error: error1 } = await supabase
       .from("courses")
       .select("id, client_rating")
-      .or(`driver_id.eq.${driverId},driver_ids.cs.{"${driverId}"}`)
+      .eq("driver_id", driverId)
       .eq("status", "completed");
     
-    if (directError) {
-      console.error("Erreur requête courses directes:", directError);
+    if (error1) {
+      console.error("Erreur requête courses driver_id:", error1);
     }
 
-    // 2. Courses partagées reçues et complétées
+    // 2. Courses où le chauffeur est dans driver_ids (array)
+    const { data: directByDriverIds, error: error2 } = await supabase
+      .from("courses")
+      .select("id, client_rating")
+      .contains("driver_ids", [driverId])
+      .eq("status", "completed");
+    
+    if (error2) {
+      console.error("Erreur requête courses driver_ids:", error2);
+    }
+
+    // 3. Courses partagées reçues et complétées
     const { data: sharedCourses } = await supabase
       .from("shared_courses")
       .select("id, course_id")
       .eq("receiver_driver_id", driverId)
       .eq("status", "completed");
 
-    // Dédupliquer les courses (éviter de compter 2x une course partagée)
-    const directCourseIds = new Set((directCourses || []).map(c => c.id));
+    // Fusionner et dédupliquer les courses directes
+    const directCoursesMap = new Map<string, { id: string; client_rating: number | null }>();
+    for (const c of (directByDriverId || [])) {
+      directCoursesMap.set(c.id, c);
+    }
+    for (const c of (directByDriverIds || [])) {
+      if (!directCoursesMap.has(c.id)) {
+        directCoursesMap.set(c.id, c);
+      }
+    }
+    const directCourses = Array.from(directCoursesMap.values());
+    const directCourseIds = new Set(directCourses.map(c => c.id));
+
+    // Dédupliquer les courses partagées (éviter de compter 2x une course partagée)
     const sharedCourseIds = (sharedCourses || [])
       .map(sc => sc.course_id)
-      .filter(cid => !directCourseIds.has(cid));
+      .filter(cid => cid && !directCourseIds.has(cid));
 
-    // 3. Récupérer les ratings des courses partagées pour le calcul de la moyenne
+    // 4. Récupérer les ratings des courses partagées pour le calcul de la moyenne
     let sharedRatings: { client_rating: number | null }[] = [];
     if (sharedCourseIds.length > 0) {
       const { data: sharedCoursesData } = await supabase
