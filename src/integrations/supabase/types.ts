@@ -8012,7 +8012,15 @@ export type Database = {
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_airport_address: { Args: { address: string }; Returns: boolean }
+      is_company_course: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_course_shared_locked: { Args: { p_course_id: string }; Returns: Json }
+      is_driver_assigned_to_course: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_first_order: {
         Args: {
           p_client_id: string

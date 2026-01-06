@@ -145,7 +145,8 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
   const { data: allCompanyInvoices, isLoading: loadingInvoices } = useQuery({
     queryKey: ["company-all-invoices", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get invoices
+      const { data: invoices, error } = await supabase
         .from("factures")
         .select(`
           id,
@@ -155,25 +156,55 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           payment_status,
           created_at,
           driver_id,
-          course_id,
-          courses(
-            id,
-            pickup_address,
-            destination_address,
-            scheduled_date,
-            distance_km,
-            duration_minutes,
-            passengers_count,
-            guest_name,
-            status,
-            notes
-          )
+          course_id
         `)
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      if (!invoices || invoices.length === 0) return [];
+
+      // Get course IDs and fetch courses separately via company_courses
+      const courseIds = invoices.map(inv => inv.course_id).filter(Boolean);
+      
+      if (courseIds.length > 0) {
+        // Fetch courses via company_courses to bypass RLS issues
+        const { data: companyCourses } = await supabase
+          .from("company_courses")
+          .select(`
+            course_id,
+            courses:course_id(
+              id,
+              pickup_address,
+              destination_address,
+              scheduled_date,
+              distance_km,
+              duration_minutes,
+              passengers_count,
+              guest_name,
+              status,
+              notes
+            )
+          `)
+          .eq("company_id", companyId)
+          .in("course_id", courseIds);
+
+        // Create a map of course data
+        const courseMap: Record<string, any> = {};
+        companyCourses?.forEach((cc: any) => {
+          if (cc.courses) {
+            courseMap[cc.course_id] = cc.courses;
+          }
+        });
+
+        // Merge course data with invoices
+        return invoices.map(inv => ({
+          ...inv,
+          courses: courseMap[inv.course_id] || null
+        }));
+      }
+
+      return invoices;
     },
   });
 
