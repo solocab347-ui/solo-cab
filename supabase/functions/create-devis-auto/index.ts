@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { course_id, driver_id, use_hourly_rate = false } = await req.json();
+    const { course_id, driver_id, use_hourly_rate = false, company_id: passedCompanyId } = await req.json();
 
     if (!course_id || !driver_id) {
       return new Response(
@@ -50,8 +50,9 @@ Deno.serve(async (req) => {
     }
 
     // Vérifier si c'est une course d'entreprise (company_courses)
-    let companyId = null;
-    if (!course.client_id) {
+    // Priorité: 1) passedCompanyId (envoyé par le frontend), 2) company_courses table
+    let companyId = passedCompanyId || null;
+    if (!companyId && !course.client_id) {
       const { data: companyCourse } = await supabaseClient
         .from('company_courses')
         .select('company_id')
@@ -60,8 +61,12 @@ Deno.serve(async (req) => {
       
       if (companyCourse?.company_id) {
         companyId = companyCourse.company_id;
-        console.log('🏢 Course d\'entreprise détectée, company_id:', companyId);
+        console.log('🏢 Course d\'entreprise détectée via table, company_id:', companyId);
       }
+    }
+    
+    if (companyId) {
+      console.log('🏢 Company ID utilisé:', companyId);
     }
 
     console.log('✅ Course trouvée:', { 

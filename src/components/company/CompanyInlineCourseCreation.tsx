@@ -142,7 +142,11 @@ export function CompanyInlineCourseCreation({
       // Créer le devis automatiquement (BLOQUANT - on attend le résultat)
       console.log("[CompanyInlineCourseCreation] Creating devis for course:", data.course.id);
       const { data: devisResult, error: devisError } = await supabase.functions.invoke("create-devis-auto", {
-        body: { course_id: data.course.id, driver_id: selectedDriver.driver_id }
+        body: { 
+          course_id: data.course.id, 
+          driver_id: selectedDriver.driver_id,
+          company_id: companyId // Passer explicitement le company_id pour les courses entreprise
+        }
       });
 
       if (devisError) {
