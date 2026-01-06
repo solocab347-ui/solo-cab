@@ -35,10 +35,10 @@ interface DriverVehicle {
   model: string;
   year: number | null;
   color: string | null;
-  license_plate: string | null;
-  vehicle_category: string | null;
+  plate: string | null;
+  category: string | null;
   max_passengers: number | null;
-  vehicle_photos: string[] | null;
+  photos: string[] | null;
   is_favorite: boolean | null;
 }
 
@@ -1040,7 +1040,7 @@ ${company?.company_name || ""}`;
                   // Priorité aux véhicules de la nouvelle table
                   const vehicles = selectedDriver.vehicles || [];
                   const favoriteVehicle = vehicles.find((v: DriverVehicle) => v.is_favorite) || vehicles[0];
-                  const vehiclePhotos = favoriteVehicle?.vehicle_photos || selectedDriver.vehicle_photos;
+                  const vehiclePhotos = favoriteVehicle?.photos || selectedDriver.vehicle_photos;
                   
                   return (
                     <>
@@ -1085,11 +1085,11 @@ ${company?.company_name || ""}`;
                             <span className="font-medium">{favoriteVehicle?.max_passengers || selectedDriver.max_passengers}</span>
                           </div>
                         )}
-                        {(favoriteVehicle?.vehicle_category || (selectedDriver.vehicle_category && typeof selectedDriver.vehicle_category === 'string')) && (
+                        {(favoriteVehicle?.category || (selectedDriver.vehicle_category && typeof selectedDriver.vehicle_category === 'string')) && (
                           <div className="flex flex-col col-span-2">
                             <span className="text-muted-foreground text-xs">Catégorie</span>
                             <span className="font-medium capitalize">
-                              {(favoriteVehicle?.vehicle_category || selectedDriver.vehicle_category)?.replace(/_/g, ' ')}
+                              {(favoriteVehicle?.category || selectedDriver.vehicle_category)?.replace(/_/g, ' ')}
                             </span>
                           </div>
                         )}

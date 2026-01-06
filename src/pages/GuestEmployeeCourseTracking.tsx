@@ -25,7 +25,7 @@ interface DriverInfo {
   show_phone?: boolean;
   show_email?: boolean;
   profile?: { full_name?: string; phone?: string; email?: string; profile_photo_url?: string };
-  vehicles?: Array<{ brand?: string; model?: string; license_plate?: string; color?: string }>;
+  vehicles?: Array<{ brand?: string; model?: string; plate?: string; color?: string }>;
 }
 
 interface TrackingData {
@@ -144,7 +144,7 @@ export default function GuestEmployeeCourseTracking() {
               // Fetch driver vehicles
               const { data: vehicles } = await supabase
                 .from("driver_vehicles")
-                .select("brand, model, license_plate, color")
+                .select("brand, model, plate, color")
                 .eq("driver_id", driverData.id)
                 .eq("is_active", true)
                 .limit(1);
@@ -214,7 +214,7 @@ export default function GuestEmployeeCourseTracking() {
                   // Fetch vehicles
                   const { data: vehicles } = await supabase
                     .from("driver_vehicles")
-                    .select("brand, model, license_plate, color")
+                    .select("brand, model, plate, color")
                     .eq("driver_id", driverData.id)
                     .eq("is_active", true)
                     .limit(1);
@@ -561,7 +561,7 @@ export default function GuestEmployeeCourseTracking() {
                   <p className="font-medium">{driverVehicle.brand} {driverVehicle.model}</p>
                   <p className="text-sm text-muted-foreground">
                     {driverVehicle.color && `${driverVehicle.color} • `}
-                    {driverVehicle.license_plate}
+                    {driverVehicle.plate}
                   </p>
                 </div>
               )}
