@@ -144,11 +144,11 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     },
   });
 
-  // Fetch ALL invoices for this company (paid and unpaid)
+  // Fetch ALL invoices for this company (paid and unpaid) with course details
   const { data: allCompanyInvoices, isLoading: loadingInvoices } = useQuery({
     queryKey: ["company-all-invoices", companyId],
     queryFn: async () => {
-      // First get invoices
+      // Fetch invoices
       const { data: invoices, error } = await supabase
         .from("factures")
         .select(`
@@ -167,11 +167,20 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       if (error) throw error;
       if (!invoices || invoices.length === 0) return [];
 
-      // Get course IDs and fetch courses directly
+      // Get course IDs
       const courseIds = invoices.map(inv => inv.course_id).filter(Boolean);
       
       if (courseIds.length > 0) {
-        // Fetch courses directly - RLS should allow via is_company_course function
+        // Fetch company_courses first to get course IDs linked to company
+        const { data: companyCourses } = await supabase
+          .from("company_courses")
+          .select("course_id")
+          .eq("company_id", companyId)
+          .in("course_id", courseIds);
+        
+        const validCourseIds = companyCourses?.map(cc => cc.course_id) || [];
+        
+        // Now fetch courses directly with the validated course IDs
         const { data: coursesData } = await supabase
           .from("courses")
           .select(`
@@ -187,7 +196,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             status,
             notes
           `)
-          .in("id", courseIds);
+          .in("id", validCourseIds);
 
         // Create a map of course data
         const courseMap: Record<string, any> = {};
@@ -403,6 +412,11 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           );
         }
 
+        // Build proper course data from invoices if available
+        const invoicesWithCourses = relatedInvoices.length > 0 ? relatedInvoices : driverInvoices.filter((inv: any) => 
+          inv.driver_id === agreement.driver_id
+        );
+
         groups.push({
           driverId: agreement.driver_id,
           driverName: agreement.driverProfile?.full_name || "Chauffeur",
@@ -413,16 +427,12 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           paymentMethods: agreement.payment_methods || [],
           paymentDay,
           totalAmount: Number(payment.amount),
-          invoiceCount: payment.courses_count || relatedInvoices.length || 1,
-          invoices: relatedInvoices.length > 0 ? relatedInvoices : [{
+          invoiceCount: payment.courses_count || invoicesWithCourses.length || 1,
+          invoices: invoicesWithCourses.length > 0 ? invoicesWithCourses : [{
             amount: payment.amount,
             created_at: payment.created_at,
             invoice_number_generated: null,
-            courses: { 
-              scheduled_date: payment.period_start || payment.created_at,
-              pickup_address: "Données non disponibles",
-              destination_address: "Contactez le chauffeur pour plus d'infos"
-            }
+            courses: null
           }],
           periodStart,
           periodEnd,
@@ -863,21 +873,27 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
                           </span>
                         </div>
                         
-                        <div className="flex items-start gap-2">
-                          <MapPin className="w-4 h-4 mt-0.5 text-green-500 shrink-0" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Départ</p>
-                            <p className="font-medium">{invoice.courses?.pickup_address || "Adresse non disponible"}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-2">
-                          <MapPin className="w-4 h-4 mt-0.5 text-red-500 shrink-0" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Arrivée</p>
-                            <p className="font-medium">{invoice.courses?.destination_address || "Adresse non disponible"}</p>
-                          </div>
-                        </div>
+                        {invoice.courses?.pickup_address ? (
+                          <>
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 mt-0.5 text-green-500 shrink-0" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Départ</p>
+                                <p className="font-medium">{invoice.courses.pickup_address}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 mt-0.5 text-red-500 shrink-0" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Arrivée</p>
+                                <p className="font-medium">{invoice.courses.destination_address}</p>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-muted-foreground text-sm italic">Détails de la course en cours de chargement...</p>
+                        )}
                         
                         {(invoice.courses?.distance_km || invoice.courses?.duration_minutes) && (
                           <div className="flex gap-4 mt-2 pt-2 border-t border-border/30">
