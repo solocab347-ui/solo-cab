@@ -21,7 +21,10 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
-  Timer
+  Timer,
+  Building2,
+  CreditCard,
+  Receipt
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,6 +62,10 @@ interface CourseData {
   driver: {
     id: string;
     company_name: string | null;
+    company_address: string | null;
+    siret: string | null;
+    siren: string | null;
+    tva_number: string | null;
     vehicle_brand: string | null;
     vehicle_model: string | null;
     vehicle_color: string | null;
@@ -74,12 +81,37 @@ interface CourseData {
     amount: number;
     status: string;
     valid_until: string;
+    base_price: number;
+    distance_price: number;
+    tva_rate: number | null;
+    tva_amount: number | null;
   } | null;
   facture: {
     id: string;
     invoice_number: string;
+    invoice_number_generated: string | null;
     amount: number;
     payment_status: string;
+    tva_rate: number | null;
+    tva_amount: number | null;
+  } | null;
+  companyCourse: {
+    actual_payment_method: string | null;
+    client_confirmed_payment_method: string | null;
+  } | null;
+  company: {
+    id: string;
+    company_name: string;
+    siret: string;
+    siren: string | null;
+    tva_number: string | null;
+    address: string;
+    billing_address: string | null;
+    contact_email: string;
+  } | null;
+  agreement: {
+    payment_frequency: string;
+    payment_day: number | null;
   } | null;
 }
 
@@ -166,19 +198,39 @@ export function EmployeeCoursesList({
 
       console.log("[EmployeeCoursesList] My courses after filter:", myCourses.length);
 
-      // Enrichir avec driver, devis, facture
+      // Fetch company info
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("id, company_name, siret, siren, tva_number, address, billing_address, contact_email")
+        .eq("id", companyId)
+        .maybeSingle();
+
+      // Enrichir avec driver, devis, facture, companyCourse
       const enrichedCourses: CourseData[] = [];
 
       for (const course of myCourses) {
         let driver = null;
         let devis = null;
         let facture = null;
+        let companyCourse = null;
+        let agreement = null;
 
-        // Get driver info
+        // Get company_course info for payment method
+        const cc = companyCourses.find(c => c.course_id === course.id);
+        if (cc) {
+          const { data: ccData } = await supabase
+            .from("company_courses")
+            .select("actual_payment_method, client_confirmed_payment_method")
+            .eq("course_id", course.id)
+            .maybeSingle();
+          companyCourse = ccData;
+        }
+
+        // Get driver info with legal details
         if (course.driver_id) {
           const { data: driverData } = await supabase
             .from("drivers")
-            .select("id, company_name, vehicle_brand, vehicle_model, vehicle_color, user_id")
+            .select("id, company_name, company_address, siret, siren, tva_number, vehicle_brand, vehicle_model, vehicle_color, user_id")
             .eq("id", course.driver_id)
             .single();
 
@@ -192,18 +244,32 @@ export function EmployeeCoursesList({
             driver = {
               id: driverData.id,
               company_name: driverData.company_name,
+              company_address: driverData.company_address,
+              siret: driverData.siret,
+              siren: driverData.siren,
+              tva_number: driverData.tva_number,
               vehicle_brand: driverData.vehicle_brand,
               vehicle_model: driverData.vehicle_model,
               vehicle_color: driverData.vehicle_color,
               profile: profileData
             };
+
+            // Get agreement for payment frequency
+            const { data: agreementData } = await supabase
+              .from("company_driver_agreements")
+              .select("payment_frequency, payment_day")
+              .eq("driver_id", course.driver_id)
+              .eq("company_id", companyId)
+              .eq("status", "accepted")
+              .maybeSingle();
+            agreement = agreementData;
           }
         }
 
-        // Get devis
+        // Get devis with pricing details
         const { data: devisData } = await supabase
           .from("devis")
-          .select("id, quote_number, amount, status, valid_until")
+          .select("id, quote_number, amount, status, valid_until, base_price, distance_price, tva_rate, tva_amount")
           .eq("course_id", course.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -213,10 +279,10 @@ export function EmployeeCoursesList({
           devis = devisData;
         }
 
-        // Get facture
+        // Get facture with details
         const { data: factureData } = await supabase
           .from("factures")
-          .select("id, invoice_number, amount, payment_status")
+          .select("id, invoice_number, invoice_number_generated, amount, payment_status, tva_rate, tva_amount")
           .eq("course_id", course.id)
           .maybeSingle();
 
@@ -228,7 +294,10 @@ export function EmployeeCoursesList({
           ...course,
           driver,
           devis,
-          facture
+          facture,
+          companyCourse,
+          company: companyData,
+          agreement
         });
       }
 
@@ -385,42 +454,265 @@ export function EmployeeCoursesList({
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    doc.setFillColor(0, 102, 204);
-    doc.rect(0, 0, pageWidth, 35, 'F');
+    // Header
+    doc.setFillColor(41, 128, 185);
+    doc.rect(0, 0, pageWidth, 50, 'F');
     
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(28);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text("DEVIS", pageWidth / 2, 18, { align: "center" });
+    doc.text("DEVIS", pageWidth / 2, 25, { align: "center" });
     
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text(`Référence: ${course.devis.quote_number}`, pageWidth / 2, 26, { align: "center" });
+    doc.text(`Référence: ${course.devis.quote_number}`, pageWidth / 2, 35, { align: "center" });
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
+    
+    // Driver info (left side) - ÉMETTEUR
     doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
     
-    let yPos = 50;
+    const driverName = course.driver?.profile?.full_name || course.driver?.company_name || "N/A";
+    doc.text(driverName, 20, 72);
+    
+    let infoY = 77;
+    if (course.driver?.siret) {
+      doc.text(`SIRET: ${course.driver.siret}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.tva_number) {
+      doc.text(`TVA: ${course.driver.tva_number}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.profile?.phone) {
+      doc.text(`Tél: ${course.driver.profile.phone}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.company_address) {
+      const addressLines = doc.splitTextToSize(course.driver.company_address, 75);
+      doc.text(addressLines, 20, infoY);
+    }
+    
+    // Company info (right side) - DESTINATAIRE
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("ENTREPRISE", pageWidth - 20, 65, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    doc.text(course.company?.company_name || "Entreprise", pageWidth - 20, 72, { align: 'right' });
+    
+    let companyInfoY = 77;
+    if (course.company?.siret) {
+      doc.text(`SIRET: ${course.company.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+      companyInfoY += 4;
+    }
+    if (course.company?.tva_number) {
+      doc.text(`TVA: ${course.company.tva_number}`, pageWidth - 20, companyInfoY, { align: 'right' });
+      companyInfoY += 4;
+    }
+    const companyAddress = course.company?.billing_address || course.company?.address;
+    if (companyAddress) {
+      const addressLines = doc.splitTextToSize(companyAddress, 75);
+      addressLines.forEach((line: string, index: number) => {
+        doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+      });
+      companyInfoY += addressLines.length * 4;
+    }
+    
+    // Service details
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, 115, 170, 45);
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("DÉTAILS DE LA PRESTATION", 25, 123);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const pickupLines = doc.splitTextToSize(course.pickup_address, 140);
+    const destLines = doc.splitTextToSize(course.destination_address, 140);
+    
+    doc.text("Départ:", 25, 131);
+    doc.text(pickupLines, 50, 131);
+    
+    let currentY = 131 + (pickupLines.length * 5);
+    doc.text("Arrivée:", 25, currentY);
+    doc.text(destLines, 50, currentY);
+    
+    currentY += (destLines.length * 5);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    
+    // Pricing
+    let yPos = 175;
+    const subtotal = (course.devis.base_price || 0) + (course.devis.distance_price || 0);
+    const tvaRate = course.devis.tva_rate || 10;
+    const tvaAmount = course.devis.tva_amount || (subtotal * (tvaRate / 100));
+    const totalTTC = course.devis.amount;
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("TARIFICATION", 20, yPos);
+    yPos += 10;
     
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
-    doc.text("CHAUFFEUR VTC", 20, yPos);
-    yPos += 5;
     doc.setFont(undefined, 'normal');
-    doc.text(course.driver?.profile?.full_name || "N/A", 20, yPos);
-    
-    yPos = 80;
-    doc.text("Départ: " + course.pickup_address, 20, yPos);
+    doc.text(`Sous-total HT: ${subtotal.toFixed(2)} €`, 20, yPos);
     yPos += 6;
-    doc.text("Arrivée: " + course.destination_address, 20, yPos);
-    yPos += 6;
-    doc.text("Date: " + format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr }), 20, yPos);
-    
-    yPos += 20;
-    doc.setFontSize(14);
+    doc.text(`TVA (${tvaRate}%): ${tvaAmount.toFixed(2)} €`, 20, yPos);
+    yPos += 10;
     doc.setFont(undefined, 'bold');
-    doc.text(`TOTAL TTC: ${course.devis.amount.toFixed(2)} €`, 20, yPos);
+    doc.setFontSize(14);
+    doc.text(`TOTAL TTC: ${totalTTC.toFixed(2)} €`, 20, yPos);
     
     doc.save(`devis-${course.devis.quote_number}.pdf`);
     toast.success("Devis téléchargé");
+  };
+
+  const handleDownloadFacture = (course: CourseData) => {
+    if (!course.facture) return;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    doc.setFillColor(46, 125, 50);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(28);
+    doc.setFont(undefined, 'bold');
+    doc.text("FACTURE", pageWidth / 2, 25, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    const invoiceNum = course.facture.invoice_number_generated || course.facture.invoice_number;
+    doc.text(`Référence: ${invoiceNum}`, pageWidth / 2, 35, { align: "center" });
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy", { locale: fr })}`, pageWidth / 2, 42, { align: "center" });
+    
+    // Driver info (left side) - ÉMETTEUR
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("CHAUFFEUR VTC", 20, 65);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const driverName = course.driver?.profile?.full_name || course.driver?.company_name || "N/A";
+    doc.text(driverName, 20, 72);
+    
+    let infoY = 77;
+    if (course.driver?.siret) {
+      doc.text(`SIRET: ${course.driver.siret}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.tva_number) {
+      doc.text(`TVA: ${course.driver.tva_number}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.profile?.phone) {
+      doc.text(`Tél: ${course.driver.profile.phone}`, 20, infoY);
+      infoY += 4;
+    }
+    if (course.driver?.company_address) {
+      const addressLines = doc.splitTextToSize(course.driver.company_address, 75);
+      doc.text(addressLines, 20, infoY);
+    }
+    
+    // Company info (right side) - DESTINATAIRE
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("FACTURÉ À", pageWidth - 20, 65, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    doc.text(course.company?.company_name || "Entreprise", pageWidth - 20, 72, { align: 'right' });
+    
+    let companyInfoY = 77;
+    if (course.company?.siret) {
+      doc.text(`SIRET: ${course.company.siret}`, pageWidth - 20, companyInfoY, { align: 'right' });
+      companyInfoY += 4;
+    }
+    if (course.company?.tva_number) {
+      doc.text(`TVA: ${course.company.tva_number}`, pageWidth - 20, companyInfoY, { align: 'right' });
+      companyInfoY += 4;
+    }
+    const companyAddress = course.company?.billing_address || course.company?.address;
+    if (companyAddress) {
+      const addressLines = doc.splitTextToSize(companyAddress, 75);
+      addressLines.forEach((line: string, index: number) => {
+        doc.text(line, pageWidth - 20, companyInfoY + (index * 4), { align: 'right' });
+      });
+      companyInfoY += addressLines.length * 4;
+    }
+    
+    // Service details
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(20, 115, 170, 45);
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("PRESTATION RÉALISÉE", 25, 123);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    const pickupLines = doc.splitTextToSize(course.pickup_address, 140);
+    const destLines = doc.splitTextToSize(course.destination_address, 140);
+    
+    doc.text("Départ:", 25, 131);
+    doc.text(pickupLines, 50, 131);
+    
+    let currentY = 131 + (pickupLines.length * 5);
+    doc.text("Arrivée:", 25, currentY);
+    doc.text(destLines, 50, currentY);
+    
+    currentY += (destLines.length * 5);
+    doc.text(`Date: ${format(new Date(course.scheduled_date), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}`, 25, currentY);
+    
+    // Pricing
+    let yPos = 175;
+    const totalTTC = course.facture.amount;
+    const tvaRate = course.facture.tva_rate || 10;
+    const tvaAmount = course.facture.tva_amount || (totalTTC / (1 + tvaRate / 100)) * (tvaRate / 100);
+    const subtotal = totalTTC - tvaAmount;
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("MONTANT", 20, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Sous-total HT: ${subtotal.toFixed(2)} €`, 20, yPos);
+    yPos += 6;
+    doc.text(`TVA (${tvaRate}%): ${tvaAmount.toFixed(2)} €`, 20, yPos);
+    yPos += 10;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(14);
+    doc.text(`TOTAL TTC: ${totalTTC.toFixed(2)} €`, 20, yPos);
+    
+    // Payment status
+    yPos += 15;
+    doc.setFontSize(10);
+    const paymentStatus = course.facture.payment_status === 'paid' ? 'PAYÉE' : 'EN ATTENTE';
+    doc.text(`Statut: ${paymentStatus}`, 20, yPos);
+    
+    doc.save(`facture-${invoiceNum}.pdf`);
+    toast.success("Facture téléchargée");
+  };
+
+  const getPaymentFrequencyLabel = (frequency: string) => {
+    const labels: Record<string, string> = {
+      'per_course': 'À la course',
+      'weekly': 'Hebdomadaire',
+      'monthly': 'Mensuel',
+      'bi_weekly': 'Bi-mensuel'
+    };
+    return labels[frequency] || frequency;
   };
 
   const getStatusConfig = (status: string, devisStatus?: string) => {
@@ -559,6 +851,35 @@ export function EmployeeCoursesList({
             </div>
           )}
 
+          {/* Info paiement différé pour courses terminées */}
+          {course.status === "completed" && 
+           course.companyCourse?.actual_payment_method === "company_will_pay" && 
+           course.companyCourse?.client_confirmed_payment_method === "company_will_pay" && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mb-4">
+              <div className="flex items-start gap-2">
+                <Building2 className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-700">
+                    Paiement différé à l'entreprise
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Cette course a été remontée pour facturation à l'entreprise
+                    {course.agreement && (
+                      <span className="block mt-1">
+                        Échéance: <strong>{getPaymentFrequencyLabel(course.agreement.payment_frequency)}</strong>
+                        {course.agreement.payment_day && ` (jour ${course.agreement.payment_day})`}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <Badge className="bg-blue-500/20 text-blue-700 border-0">
+                  <CreditCard className="w-3 h-3 mr-1" />
+                  Entreprise
+                </Badge>
+              </div>
+            </div>
+          )}
+
           {/* Actions selon le statut */}
           <div className="flex flex-wrap gap-2">
             {/* Course sans devis - proposer de régénérer */}
@@ -618,6 +939,14 @@ export function EmployeeCoursesList({
               <Button variant="outline" size="sm" onClick={() => handleDownloadDevis(course)}>
                 <Download className="w-4 h-4 mr-2" />
                 Devis
+              </Button>
+            )}
+
+            {/* Télécharger facture (courses terminées avec facture) */}
+            {course.facture && (course.status === "completed" || course.status === "accepted" || course.status === "in_progress") && (
+              <Button variant="outline" size="sm" onClick={() => handleDownloadFacture(course)}>
+                <Receipt className="w-4 h-4 mr-2" />
+                Facture
               </Button>
             )}
 
