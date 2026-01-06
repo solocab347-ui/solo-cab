@@ -358,7 +358,11 @@ export function EmployeeCoursesList({
       toast.info("Génération du devis en cours...");
 
       const { data, error } = await supabase.functions.invoke("create-devis-auto", {
-        body: { course_id: courseId, driver_id: course.driver.id }
+        body: { 
+          course_id: courseId, 
+          driver_id: course.driver.id,
+          company_id: companyId // Passer le company_id pour les courses entreprise
+        }
       });
 
       if (error) {
