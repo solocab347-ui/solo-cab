@@ -7988,6 +7988,15 @@ export type Database = {
         }[]
       }
       get_client_id: { Args: { _user_id: string }; Returns: string }
+      get_company_course_driver_profile: {
+        Args: { driver_user_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          phone: string
+          profile_photo_url: string
+        }[]
+      }
       get_company_id: { Args: { _user_id: string }; Returns: string }
       get_company_id_for_user: { Args: { user_id: string }; Returns: string }
       get_course_invitation_by_token: {
