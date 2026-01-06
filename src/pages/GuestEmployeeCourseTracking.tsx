@@ -69,6 +69,8 @@ interface TrackingData {
     company_payment_status?: string;
     employee_declared_paid_at?: string;
     driver_declared_payment_received?: boolean;
+    client_payment_confirmation?: string;
+    client_payment_confirmation_at?: string;
     driver?: DriverInfo;
     devis?: Array<{ amount: number; quote_number?: string }>;
   };
@@ -105,7 +107,7 @@ export default function GuestEmployeeCourseTracking() {
         console.log('[GuestTracking] Fetching course data for course_id:', result.course_id);
         const { data: courseData, error: courseError } = await supabase
           .from("courses")
-          .select(`id, status, updated_at, driver_id, company_payment_status, employee_declared_paid_at, driver_declared_payment_received`)
+          .select(`id, status, updated_at, driver_id, company_payment_status, employee_declared_paid_at, driver_declared_payment_received, client_payment_confirmation, client_payment_confirmation_at`)
           .eq("id", result.course_id)
           .maybeSingle();
         

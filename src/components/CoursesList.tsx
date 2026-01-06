@@ -555,6 +555,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     return companyCourse?.company?.company_name || "";
   }, [selectedCourseId, companyCoursesData]);
 
+  // Vérifier si la course sélectionnée a une invitation (guest employee)
+  const selectedCourseHasInvitation = useMemo(() => {
+    if (!selectedCourseId) return false;
+    // Une course a une invitation si elle a un employeeName via company_course_requests
+    const companyCourse = companyCoursesData.find(cc => cc.course_id === selectedCourseId);
+    return !!(companyCourse?.employeeName);
+  }, [selectedCourseId, companyCoursesData]);
+
   const handleCompleteCourse = async () => {
     if (!selectedCourseId || !paymentMethod) {
       toast.error("Veuillez sélectionner un moyen de paiement");
@@ -3051,6 +3059,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                 value={companyPaymentStatus}
                 onChange={setCompanyPaymentStatus}
                 companyName={selectedCourseCompanyName}
+                hasInvitation={selectedCourseHasInvitation}
               />
             )}
           </div>
