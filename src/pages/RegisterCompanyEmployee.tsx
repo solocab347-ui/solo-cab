@@ -192,6 +192,20 @@ export default function RegisterCompanyEmployee() {
         })
         .eq("id", invitation.id);
 
+      // 7. Envoyer l'email de bienvenue
+      try {
+        await supabase.functions.invoke("send-company-employee-welcome", {
+          body: {
+            user_id: authData.user.id,
+            company_id: invitation.company_id,
+          },
+        });
+        console.log("Email de bienvenue envoyé");
+      } catch (emailErr) {
+        console.error("Erreur envoi email bienvenue:", emailErr);
+        // Ne pas bloquer l'inscription si l'email échoue
+      }
+
       toast.success("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
       navigate("/login");
       
