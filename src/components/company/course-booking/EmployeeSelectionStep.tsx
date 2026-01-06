@@ -32,21 +32,27 @@ export function EmployeeSelectionStep({ companyId, formData, setFormData }: Empl
         .order("joined_at", { ascending: false });
 
       if (error) throw error;
+      if (!employeesData || employeesData.length === 0) return [];
 
-      // Fetch profiles
-      const userIds = employeesData?.map(e => e.user_id) || [];
-      if (userIds.length === 0) return [];
+      // Fetch profiles for all employees
+      const employeesWithProfiles = await Promise.all(
+        employeesData.map(async (emp) => {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id, full_name, email, phone, profile_photo_url")
+            .eq("id", emp.user_id)
+            .maybeSingle();
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone, profile_photo_url")
-        .in("id", userIds);
+          return {
+            ...emp,
+            profile: profile || { id: emp.user_id, full_name: null, email: null, phone: null, profile_photo_url: null },
+          };
+        })
+      );
 
-      return employeesData?.map(emp => ({
-        ...emp,
-        profile: profiles?.find(p => p.id === emp.user_id),
-      })) || [];
+      return employeesWithProfiles;
     },
+    staleTime: 0, // Always fetch fresh data
   });
 
   const filteredEmployees = employees?.filter(emp => {
