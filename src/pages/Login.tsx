@@ -52,23 +52,42 @@ const Login = () => {
       logger.info("Redirecting to dashboard", { userRole });
       setHasRedirected(true);
       
-      let path: string;
-      if (userRole === "admin") {
-        path = "/admin-dashboard";
-      } else if (userRole === "driver") {
-        path = "/driver-dashboard";
-      } else if (userRole === "fleet_manager") {
-        path = "/fleet-manager-dashboard";
-      } else if (userRole === "company") {
-        path = "/company-dashboard";
-      } else if (userRole === "client") {
-        path = "/client-dashboard";
-      } else {
-        // Fallback pour autres rôles (company_employee, fleet_driver, fleet_client, etc.)
-        path = "/client-dashboard";
-      }
+      // Vérifier si l'utilisateur est un collaborateur d'entreprise
+      const checkEmployeeAndRedirect = async () => {
+        if (userRole === "client") {
+          // Vérifier si c'est un collaborateur d'entreprise
+          const { data: employeeData } = await supabase
+            .from("company_employees")
+            .select("id, is_active")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .maybeSingle();
+          
+          if (employeeData) {
+            navigate("/company-employee-dashboard", { replace: true });
+            return;
+          }
+        }
+        
+        let path: string;
+        if (userRole === "admin") {
+          path = "/admin-dashboard";
+        } else if (userRole === "driver") {
+          path = "/driver-dashboard";
+        } else if (userRole === "fleet_manager") {
+          path = "/fleet-manager-dashboard";
+        } else if (userRole === "company") {
+          path = "/company-dashboard";
+        } else if (userRole === "client") {
+          path = "/client-dashboard";
+        } else {
+          path = "/client-dashboard";
+        }
+        
+        navigate(path, { replace: true });
+      };
       
-      navigate(path, { replace: true });
+      checkEmployeeAndRedirect();
     }
   }, [user, userRole, authLoading, navigate, loading, hasRedirected]);
 

@@ -243,6 +243,16 @@ const App = () => (
               }
               />
               <Route
+                path="/company-employee-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["client"]}>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CompanyEmployeeDashboard />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/create-company-course"
                 element={
                   <ProtectedRoute allowedRoles={["company"]}>
