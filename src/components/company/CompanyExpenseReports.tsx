@@ -577,10 +577,10 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Calendar className="w-5 h-5 text-primary" />
-                      <span className="font-medium">Avec la paye</span>
+                      <span className="font-medium">Avec la paie</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Inclus dans la prochaine fiche de paie
+                      Inclus dans la fiche de paie
                     </p>
                   </button>
                 </div>
@@ -589,7 +589,7 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
               {/* Month selection for payroll */}
               {reimbursementMethod === "payroll" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Mois de la paye</label>
+                  <label className="text-sm font-medium">Paie du mois de</label>
                   <Input
                     type="month"
                     value={reimbursementMonth}
