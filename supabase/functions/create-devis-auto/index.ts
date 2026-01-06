@@ -50,18 +50,26 @@ Deno.serve(async (req) => {
     }
 
     // Vérifier si c'est une course d'entreprise (company_courses)
-    // Priorité: 1) passedCompanyId (envoyé par le frontend), 2) company_courses table
+    // Récupérer company_id ET employee_id pour lier le devis à l'employé
     let companyId = passedCompanyId || null;
-    if (!companyId && !course.client_id) {
-      const { data: companyCourse } = await supabaseClient
-        .from('company_courses')
-        .select('company_id')
-        .eq('course_id', course_id)
-        .maybeSingle();
-      
-      if (companyCourse?.company_id) {
+    let companyEmployeeId = null;
+    
+    // Toujours récupérer le lien company_courses pour avoir l'employee_id
+    const { data: companyCourse } = await supabaseClient
+      .from('company_courses')
+      .select('company_id, employee_id')
+      .eq('course_id', course_id)
+      .maybeSingle();
+    
+    if (companyCourse) {
+      // Utiliser le company_id passé en priorité, sinon celui de la table
+      if (!companyId && companyCourse.company_id) {
         companyId = companyCourse.company_id;
-        console.log('🏢 Course d\'entreprise détectée via table, company_id:', companyId);
+      }
+      // IMPORTANT: Toujours récupérer l'employee_id pour le devis
+      if (companyCourse.employee_id) {
+        companyEmployeeId = companyCourse.employee_id;
+        console.log('👤 Employé détecté:', companyEmployeeId);
       }
     }
     
