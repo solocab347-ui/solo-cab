@@ -102,25 +102,26 @@ const Login = () => {
     }
 
     setLoading(true);
+    setHasRedirected(true); // Empêcher le useEffect de rediriger pendant qu'on traite
+    
     try {
-      // Se connecter
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error("Erreur de connexion");
-
-      // Vérifier s'il y a une inscription chauffeur en cours
-      const { data: driver } = await supabase
-        .from("drivers")
-        .select("id, registration_step, status, free_access_granted")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      // MODE REPRISE: Si on est en mode reprise d'inscription
+      // MODE REPRISE: Vérifier d'abord s'il y a une inscription en cours
       if (isResumeMode) {
+        // Connexion temporaire pour vérifier
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: loginPassword,
+        });
+        
+        if (error) throw error;
+        if (!data.user) throw new Error("Erreur de connexion");
+        
+        const { data: driver } = await supabase
+          .from("drivers")
+          .select("id, registration_step, status, free_access_granted")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+          
         if (driver && driver.registration_step) {
           toast.success("Inscription retrouvée", {
             description: "Reprise de votre inscription chauffeur en cours...",
@@ -129,28 +130,19 @@ const Login = () => {
           navigate("/register-driver", { replace: true });
           return;
         } else {
+          // Déconnexion si pas d'inscription en cours
+          await supabase.auth.signOut();
           toast.error("Aucune inscription en cours", {
             description: "Aucune inscription chauffeur trouvée pour ce compte",
             duration: 4000,
           });
           setLoading(false);
+          setHasRedirected(false);
           return;
         }
       }
 
-      // MODE CONNEXION NORMALE: Si inscription en cours, proposer de reprendre
-      // MAIS PAS pour les drivers validés avec accès gratuit
-      if (driver && driver.registration_step && driver.status !== 'validated' && !driver.free_access_granted) {
-        toast.info("Inscription en cours détectée", {
-          description: "Utilisez 'Reprendre mon inscription' pour continuer",
-          duration: 5000,
-        });
-        setLoading(false);
-        setIsResumeMode(true);
-        return;
-      }
-
-      // Sinon continuer avec la connexion normale
+      // MODE CONNEXION NORMALE: Utiliser signIn qui gère tout (y compris employee check)
       await signIn(loginEmail, loginPassword);
       // La navigation est gérée dans signIn()
     } catch (error: any) {
@@ -160,6 +152,7 @@ const Login = () => {
         duration: 4000,
       });
       setLoading(false);
+      setHasRedirected(false);
     }
   };
 
