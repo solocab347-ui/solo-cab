@@ -156,13 +156,14 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       
       if (courseIds.length > 0) {
         // Fetch company_courses with company info
-        const { data: companyData } = await supabase
+        const { data: companyData, error: companyDataError } = await supabase
           .from("company_courses")
           .select(`
             course_id,
             employee_id,
-            company:companies(id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address),
-            employee:company_employees(
+            company_id,
+            companies!company_courses_company_id_fkey(id, company_name, logo_url, contact_email, contact_phone, siret, siren, tva_number, address, billing_address),
+            company_employees!company_courses_employee_id_fkey(
               id,
               user_id,
               profiles:user_id(full_name, phone, email)
@@ -170,10 +171,14 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
           `)
           .in("course_id", courseIds);
         
+        if (companyDataError) {
+          console.error("Error fetching company courses:", companyDataError);
+        }
+        
         companyData?.forEach(cc => {
           companyCoursesMap.set(cc.course_id, {
-            company: cc.company,
-            employee: cc.employee
+            company: cc.companies,
+            employee: cc.company_employees
           });
         });
 
