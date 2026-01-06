@@ -241,13 +241,25 @@ function ActiveAgreementCard({
         </div>
 
         {(agreement.outstanding_balance > 0) && (
-          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-yellow-800 dark:text-yellow-200 flex items-center gap-1">
+          <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-950/50 rounded-lg border border-orange-200 dark:border-orange-800/50">
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-orange-700 dark:text-orange-300 flex items-center gap-2 text-sm">
                 <Euro className="w-4 h-4" />
-                À recevoir: {agreement.outstanding_balance?.toFixed(2) || "0.00"}€
+                Vous devez au chauffeur:
+              </span>
+              <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                {agreement.outstanding_balance?.toFixed(2) || "0.00"}€
               </span>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 w-full border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-900/50"
+              onClick={() => handleExpand(true)}
+            >
+              <Send className="w-4 h-4 mr-1" />
+              Gérer les paiements
+            </Button>
           </div>
         )}
 
