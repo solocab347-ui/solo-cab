@@ -1,23 +1,25 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   CheckCircle, 
   Clock,
   Building2,
-  Banknote
+  AlertTriangle
 } from "lucide-react";
 
 interface CompanyPaymentStatusSelectorProps {
   value: string;
   onChange: (value: string) => void;
   companyName?: string;
+  hasInvitation?: boolean;
 }
 
 export function CompanyPaymentStatusSelector({
   value,
   onChange,
-  companyName
+  companyName,
+  hasInvitation = false
 }: CompanyPaymentStatusSelectorProps) {
   return (
     <div className="space-y-3 p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
@@ -57,6 +59,27 @@ export function CompanyPaymentStatusSelector({
           </Label>
         </div>
       </RadioGroup>
+
+      {/* Avertissement quand paiement en attente est sélectionné */}
+      {value === "pending" && (
+        <Alert className="border-amber-500/50 bg-amber-500/10">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 text-sm">Double vérification activée</AlertTitle>
+          <AlertDescription className="text-xs text-amber-600/90">
+            {hasInvitation ? (
+              <>
+                <strong>Important :</strong> Informez le collaborateur qu'il devra confirmer sur son lien de suivi 
+                qu'il n'a pas payé sur place. Cette double vérification protège contre les erreurs de facturation.
+              </>
+            ) : (
+              <>
+                <strong>Important :</strong> En sélectionnant cette option, vous indiquez que le paiement 
+                sera géré par l'entreprise. L'entreprise pourra vérifier cette information avant de procéder au règlement.
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

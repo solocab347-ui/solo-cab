@@ -1054,6 +1054,8 @@ export type Database = {
           actual_payment_method: string | null
           approved_at: string | null
           approved_by: string | null
+          client_confirmed_at: string | null
+          client_confirmed_payment_method: string | null
           company_id: string
           course_id: string
           created_at: string | null
@@ -1069,6 +1071,8 @@ export type Database = {
           actual_payment_method?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          client_confirmed_at?: string | null
+          client_confirmed_payment_method?: string | null
           company_id: string
           course_id: string
           created_at?: string | null
@@ -1084,6 +1088,8 @@ export type Database = {
           actual_payment_method?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          client_confirmed_at?: string | null
+          client_confirmed_payment_method?: string | null
           company_id?: string
           course_id?: string
           created_at?: string | null
@@ -2334,6 +2340,9 @@ export type Database = {
       courses: {
         Row: {
           client_id: string | null
+          client_payment_confirmation: string | null
+          client_payment_confirmation_at: string | null
+          client_payment_confirmation_token: string | null
           client_rating: number | null
           company_payment_status: string | null
           course_number: string | null
@@ -2374,6 +2383,9 @@ export type Database = {
         }
         Insert: {
           client_id?: string | null
+          client_payment_confirmation?: string | null
+          client_payment_confirmation_at?: string | null
+          client_payment_confirmation_token?: string | null
           client_rating?: number | null
           company_payment_status?: string | null
           course_number?: string | null
@@ -2414,6 +2426,9 @@ export type Database = {
         }
         Update: {
           client_id?: string | null
+          client_payment_confirmation?: string | null
+          client_payment_confirmation_at?: string | null
+          client_payment_confirmation_token?: string | null
           client_rating?: number | null
           company_payment_status?: string | null
           course_number?: string | null
