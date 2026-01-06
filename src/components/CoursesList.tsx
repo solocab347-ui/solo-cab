@@ -261,34 +261,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         const employeeIdsFromCompanyCourses = companyData?.filter(cc => cc.employee_id).map(cc => cc.employee_id) || [];
         const allEmployeeIds = [...new Set([...employeeIdsFromRequests, ...employeeIdsFromCompanyCourses])];
         
-        // Fetch employee profiles via company_employees -> profiles
+        // Fetch employee profiles via RPC SECURITY DEFINER function (évite les problèmes RLS)
         let employeeProfilesMap: Record<string, { name: string; phone: string | null }> = {};
         
         if (allEmployeeIds.length > 0) {
-          const { data: employees } = await supabase
-            .from("company_employees")
-            .select("id, user_id")
-            .in("id", allEmployeeIds);
-          
-          if (employees && employees.length > 0) {
-            const userIds = employees.map(e => e.user_id);
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, full_name, phone")
-              .in("id", userIds);
-            
-            if (profiles) {
-              employees.forEach(emp => {
-                const profile = profiles.find(p => p.id === emp.user_id);
-                if (profile) {
-                  employeeProfilesMap[emp.id] = { 
-                    name: profile.full_name || '', 
-                    phone: profile.phone || null 
-                  };
-                }
-              });
+          // Utiliser la fonction RPC pour chaque employee_id
+          const employeePromises = allEmployeeIds.map(async (empId) => {
+            const { data } = await supabase.rpc('get_employee_profile_for_course', { 
+              p_employee_id: empId 
+            });
+            if (data && data.length > 0) {
+              return { 
+                id: empId, 
+                name: data[0].full_name || '', 
+                phone: data[0].phone || null 
+              };
             }
-          }
+            return null;
+          });
+          
+          const employeeResults = await Promise.all(employeePromises);
+          employeeResults.forEach(result => {
+            if (result) {
+              employeeProfilesMap[result.id] = { 
+                name: result.name, 
+                phone: result.phone 
+              };
+            }
+          });
         }
         
         // Also fetch profiles for courses created_by_user_id (for inline employee course creation - fallback)
