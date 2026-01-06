@@ -313,7 +313,7 @@ export const FleetCommissionTracker = ({ fleetManagerId }: FleetCommissionTracke
                     <div className="grid gap-4 md:grid-cols-4">
                       <div className="text-center p-3 bg-muted/50 rounded-lg">
                         <p className="text-2xl font-bold text-primary">
-                          {driver.total_revenue.toFixed(0)}€
+                          {driver.total_revenue.toFixed(2)}€
                         </p>
                         <p className="text-xs text-muted-foreground">CA depuis dernier paiement</p>
                       </div>

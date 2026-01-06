@@ -290,7 +290,7 @@ export function PushCourseToPartners() {
                       {course.devis_amount && (
                         <span className="flex items-center gap-1 font-medium text-foreground">
                           <Euro className="h-3 w-3" />
-                          {course.devis_amount.toFixed(0)}€
+                          {course.devis_amount.toFixed(2)}€
                         </span>
                       )}
                     </div>

@@ -275,7 +275,7 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
-              <p className="text-2xl font-bold text-foreground">{globalStats.total_revenue.toFixed(0)}€</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.total_revenue.toFixed(2)}€</p>
             </div>
           </div>
         </div>
@@ -290,7 +290,7 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Commissions</p>
-              <p className="text-2xl font-bold text-foreground">{globalStats.total_commissions.toFixed(0)}€</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.total_commissions.toFixed(2)}€</p>
             </div>
           </div>
         </div>
@@ -314,7 +314,7 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Valeur moyenne</p>
-              <p className="text-2xl font-bold text-foreground">{globalStats.average_course_value.toFixed(0)}€</p>
+              <p className="text-2xl font-bold text-foreground">{globalStats.average_course_value.toFixed(2)}€</p>
             </div>
           </div>
         </div>
@@ -406,11 +406,11 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
                         <p className="text-xs text-muted-foreground">Courses</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-success">{driver.total_revenue.toFixed(0)}€</p>
+                        <p className="text-lg font-bold text-success">{driver.total_revenue.toFixed(2)}€</p>
                         <p className="text-xs text-muted-foreground">CA</p>
                       </div>
                       <div>
-                        <p className="text-lg font-bold text-primary">{driver.commission_earned.toFixed(0)}€</p>
+                        <p className="text-lg font-bold text-primary">{driver.commission_earned.toFixed(2)}€</p>
                         <p className="text-xs text-muted-foreground">Commission</p>
                       </div>
                       <div className="flex items-center gap-1 justify-center">
@@ -424,7 +424,7 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
                     {/* Stats mobile */}
                     <div className="sm:hidden flex items-center gap-2">
                       <Badge variant="secondary" className="text-success">
-                        {driver.total_revenue.toFixed(0)}€
+                        {driver.total_revenue.toFixed(2)}€
                       </Badge>
                     </div>
                   </div>

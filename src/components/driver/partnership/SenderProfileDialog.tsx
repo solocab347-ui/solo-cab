@@ -412,7 +412,7 @@ export function SenderProfileDialog({
                         <p className="text-xs text-muted-foreground">Courses partagées</p>
                       </div>
                       <div className="text-center p-2 bg-background rounded">
-                        <p className="text-lg font-bold text-primary">{sharedCoursesStats.total.toFixed(0)}€</p>
+                        <p className="text-lg font-bold text-primary">{sharedCoursesStats.total.toFixed(2)}€</p>
                         <p className="text-xs text-muted-foreground">Volume total</p>
                       </div>
                     </div>

@@ -279,7 +279,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                 </AvatarFallback>
               </Avatar>
               <span>{quote.profile?.full_name || quote.driver?.company_name || "Chauffeur"}</span>
-              <span className="font-medium">{quote.total_price?.toFixed(0)}€</span>
+              <span className="font-medium">{quote.total_price?.toFixed(2)}€</span>
               {getQuoteStatusBadge(quote.status)}
             </div>
           ))}

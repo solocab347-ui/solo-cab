@@ -812,9 +812,9 @@ export function MyPartnersList() {
                       {balance && (
                         <div className="text-right shrink-0">
                           {balance.net_balance > 0 ? (
-                            <p className="text-sm font-bold text-red-600">-{balance.net_balance.toFixed(0)}€</p>
+                            <p className="text-sm font-bold text-red-600">-{balance.net_balance.toFixed(2)}€</p>
                           ) : balance.net_balance < 0 ? (
-                            <p className="text-sm font-bold text-green-600">+{Math.abs(balance.net_balance).toFixed(0)}€</p>
+                            <p className="text-sm font-bold text-green-600">+{Math.abs(balance.net_balance).toFixed(2)}€</p>
                           ) : (
                             <p className="text-xs text-muted-foreground">0€</p>
                           )}

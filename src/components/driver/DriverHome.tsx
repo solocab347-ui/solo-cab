@@ -295,7 +295,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wider">Revenus</p>
                 <h3 className="text-5xl font-bold text-foreground mb-1">
-                  {loading ? "..." : `${stats.todayRevenue.toFixed(0)}€`}
+                  {loading ? "..." : `${stats.todayRevenue.toFixed(2)}€`}
                 </h3>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="w-2 h-2 bg-premium rounded-full animate-pulse"></div>
@@ -371,7 +371,7 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
               </div>
               <div>
                 <h3 className="text-4xl font-bold text-foreground mb-1">
-                  {loading ? "..." : `${stats.monthRevenue.toFixed(0)}€`}
+                  {loading ? "..." : `${stats.monthRevenue.toFixed(2)}€`}
                 </h3>
                 <p className="text-sm text-muted-foreground uppercase tracking-wider">CA Total</p>
               </div>
