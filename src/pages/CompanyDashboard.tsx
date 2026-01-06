@@ -133,7 +133,7 @@ export default function CompanyDashboard() {
       if (data) {
         const [coursesRes, driversRes, employeesRes] = await Promise.all([
           supabase.from("company_courses").select("course_id").eq("company_id", data.id),
-          supabase.from("company_driver_agreements").select("id").eq("company_id", data.id).eq("status", "active"),
+          supabase.from("company_driver_agreements").select("id").eq("company_id", data.id).eq("status", "accepted"),
           supabase.from("company_employees").select("id").eq("company_id", data.id).eq("is_active", true),
         ]);
 
