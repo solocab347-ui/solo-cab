@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Building2, 
   Car, 
@@ -42,6 +43,7 @@ import { EmployeePhotoUpload } from "@/components/company/employee/EmployeePhoto
 import { EmployeeExpenseReports } from "@/components/company/employee/EmployeeExpenseReports";
 import { EmployeePartnersHub } from "@/components/company/employee/EmployeePartnersHub";
 import { EmployeeCoursePaymentDeclaration } from "@/components/company/employee/EmployeeCoursePaymentDeclaration";
+import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 
 interface EmployeeData {
   id: string;
@@ -88,6 +90,7 @@ export default function CompanyEmployeeDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [showCourseCreation, setShowCourseCreation] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -558,7 +561,7 @@ export default function CompanyEmployeeDashboard() {
                   </CardDescription>
                 </div>
                 {employee.can_create_courses && (
-                  <Button onClick={() => navigate("/chauffeurs")} className="bg-gradient-to-r from-primary to-accent">
+                  <Button onClick={() => setShowCourseCreation(true)} className="bg-gradient-to-r from-primary to-accent">
                     <Plus className="w-4 h-4 mr-2" />
                     Nouvelle course
                   </Button>
@@ -578,7 +581,7 @@ export default function CompanyEmployeeDashboard() {
                       }
                     </p>
                     {employee.can_create_courses && (
-                      <Button onClick={() => navigate("/chauffeurs")} className="bg-gradient-to-r from-primary to-accent">
+                      <Button onClick={() => setShowCourseCreation(true)} className="bg-gradient-to-r from-primary to-accent">
                         <Plus className="w-4 h-4 mr-2" />
                         Réserver maintenant
                       </Button>
@@ -839,6 +842,31 @@ export default function CompanyEmployeeDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Dialog création de course */}
+      {employee && (
+        <Dialog open={showCourseCreation} onOpenChange={setShowCourseCreation}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Car className="w-5 h-5 text-primary" />
+                Nouvelle course
+              </DialogTitle>
+              <DialogDescription>
+                Sélectionnez un chauffeur partenaire et créez votre course
+              </DialogDescription>
+            </DialogHeader>
+            <CompanyInlineCourseCreation 
+              companyId={employee.company_id}
+              onClose={() => setShowCourseCreation(false)}
+              onSuccess={() => {
+                setShowCourseCreation(false);
+                fetchCourses();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

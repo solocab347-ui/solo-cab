@@ -24,6 +24,7 @@ import {
   Clock,
   AlertCircle,
   User,
+  Trophy,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import { DriverSearchFilters, DriverSearchFiltersState, defaultFilters } from "./DriverSearchFilters";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
+import { getDriverGlobalStats, DriverGlobalStats } from "@/hooks/useDriverGlobalStats";
 
 interface Driver {
   id: string;
@@ -85,6 +87,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [activeView, setActiveView] = useState<"partners" | "search">("partners");
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [profileDialogDriverId, setProfileDialogDriverId] = useState<string | null>(null);
+  const [selectedDriverStats, setSelectedDriverStats] = useState<DriverGlobalStats | null>(null);
   
   // Filtres pour les partenaires
   const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
@@ -495,6 +498,18 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
     return driver.card_photo_url || driver.avatar_url || null;
   };
 
+  // Helper pour sélectionner un chauffeur et charger ses stats globales
+  const handleSelectDriver = async (driver: Driver) => {
+    setSelectedDriver(driver);
+    setSelectedDriverStats(null); // Reset les stats
+    try {
+      const stats = await getDriverGlobalStats(driver.id);
+      setSelectedDriverStats(stats);
+    } catch (error) {
+      console.error("Erreur chargement stats globales:", error);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -755,7 +770,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => setSelectedDriver(driver)}
+                                      onClick={() => handleSelectDriver(driver)}
                                       className="w-full border-primary/30 hover:bg-primary/10 text-xs"
                                     >
                                       <Eye className="w-3 h-3 mr-2" />
@@ -864,7 +879,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => setSelectedDriver(driver)}
+                                      onClick={() => handleSelectDriver(driver)}
                                       className="h-8 border-accent/20 hover:bg-accent/10"
                                     >
                                       <Eye className="w-3 h-3" />
@@ -912,7 +927,7 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
       </Card>
 
       {/* Dialog de détail chauffeur amélioré */}
-      <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
+      <Dialog open={!!selectedDriver} onOpenChange={() => { setSelectedDriver(null); setSelectedDriverStats(null); }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
           {selectedDriver && (
             <>
@@ -985,17 +1000,20 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
 
               {/* Note et véhicule */}
               <div className="grid grid-cols-2 gap-3">
-                {selectedDriver.show_rating_partners && selectedDriver.rating && selectedDriver.rating > 0 && (
+                {selectedDriver.show_rating_partners && selectedDriverStats && (
                   <div className="p-3 rounded-xl bg-muted/30">
                     <p className="text-xs text-muted-foreground">Note partenaires</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="font-bold">{selectedDriver.rating.toFixed(1)}</span>
-                      {selectedDriver.total_rides && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          ({selectedDriver.total_rides} courses)
-                        </span>
-                      )}
+                      <span className="font-bold">
+                        {selectedDriverStats.averageRating > 0 
+                          ? selectedDriverStats.averageRating.toFixed(1) 
+                          : "N/A"}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        <Trophy className="w-3 h-3 inline mr-0.5" />
+                        {selectedDriverStats.totalRides} courses
+                      </span>
                     </div>
                   </div>
                 )}
