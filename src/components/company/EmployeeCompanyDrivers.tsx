@@ -16,21 +16,27 @@ import {
   CheckCircle2,
   Users,
   Building2,
+  Sparkles,
+  X,
+  Eye,
+  ArrowRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Driver {
   id: string;
   user_id: string;
   full_name: string;
   avatar_url: string | null;
-  city: string | null;
-  vehicle_type: string | null;
-  average_rating: number | null;
+  working_sectors: string[] | null;
+  vehicle_model: string | null;
+  rating: number | null;
   contact_phone: string | null;
-  services: string[];
+  services_offered: string[] | null;
+  company_name: string | null;
 }
 
 interface EmployeeCompanyDriversProps {
@@ -44,41 +50,56 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchDialog, setShowSearchDialog] = useState(false);
   const [searchResults, setSearchResults] = useState<Driver[]>([]);
   const [searching, setSearching] = useState(false);
   const [proposingDriver, setProposingDriver] = useState<string | null>(null);
+  const [pendingProposals, setPendingProposals] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<"partners" | "search">("partners");
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   useEffect(() => {
     fetchCompanyDrivers();
+    fetchPendingProposals();
   }, [companyId]);
 
   const fetchCompanyDrivers = async () => {
     try {
-      // Récupérer les chauffeurs liés à l'entreprise via les accords
-      const { data: agreements, error } = await supabase
+      setLoading(true);
+      
+      // Récupérer les accords acceptés
+      const { data: agreements, error: agreementsError } = await supabase
         .from("company_driver_agreements")
-        .select(`
-          driver_id,
-          drivers!inner(
-            id,
-            user_id,
-            city,
-            vehicle_type,
-            average_rating,
-            contact_phone,
-            services
-          )
-        `)
+        .select("driver_id")
         .eq("company_id", companyId)
         .eq("status", "accepted");
 
-      if (error) throw error;
+      if (agreementsError) {
+        console.error("Agreements error:", agreementsError);
+        throw agreementsError;
+      }
+
+      if (!agreements || agreements.length === 0) {
+        setDrivers([]);
+        setLoading(false);
+        return;
+      }
+
+      const driverIds = agreements.map(a => a.driver_id);
+
+      // Récupérer les chauffeurs
+      const { data: driversData, error: driversError } = await supabase
+        .from("drivers")
+        .select("id, user_id, working_sectors, vehicle_model, rating, contact_phone, services_offered, company_name")
+        .in("id", driverIds);
+
+      if (driversError) {
+        console.error("Drivers error:", driversError);
+        throw driversError;
+      }
 
       // Enrichir avec les profils
       const enrichedDrivers: Driver[] = [];
-      for (const agreement of agreements || []) {
-        const driver = agreement.drivers as any;
+      for (const driver of driversData || []) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, avatar_url")
@@ -89,12 +110,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
           id: driver.id,
           user_id: driver.user_id,
           full_name: profile?.full_name || "Chauffeur",
-          avatar_url: profile?.avatar_url,
-          city: driver.city,
-          vehicle_type: driver.vehicle_type,
-          average_rating: driver.average_rating,
+          avatar_url: profile?.avatar_url || null,
+          working_sectors: driver.working_sectors,
+          vehicle_model: driver.vehicle_model,
+          rating: driver.rating,
           contact_phone: driver.contact_phone,
-          services: driver.services || [],
+          services_offered: driver.services_offered,
+          company_name: driver.company_name,
         });
       }
 
@@ -107,52 +129,102 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
     }
   };
 
+  const fetchPendingProposals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("company_driver_agreements")
+        .select("driver_id")
+        .eq("company_id", companyId)
+        .eq("status", "pending");
+
+      if (!error && data) {
+        setPendingProposals(data.map(d => d.driver_id));
+      }
+    } catch (error) {
+      console.error("Erreur récupération propositions:", error);
+    }
+  };
+
   const searchPublicDrivers = async () => {
-    if (!searchQuery.trim()) return;
-    
     setSearching(true);
     try {
-      // Rechercher dans les chauffeurs publics disponibles
-      const { data: driversData, error } = await supabase
-        .from("drivers")
-        .select(`
-          id,
-          user_id,
-          vehicle_type,
-          average_rating,
-          contact_phone,
-          services
-        `)
-        .eq("status", "validated")
-        .eq("visible_to_companies", true)
-        .limit(10);
+      let driversData: any[] = [];
 
-      if (error) throw error;
+      if (!searchQuery.trim()) {
+        // Afficher tous les chauffeurs visibles aux entreprises
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+          .eq("status", "validated")
+          .eq("visible_to_companies", true)
+          .limit(20);
 
-      // Filtrer les chauffeurs déjà liés
-      const existingIds = drivers.map(d => d.id);
-      const filteredDrivers = (driversData || []).filter((d: any) => !existingIds.includes(d.id));
+        if (error) throw error;
+        driversData = data || [];
+      } else {
+        // Rechercher par nom (via les profils) ou par company_name
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .ilike("full_name", `%${searchQuery}%`)
+          .limit(20);
+
+        const profileUserIds = (profiles || []).map(p => p.id);
+        
+        // Chauffeurs trouvés par nom d'entreprise ou secteur
+        const { data: byCompany, error } = await supabase
+          .from("drivers")
+          .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+          .eq("status", "validated")
+          .eq("visible_to_companies", true)
+          .ilike("company_name", `%${searchQuery}%`)
+          .limit(20);
+
+        if (error) throw error;
+
+        // Chauffeurs trouvés par nom
+        let byName: any[] = [];
+        if (profileUserIds.length > 0) {
+          const { data: nameData } = await supabase
+            .from("drivers")
+            .select("id, user_id, vehicle_model, rating, contact_phone, services_offered, working_sectors, company_name")
+            .eq("status", "validated")
+            .eq("visible_to_companies", true)
+            .in("user_id", profileUserIds);
+          byName = nameData || [];
+        }
+
+        // Fusionner et dédupliquer
+        const allDrivers = [...(byCompany || []), ...byName];
+        driversData = allDrivers.filter((driver, index, self) => 
+          index === self.findIndex(d => d.id === driver.id)
+        );
+      }
+
+      // Exclure les chauffeurs déjà partenaires ou en attente
+      const existingIds = [...drivers.map(d => d.id), ...pendingProposals];
+      const filteredDrivers = driversData.filter(d => !existingIds.includes(d.id));
 
       // Enrichir avec les profils
       const enriched: Driver[] = [];
       for (const driver of filteredDrivers) {
-        const driverData = driver as any;
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, avatar_url")
-          .eq("id", driverData.user_id)
+          .eq("id", driver.user_id)
           .maybeSingle();
 
         enriched.push({
-          id: driverData.id,
-          user_id: driverData.user_id,
+          id: driver.id,
+          user_id: driver.user_id,
           full_name: profile?.full_name || "Chauffeur",
-          avatar_url: profile?.avatar_url,
-          city: null,
-          vehicle_type: driverData.vehicle_type,
-          average_rating: driverData.average_rating,
-          contact_phone: driverData.contact_phone,
-          services: driverData.services || [],
+          avatar_url: profile?.avatar_url || null,
+          working_sectors: driver.working_sectors,
+          vehicle_model: driver.vehicle_model,
+          rating: driver.rating,
+          contact_phone: driver.contact_phone,
+          services_offered: driver.services_offered,
+          company_name: driver.company_name,
         });
       }
 
@@ -168,7 +240,6 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   const proposeDriver = async (driverId: string) => {
     setProposingDriver(driverId);
     try {
-      // Créer une proposition de partenariat au nom de l'entreprise
       const { error } = await supabase
         .from("company_driver_agreements")
         .insert({
@@ -188,10 +259,13 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         return;
       }
 
-      toast.success("Proposition envoyée au chauffeur !");
-      setShowSearchDialog(false);
-      setSearchResults([]);
-      setSearchQuery("");
+      toast.success("Proposition envoyée au chauffeur !", {
+        description: "Le chauffeur recevra une notification et pourra accepter votre invitation."
+      });
+      
+      // Mettre à jour les états
+      setPendingProposals(prev => [...prev, driverId]);
+      setSearchResults(prev => prev.filter(d => d.id !== driverId));
     } catch (error) {
       console.error("Erreur proposition:", error);
       toast.error("Erreur lors de l'envoi de la proposition");
@@ -201,176 +275,382 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
   };
 
   const handleBookDriver = (driverId: string) => {
-    navigate(`/create-course?driver_id=${driverId}`);
+    navigate(`/book-driver/${driverId}`);
+  };
+
+  // Charger les chauffeurs disponibles quand on passe à l'onglet recherche
+  useEffect(() => {
+    if (activeView === "search" && searchResults.length === 0 && !searching) {
+      searchPublicDrivers();
+    }
+  }, [activeView]);
+
+  const getMainSector = (sectors: string[] | null) => {
+    if (!sectors || sectors.length === 0) return null;
+    return sectors[0];
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <CardContent className="flex items-center justify-center py-16">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center animate-pulse">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground">Chargement des chauffeurs...</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold">Chauffeurs partenaires</h2>
-          <p className="text-sm text-muted-foreground">
-            Les chauffeurs VTC liés à votre entreprise
-          </p>
-        </div>
-        {canInviteDrivers && (
-          <Button onClick={() => setShowSearchDialog(true)}>
-            <Search className="w-4 h-4 mr-2" />
-            Rechercher un chauffeur
-          </Button>
-        )}
-      </div>
-
-      {/* Liste des chauffeurs */}
-      {drivers.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-medium mb-2">Aucun chauffeur partenaire</h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Votre entreprise n'a pas encore de chauffeurs partenaires.
-            </p>
-            {canInviteDrivers && (
-              <Button onClick={() => setShowSearchDialog(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Proposer un chauffeur
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {drivers.map((driver) => (
-            <Card key={driver.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-14 h-14">
-                    <AvatarImage src={driver.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {driver.full_name.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{driver.full_name}</h3>
-                    {driver.city && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {driver.city}
-                      </p>
-                    )}
-                    {driver.average_rating && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{driver.average_rating.toFixed(1)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {driver.vehicle_type && (
-                  <Badge variant="secondary" className="mt-3">
-                    <Car className="w-3 h-3 mr-1" />
-                    {driver.vehicle_type}
-                  </Badge>
+      {/* Header avec onglets */}
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-primary via-accent to-success" />
+        <CardContent className="p-6">
+          <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "partners" | "search")} className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Chauffeurs de l'entreprise
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Gérez les chauffeurs partenaires de votre entreprise
+                </p>
+              </div>
+              
+              <TabsList className="bg-muted/50 p-1 rounded-xl">
+                <TabsTrigger 
+                  value="partners" 
+                  className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Partenaires ({drivers.length})
+                </TabsTrigger>
+                {canInviteDrivers && (
+                  <TabsTrigger 
+                    value="search" 
+                    className="rounded-lg data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Rechercher
+                  </TabsTrigger>
                 )}
-
-                <div className="flex gap-2 mt-4">
-                  {canCreateCourses && (
-                    <Button 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => handleBookDriver(driver.id)}
-                    >
-                      Réserver
-                    </Button>
-                  )}
-                  {driver.contact_phone && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => window.open(`tel:${driver.contact_phone}`, "_blank")}
-                    >
-                      <Phone className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Dialog de recherche */}
-      <Dialog open={showSearchDialog} onOpenChange={setShowSearchDialog}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Rechercher un chauffeur</DialogTitle>
-            <DialogDescription>
-              Recherchez un chauffeur par ville pour le proposer comme partenaire de votre entreprise.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Rechercher par ville..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && searchPublicDrivers()}
-              />
-              <Button onClick={searchPublicDrivers} disabled={searching}>
-                {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              </Button>
+              </TabsList>
             </div>
 
-            {searchResults.length > 0 && (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {searchResults.map((driver) => (
-                  <div key={driver.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={driver.avatar_url || undefined} />
-                        <AvatarFallback>{driver.full_name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{driver.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{driver.city}</p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => proposeDriver(driver.id)}
-                      disabled={proposingDriver === driver.id}
+            {/* Liste des partenaires */}
+            <TabsContent value="partners" className="mt-6 animate-fade-in">
+              {drivers.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 mx-auto rounded-3xl bg-muted/50 flex items-center justify-center mb-6">
+                    <Users className="w-10 h-10 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">Aucun chauffeur partenaire</h3>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
+                    Votre entreprise n'a pas encore de chauffeurs partenaires. Recherchez des chauffeurs pour les inviter.
+                  </p>
+                  {canInviteDrivers && (
+                    <Button 
+                      onClick={() => setActiveView("search")}
+                      className="bg-gradient-to-r from-primary to-accent"
                     >
-                      {proposingDriver === driver.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Proposer
-                        </>
+                      <Search className="w-4 h-4 mr-2" />
+                      Rechercher des chauffeurs
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {drivers.map((driver, index) => (
+                    <Card 
+                      key={driver.id} 
+                      className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-muted/20 to-transparent hover:shadow-lg transition-all hover:scale-[1.02]"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors" />
+                      <CardContent className="pt-6 relative">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="w-14 h-14 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
+                            <AvatarImage src={driver.avatar_url || undefined} />
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-primary font-bold">
+                              {driver.full_name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold truncate">{driver.full_name}</h3>
+                            {getMainSector(driver.working_sectors) && (
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3" />
+                                {getMainSector(driver.working_sectors)}
+                              </p>
+                            )}
+                            {driver.rating && driver.rating > 0 && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                <span className="text-sm font-semibold">{driver.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {driver.vehicle_model && (
+                          <Badge variant="secondary" className="mt-4 bg-primary/10 text-primary border-primary/20">
+                            <Car className="w-3 h-3 mr-1" />
+                            {driver.vehicle_model}
+                          </Badge>
+                        )}
+
+                        <div className="flex gap-2 mt-4">
+                          {canCreateCourses && (
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-gradient-to-r from-primary to-primary-light"
+                              onClick={() => handleBookDriver(driver.id)}
+                            >
+                              Réserver
+                              <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          )}
+                          {driver.contact_phone && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-primary/20 hover:bg-primary/10"
+                              onClick={() => window.open(`tel:${driver.contact_phone}`, "_blank")}
+                            >
+                              <Phone className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Recherche de chauffeurs */}
+            {canInviteDrivers && (
+              <TabsContent value="search" className="mt-6 animate-fade-in">
+                <div className="space-y-6">
+                  {/* Barre de recherche */}
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher par nom, entreprise..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && searchPublicDrivers()}
+                        className="pl-10 h-12 rounded-xl border-border/50 bg-muted/30"
+                      />
+                      {searchQuery && (
+                        <button 
+                          onClick={() => {
+                            setSearchQuery("");
+                            searchPublicDrivers();
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       )}
+                    </div>
+                    <Button 
+                      onClick={searchPublicDrivers} 
+                      disabled={searching}
+                      className="h-12 px-6 bg-gradient-to-r from-accent to-accent-light"
+                    >
+                      {searching ? <Loader2 className="w-5 h-5 animate-spin" /> : "Rechercher"}
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
 
-            {searchResults.length === 0 && searchQuery && !searching && (
-              <p className="text-center text-muted-foreground py-4">
-                Aucun chauffeur trouvé pour cette recherche
-              </p>
+                  {/* Résultats */}
+                  {searching ? (
+                    <div className="text-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+                      <p className="text-muted-foreground">Recherche en cours...</p>
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {searchResults.map((driver, index) => (
+                        <Card 
+                          key={driver.id}
+                          className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-accent/5 to-transparent hover:shadow-lg transition-all hover:scale-[1.02]"
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <CardContent className="pt-6">
+                            <div className="flex items-start gap-4">
+                              <Avatar className="w-12 h-12 ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
+                                <AvatarImage src={driver.avatar_url || undefined} />
+                                <AvatarFallback className="bg-gradient-to-br from-accent/20 to-success/20 text-accent font-bold">
+                                  {driver.full_name.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-bold truncate">{driver.full_name}</h3>
+                                {getMainSector(driver.working_sectors) && (
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {getMainSector(driver.working_sectors)}
+                                  </p>
+                                )}
+                                {driver.rating && driver.rating > 0 && (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                    <span className="text-sm font-medium">{driver.rating.toFixed(1)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {driver.company_name && (
+                              <Badge variant="outline" className="mt-3 text-xs">
+                                <Building2 className="w-3 h-3 mr-1" />
+                                {driver.company_name}
+                              </Badge>
+                            )}
+
+                            <div className="flex gap-2 mt-4">
+                              <Button
+                                size="sm"
+                                onClick={() => proposeDriver(driver.id)}
+                                disabled={proposingDriver === driver.id}
+                                className="flex-1 bg-gradient-to-r from-accent to-success"
+                              >
+                                {proposingDriver === driver.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <UserPlus className="w-4 h-4 mr-1" />
+                                    Inviter
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedDriver(driver)}
+                                className="border-accent/20 hover:bg-accent/10"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                        <Search className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-semibold mb-2">
+                        {searchQuery ? "Aucun résultat" : "Recherchez des chauffeurs"}
+                      </h3>
+                      <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                        {searchQuery 
+                          ? "Aucun chauffeur disponible ne correspond à votre recherche."
+                          : "Tapez un nom ou une entreprise pour trouver des chauffeurs à inviter dans votre cercle."
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Info box */}
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-start gap-3">
+                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-primary">Cercle de chauffeurs partagé</p>
+                      <p className="text-muted-foreground mt-1">
+                        Lorsque vous invitez un chauffeur, il devient visible par tous les collaborateurs et administrateurs de votre entreprise une fois qu'il accepte.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
             )}
-          </div>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Dialog de détail chauffeur */}
+      <Dialog open={!!selectedDriver} onOpenChange={() => setSelectedDriver(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Profil du chauffeur</DialogTitle>
+          </DialogHeader>
+          {selectedDriver && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={selectedDriver.avatar_url || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 text-lg font-bold">
+                    {selectedDriver.full_name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-bold text-lg">{selectedDriver.full_name}</h3>
+                  {getMainSector(selectedDriver.working_sectors) && (
+                    <p className="text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {getMainSector(selectedDriver.working_sectors)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {selectedDriver.rating && selectedDriver.rating > 0 && (
+                  <div className="p-3 rounded-xl bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Note</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <span className="font-bold">{selectedDriver.rating.toFixed(1)}</span>
+                    </div>
+                  </div>
+                )}
+                {selectedDriver.vehicle_model && (
+                  <div className="p-3 rounded-xl bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Véhicule</p>
+                    <p className="font-medium mt-1">{selectedDriver.vehicle_model}</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedDriver.services_offered && selectedDriver.services_offered.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Services proposés</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDriver.services_offered.slice(0, 5).map((service, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    proposeDriver(selectedDriver.id);
+                    setSelectedDriver(null);
+                  }}
+                  disabled={proposingDriver === selectedDriver.id}
+                  className="w-full bg-gradient-to-r from-accent to-success"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Inviter ce chauffeur
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
