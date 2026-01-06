@@ -48,6 +48,11 @@ import {
   AlertTriangle,
   Target,
   Euro,
+  Crown,
+  User,
+  Briefcase,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { EmployeeSupervisionDialog } from "./EmployeeSupervisionDialog";
 
@@ -110,6 +115,9 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showSupervisionDialog, setShowSupervisionDialog] = useState(false);
   
+  const [inviteStep, setInviteStep] = useState<"type" | "details">("type");
+  const [employeeType, setEmployeeType] = useState<"autonomous" | "managed" | null>(null);
+  
   const [inviteForm, setInviteForm] = useState({
     email: "",
     employeeName: "",
@@ -117,6 +125,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
     canCreateCourses: true,
     canViewInvoices: true,
     canInviteDrivers: false,
+    maxMonthlyBudget: "",
   });
 
   useEffect(() => {
@@ -184,7 +193,8 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
           can_create_courses: inviteForm.canCreateCourses,
           can_view_invoices: inviteForm.canViewInvoices,
           can_invite_drivers: inviteForm.canInviteDrivers,
-        })
+          max_monthly_budget: inviteForm.maxMonthlyBudget ? parseFloat(inviteForm.maxMonthlyBudget) : null,
+        } as any)
         .select()
         .single();
 
@@ -192,6 +202,8 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
 
       setInvitations([data, ...invitations]);
       setShowInviteDialog(false);
+      setInviteStep("type");
+      setEmployeeType(null);
       setInviteForm({
         email: "",
         employeeName: "",
@@ -199,6 +211,7 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
         canCreateCourses: true,
         canViewInvoices: true,
         canInviteDrivers: false,
+        maxMonthlyBudget: "",
       });
       
       toast.success("Invitation créée avec succès");
@@ -306,97 +319,250 @@ export function CompanyEmployeesManager({ companyId }: CompanyEmployeesManagerPr
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualiser
           </Button>
-          <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+          <Dialog open={showInviteDialog} onOpenChange={(open) => {
+            setShowInviteDialog(open);
+            if (!open) {
+              setInviteStep("type");
+              setEmployeeType(null);
+            }
+          }}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Inviter un collaborateur
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Inviter un collaborateur</DialogTitle>
+                <DialogTitle>
+                  {inviteStep === "type" ? "Type de collaborateur" : "Détails de l'invitation"}
+                </DialogTitle>
                 <DialogDescription>
-                  Créez un lien d'invitation unique pour un nouveau collaborateur
+                  {inviteStep === "type" 
+                    ? "Choisissez le type de compte pour votre collaborateur"
+                    : `Configuration pour un collaborateur ${employeeType === "autonomous" ? "autonome" : "géré"}`
+                  }
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employeeName">Nom du collaborateur (optionnel)</Label>
-                  <Input
-                    id="employeeName"
-                    placeholder="Jean Dupont"
-                    value={inviteForm.employeeName}
-                    onChange={(e) => setInviteForm({ ...inviteForm, employeeName: e.target.value })}
-                  />
+
+              {inviteStep === "type" ? (
+                <div className="space-y-4 pt-4">
+                  {/* Type Autonome */}
+                  <button
+                    onClick={() => {
+                      setEmployeeType("autonomous");
+                      setInviteForm({
+                        ...inviteForm,
+                        canCreateCourses: true,
+                        canViewInvoices: true,
+                        canInviteDrivers: true,
+                      });
+                      setInviteStep("details");
+                    }}
+                    className="w-full p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 hover:border-primary/60 hover:bg-primary/15 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center shrink-0">
+                        <Crown className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-lg">Collaborateur Autonome</h3>
+                          <Badge className="bg-primary/20 text-primary border-primary/30">Premium</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Accès complet à toutes les fonctionnalités pour gérer ses déplacements
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                            <Car className="w-3 h-3 mr-1" />
+                            Créer des courses
+                          </Badge>
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+                            <FileText className="w-3 h-3 mr-1" />
+                            Voir les factures
+                          </Badge>
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                            <Users className="w-3 h-3 mr-1" />
+                            Proposer chauffeurs
+                          </Badge>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </button>
+
+                  {/* Type Géré */}
+                  <button
+                    onClick={() => {
+                      setEmployeeType("managed");
+                      setInviteForm({
+                        ...inviteForm,
+                        canCreateCourses: false,
+                        canViewInvoices: false,
+                        canInviteDrivers: false,
+                      });
+                      setInviteStep("details");
+                    }}
+                    className="w-full p-4 rounded-xl border-2 border-border hover:border-accent/60 hover:bg-accent/5 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center shrink-0">
+                        <Briefcase className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-lg">Collaborateur Géré</h3>
+                          <Badge variant="secondary">Standard</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          L'administrateur gère ses courses. Il reçoit et confirme ses trajets.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-muted">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Courses assignées
+                          </Badge>
+                          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-muted">
+                            <Target className="w-3 h-3 mr-1" />
+                            Budget contrôlé
+                          </Badge>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email (optionnel)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="jean.dupont@entreprise.com"
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Service (optionnel)</Label>
-                  <Input
-                    id="department"
-                    placeholder="Marketing, RH, Direction..."
-                    value={inviteForm.department}
-                    onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label>Permissions</Label>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-normal">Créer des courses</Label>
+              ) : (
+                <div className="space-y-4 pt-4">
+                  {/* Bandeau type sélectionné */}
+                  <div className={`p-3 rounded-lg flex items-center gap-3 ${
+                    employeeType === "autonomous" 
+                      ? "bg-primary/10 border border-primary/20" 
+                      : "bg-muted/50 border border-border"
+                  }`}>
+                    {employeeType === "autonomous" ? (
+                      <Crown className="w-5 h-5 text-primary" />
+                    ) : (
+                      <Briefcase className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        {employeeType === "autonomous" ? "Collaborateur Autonome" : "Collaborateur Géré"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        Le collaborateur peut réserver des VTC
+                        {employeeType === "autonomous" 
+                          ? "Toutes les permissions activées"
+                          : "Permissions limitées, géré par l'admin"
+                        }
                       </p>
                     </div>
-                    <Switch
-                      checked={inviteForm.canCreateCourses}
-                      onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canCreateCourses: checked })}
-                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setInviteStep("type")}
+                    >
+                      Changer
+                    </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-normal">Voir les factures</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Accès aux factures de l'entreprise
-                      </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="employeeName">Nom du collaborateur</Label>
+                      <Input
+                        id="employeeName"
+                        placeholder="Jean Dupont"
+                        value={inviteForm.employeeName}
+                        onChange={(e) => setInviteForm({ ...inviteForm, employeeName: e.target.value })}
+                      />
                     </div>
-                    <Switch
-                      checked={inviteForm.canViewInvoices}
-                      onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canViewInvoices: checked })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-normal">Proposer des chauffeurs</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Peut rechercher et proposer des chauffeurs partenaires
-                      </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="department">Service</Label>
+                      <Input
+                        id="department"
+                        placeholder="Marketing, RH..."
+                        value={inviteForm.department}
+                        onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                      />
                     </div>
-                    <Switch
-                      checked={inviteForm.canInviteDrivers}
-                      onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canInviteDrivers: checked })}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email (optionnel)</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="jean.dupont@entreprise.com"
+                      value={inviteForm.email}
+                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
                     />
                   </div>
-                </div>
-                <Button onClick={createInvitation} className="w-full" disabled={creatingInvitation}>
-                  {creatingInvitation ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Link2 className="w-4 h-4 mr-2" />
+
+                  {/* Budget mensuel */}
+                  <div className="space-y-2">
+                    <Label htmlFor="maxBudget" className="flex items-center gap-2">
+                      <Euro className="w-4 h-4" />
+                      Budget mensuel maximum
+                    </Label>
+                    <Input
+                      id="maxBudget"
+                      type="number"
+                      placeholder="Ex: 500"
+                      value={inviteForm.maxMonthlyBudget}
+                      onChange={(e) => setInviteForm({ ...inviteForm, maxMonthlyBudget: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Laissez vide pour un budget illimité. Des alertes seront envoyées à 80% et 100%.
+                    </p>
+                  </div>
+
+                  {/* Permissions personnalisables (seulement pour autonome) */}
+                  {employeeType === "autonomous" && (
+                    <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border">
+                      <Label className="flex items-center gap-2">
+                        <Settings2 className="w-4 h-4" />
+                        Personnaliser les permissions
+                      </Label>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-normal">Créer des courses</Label>
+                        </div>
+                        <Switch
+                          checked={inviteForm.canCreateCourses}
+                          onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canCreateCourses: checked })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-normal">Voir les factures</Label>
+                        </div>
+                        <Switch
+                          checked={inviteForm.canViewInvoices}
+                          onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canViewInvoices: checked })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-normal">Proposer des chauffeurs</Label>
+                        </div>
+                        <Switch
+                          checked={inviteForm.canInviteDrivers}
+                          onCheckedChange={(checked) => setInviteForm({ ...inviteForm, canInviteDrivers: checked })}
+                        />
+                      </div>
+                    </div>
                   )}
-                  Créer le lien d'invitation
-                </Button>
-              </div>
+
+                  <Button onClick={createInvitation} className="w-full" disabled={creatingInvitation}>
+                    {creatingInvitation ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 mr-2" />
+                    )}
+                    Créer le lien d'invitation
+                  </Button>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>
