@@ -25,6 +25,7 @@ import {
   AlertCircle,
   User,
   Trophy,
+  ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -935,8 +936,19 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
           {selectedDriver && (
             <>
-              {/* Header fixe avec photo et nom */}
+              {/* Header fixe avec photo, nom et bouton retour */}
               <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 p-4 border-b border-border/50">
+                {/* Bouton retour */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => { setSelectedDriver(null); setSelectedDriverStats(null); }}
+                  className="mb-3 -ml-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour
+                </Button>
+                
                 <div className="flex items-center gap-3">
                   <Avatar className="w-14 h-14 sm:w-16 sm:h-16 ring-2 ring-primary/20 flex-shrink-0">
                     <AvatarImage src={getDriverPhoto(selectedDriver) || undefined} />
@@ -1002,25 +1014,29 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                 </div>
               )}
 
-              {/* Note et véhicule */}
+              {/* Note et véhicule - toujours affichés en B2B */}
               <div className="grid grid-cols-2 gap-3">
-                {selectedDriver.show_rating_partners && selectedDriverStats && (
-                  <div className="p-3 rounded-xl bg-muted/30">
-                    <p className="text-xs text-muted-foreground">Note partenaires</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="font-bold">
-                        {selectedDriverStats.averageRating > 0 
-                          ? selectedDriverStats.averageRating.toFixed(1) 
-                          : "N/A"}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-1">
-                        <Trophy className="w-3 h-3 inline mr-0.5" />
-                        {selectedDriverStats.totalRides} courses
-                      </span>
-                    </div>
+                <div className="p-3 rounded-xl bg-muted/30">
+                  <p className="text-xs text-muted-foreground">Note partenaires</p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    {selectedDriverStats ? (
+                      <>
+                        <span className="font-bold">
+                          {selectedDriverStats.averageRating > 0 
+                            ? selectedDriverStats.averageRating.toFixed(1) 
+                            : "N/A"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-1">
+                          <Trophy className="w-3 h-3 inline mr-0.5" />
+                          {selectedDriverStats.totalRides} courses
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Chargement...</span>
+                    )}
                   </div>
-                )}
+                </div>
                 {selectedDriver.vehicle_model && (
                   <div className="p-3 rounded-xl bg-muted/30">
                     <p className="text-xs text-muted-foreground">Véhicule</p>
@@ -1093,12 +1109,20 @@ export function EmployeeCompanyDrivers({ companyId, canInviteDrivers, canCreateC
                     <Clock className="w-4 h-4 text-primary" />
                     <span className="text-sm font-medium text-primary">Invitation en attente de réponse</span>
                   </div>
-                  {getRequestedByLabel(selectedDriver.id) && (
-                    <p className="text-xs text-primary/80 mt-1 ml-6 flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {getRequestedByLabel(selectedDriver.id)}
-                    </p>
-                  )}
+                  <p className="text-xs text-primary/80 mt-1 ml-6 flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {getRequestedByLabel(selectedDriver.id)}
+                  </p>
+                </div>
+              )}
+
+              {/* Partenaire confirmé */}
+              {drivers.some(d => d.id === selectedDriver.id) && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm font-medium text-emerald-600">Chauffeur partenaire de votre entreprise</span>
+                  </div>
                 </div>
               )}
 
