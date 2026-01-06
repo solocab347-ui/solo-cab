@@ -180,7 +180,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
 
       if (devisError) throw devisError;
 
-      // Fetch company course quotes
+      // Fetch company course quotes - include all relevant statuses
       const { data: companyQuotes, error: companyError } = await supabase
         .from("company_course_quotes")
         .select(`
@@ -198,7 +198,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           )
         `)
         .eq("driver_id", driverId)
-        .eq("status", "sent") // Only show sent quotes (pending for driver)
+        .in("status", ["sent", "accepted", "refused", "taken_by_other"]) // Include all statuses
         .order("created_at", { ascending: false });
 
       if (companyError) throw companyError;
@@ -234,36 +234,45 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         request_id: null,
       }));
 
-      // Transform company quotes to unified format
-      const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => ({
-        id: q.id,
-        quote_number: `ENT-${q.id.slice(0, 8).toUpperCase()}`,
-        amount: q.total_price,
-        status: "pending", // For the driver, 'sent' = pending response
-        created_at: q.created_at,
-        valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days validity
-        base_price: q.base_price,
-        distance_price: q.distance_price,
-        time_price: q.time_price,
-        evening_surcharge_amount: q.evening_surcharge,
-        weekend_surcharge_amount: q.weekend_surcharge,
-        discount_amount: 0,
-        promo_code: null,
-        pickup_address: q.company_course_requests.pickup_address,
-        destination_address: q.company_course_requests.destination_address,
-        scheduled_date: q.company_course_requests.scheduled_date,
-        distance_km: q.distance_km,
-        duration_minutes: q.duration_minutes,
-        client_id: null,
-        client_name: null,
-        client_email: null,
-        client_phone: null,
-        client_photo_url: null,
-        company_id: q.company_course_requests.company_id,
-        company_name: q.company_course_requests.companies.company_name,
-        is_company_quote: true,
-        request_id: q.request_id,
-      }));
+      // Transform company quotes to unified format - map statuses correctly
+      const transformedCompanyQuotes: UnifiedQuote[] = (companyQuotes || []).map((q: any) => {
+        // Map company quote status to unified status
+        let mappedStatus = "pending";
+        if (q.status === "sent") mappedStatus = "pending";
+        else if (q.status === "accepted") mappedStatus = "accepted";
+        else if (q.status === "refused") mappedStatus = "refused";
+        else if (q.status === "taken_by_other") mappedStatus = "expired"; // Map to expired for display
+        
+        return {
+          id: q.id,
+          quote_number: `ENT-${q.id.slice(0, 8).toUpperCase()}`,
+          amount: q.total_price,
+          status: mappedStatus,
+          created_at: q.created_at,
+          valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days validity
+          base_price: q.base_price,
+          distance_price: q.distance_price,
+          time_price: q.time_price,
+          evening_surcharge_amount: q.evening_surcharge,
+          weekend_surcharge_amount: q.weekend_surcharge,
+          discount_amount: 0,
+          promo_code: null,
+          pickup_address: q.company_course_requests.pickup_address,
+          destination_address: q.company_course_requests.destination_address,
+          scheduled_date: q.company_course_requests.scheduled_date,
+          distance_km: q.distance_km,
+          duration_minutes: q.duration_minutes,
+          client_id: null,
+          client_name: null,
+          client_email: null,
+          client_phone: null,
+          client_photo_url: null,
+          company_id: q.company_course_requests.company_id,
+          company_name: q.company_course_requests.companies.company_name,
+          is_company_quote: true,
+          request_id: q.request_id,
+        };
+      });
 
       // Combine and sort by date
       const allQuotes = [...transformedRegularDevis, ...transformedCompanyQuotes].sort(

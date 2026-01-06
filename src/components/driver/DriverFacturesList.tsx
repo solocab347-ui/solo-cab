@@ -41,9 +41,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       filtered = filtered.filter((facture) => facture.payment_status === statusFilter);
     }
 
-    // Filter by client
+    // Filter by client/company
     if (clientFilter !== "all") {
-      filtered = filtered.filter((facture) => facture.client_id === clientFilter);
+      filtered = filtered.filter((facture) => 
+        facture.clients?.id === clientFilter || 
+        facture.companyInfo?.id === clientFilter ||
+        (clientFilter.startsWith('guest-') && `guest-${facture.id}` === clientFilter)
+      );
     }
 
     // Filter by date
@@ -77,11 +81,14 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
     // Filter by search term
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (facture) =>
-          facture.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          facture.invoice_number_generated?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          facture.clients?.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+          facture.invoice_number?.toLowerCase().includes(term) ||
+          facture.invoice_number_generated?.toLowerCase().includes(term) ||
+          facture.clients?.profiles?.full_name?.toLowerCase().includes(term) ||
+          facture.companyInfo?.company_name?.toLowerCase().includes(term) ||
+          facture.courses?.guest_name?.toLowerCase().includes(term)
       );
     }
 
@@ -107,11 +114,12 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
 
   const fetchFactures = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch regular factures (with client)
+      const { data: regularFactures, error: regularError } = await supabase
         .from("factures")
         .select(`
           *,
-          clients!inner(
+          clients(
             id,
             profiles:user_id(full_name, email, phone, profile_photo_url)
           ),
@@ -121,7 +129,10 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             scheduled_date,
             distance_km,
             duration_minutes,
-            passengers_count
+            passengers_count,
+            is_guest_booking,
+            guest_name,
+            guest_phone
           ),
           devis(
             base_price,
@@ -136,17 +147,62 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         .eq("driver_id", driverId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setFactures(data || []);
-      setFilteredFactures(data || []);
+      if (regularError) throw regularError;
 
-      // Extract unique clients for filter
-      const uniqueClients = Array.from(
-        new Map(
-          data?.map((f) => [f.clients.id, { id: f.clients.id, name: f.clients.profiles.full_name }])
-        ).values()
-      );
-      setClients(uniqueClients);
+      // Fetch company course info for factures
+      const courseIds = (regularFactures || []).map(f => f.course_id);
+      let companyCoursesMap = new Map();
+      
+      if (courseIds.length > 0) {
+        const { data: companyData } = await supabase
+          .from("company_courses")
+          .select(`
+            course_id,
+            company:companies(id, company_name, logo_url)
+          `)
+          .in("course_id", courseIds);
+        
+        companyData?.forEach(cc => {
+          companyCoursesMap.set(cc.course_id, cc.company);
+        });
+      }
+
+      // Enrich factures with company info
+      const enrichedFactures = (regularFactures || []).map(f => ({
+        ...f,
+        companyInfo: companyCoursesMap.get(f.course_id) || null
+      }));
+
+      setFactures(enrichedFactures);
+      setFilteredFactures(enrichedFactures);
+
+      // Extract unique clients/companies for filter
+      const uniqueEntities = new Map();
+      enrichedFactures.forEach((f) => {
+        if (f.clients?.id) {
+          uniqueEntities.set(f.clients.id, { 
+            id: f.clients.id, 
+            name: f.clients.profiles?.full_name || 'Client',
+            type: 'client'
+          });
+        }
+        if (f.companyInfo?.id) {
+          uniqueEntities.set(f.companyInfo.id, {
+            id: f.companyInfo.id,
+            name: `🏢 ${f.companyInfo.company_name}`,
+            type: 'company'
+          });
+        }
+        // For guest bookings without company
+        if (f.courses?.is_guest_booking && f.courses?.guest_name && !f.companyInfo) {
+          uniqueEntities.set(`guest-${f.id}`, {
+            id: `guest-${f.id}`,
+            name: `${f.courses.guest_name} (Non inscrit)`,
+            type: 'guest'
+          });
+        }
+      });
+      setClients(Array.from(uniqueEntities.values()));
     } catch (error: any) {
       console.error("Error fetching factures:", error);
       toast.error("Erreur lors du chargement des factures");
