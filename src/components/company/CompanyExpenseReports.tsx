@@ -83,6 +83,9 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showReimburseDialog, setShowReimburseDialog] = useState(false);
+  const [reimbursementMethod, setReimbursementMethod] = useState<"direct_payment" | "payroll">("direct_payment");
+  const [reimbursementMonth, setReimbursementMonth] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "reimbursed">("all");
 
   useEffect(() => {
@@ -350,9 +353,12 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
                               </>
                             )}
                             {report.status === "approved" && (
-                              <DropdownMenuItem onClick={() => updateReportStatus(report.id, "reimbursed")}>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedReport(report);
+                                setShowReimburseDialog(true);
+                              }}>
                                 <Euro className="w-4 h-4 mr-2 text-green-600" />
-                                Marquer remboursée
+                                Déclarer remboursement
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -439,11 +445,13 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
               {selectedReport.status === "approved" && (
                 <Button 
                   className="w-full"
-                  onClick={() => updateReportStatus(selectedReport.id, "reimbursed")}
-                  disabled={processingId === selectedReport.id}
+                  onClick={() => {
+                    setShowDetailDialog(false);
+                    setShowReimburseDialog(true);
+                  }}
                 >
                   <Euro className="w-4 h-4 mr-2" />
-                  Marquer comme remboursée
+                  Déclarer remboursement
                 </Button>
               )}
             </div>
@@ -481,6 +489,136 @@ export function CompanyExpenseReports({ companyId }: CompanyExpenseReportsProps)
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reimburse Dialog */}
+      <Dialog open={showReimburseDialog} onOpenChange={setShowReimburseDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Euro className="w-5 h-5 text-emerald-600" />
+              Déclarer le remboursement
+            </DialogTitle>
+            <DialogDescription>
+              Choisissez le mode de remboursement pour cette note de frais
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReport && (
+            <div className="space-y-5">
+              {/* Amount summary */}
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-400">Montant à rembourser</p>
+                    <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">
+                      {selectedReport.amount.toFixed(2)} €
+                    </p>
+                  </div>
+                  <div className="text-right text-sm">
+                    <p className="text-muted-foreground">Collaborateur</p>
+                    <p className="font-medium">{selectedReport.employee?.profile?.full_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reimbursement method selection */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Mode de remboursement</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReimbursementMethod("direct_payment")}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      reimbursementMethod === "direct_payment"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Euro className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Paiement direct</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Virement ou remise immédiate
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReimbursementMethod("payroll")}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      reimbursementMethod === "payroll"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      <span className="font-medium">Avec la paye</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Inclus dans la prochaine fiche de paie
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Month selection for payroll */}
+              {reimbursementMethod === "payroll" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mois de la paye</label>
+                  <Input
+                    type="month"
+                    value={reimbursementMonth}
+                    onChange={(e) => setReimbursementMonth(e.target.value)}
+                    className="w-full"
+                    min={format(new Date(), "yyyy-MM")}
+                  />
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowReimburseDialog(false);
+                    setReimbursementMethod("direct_payment");
+                    setReimbursementMonth("");
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => {
+                    updateReportStatus(selectedReport.id, "reimbursed", {
+                      reimbursement_method: reimbursementMethod,
+                      reimbursement_month: reimbursementMethod === "payroll" ? reimbursementMonth : null,
+                    });
+                    setShowReimburseDialog(false);
+                    setReimbursementMethod("direct_payment");
+                    setReimbursementMonth("");
+                  }}
+                  disabled={
+                    processingId === selectedReport.id || 
+                    (reimbursementMethod === "payroll" && !reimbursementMonth)
+                  }
+                >
+                  {processingId === selectedReport.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Confirmer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

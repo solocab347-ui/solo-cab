@@ -79,7 +79,8 @@ export function EmployeeCoursePaymentDeclaration({
             driver_declared_payment_received
           )
         `)
-        .eq("employee_id", employeeId);
+        .eq("employee_id", employeeId)
+        .is("client_confirmed_payment_method", null);
 
       if (error) throw error;
 
@@ -88,9 +89,6 @@ export function EmployeeCoursePaymentDeclaration({
       for (const cc of companyCourses || []) {
         const course = cc.course as any;
         if (course.status !== "completed") continue;
-
-        // Skip if already confirmed by employee
-        if (cc.client_confirmed_payment_method) continue;
 
         let driverName = null;
         let amount = null;
