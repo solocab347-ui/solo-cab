@@ -133,7 +133,9 @@ export default function CompanyEmployeeDashboard() {
         user_name: profileData?.full_name || null,
       });
 
-      const { data: coursesData, error: coursesError } = await supabase
+      // Fetch courses - either created by this employee OR all company courses if admin/can_view_all
+      // First, try to get courses linked to this employee
+      let coursesQuery = supabase
         .from("company_courses")
         .select(`
           course:courses!inner(
@@ -146,17 +148,29 @@ export default function CompanyEmployeeDashboard() {
             started_at,
             updated_at,
             company_payment_status,
-            driver_id
-          )
+            driver_id,
+            created_by_user_id
+          ),
+          employee_id
         `)
-        .eq("employee_id", empData.id)
+        .eq("company_id", empData.company.id)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(50);
+
+      // For regular employees, filter by their employee_id OR courses they created
+      const { data: coursesData, error: coursesError } = await coursesQuery;
 
       if (!coursesError && coursesData) {
+        // Filter courses: either assigned to this employee OR created by this user
+        const filteredCourses = coursesData.filter((cc: any) => 
+          cc.employee_id === empData.id || 
+          cc.course?.created_by_user_id === user?.id ||
+          !cc.employee_id // Include courses without employee assignment (legacy)
+        );
+
         const enrichedCourses: Course[] = [];
         
-        for (const cc of coursesData) {
+        for (const cc of filteredCourses) {
           const course = cc.course as any;
           let driverName = null;
           let amount = null;
@@ -178,11 +192,13 @@ export default function CompanyEmployeeDashboard() {
             }
           }
 
+          // Get devis - either accepted or pending
           const { data: devis } = await supabase
             .from("devis")
-            .select("amount")
+            .select("amount, status")
             .eq("course_id", course.id)
-            .eq("status", "accepted")
+            .order("created_at", { ascending: false })
+            .limit(1)
             .maybeSingle();
           
           amount = devis?.amount || null;
