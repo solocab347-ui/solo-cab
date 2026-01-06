@@ -516,34 +516,32 @@ export default function GuestEmployeeCourseTracking() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Driver Profile */}
+              {/* Driver Profile - Enhanced display */}
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 border-2 border-primary/20">
-                  <AvatarImage src={acceptedDriver.profile?.profile_photo_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                <Avatar className="h-20 w-20 border-4 border-primary/30 shadow-lg">
+                  <AvatarImage 
+                    src={acceptedDriver.profile?.profile_photo_url || undefined} 
+                    alt={acceptedDriver.profile?.full_name || acceptedDriver.company_name || "Chauffeur"}
+                  />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
                     {acceptedDriver.profile?.full_name?.charAt(0) || acceptedDriver.company_name?.charAt(0) || "C"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  {/* Always show driver's full name if available */}
-                  {acceptedDriver.profile?.full_name && (
-                    <h3 className="font-semibold text-lg">
-                      {acceptedDriver.profile.full_name}
-                    </h3>
-                  )}
-                  {/* Show company name below or as main title if no full name */}
-                  {acceptedDriver.company_name && (
-                    <p className={acceptedDriver.profile?.full_name ? "text-sm text-muted-foreground" : "font-semibold text-lg"}>
+                <div className="flex-1 min-w-0">
+                  {/* Toujours afficher le nom complet du chauffeur en priorité */}
+                  <h3 className="font-bold text-xl truncate">
+                    {acceptedDriver.profile?.full_name || acceptedDriver.company_name || "Votre chauffeur"}
+                  </h3>
+                  {/* Afficher le nom de l'entreprise en dessous si différent */}
+                  {acceptedDriver.company_name && acceptedDriver.profile?.full_name && 
+                   acceptedDriver.company_name !== acceptedDriver.profile.full_name && (
+                    <p className="text-sm text-muted-foreground truncate">
                       {acceptedDriver.company_name}
                     </p>
                   )}
-                  {/* Fallback if neither exists */}
-                  {!acceptedDriver.profile?.full_name && !acceptedDriver.company_name && (
-                    <h3 className="font-semibold text-lg">Chauffeur</h3>
-                  )}
-                  {/* Show quote price if available */}
+                  {/* Afficher le prix si disponible */}
                   {quoteAmount && (
-                    <p className="text-primary font-bold mt-1">{quoteAmount.toFixed(2)} €</p>
+                    <p className="text-primary font-bold text-lg mt-1">{quoteAmount.toFixed(2)} €</p>
                   )}
                 </div>
               </div>
