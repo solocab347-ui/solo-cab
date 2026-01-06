@@ -213,23 +213,24 @@ export function QuotesReviewStep({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header - responsive layout */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
+          <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
             Devis générés
           </h3>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Sélectionnez les devis à envoyer aux chauffeurs
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {generatedQuotes.length > 1 && (
             <button
               type="button"
               onClick={toggleAll}
-              className="text-sm text-primary hover:underline"
+              className="text-xs sm:text-sm text-primary hover:underline whitespace-nowrap"
             >
               {generatedQuotes.every(q => q.selected) ? "Tout désélectionner" : "Tout sélectionner"}
             </button>
@@ -239,26 +240,28 @@ export function QuotesReviewStep({
             size="sm"
             onClick={() => canRegenerate ? generateQuotesMutation.mutate() : refetchExisting()}
             disabled={generateQuotesMutation.isPending || isLoadingExisting}
+            className="text-xs sm:text-sm"
           >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            Actualiser
+            <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden xs:inline">Actualiser</span>
+            <span className="xs:hidden">↻</span>
           </Button>
         </div>
       </div>
 
-      {/* Course summary */}
+      {/* Course summary - responsive */}
       {generatedQuotes.length > 0 && (
-        <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <span className="truncate">{formData.pickupAddress}</span>
+        <div className="p-3 sm:p-4 bg-muted/50 rounded-lg space-y-2">
+          <div className="flex items-start gap-2 text-xs sm:text-sm">
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <span className="line-clamp-2">{formData.pickupAddress}</span>
           </div>
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-            <span className="truncate">{formData.destinationAddress}</span>
+          <div className="flex items-start gap-2 text-xs sm:text-sm">
+            <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 mt-0.5 flex-shrink-0" />
+            <span className="line-clamp-2">{formData.destinationAddress}</span>
           </div>
           {(generatedQuotes[0]?.distanceKm > 0 || generatedQuotes[0]?.durationMinutes > 0) ? (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground pt-1">
+            <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground pt-1">
               <span>{generatedQuotes[0]?.distanceKm.toFixed(1)} km</span>
               <span>~{generatedQuotes[0]?.durationMinutes} min</span>
             </div>
@@ -271,7 +274,7 @@ export function QuotesReviewStep({
       )}
 
       {generatedQuotes.length > 0 ? (
-        <div className="grid gap-3">
+        <div className="grid gap-2 sm:gap-3">
           {generatedQuotes.map((quote) => (
             <Card 
               key={quote.id}
@@ -282,37 +285,37 @@ export function QuotesReviewStep({
               }`}
               onClick={() => toggleQuoteSelection(quote.id)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <Checkbox 
                     checked={quote.selected}
                     onCheckedChange={() => toggleQuoteSelection(quote.id)}
-                    className="flex-shrink-0"
+                    className="flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5"
                   />
                   
-                  <Avatar className="h-10 w-10 flex-shrink-0">
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                     <AvatarImage src={quote.driverPhoto} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">
                       {quote.driverName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold truncate">{quote.driverName}</h4>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <h4 className="font-semibold text-sm sm:text-base truncate">{quote.driverName}</h4>
                       {quote.selected && (
-                        <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-primary flex-shrink-0" />
                       )}
                     </div>
                     {quote.vehicleInfo && (
-                      <p className="text-sm text-muted-foreground truncate">{quote.vehicleInfo}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{quote.vehicleInfo}</p>
                     )}
                   </div>
                   
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xl font-bold text-primary flex items-center gap-1">
+                    <p className="text-base sm:text-xl font-bold text-primary flex items-center gap-0.5 sm:gap-1">
                       {quote.totalPrice.toFixed(2)}
-                      <Euro className="w-4 h-4" />
+                      <Euro className="w-3 h-3 sm:w-4 sm:h-4" />
                     </p>
                   </div>
                 </div>
@@ -342,13 +345,13 @@ export function QuotesReviewStep({
       )}
 
       {selectedCount > 0 && (
-        <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-          <p className="text-sm font-medium text-primary">
+        <div className="p-3 sm:p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <p className="text-xs sm:text-sm font-medium text-primary">
             {selectedCount} devis sélectionné{selectedCount > 1 ? "s" : ""} pour envoi
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {selectedCount > 1 
-              ? "Le premier chauffeur à accepter remportera la course. Les autres seront automatiquement informés."
+              ? "Le premier chauffeur à accepter remportera la course."
               : "Le devis sera envoyé au chauffeur qui pourra l'accepter ou le refuser."
             }
           </p>
