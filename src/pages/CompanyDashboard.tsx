@@ -34,6 +34,8 @@ import {
   X,
   Sparkles,
   ArrowUpRight,
+  ArrowLeft,
+  Shield,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -54,6 +56,7 @@ import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReport
 import { CompanyCourseRequestsManager } from "@/components/company/CompanyCourseRequestsManager";
 import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
 import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
+import { CompanyAdministratorsManager } from "@/components/company/CompanyAdministratorsManager";
 import { cn } from "@/lib/utils";
 
 interface Company {
@@ -88,6 +91,7 @@ export default function CompanyDashboard() {
     { id: "course-requests", icon: Car, label: "Demandes de courses", color: "text-primary" },
     { id: "reservations", icon: Calendar, label: t('companyDashboard.menu.rides'), color: "text-violet-400" },
     { id: "employees", icon: Users, label: t('companyDashboard.menu.employees'), color: "text-emerald-400" },
+    { id: "administrators", icon: Shield, label: "Administrateurs", color: "text-amber-400" },
     { id: "divider1", type: "divider", label: t('companyDashboard.menu.finances') },
     { id: "devis", icon: FileText, label: t('companyDashboard.menu.quotes'), color: "text-amber-400" },
     { id: "invoices", icon: Receipt, label: t('companyDashboard.menu.invoices'), color: "text-orange-400" },
@@ -221,6 +225,8 @@ export default function CompanyDashboard() {
         return <CompanyPartnershipQRCode companyId={company.id} companyName={company.company_name} />;
       case "employees":
         return <CompanyEmployeesManager companyId={company.id} />;
+      case "administrators":
+        return <CompanyAdministratorsManager companyId={company.id} companyName={company.company_name} />;
       case "stats":
         return <CompanyStatisticsComplete companyId={company.id} />;
       case "public":
@@ -232,6 +238,12 @@ export default function CompanyDashboard() {
     }
   };
 
+  const handleBackClick = () => {
+    if (activeTab !== "overview") {
+      handleTabChange("overview");
+    }
+  };
+
   const currentMenuItem = menuItems.find(item => item.id === activeTab);
 
   return (
@@ -239,13 +251,23 @@ export default function CompanyDashboard() {
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-3">
-          <button 
-            onClick={() => setSidebarOpen(true)} 
-            className="flex items-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors border border-primary/30"
-          >
-            <Menu className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Menu</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {activeTab !== "overview" && (
+              <button 
+                onClick={handleBackClick}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-white" />
+              </button>
+            )}
+            <button 
+              onClick={() => setSidebarOpen(true)} 
+              className="flex items-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors border border-primary/30"
+            >
+              <Menu className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Menu</span>
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <img src={logo} alt="SoloCab" className="w-8 h-8" />
           </div>
@@ -291,6 +313,14 @@ export default function CompanyDashboard() {
         {/* Desktop Header */}
         <header className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-white/10 bg-slate-900/30 backdrop-blur-sm">
           <div className="flex items-center gap-3">
+            {activeTab !== "overview" && (
+              <button 
+                onClick={handleBackClick}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors mr-2"
+              >
+                <ArrowLeft className="w-5 h-5 text-white" />
+              </button>
+            )}
             {currentMenuItem && !currentMenuItem.type && (
               <>
                 <div className="p-2 rounded-lg bg-primary/20">
@@ -437,7 +467,7 @@ function DashboardOverview({
     { label: "Nouvelle course", icon: Plus, action: onCreateCourse, primary: true, gradient: "from-primary to-primary/80" },
     { label: "Trouver un chauffeur", icon: Search, action: () => onNavigate("drivers"), gradient: "from-indigo-500 to-violet-500", iconColor: "text-indigo-400" },
     { label: "Mes collaborateurs", icon: Users, action: () => onNavigate("employees"), gradient: "from-emerald-500 to-teal-500", iconColor: "text-emerald-400" },
-    { label: "Statistiques", icon: BarChart3, action: () => onNavigate("stats"), gradient: "from-amber-500 to-orange-500", iconColor: "text-amber-400" },
+    { label: "Paiements", icon: CreditCard, action: () => onNavigate("payments"), gradient: "from-pink-500 to-rose-500", iconColor: "text-pink-400" },
   ];
 
   return (
