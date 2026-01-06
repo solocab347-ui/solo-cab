@@ -427,6 +427,91 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   </div>
                 )}
 
+                {/* Timeline de progression */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Progression</p>
+                  <div className="space-y-2">
+                    {/* Demande créée */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0" />
+                      <span className="text-xs font-medium flex-1">Demande créée</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(request.created_at), "d/MM HH:mm")}
+                      </span>
+                    </div>
+                    {/* Devis générés */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                          ? "bg-primary" : "bg-muted-foreground/30"
+                      }`} />
+                      <span className={`text-xs flex-1 ${
+                        ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                          ? "font-medium" : "text-muted-foreground"
+                      }`}>Devis générés</span>
+                      {request.quotes_generated_at && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(request.quotes_generated_at), "d/MM HH:mm")}
+                        </span>
+                      )}
+                    </div>
+                    {/* Envoyé aux chauffeurs */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                          ? "bg-primary" : "bg-muted-foreground/30"
+                      }`} />
+                      <span className={`text-xs flex-1 ${
+                        ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                          ? "font-medium" : "text-muted-foreground"
+                      }`}>Envoyé au(x) chauffeur(s)</span>
+                      {request.sent_to_drivers_at && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(request.sent_to_drivers_at), "d/MM HH:mm")}
+                        </span>
+                      )}
+                    </div>
+                    {/* Chauffeur confirmé */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        request.status === "accepted" || courseStatus
+                          ? "bg-primary" : "bg-muted-foreground/30"
+                      }`} />
+                      <span className={`text-xs flex-1 ${
+                        request.status === "accepted" || courseStatus
+                          ? "font-medium" : "text-muted-foreground"
+                      }`}>Chauffeur confirmé</span>
+                      {request.accepted_at && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(request.accepted_at), "d/MM HH:mm")}
+                        </span>
+                      )}
+                    </div>
+                    {/* Course en cours */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        courseStatus === "in_progress" || courseStatus === "completed"
+                          ? "bg-blue-500" : "bg-muted-foreground/30"
+                      }`} />
+                      <span className={`text-xs flex-1 ${
+                        courseStatus === "in_progress" || courseStatus === "completed"
+                          ? "font-medium text-blue-600" : "text-muted-foreground"
+                      }`}>Course en cours</span>
+                    </div>
+                    {/* Course terminée */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        courseStatus === "completed"
+                          ? "bg-green-500" : "bg-muted-foreground/30"
+                      }`} />
+                      <span className={`text-xs flex-1 ${
+                        courseStatus === "completed"
+                          ? "font-medium text-green-600" : "text-muted-foreground"
+                      }`}>Course terminée</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Quotes info */}
                 {renderQuotesList(request.quotesWithProfiles)}
 
