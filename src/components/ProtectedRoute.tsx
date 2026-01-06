@@ -11,19 +11,80 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: ("admin" | "driver" | "client" | "company" | "fleet_manager")[];
   requireValidatedDriver?: boolean;
+  requireCompanyAdmin?: boolean; // Pour vérifier si l'utilisateur est admin d'entreprise
 }
 
 export const ProtectedRoute = ({ 
   children, 
   allowedRoles,
-  requireValidatedDriver = false 
+  requireValidatedDriver = false,
+  requireCompanyAdmin = false 
 }: ProtectedRouteProps) => {
   const { user, userRole, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [driverStatus, setDriverStatus] = useState<string | null>(null);
   const [checkingDriver, setCheckingDriver] = useState(requireValidatedDriver);
+  const [checkingCompanyAdmin, setCheckingCompanyAdmin] = useState(false);
+  const [isCompanyAdmin, setIsCompanyAdmin] = useState<boolean | null>(null);
   const hasChecked = useRef(false); // Éviter les vérifications multiples
+  const hasCheckedCompanyAdmin = useRef(false);
+
+  // Vérification du statut admin entreprise
+  useEffect(() => {
+    if (requireCompanyAdmin && user && !hasCheckedCompanyAdmin.current) {
+      hasCheckedCompanyAdmin.current = true;
+      checkCompanyAdminStatus();
+    } else if (!requireCompanyAdmin || !user) {
+      setCheckingCompanyAdmin(false);
+      hasCheckedCompanyAdmin.current = false;
+    }
+  }, [user?.id, requireCompanyAdmin]);
+
+  const checkCompanyAdminStatus = async () => {
+    if (!user) {
+      setCheckingCompanyAdmin(false);
+      return;
+    }
+
+    setCheckingCompanyAdmin(true);
+    try {
+      // Vérifier si l'utilisateur est propriétaire d'une entreprise
+      const { data: ownedCompany } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (ownedCompany) {
+        setIsCompanyAdmin(true);
+        setCheckingCompanyAdmin(false);
+        return;
+      }
+
+      // Vérifier si l'utilisateur est un administrateur d'entreprise
+      const { data: adminData } = await supabase
+        .from("company_administrators")
+        .select("id, is_active")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (adminData) {
+        setIsCompanyAdmin(true);
+        setCheckingCompanyAdmin(false);
+        return;
+      }
+
+      // L'utilisateur n'est pas admin - peut-être un collaborateur
+      setIsCompanyAdmin(false);
+    } catch (error) {
+      logger.error("Error checking company admin status", { error });
+      setIsCompanyAdmin(false);
+    } finally {
+      setCheckingCompanyAdmin(false);
+    }
+  };
 
   useEffect(() => {
     // Ne vérifier qu'une seule fois
@@ -86,7 +147,7 @@ export const ProtectedRoute = ({
   };
 
   // Utiliser un loader minimal et cohérent pour éviter les flash
-  if (loading || checkingDriver) {
+  if (loading || checkingDriver || checkingCompanyAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background auth-loading-screen">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -100,6 +161,11 @@ export const ProtectedRoute = ({
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Vérifier si l'utilisateur essaie d'accéder au company-dashboard sans être admin
+  if (requireCompanyAdmin && isCompanyAdmin === false) {
+    return <Navigate to="/company-employee-dashboard" replace />;
   }
 
   // Rediriger les chauffeurs sans paiement vers une page d'erreur claire
