@@ -8285,7 +8285,7 @@ export type Database = {
       }
       is_company_employee: { Args: { p_company_id: string }; Returns: boolean }
       is_company_employee_of_driver: {
-        Args: { p_driver_id: string }
+        Args: { p_driver_id: string; p_user_id: string }
         Returns: boolean
       }
       is_course_shared_locked: { Args: { p_course_id: string }; Returns: Json }
