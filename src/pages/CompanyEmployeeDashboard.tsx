@@ -28,6 +28,8 @@ import {
   CheckCircle2,
   Timer,
   Zap,
+  Receipt,
+  Handshake,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -37,6 +39,9 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { CompanyEmployeeFactures } from "@/components/company/CompanyEmployeeFactures";
 import { EmployeePaymentConfirmation } from "@/components/company/EmployeePaymentConfirmation";
 import { EmployeeCompanyDrivers } from "@/components/company/EmployeeCompanyDrivers";
+import { EmployeePhotoUpload } from "@/components/company/employee/EmployeePhotoUpload";
+import { EmployeeExpenseReports } from "@/components/company/employee/EmployeeExpenseReports";
+import { EmployeeFleetPartners } from "@/components/company/employee/EmployeeFleetPartners";
 
 interface EmployeeData {
   id: string;
@@ -49,6 +54,7 @@ interface EmployeeData {
   can_invite_drivers: boolean;
   current_month_spent: number;
   max_monthly_budget: number | null;
+  avatar_url: string | null;
   company: {
     id: string;
     company_name: string;
@@ -250,7 +256,6 @@ export default function CompanyEmployeeDashboard() {
   }
 
   const firstName = employee.user_name?.split(" ")[0] || "Collaborateur";
-  const hasDriversTab = employee.can_invite_drivers || employee.can_create_courses;
   const hasInvoicesTab = employee.can_view_invoices;
 
   return (
@@ -329,16 +334,6 @@ export default function CompanyEmployeeDashboard() {
               <span className="text-xs sm:text-sm">Accueil</span>
             </TabsTrigger>
             
-            {hasDriversTab && (
-              <TabsTrigger 
-                value="drivers" 
-                className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
-              >
-                <Users className="w-6 h-6" />
-                <span className="text-xs sm:text-sm">Chauffeurs</span>
-              </TabsTrigger>
-            )}
-            
             <TabsTrigger 
               value="courses" 
               className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
@@ -356,6 +351,22 @@ export default function CompanyEmployeeDashboard() {
                 <span className="text-xs sm:text-sm">Factures</span>
               </TabsTrigger>
             )}
+
+            <TabsTrigger 
+              value="expenses" 
+              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+            >
+              <Receipt className="w-6 h-6" />
+              <span className="text-xs sm:text-sm">Frais</span>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="partners" 
+              className="flex-1 min-w-[80px] rounded-xl py-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+            >
+              <Handshake className="w-6 h-6" />
+              <span className="text-xs sm:text-sm">Partenaires</span>
+            </TabsTrigger>
             
             <TabsTrigger 
               value="profile" 
@@ -687,16 +698,6 @@ export default function CompanyEmployeeDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Drivers Tab */}
-          {hasDriversTab && (
-            <TabsContent value="drivers" className="animate-fade-in">
-              <EmployeeCompanyDrivers 
-                companyId={employee.company_id}
-                canInviteDrivers={employee.can_invite_drivers}
-                canCreateCourses={employee.can_create_courses}
-              />
-            </TabsContent>
-          )}
 
           {/* Invoices Tab */}
           {hasInvoicesTab && (
@@ -707,6 +708,27 @@ export default function CompanyEmployeeDashboard() {
               />
             </TabsContent>
           )}
+
+          {/* Expenses Tab */}
+          <TabsContent value="expenses" className="animate-fade-in">
+            <EmployeeExpenseReports 
+              employeeId={employee.id}
+              companyId={employee.company_id}
+            />
+          </TabsContent>
+
+          {/* Partners Tab */}
+          <TabsContent value="partners" className="animate-fade-in space-y-6">
+            {/* Fleet Partners */}
+            <EmployeeFleetPartners companyId={employee.company_id} />
+            
+            {/* Driver Partners - reuse the existing component in view-only mode if no invite permission */}
+            <EmployeeCompanyDrivers 
+              companyId={employee.company_id}
+              canInviteDrivers={employee.can_invite_drivers}
+              canCreateCourses={employee.can_create_courses}
+            />
+          </TabsContent>
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="animate-fade-in">
@@ -752,7 +774,7 @@ export default function CompanyEmployeeDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Employee Info */}
+              {/* Employee Info with Photo Upload */}
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
                 <div className="h-2 bg-gradient-to-r from-accent to-success" />
                 <CardHeader>
@@ -762,17 +784,23 @@ export default function CompanyEmployeeDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent/20 to-success/20 flex items-center justify-center ring-4 ring-accent/20">
-                      <User className="w-10 h-10 text-accent" />
-                    </div>
-                  </div>
-                  <div className="text-center mb-4">
+                  {/* Photo Upload */}
+                  <EmployeePhotoUpload
+                    employeeId={employee.id}
+                    currentPhotoUrl={employee.avatar_url}
+                    employeeName={employee.user_name || "Collaborateur"}
+                    onPhotoUpdated={(url) => {
+                      setEmployee(prev => prev ? { ...prev, avatar_url: url } : null);
+                    }}
+                  />
+
+                  <div className="text-center">
                     <h3 className="font-bold text-lg">{employee.user_name || "Collaborateur"}</h3>
                     <Badge className="mt-2 bg-accent/20 text-accent border-accent/30">
                       {employee.employee_code}
                     </Badge>
                   </div>
+
                   {employee.department && (
                     <div className="p-4 rounded-xl bg-muted/30">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">Service</p>
