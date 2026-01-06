@@ -13,6 +13,7 @@ interface AuthContextType {
   userRole: UserRole;
   userRoles: string[];
   isCompanyEmployee: boolean;
+  isCompanyEmployeeChecked: boolean; // CRITIQUE: indique si la vérification est terminée
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: "driver" | "client", additionalData?: any) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -28,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [isCompanyEmployee, setIsCompanyEmployee] = useState(false);
+  const [isCompanyEmployeeChecked, setIsCompanyEmployeeChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
@@ -44,10 +46,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const isEmployee = !!data;
       setIsCompanyEmployee(isEmployee);
+      setIsCompanyEmployeeChecked(true); // CRITIQUE: marquer comme vérifié
       return isEmployee;
     } catch (error) {
       logger.error("Error checking company employee", { error });
       setIsCompanyEmployee(false);
+      setIsCompanyEmployeeChecked(true); // CRITIQUE: marquer comme vérifié même en cas d'erreur
       return false;
     }
   };
@@ -85,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await checkIsCompanyEmployee(userId);
       } else {
         setIsCompanyEmployee(false);
+        setIsCompanyEmployeeChecked(true); // Non-client = pas besoin de vérification
       }
       
       return primaryRole;
@@ -93,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserRoles([]);
       setUserRole(null);
       setIsCompanyEmployee(false);
+      setIsCompanyEmployeeChecked(true); // Marquer comme vérifié même en erreur
       return null;
     }
   };
@@ -260,6 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserRoles([]);
           setUserRole(null);
           setIsCompanyEmployee(false);
+          setIsCompanyEmployeeChecked(true); // Pas d'utilisateur = pas de vérification nécessaire
         }
       } catch (error) {
         logger.error("Init error", { error });
@@ -436,6 +443,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       setUserRole(null);
       setUserRoles([]);
+      setIsCompanyEmployee(false);
+      setIsCompanyEmployeeChecked(false);
       navigate("/login");
       toast.success("Déconnexion réussie", {
         description: "À bientôt sur SoloCab !",
@@ -449,6 +458,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       setUserRole(null);
       setUserRoles([]);
+      setIsCompanyEmployee(false);
+      setIsCompanyEmployeeChecked(false);
       navigate("/login");
       
       toast.info("Déconnexion effectuée", {
@@ -466,6 +477,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userRole,
         userRoles,
         isCompanyEmployee,
+        isCompanyEmployeeChecked,
         loading,
         signUp,
         signIn,
