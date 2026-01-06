@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
-  Car, 
   Loader2, 
   MapPin, 
-  Euro,
   CheckCircle2,
   Building2,
   User,
   Calendar,
   ArrowRight,
-  AlertCircle,
   Banknote,
   Receipt,
+  AlertTriangle,
+  Clock,
+  Car,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,7 +25,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
 
@@ -37,8 +36,7 @@ interface CompletedCourse {
   amount: number | null;
   driver_name: string | null;
   company_course_id: string;
-  // Driver's declaration
-  driver_declared_paid: boolean; // true = paid_on_spot, false = company_will_pay
+  driver_declared_paid: boolean;
   company_payment_status: string | null;
 }
 
@@ -64,7 +62,6 @@ export function EmployeeCoursePaymentDeclaration({
 
   const fetchUnconfirmedCourses = async () => {
     try {
-      // Récupérer les courses terminées sans confirmation du collaborateur
       const { data: companyCourses, error } = await supabase
         .from("company_courses")
         .select(`
@@ -91,14 +88,11 @@ export function EmployeeCoursePaymentDeclaration({
 
       for (const cc of companyCourses || []) {
         const course = cc.course as any;
-        
-        // Ne prendre que les courses terminées
         if (course.status !== "completed") continue;
 
         let driverName = null;
         let amount = null;
 
-        // Récupérer le nom du chauffeur
         if (course.driver_id) {
           const { data: driver } = await supabase
             .from("drivers")
@@ -116,7 +110,6 @@ export function EmployeeCoursePaymentDeclaration({
           }
         }
 
-        // Récupérer le montant du devis accepté
         const { data: devis } = await supabase
           .from("devis")
           .select("amount")
@@ -126,7 +119,6 @@ export function EmployeeCoursePaymentDeclaration({
         
         amount = devis?.amount || null;
 
-        // Déterminer ce que le chauffeur a déclaré
         const driverDeclaredPaid = course.driver_declared_payment_received === true ||
           course.company_payment_status === "paid_on_spot";
 
@@ -158,7 +150,6 @@ export function EmployeeCoursePaymentDeclaration({
     try {
       const paymentMethod = confirmedPaidByEmployee ? "paid_on_spot" : "company_will_pay";
 
-      // Mettre à jour company_courses avec la confirmation du collaborateur
       const { error: updateError } = await supabase
         .from("company_courses")
         .update({
@@ -171,7 +162,6 @@ export function EmployeeCoursePaymentDeclaration({
 
       if (updateError) throw updateError;
 
-      // Mettre à jour courses.client_payment_confirmation
       await supabase
         .from("courses")
         .update({
@@ -181,9 +171,7 @@ export function EmployeeCoursePaymentDeclaration({
         })
         .eq("id", selectedCourse.id);
 
-      // Si le collaborateur confirme avoir payé
       if (confirmedPaidByEmployee) {
-        // Mettre la facture en "paid"
         await supabase
           .from("factures")
           .update({
@@ -192,7 +180,6 @@ export function EmployeeCoursePaymentDeclaration({
           })
           .eq("course_id", selectedCourse.id);
 
-        // Créer automatiquement une note de frais
         if (selectedCourse.amount) {
           const { error: expenseError } = await supabase
             .from("expense_reports")
@@ -218,7 +205,6 @@ export function EmployeeCoursePaymentDeclaration({
           onExpenseCreated?.();
         }
       } else {
-        // Payé par l'entreprise - facture reste en attente
         toast.success("Confirmation enregistrée", {
           description: "Cette course sera facturée à l'entreprise"
         });
@@ -236,11 +222,9 @@ export function EmployeeCoursePaymentDeclaration({
 
   if (loading) {
     return (
-      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -250,215 +234,292 @@ export function EmployeeCoursePaymentDeclaration({
 
   return (
     <>
-      <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-900/10 shadow-lg overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-            <Car className="w-5 h-5" />
-            Courses à confirmer ({courses.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Confirmez le mode de paiement de ces courses. Une note de frais sera créée automatiquement si vous avez payé personnellement.
-          </p>
+      {/* Alert Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 p-1 shadow-xl">
+        <div className="relative rounded-xl bg-background/95 backdrop-blur-sm p-5">
+          {/* Animated pulse indicator */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+            </span>
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              Action requise
+            </span>
+          </div>
+
+          <div className="flex items-start gap-4 mb-5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shrink-0">
+              <Receipt className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">
+                Confirmez vos paiements
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {courses.length} course{courses.length > 1 ? 's' : ''} en attente de confirmation
+              </p>
+            </div>
+          </div>
+
+          {/* Course Cards */}
           <div className="space-y-3">
             {courses.map((course) => (
               <div
                 key={course.id}
-                className="p-4 rounded-xl bg-white/80 dark:bg-black/30 border border-amber-200/50 hover:border-amber-300 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => setSelectedCourse(course)}
+                className="group relative overflow-hidden rounded-xl border-2 border-border/50 bg-card hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    {/* Driver's declaration badge */}
-                    <div className="mb-2">
-                      {course.driver_declared_paid ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
-                          <Banknote className="w-3 h-3 mr-1" />
-                          Chauffeur: payé sur place
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
-                          <Building2 className="w-3 h-3 mr-1" />
-                          Chauffeur: à facturer entreprise
-                        </Badge>
+                {/* Left colored bar based on driver declaration */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                  course.driver_declared_paid 
+                    ? "bg-gradient-to-b from-emerald-400 to-emerald-600" 
+                    : "bg-gradient-to-b from-blue-400 to-blue-600"
+                }`} />
+                
+                <div className="p-4 pl-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Driver declaration badge - prominent */}
+                      <div className="mb-3">
+                        {course.driver_declared_paid ? (
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                            <Banknote className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                              Chauffeur indique : Payé sur place
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                            <Building2 className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                              Chauffeur indique : Facturer entreprise
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Route */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="font-medium text-sm">{course.pickup_address.split(",")[0]}</span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                          <span className="font-medium text-sm">{course.destination_address.split(",")[0]}</span>
+                        </div>
+                      </div>
+
+                      {/* Meta info */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {format(new Date(course.scheduled_date), "dd MMM yyyy", { locale: fr })}
+                        </div>
+                        {course.driver_name && (
+                          <div className="flex items-center gap-1">
+                            <Car className="w-3.5 h-3.5" />
+                            {course.driver_name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right side - Amount + Action */}
+                    <div className="flex flex-col items-end gap-2">
+                      {course.amount && (
+                        <div className="text-xl font-bold text-foreground">
+                          {course.amount.toFixed(2)} €
+                        </div>
                       )}
+                      <Button 
+                        size="sm"
+                        onClick={() => setSelectedCourse(course)}
+                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-md"
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        Confirmer
+                      </Button>
                     </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(course.scheduled_date), "dd MMM yyyy 'à' HH:mm", { locale: fr })}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                      <span className="truncate">{course.pickup_address.split(",")[0]}</span>
-                      <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                      <span className="truncate">{course.destination_address.split(",")[0]}</span>
-                    </div>
-                    {course.driver_name && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Chauffeur: {course.driver_name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right flex flex-col items-end gap-2">
-                    {course.amount && (
-                      <Badge className="bg-primary/10 text-primary border-primary/20">
-                        {course.amount.toFixed(2)} €
-                      </Badge>
-                    )}
-                    <Button size="sm" variant="outline" className="text-xs">
-                      Confirmer
-                    </Button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Dialog de confirmation */}
+      {/* Confirmation Dialog */}
       <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-primary" />
-              Confirmer le paiement
-            </DialogTitle>
-            <DialogDescription>
-              Vérifiez la déclaration du chauffeur et confirmez.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+          {/* Header with gradient */}
+          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 pb-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 text-primary" />
+                </div>
+                Confirmation de paiement
+              </DialogTitle>
+              <DialogDescription className="mt-2">
+                Vérifiez et confirmez le mode de paiement de cette course
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           {selectedCourse && (
-            <>
-              {/* Course details */}
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                  <Calendar className="w-3 h-3" />
-                  {format(new Date(selectedCourse.scheduled_date), "EEEE dd MMMM yyyy", { locale: fr })}
+            <div className="p-6 pt-2 space-y-5">
+              {/* Course summary card */}
+              <div className="rounded-xl bg-muted/50 border p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="font-medium">{selectedCourse.pickup_address.split(",")[0]}</span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="font-medium">{selectedCourse.destination_address.split(",")[0]}</span>
                 </div>
-                <p className="font-medium">
-                  {selectedCourse.pickup_address.split(",")[0]} → {selectedCourse.destination_address.split(",")[0]}
-                </p>
-                {selectedCourse.driver_name && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Chauffeur: {selectedCourse.driver_name}
-                  </p>
-                )}
-                {selectedCourse.amount && (
-                  <p className="text-xl font-bold text-primary mt-2">
-                    {selectedCourse.amount.toFixed(2)} €
-                  </p>
-                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    {format(new Date(selectedCourse.scheduled_date), "EEEE dd MMMM yyyy", { locale: fr })}
+                  </div>
+                  <div className="text-2xl font-bold text-primary">
+                    {selectedCourse.amount?.toFixed(2)} €
+                  </div>
+                </div>
               </div>
 
-              {/* Driver's declaration */}
+              {/* Driver declaration - highlighted */}
               <div className={`p-4 rounded-xl border-2 ${
                 selectedCourse.driver_declared_paid 
-                  ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
-                  : "bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
+                  ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+                  : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
               }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className={`w-4 h-4 ${selectedCourse.driver_declared_paid ? "text-emerald-600" : "text-blue-600"}`} />
-                  <span className="font-semibold text-sm">
-                    Déclaration du chauffeur
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    selectedCourse.driver_declared_paid 
+                      ? "bg-emerald-500/20" 
+                      : "bg-blue-500/20"
+                  }`}>
+                    {selectedCourse.driver_declared_paid ? (
+                      <Banknote className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-semibold">
+                      {selectedCourse.driver_declared_paid 
+                        ? "Le chauffeur indique : Payé sur place"
+                        : "Le chauffeur indique : À facturer"
+                      }
+                    </div>
+                    <div className={`text-sm ${
+                      selectedCourse.driver_declared_paid 
+                        ? "text-emerald-600 dark:text-emerald-400" 
+                        : "text-blue-600 dark:text-blue-400"
+                    }`}>
+                      {selectedCourse.driver_declared_paid 
+                        ? "Vous avez réglé directement le chauffeur"
+                        : "L'entreprise sera facturée"
+                      }
+                    </div>
+                  </div>
                 </div>
-                <p className={`text-sm ${selectedCourse.driver_declared_paid ? "text-emerald-700 dark:text-emerald-400" : "text-blue-700 dark:text-blue-400"}`}>
-                  {selectedCourse.driver_declared_paid 
-                    ? "Le passager a réglé la course sur place"
-                    : "La course sera facturée à l'entreprise"
-                  }
-                </p>
               </div>
 
-              {/* Confirmation buttons */}
-              <div className="space-y-3 mt-2">
-                <p className="text-sm font-medium text-center">Confirmez-vous cette information ?</p>
-                
+              {/* Confirmation question */}
+              <div className="text-center py-2">
+                <p className="font-semibold text-lg">Cette information est-elle correcte ?</p>
+              </div>
+
+              {/* Action buttons - contextual */}
+              <div className="grid grid-cols-1 gap-3">
                 {selectedCourse.driver_declared_paid ? (
-                  // Driver said paid on spot - employee confirms
-                  <div className="grid grid-cols-1 gap-3">
+                  <>
                     <Button
-                      className="flex items-center justify-center gap-2 h-auto py-4 bg-emerald-600 hover:bg-emerald-700"
+                      size="lg"
+                      className="h-auto py-4 bg-emerald-600 hover:bg-emerald-700 shadow-lg"
                       onClick={() => handleConfirmPayment(true)}
                       disabled={declaring}
                     >
                       {declaring ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <>
-                          <CheckCircle2 className="w-5 h-5" />
+                        <div className="flex items-center gap-3">
+                          <CheckCircle2 className="w-6 h-6" />
                           <div className="text-left">
-                            <span className="block font-semibold">Oui, j'ai payé</span>
-                            <span className="text-xs opacity-80">Créer une note de frais</span>
+                            <div className="font-bold">Oui, j'ai payé le chauffeur</div>
+                            <div className="text-xs opacity-80 font-normal">Une note de frais sera créée automatiquement</div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex items-center justify-center gap-2 h-auto py-4"
+                      size="lg"
+                      className="h-auto py-4 border-2"
                       onClick={() => handleConfirmPayment(false)}
                       disabled={declaring}
                     >
-                      <Building2 className="w-5 h-5" />
-                      <div className="text-left">
-                        <span className="block font-semibold">Non, facturer l'entreprise</span>
-                        <span className="text-xs text-muted-foreground">Corriger la déclaration</span>
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                        <div className="text-left">
+                          <div className="font-medium">Non, facturer l'entreprise</div>
+                          <div className="text-xs text-muted-foreground">Corriger la déclaration du chauffeur</div>
+                        </div>
                       </div>
                     </Button>
-                  </div>
+                  </>
                 ) : (
-                  // Driver said company will pay - employee confirms
-                  <div className="grid grid-cols-1 gap-3">
+                  <>
                     <Button
-                      className="flex items-center justify-center gap-2 h-auto py-4 bg-blue-600 hover:bg-blue-700"
+                      size="lg"
+                      className="h-auto py-4 bg-blue-600 hover:bg-blue-700 shadow-lg"
                       onClick={() => handleConfirmPayment(false)}
                       disabled={declaring}
                     >
                       {declaring ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <>
-                          <Building2 className="w-5 h-5" />
+                        <div className="flex items-center gap-3">
+                          <Building2 className="w-6 h-6" />
                           <div className="text-left">
-                            <span className="block font-semibold">Confirmer: facturer l'entreprise</span>
-                            <span className="text-xs opacity-80">Paiement différé</span>
+                            <div className="font-bold">Confirmer : Facturer l'entreprise</div>
+                            <div className="text-xs opacity-80 font-normal">Paiement différé via compte entreprise</div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex items-center justify-center gap-2 h-auto py-4"
+                      size="lg"
+                      className="h-auto py-4 border-2"
                       onClick={() => handleConfirmPayment(true)}
                       disabled={declaring}
                     >
-                      <User className="w-5 h-5" />
-                      <div className="text-left">
-                        <span className="block font-semibold">J'ai payé personnellement</span>
-                        <span className="text-xs text-muted-foreground">Créer une note de frais</span>
+                      <div className="flex items-center gap-3">
+                        <User className="w-5 h-5 text-emerald-600" />
+                        <div className="text-left">
+                          <div className="font-medium">J'ai payé personnellement</div>
+                          <div className="text-xs text-muted-foreground">Créer une note de frais</div>
+                        </div>
                       </div>
                     </Button>
-                  </div>
+                  </>
                 )}
               </div>
-            </>
-          )}
 
-          <DialogFooter className="mt-4">
-            <Button
-              variant="ghost"
-              onClick={() => setSelectedCourse(null)}
-              disabled={declaring}
-            >
-              Annuler
-            </Button>
-          </DialogFooter>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => setSelectedCourse(null)}
+                disabled={declaring}
+              >
+                Annuler
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
