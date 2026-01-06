@@ -141,20 +141,17 @@ export const EmployeeDocumentsHub = ({
   }, [employeeId, companyId]);
 
   const fetchEmployeeName = async () => {
-    const { data: employee } = await supabase
-      .from("company_employees")
-      .select("user_id")
-      .eq("id", employeeId)
-      .maybeSingle();
-    
-    if (employee?.user_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, phone")
-        .eq("id", employee.user_id)
-        .maybeSingle();
+    try {
+      // Use RPC function to bypass RLS restrictions
+      const { data } = await supabase.rpc('get_employee_profile_for_course', { 
+        p_employee_id: employeeId 
+      });
       
-      setEmployeeName(profile?.full_name || null);
+      if (data && data.length > 0) {
+        setEmployeeName(data[0].full_name || null);
+      }
+    } catch (error) {
+      console.error("[EmployeeDocumentsHub] Error fetching employee name:", error);
     }
   };
 
