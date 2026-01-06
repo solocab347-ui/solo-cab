@@ -407,7 +407,8 @@ export default function CompanyEmployeeDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-3 shadow-xl">
             {/* First row - Main navigation */}
-            <div className="grid grid-cols-3 gap-2 mb-2">
+            {/* For managed employees: 2 columns, for autonomous: 3 columns */}
+            <div className={`grid gap-2 mb-2 ${(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <button
                 onClick={() => setActiveTab("overview")}
                 className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
@@ -450,26 +451,29 @@ export default function CompanyEmployeeDashboard() {
                 )}
               </button>
 
-              <button
-                onClick={() => setActiveTab("partners")}
-                className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
-                  activeTab === "partners"
-                    ? "bg-gradient-to-br from-emerald-500 via-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]"
-                    : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`p-2 rounded-xl transition-all ${
-                    activeTab === "partners" ? "bg-white/20" : "bg-emerald-500/10 group-hover:bg-emerald-500/20"
-                  }`}>
-                    <Handshake className="w-5 h-5" />
+              {/* Partenaire chauffeur - only for autonomous employees */}
+              {(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) && (
+                <button
+                  onClick={() => setActiveTab("partners")}
+                  className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${
+                    activeTab === "partners"
+                      ? "bg-gradient-to-br from-emerald-500 via-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]"
+                      : "bg-muted/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`p-2 rounded-xl transition-all ${
+                      activeTab === "partners" ? "bg-white/20" : "bg-emerald-500/10 group-hover:bg-emerald-500/20"
+                    }`}>
+                      <Handshake className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-semibold tracking-wide text-center leading-tight">Partenaire<br/>chauffeur</span>
                   </div>
-                  <span className="text-xs font-semibold tracking-wide text-center leading-tight">Partenaire<br/>chauffeur</span>
-                </div>
-                {activeTab === "partners" && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
-                )}
-              </button>
+                  {activeTab === "partners" && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Second row - Secondary navigation */}
@@ -545,7 +549,9 @@ export default function CompanyEmployeeDashboard() {
           <TabsList className="hidden">
             <TabsTrigger value="overview">Accueil</TabsTrigger>
             <TabsTrigger value="courses">Courses</TabsTrigger>
-            <TabsTrigger value="partners">Partenaires</TabsTrigger>
+            {(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) && (
+              <TabsTrigger value="partners">Partenaires</TabsTrigger>
+            )}
             <TabsTrigger value="expenses">Notes de frais</TabsTrigger>
             {hasInvoicesTab && <TabsTrigger value="documents">Documents</TabsTrigger>}
             <TabsTrigger value="profile">Profil</TabsTrigger>
@@ -557,7 +563,7 @@ export default function CompanyEmployeeDashboard() {
             <EmployeePaymentConfirmation employeeId={employee.id} />
 
             {/* Stats Cards */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <div className={`grid gap-4 grid-cols-1 ${(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {/* Budget Gauge */}
               <EmployeeBudgetGauge 
                 currentSpent={employee.current_month_spent} 
@@ -583,31 +589,33 @@ export default function CompanyEmployeeDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Permissions */}
-              <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-success/10 via-success/5 to-transparent shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-success/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                <CardContent className="pt-6 relative">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Mes permissions</p>
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        <Badge variant={employee.can_create_courses ? "default" : "secondary"} className={employee.can_create_courses ? "bg-success/20 text-success border-success/30" : ""}>
-                          {employee.can_create_courses ? "✓" : "✗"} Réserver
-                        </Badge>
-                        <Badge variant={employee.can_view_invoices ? "default" : "secondary"} className={employee.can_view_invoices ? "bg-primary/20 text-primary border-primary/30" : ""}>
-                          {employee.can_view_invoices ? "✓" : "✗"} Factures
-                        </Badge>
-                        <Badge variant={employee.can_invite_drivers ? "default" : "secondary"} className={employee.can_invite_drivers ? "bg-accent/20 text-accent border-accent/30" : ""}>
-                          {employee.can_invite_drivers ? "✓" : "✗"} Chauffeurs
-                        </Badge>
+              {/* Permissions - Only show for autonomous employees */}
+              {(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) && (
+                <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-success/10 via-success/5 to-transparent shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-success/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                  <CardContent className="pt-6 relative">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground font-medium">Mes permissions</p>
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {employee.can_create_courses && (
+                            <Badge className="bg-success/20 text-success border-success/30">✓ Réserver</Badge>
+                          )}
+                          {employee.can_view_invoices && (
+                            <Badge className="bg-primary/20 text-primary border-primary/30">✓ Factures</Badge>
+                          )}
+                          {employee.can_invite_drivers && (
+                            <Badge className="bg-accent/20 text-accent border-accent/30">✓ Chauffeurs</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-success/20 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-success" />
                       </div>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-success/20 flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-success" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Quick Actions */}
@@ -738,14 +746,16 @@ export default function CompanyEmployeeDashboard() {
             />
           </TabsContent>
 
-          {/* Partners Tab */}
-          <TabsContent value="partners" className="animate-fade-in">
-            <EmployeePartnersHub 
-              companyId={employee.company_id}
-              canInviteDrivers={employee.can_invite_drivers}
-              canCreateCourses={employee.can_create_courses}
-            />
-          </TabsContent>
+          {/* Partners Tab - Only for autonomous employees */}
+          {(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) && (
+            <TabsContent value="partners" className="animate-fade-in">
+              <EmployeePartnersHub 
+                companyId={employee.company_id}
+                canInviteDrivers={employee.can_invite_drivers}
+                canCreateCourses={employee.can_create_courses}
+              />
+            </TabsContent>
+          )}
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="animate-fade-in">
@@ -830,20 +840,23 @@ export default function CompanyEmployeeDashboard() {
                       <p className="font-medium mt-1">{employee.job_title}</p>
                     </div>
                   )}
-                  <div className="p-4 rounded-xl bg-muted/30">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Permissions</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className={employee.can_create_courses ? "bg-success/20 text-success border-success/30" : "bg-muted text-muted-foreground"}>
-                        {employee.can_create_courses ? "✓" : "✗"} Réservations
-                      </Badge>
-                      <Badge className={employee.can_view_invoices ? "bg-primary/20 text-primary border-primary/30" : "bg-muted text-muted-foreground"}>
-                        {employee.can_view_invoices ? "✓" : "✗"} Factures
-                      </Badge>
-                      <Badge className={employee.can_invite_drivers ? "bg-accent/20 text-accent border-accent/30" : "bg-muted text-muted-foreground"}>
-                        {employee.can_invite_drivers ? "✓" : "✗"} Inviter chauffeurs
-                      </Badge>
+                  {/* Permissions - Only show for autonomous employees */}
+                  {(employee.can_create_courses || employee.can_view_invoices || employee.can_invite_drivers) && (
+                    <div className="p-4 rounded-xl bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Permissions</p>
+                      <div className="flex flex-wrap gap-2">
+                        {employee.can_create_courses && (
+                          <Badge className="bg-success/20 text-success border-success/30">✓ Réservations</Badge>
+                        )}
+                        {employee.can_view_invoices && (
+                          <Badge className="bg-primary/20 text-primary border-primary/30">✓ Factures</Badge>
+                        )}
+                        {employee.can_invite_drivers && (
+                          <Badge className="bg-accent/20 text-accent border-accent/30">✓ Inviter chauffeurs</Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
