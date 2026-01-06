@@ -1077,54 +1077,55 @@ export function EmployeeCoursesList({
 
   return (
     <div className="space-y-4">
-      {/* Header moderne */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-card via-card to-card/80 border border-border/50 shadow-lg">
+      {/* Header moderne - responsive */}
+      <div className="flex flex-col gap-3 p-4 rounded-2xl bg-gradient-to-r from-card via-card to-card/80 border border-border/50 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-            <Car className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
+            <Car className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text truncate">
               Mes courses
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Gérez et suivez vos déplacements professionnels
+            <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
+              Gérez et suivez vos déplacements
             </p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handleRefresh} 
-            disabled={refreshing}
-            className="rounded-xl border-border/50 hover:bg-muted/50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button 
-            onClick={onCreateCourse} 
-            className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/25"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle course
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+              className="rounded-xl border-border/50 hover:bg-muted/50 w-9 h-9 sm:w-10 sm:h-10"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button 
+              onClick={onCreateCourse} 
+              size="sm"
+              className="rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/25 h-9 sm:h-10 px-3 sm:px-4"
+            >
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nouvelle course</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Status Pills modernes */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Status Pills modernes - Grille 3x2 en mobile, ligne en desktop */}
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
         <button
           onClick={() => setActiveTab("pending")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
             activeTab === "pending"
               ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <FileText className="w-4 h-4" />
-          Devis
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Devis</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
             activeTab === "pending" ? "bg-white/20" : "bg-amber-500/20 text-amber-500"
           }`}>
             {allPendingQuotes.length}
@@ -1133,15 +1134,15 @@ export function EmployeeCoursesList({
 
         <button
           onClick={() => setActiveTab("awaiting")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
             activeTab === "awaiting"
               ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <Timer className="w-4 h-4" />
-          En attente
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+          <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Attente</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
             activeTab === "awaiting" ? "bg-white/20" : "bg-orange-500/20 text-orange-500"
           }`}>
             {awaitingDriver.length}
@@ -1150,15 +1151,15 @@ export function EmployeeCoursesList({
 
         <button
           onClick={() => setActiveTab("confirmed")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
             activeTab === "confirmed"
               ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <CheckCircle className="w-4 h-4" />
-          Confirmées
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+          <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Confirmées</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
             activeTab === "confirmed" ? "bg-white/20" : "bg-green-500/20 text-green-500"
           }`}>
             {confirmedCourses.length}
@@ -1167,15 +1168,15 @@ export function EmployeeCoursesList({
 
         <button
           onClick={() => setActiveTab("completed")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all ${
             activeTab === "completed"
               ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <Car className="w-4 h-4" />
-          Terminées
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+          <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Terminées</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
             activeTab === "completed" ? "bg-white/20" : "bg-purple-500/20 text-purple-500"
           }`}>
             {completedCourses.length}
@@ -1184,15 +1185,15 @@ export function EmployeeCoursesList({
 
         <button
           onClick={() => setActiveTab("cancelled")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all col-span-2 sm:col-span-1 ${
             activeTab === "cancelled"
               ? "bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25"
               : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
-          <XCircle className="w-4 h-4" />
-          Annulées
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+          <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Annulées</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold ${
             activeTab === "cancelled" ? "bg-white/20" : "bg-red-500/20 text-red-500"
           }`}>
             {cancelledCourses.length}
