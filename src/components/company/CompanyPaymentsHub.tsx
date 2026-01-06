@@ -146,8 +146,11 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
 
   // Fetch ALL data in one combined query for reliability
   const { data: combinedData, isLoading: loadingCombinedData } = useQuery({
-    queryKey: ["company-payments-combined-data", companyId],
+    queryKey: ["company-payments-combined-data-v2", companyId],
+    staleTime: 0, // Always refetch
     queryFn: async () => {
+      console.log("Fetching combined data for company:", companyId);
+      
       // Step 1: Get company_courses to find all courses belonging to this company
       const { data: companyCoursesLinks, error: linksError } = await supabase
         .from("company_courses")
@@ -158,6 +161,8 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         console.error("Error fetching company_courses:", linksError);
         throw linksError;
       }
+      
+      console.log("Company courses links:", companyCoursesLinks);
       
       const courseIds = companyCoursesLinks?.map(cc => cc.course_id) || [];
       
@@ -182,6 +187,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         
         if (!error && data) {
           coursesData = data;
+          console.log("Courses data fetched:", coursesData);
         } else {
           console.error("Error fetching courses:", error);
         }
@@ -208,16 +214,26 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         throw invoicesError;
       }
       
+      console.log("Invoices fetched:", invoices);
+      
       // Step 4: Create course map and merge with invoices
       const courseMap: Record<string, any> = {};
       coursesData.forEach((course: any) => {
         courseMap[course.id] = course;
       });
       
-      const invoicesWithCourses = (invoices || []).map((inv: any) => ({
-        ...inv,
-        courses: courseMap[inv.course_id] || null
-      }));
+      console.log("Course map:", courseMap);
+      
+      const invoicesWithCourses = (invoices || []).map((inv: any) => {
+        const courseData = courseMap[inv.course_id] || null;
+        console.log(`Invoice ${inv.id} course_id: ${inv.course_id}, has course data:`, !!courseData);
+        return {
+          ...inv,
+          courses: courseData
+        };
+      });
+      
+      console.log("Invoices with courses:", invoicesWithCourses);
       
       return {
         courses: coursesData,
