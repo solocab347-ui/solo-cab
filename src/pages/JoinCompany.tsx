@@ -117,6 +117,7 @@ export default function JoinCompany() {
           company_id: invitation.company_id,
           user_id: user.id,
           role: "admin",
+          admin_type: "admin",
           accepted_at: new Date().toISOString(),
         });
 
@@ -147,6 +148,19 @@ export default function JoinCompany() {
             user_id: user.id,
             role: "company",
           });
+      }
+
+      // Envoyer l'email de bienvenue administrateur
+      try {
+        await supabase.functions.invoke("send-company-admin-welcome", {
+          body: { 
+            company_id: invitation.company_id,
+            admin_user_id: user.id
+          },
+        });
+        console.log("Email de bienvenue admin envoyé");
+      } catch (emailError) {
+        console.error("Erreur envoi email:", emailError);
       }
 
       setSuccess(true);

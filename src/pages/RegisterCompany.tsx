@@ -138,12 +138,12 @@ export default function RegisterCompany() {
 
       if (roleError) throw roleError;
 
-      // 5. Envoyer l'email de confirmation
+      // 5. Envoyer l'email de bienvenue administrateur
       try {
-        await supabase.functions.invoke("send-company-registration-email", {
+        await supabase.functions.invoke("send-company-admin-welcome", {
           body: { company_id: companyData.id },
         });
-        console.log("Email de confirmation envoyé");
+        console.log("Email de bienvenue admin envoyé");
       } catch (emailError) {
         console.error("Erreur envoi email:", emailError);
         // Ne pas bloquer l'inscription si l'email échoue

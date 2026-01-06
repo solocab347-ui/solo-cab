@@ -161,3 +161,6 @@ verify_jwt = false
 
 [functions.send-company-payment-reminder]
 verify_jwt = true
+
+[functions.send-company-admin-welcome]
+verify_jwt = false
