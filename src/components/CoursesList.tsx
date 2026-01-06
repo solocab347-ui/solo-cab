@@ -222,8 +222,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         
         setSharedCoursesData(sharedData || []);
 
-        // Fetch company courses data avec logo et infos collaborateur (enrichi avec toutes les infos de facturation)
-        // Utilisation d'une jointure directe pour récupérer l'employé et son profil
+        // Fetch company courses data avec logo et infos entreprise
         const { data: companyData } = await supabase
           .from("company_courses")
           .select(`
@@ -241,14 +240,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               billing_address,
               contact_email,
               contact_phone
-            ),
-            employee:company_employees!company_courses_employee_id_fkey(
-              id,
-              user_id,
-              profile:profiles!company_employees_user_id_fkey(
-                full_name,
-                phone
-              )
             )
           `)
           .in("course_id", courseIds);
@@ -261,17 +252,44 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             guest_employee_name,
             guest_employee_phone,
             is_guest_employee,
-            employee_id,
-            employee:company_employees(
-              id,
-              user_id,
-              profile:profiles!company_employees_user_id_fkey(
-                full_name,
-                phone
-              )
-            )
+            employee_id
           `)
           .in("final_course_id", courseIds);
+        
+        // Collecter tous les employee_ids pour récupérer leurs profils
+        const employeeIdsFromRequests = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
+        const employeeIdsFromCompanyCourses = companyData?.filter(cc => cc.employee_id).map(cc => cc.employee_id) || [];
+        const allEmployeeIds = [...new Set([...employeeIdsFromRequests, ...employeeIdsFromCompanyCourses])];
+        
+        // Fetch employee profiles via company_employees -> profiles
+        let employeeProfilesMap: Record<string, { name: string; phone: string | null }> = {};
+        
+        if (allEmployeeIds.length > 0) {
+          const { data: employees } = await supabase
+            .from("company_employees")
+            .select("id, user_id")
+            .in("id", allEmployeeIds);
+          
+          if (employees && employees.length > 0) {
+            const userIds = employees.map(e => e.user_id);
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, full_name, phone")
+              .in("id", userIds);
+            
+            if (profiles) {
+              employees.forEach(emp => {
+                const profile = profiles.find(p => p.id === emp.user_id);
+                if (profile) {
+                  employeeProfilesMap[emp.id] = { 
+                    name: profile.full_name || '', 
+                    phone: profile.phone || null 
+                  };
+                }
+              });
+            }
+          }
+        }
         
         // Also fetch profiles for courses created_by_user_id (for inline employee course creation - fallback)
         const createdByUserIds = coursesData
@@ -294,7 +312,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           }
         }
         
-        // Merge company data with employee info - utiliser les jointures directes
+        // Merge company data with employee info
         const enrichedCompanyData = companyData?.map(cc => {
           const request = requestsData?.find(r => r.final_course_id === cc.course_id);
           const course = coursesData?.find(c => c.id === cc.course_id);
@@ -306,28 +324,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             if (request.is_guest_employee) {
               employeeName = request.guest_employee_name;
               employeePhone = request.guest_employee_phone;
-            } else if (request.employee) {
-              // profile peut être un tableau ou un objet selon la relation Supabase
-              const profile = Array.isArray(request.employee.profile) 
-                ? request.employee.profile[0] 
-                : request.employee.profile;
-              if (profile) {
-                employeeName = profile.full_name || null;
-                employeePhone = profile.phone || null;
-              }
+            } else if (request.employee_id && employeeProfilesMap[request.employee_id]) {
+              employeeName = employeeProfilesMap[request.employee_id].name;
+              employeePhone = employeeProfilesMap[request.employee_id].phone;
             }
           }
           
-          // Priority 2: from company_courses.employee jointure directe (inline creation)
-          if (!employeeName && cc.employee) {
-            // profile peut être un tableau ou un objet selon la relation Supabase
-            const profile = Array.isArray(cc.employee.profile) 
-              ? cc.employee.profile[0] 
-              : cc.employee.profile;
-            if (profile) {
-              employeeName = profile.full_name || null;
-              employeePhone = profile.phone || null;
-            }
+          // Priority 2: from company_courses.employee_id (inline creation)
+          if (!employeeName && cc.employee_id && employeeProfilesMap[cc.employee_id]) {
+            employeeName = employeeProfilesMap[cc.employee_id].name;
+            employeePhone = employeeProfilesMap[cc.employee_id].phone;
           }
           
           // Priority 3: from courses.created_by_user_id (fallback)
@@ -2510,23 +2516,29 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               const shareLockStatus = isCourseShareLocked(course.id);
               const isPendingShare = shareLockStatus === 'pending';
               const isActivelySharingOrHandled = shareLockStatus === 'active' || handledByPartner;
+              const courseTypeInfo = getCourseTypeInfo(course);
+              const companyCourseInfo = getCompanyCourseInfo(course.id);
               
               return (
               <Card key={course.id} className={cn(
-                "p-4 backdrop-blur-sm border bg-card/95 hover:shadow-lg transition-all",
-                isPendingShare ? "border-amber-500/30" : "border-primary/10"
+                "relative overflow-hidden p-4 backdrop-blur-sm border bg-card/95 hover:shadow-lg transition-all",
+                isPendingShare ? "border-amber-500/30" : courseTypeInfo.borderColor
               )}>
-                <div className="space-y-3">
+                {/* Indicateur de type de course - barre latérale colorée */}
+                <CourseTypeIndicator type={courseTypeInfo.type} className="absolute left-0 top-0 bottom-0 w-1" />
+                
+                <div className="space-y-3 pl-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-foreground">
-                            {getClientDisplayName(course)}
-                            {course.is_guest_booking && (
+                            {companyCourseInfo?.employeeName || getClientDisplayName(course)}
+                            {course.is_guest_booking && !companyCourseInfo && (
                               <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
                             )}
                           </h3>
                           {getStatusBadge(course.status)}
+                          <CourseTypeBadge typeInfo={courseTypeInfo} size="sm" />
                           <PaymentMethodBadge paymentMethod={course.payment_method_requested} size="sm" />
                           <CourseShareStatusIndicator 
                             courseId={course.id} 
@@ -2539,12 +2551,12 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
                       {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
-                      {getCompanyCourseInfo(course.id) && (
+                      {companyCourseInfo && (
                         <CompanyCourseIndicator 
-                          companyName={getCompanyCourseInfo(course.id)!.companyName}
-                          companyLogo={getCompanyCourseInfo(course.id)!.logoUrl}
-                          employeeName={getCompanyCourseInfo(course.id)!.employeeName}
-                          employeePhone={getCompanyCourseInfo(course.id)!.employeePhone}
+                          companyName={companyCourseInfo.companyName}
+                          companyLogo={companyCourseInfo.logoUrl}
+                          employeeName={companyCourseInfo.employeeName}
+                          employeePhone={companyCourseInfo.employeePhone}
                         />
                       )}
                     </div>
