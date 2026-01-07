@@ -118,9 +118,18 @@ export function AdvancedLocationFilter({
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   
+  // City autocomplete state
+  const [citySuggestions, setCitySuggestions] = useState<LocationSuggestion[]>([]);
+  const [loadingCitySuggestions, setLoadingCitySuggestions] = useState(false);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [cityDropdownPosition, setCityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
   const inputRef = useRef<HTMLInputElement>(null);
+  const cityInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cityContainerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  const cityDebounceRef = useRef<NodeJS.Timeout>();
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -137,7 +146,7 @@ export function AdvancedLocationFilter({
     fetchToken();
   }, []);
 
-  // Update dropdown position
+  // Update dropdown position for address
   useEffect(() => {
     if (inputRef.current && showSuggestions) {
       const rect = inputRef.current.getBoundingClientRect();
@@ -149,11 +158,26 @@ export function AdvancedLocationFilter({
     }
   }, [showSuggestions, values.locationAddress]);
 
+  // Update dropdown position for city
+  useEffect(() => {
+    if (cityInputRef.current && showCitySuggestions) {
+      const rect = cityInputRef.current.getBoundingClientRect();
+      setCityDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [showCitySuggestions, values.city]);
+
   // Close suggestions on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (cityContainerRef.current && !cityContainerRef.current.contains(e.target as Node)) {
+        setShowCitySuggestions(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -183,6 +207,30 @@ export function AdvancedLocationFilter({
     }
   };
 
+  // Fetch city suggestions (only places/localities)
+  const fetchCitySuggestions = async (query: string) => {
+    if (!mapboxToken || query.length < 2) {
+      setCitySuggestions([]);
+      return;
+    }
+
+    setLoadingCitySuggestions(true);
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=place,locality&language=fr&limit=5`
+      );
+      const data = await response.json();
+      if (data.features) {
+        setCitySuggestions(data.features);
+        setShowCitySuggestions(true);
+      }
+    } catch (error) {
+      console.error('Error fetching city suggestions:', error);
+    } finally {
+      setLoadingCitySuggestions(false);
+    }
+  };
+
   const handleLocationInputChange = (value: string) => {
     onChange({ ...values, locationAddress: value, locationCoords: null });
     
@@ -195,6 +243,18 @@ export function AdvancedLocationFilter({
     }, 300);
   };
 
+  const handleCityInputChange = (value: string) => {
+    onChange({ ...values, city: value });
+    
+    if (cityDebounceRef.current) {
+      clearTimeout(cityDebounceRef.current);
+    }
+    
+    cityDebounceRef.current = setTimeout(() => {
+      fetchCitySuggestions(value);
+    }, 300);
+  };
+
   const selectSuggestion = (suggestion: LocationSuggestion) => {
     onChange({
       ...values,
@@ -204,8 +264,21 @@ export function AdvancedLocationFilter({
     setShowSuggestions(false);
   };
 
+  const selectCitySuggestion = (suggestion: LocationSuggestion) => {
+    // Extract just the city name from the suggestion text
+    onChange({
+      ...values,
+      city: suggestion.text,
+    });
+    setShowCitySuggestions(false);
+  };
+
   const clearLocation = () => {
     onChange({ ...values, locationAddress: "", locationCoords: null });
+  };
+
+  const clearCity = () => {
+    onChange({ ...values, city: "" });
   };
 
   const hasActiveFilters = 
@@ -256,17 +329,57 @@ export function AdvancedLocationFilter({
           </p>
           
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* City input */}
-            <div className="space-y-2">
+            {/* City input with autocomplete */}
+            <div className="space-y-2" ref={cityContainerRef}>
               <Label className="flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4" />
                 Ville
               </Label>
-              <Input
-                placeholder="Paris, Lyon, Marseille..."
-                value={values.city}
-                onChange={(e) => onChange({ ...values, city: e.target.value })}
-              />
+              <div className="relative">
+                <Input
+                  ref={cityInputRef}
+                  placeholder="Tapez pour rechercher une ville..."
+                  value={values.city}
+                  onChange={(e) => handleCityInputChange(e.target.value)}
+                  onFocus={() => citySuggestions.length > 0 && setShowCitySuggestions(true)}
+                  className="pr-10"
+                />
+                {loadingCitySuggestions && (
+                  <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+                {values.city && (
+                  <button
+                    onClick={clearCity}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              
+              {/* City suggestions dropdown */}
+              {showCitySuggestions && citySuggestions.length > 0 && createPortal(
+                <div
+                  className="fixed bg-popover border rounded-md shadow-lg z-[9999] max-h-60 overflow-auto"
+                  style={{
+                    top: cityDropdownPosition.top,
+                    left: cityDropdownPosition.left,
+                    width: cityDropdownPosition.width,
+                  }}
+                >
+                  {citySuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2"
+                      onClick={() => selectCitySuggestion(suggestion)}
+                    >
+                      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{suggestion.place_name}</span>
+                    </button>
+                  ))}
+                </div>,
+                document.body
+              )}
             </div>
 
             {/* Department select */}
