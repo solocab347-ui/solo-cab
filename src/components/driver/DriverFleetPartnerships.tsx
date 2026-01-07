@@ -28,7 +28,8 @@ import {
   AlertTriangle,
   Car,
   Edit,
-  Ban
+  Ban,
+  Eye
 } from "lucide-react";
 import { PartnershipModificationDialog } from "@/components/fleet-manager/PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
@@ -37,6 +38,7 @@ import { PartnershipSignatureConfirmation } from "@/components/shared/Partnershi
 import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
 import { FleetDriverBlockManager, useFleetDriverBlocks } from "@/components/shared/FleetDriverBlockManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
+import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DriverFleetPartnershipsProps {
@@ -84,9 +86,13 @@ interface Partnership {
 export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [fleetManagers, setFleetManagers] = useState<FleetManager[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
+  
+  // View fleet profile state
+  const [viewFleetProfileId, setViewFleetProfileId] = useState<string | null>(null);
   const [selectedFleet, setSelectedFleet] = useState<FleetManager | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [proposalMessage, setProposalMessage] = useState("");
@@ -390,15 +396,58 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
     }
   };
 
+  // Filter fleets based on advanced filters
   const filteredFleets = fleetManagers.filter(f => {
-    if (!searchTerm) return true;
-    const name = f.company_name?.toLowerCase() || "";
-    const contact = f.contact_name?.toLowerCase() || "";
-    const description = f.description?.toLowerCase() || "";
-    return name.includes(searchTerm.toLowerCase()) || 
-           contact.includes(searchTerm.toLowerCase()) ||
-           description.includes(searchTerm.toLowerCase());
+    const searchTerm = filterValues.searchText.toLowerCase();
+    
+    // Text search
+    if (searchTerm) {
+      const name = f.company_name?.toLowerCase() || "";
+      const contact = f.contact_name?.toLowerCase() || "";
+      const description = f.description?.toLowerCase() || "";
+      const address = f.address?.toLowerCase() || "";
+      if (!name.includes(searchTerm) && !contact.includes(searchTerm) && 
+          !description.includes(searchTerm) && !address.includes(searchTerm)) {
+        return false;
+      }
+    }
+    
+    // City filter
+    if (filterValues.city) {
+      const address = f.address?.toLowerCase() || "";
+      if (!address.includes(filterValues.city.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    // Department filter
+    if (filterValues.department) {
+      const address = f.address?.toLowerCase() || "";
+      if (!address.includes(filterValues.department.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    // Region filter
+    if (filterValues.region) {
+      const address = f.address?.toLowerCase() || "";
+      if (!address.includes(filterValues.region.toLowerCase())) {
+        return false;
+      }
+    }
+    
+    return true;
   });
+
+  const handleSearchFleets = () => {
+    setSearching(true);
+    // Filtrage client-side, pas de requête serveur
+    setTimeout(() => setSearching(false), 300);
+  };
+
+  const handleResetFilters = () => {
+    setFilterValues(getDefaultFilterValues());
+  };
 
   // Filter out fleets with existing active or pending partnerships only
   // Rejected and terminated partnerships should NOT block showing the fleet manager in search
@@ -463,15 +512,15 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
 
             {/* Explore Tab */}
             <TabsContent value="explore" className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un gestionnaire de flotte..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <AdvancedLocationFilter
+                values={filterValues}
+                onChange={setFilterValues}
+                onSearch={handleSearchFleets}
+                onReset={handleResetFilters}
+                searching={searching}
+                showRatingFilter={false}
+                searchPlaceholder="Rechercher un gestionnaire par nom, entreprise..."
+              />
 
               {availableFleets.length === 0 ? (
                 <div className="text-center py-8">
@@ -525,13 +574,30 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                             {fleet.driver_profile_description}
                           </p>
                         )}
-                        <Button 
-                          className="w-full mt-3 sm:mt-4 gap-1.5 h-9 sm:h-10 text-xs sm:text-sm"
-                          onClick={() => handleProposePartnership(fleet)}
-                        >
-                          <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          Demander à rejoindre
-                        </Button>
+                        {fleet.address && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {fleet.address}
+                          </p>
+                        )}
+                        <div className="flex gap-2 mt-3 sm:mt-4">
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 gap-1.5 h-9 sm:h-10 text-xs sm:text-sm"
+                            onClick={() => setViewFleetProfileId(fleet.id)}
+                          >
+                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            Voir profil
+                          </Button>
+                          <Button 
+                            className="flex-1 gap-1.5 h-9 sm:h-10 text-xs sm:text-sm"
+                            onClick={() => handleProposePartnership(fleet)}
+                          >
+                            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            Rejoindre
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -1010,6 +1076,25 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
         partnerType="company"
         onReject={handleRejectPartnership}
         isLoading={rejectLoading}
+      />
+
+      {/* View Fleet Profile from Search */}
+      <PartnerPublicProfilePreview
+        open={!!viewFleetProfileId}
+        onOpenChange={(open) => {
+          if (!open) setViewFleetProfileId(null);
+        }}
+        partnerId={viewFleetProfileId || ''}
+        partnerType="fleet"
+        partnerName={fleetManagers.find(f => f.id === viewFleetProfileId)?.company_name || 'Gestionnaire de flotte'}
+        viewOnly={true}
+        onContinue={() => {
+          const fleet = fleetManagers.find(f => f.id === viewFleetProfileId);
+          if (fleet) {
+            setViewFleetProfileId(null);
+            handleProposePartnership(fleet);
+          }
+        }}
       />
     </div>
   );
