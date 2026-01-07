@@ -864,7 +864,7 @@ Cordialement`;
                             ? driver.company_name
                             : 'Chauffeur VTC'}
                         </h3>
-                        {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && driver.rating >= 4.5 && (
+                        {(driver as any).show_rating_partners !== false && driver.rating && driver.rating >= 4.5 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                             <Star className="h-3 w-3 fill-current mr-1" />
                             {driver.rating.toFixed(1)}
@@ -927,7 +927,7 @@ Cordialement`;
                       })()}
                       
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                        {((driver as any).show_rating_public !== false || (driver as any).show_rating_partners !== false) && driver.rating && (
+                        {(driver as any).show_rating_partners !== false && driver.rating && driver.rating > 0 && (
                           <span className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
                             {driver.rating.toFixed(1)}
@@ -1039,7 +1039,7 @@ Cordialement`;
                         </p>
                       )}
                       <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-4 mt-2 flex-wrap">
-                        {((selectedDriver as any).show_rating_public !== false || (selectedDriver as any).show_rating_partners !== false) && selectedDriver.rating && (
+                        {(selectedDriver as any).show_rating_partners !== false && selectedDriver.rating && selectedDriver.rating > 0 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 text-xs">
                             <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current mr-1" />
                             {selectedDriver.rating.toFixed(1)}/5
