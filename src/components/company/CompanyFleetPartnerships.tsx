@@ -651,17 +651,14 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                     </Button>
                     <Button
                       className="flex-1"
-                      onClick={() => acceptProposal.mutate(agreement.id)}
+                      onClick={() => {
+                        setSelectedAgreement(agreement);
+                        setShowSignatureDialog(true);
+                      }}
                       disabled={acceptProposal.isPending}
                     >
-                      {acceptProposal.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Accepter
-                        </>
-                      )}
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Accepter
                     </Button>
                   </div>
                 </CardContent>
@@ -994,6 +991,24 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
         partnerName={selectedAgreement?.fleet_manager?.company_name || "Gestionnaire"}
         partnerType="driver"
         isLoading={blockFleet.isPending}
+      />
+
+      {/* Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureDialog}
+        onOpenChange={setShowSignatureDialog}
+        partnerName={selectedAgreement?.fleet_manager?.company_name || ""}
+        paymentSchedule={selectedAgreement?.payment_frequency}
+        onConfirmSign={() => {
+          if (selectedAgreement) {
+            acceptProposal.mutate(selectedAgreement.id);
+          }
+          setShowSignatureDialog(false);
+        }}
+        signing={acceptProposal.isPending}
+        partnershipType="company_fleet"
+        mode="accept"
+        signerRole="company"
       />
     </div>
   );
