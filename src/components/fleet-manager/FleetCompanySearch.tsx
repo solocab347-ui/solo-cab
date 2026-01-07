@@ -58,6 +58,40 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
+  // Helper function to normalize text for searching
+  const normalizeText = (text: string | null | undefined): string => {
+    if (!text) return '';
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .trim();
+  };
+
+  // Department to region mapping for France
+  const departmentToRegion: Record<string, string> = {
+    'paris': 'ile-de-france',
+    'seine-et-marne': 'ile-de-france',
+    'yvelines': 'ile-de-france',
+    'essonne': 'ile-de-france',
+    'hauts-de-seine': 'ile-de-france',
+    'seine-saint-denis': 'ile-de-france',
+    'val-de-marne': 'ile-de-france',
+    'val-d\'oise': 'ile-de-france',
+    'bouches-du-rhone': 'provence-alpes-cote d\'azur',
+    'rhone': 'auvergne-rhone-alpes',
+    'haute-garonne': 'occitanie',
+    'gironde': 'nouvelle-aquitaine',
+    'nord': 'hauts-de-france',
+    'alpes-maritimes': 'provence-alpes-cote d\'azur',
+    'loire-atlantique': 'pays de la loire',
+    'bas-rhin': 'grand est',
+    'herault': 'occitanie',
+    'ille-et-vilaine': 'bretagne',
+    'seine-maritime': 'normandie',
+    'finistere': 'bretagne',
+  };
+
   // Fetch companies visible to fleet managers
   const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ["public-companies-for-fleets", filterValues],
@@ -69,56 +103,77 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
         .eq("accepting_proposals", true)
         .in("status", ["validated", "active"])
         .order('company_name')
-        .limit(50);
+        .limit(100);
 
       const { data, error } = await query;
       if (error) throw error;
 
       let result = data || [];
 
-      // Filter by search term
+      // Filter by search term (name, contact, address)
       if (filterValues.searchText) {
-        const searchLower = filterValues.searchText.toLowerCase();
+        const searchNorm = normalizeText(filterValues.searchText);
         result = result.filter((c: any) =>
-          c.company_name?.toLowerCase().includes(searchLower) ||
-          c.contact_name?.toLowerCase().includes(searchLower) ||
-          c.address?.toLowerCase().includes(searchLower)
+          normalizeText(c.company_name).includes(searchNorm) ||
+          normalizeText(c.contact_name).includes(searchNorm) ||
+          normalizeText(c.address).includes(searchNorm) ||
+          normalizeText(c.contact_email).includes(searchNorm)
         );
       }
 
-      // Filter by city
+      // Filter by city (from autocomplete)
       if (filterValues.city) {
-        const cityLower = filterValues.city.toLowerCase();
-        result = result.filter((c: any) => 
-          c.address?.toLowerCase().includes(cityLower)
-        );
+        const cityNorm = normalizeText(filterValues.city);
+        result = result.filter((c: any) => {
+          const addressNorm = normalizeText(c.address);
+          // Check if address contains the city name
+          return addressNorm.includes(cityNorm);
+        });
       }
 
       // Filter by department
       if (filterValues.department) {
-        result = result.filter((c: any) => 
-          c.address?.toLowerCase().includes(filterValues.department.toLowerCase()) ||
-          c.department?.toLowerCase().includes(filterValues.department.toLowerCase())
-        );
+        const deptNorm = normalizeText(filterValues.department);
+        result = result.filter((c: any) => {
+          const addressNorm = normalizeText(c.address);
+          const companyDeptNorm = normalizeText(c.department);
+          // Check address or department field
+          return addressNorm.includes(deptNorm) || companyDeptNorm.includes(deptNorm);
+        });
       }
 
       // Filter by region
       if (filterValues.region) {
-        const regionLower = filterValues.region.toLowerCase();
-        result = result.filter((c: any) => 
-          c.address?.toLowerCase().includes(regionLower)
-        );
+        const regionNorm = normalizeText(filterValues.region);
+        result = result.filter((c: any) => {
+          const addressNorm = normalizeText(c.address);
+          const companyDeptNorm = normalizeText(c.department);
+          
+          // Direct match in address
+          if (addressNorm.includes(regionNorm)) return true;
+          
+          // Check if company's department belongs to the selected region
+          for (const [dept, reg] of Object.entries(departmentToRegion)) {
+            if ((addressNorm.includes(dept) || companyDeptNorm.includes(dept)) && 
+                normalizeText(reg).includes(regionNorm)) {
+              return true;
+            }
+          }
+          return false;
+        });
       }
 
-      // Filter by radius (if coordinates are set)
-      if (filterValues.locationCoords) {
-        const { lat, lng } = filterValues.locationCoords;
-        const radiusKm = filterValues.radiusKm;
+      // Filter by radius (if coordinates are set from address autocomplete)
+      if (filterValues.locationCoords && filterValues.locationAddress) {
+        // For now, use address text matching since companies don't have coordinates
+        const locationNorm = normalizeText(filterValues.locationAddress);
+        // Extract city/area from the full address (first part before comma usually)
+        const locationParts = locationNorm.split(',').map(p => p.trim());
         
         result = result.filter((c: any) => {
-          // Companies need to have geocoded address, otherwise include them if no precise filtering
-          // For now, we'll do basic matching on address for companies without coordinates
-          return true; // Keep all for now since companies don't have coordinates
+          const addressNorm = normalizeText(c.address);
+          // Check if any part of the searched location is in the company address
+          return locationParts.some(part => part.length > 2 && addressNorm.includes(part));
         });
       }
 
