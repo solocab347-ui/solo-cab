@@ -1,28 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocale } from "@/hooks/useLocale";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
-  Trophy, 
+  Loader2, 
+  CheckCircle, 
+  Crown, 
   Car, 
   Users, 
-  CreditCard, 
   Calendar,
+  CreditCard,
   Star,
   Shield,
   Zap,
-  Gift,
-  ChevronRight,
-  CheckCircle2,
-  Loader2,
-  Crown
+  Eye, 
+  EyeOff,
+  Handshake,
+  Building2,
+  TrendingUp,
+  Palette,
+  Globe,
+  Smartphone,
+  Heart
 } from "lucide-react";
+import logo from "@/assets/logo-solocab.png";
 
 interface CongressInvitation {
   id: string;
@@ -36,35 +43,48 @@ interface CongressInvitation {
 }
 
 const FEATURES = [
-  { icon: Users, title: "Gestion de clientèle", description: "Portefeuille clients illimité avec QR codes personnalisés" },
-  { icon: Calendar, title: "Planning intelligent", description: "Agenda des courses avec notifications automatiques" },
-  { icon: CreditCard, title: "Facturation automatique", description: "Devis et factures générés automatiquement" },
-  { icon: Star, title: "Vitrine publique", description: "Profil professionnel visible par les clients" },
-  { icon: Shield, title: "Tableau de bord", description: "Statistiques détaillées de votre activité" },
-  { icon: Zap, title: "Réservation instantanée", description: "Vos clients réservent en 2 clics" },
+  { icon: Users, title: "Acquérir des clients", desc: "QR codes personnalisés" },
+  { icon: Car, title: "Gérer vos courses", desc: "Planning intelligent" },
+  { icon: Handshake, title: "Partenariats chauffeurs", desc: "Réseau de confiance" },
+  { icon: Building2, title: "Clients entreprises", desc: "Contrats B2B" },
+  { icon: TrendingUp, title: "Gestionnaires flotte", desc: "Collaboration pro" },
+  { icon: Palette, title: "Vos propres prix", desc: "Liberté tarifaire" },
+  { icon: Globe, title: "Vitrine publique", desc: "Visibilité clients" },
+  { icon: Smartphone, title: "Maîtriser votre activité", desc: "Tableau de bord" },
+];
+
+const VALUES = [
+  { icon: Zap, label: "Indépendance", color: "bg-blue-500" },
+  { icon: Shield, label: "Technologie", color: "bg-violet-500" },
+  { icon: Heart, label: "Humanité", color: "bg-orange-500" },
+  { icon: Star, label: "Excellence", color: "bg-green-500" },
 ];
 
 const RegisterCongressDriver = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useLocale();
   const slug = searchParams.get("ref") || "congres-vtc-pionnier";
 
   const [invitation, setInvitation] = useState<CongressInvitation | null>(null);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    fullName: "",
-    phone: "",
-    vtcCardNumber: "",
-    city: "",
-  });
+  // Form state - Step 1
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Form state - Step 2
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [siret, setSiret] = useState("");
 
   useEffect(() => {
     loadInvitation();
@@ -100,13 +120,15 @@ const RegisterCongressDriver = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (formData.password !== formData.confirmPassword) {
+  const handleStep1 = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
       toast.error("Les mots de passe ne correspondent pas");
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (password.length < 6) {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
@@ -114,59 +136,86 @@ const RegisterCongressDriver = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
           data: {
-            full_name: formData.fullName,
+            full_name: fullName,
             is_pioneer: true,
-          }
-        }
+          },
+          emailRedirectTo: `${window.location.origin}/registration-success`,
+        },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+      if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error("Échec de création du compte");
 
-      const userId = authData.user.id;
+      setUserId(authData.user.id);
 
-      // 2. Update profile
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          full_name: formData.fullName,
-          phone: formData.phone,
+        .update({ 
+          phone,
+          full_name: fullName,
           roles: ["driver"],
         })
-        .eq("id", userId);
+        .eq("id", authData.user.id);
 
       if (profileError) throw profileError;
 
-      // 3. Create driver with pioneer status
+      toast.success("Compte créé avec succès !");
+      setCurrentStep(2);
+    } catch (error: any) {
+      console.error("Erreur step 1:", error);
+      toast.error(error.message || "Erreur lors de la création du compte");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStep2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId || !invitation) return;
+
+    setIsSubmitting(true);
+
+    try {
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
           user_id: userId,
-          license_number: formData.vtcCardNumber,
-          vehicle_model: "À renseigner",
+          license_number: licenseNumber,
+          vehicle_model: vehicleModel,
+          company_name: companyName || null,
+          siret: siret || null,
           status: "pending",
           is_pioneer: true,
           pioneer_since: new Date().toISOString(),
           subscription_status: "trial",
           free_access_type: "trial",
-          free_access_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          free_access_end_date: new Date(Date.now() + invitation.trial_days * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
 
       if (driverError) throw driverError;
 
-      // 4. Register in congress_registrations
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: "driver",
+        });
+
+      if (roleError && !roleError.message.includes("duplicate")) {
+        throw roleError;
+      }
+
       const { error: regError } = await supabase
         .from("congress_registrations")
         .insert({
-          invitation_id: invitation!.id,
+          invitation_id: invitation.id,
           driver_id: driverData.id,
           user_id: userId,
           subscription_status: "trial",
@@ -174,38 +223,55 @@ const RegisterCongressDriver = () => {
 
       if (regError) throw regError;
 
-      // 5. Increment current_uses
       await supabase
         .from("congress_invitations")
-        .update({ current_uses: (invitation?.current_uses || 0) + 1 })
-        .eq("id", invitation!.id);
+        .update({ current_uses: (invitation.current_uses || 0) + 1 })
+        .eq("id", invitation.id);
 
-      // 6. Redirect to Stripe checkout for subscription setup
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
-        "create-pioneer-subscription",
-        {
-          body: { driver_id: driverData.id },
-        }
-      );
+      toast.success("Profil chauffeur créé !");
+      setCurrentStep(3);
+    } catch (error: any) {
+      console.error("Erreur step 2:", error);
+      toast.error(error.message || "Erreur lors de la création du profil");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      if (checkoutError) {
-        console.error("Checkout error:", checkoutError);
-        // Still success, just redirect to dashboard
+  const handleStep3Payment = async () => {
+    if (!userId) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (driverError || !driverData) throw new Error("Chauffeur non trouvé");
+
+      const { data, error } = await supabase.functions.invoke("create-pioneer-subscription", {
+        body: { driver_id: driverData.id },
+      });
+
+      if (error) {
+        console.error("Checkout error:", error);
         toast.success("🎉 Bienvenue parmi les Pionniers SoloCab !");
         navigate("/driver-pending-validation");
         return;
       }
 
-      if (checkoutData?.url) {
-        window.location.href = checkoutData.url;
+      if (data?.url) {
+        window.location.href = data.url;
       } else {
         toast.success("🎉 Bienvenue parmi les Pionniers SoloCab !");
         navigate("/driver-pending-validation");
       }
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      toast.error(err.message || "Erreur lors de l'inscription");
-    } finally {
+    } catch (error: any) {
+      console.error("Erreur step 3:", error);
+      toast.error(error.message || "Erreur lors du paiement");
       setIsSubmitting(false);
     }
   };
@@ -222,249 +288,386 @@ const RegisterCongressDriver = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-primary/10" />
-        <div className="container mx-auto px-4 py-12 relative">
-          <div className="text-center mb-8">
-            <Badge className="mb-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 text-sm px-4 py-2">
-              <Crown className="w-4 h-4 mr-2" />
-              OFFRE EXCLUSIVE CONGRÈS VTC
-            </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-amber-500 to-primary bg-clip-text text-transparent">
-              Devenez Pionnier SoloCab
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Rejoignez l'élite des chauffeurs VTC et bénéficiez d'un tarif préférentiel à vie
-            </p>
+      <div className="container max-w-5xl mx-auto px-4 py-6 md:py-12">
+        {/* Header */}
+        <div className="text-center mb-6 md:mb-8">
+          <img src={logo} alt="SoloCab" className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 object-contain" />
+          
+          {/* Promo banner */}
+          <div className="mb-6 relative">
+            <Card className="relative border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-violet-500/10 p-4 md:p-6">
+              <Badge className="mb-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 shadow-lg">
+                <Crown className="w-3 h-3 mr-1" />
+                OFFRE EXCLUSIVE CONGRÈS VTC 2026
+              </Badge>
+              
+              <div className="flex flex-wrap items-center justify-center gap-3 md:gap-6 mb-2">
+                <div className="text-center">
+                  <span className="text-2xl md:text-4xl font-bold text-amber-500">{invitation?.trial_days || 30}</span>
+                  <p className="text-xs md:text-sm text-muted-foreground">jours d'essai</p>
+                </div>
+                <div className="w-px h-10 bg-border hidden md:block" />
+                <div className="text-center">
+                  <span className="text-2xl md:text-4xl font-bold text-primary">{invitation?.monthly_price || 39.99}€</span>
+                  <p className="text-xs md:text-sm text-muted-foreground">/mois à vie</p>
+                </div>
+                <div className="w-px h-10 bg-border hidden md:block" />
+                <div className="text-center">
+                  <span className="text-2xl md:text-4xl font-bold text-green-500">{remainingPlaces}</span>
+                  <p className="text-xs md:text-sm text-muted-foreground">places restantes</p>
+                </div>
+              </div>
+            </Card>
           </div>
 
-          {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-6 mb-8">
-            <Card className="bg-card/80 backdrop-blur border-amber-500/20">
-              <CardContent className="p-4 text-center">
-                <div className="text-3xl font-bold text-amber-500">{remainingPlaces}</div>
-                <div className="text-sm text-muted-foreground">Places restantes</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/80 backdrop-blur border-primary/20">
-              <CardContent className="p-4 text-center">
-                <div className="text-3xl font-bold text-primary">30 jours</div>
-                <div className="text-sm text-muted-foreground">Essai gratuit</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/80 backdrop-blur border-green-500/20">
-              <CardContent className="p-4 text-center">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-bold text-green-500">39,99€</span>
-                  <span className="text-sm text-muted-foreground line-through">49,99€</span>
-                </div>
-                <div className="text-sm text-muted-foreground">/mois à vie</div>
-              </CardContent>
-            </Card>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Inscription Pionnier SoloCab</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Rejoignez l'élite des chauffeurs VTC indépendants</p>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          {/* Features Section */}
-          <div className="space-y-6">
-            <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-6 w-6 text-amber-500" />
-                  Avantages Pionnier
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-1 md:gap-2 mb-6 md:mb-8">
+          {[1, 2, 3].map((step) => (
+            <div key={step} className="flex items-center">
+              <div
+                className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-semibold text-sm md:text-base transition-all ${
+                  currentStep >= step
+                    ? "bg-gradient-to-r from-amber-500 to-primary text-white"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {currentStep > step ? <CheckCircle className="w-4 h-4 md:w-5 md:h-5" /> : step}
+              </div>
+              {step < 3 && (
+                <div
+                  className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded transition-all ${
+                    currentStep > step ? "bg-gradient-to-r from-amber-500 to-primary" : "bg-muted"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid lg:grid-cols-5 gap-6 md:gap-8">
+          {/* Left side - Features (hidden on step forms for mobile) */}
+          <div className={`lg:col-span-2 space-y-4 ${currentStep < 3 ? 'hidden lg:block' : ''}`}>
+            {/* Pioneer advantages */}
+            <Card className="p-4 md:p-6 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+              <h3 className="font-bold mb-4 flex items-center gap-2 text-sm md:text-base">
+                <Crown className="h-5 w-5 text-amber-500" />
+                Avantages Pionnier
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium">Badge Pionnier exclusif</div>
-                    <div className="text-sm text-muted-foreground">Visible sur votre profil et vitrine publique</div>
+                    <p className="font-medium text-sm">Badge Pionnier exclusif</p>
+                    <p className="text-xs text-muted-foreground">Visible sur votre profil</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium">Tarif préférentiel à vie</div>
-                    <div className="text-sm text-muted-foreground">39,99€/mois au lieu de 49,99€</div>
+                    <p className="font-medium text-sm">Tarif préférentiel à vie</p>
+                    <p className="text-xs text-muted-foreground">{invitation?.monthly_price}€/mois garanti</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium">1 mois d'essai gratuit</div>
-                    <div className="text-sm text-muted-foreground">Testez toutes les fonctionnalités</div>
+                    <p className="font-medium text-sm">{invitation?.trial_days} jours d'essai</p>
+                    <p className="text-xs text-muted-foreground">Testez sans risque</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium">Priorité sur les nouvelles fonctionnalités</div>
-                    <div className="text-sm text-muted-foreground">Accès anticipé aux mises à jour</div>
+                    <p className="font-medium text-sm">Priorité nouvelles fonctions</p>
+                    <p className="text-xs text-muted-foreground">Accès anticipé</p>
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-6 w-6 text-primary" />
-                  Fonctionnalités incluses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {FEATURES.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <feature.icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{feature.title}</div>
-                        <div className="text-sm text-muted-foreground">{feature.description}</div>
-                      </div>
+            {/* Features grid */}
+            <Card className="p-4 md:p-6">
+              <h3 className="font-bold mb-4 flex items-center gap-2 text-sm md:text-base">
+                <Zap className="h-5 w-5 text-primary" />
+                Fonctionnalités
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {FEATURES.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <feature.icon className="h-3 w-3 text-primary" />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
+                    <span className="text-xs font-medium">{feature.title}</span>
+                  </div>
+                ))}
+              </div>
             </Card>
+
+            {/* Values */}
+            <div className="flex justify-center gap-4">
+              {VALUES.map((value, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full ${value.color} flex items-center justify-center shadow-lg`}>
+                    <value.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-[10px] md:text-xs font-medium mt-1">{value.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Registration Form */}
-          <Card className="sticky top-4 border-2 border-primary/20">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-amber-500/10">
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="h-6 w-6 text-primary" />
-                Inscription Pionnier
-              </CardTitle>
-              <CardDescription>
-                Étape {step} sur 2 - {step === 1 ? "Créez votre compte" : "Complétez votre profil"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {step === 1 ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+          {/* Right side - Form */}
+          <div className="lg:col-span-3">
+            {/* Step 1: Account */}
+            {currentStep === 1 && (
+              <Card className="p-4 md:p-8">
+                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 1 : Créer votre compte</h2>
+                <form onSubmit={handleStep1} className="space-y-4">
+                  <div>
+                    <Label htmlFor="fullName">Nom complet *</Label>
+                    <Input
+                      id="fullName"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      placeholder="Jean Dupont"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="votre@email.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder="jean@example.com"
+                      className="mt-1"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Mot de passe</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    />
-                    {formData.password && formData.confirmPassword && (
-                      <div className={`text-sm ${formData.password === formData.confirmPassword ? 'text-green-500' : 'text-destructive'}`}>
-                        {formData.password === formData.confirmPassword 
-                          ? "✓ Les mots de passe correspondent"
-                          : "✗ Les mots de passe ne correspondent pas"
-                        }
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={() => setStep(2)}
-                    disabled={!formData.email || !formData.password || formData.password !== formData.confirmPassword}
-                  >
-                    Continuer
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nom complet</Label>
-                    <Input
-                      id="fullName"
-                      placeholder="Jean Dupont"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone</Label>
+                  <div>
+                    <Label htmlFor="phone">Téléphone *</Label>
                     <Input
                       id="phone"
                       type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
                       placeholder="06 12 34 56 78"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="mt-1"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="vtcCardNumber">Numéro de carte VTC</Label>
+                  <div>
+                    <Label htmlFor="password">Mot de passe *</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Minimum 6 caractères"
+                        minLength={6}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder="Confirmer"
+                        minLength={6}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {confirmPassword && password !== confirmPassword && (
+                      <p className="text-sm text-destructive mt-1">Les mots de passe ne correspondent pas</p>
+                    )}
+                    {confirmPassword && password === confirmPassword && (
+                      <p className="text-sm text-green-500 mt-1">✓ Les mots de passe correspondent</p>
+                    )}
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting} 
+                    className="w-full bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
+                    size="lg"
+                  >
+                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Continuer
+                  </Button>
+                </form>
+              </Card>
+            )}
+
+            {/* Step 2: Driver info */}
+            {currentStep === 2 && (
+              <Card className="p-4 md:p-8">
+                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 2 : Informations professionnelles</h2>
+                <form onSubmit={handleStep2} className="space-y-4">
+                  <div>
+                    <Label htmlFor="licenseNumber">Numéro de carte VTC *</Label>
                     <Input
-                      id="vtcCardNumber"
-                      placeholder="Votre numéro de carte professionnelle"
-                      value={formData.vtcCardNumber}
-                      onChange={(e) => setFormData({ ...formData, vtcCardNumber: e.target.value })}
+                      id="licenseNumber"
+                      value={licenseNumber}
+                      onChange={(e) => setLicenseNumber(e.target.value)}
+                      required
+                      placeholder="VTC123456"
+                      className="mt-1"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Ville d'exercice</Label>
+                  <div>
+                    <Label htmlFor="vehicleModel">Modèle de véhicule *</Label>
                     <Input
-                      id="city"
-                      placeholder="Paris"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      id="vehicleModel"
+                      value={vehicleModel}
+                      onChange={(e) => setVehicleModel(e.target.value)}
+                      required
+                      placeholder="Mercedes Classe E"
+                      className="mt-1"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  <div>
+                    <Label htmlFor="companyName">Nom de l'entreprise (optionnel)</Label>
+                    <Input
+                      id="companyName"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="VTC Transport"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="siret">SIRET (optionnel)</Label>
+                    <Input
+                      id="siret"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      placeholder="123 456 789 00010"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      className="flex-1"
+                    >
                       Retour
                     </Button>
-                    <Button
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting} 
                       className="flex-1 bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
-                      onClick={handleSubmit}
-                      disabled={isSubmitting || !formData.fullName || !formData.phone}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Inscription...
-                        </>
-                      ) : (
-                        <>
-                          <Crown className="h-4 w-4 mr-2" />
-                          Devenir Pionnier
-                        </>
-                      )}
+                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Continuer
                     </Button>
                   </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    En vous inscrivant, vous acceptez nos conditions d'utilisation.
-                    <br />
-                    Votre carte bancaire ne sera pas débitée pendant la période d'essai.
+                </form>
+              </Card>
+            )}
+
+            {/* Step 3: Payment */}
+            {currentStep === 3 && (
+              <Card className="p-4 md:p-8">
+                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 3 : Finaliser l'inscription</h2>
+                
+                <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
+                  <Crown className="w-5 h-5 text-amber-500" />
+                  <AlertDescription>
+                    <strong>Offre Pionnier Congrès :</strong> {invitation?.trial_days} jours d'essai gratuit puis {invitation?.monthly_price}€/mois à vie !
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Car className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Plateforme complète</p>
+                      <p className="text-xs text-muted-foreground">Gestion courses, clients, devis et factures</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Crown className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Badge Pionnier exclusif</p>
+                      <p className="text-xs text-muted-foreground">Visible sur votre profil public</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-violet-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Vitrine publique</p>
+                      <p className="text-xs text-muted-foreground">Soyez visible par les clients</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-sm">Tarif garanti à vie</p>
+                      <p className="text-xs text-muted-foreground">{invitation?.monthly_price}€/mois sans augmentation</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-muted-foreground">Essai gratuit</span>
+                    <span className="font-semibold text-green-500">{invitation?.trial_days} jours</span>
+                  </div>
+                  <div className="h-px bg-border my-3"></div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Puis abonnement</span>
+                    <span className="font-bold text-xl text-primary">{invitation?.monthly_price}€/mois</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Empreinte carte bancaire requise • Sans engagement
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                <Button
+                  onClick={handleStep3Payment}
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
+                  size="lg"
+                >
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CreditCard className="w-5 h-5 mr-2" />}
+                  Procéder au paiement sécurisé
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground mt-4">
+                  🔒 Paiement sécurisé par Stripe. Vous recevrez un email de confirmation.
+                </p>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
