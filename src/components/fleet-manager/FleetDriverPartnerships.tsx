@@ -186,6 +186,11 @@ interface Partnership {
 interface FleetManagerInfo {
   name: string;
   company: string;
+  siret?: string;
+  tvaNumber?: string;
+  address?: string;
+  phone?: string | null;
+  email?: string | null;
 }
 
 
@@ -262,7 +267,7 @@ export const FleetDriverPartnerships = ({
       // Fetch fleet manager info for contracts
       const { data: fmData } = await supabase
         .from("fleet_managers")
-        .select("company_name, contact_name, user_id")
+        .select("company_name, contact_name, user_id, siret, tva_number, address, contact_phone, contact_email")
         .eq("id", fleetManagerId)
         .single();
 
@@ -275,7 +280,12 @@ export const FleetDriverPartnerships = ({
 
         setFleetManagerInfo({
           name: profile?.full_name || fmData.contact_name,
-          company: fmData.company_name
+          company: fmData.company_name,
+          siret: fmData.siret || undefined,
+          tvaNumber: fmData.tva_number || undefined,
+          address: fmData.address || undefined,
+          phone: fmData.contact_phone || undefined,
+          email: fmData.contact_email || undefined
         });
       }
 
@@ -1173,6 +1183,15 @@ export const FleetDriverPartnerships = ({
                                 partnershipId={partnership.id}
                                 fleetManagerName={fleetManagerInfo.name}
                                 fleetManagerCompany={fleetManagerInfo.company}
+                                fleetManagerInfo={{
+                                  name: fleetManagerInfo.name,
+                                  company: fleetManagerInfo.company,
+                                  siret: fleetManagerInfo.siret,
+                                  tvaNumber: fleetManagerInfo.tvaNumber,
+                                  address: fleetManagerInfo.address,
+                                  phone: fleetManagerInfo.phone,
+                                  email: fleetManagerInfo.email
+                                }}
                                 driverName={partnership.driver?.profile?.full_name || "Chauffeur"}
                                 commissionPercentage={partnership.commission_percentage}
                                 paymentSchedule={partnership.payment_schedule || "per_course"}
@@ -1180,6 +1199,7 @@ export const FleetDriverPartnerships = ({
                                 fleetManagerSignedAt={partnership.fleet_manager_signed_at}
                                 driverSignedAt={partnership.driver_signed_at}
                                 contractType="partner"
+                                status={partnership.status}
                               />
                             )}
                             {!partnership.pending_modification && (
