@@ -157,7 +157,6 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             id,
             status,
             driver_id,
-            started_at,
             updated_at
           )
         `)
