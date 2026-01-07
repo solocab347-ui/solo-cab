@@ -512,10 +512,12 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
     }
     
     // City filter - check if address contains the city name
+    // Extract city name from full place_name (e.g., "Paris, France" -> "Paris")
     if (filterValues.city) {
       const address = f.address?.toLowerCase() || "";
-      const cityLower = filterValues.city.toLowerCase();
-      if (!address.includes(cityLower)) {
+      const cityParts = filterValues.city.split(',').map(p => p.trim().toLowerCase());
+      const mainCity = cityParts[0]; // First part is the city name
+      if (!address.includes(mainCity)) {
         return false;
       }
     }

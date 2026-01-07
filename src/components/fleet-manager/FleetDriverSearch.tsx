@@ -458,6 +458,56 @@ Cordialement`;
           );
         }
 
+        // Apply location-based filtering with radius if coordinates are set
+        if (locationCoords && mapboxToken) {
+          const driversWithDistance = await Promise.all(
+            driversWithProfiles.map(async (driver) => {
+              if (!driver.home_address) {
+                return { ...driver, distance: null };
+              }
+              
+              try {
+                // Geocode the driver's address
+                const response = await fetch(
+                  `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(driver.home_address)}.json?access_token=${mapboxToken}&country=fr&limit=1`
+                );
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                  const driverCoords = {
+                    lat: data.features[0].center[1],
+                    lng: data.features[0].center[0]
+                  };
+                  
+                  // Calculate distance using Haversine formula
+                  const R = 6371; // Earth's radius in km
+                  const dLat = (driverCoords.lat - locationCoords.lat) * Math.PI / 180;
+                  const dLon = (driverCoords.lng - locationCoords.lng) * Math.PI / 180;
+                  const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(locationCoords.lat * Math.PI / 180) * Math.cos(driverCoords.lat * Math.PI / 180) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                  const distance = R * c;
+                  
+                  return { ...driver, distance };
+                }
+                return { ...driver, distance: null };
+              } catch (error) {
+                console.error('Error geocoding driver address:', error);
+                return { ...driver, distance: null };
+              }
+            })
+          );
+          
+          // Filter by radius and sort by distance
+          driversWithProfiles = driversWithDistance
+            .filter(d => d.distance !== null && d.distance <= radiusKm)
+            .sort((a, b) => (a.distance || 999) - (b.distance || 999));
+            
+          console.log(`📍 Location filter: ${driversWithProfiles.length} drivers within ${radiusKm}km`);
+        }
+
         setDrivers(driversWithProfiles as SearchableDriver[]);
       } else {
         setDrivers([]);
