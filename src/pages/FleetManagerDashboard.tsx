@@ -61,6 +61,7 @@ import { FleetCoursesManager } from "@/components/fleet-manager/FleetCoursesMana
 import { FleetStatisticsComplete } from "@/components/fleet-manager/FleetStatisticsComplete";
 import { FleetDriverPartnerships } from "@/components/fleet-manager/FleetDriverPartnerships";
 import { FleetPartnerCommissions } from "@/components/fleet-manager/FleetPartnerCommissions";
+import { FleetPartnershipsHub } from "@/components/fleet-manager/FleetPartnershipsHub";
 import FleetPromotions from "@/components/fleet-manager/FleetPromotions";
 import { FleetDriverDocumentsValidation } from "@/components/fleet-manager/FleetDriverDocumentsValidation";
 import { FleetStorefrontManager } from "@/components/fleet-manager/FleetStorefrontManager";
@@ -843,7 +844,7 @@ const FleetManagerDashboard = () => {
                     <Handshake className="w-5 h-5 text-primary" />
                     Partenariats
                   </CardTitle>
-                  <CardDescription>Collaborez avec des chauffeurs indépendants</CardDescription>
+                  <CardDescription>Chauffeurs indépendants et entreprises partenaires</CardDescription>
                 </CardHeader>
               </Card>
 
@@ -1032,21 +1033,16 @@ const FleetManagerDashboard = () => {
                 <ArrowLeft className="w-4 h-4" />
                 Retour aux outils
               </Button>
-              <Tabs defaultValue="partnerships" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="partnerships">Partenariats</TabsTrigger>
-                  <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                </TabsList>
-                <TabsContent value="partnerships">
-                  <FleetDriverPartnerships 
-                    fleetManagerId={fleetManager.id}
-                    defaultCommission={10}
-                  />
-                </TabsContent>
-                <TabsContent value="commissions">
-                  <FleetPartnerCommissions fleetManagerId={fleetManager.id} />
-                </TabsContent>
-              </Tabs>
+              <FleetPartnershipsHub 
+                fleetManagerId={fleetManager.id}
+                fleetManagerProfile={{
+                  company_name: fleetManager.company_name,
+                  contact_name: fleetManager.contact_name,
+                  services_offered: fleetManager.services_offered || [],
+                  total_drivers: drivers.length
+                }}
+                defaultCommission={10}
+              />
             </div>
           </TabsContent>
 

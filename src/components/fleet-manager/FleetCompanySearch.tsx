@@ -1,0 +1,665 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+import { 
+  Loader2, Search, Building2, MapPin, Send, 
+  Eye, Phone, Mail, Filter, RotateCcw, Users, Euro, Briefcase
+} from "lucide-react";
+
+const PAYMENT_METHODS = [
+  { value: "card", label: "Carte bancaire", icon: "💳" },
+  { value: "payment_link", label: "Lien de paiement", icon: "🔗" },
+  { value: "cash", label: "Espèces", icon: "💵" },
+  { value: "bank_transfer", label: "Virement bancaire", icon: "🏦" },
+];
+
+const PAYMENT_FREQUENCIES = [
+  { value: "per_course", label: "À la course", description: "Paiement après chaque course" },
+  { value: "weekly", label: "Hebdomadaire", description: "Paiement chaque semaine" },
+  { value: "monthly", label: "Mensuel", description: "Paiement chaque mois" },
+  { value: "mixed", label: "Mixte", description: "Selon l'accord" },
+];
+
+const FRENCH_DEPARTMENTS = [
+  { code: '75', name: 'Paris' },
+  { code: '77', name: 'Seine-et-Marne' },
+  { code: '78', name: 'Yvelines' },
+  { code: '91', name: 'Essonne' },
+  { code: '92', name: 'Hauts-de-Seine' },
+  { code: '93', name: 'Seine-Saint-Denis' },
+  { code: '94', name: 'Val-de-Marne' },
+  { code: '95', name: "Val-d'Oise" },
+  { code: '13', name: 'Bouches-du-Rhône' },
+  { code: '69', name: 'Rhône' },
+  { code: '31', name: 'Haute-Garonne' },
+  { code: '33', name: 'Gironde' },
+  { code: '59', name: 'Nord' },
+  { code: '06', name: 'Alpes-Maritimes' },
+];
+
+interface FleetCompanySearchProps {
+  fleetManagerId: string;
+  fleetManagerProfile?: {
+    company_name: string;
+    contact_name?: string;
+    services_offered?: string[];
+    total_drivers?: number;
+  };
+}
+
+export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: FleetCompanySearchProps) {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  
+  // Proposal form state
+  const [proposalMessage, setProposalMessage] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(["card"]);
+  const [paymentFrequency, setPaymentFrequency] = useState("monthly");
+  const [paymentDay, setPaymentDay] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+
+  // Fetch companies visible to fleet managers
+  const { data: companies, isLoading } = useQuery({
+    queryKey: ["public-companies-for-fleets", searchTerm, selectedDepartment],
+    queryFn: async () => {
+      let query = supabase
+        .from("companies")
+        .select("*")
+        .eq("visible_to_drivers", true)
+        .eq("accepting_proposals", true)
+        .in("status", ["validated", "active"])
+        .order('company_name')
+        .limit(50);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let result = data || [];
+
+      // Filter by search term
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        result = result.filter((c: any) =>
+          c.company_name?.toLowerCase().includes(searchLower) ||
+          c.contact_name?.toLowerCase().includes(searchLower) ||
+          c.address?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Filter by department
+      if (selectedDepartment) {
+        result = result.filter((c: any) => 
+          c.address?.toLowerCase().includes(selectedDepartment.toLowerCase())
+        );
+      }
+
+      return result;
+    },
+  });
+
+  // Check existing agreements
+  const { data: existingAgreements } = useQuery({
+    queryKey: ["fleet-company-agreements", fleetManagerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("company_fleet_agreements")
+        .select("company_id, status")
+        .eq("fleet_manager_id", fleetManagerId);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Send proposal mutation
+  const sendProposal = useMutation({
+    mutationFn: async (companyId: string) => {
+      const { error } = await supabase
+        .from("company_fleet_agreements")
+        .insert({
+          company_id: companyId,
+          fleet_manager_id: fleetManagerId,
+          proposed_by: "fleet_manager",
+          status: "pending",
+          fleet_manager_signed: true,
+          fleet_manager_signed_at: new Date().toISOString(),
+          payment_methods: paymentMethods,
+          payment_frequency: paymentFrequency,
+          payment_day: paymentDay,
+          proposal_message: proposalMessage,
+          notes: notes || null,
+        });
+
+      if (error) throw error;
+
+      // Notify company
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("user_id")
+        .eq("id", companyId)
+        .single();
+
+      if (companyData) {
+        await supabase.from("notifications").insert({
+          user_id: companyData.user_id,
+          title: "Nouvelle proposition de partenariat",
+          message: `Le gestionnaire de flotte ${fleetManagerProfile?.company_name || ""} vous propose un partenariat`,
+          type: "partnership",
+          link: "/company-dashboard?tab=fleet-partners"
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Proposition de partenariat envoyée !");
+      queryClient.invalidateQueries({ queryKey: ["fleet-company-agreements"] });
+      resetForm();
+      setShowProposalDialog(false);
+      setSelectedCompany(null);
+    },
+    onError: (error: any) => {
+      toast.error("Erreur: " + error.message);
+    },
+  });
+
+  const resetForm = () => {
+    setProposalMessage("");
+    setPaymentMethods(["card"]);
+    setPaymentFrequency("monthly");
+    setPaymentDay(null);
+    setNotes("");
+  };
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedDepartment("");
+  };
+
+  const getAgreementStatus = (companyId: string) => {
+    return existingAgreements?.find((a) => a.company_id === companyId)?.status;
+  };
+
+  const handleOpenProposal = (company: any) => {
+    setSelectedCompany(company);
+    
+    const defaultMessage = `Bonjour,
+
+Je représente ${fleetManagerProfile?.company_name || "notre flotte VTC"}${fleetManagerProfile?.total_drivers ? `, composée de ${fleetManagerProfile.total_drivers} chauffeurs professionnels` : ""}.
+
+Nous proposons nos services de transport pour répondre aux besoins de votre entreprise.
+
+${fleetManagerProfile?.services_offered?.length ? `Nos services incluent: ${fleetManagerProfile.services_offered.join(", ")}.` : ""}
+
+Nous serions ravis d'établir un partenariat avec ${company.company_name} pour vous offrir un service de qualité.
+
+Cordialement`;
+
+    setProposalMessage(defaultMessage);
+    setShowProposalDialog(true);
+  };
+
+  const handleViewProfile = (company: any) => {
+    setSelectedCompany(company);
+    setShowProfileDialog(true);
+  };
+
+  const activeFiltersCount = [selectedDepartment].filter(Boolean).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-primary" />
+            Rechercher des entreprises
+          </CardTitle>
+          <CardDescription>
+            Trouvez des entreprises et proposez vos services de transport
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      {/* Search & Filters */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Rechercher par nom d'entreprise, contact..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filtres
+              {activeFiltersCount > 0 && (
+                <Badge className="h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
+
+          {showFilters && (
+            <div className="space-y-4 pt-4 border-t">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Département
+                  </Label>
+                  <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les départements" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les départements</SelectItem>
+                      {FRENCH_DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept.code} value={dept.name}>
+                          {dept.code} - {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {activeFiltersCount > 0 && (
+                <Button variant="ghost" onClick={resetFilters} className="gap-2">
+                  <RotateCcw className="h-4 w-4" />
+                  Réinitialiser les filtres
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : companies && companies.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {companies.map((company: any) => {
+            const agreementStatus = getAgreementStatus(company.id);
+            const hasAgreement = !!agreementStatus;
+
+            return (
+              <Card key={company.id} className={hasAgreement ? "opacity-75" : ""}>
+                <CardContent className="p-4">
+                  <div className="flex gap-3 mb-4">
+                    <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
+                      {company.logo_url ? (
+                        <img src={company.logo_url} alt={company.company_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="w-7 h-7 text-primary" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate">{company.company_name}</h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {company.contact_name}
+                      </p>
+                    </div>
+                    {hasAgreement && (
+                      <Badge 
+                        className={
+                          agreementStatus === "accepted" 
+                            ? "bg-green-500" 
+                            : agreementStatus === "rejected" 
+                            ? "bg-red-500" 
+                            : "bg-yellow-500"
+                        }
+                      >
+                        {agreementStatus === "accepted" 
+                          ? "Partenaire" 
+                          : agreementStatus === "rejected" 
+                          ? "Refusé" 
+                          : "En attente"}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 text-sm mb-4">
+                    {company.address && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{company.address}</span>
+                      </div>
+                    )}
+                    {company.contact_email && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{company.contact_email}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {company.employee_count && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Users className="w-3 h-3 mr-1" />
+                        {company.employee_count} employés
+                      </Badge>
+                    )}
+                    {company.monthly_budget && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Euro className="w-3 h-3 mr-1" />
+                        ~{company.monthly_budget}€/mois
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleViewProfile(company)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Voir profil
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={() => handleOpenProposal(company)}
+                      disabled={hasAgreement}
+                    >
+                      {hasAgreement ? (
+                        "Proposition envoyée"
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-1" />
+                          Proposer
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="font-semibold mb-2">
+              {searchTerm ? "Aucune entreprise trouvée" : "Aucune entreprise disponible"}
+            </h3>
+            <p className="text-muted-foreground">
+              {searchTerm 
+                ? "Essayez avec d'autres termes de recherche"
+                : "Aucune entreprise n'a activé son profil public"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Profile Dialog */}
+      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Profil de l'entreprise
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedCompany && (
+            <ScrollArea className="max-h-[70vh]">
+              <div className="space-y-6 py-4 pr-4">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-24 h-24 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center overflow-hidden">
+                    {selectedCompany.logo_url ? (
+                      <img src={selectedCompany.logo_url} alt={selectedCompany.company_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-12 h-12 text-white" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold">{selectedCompany.company_name}</h3>
+                    <p className="text-muted-foreground">{selectedCompany.contact_name}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {selectedCompany.address && (
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Adresse</p>
+                        <p className="font-medium">{selectedCompany.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCompany.contact_email && (
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Mail className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{selectedCompany.contact_email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCompany.contact_phone && selectedCompany.show_phone && (
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Phone className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Téléphone</p>
+                        <p className="font-medium">{selectedCompany.contact_phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCompany.employee_count && (
+                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Users className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Effectif</p>
+                        <p className="font-medium">{selectedCompany.employee_count} employés</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {selectedCompany.notes && (
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <h4 className="font-medium mb-2">Description</h4>
+                    <p className="text-sm text-muted-foreground">{selectedCompany.notes}</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Proposal Dialog */}
+      <Dialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5" />
+              Proposer un partenariat
+            </DialogTitle>
+            <DialogDescription>
+              Envoyez une proposition à {selectedCompany?.company_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Message */}
+            <div className="space-y-2">
+              <Label>Message de présentation</Label>
+              <Textarea
+                value={proposalMessage}
+                onChange={(e) => setProposalMessage(e.target.value)}
+                placeholder="Présentez votre flotte et vos services..."
+                rows={8}
+              />
+            </div>
+
+            {/* Payment Methods */}
+            <div className="space-y-3">
+              <Label>Moyens de paiement acceptés</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {PAYMENT_METHODS.map((method) => (
+                  <label
+                    key={method.value}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                      paymentMethods.includes(method.value)
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={paymentMethods.includes(method.value)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setPaymentMethods([...paymentMethods, method.value]);
+                        } else {
+                          setPaymentMethods(paymentMethods.filter((m) => m !== method.value));
+                        }
+                      }}
+                    />
+                    <span className="text-lg">{method.icon}</span>
+                    <span className="text-sm">{method.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Frequency */}
+            <div className="space-y-3">
+              <Label>Fréquence de facturation</Label>
+              <div className="grid gap-2">
+                {PAYMENT_FREQUENCIES.map((freq) => (
+                  <label
+                    key={freq.value}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                      paymentFrequency === freq.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="frequency"
+                      value={freq.value}
+                      checked={paymentFrequency === freq.value}
+                      onChange={(e) => setPaymentFrequency(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 rounded-full border-2 ${
+                      paymentFrequency === freq.value ? "border-primary bg-primary" : "border-muted-foreground"
+                    }`}>
+                      {paymentFrequency === freq.value && (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{freq.label}</p>
+                      <p className="text-xs text-muted-foreground">{freq.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Day */}
+            {(paymentFrequency === "weekly" || paymentFrequency === "monthly") && (
+              <div className="space-y-2">
+                <Label>
+                  {paymentFrequency === "weekly" ? "Jour de paiement" : "Jour du mois"}
+                </Label>
+                <Select 
+                  value={paymentDay?.toString() || ""} 
+                  onValueChange={(val) => setPaymentDay(val ? parseInt(val) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un jour" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentFrequency === "weekly" ? (
+                      <>
+                        <SelectItem value="1">Lundi</SelectItem>
+                        <SelectItem value="2">Mardi</SelectItem>
+                        <SelectItem value="3">Mercredi</SelectItem>
+                        <SelectItem value="4">Jeudi</SelectItem>
+                        <SelectItem value="5">Vendredi</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        {[1, 5, 10, 15, 20, 25].map((day) => (
+                          <SelectItem key={day} value={day.toString()}>
+                            Le {day} du mois
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes additionnelles (optionnel)</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Conditions particulières, remarques..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProposalDialog(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={() => selectedCompany && sendProposal.mutate(selectedCompany.id)}
+              disabled={sendProposal.isPending || !proposalMessage.trim()}
+            >
+              {sendProposal.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Envoyer la proposition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
