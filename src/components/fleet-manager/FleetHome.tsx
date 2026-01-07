@@ -93,10 +93,11 @@ export const FleetHome = ({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Get all driver IDs from the fleet
+        // Get all driver IDs from the fleet (passed as props, already includes partners)
         const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
         
         if (driverIds.length === 0) {
+          // Even with no direct drivers, we should check for partner drivers stats
           setStats({ totalCourses: 0, monthRevenue: 0, completedCourses: 0 });
           setLoading(false);
           return;

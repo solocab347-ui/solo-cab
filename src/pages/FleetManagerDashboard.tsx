@@ -282,8 +282,8 @@ const FleetManagerDashboard = () => {
         setUserProfile(profileData);
       }
 
-      // Fetch drivers with more details
-      const { data: driversData } = await supabase
+      // Fetch drivers from fleet_manager_drivers (direct drivers)
+      const { data: directDriversData } = await supabase
         .from("fleet_manager_drivers")
         .select(`
           *,
@@ -301,11 +301,69 @@ const FleetManagerDashboard = () => {
         `)
         .eq("fleet_manager_id", fmData.id);
 
-      if (driversData) {
-        // Fetch profiles for drivers
-        const driverUserIds = driversData
+      // Fetch drivers from fleet_driver_partnerships (partner drivers with accepted contracts)
+      const { data: partnerDriversData } = await supabase
+        .from("fleet_driver_partnerships")
+        .select(`
+          id,
+          driver_id,
+          status,
+          accepted_at,
+          driver:drivers(
+            id,
+            vehicle_model,
+            vehicle_brand,
+            status,
+            user_id,
+            rating,
+            vehicle_photos,
+            bio,
+            services_offered
+          )
+        `)
+        .eq("fleet_manager_id", fmData.id)
+        .eq("status", "accepted");
+
+      // Combine both sources, avoiding duplicates
+      const allDriversMap = new Map<string, FleetDriver>();
+      
+      // Add direct drivers
+      if (directDriversData) {
+        directDriversData.forEach((d: any) => {
+          if (d.driver_id) {
+            allDriversMap.set(d.driver_id, {
+              id: d.id,
+              driver_id: d.driver_id,
+              status: d.status || 'active',
+              joined_at: d.joined_at || d.created_at,
+              driver: d.driver
+            });
+          }
+        });
+      }
+
+      // Add partner drivers (overwrite if already exists)
+      if (partnerDriversData) {
+        partnerDriversData.forEach((d: any) => {
+          if (d.driver_id && !allDriversMap.has(d.driver_id)) {
+            allDriversMap.set(d.driver_id, {
+              id: d.id,
+              driver_id: d.driver_id,
+              status: 'partner',
+              joined_at: d.accepted_at || new Date().toISOString(),
+              driver: d.driver
+            });
+          }
+        });
+      }
+
+      const combinedDrivers = Array.from(allDriversMap.values());
+
+      if (combinedDrivers.length > 0) {
+        // Fetch profiles for all drivers
+        const driverUserIds = combinedDrivers
           .filter((d) => d.driver)
-          .map((d) => d.driver.user_id);
+          .map((d) => d.driver!.user_id);
 
         if (driverUserIds.length > 0) {
           const { data: profiles } = await supabase
@@ -313,20 +371,22 @@ const FleetManagerDashboard = () => {
             .select("id, full_name, email, phone, profile_photo_url")
             .in("id", driverUserIds);
 
-          const driversWithProfiles = driversData.map((d) => ({
+          const driversWithProfiles = combinedDrivers.map((d) => ({
             ...d,
             driver: d.driver
               ? {
                   ...d.driver,
-                  profile: profiles?.find((p) => p.id === d.driver.user_id),
+                  profile: profiles?.find((p) => p.id === d.driver!.user_id),
                 }
               : undefined,
           }));
 
           setDrivers(driversWithProfiles);
         } else {
-          setDrivers(driversData);
+          setDrivers(combinedDrivers);
         }
+      } else {
+        setDrivers([]);
       }
 
       // Fetch clients
@@ -411,15 +471,18 @@ const FleetManagerDashboard = () => {
       setPendingCompanyPartnershipsCount(companyPartnershipsCount || 0);
 
       // Fetch pending courses (courses assignées en attente de validation)
-      const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
-      if (driverIds.length > 0) {
+      // Use the driverIds we just gathered from combined sources
+      const allDriverIds = Array.from(allDriversMap.keys());
+      if (allDriverIds.length > 0) {
         const { count: coursesCount } = await supabase
           .from("courses")
           .select("*", { count: 'exact', head: true })
-          .in("driver_id", driverIds)
+          .in("driver_id", allDriverIds)
           .eq("status", "pending");
         
         setPendingCoursesCount(coursesCount || 0);
+      } else {
+        setPendingCoursesCount(0);
       }
 
       // Fetch or generate QR code
