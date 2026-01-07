@@ -213,6 +213,39 @@ const FleetManagerDashboard = () => {
     }
   }, [user]);
 
+  // Realtime subscriptions pour synchronisation instantanée des statistiques
+  useEffect(() => {
+    if (!fleetManager?.id) return;
+
+    const channel = supabase
+      .channel(`fleet-stats-${fleetManager.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fleet_driver_invitations', filter: `fleet_manager_id=eq.${fleetManager.id}` },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fleet_manager_drivers', filter: `fleet_manager_id=eq.${fleetManager.id}` },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fleet_manager_clients', filter: `fleet_manager_id=eq.${fleetManager.id}` },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'courses' },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fleetManager?.id]);
+
   const fetchData = async () => {
     try {
       // Fetch fleet manager profile
@@ -323,15 +356,25 @@ const FleetManagerDashboard = () => {
         }
       }
 
-      // Fetch invitations
+      // Fetch invitations from fleet_driver_invitations (la vraie table utilisée)
       const { data: invitationsData } = await supabase
-        .from("fleet_manager_invitations")
+        .from("fleet_driver_invitations")
         .select("*")
         .eq("fleet_manager_id", fmData.id)
         .order("created_at", { ascending: false });
 
       if (invitationsData) {
-        setInvitations(invitationsData);
+        // Filtrer les invitations expirées non utilisées
+        const now = new Date();
+        const validInvitations = invitationsData.filter(inv => {
+          // Garder les invitations utilisées
+          if (inv.used) return true;
+          // Garder les invitations sans date d'expiration
+          if (!inv.expires_at) return true;
+          // Garder les invitations non expirées
+          return new Date(inv.expires_at) > now;
+        });
+        setInvitations(validInvitations);
       }
 
       // Fetch or generate QR code
