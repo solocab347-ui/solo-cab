@@ -38,6 +38,7 @@ interface PartnerPublicProfilePreviewProps {
   partnerType: PartnerType;
   onContinue: () => void;
   partnerName?: string;
+  viewOnly?: boolean;
 }
 
 interface DriverProfile {
@@ -92,7 +93,8 @@ export function PartnerPublicProfilePreview({
   partnerId,
   partnerType,
   onContinue,
-  partnerName
+  partnerName,
+  viewOnly = false
 }: PartnerPublicProfilePreviewProps) {
   const [loading, setLoading] = useState(true);
   const [driverProfile, setDriverProfile] = useState<DriverProfile | null>(null);
@@ -477,16 +479,28 @@ export function PartnerPublicProfilePreview({
 
         <DialogFooter className="p-6 pt-4 bg-muted/20">
           <div className="flex flex-col gap-2 w-full">
-            <Button 
-              onClick={onContinue}
-              className="w-full gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Continuer vers le contrat
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              Vérifiez que ce partenaire correspond à vos attentes avant de signer
-            </p>
+            {viewOnly ? (
+              <Button 
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="w-full gap-2"
+              >
+                Fermer
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  onClick={onContinue}
+                  className="w-full gap-2"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Continuer vers le contrat
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Vérifiez que ce partenaire correspond à vos attentes avant de signer
+                </p>
+              </>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>
