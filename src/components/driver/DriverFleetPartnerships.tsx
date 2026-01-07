@@ -522,20 +522,64 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
       }
     }
     
-    // Department filter
+    // Department filter - extract department code and match against postal code
     if (filterValues.department) {
-      const address = f.address?.toLowerCase() || "";
-      if (!address.includes(filterValues.department.toLowerCase())) {
-        return false;
+      const deptCodeMatch = filterValues.department.match(/^(\d{2,3})/);
+      const deptCode = deptCodeMatch ? deptCodeMatch[1] : null;
+      const deptNameNorm = filterValues.department.replace(/^\d+\s*-?\s*/, '').trim().toLowerCase();
+      
+      let matches = false;
+      if (deptCode && f.address) {
+        const postalCodeMatch = f.address.match(/\b(\d{5})\b/);
+        if (postalCodeMatch) {
+          const postalCode = postalCodeMatch[1];
+          if (postalCode.startsWith(deptCode)) {
+            matches = true;
+          }
+        }
       }
+      if (!matches && deptNameNorm) {
+        const address = f.address?.toLowerCase() || "";
+        matches = address.includes(deptNameNorm);
+      }
+      if (!matches) return false;
     }
     
-    // Region filter
+    // Region filter - use postal code to determine region
     if (filterValues.region) {
+      const regionNorm = filterValues.region.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      
+      // Department code to region mapping
+      const deptCodeToRegion: Record<string, string> = {
+        '75': 'ile-de-france', '77': 'ile-de-france', '78': 'ile-de-france', 
+        '91': 'ile-de-france', '92': 'ile-de-france', '93': 'ile-de-france', 
+        '94': 'ile-de-france', '95': 'ile-de-france',
+        '13': "provence-alpes-cote d'azur", '06': "provence-alpes-cote d'azur",
+        '69': 'auvergne-rhone-alpes', '31': 'occitanie', '33': 'nouvelle-aquitaine',
+        '59': 'hauts-de-france', '67': 'grand est', '44': 'pays de la loire',
+        '35': 'bretagne', '76': 'normandie', '21': 'bourgogne-franche-comte',
+        '18': 'centre-val de loire', '2A': 'corse', '2B': 'corse', '20': 'corse',
+      };
+      
+      let matches = false;
       const address = f.address?.toLowerCase() || "";
-      if (!address.includes(filterValues.region.toLowerCase())) {
-        return false;
+      
+      // Direct match in address
+      if (address.includes(regionNorm)) {
+        matches = true;
+      } else if (f.address) {
+        // Extract postal code and determine region
+        const postalCodeMatch = f.address.match(/\b(\d{5})\b/);
+        if (postalCodeMatch) {
+          const deptCode = postalCodeMatch[1].substring(0, 2);
+          const fleetRegion = deptCodeToRegion[deptCode];
+          if (fleetRegion && fleetRegion.includes(regionNorm)) {
+            matches = true;
+          }
+        }
       }
+      if (!matches) return false;
     }
     
     // Geographic distance filter
