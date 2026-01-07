@@ -113,6 +113,7 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   
   // Profile preview before signature
   const [previewProfilePartnership, setPreviewProfilePartnership] = useState<Partnership | null>(null);
+  const [previewProfileViewOnly, setPreviewProfileViewOnly] = useState(false);
 
   useEffect(() => {
     if (driverId) {
@@ -545,31 +546,46 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                             </div>
                           </div>
                           {/* Action buttons - stacked on mobile */}
-                          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 sm:shrink-0">
+                          <div className="flex flex-col gap-2 mt-2 sm:mt-0 sm:shrink-0 w-full sm:w-auto">
+                            {/* Bouton Voir le profil - toujours visible */}
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setPreviewProfileViewOnly(true);
+                                setPreviewProfilePartnership(partnership);
+                              }}
+                              className="gap-1.5 h-9 w-full sm:w-auto"
+                            >
+                              <Building2 className="w-3.5 h-3.5" />
+                              <span className="text-xs sm:text-sm">Voir le profil</span>
+                            </Button>
+                            
                             {!partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
-                              <>
-                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="gap-1.5 h-9">
-                                  <Check className="w-3.5 h-3.5" />
+                              <div className="grid grid-cols-3 gap-2">
+                                <Button size="lg" onClick={() => setConfirmSignaturePartnership(partnership)} className="gap-1.5 h-11 col-span-1">
+                                  <Check className="w-4 h-4" />
                                   <span className="text-xs sm:text-sm">Accepter</span>
                                 </Button>
                                 <Button 
                                   variant="secondary"
-                                  size="sm"
+                                  size="lg"
                                   onClick={() => openCounterProposal(partnership)}
-                                  className="gap-1.5 h-9"
+                                  className="gap-1.5 h-11 col-span-1"
                                 >
-                                  <Edit className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Contre-prop.</span>
+                                  <Edit className="w-4 h-4" />
+                                  <span className="text-xs sm:text-sm">Contre</span>
                                 </Button>
                                 <Button 
-                                  variant="outline" 
-                                  size="sm"
+                                  variant="destructive" 
+                                  size="lg"
                                   onClick={() => rejectPartnership(partnership.id, "Refusé par le chauffeur")}
-                                  className="h-9 px-3"
+                                  className="h-11 col-span-1"
                                 >
                                   <X className="w-4 h-4" />
+                                  <span className="text-xs sm:text-sm">Refuser</span>
                                 </Button>
-                              </>
+                              </div>
                             )}
                             {partnership.driver_signed && !partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
                               <Badge variant="secondary" className="py-1.5 text-xs justify-center">
@@ -842,12 +858,18 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
       {/* Partner Profile Preview before signature */}
       <PartnerPublicProfilePreview
         open={!!previewProfilePartnership}
-        onOpenChange={(open) => !open && setPreviewProfilePartnership(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewProfilePartnership(null);
+            setPreviewProfileViewOnly(false);
+          }
+        }}
         partnerId={previewProfilePartnership?.fleet_manager_id || ''}
         partnerType="fleet"
         partnerName={previewProfilePartnership?.fleet_manager?.company_name || 'Gestionnaire de flotte'}
+        viewOnly={previewProfileViewOnly}
         onContinue={() => {
-          if (previewProfilePartnership) {
+          if (previewProfilePartnership && !previewProfileViewOnly) {
             setConfirmSignaturePartnership(previewProfilePartnership);
             setPreviewProfilePartnership(null);
           }
