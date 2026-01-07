@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Crown, Users, Tag, Loader2, Phone, Mail, Copy, ExternalLink, User } from "lucide-react";
+import { Crown, Users, Tag, Loader2, Phone, Mail, Copy, ExternalLink, User, Search } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,8 +25,9 @@ interface CongressRegistration {
     contact_phone: string | null;
     contact_email: string | null;
     is_pioneer: boolean | null;
-    solo_number?: string | null;
+    nfc_tag_number?: string | null;
     public_profile_enabled?: boolean | null;
+    driver_code?: string | null;
   } | null;
   profile?: {
     full_name: string | null;
@@ -45,6 +46,27 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
   const [nfcTagNumber, setNfcTagNumber] = useState("");
   const [isUpdatingNfc, setIsUpdatingNfc] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filtrer les inscriptions par nom, email ou code chauffeur
+  const filteredRegistrations = useMemo(() => {
+    if (!searchQuery.trim()) return registrations;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return registrations.filter((reg) => {
+      const name = reg.profile?.full_name?.toLowerCase() || "";
+      const email = (reg.driver?.contact_email || reg.profile?.email || "").toLowerCase();
+      const driverCode = (reg.driver?.driver_code || `DRV-${reg.driver_id.slice(0, 6).toUpperCase()}`).toLowerCase();
+      const phone = (reg.driver?.contact_phone || reg.profile?.phone || "").toLowerCase();
+      const nfcTag = (reg.nfc_tag_number || "").toLowerCase();
+      
+      return name.includes(query) || 
+             email.includes(query) || 
+             driverCode.includes(query) ||
+             phone.includes(query) ||
+             nfcTag.includes(query);
+    });
+  }, [registrations, searchQuery]);
 
   const getPublicProfileLink = (driverId: string) => {
     return `${window.location.origin}/chauffeur/${driverId}`;
@@ -106,12 +128,29 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
           Gérez les tags NFC pour chaque chauffeur inscrit - Le lien profil public servira à programmer le badge NFC
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Barre de recherche */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, email, code chauffeur ou tag NFC..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        {filteredRegistrations.length !== registrations.length && (
+          <p className="text-sm text-muted-foreground">
+            {filteredRegistrations.length} résultat(s) sur {registrations.length}
+          </p>
+        )}
+        
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>N° Solo</TableHead>
+                <TableHead>Code Chauffeur</TableHead>
                 <TableHead>Chauffeur</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Lien Profil Public</TableHead>
@@ -121,13 +160,13 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {registrations.map((reg) => {
+              {filteredRegistrations.map((reg) => {
                 const profileLink = getPublicProfileLink(reg.driver_id);
                 return (
                   <TableRow key={reg.id}>
                     <TableCell>
                       <Badge variant="outline" className="font-mono">
-                        {reg.driver?.solo_number || `SOLO-${reg.driver_id.slice(0, 6).toUpperCase()}`}
+                        {reg.driver?.driver_code || `DRV-${reg.driver_id.slice(0, 6).toUpperCase()}`}
                       </Badge>
                     </TableCell>
                     <TableCell>
