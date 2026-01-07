@@ -662,7 +662,7 @@ Cordialement`;
                       setLocationCoords(null);
                       if (debounceRef.current) clearTimeout(debounceRef.current);
                       debounceRef.current = setTimeout(async () => {
-                        if (mapboxToken && e.target.value.length >= 3) {
+                        if (mapboxToken && e.target.value.length >= 2) {
                           setLoadingLocationSuggestions(true);
                           try {
                             const response = await fetch(
@@ -708,8 +708,8 @@ Cordialement`;
                   <div
                     className="fixed bg-popover border rounded-md shadow-lg z-[9999] max-h-60 overflow-auto"
                     style={{
-                      top: locationInputRef.current.getBoundingClientRect().bottom + window.scrollY + 4,
-                      left: locationInputRef.current.getBoundingClientRect().left + window.scrollX,
+                      top: locationInputRef.current.getBoundingClientRect().bottom + 4,
+                      left: locationInputRef.current.getBoundingClientRect().left,
                       width: locationInputRef.current.getBoundingClientRect().width,
                     }}
                   >
