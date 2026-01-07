@@ -24,7 +24,8 @@ import {
   Timer,
   Building2,
   CreditCard,
-  Receipt
+  Receipt,
+  Send
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -125,6 +126,7 @@ export function EmployeeCoursesList({
 }: EmployeeCoursesListProps) {
   const [activeTab, setActiveTab] = useState("pending");
   const [courses, setCourses] = useState<CourseData[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
@@ -145,6 +147,67 @@ export function EmployeeCoursesList({
       if (!session) {
         console.error("[EmployeeCoursesList] No session");
         return;
+      }
+
+      // Récupérer les demandes de courses en attente pour cet employé
+      const { data: requestsData, error: requestsError } = await supabase
+        .from("company_course_requests")
+        .select(`
+          id,
+          pickup_address,
+          destination_address,
+          scheduled_date,
+          status,
+          passengers_count,
+          notes,
+          created_at,
+          quotes:company_course_quotes(
+            id,
+            total_price,
+            status,
+            driver:drivers(
+              user_id,
+              company_name
+            )
+          )
+        `)
+        .eq("company_id", companyId)
+        .eq("employee_id", employeeId)
+        .in("status", ["draft", "quotes_generated", "sent_to_drivers"])
+        .order("created_at", { ascending: false });
+
+      if (requestsError) {
+        console.error("[EmployeeCoursesList] Error fetching pending requests:", requestsError);
+      } else {
+        console.log("[EmployeeCoursesList] Pending requests found:", requestsData?.length);
+        
+        // Fetch driver profiles for quotes
+        const driverUserIds = new Set<string>();
+        requestsData?.forEach((r: any) => {
+          r.quotes?.forEach((q: any) => {
+            if (q.driver?.user_id) driverUserIds.add(q.driver.user_id);
+          });
+        });
+        
+        let profilesMap = new Map<string, string>();
+        if (driverUserIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", Array.from(driverUserIds));
+          profiles?.forEach((p: any) => profilesMap.set(p.id, p.full_name));
+        }
+        
+        // Enrich requests with driver names
+        const enrichedRequests = requestsData?.map((r: any) => ({
+          ...r,
+          quotes: r.quotes?.map((q: any) => ({
+            ...q,
+            driver_name: q.driver?.user_id ? profilesMap.get(q.driver.user_id) : q.driver?.company_name
+          }))
+        })) || [];
+        
+        setPendingRequests(enrichedRequests);
       }
 
       // Récupérer les company_courses liées à cet utilisateur
@@ -383,10 +446,23 @@ export function EmployeeCoursesList({
       () => fetchCourses()
     );
 
+    // Subscribe to company_course_requests changes
+    const unsubscribeRequests = subscriptionManager.subscribe(
+      `employee-requests-${employeeId}`,
+      {
+        table: "company_course_requests",
+        event: "*",
+        filter: `company_id=eq.${companyId}`,
+        debounceMs: 500
+      },
+      () => fetchCourses()
+    );
+
     // Return combined cleanup
     return () => {
       unsubscribeCourses?.();
       unsubscribeDevis?.();
+      unsubscribeRequests?.();
     };
   };
 
@@ -860,14 +936,91 @@ export function EmployeeCoursesList({
   const awaitingQuote = courses.filter(c => 
     c.status === "pending" && !c.devis
   );
-  // Combiner les devis à valider avec ceux en attente de génération
+  // Combiner les devis à valider avec ceux en attente de génération ET les demandes en attente
   const allPendingQuotes = [...pendingQuotes, ...awaitingQuote];
+  // Total des éléments en attente = courses + demandes
+  const totalPending = allPendingQuotes.length + pendingRequests.length;
   
   const confirmedCourses = courses.filter(c => 
     c.status === "accepted" || c.status === "in_progress"
   );
   const completedCourses = courses.filter(c => c.status === "completed");
   const cancelledCourses = courses.filter(c => c.status === "cancelled");
+
+  // Fonction pour obtenir le statut d'une demande
+  const getRequestStatusConfig = (status: string) => {
+    const configs: Record<string, any> = {
+      draft: { label: "Brouillon", color: "text-gray-500", bgColor: "bg-gray-500/10", icon: Clock },
+      quotes_generated: { label: "Devis générés", color: "text-blue-500", bgColor: "bg-blue-500/10", icon: FileText },
+      sent_to_drivers: { label: "Envoyé aux chauffeurs", color: "text-amber-500", bgColor: "bg-amber-500/10", icon: Send }
+    };
+    return configs[status] || configs.draft;
+  };
+
+  // Render une carte de demande en attente
+  const renderRequestCard = (request: any) => {
+    const statusConfig = getRequestStatusConfig(request.status);
+    const StatusIcon = statusConfig.icon;
+    const bestQuote = request.quotes?.find((q: any) => q.status === "sent") || request.quotes?.[0];
+
+    return (
+      <Card key={request.id} className="group overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300">
+        <CardContent className="p-4 sm:p-5">
+          {/* Header avec statut */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-xl ${statusConfig.bgColor} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
+                <StatusIcon className={`w-5 h-5 ${statusConfig.color}`} />
+              </div>
+              <div>
+                <Badge className={`${statusConfig.bgColor} ${statusConfig.color} border-0 font-semibold`}>
+                  {statusConfig.label}
+                </Badge>
+                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3" />
+                  {format(new Date(request.scheduled_date), "EEE d MMM • HH:mm", { locale: fr })}
+                </p>
+              </div>
+            </div>
+            {bestQuote && (
+              <div className="text-right">
+                <p className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {bestQuote.total_price?.toFixed(0)}€
+                </p>
+                <p className="text-[10px] text-muted-foreground">Estimation</p>
+              </div>
+            )}
+          </div>
+
+          {/* Adresses */}
+          <div className="relative space-y-0 mb-4 pl-3">
+            <div className="absolute left-0.5 top-2 bottom-2 w-0.5 bg-gradient-to-b from-green-500 via-muted to-red-500 rounded-full" />
+            <div className="flex items-start gap-3 py-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 -ml-[5px] ring-2 ring-green-500/20" />
+              <p className="text-sm text-foreground/90 leading-relaxed">{request.pickup_address}</p>
+            </div>
+            <div className="flex items-start gap-3 py-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 -ml-[5px] ring-2 ring-red-500/20" />
+              <p className="text-sm text-foreground/90 leading-relaxed">{request.destination_address}</p>
+            </div>
+          </div>
+
+          {/* Info sur les chauffeurs contactés */}
+          {request.quotes && request.quotes.length > 0 && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-600 flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                {request.quotes.length} chauffeur(s) contacté(s)
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                En attente de confirmation d'un chauffeur
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
@@ -1134,7 +1287,7 @@ export function EmployeeCoursesList({
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                 activeTab === "pending" ? "bg-white/20" : "bg-amber-500/20 text-amber-500"
               }`}>
-                {allPendingQuotes.length}
+                {totalPending}
               </span>
             </div>
             <span className="text-[10px] sm:text-xs font-semibold">Devis</span>
@@ -1273,7 +1426,7 @@ export function EmployeeCoursesList({
       <div className="space-y-4">
         {/* Pending Quotes */}
         {activeTab === "pending" && (
-          allPendingQuotes.length === 0 ? (
+          totalPending === 0 ? (
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardContent className="text-center py-12">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4">
@@ -1299,6 +1452,9 @@ export function EmployeeCoursesList({
             </Card>
           ) : (
             <div className="space-y-4">
+              {/* Afficher d'abord les demandes en attente (company_course_requests) */}
+              {pendingRequests.map(renderRequestCard)}
+              {/* Puis les courses avec devis en attente */}
               {allPendingQuotes.map(renderCourseCard)}
             </div>
           )
