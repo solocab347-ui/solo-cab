@@ -27,13 +27,15 @@ import {
   Percent,
   AlertTriangle,
   Car,
-  Edit
+  Edit,
+  Ban
 } from "lucide-react";
 import { PartnershipModificationDialog } from "@/components/fleet-manager/PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
+import { FleetDriverBlockManager, BlockDialog, useFleetDriverBlocks } from "@/components/shared/FleetDriverBlockManager";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DriverFleetPartnershipsProps {
@@ -391,14 +393,14 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={pendingPartnerships.length > 0 ? "pending" : "explore"} className="space-y-4 sm:space-y-6">
-            <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsList className="grid w-full grid-cols-4 h-auto">
               <TabsTrigger value="explore" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5">
                 <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>Rechercher</span>
+                <span className="hidden sm:inline">Rechercher</span>
               </TabsTrigger>
               <TabsTrigger value="pending" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5 relative">
                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>En attente</span>
+                <span className="hidden sm:inline">En attente</span>
                 {pendingPartnerships.length > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg">
                     {pendingPartnerships.length}
@@ -407,12 +409,16 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
               </TabsTrigger>
               <TabsTrigger value="active" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5">
                 <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>Validés</span>
+                <span className="hidden sm:inline">Validés</span>
                 {activePartnerships.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
                     {activePartnerships.length}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="blocked" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5">
+                <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Bloqués</span>
               </TabsTrigger>
             </TabsList>
 
@@ -692,6 +698,15 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Blocked Tab */}
+            <TabsContent value="blocked">
+              <FleetDriverBlockManager
+                entityId={driverId}
+                entityType="driver"
+                onBlockChange={fetchData}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

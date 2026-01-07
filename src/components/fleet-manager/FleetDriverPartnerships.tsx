@@ -38,7 +38,8 @@ import {
   Building2,
   Filter,
   Edit,
-  Navigation
+  Navigation,
+  Ban
 } from "lucide-react";
 import { extractCityDepartment } from "@/lib/addressPrivacy";
 import { getServiceLabel, getServiceIcon } from "@/lib/serviceLabels";
@@ -50,6 +51,7 @@ import { PendingModificationBanner } from "@/components/shared/PendingModificati
 import { PartnershipContractDocument } from "./PartnershipContractDocument";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
+import { FleetDriverBlockManager } from "@/components/shared/FleetDriverBlockManager";
 
 // Vehicle categories
 const VEHICLE_CATEGORIES = [
@@ -630,18 +632,22 @@ export const FleetDriverPartnerships = ({
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="explore" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="explore" className="gap-2">
                 <Search className="w-4 h-4" />
-                Explorer
+                <span className="hidden sm:inline">Explorer</span>
               </TabsTrigger>
               <TabsTrigger value="pending" className="gap-2">
                 <Clock className="w-4 h-4" />
-                En attente ({pendingPartnerships.length})
+                <span className="hidden sm:inline">En attente</span> ({pendingPartnerships.length})
               </TabsTrigger>
               <TabsTrigger value="active" className="gap-2">
                 <Check className="w-4 h-4" />
-                Actifs ({activePartnerships.length})
+                <span className="hidden sm:inline">Actifs</span> ({activePartnerships.length})
+              </TabsTrigger>
+              <TabsTrigger value="blocked" className="gap-2">
+                <Ban className="w-4 h-4" />
+                <span className="hidden sm:inline">Bloqués</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1159,6 +1165,15 @@ export const FleetDriverPartnerships = ({
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Blocked Tab */}
+            <TabsContent value="blocked">
+              <FleetDriverBlockManager
+                entityId={fleetManagerId}
+                entityType="fleet_manager"
+                onBlockChange={fetchData}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
