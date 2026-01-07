@@ -36,6 +36,7 @@ interface PartnershipSignatureConfirmationProps {
   onConfirmSign: () => void;
   signing?: boolean;
   partnershipType?: 'driver' | 'fleet'; // driver = chauffeur-chauffeur, fleet = chauffeur-gestionnaire
+  mode?: 'accept' | 'propose'; // accept = accepter une offre, propose = faire une demande
 }
 
 const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
@@ -145,6 +146,7 @@ export function PartnershipSignatureConfirmation({
   onConfirmSign,
   signing,
   partnershipType = 'driver',
+  mode = 'accept',
 }: PartnershipSignatureConfirmationProps) {
   const [acceptedObligations, setAcceptedObligations] = useState<Set<string>>(new Set());
   const [globalAcceptance, setGlobalAcceptance] = useState(false);
@@ -186,9 +188,14 @@ export function PartnershipSignatureConfirmation({
               <FileText className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <DialogTitle className="text-xl">Confirmation de signature</DialogTitle>
+              <DialogTitle className="text-xl">
+                {mode === 'propose' ? 'Engagements contractuels' : 'Confirmation de signature'}
+              </DialogTitle>
               <DialogDescription>
-                Partenariat avec <span className="font-semibold text-foreground">{partnerName}</span>
+                {mode === 'propose' 
+                  ? <>Demande de partenariat à <span className="font-semibold text-foreground">{partnerName}</span></>
+                  : <>Partenariat avec <span className="font-semibold text-foreground">{partnerName}</span></>
+                }
               </DialogDescription>
             </div>
           </div>
@@ -216,8 +223,10 @@ export function PartnershipSignatureConfirmation({
           <Alert className="mb-4 border-amber-500/50 bg-amber-500/10">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
-              <strong>Attention :</strong> En signant ce contrat, vous vous engagez légalement. 
-              Veuillez lire attentivement chaque clause avant d'accepter.
+              <strong>Attention :</strong> {mode === 'propose' 
+                ? "En envoyant cette demande, vous vous engagez à respecter les obligations ci-dessous si le partenariat est accepté."
+                : "En signant ce contrat, vous vous engagez légalement. Veuillez lire attentivement chaque clause avant d'accepter."
+              }
             </AlertDescription>
           </Alert>
 
@@ -282,9 +291,10 @@ export function PartnershipSignatureConfirmation({
                   Déclaration sur l'honneur
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  Je déclare avoir lu, compris et accepté l'intégralité des clauses du contrat de partenariat. 
-                  Je m'engage sur l'honneur à respecter ces obligations et comprends que tout manquement 
-                  pourra entraîner des sanctions, la résiliation du partenariat et d'éventuelles poursuites judiciaires.
+                  {mode === 'propose'
+                    ? "Je déclare avoir lu, compris et accepté l'intégralité des engagements ci-dessus. En envoyant cette demande de partenariat, je m'engage sur l'honneur à respecter ces obligations si ma demande est acceptée."
+                    : "Je déclare avoir lu, compris et accepté l'intégralité des clauses du contrat de partenariat. Je m'engage sur l'honneur à respecter ces obligations et comprends que tout manquement pourra entraîner des sanctions, la résiliation du partenariat et d'éventuelles poursuites judiciaires."
+                  }
                 </p>
               </label>
             </div>
@@ -309,12 +319,12 @@ export function PartnershipSignatureConfirmation({
               {signing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Signature en cours...
+                  {mode === 'propose' ? 'Envoi en cours...' : 'Signature en cours...'}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  Je signe le contrat
+                  {mode === 'propose' ? "J'accepte et j'envoie ma demande" : 'Je signe le contrat'}
                 </>
               )}
             </Button>
