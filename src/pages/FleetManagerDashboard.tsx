@@ -479,96 +479,77 @@ const FleetManagerDashboard = () => {
           }
           setActiveTab(tab);
         }} className="space-y-6">
-          {/* Navigation Tabs - Design moderne sur 2 lignes de 4 */}
-          <div className="relative animate-fade-in">
-            {/* Glow background effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-info/10 rounded-3xl blur-2xl opacity-50" />
-            
-            <div className="relative glass-strong p-4 rounded-3xl space-y-3">
+          {/* Navigation Tabs - Compact Design */}
+          <div className="relative">
+            <div className="bg-card/50 backdrop-blur-sm border border-border/50 p-2 rounded-xl space-y-1.5">
               {/* Première ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-3 h-auto bg-transparent p-0 stagger-fade-in">
+              <TabsList className="w-full grid grid-cols-4 gap-1.5 h-auto bg-transparent p-0">
                 <TabsTrigger 
                   value="home" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-primary data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-accent data-[state=active]:text-white data-[state=active]:shadow-elegant data-[state=active]:scale-[1.03] data-[state=active]:border-primary/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-primary/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Home className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.home')}</span>
+                  <Home className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.home')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="drivers" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-primary data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-primary/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-primary/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Car className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.drivers')}</span>
+                  <Car className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.drivers')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="clients" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-success data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-success data-[state=active]:scale-[1.03] data-[state=active]:border-success/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-success/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-success data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Users className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.clients')}</span>
+                  <Users className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.clients')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="courses" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-info data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-info/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-info/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-info data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Route className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.courses')}</span>
+                  <Route className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.courses')}</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* Deuxième ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-3 h-auto bg-transparent p-0 stagger-fade-in">
+              <TabsList className="w-full grid grid-cols-4 gap-1.5 h-auto bg-transparent p-0">
                 <TabsTrigger 
                   value="stats" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-accent data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-premium data-[state=active]:scale-[1.03] data-[state=active]:border-accent/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-accent/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-accent data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <BarChart3 className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.statistics')}</span>
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.statistics')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="tools" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-warning data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-warning data-[state=active]:scale-[1.03] data-[state=active]:border-warning/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-warning/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-warning data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Wrench className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('common.more')}</span>
+                  <Wrench className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('common.more')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 hover-glow-info data-[state=active]:bg-gradient-to-br data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-trust data-[state=active]:scale-[1.03] data-[state=active]:border-cyan-500/50 ${isAccountRestricted ? 'ring-2 ring-destructive ring-offset-2 ring-offset-background animate-pulse' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-cyan-500/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-cyan-500 data-[state=active]:text-white ${isAccountRestricted ? 'ring-2 ring-destructive' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <FileText className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.documents')}</span>
+                  <FileText className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.documents')}</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="settings" 
                   disabled={isAccountRestricted}
-                  className={`group relative flex flex-col items-center gap-2 py-4 px-3 rounded-2xl transition-all duration-500 bg-muted/20 border border-white/5 data-[state=active]:bg-gradient-to-br data-[state=active]:from-slate-600 data-[state=active]:to-slate-700 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-[1.03] data-[state=active]:border-slate-500/50 ${isAccountRestricted ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted/40 hover:scale-[1.02] hover:border-slate-500/20'}`}
+                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-muted-foreground data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
                 >
-                  <div className="relative">
-                    <Settings className="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45 group-data-[state=active]:drop-shadow-glow" />
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide">{t('fleetDashboard.tabs.settings')}</span>
+                  <Settings className="w-4 h-4" />
+                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.settings')}</span>
                 </TabsTrigger>
               </TabsList>
             </div>
