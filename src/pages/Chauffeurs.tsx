@@ -419,24 +419,43 @@ const Chauffeurs = () => {
               <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
             </div>
 
-            {/* Option pour inclure les flottes - EN HAUT */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border mb-6">
-              <div className="flex items-center gap-3">
-                <Building2 className="w-5 h-5 text-emerald-600" />
-                <div>
-                  <Label htmlFor="include-fleets-top" className="text-sm font-medium cursor-pointer">
-                    Rechercher des flottes VTC
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Inclure les chauffeurs des gestionnaires de flotte
-                  </p>
+            {/* Filtres de recherche - EN HAUT */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Inclure les flottes */}
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <Building2 className="w-5 h-5 text-emerald-600" />
+                  <div>
+                    <Label htmlFor="include-fleets-top" className="text-sm font-medium cursor-pointer">
+                      Flottes VTC
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Inclure les gestionnaires de flotte
+                    </p>
+                  </div>
                 </div>
+                <Switch
+                  id="include-fleets-top"
+                  checked={includeFleets}
+                  onCheckedChange={setIncludeFleets}
+                />
               </div>
-              <Switch
-                id="include-fleets-top"
-                checked={includeFleets}
-                onCheckedChange={setIncludeFleets}
-              />
+              
+              {/* Chauffeurs indépendants (toujours actif) */}
+              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div>
+                    <Label className="text-sm font-medium">
+                      Chauffeurs indépendants
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Toujours inclus dans la recherche
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="default" className="bg-primary">Actif</Badge>
+              </div>
             </div>
 
             {/* Search Mode Tabs */}

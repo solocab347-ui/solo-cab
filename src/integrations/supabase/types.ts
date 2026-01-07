@@ -4488,6 +4488,7 @@ export type Database = {
           commission_type: string
           contract_signed: boolean | null
           created_at: string
+          default_equipment_type: string | null
           driver_confirmed_final_payment: boolean | null
           driver_confirmed_final_payment_at: string | null
           driver_id: string
@@ -4537,6 +4538,7 @@ export type Database = {
           commission_type?: string
           contract_signed?: boolean | null
           created_at?: string
+          default_equipment_type?: string | null
           driver_confirmed_final_payment?: boolean | null
           driver_confirmed_final_payment_at?: string | null
           driver_id: string
@@ -4586,6 +4588,7 @@ export type Database = {
           commission_type?: string
           contract_signed?: boolean | null
           created_at?: string
+          default_equipment_type?: string | null
           driver_confirmed_final_payment?: boolean | null
           driver_confirmed_final_payment_at?: string | null
           driver_id?: string
@@ -5204,6 +5207,166 @@ export type Database = {
           weekend_surcharge?: number | null
         }
         Relationships: []
+      }
+      fleet_partner_courses: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          commission_amount: number | null
+          commission_percentage: number | null
+          completed_at: string | null
+          course_amount: number | null
+          course_id: string
+          created_at: string
+          decline_reason: string | null
+          declined_at: string | null
+          driver_id: string
+          driver_notified_at: string | null
+          earnings_for_driver: number | null
+          equipment_type: string | null
+          fleet_manager_id: string
+          fleet_notified_at: string | null
+          id: string
+          partnership_id: string
+          payment_method_used: string | null
+          payment_settled: boolean | null
+          payment_settled_at: string | null
+          pool_group_id: string | null
+          sharing_mode: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          completed_at?: string | null
+          course_amount?: number | null
+          course_id: string
+          created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          driver_id: string
+          driver_notified_at?: string | null
+          earnings_for_driver?: number | null
+          equipment_type?: string | null
+          fleet_manager_id: string
+          fleet_notified_at?: string | null
+          id?: string
+          partnership_id: string
+          payment_method_used?: string | null
+          payment_settled?: boolean | null
+          payment_settled_at?: string | null
+          pool_group_id?: string | null
+          sharing_mode?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          completed_at?: string | null
+          course_amount?: number | null
+          course_id?: string
+          created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          driver_id?: string
+          driver_notified_at?: string | null
+          earnings_for_driver?: number | null
+          equipment_type?: string | null
+          fleet_manager_id?: string
+          fleet_notified_at?: string | null
+          id?: string
+          partnership_id?: string
+          payment_method_used?: string | null
+          payment_settled?: boolean | null
+          payment_settled_at?: string | null
+          pool_group_id?: string | null
+          sharing_mode?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_partner_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_driver_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fleet_partnership_payments: {
         Row: {
@@ -8061,13 +8224,36 @@ export type Database = {
           user_id: string
         }[]
       }
-      find_nearest_available_fleet_driver: {
+      find_nearest_available_fleet_driver:
+        | {
+            Args: {
+              p_duration_minutes?: number
+              p_favorite_driver_id?: string
+              p_fleet_manager_id: string
+              p_pickup_latitude?: number
+              p_pickup_longitude?: number
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_duration_minutes?: number
+              p_excluded_driver_id?: string
+              p_fleet_manager_id: string
+              p_pickup_latitude: number
+              p_pickup_longitude: number
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+      find_nearest_available_fleet_partner: {
         Args: {
           p_duration_minutes?: number
-          p_excluded_driver_id?: string
+          p_favorite_driver_id?: string
           p_fleet_manager_id: string
-          p_pickup_latitude: number
-          p_pickup_longitude: number
+          p_pickup_latitude?: number
+          p_pickup_longitude?: number
           p_scheduled_date: string
         }
         Returns: string
@@ -8442,6 +8628,10 @@ export type Database = {
           p_fleet_manager_id?: string
         }
         Returns: boolean
+      }
+      is_fleet_course_shared_locked: {
+        Args: { p_course_id: string }
+        Returns: Json
       }
       is_fleet_driver_blocked: {
         Args: { p_driver_id: string; p_fleet_manager_id: string }
