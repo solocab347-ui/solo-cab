@@ -222,6 +222,21 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
     try {
       const commission = selectedFleet.default_partnership_commission || 10;
 
+      // Vérifier si un partenariat actif ou en attente existe déjà
+      const { data: existingPartnership } = await supabase
+        .from("fleet_driver_partnerships")
+        .select("id, status")
+        .eq("fleet_manager_id", selectedFleet.id)
+        .eq("driver_id", driverId)
+        .in("status", ["pending", "accepted"])
+        .maybeSingle();
+
+      if (existingPartnership) {
+        toast.error("Un partenariat existe déjà avec ce gestionnaire");
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .insert({
