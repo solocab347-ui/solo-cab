@@ -33,6 +33,7 @@ interface FleetDriver {
     status: string;
     rating?: number | null;
     vehicle_photos?: string[] | null;
+    show_rating_for_sharing?: boolean | null;
     profile?: {
       full_name: string;
       profile_photo_url?: string | null;
@@ -444,7 +445,8 @@ export const FleetHome = ({
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {driver.driver?.rating && (
+                    {/* Rating visible uniquement si show_rating_for_sharing est true */}
+                    {driver.driver?.show_rating_for_sharing !== false && driver.driver?.rating && driver.driver.rating > 0 && (
                       <div className="flex items-center gap-1.5 px-2 py-1 bg-warning/10 rounded-lg">
                         <Star className="w-4 h-4 text-warning fill-warning" />
                         <span className="text-sm font-bold text-warning">{driver.driver.rating.toFixed(1)}</span>

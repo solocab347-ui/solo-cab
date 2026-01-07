@@ -162,7 +162,7 @@ export const CityAutocomplete = ({
     return (
       <div
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: `${dropdownPosition.top}px`,
           left: `${dropdownPosition.left}px`,
           width: `${dropdownPosition.width}px`,
