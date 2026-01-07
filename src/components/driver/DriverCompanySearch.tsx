@@ -231,12 +231,37 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
       if (!addressNorm.includes(mainCity)) return false;
     }
 
-    // Department filter
+    // Department filter - extract department code from filter and match against postal code in address
     if (filterValues.department) {
-      const deptNorm = normalizeText(filterValues.department);
+      // Extract department code from filter (e.g., "91" from "91 - Essonne")
+      const deptCodeMatch = filterValues.department.match(/^(\d{2,3})/);
+      const deptCode = deptCodeMatch ? deptCodeMatch[1] : null;
+      const deptNameNorm = normalizeText(filterValues.department.replace(/^\d+\s*-?\s*/, '')); // Get name part
+      
       const addressNorm = normalizeText(c.address);
       const companyDeptNorm = normalizeText(c.department);
-      if (!addressNorm.includes(deptNorm) && !companyDeptNorm.includes(deptNorm)) return false;
+      
+      let matches = false;
+      
+      // Check if postal code in address starts with department code
+      if (deptCode && c.address) {
+        const postalCodeMatch = c.address.match(/\b(\d{5})\b/);
+        if (postalCodeMatch) {
+          const postalCode = postalCodeMatch[1];
+          if (deptCode.length === 2 && postalCode.startsWith(deptCode)) {
+            matches = true;
+          } else if (deptCode.length === 3 && postalCode.startsWith(deptCode)) {
+            matches = true;
+          }
+        }
+      }
+      
+      // Also check department name in address or company department field
+      if (!matches) {
+        matches = addressNorm.includes(deptNameNorm) || companyDeptNorm.includes(deptNameNorm);
+      }
+      
+      if (!matches) return false;
     }
 
     // Region filter
