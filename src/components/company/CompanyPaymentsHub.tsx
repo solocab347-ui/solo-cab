@@ -100,6 +100,7 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
   const [expandedPayments, setExpandedPayments] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDriverFilter, setSelectedDriverFilter] = useState<string | null>(null);
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // Fetch agreements with payment settings
@@ -1133,8 +1134,6 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
       </Card>
     );
   };
-
-  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
 
   const toggleCourseExpanded = (courseId: string) => {
     const newExpanded = new Set(expandedCourses);
