@@ -202,7 +202,7 @@ export const FleetHome = ({
         <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Accès Rapide</h2>
         
         {/* Première ligne - 4 boutons */}
-        <div className="grid grid-cols-4 gap-2 mb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
           <Card 
             className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
             onClick={() => onTabChange("courses")}
@@ -258,7 +258,7 @@ export const FleetHome = ({
         </div>
 
         {/* Deuxième ligne - 4 boutons (Outils) */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Card 
             className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
             onClick={() => onTabChange("partnerships")}
@@ -330,7 +330,7 @@ export const FleetHome = ({
             {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
           </Badge>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Card className="p-3 text-center border-border/50">
             <div className="flex flex-col items-center gap-1">
               <Car className="w-4 h-4 text-primary" />
