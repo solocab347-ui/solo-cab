@@ -400,9 +400,12 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
            description.includes(searchTerm.toLowerCase());
   });
 
-  // Filter out fleets with existing partnerships
-  const existingPartnerFleetIds = partnerships.map(p => p.fleet_manager_id);
-  const availableFleets = filteredFleets.filter(f => !existingPartnerFleetIds.includes(f.id));
+  // Filter out fleets with existing active or pending partnerships only
+  // Rejected and terminated partnerships should NOT block showing the fleet manager in search
+  const activeOrPendingPartnerFleetIds = partnerships
+    .filter(p => p.status === "pending" || p.status === "accepted")
+    .map(p => p.fleet_manager_id);
+  const availableFleets = filteredFleets.filter(f => !activeOrPendingPartnerFleetIds.includes(f.id));
 
   const activePartnerships = partnerships.filter(p => p.status === "accepted" && p.contract_signed);
   const pendingPartnerships = partnerships.filter(p => p.status === "pending" || (p.status === "accepted" && !p.contract_signed));
