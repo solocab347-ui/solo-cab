@@ -1,24 +1,34 @@
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet, Package, Filter, ChevronDown, Navigation, X } from "lucide-react";
+import { Loader2, Search, Building2, MapPin, Mail, Send, Car, Users, Briefcase, Eye, Euro, Star, Phone, Package } from "lucide-react";
+import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
+
+// Haversine formula to calculate distance between two coordinates
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
 
 interface DriverCompanySearchProps {
   driverId: string;
-  initialCompanyId?: string; // Pour pré-sélectionner une entreprise après un refus
+  initialCompanyId?: string;
 }
 
 const PAYMENT_METHODS = [
@@ -35,25 +45,53 @@ const PAYMENT_FREQUENCIES = [
   { value: "mixed", label: "Mixte", description: "Selon l'accord" },
 ];
 
+// Helper function to normalize text for searching
+const normalizeText = (text: string | null | undefined): string => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+};
+
+// Department to region mapping for France
+const departmentToRegion: Record<string, string> = {
+  'paris': 'ile-de-france',
+  'seine-et-marne': 'ile-de-france',
+  'yvelines': 'ile-de-france',
+  'essonne': 'ile-de-france',
+  'hauts-de-seine': 'ile-de-france',
+  'seine-saint-denis': 'ile-de-france',
+  'val-de-marne': 'ile-de-france',
+  'val-d\'oise': 'ile-de-france',
+  'bouches-du-rhone': 'provence-alpes-cote d\'azur',
+  'rhone': 'auvergne-rhone-alpes',
+  'haute-garonne': 'occitanie',
+  'gironde': 'nouvelle-aquitaine',
+  'nord': 'hauts-de-france',
+  'alpes-maritimes': 'provence-alpes-cote d\'azur',
+  'loire-atlantique': 'pays de la loire',
+  'bas-rhin': 'grand est',
+  'herault': 'occitanie',
+  'ille-et-vilaine': 'bretagne',
+  'seine-maritime': 'normandie',
+  'finistere': 'bretagne',
+};
+
 export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<any>(null);
   
-  // Filters
-  const [showFilters, setShowFilters] = useState(false);
-  const [locationAddress, setLocationAddress] = useState("");
-  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [radiusKm, setRadiusKm] = useState(25);
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
-  const [loadingLocationSuggestions, setLoadingLocationSuggestions] = useState(false);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const locationInputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  // Advanced location filter
+  const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
+  
+  // Geocoded company coordinates for radius filtering
+  const [companyCoords, setCompanyCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const [geocodingInProgress, setGeocodingInProgress] = useState(false);
   
   // Proposal form state
   const [presentation, setPresentation] = useState("");
@@ -61,21 +99,6 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const [paymentFrequency, setPaymentFrequency] = useState("per_course");
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
-
-  // Fetch Mapbox token
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (!error && data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (error) {
-        console.error('Error fetching Mapbox token:', error);
-      }
-    };
-    fetchToken();
-  }, []);
 
   // Fetch driver profile for auto-fill
   const { data: driverProfile } = useQuery({
@@ -116,31 +139,142 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
     enabled: !!driverId,
   });
 
-  // Fetch visible companies
-  const { data: allCompanies, isLoading } = useQuery({
-    queryKey: ["visible-companies", searchTerm],
+  // Fetch all visible companies (base query)
+  const { data: allCompaniesBase, isLoading } = useQuery({
+    queryKey: ["visible-companies-base"],
     queryFn: async () => {
-      // Recherche les entreprises visibles aux chauffeurs (validated OU active)
-      let query = supabase
+      const { data, error } = await supabase
         .from("companies")
         .select("*, logo_url")
         .eq("visible_to_drivers", true)
         .eq("accepting_proposals", true)
-        .or("status.eq.validated,status.eq.active");
-
-      if (searchTerm) {
-        query = query.or(`company_name.ilike.%${searchTerm}%,contact_name.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.order("company_name").limit(20);
+        .or("status.eq.validated,status.eq.active")
+        .order("company_name")
+        .limit(100);
       if (error) throw error;
       return data;
     },
-    enabled: true,
   });
 
-  // Filter out blocked companies
-  const companies = (allCompanies || []).filter((c: any) => !blockedCompanyIds.includes(c.id));
+  // Geocode company addresses when location filter is active
+  useEffect(() => {
+    const geocodeCompanyAddresses = async () => {
+      if (!filterValues.locationCoords || !allCompaniesBase || allCompaniesBase.length === 0) {
+        return;
+      }
+      
+      const companiesToGeocode = allCompaniesBase.filter(
+        (c: any) => c.address && companyCoords[c.id] === undefined
+      );
+      
+      if (companiesToGeocode.length === 0) return;
+      
+      setGeocodingInProgress(true);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (error || !data?.token) {
+          console.error('Could not get Mapbox token for geocoding');
+          return;
+        }
+        
+        const newCoords: Record<string, { lat: number; lng: number } | null> = { ...companyCoords };
+        
+        for (const company of companiesToGeocode) {
+          try {
+            const response = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(company.address)}.json?access_token=${data.token}&country=fr&limit=1`
+            );
+            const geoData = await response.json();
+            if (geoData.features?.[0]?.center) {
+              newCoords[company.id] = {
+                lng: geoData.features[0].center[0],
+                lat: geoData.features[0].center[1]
+              };
+            } else {
+              newCoords[company.id] = null;
+            }
+          } catch {
+            newCoords[company.id] = null;
+          }
+        }
+        
+        setCompanyCoords(newCoords);
+      } finally {
+        setGeocodingInProgress(false);
+      }
+    };
+    
+    geocodeCompanyAddresses();
+  }, [filterValues.locationCoords, allCompaniesBase]);
+
+  // Filter companies based on all filters
+  const filteredCompanies = (allCompaniesBase || []).filter((c: any) => {
+    // Exclude blocked companies
+    if (blockedCompanyIds.includes(c.id)) return false;
+
+    // Text search filter
+    if (filterValues.searchText) {
+      const searchNorm = normalizeText(filterValues.searchText);
+      const matches = normalizeText(c.company_name).includes(searchNorm) ||
+        normalizeText(c.contact_name).includes(searchNorm) ||
+        normalizeText(c.address).includes(searchNorm) ||
+        normalizeText(c.contact_email).includes(searchNorm);
+      if (!matches) return false;
+    }
+
+    // City filter
+    if (filterValues.city) {
+      const cityParts = filterValues.city.split(',').map(p => normalizeText(p.trim()));
+      const mainCity = cityParts[0];
+      const addressNorm = normalizeText(c.address);
+      if (!addressNorm.includes(mainCity)) return false;
+    }
+
+    // Department filter
+    if (filterValues.department) {
+      const deptNorm = normalizeText(filterValues.department);
+      const addressNorm = normalizeText(c.address);
+      const companyDeptNorm = normalizeText(c.department);
+      if (!addressNorm.includes(deptNorm) && !companyDeptNorm.includes(deptNorm)) return false;
+    }
+
+    // Region filter
+    if (filterValues.region) {
+      const regionNorm = normalizeText(filterValues.region);
+      const addressNorm = normalizeText(c.address);
+      const companyDeptNorm = normalizeText(c.department);
+      
+      if (!addressNorm.includes(regionNorm)) {
+        let regionMatch = false;
+        for (const [dept, reg] of Object.entries(departmentToRegion)) {
+          if ((addressNorm.includes(dept) || companyDeptNorm.includes(dept)) && 
+              normalizeText(reg).includes(regionNorm)) {
+            regionMatch = true;
+            break;
+          }
+        }
+        if (!regionMatch) return false;
+      }
+    }
+
+    // Geographic distance filter
+    if (filterValues.locationCoords) {
+      const coords = companyCoords[c.id];
+      if (!coords) return false;
+      const distance = calculateDistance(
+        filterValues.locationCoords.lat,
+        filterValues.locationCoords.lng,
+        coords.lat,
+        coords.lng
+      );
+      if (distance > filterValues.radiusKm) return false;
+    }
+
+    return true;
+  });
+
+  const companies = filteredCompanies;
 
   // Check existing proposals
   const { data: existingProposals } = useQuery({
@@ -249,16 +383,13 @@ Cordialement.`;
         </p>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          placeholder="Rechercher par nom, contact ou adresse..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      {/* Search with AdvancedLocationFilter */}
+      <AdvancedLocationFilter
+        values={filterValues}
+        onChange={setFilterValues}
+        onSearch={() => {}}
+        onReset={() => setFilterValues(getDefaultFilterValues())}
+      />
 
       {/* Results */}
       {isLoading ? (
@@ -415,10 +546,10 @@ Cordialement.`;
           <CardContent className="py-12 text-center">
             <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-semibold mb-2">
-              {searchTerm ? "Aucune entreprise trouvée" : "Aucune entreprise visible"}
+              {filterValues.searchText ? "Aucune entreprise trouvée" : "Aucune entreprise visible"}
             </h3>
             <p className="text-muted-foreground">
-              {searchTerm 
+              {filterValues.searchText 
                 ? "Essayez avec d'autres termes de recherche"
                 : "Les entreprises peuvent choisir d'être visibles ou non pour les chauffeurs"}
             </p>

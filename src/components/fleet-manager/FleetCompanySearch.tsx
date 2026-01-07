@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,6 +16,19 @@ import {
   Eye, Phone, Mail, Users, Euro
 } from "lucide-react";
 import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
+
+// Haversine formula to calculate distance between two coordinates
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
 
 const PAYMENT_METHODS = [
   { value: "card", label: "Carte bancaire", icon: "💳" },
@@ -50,6 +63,10 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
   // Advanced location filter
   const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
   const [isSearching, setIsSearching] = useState(false);
+  
+  // Geocoded company coordinates for radius filtering
+  const [companyCoords, setCompanyCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const [geocodingInProgress, setGeocodingInProgress] = useState(false);
   
   // Proposal form state
   const [proposalMessage, setProposalMessage] = useState("");
@@ -92,11 +109,11 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
     'finistere': 'bretagne',
   };
 
-  // Fetch companies visible to fleet managers
-  const { data: companies, isLoading, refetch } = useQuery({
-    queryKey: ["public-companies-for-fleets", filterValues],
+  // Fetch companies visible to fleet managers (without location filtering - done separately)
+  const { data: allCompanies, isLoading, refetch } = useQuery({
+    queryKey: ["public-companies-for-fleets-base"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("companies")
         .select("*")
         .eq("visible_to_drivers", true)
@@ -105,87 +122,132 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
         .order('company_name')
         .limit(100);
 
-      const { data, error } = await query;
       if (error) throw error;
-
-      let result = data || [];
-
-      // Filter by search term (name, contact, address)
-      if (filterValues.searchText) {
-        const searchNorm = normalizeText(filterValues.searchText);
-        result = result.filter((c: any) =>
-          normalizeText(c.company_name).includes(searchNorm) ||
-          normalizeText(c.contact_name).includes(searchNorm) ||
-          normalizeText(c.address).includes(searchNorm) ||
-          normalizeText(c.contact_email).includes(searchNorm)
-        );
-      }
-
-      // Filter by city (from autocomplete)
-      // Extract city name from full place_name (e.g., "Paris, France" -> "Paris")
-      if (filterValues.city) {
-        const cityParts = filterValues.city.split(',').map(p => normalizeText(p.trim()));
-        const mainCity = cityParts[0]; // First part is the city name
-        result = result.filter((c: any) => {
-          const addressNorm = normalizeText(c.address);
-          // Check if address contains the city name
-          return addressNorm.includes(mainCity);
-        });
-      }
-
-      // Filter by department
-      if (filterValues.department) {
-        const deptNorm = normalizeText(filterValues.department);
-        result = result.filter((c: any) => {
-          const addressNorm = normalizeText(c.address);
-          const companyDeptNorm = normalizeText(c.department);
-          // Check address or department field
-          return addressNorm.includes(deptNorm) || companyDeptNorm.includes(deptNorm);
-        });
-      }
-
-      // Filter by region
-      if (filterValues.region) {
-        const regionNorm = normalizeText(filterValues.region);
-        result = result.filter((c: any) => {
-          const addressNorm = normalizeText(c.address);
-          const companyDeptNorm = normalizeText(c.department);
-          
-          // Direct match in address
-          if (addressNorm.includes(regionNorm)) return true;
-          
-          // Check if company's department belongs to the selected region
-          for (const [dept, reg] of Object.entries(departmentToRegion)) {
-            if ((addressNorm.includes(dept) || companyDeptNorm.includes(dept)) && 
-                normalizeText(reg).includes(regionNorm)) {
-              return true;
-            }
-          }
-          return false;
-        });
-      }
-
-      // Filter by radius/address (if location is specified)
-      if (filterValues.locationAddress) {
-        const locationNorm = normalizeText(filterValues.locationAddress);
-        // Extract city/area from the full address (split by comma)
-        const locationParts = locationNorm.split(',').map(p => p.trim()).filter(p => p.length > 2);
-        
-        // Also extract individual words for better matching
-        const locationWords = locationNorm.split(/[\s,]+/).filter(w => w.length > 2);
-        
-        result = result.filter((c: any) => {
-          const addressNorm = normalizeText(c.address);
-          // Check if any part of the searched location is in the company address
-          const partMatch = locationParts.some(part => addressNorm.includes(part));
-          // Or check if any significant word matches
-          const wordMatch = locationWords.some(word => addressNorm.includes(word));
-          return partMatch || wordMatch;
-        });
-      }
-
-      return result;
+      return data || [];
     },
+  });
+
+  // Geocode company addresses when location filter is active
+  useEffect(() => {
+    const geocodeCompanyAddresses = async () => {
+      if (!filterValues.locationCoords || !allCompanies || allCompanies.length === 0) {
+        return;
+      }
+      
+      // Get companies that need geocoding
+      const companiesToGeocode = allCompanies.filter(
+        (c: any) => c.address && companyCoords[c.id] === undefined
+      );
+      
+      if (companiesToGeocode.length === 0) return;
+      
+      setGeocodingInProgress(true);
+      
+      try {
+        // Fetch Mapbox token
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (error || !data?.token) {
+          console.error('Could not get Mapbox token for geocoding');
+          return;
+        }
+        
+        const newCoords: Record<string, { lat: number; lng: number } | null> = { ...companyCoords };
+        
+        // Geocode each company address
+        for (const company of companiesToGeocode) {
+          try {
+            const response = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(company.address)}.json?access_token=${data.token}&country=fr&limit=1`
+            );
+            const geoData = await response.json();
+            if (geoData.features?.[0]?.center) {
+              newCoords[company.id] = {
+                lng: geoData.features[0].center[0],
+                lat: geoData.features[0].center[1]
+              };
+            } else {
+              newCoords[company.id] = null;
+            }
+          } catch {
+            newCoords[company.id] = null;
+          }
+        }
+        
+        setCompanyCoords(newCoords);
+      } finally {
+        setGeocodingInProgress(false);
+      }
+    };
+    
+    geocodeCompanyAddresses();
+  }, [filterValues.locationCoords, allCompanies]);
+
+  // Filter companies based on all filters
+  const companies = (allCompanies || []).filter((c: any) => {
+    // Text search filter
+    if (filterValues.searchText) {
+      const searchNorm = normalizeText(filterValues.searchText);
+      const matches = normalizeText(c.company_name).includes(searchNorm) ||
+        normalizeText(c.contact_name).includes(searchNorm) ||
+        normalizeText(c.address).includes(searchNorm) ||
+        normalizeText(c.contact_email).includes(searchNorm);
+      if (!matches) return false;
+    }
+
+    // City filter - check if address contains the city name
+    if (filterValues.city) {
+      const cityParts = filterValues.city.split(',').map(p => normalizeText(p.trim()));
+      const mainCity = cityParts[0];
+      const addressNorm = normalizeText(c.address);
+      if (!addressNorm.includes(mainCity)) return false;
+    }
+
+    // Department filter
+    if (filterValues.department) {
+      const deptNorm = normalizeText(filterValues.department);
+      const addressNorm = normalizeText(c.address);
+      const companyDeptNorm = normalizeText(c.department);
+      if (!addressNorm.includes(deptNorm) && !companyDeptNorm.includes(deptNorm)) return false;
+    }
+
+    // Region filter
+    if (filterValues.region) {
+      const regionNorm = normalizeText(filterValues.region);
+      const addressNorm = normalizeText(c.address);
+      const companyDeptNorm = normalizeText(c.department);
+      
+      // Direct match in address
+      if (!addressNorm.includes(regionNorm)) {
+        // Check if company's department belongs to the selected region
+        let regionMatch = false;
+        for (const [dept, reg] of Object.entries(departmentToRegion)) {
+          if ((addressNorm.includes(dept) || companyDeptNorm.includes(dept)) && 
+              normalizeText(reg).includes(regionNorm)) {
+            regionMatch = true;
+            break;
+          }
+        }
+        if (!regionMatch) return false;
+      }
+    }
+
+    // Geographic distance filter - use actual coordinates
+    if (filterValues.locationCoords) {
+      const coords = companyCoords[c.id];
+      if (!coords) {
+        // If we don't have coords yet, exclude (will be included after geocoding)
+        return false;
+      }
+      const distance = calculateDistance(
+        filterValues.locationCoords.lat,
+        filterValues.locationCoords.lng,
+        coords.lat,
+        coords.lng
+      );
+      if (distance > filterValues.radiusKm) return false;
+    }
+
+    return true;
   });
 
   // Check existing agreements
