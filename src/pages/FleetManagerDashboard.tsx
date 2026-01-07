@@ -523,37 +523,32 @@ const FleetManagerDashboard = () => {
           }
           setActiveTab(tab);
         }} className="space-y-6">
-          {/* Navigation - Dropdown amélioré */}
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-3 border border-primary/20">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                <Menu className="w-4 h-4" />
-                <span>Menu</span>
-              </div>
-              <div className="flex-1 relative">
-                <select
-                  value={activeTab}
-                  onChange={(e) => {
-                    const tab = e.target.value;
-                    if (isAccountRestricted && tab !== "documents") {
-                      toast.error(t('fleetDashboard.accessFeatureError'));
-                      return;
-                    }
-                    setActiveTab(tab);
-                  }}
-                  className="w-full h-11 px-4 pr-10 rounded-lg bg-card border-2 border-primary/30 text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none cursor-pointer shadow-sm hover:border-primary/50 transition-colors"
-                >
-                  <option value="home" disabled={isAccountRestricted}>🏠 {t('fleetDashboard.tabs.home')}</option>
-                  <option value="drivers" disabled={isAccountRestricted}>🚗 {t('fleetDashboard.tabs.drivers')}</option>
-                  <option value="clients" disabled={isAccountRestricted}>👥 {t('fleetDashboard.tabs.clients')}</option>
-                  <option value="courses" disabled={isAccountRestricted}>📍 {t('fleetDashboard.tabs.courses')}</option>
-                  <option value="stats" disabled={isAccountRestricted}>📊 {t('fleetDashboard.tabs.statistics')}</option>
-                  <option value="tools" disabled={isAccountRestricted}>🔧 {t('common.more')}</option>
-                  <option value="documents">📄 {t('fleetDashboard.tabs.documents')}</option>
-                  <option value="settings" disabled={isAccountRestricted}>⚙️ {t('fleetDashboard.tabs.settings')}</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary pointer-events-none" />
-              </div>
+          {/* Navigation - Menu clair et harmonieux */}
+          <div className="relative">
+            <select
+              value={activeTab}
+              onChange={(e) => {
+                const tab = e.target.value;
+                if (isAccountRestricted && tab !== "documents") {
+                  toast.error(t('fleetDashboard.accessFeatureError'));
+                  return;
+                }
+                setActiveTab(tab);
+              }}
+              className="w-full h-12 px-4 pr-12 rounded-xl bg-card border border-border text-base font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="home" disabled={isAccountRestricted}>🏠 Accueil</option>
+              <option value="drivers" disabled={isAccountRestricted}>🚗 Chauffeurs</option>
+              <option value="clients" disabled={isAccountRestricted}>👥 Clients</option>
+              <option value="courses" disabled={isAccountRestricted}>📍 Courses</option>
+              <option value="stats" disabled={isAccountRestricted}>📊 Statistiques</option>
+              <option value="tools" disabled={isAccountRestricted}>🔧 Outils</option>
+              <option value="documents">📄 Documents</option>
+              <option value="settings" disabled={isAccountRestricted}>⚙️ Paramètres</option>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-1">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Naviguer</span>
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             </div>
           </div>
 
