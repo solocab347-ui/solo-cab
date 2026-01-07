@@ -1134,102 +1134,162 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
     );
   };
 
-  const CourseHistoryCard = ({ course }: { course: CourseDetails }) => (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-          {/* Driver info */}
-          <div className="flex items-center gap-3 sm:w-48 shrink-0">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={course.driverPhoto || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {course.driverName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h4 className="font-semibold text-sm truncate">{course.driverName}</h4>
-              {course.driverCompany && (
-                <p className="text-xs text-muted-foreground truncate">{course.driverCompany}</p>
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+
+  const toggleCourseExpanded = (courseId: string) => {
+    const newExpanded = new Set(expandedCourses);
+    if (newExpanded.has(courseId)) {
+      newExpanded.delete(courseId);
+    } else {
+      newExpanded.add(courseId);
+    }
+    setExpandedCourses(newExpanded);
+  };
+
+  const CourseHistoryCard = ({ course }: { course: CourseDetails }) => {
+    const isExpanded = expandedCourses.has(course.id);
+    
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {/* Header cliquable */}
+          <div 
+            className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+            onClick={() => toggleCourseExpanded(course.id)}
+          >
+            <div className="flex items-center gap-3">
+              {/* Driver avatar */}
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage src={course.driverPhoto || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                  {course.driverName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Infos principales */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-semibold text-sm truncate">{course.driverName}</h4>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-bold text-primary">{Number(course.amount).toFixed(2)} €</span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <CalendarDays className="w-3 h-3" />
+                    {format(new Date(course.scheduled_date), "d MMM yyyy", { locale: fr })}
+                  </span>
+                  {course.guest_name && (
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {course.guest_name}
+                    </span>
+                  )}
+                  <Badge className="text-xs bg-green-500/10 text-green-500">
+                    ✓ Payée
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Détails déroulants */}
+          {isExpanded && (
+            <div className="border-t border-border bg-muted/20 p-4 space-y-3">
+              {/* Chauffeur détails */}
+              <div className="flex items-center gap-3 pb-3 border-b border-border/30">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={course.driverPhoto || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {course.driverName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-semibold">{course.driverName}</h4>
+                  {course.driverCompany && (
+                    <p className="text-sm text-muted-foreground">{course.driverCompany}</p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-xl text-primary">{Number(course.amount).toFixed(2)} €</p>
+                  <Badge variant="outline" className="text-xs">{course.invoice_number}</Badge>
+                </div>
+              </div>
+              
+              {/* Passager */}
+              {course.guest_name && (
+                <div className="flex items-center gap-2 pb-3 border-b border-border/30">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium">{course.guest_name}</span>
+                    {course.passengers_count && course.passengers_count > 1 && (
+                      <span className="text-sm text-muted-foreground ml-2">
+                        ({course.passengers_count} passagers)
+                      </span>
+                    )}
+                  </div>
+                  {course.guest_phone && (
+                    <a 
+                      href={`tel:${course.guest_phone}`}
+                      className="p-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary shrink-0"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              )}
+              
+              {/* Date et heure */}
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarDays className="w-4 h-4 text-primary shrink-0" />
+                <span className="font-medium">
+                  {format(new Date(course.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                </span>
+              </div>
+              
+              {/* Adresses */}
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 mt-0.5 text-green-500 shrink-0" />
+                  <span>{course.pickup_address || "Adresse non disponible"}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 mt-0.5 text-red-500 shrink-0" />
+                  <span>{course.destination_address || "Adresse non disponible"}</span>
+                </div>
+              </div>
+              
+              {/* Distance et durée */}
+              {(course.distance_km || course.duration_minutes) && (
+                <div className="flex gap-4 pt-2">
+                  {course.distance_km && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+                      <Car className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{Number(course.distance_km).toFixed(1)} km</span>
+                    </div>
+                  )}
+                  {course.duration_minutes && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{course.duration_minutes} min</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          </div>
-          
-          {/* Course info */}
-          <div className="flex-1 min-w-0 space-y-2">
-            {/* Passager */}
-            {course.guest_name && (
-              <div className="flex items-center gap-2 pb-2 border-b border-border/30">
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium">
-                    {course.guest_name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm font-medium truncate flex-1">{course.guest_name}</span>
-                {course.passengers_count && course.passengers_count > 1 && (
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    {course.passengers_count} pers.
-                  </Badge>
-                )}
-                {course.guest_phone && (
-                  <a 
-                    href={`tel:${course.guest_phone}`}
-                    className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary shrink-0"
-                  >
-                    <Phone className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarDays className="w-4 h-4 text-primary" />
-              <span className="font-medium">
-                {format(new Date(course.scheduled_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-              </span>
-            </div>
-            
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin className="w-4 h-4 mt-0.5 text-green-500 shrink-0" />
-              <span className="truncate">{course.pickup_address || "Adresse non disponible"}</span>
-            </div>
-            
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin className="w-4 h-4 mt-0.5 text-red-500 shrink-0" />
-              <span className="truncate">{course.destination_address || "Adresse non disponible"}</span>
-            </div>
-            
-            {(course.distance_km || course.duration_minutes) && (
-              <div className="flex gap-4 text-xs text-muted-foreground">
-                {course.distance_km && (
-                  <span className="flex items-center gap-1">
-                    <Car className="w-3 h-3" />
-                    {Number(course.distance_km).toFixed(1)} km
-                  </span>
-                )}
-                {course.duration_minutes && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {course.duration_minutes} min
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Price and status */}
-          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:shrink-0">
-            <div className="text-right">
-              <p className="font-bold text-lg text-primary">{Number(course.amount).toFixed(2)} €</p>
-              <Badge variant="outline" className="text-xs">{course.invoice_number}</Badge>
-            </div>
-            <Badge className={`text-xs ${course.payment_status === 'paid' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
-              {course.payment_status === 'paid' ? '✓ Payée' : 'En attente'}
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -1366,28 +1426,9 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          {/* Paiements confirmés */}
-          {receivedPayments.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                Paiements confirmés ({receivedPayments.length})
-              </h3>
-              <div className="space-y-4">
-                {receivedPayments.map((payment) => (
-                  <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Filtres pour l'historique des courses */}
           <Card className="mb-4">
             <CardContent className="p-4">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Détail des courses payées
-              </h3>
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1414,24 +1455,17 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             </CardContent>
           </Card>
 
-          {filteredCourseHistory.length === 0 && receivedPayments.length === 0 ? (
+          {filteredCourseHistory.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <History className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">Aucun historique</p>
-                <p className="text-muted-foreground">Vos paiements confirmés et courses payées apparaîtront ici</p>
-              </CardContent>
-            </Card>
-          ) : filteredCourseHistory.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">Aucune course correspondante</p>
+                <p className="text-muted-foreground">Vos courses payées apparaîtront ici</p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{filteredCourseHistory.length} course(s)</p>
+              <p className="text-sm text-muted-foreground">{filteredCourseHistory.length} course(s) payée(s)</p>
               {filteredCourseHistory.map((course) => (
                 <CourseHistoryCard key={course.id} course={course} />
               ))}
