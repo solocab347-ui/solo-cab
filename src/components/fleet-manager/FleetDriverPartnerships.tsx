@@ -49,6 +49,7 @@ import { PartnershipModificationDialog } from "./PartnershipModificationDialog";
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 import { PartnershipContractDocument } from "./PartnershipContractDocument";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
+import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
 
 // Vehicle categories
 const VEHICLE_CATEGORIES = [
@@ -221,6 +222,9 @@ export const FleetDriverPartnerships = ({
   // Pre-signature confirmation state
   const [confirmSignaturePartnership, setConfirmSignaturePartnership] = useState<Partnership | null>(null);
   const [signingContract, setSigningContract] = useState(false);
+  
+  // Profile preview before signature
+  const [previewProfilePartnership, setPreviewProfilePartnership] = useState<Partnership | null>(null);
   
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
@@ -947,7 +951,7 @@ export const FleetDriverPartnerships = ({
                           <div className="flex flex-wrap gap-2">
                             {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
                               <>
-                                <Button size="sm" onClick={() => setConfirmSignaturePartnership(partnership)}>
+                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)}>
                                   <FileText className="w-4 h-4 mr-1" />
                                   Accepter et signer
                                 </Button>
@@ -1794,6 +1798,21 @@ export const FleetDriverPartnerships = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Partner Profile Preview before signature */}
+      <PartnerPublicProfilePreview
+        open={!!previewProfilePartnership}
+        onOpenChange={(open) => !open && setPreviewProfilePartnership(null)}
+        partnerId={previewProfilePartnership?.driver_id || ''}
+        partnerType="driver"
+        partnerName={previewProfilePartnership?.driver?.profile?.full_name || 'Chauffeur partenaire'}
+        onContinue={() => {
+          if (previewProfilePartnership) {
+            setConfirmSignaturePartnership(previewProfilePartnership);
+            setPreviewProfilePartnership(null);
+          }
+        }}
+      />
 
       {/* Pre-Signature Confirmation Dialog */}
       <PartnershipSignatureConfirmation
