@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { 
   Loader2, Search, Users, CheckCircle, XCircle, 
   Clock, Send, Inbox, Ban, Info, Unlock, Lock, MapPin, Handshake,
-  ChevronDown, ChevronUp, Euro, CreditCard, RefreshCw, EyeOff
+  ChevronDown, ChevronUp, Euro, CreditCard, RefreshCw, EyeOff, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -19,6 +19,7 @@ import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
+import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
 
 const PAYMENT_METHODS = [
   { value: "card", label: "Carte bancaire", icon: "💳" },
@@ -212,6 +213,7 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+  const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
 
   // Fetch existing fleet agreements
@@ -639,8 +641,22 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
                       "{agreement.proposal_message}"
                     </p>
                   )}
+
+                  {/* Bouton voir profil */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-3 text-primary"
+                    onClick={() => {
+                      setSelectedAgreement(agreement);
+                      setShowProfilePreview(true);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Voir le profil du gestionnaire
+                  </Button>
                   
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-3">
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -1009,6 +1025,20 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
         partnershipType="company_fleet"
         mode="accept"
         signerRole="company"
+      />
+
+      {/* Profile Preview Dialog */}
+      <PartnerPublicProfilePreview
+        open={showProfilePreview}
+        onOpenChange={setShowProfilePreview}
+        partnerId={selectedAgreement?.fleet_manager?.id || ""}
+        partnerType="fleet"
+        partnerName={selectedAgreement?.fleet_manager?.company_name}
+        onContinue={() => {
+          setShowProfilePreview(false);
+          setShowSignatureDialog(true);
+        }}
+        viewOnly={false}
       />
     </div>
   );
