@@ -297,6 +297,21 @@ export function PartnerPublicProfilePreview({
               </Badge>
             )}
           </div>
+          
+          {/* Présentation / Bio - affiché juste après les stats */}
+          {driverProfile.bio && (
+            <div className="w-full mt-3">
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardContent className="p-3">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
+                    Présentation
+                  </h4>
+                  <p className="text-sm text-muted-foreground italic">"{driverProfile.bio}"</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Vehicle */}
@@ -320,19 +335,6 @@ export function PartnerPublicProfilePreview({
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* Présentation / Bio */}
-        {driverProfile.bio && (
-          <div>
-            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-primary" />
-              Présentation
-            </h4>
-            <div className="p-3 bg-muted/30 rounded-lg">
-              <p className="text-sm text-muted-foreground">"{driverProfile.bio}"</p>
-            </div>
-          </div>
         )}
 
         {/* Services */}
