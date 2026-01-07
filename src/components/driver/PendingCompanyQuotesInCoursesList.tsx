@@ -55,43 +55,50 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange, onC
 
       if (error) throw error;
       
-      // Fetch employee info
+      // Fetch employee info using RPC for reliability (bypasses RLS issues)
       const employeeIds = new Set<string>();
       data?.forEach((q: any) => {
-        if (q.company_course_requests?.employee_id) {
+        if (q.company_course_requests?.employee_id && !q.company_course_requests?.is_guest_employee) {
           employeeIds.add(q.company_course_requests.employee_id);
         }
       });
       
-      let employeesMap = new Map<string, { user_id: string }>();
-      let profilesMap = new Map<string, { full_name: string; phone: string | null }>();
+      let employeeProfilesMap = new Map<string, { full_name: string; phone: string | null }>();
       
-      if (employeeIds.size > 0) {
-        const { data: employees } = await supabase
-          .from("company_employees")
-          .select("id, user_id")
-          .in("id", Array.from(employeeIds));
-        
-        employees?.forEach((e: any) => employeesMap.set(e.id, e));
-        
-        const userIds = employees?.map((e: any) => e.user_id).filter(Boolean) || [];
-        if (userIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, full_name, phone")
-            .in("id", userIds);
-          profiles?.forEach((p: any) => profilesMap.set(p.id, p));
+      for (const empId of employeeIds) {
+        try {
+          const { data: empData } = await supabase.rpc('get_employee_profile_for_course', { 
+            p_employee_id: empId 
+          });
+          if (empData && empData.length > 0) {
+            employeeProfilesMap.set(empId, { 
+              full_name: empData[0].full_name || "Collaborateur", 
+              phone: empData[0].phone || null 
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching employee profile:", e);
         }
       }
       
       // Enrich quotes with employee info
       const enrichedData = data?.map((q: any) => {
-        const employee = employeesMap.get(q.company_course_requests?.employee_id);
-        const profile = employee ? profilesMap.get(employee.user_id) : null;
+        let employee_name = null;
+        let employee_phone = null;
+        
+        if (q.company_course_requests?.is_guest_employee) {
+          employee_name = q.company_course_requests?.guest_employee_name || null;
+          employee_phone = q.company_course_requests?.guest_employee_phone || null;
+        } else if (q.company_course_requests?.employee_id) {
+          const empProfile = employeeProfilesMap.get(q.company_course_requests.employee_id);
+          employee_name = empProfile?.full_name || null;
+          employee_phone = empProfile?.phone || null;
+        }
+        
         return {
           ...q,
-          employee_name: profile?.full_name || null,
-          employee_phone: profile?.phone || null
+          employee_name,
+          employee_phone
         };
       }) || [];
       
