@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Car, Building2, Users, Handshake, Euro, MapPin, Loader2, CheckCircle, XCircle, Ban, RefreshCw, Unlock, Lock, Clock, FileText, Eye } from "lucide-react";
+import { Car, Building2, Users, Handshake, Euro, MapPin, Loader2, CheckCircle, XCircle, Ban, RefreshCw, Unlock, Lock, Clock, FileText, Eye, Route } from "lucide-react";
 import { FleetDriverSearch } from "./FleetDriverSearch";
 import { FleetDriverPartnerships } from "./FleetDriverPartnerships";
 import { FleetCompanySearch } from "./FleetCompanySearch";
 import { FleetPartnerCommissions } from "./FleetPartnerCommissions";
+import { FleetPartnerCoursesSent } from "./FleetPartnerCoursesSent";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
@@ -132,7 +133,7 @@ export function FleetPartnershipsHub({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
           <TabsTrigger 
             value="drivers" 
             className="flex items-center gap-2 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white"
@@ -147,6 +148,13 @@ export function FleetPartnershipsHub({
                 {pendingDriverRequests > 0 ? pendingDriverRequests : driverPartnershipsCount}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="courses" 
+            className="flex items-center gap-2 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white"
+          >
+            <Route className="w-4 h-4" />
+            <span className="hidden sm:inline">Missions</span>
           </TabsTrigger>
           <TabsTrigger 
             value="companies" 
@@ -202,6 +210,11 @@ export function FleetPartnershipsHub({
               <FleetDriverSearch fleetManagerId={fleetManagerId} />
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* Courses/Missions Tab */}
+        <TabsContent value="courses" className="space-y-6">
+          <FleetPartnerCoursesSent fleetManagerId={fleetManagerId} />
         </TabsContent>
 
         {/* Companies Tab */}
