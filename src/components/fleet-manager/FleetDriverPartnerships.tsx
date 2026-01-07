@@ -918,66 +918,88 @@ export const FleetDriverPartnerships = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {pendingPartnerships.map((partnership) => (
-                    <Card key={partnership.id} className="border-warning/30 bg-warning/5">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <Avatar className="w-12 h-12">
+                {pendingPartnerships.map((partnership) => (
+                    <Card key={partnership.id} className="border-warning/30 bg-warning/5 overflow-hidden">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col gap-3">
+                          {/* Header with avatar and info */}
+                          <div className="flex items-start gap-3">
+                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
                               <AvatarImage src={partnership.driver?.profile?.profile_photo_url || undefined} />
                               <AvatarFallback>
                                 {(partnership.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <h3 className="font-semibold">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-sm sm:text-base truncate">
                                 {partnership.driver?.profile?.full_name || "Chauffeur"}
                               </h3>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-xs sm:text-sm text-muted-foreground">
                                 Commission: {partnership.commission_type === "fixed" 
                                   ? `${partnership.commission_fixed_amount}€/course` 
                                   : `${partnership.commission_percentage}%`}
                               </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={partnership.fleet_manager_signed ? "default" : "secondary"}>
-                                  {partnership.fleet_manager_signed ? "✓ Vous avez signé" : "En attente de votre signature"}
+                              {/* Signature status badges - responsive grid */}
+                              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                                <Badge 
+                                  variant={partnership.fleet_manager_signed ? "default" : "secondary"}
+                                  className={`text-xs justify-center py-1 ${partnership.fleet_manager_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : 'bg-orange-500/20 text-orange-600 border-orange-500/30'}`}
+                                >
+                                  {partnership.fleet_manager_signed ? "✓ Vous" : "À signer"}
                                 </Badge>
-                                <Badge variant={partnership.driver_signed ? "default" : "secondary"}>
-                                  {partnership.driver_signed ? "✓ Chauffeur a signé" : "En attente du chauffeur"}
+                                <Badge 
+                                  variant={partnership.driver_signed ? "default" : "secondary"}
+                                  className={`text-xs justify-center py-1 ${partnership.driver_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : ''}`}
+                                >
+                                  {partnership.driver_signed ? "✓ Chauffeur" : "Attente"}
                                 </Badge>
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
+                          
+                          {/* Action buttons - stacked on mobile */}
+                          <div className="flex flex-col sm:flex-row gap-2">
                             {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
                               <>
-                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)}>
-                                  <FileText className="w-4 h-4 mr-1" />
-                                  Accepter et signer
+                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="flex-1 gap-1.5 h-9">
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span className="text-xs sm:text-sm">Accepter</span>
                                 </Button>
                                 <Button 
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => openCounterProposal(partnership)}
+                                  className="flex-1 gap-1.5 h-9"
                                 >
-                                  <Edit className="w-4 h-4 mr-1" />
-                                  Contre-proposer
+                                  <Edit className="w-3.5 h-3.5" />
+                                  <span className="text-xs sm:text-sm">Contre-prop.</span>
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => cancelPartnership(partnership.id)}
+                                  className="h-9 px-3"
+                                >
+                                  <X className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
                             {partnership.fleet_manager_signed && !partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
-                              <Badge variant="secondary" className="py-1.5">
-                                <Clock className="w-3 h-3 mr-1" />
-                                En attente de réponse du chauffeur
-                              </Badge>
+                              <div className="flex items-center gap-2 flex-1">
+                                <Badge variant="secondary" className="py-1.5 text-xs flex-1 justify-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Attente chauffeur
+                                </Badge>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => cancelPartnership(partnership.id)}
+                                  className="h-9 px-3"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
                             )}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => cancelPartnership(partnership.id)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -995,10 +1017,10 @@ export const FleetDriverPartnerships = ({
                   <p className="text-muted-foreground">Aucun partenariat actif</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {activePartnerships.map((partnership) => (
-                    <Card key={partnership.id} className="border-success/30 bg-success/5">
-                      <CardContent className="p-4 space-y-4">
+                    <Card key={partnership.id} className="border-success/30 bg-success/5 overflow-hidden">
+                      <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                         {/* Pending modification banner */}
                         {partnership.pending_modification && (
                           <PendingModificationBanner
@@ -1014,98 +1036,97 @@ export const FleetDriverPartnerships = ({
                           />
                         )}
 
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-14 h-14 border-2 border-success/30">
-                            <AvatarImage src={partnership.driver?.profile?.profile_photo_url || undefined} />
-                            <AvatarFallback className="bg-success/20">
-                              {(partnership.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">
-                                {partnership.driver?.profile?.full_name || "Chauffeur"}
-                              </h3>
-                              <Badge className="bg-success/20 text-success border-success/30">
-                                <Check className="w-3 h-3 mr-1" />
-                                Actif
-                              </Badge>
-                            </div>
-                            {/* Use driver_vehicles if available, fallback to legacy fields */}
-                            {(() => {
-                              const favoriteVehicle = partnership.driver?.vehicles?.find(v => v.is_favorite) || partnership.driver?.vehicles?.[0];
-                              if (favoriteVehicle) {
-                                return (
-                                  <p className="text-sm text-muted-foreground">
-                                    <Car className="w-3 h-3 inline mr-1" />
-                                    {favoriteVehicle.brand} {favoriteVehicle.model}
-                                    {favoriteVehicle.year && ` (${favoriteVehicle.year})`}
-                                  </p>
-                                );
-                              }
-                              return partnership.driver?.vehicle_brand || partnership.driver?.vehicle_model ? (
-                                <p className="text-sm text-muted-foreground">
-                                  <Car className="w-3 h-3 inline mr-1" />
-                                  {partnership.driver?.vehicle_brand} {partnership.driver?.vehicle_model}
-                                  {partnership.driver?.vehicle_year && ` (${partnership.driver?.vehicle_year})`}
-                                </p>
-                              ) : null;
-                            })()}
-                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              <Badge variant="outline">
-                                {partnership.commission_type === "fixed" ? (
-                                  <>
-                                    <Euro className="w-3 h-3 mr-1" />
-                                    {partnership.commission_fixed_amount}€/course
-                                  </>
-                                ) : (
-                                  <>
-                                    <Percent className="w-3 h-3 mr-1" />
-                                    {partnership.commission_percentage}% commission
-                                  </>
-                                )}
-                              </Badge>
-                              {partnership.payment_schedule && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {partnership.payment_schedule === "per_course" ? "Par course" : 
-                                   partnership.payment_schedule === "weekly" ? "Hebdo" : "Mensuel"}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Avatar className="w-10 h-10 sm:w-14 sm:h-14 border-2 border-success/30 shrink-0">
+                              <AvatarImage src={partnership.driver?.profile?.profile_photo_url || undefined} />
+                              <AvatarFallback className="bg-success/20 text-xs sm:text-base">
+                                {(partnership.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <h3 className="font-semibold text-sm sm:text-base truncate">
+                                  {partnership.driver?.profile?.full_name || "Chauffeur"}
+                                </h3>
+                                <Badge className="bg-success/20 text-success border-success/30 text-xs">
+                                  <Check className="w-3 h-3 mr-0.5" />
+                                  Actif
                                 </Badge>
-                              )}
-                            </div>
-                            {/* Contract document */}
-                            {fleetManagerInfo && (
-                              <div className="mt-3">
-                                <PartnershipContractDocument
-                                  partnershipId={partnership.id}
-                                  fleetManagerName={fleetManagerInfo.name}
-                                  fleetManagerCompany={fleetManagerInfo.company}
-                                  driverName={partnership.driver?.profile?.full_name || "Chauffeur"}
-                                  commissionPercentage={partnership.commission_percentage}
-                                  paymentSchedule={partnership.payment_schedule || "per_course"}
-                                  signedAt={partnership.created_at}
-                                  fleetManagerSignedAt={partnership.fleet_manager_signed_at}
-                                  driverSignedAt={partnership.driver_signed_at}
-                                  contractType="partner"
-                                />
                               </div>
-                            )}
+                              {/* Vehicle info */}
+                              {(() => {
+                                const favoriteVehicle = partnership.driver?.vehicles?.find(v => v.is_favorite) || partnership.driver?.vehicles?.[0];
+                                if (favoriteVehicle) {
+                                  return (
+                                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                      <Car className="w-3 h-3 inline mr-1" />
+                                      {favoriteVehicle.brand} {favoriteVehicle.model}
+                                    </p>
+                                  );
+                                }
+                                return partnership.driver?.vehicle_brand || partnership.driver?.vehicle_model ? (
+                                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                    <Car className="w-3 h-3 inline mr-1" />
+                                    {partnership.driver?.vehicle_brand} {partnership.driver?.vehicle_model}
+                                  </p>
+                                ) : null;
+                              })()}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                <Badge variant="outline" className="text-xs">
+                                  {partnership.commission_type === "fixed" ? (
+                                    <>
+                                      <Euro className="w-3 h-3 mr-0.5" />
+                                      {partnership.commission_fixed_amount}€
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Percent className="w-3 h-3 mr-0.5" />
+                                      {partnership.commission_percentage}%
+                                    </>
+                                  )}
+                                </Badge>
+                                {partnership.payment_schedule && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {partnership.payment_schedule === "per_course" ? "Par course" : 
+                                     partnership.payment_schedule === "weekly" ? "Hebdo" : "Mensuel"}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
                           
-                          {/* Modify button */}
-                          {!partnership.pending_modification && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setModifyingPartnership(partnership);
-                                setShowModificationDialog(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Modifier
-                            </Button>
-                          )}
+                          {/* Action buttons */}
+                          <div className="flex gap-2 sm:shrink-0">
+                            {fleetManagerInfo && (
+                              <PartnershipContractDocument
+                                partnershipId={partnership.id}
+                                fleetManagerName={fleetManagerInfo.name}
+                                fleetManagerCompany={fleetManagerInfo.company}
+                                driverName={partnership.driver?.profile?.full_name || "Chauffeur"}
+                                commissionPercentage={partnership.commission_percentage}
+                                paymentSchedule={partnership.payment_schedule || "per_course"}
+                                signedAt={partnership.created_at}
+                                fleetManagerSignedAt={partnership.fleet_manager_signed_at}
+                                driverSignedAt={partnership.driver_signed_at}
+                                contractType="partner"
+                              />
+                            )}
+                            {!partnership.pending_modification && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 h-9"
+                                onClick={() => {
+                                  setModifyingPartnership(partnership);
+                                  setShowModificationDialog(true);
+                                }}
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline text-xs">Modifier</span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
