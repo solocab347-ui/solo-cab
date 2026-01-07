@@ -56,6 +56,9 @@ interface FleetHomeProps {
   drivers: FleetDriver[];
   clientsCount: number;
   pendingInvitationsCount: number;
+  pendingPartnershipsCount?: number;
+  pendingCoursesCount?: number;
+  pendingCompanyPartnershipsCount?: number;
   onTabChange: (tab: string) => void;
   onViewDriverProfile: (driverId: string) => void;
 }
@@ -66,6 +69,9 @@ export const FleetHome = ({
   drivers,
   clientsCount,
   pendingInvitationsCount,
+  pendingPartnershipsCount = 0,
+  pendingCoursesCount = 0,
+  pendingCompanyPartnershipsCount = 0,
   onTabChange,
   onViewDriverProfile
 }: FleetHomeProps) => {
@@ -198,9 +204,14 @@ export const FleetHome = ({
         {/* Première ligne - 4 boutons */}
         <div className="grid grid-cols-4 gap-2 mb-2">
           <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
             onClick={() => onTabChange("courses")}
           >
+            {pendingCoursesCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
+                {pendingCoursesCount}
+              </span>
+            )}
             <div className="flex flex-col items-center text-center gap-1.5">
               <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center group-hover:bg-info/20 transition-colors">
                 <Route className="w-5 h-5 text-info" />
@@ -249,9 +260,14 @@ export const FleetHome = ({
         {/* Deuxième ligne - 4 boutons (Outils) */}
         <div className="grid grid-cols-4 gap-2">
           <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
             onClick={() => onTabChange("partnerships")}
           >
+            {(pendingPartnershipsCount + pendingCompanyPartnershipsCount) > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
+                {pendingPartnershipsCount + pendingCompanyPartnershipsCount}
+              </span>
+            )}
             <div className="flex flex-col items-center text-center gap-1.5">
               <div className="w-10 h-10 bg-warning/10 rounded-xl flex items-center justify-center group-hover:bg-warning/20 transition-colors">
                 <Handshake className="w-5 h-5 text-warning" />
@@ -261,9 +277,14 @@ export const FleetHome = ({
           </Card>
 
           <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
             onClick={() => onTabChange("invitations")}
           >
+            {pendingInvitationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
+                {pendingInvitationsCount}
+              </span>
+            )}
             <div className="flex flex-col items-center text-center gap-1.5">
               <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center group-hover:bg-success/20 transition-colors">
                 <Send className="w-5 h-5 text-success" />
