@@ -6,6 +6,8 @@ import { useUserLanguage } from "@/hooks/useUserLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import logo from "@/assets/logo-solocab.png";
 import {
@@ -30,10 +32,8 @@ import {
   ChevronRight,
   TrendingUp,
   Clock,
-  Menu,
-  X,
+  ChevronDown,
   Sparkles,
-  ArrowUpRight,
   ArrowLeft,
   Shield,
 } from "lucide-react";
@@ -50,14 +50,14 @@ import { CompanyPaymentAlerts } from "@/components/company/CompanyPaymentAlerts"
 import { CompanyPublicProfile } from "@/components/company/CompanyPublicProfile";
 import { CompanyStatisticsComplete } from "@/components/company/CompanyStatisticsComplete";
 import { CompanyDriverSearch } from "@/components/company/CompanyDriverSearch";
-import { CompanyFleetSearch } from "@/components/company/CompanyFleetSearch";
+import { CompanyFleetPartnerships } from "@/components/company/CompanyFleetPartnerships";
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { CompanyExpenseReports } from "@/components/company/CompanyExpenseReports";
 import { CompanyCourseRequestsManager } from "@/components/company/CompanyCourseRequestsManager";
 import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
 import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
 import { CompanyAdministratorsManager } from "@/components/company/CompanyAdministratorsManager";
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface Company {
   id: string;
@@ -77,36 +77,15 @@ interface Company {
 export default function CompanyDashboard() {
   const { user, signOut } = useAuth();
   const { t } = useLocale();
-  useUserLanguage(); // Sync language with user profile
+  useUserLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
-  const [stats, setStats] = useState({ courses: 0, spent: 0, drivers: 0, employees: 0 });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const menuItems = [
-    { id: "overview", icon: Home, label: t('companyDashboard.menu.dashboard'), color: "text-blue-400" },
-    { id: "course-requests", icon: Car, label: "Demandes de courses", color: "text-primary" },
-    { id: "reservations", icon: Calendar, label: t('companyDashboard.menu.rides'), color: "text-violet-400" },
-    { id: "employees", icon: Users, label: t('companyDashboard.menu.employees'), color: "text-emerald-400" },
-    { id: "administrators", icon: Shield, label: "Administrateurs", color: "text-amber-400" },
-    { id: "divider1", type: "divider", label: t('companyDashboard.menu.finances') },
-    { id: "devis", icon: FileText, label: t('companyDashboard.menu.quotes'), color: "text-amber-400" },
-    { id: "invoices", icon: Receipt, label: t('companyDashboard.menu.invoices'), color: "text-orange-400" },
-    { id: "expenses", icon: Euro, label: t('companyDashboard.menu.expenses'), color: "text-lime-400" },
-    { id: "payments", icon: CreditCard, label: t('companyDashboard.menu.payments'), color: "text-pink-400" },
-    { id: "divider2", type: "divider", label: t('companyDashboard.menu.partners') },
-    { id: "partnerships", icon: Handshake, label: t('companyDashboard.menu.agreements'), color: "text-cyan-400" },
-    { id: "drivers", icon: Car, label: t('companyDashboard.menu.vtcDrivers'), color: "text-indigo-400" },
-    { id: "fleets", icon: Truck, label: t('companyDashboard.menu.fleets'), color: "text-rose-400" },
-    { id: "qrcode", icon: Globe, label: t('companyDashboard.menu.partnershipQR'), color: "text-purple-400" },
-    { id: "divider3", type: "divider", label: t('companyDashboard.menu.settings') },
-    { id: "stats", icon: BarChart3, label: t('companyDashboard.menu.statistics'), color: "text-teal-400" },
-    { id: "public", icon: Globe, label: t('companyDashboard.menu.publicProfile'), color: "text-sky-400" },
-    { id: "settings", icon: Settings, label: t('companyDashboard.menu.configuration'), color: "text-slate-400" },
-  ];
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "home");
+  const [stats, setStats] = useState({ courses: 0, spent: 0, drivers: 0, employees: 0, fleets: 0 });
+  const [pendingDriverRequests, setPendingDriverRequests] = useState(0);
+  const [pendingFleetRequests, setPendingFleetRequests] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -131,27 +110,36 @@ export default function CompanyDashboard() {
       setCompany(data);
 
       if (data) {
-        // Calculate date range for current month
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
         
-        const [coursesRes, driversRes, employeesRes, paymentsRes] = await Promise.all([
-          // Courses for this month
+        const [coursesRes, driversRes, employeesRes, paymentsRes, fleetsRes, pendingDriversRes, pendingFleetsRes] = await Promise.all([
           supabase.from("company_courses")
             .select("course_id, courses:course_id(scheduled_date)")
             .eq("company_id", data.id),
           supabase.from("company_driver_agreements").select("id").eq("company_id", data.id).eq("status", "accepted"),
           supabase.from("company_employees").select("id").eq("company_id", data.id).eq("is_active", true),
-          // Payments for this month
           supabase.from("company_payments")
             .select("amount")
             .eq("company_id", data.id)
             .gte("created_at", startOfMonth.toISOString())
             .lte("created_at", endOfMonth.toISOString()),
+          supabase.from("company_fleet_agreements").select("id").eq("company_id", data.id).eq("status", "accepted"),
+          // Pending driver partnership requests (received)
+          supabase.from("company_driver_agreements")
+            .select("id", { count: 'exact', head: true })
+            .eq("company_id", data.id)
+            .eq("status", "pending")
+            .eq("proposed_by", "driver"),
+          // Pending fleet partnership requests (received)
+          supabase.from("company_fleet_agreements")
+            .select("id", { count: 'exact', head: true })
+            .eq("company_id", data.id)
+            .eq("status", "pending")
+            .eq("proposed_by", "fleet_manager"),
         ]);
 
-        // Filter courses for current month
         const monthCourses = coursesRes.data?.filter(cc => {
           const courseDate = cc.courses?.scheduled_date;
           if (!courseDate) return false;
@@ -159,7 +147,6 @@ export default function CompanyDashboard() {
           return date >= startOfMonth && date <= endOfMonth;
         }) || [];
 
-        // Calculate total spending for the month
         const totalSpent = paymentsRes.data?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
 
         setStats({
@@ -167,7 +154,11 @@ export default function CompanyDashboard() {
           spent: Math.round(totalSpent * 100) / 100,
           drivers: driversRes.data?.length || 0,
           employees: employeesRes.data?.length || 0,
+          fleets: fleetsRes.data?.length || 0,
         });
+
+        setPendingDriverRequests(pendingDriversRes.count || 0);
+        setPendingFleetRequests(pendingFleetsRes.count || 0);
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -182,25 +173,15 @@ export default function CompanyDashboard() {
     navigate("/");
   };
 
-  const handleCreateCourse = () => {
-    handleTabChange("new-course");
-  };
-
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId });
-    setSidebarOpen(false);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center animate-pulse">
-            <Building2 className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <p className="text-muted-foreground">{t('companyDashboard.loading')}</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background auth-loading-screen">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -222,294 +203,155 @@ export default function CompanyDashboard() {
     );
   }
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "overview":
-        return <DashboardOverview stats={stats} company={company} onNavigate={handleTabChange} onCreateCourse={() => handleTabChange("course-requests")} />;
-      case "course-requests":
-        return <CompanyCourseRequestsManager companyId={company.id} />;
-      case "reservations":
-        return <CompanyCoursesList companyId={company.id} onCreateCourse={() => handleTabChange("course-requests")} />;
-      case "new-course":
-        return <CompanyInlineCourseCreation companyId={company.id} onSuccess={() => handleTabChange("reservations")} onSearchNewDriver={() => handleTabChange("drivers")} />;
-      case "devis":
-        return <CompanyDevisList companyId={company.id} />;
-      case "invoices":
-        return <CompanyFacturesList companyId={company.id} />;
-      case "expenses":
-        return <CompanyExpenseReports companyId={company.id} />;
-      case "payments":
-        return <CompanyPaymentsHub companyId={company.id} />;
-      case "partnerships":
-        return <CompanyDriverAgreements companyId={company.id} />;
-      case "drivers":
-        return <CompanyDriverSearch companyId={company.id} />;
-      case "fleets":
-        return <CompanyFleetSearch companyId={company.id} companyProfile={{ company_name: company.company_name, contact_name: company.contact_name }} />;
-      case "qrcode":
-        return <CompanyPartnershipQRCode companyId={company.id} companyName={company.company_name} />;
-      case "employees":
-        return <CompanyEmployeesManager companyId={company.id} />;
-      case "administrators":
-        return <CompanyAdministratorsManager companyId={company.id} companyName={company.company_name} />;
-      case "stats":
-        return <CompanyStatisticsComplete companyId={company.id} />;
-      case "public":
-        return <CompanyPublicProfile companyId={company.id} />;
-      case "settings":
-        return <CompanyBillingSettings companyId={company.id} initialData={company} />;
-      default:
-        return null;
-    }
-  };
-
-  const handleBackClick = () => {
-    if (activeTab !== "overview") {
-      handleTabChange("overview");
-    }
-  };
-
-  const currentMenuItem = menuItems.find(item => item.id === activeTab);
+  const totalPendingRequests = pendingDriverRequests + pendingFleetRequests;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            {activeTab !== "overview" && (
-              <button 
-                onClick={handleBackClick}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </button>
+    <div className="min-h-screen bg-gradient-bg page-transition">
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-lg">
+        <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+            {activeTab !== "home" && (
+              <Button variant="ghost" size="sm" onClick={() => handleTabChange("home")} className="gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Accueil</span>
+              </Button>
             )}
-            <button 
-              onClick={() => setSidebarOpen(true)} 
-              className="flex items-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors border border-primary/30"
-            >
-              <Menu className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Menu</span>
-            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <img src={logo} alt="SoloCab" className="w-8 h-8" />
-          </div>
-          <div className="flex items-center gap-2">
-            <LanguageSelector variant="header" />
+          <div className="flex items-center gap-2 sm:gap-4">
             <NotificationBell />
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-medium text-foreground">{company.contact_name}</span>
+              <Badge variant="outline" className="text-xs border-primary/50 text-primary bg-primary/10">
+                Entreprise
+              </Badge>
+            </div>
+            <Link to="/rgpd-data">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground" title="Mes Données RGPD">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+              </Button>
+            </Link>
+            <LanguageSelector variant="header" />
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-slate-900 border-r border-white/10 animate-slide-in-right">
-            <SidebarContent
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          {/* Navigation Menu - Dropdown style like Fleet Manager */}
+          <div className="relative">
+            <select
+              value={activeTab}
+              onChange={(e) => handleTabChange(e.target.value)}
+              className="w-full h-12 px-4 pr-12 rounded-xl bg-card border border-border text-base font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary appearance-none cursor-pointer shadow-sm"
+            >
+              <option value="home">🏠 Accueil</option>
+              <option value="courses">🚗 Courses</option>
+              <option value="team">👥 Équipe</option>
+              <option value="finances">💰 Finances</option>
+              <option value="partnerships">🤝 Partenaires {totalPendingRequests > 0 ? `(${totalPendingRequests})` : ''}</option>
+              <option value="stats">📊 Statistiques</option>
+              <option value="settings">⚙️ Paramètres</option>
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-1">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Naviguer</span>
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            </div>
+          </div>
+
+          {/* Home Tab */}
+          <TabsContent value="home">
+            <CompanyHome 
               company={company}
-              activeTab={activeTab}
+              stats={stats}
+              pendingDriverRequests={pendingDriverRequests}
+              pendingFleetRequests={pendingFleetRequests}
               onTabChange={handleTabChange}
-              onLogout={handleLogout}
-              onClose={() => setSidebarOpen(false)}
-              menuItems={menuItems}
-              t={t}
             />
-          </aside>
-        </div>
-      )}
+          </TabsContent>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-slate-900/50 backdrop-blur-xl border-r border-white/10">
-        <SidebarContent
-          company={company}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          onLogout={handleLogout}
-          menuItems={menuItems}
-          t={t}
-        />
-      </aside>
+          {/* Courses Tab */}
+          <TabsContent value="courses">
+            <CoursesSection companyId={company.id} />
+          </TabsContent>
 
-      {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen pt-16 lg:pt-0">
-        {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-between px-8 py-4 border-b border-white/10 bg-slate-900/30 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            {activeTab !== "overview" && (
-              <button 
-                onClick={handleBackClick}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors mr-2"
-              >
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </button>
-            )}
-            {currentMenuItem && !currentMenuItem.type && (
-              <>
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <currentMenuItem.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-semibold text-white">{currentMenuItem.label}</h1>
-                  <p className="text-sm text-muted-foreground">{t('companyDashboard.companySpace')}</p>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <NotificationBell />
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground hover:text-white">
-              <LogOut className="w-4 h-4 mr-2" />
-              {t('companyDashboard.logout')}
-            </Button>
-          </div>
-        </header>
+          {/* Team Tab */}
+          <TabsContent value="team">
+            <TeamSection companyId={company.id} companyName={company.company_name} />
+          </TabsContent>
 
-        {/* Page Content */}
-        <div className="p-4 lg:p-8">
-          {renderContent()}
-        </div>
-      </main>
+          {/* Finances Tab */}
+          <TabsContent value="finances">
+            <FinancesSection companyId={company.id} company={company} />
+          </TabsContent>
+
+          {/* Partnerships Tab */}
+          <TabsContent value="partnerships">
+            <PartnershipsSection 
+              companyId={company.id} 
+              companyProfile={{ company_name: company.company_name, contact_name: company.contact_name }}
+            />
+          </TabsContent>
+
+          {/* Stats Tab */}
+          <TabsContent value="stats">
+            <CompanyStatisticsComplete companyId={company.id} />
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <SettingsSection companyId={company.id} company={company} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
 
-// Sidebar Content Component
-function SidebarContent({
+// ============= HOME SECTION =============
+function CompanyHome({
   company,
-  activeTab,
-  onTabChange,
-  onLogout,
-  onClose,
-  menuItems,
-  t,
-}: {
-  company: Company;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  onLogout: () => void;
-  onClose?: () => void;
-  menuItems: any[];
-  t: (key: string) => string;
-}) {
-  return (
-    <div className="flex flex-col h-full">
-      {/* Logo & Company */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-white truncate">{company.company_name}</p>
-              <p className="text-xs text-muted-foreground">{t('companyDashboard.company')}</p>
-            </div>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg lg:hidden">
-              <X className="w-5 h-5 text-white" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <div className="space-y-1">
-          {menuItems.map((item) => {
-            if (item.type === "divider") {
-              return (
-                <div key={item.id} className="pt-4 pb-2">
-                  <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {item.label}
-                  </p>
-                </div>
-              );
-            }
-
-            const Icon = item.icon!;
-            const isActive = activeTab === item.id;
-            const itemColor = (item as any).color || "text-muted-foreground";
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25"
-                    : "text-muted-foreground hover:text-white hover:bg-white/10"
-                )}
-              >
-                <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary-foreground" : itemColor)} />
-                <span className="truncate">{item.label}</span>
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-white/10">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          {t('companyDashboard.logout')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Dashboard Overview Component
-function DashboardOverview({
   stats,
-  company,
-  onNavigate,
-  onCreateCourse,
+  pendingDriverRequests,
+  pendingFleetRequests,
+  onTabChange,
 }: {
-  stats: { courses: number; spent: number; drivers: number; employees: number };
   company: Company;
-  onNavigate: (tab: string) => void;
-  onCreateCourse: () => void;
+  stats: { courses: number; spent: number; drivers: number; employees: number; fleets: number };
+  pendingDriverRequests: number;
+  pendingFleetRequests: number;
+  onTabChange: (tab: string) => void;
 }) {
-  const companyId = company.id;
-  const statCards = [
-    { label: "Courses", value: stats.courses, icon: Calendar, gradient: "from-blue-500 to-indigo-600", bgColor: "bg-blue-500/20", iconColor: "text-blue-400" },
-    { label: "Chauffeurs", value: stats.drivers, icon: Car, gradient: "from-violet-500 to-purple-600", bgColor: "bg-violet-500/20", iconColor: "text-violet-400" },
-    { label: "Collaborateurs", value: stats.employees, icon: Users, gradient: "from-emerald-500 to-teal-600", bgColor: "bg-emerald-500/20", iconColor: "text-emerald-400" },
-    { label: "Dépenses", value: `${stats.spent}€`, icon: Euro, gradient: "from-amber-500 to-orange-600", bgColor: "bg-amber-500/20", iconColor: "text-amber-400" },
-  ];
+  const totalPendingRequests = pendingDriverRequests + pendingFleetRequests;
 
   const quickActions = [
-    { label: "Nouvelle course", icon: Plus, action: onCreateCourse, primary: true, gradient: "from-primary to-primary/80" },
-    { label: "Trouver un chauffeur", icon: Search, action: () => onNavigate("drivers"), gradient: "from-indigo-500 to-violet-500", iconColor: "text-indigo-400" },
-    { label: "Mes collaborateurs", icon: Users, action: () => onNavigate("employees"), gradient: "from-emerald-500 to-teal-500", iconColor: "text-emerald-400" },
-    { label: "Paiements", icon: CreditCard, action: () => onNavigate("payments"), gradient: "from-pink-500 to-rose-500", iconColor: "text-pink-400" },
+    { label: "Courses", icon: Car, tab: "courses", color: "text-blue-400", bgColor: "bg-blue-500/20", count: stats.courses },
+    { label: "Équipe", icon: Users, tab: "team", color: "text-emerald-400", bgColor: "bg-emerald-500/20", count: stats.employees },
+    { label: "Partenaires", icon: Handshake, tab: "partnerships", color: "text-violet-400", bgColor: "bg-violet-500/20", count: stats.drivers + stats.fleets, badge: totalPendingRequests },
+    { label: "Finances", icon: Euro, tab: "finances", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+    { label: "Statistiques", icon: BarChart3, tab: "stats", color: "text-cyan-400", bgColor: "bg-cyan-500/20" },
+    { label: "Paramètres", icon: Settings, tab: "settings", color: "text-slate-400", bgColor: "bg-slate-500/20" },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Billing Warning - Priority */}
+      {/* Billing Warning */}
       <BillingWarningBanner 
         company={company} 
-        onNavigateToSettings={() => onNavigate("settings")} 
+        onNavigateToSettings={() => onTabChange("settings")} 
       />
       
-      {/* Payment Alerts - Priority */}
+      {/* Payment Alerts */}
       <CompanyPaymentAlerts 
-        companyId={companyId} 
-        onNavigateToPayments={() => onNavigate("payments")} 
+        companyId={company.id} 
+        onNavigateToPayments={() => onTabChange("finances")} 
       />
 
-      {/* Welcome Banner with gradient */}
+      {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 via-violet-500/20 to-indigo-500/10 border border-primary/20 p-6">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-violet-500/10 to-pink-500/5" />
         <div className="relative z-10 flex items-center justify-between">
@@ -522,7 +364,7 @@ function DashboardOverview({
               Bonjour, {company.contact_name} 👋
             </h2>
             <p className="text-muted-foreground max-w-xl">
-              Gérez vos réservations VTC, vos collaborateurs et vos partenaires depuis votre tableau de bord.
+              Gérez vos réservations VTC, vos collaborateurs et vos partenaires.
             </p>
           </div>
           <div className="hidden lg:block">
@@ -533,143 +375,358 @@ function DashboardOverview({
         </div>
       </div>
 
-      {/* Quick Actions - FIRST */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <ArrowUpRight className="w-5 h-5 text-primary" />
-          Actions rapides
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {quickActions.map((action, i) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={i}
-                onClick={action.action}
-                className={cn(
-                  "group relative overflow-hidden rounded-xl p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg",
-                  action.primary
-                    ? `bg-gradient-to-br ${action.gradient} text-primary-foreground shadow-lg shadow-primary/25`
-                    : "bg-white/5 border border-white/10 hover:border-white/20"
-                )}
-              >
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <div className={cn(
-                    "p-3 rounded-xl transition-all duration-300",
-                    action.primary 
-                      ? "bg-white/20" 
-                      : `bg-gradient-to-br ${action.gradient} bg-opacity-10 group-hover:scale-110`
-                  )}>
-                    <Icon className={cn("w-5 h-5", action.primary ? "text-white" : "text-white")} />
-                  </div>
-                  <span className={cn("text-sm font-medium", action.primary ? "text-white" : "text-white")}>{action.label}</span>
+      {/* Quick Navigation Grid 3x2 */}
+      <div className="grid grid-cols-3 gap-3">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.tab}
+              onClick={() => onTabChange(action.tab)}
+              className="relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/50 hover:bg-card transition-all duration-200"
+            >
+              {action.badge && action.badge > 0 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center animate-pulse">
+                  {action.badge}
                 </div>
-              </button>
-            );
-          })}
-        </div>
+              )}
+              <div className={`p-3 rounded-xl ${action.bgColor}`}>
+                <Icon className={`w-5 h-5 ${action.color}`} />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-foreground">{action.label}</span>
+              {action.count !== undefined && (
+                <span className="text-xs text-muted-foreground">{action.count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Stats Grid - AFTER Quick Actions */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-violet-400" />
-          Statistiques mensuelles
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statCards.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={i} className={cn(
-                "relative overflow-hidden bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 backdrop-blur-sm hover:scale-[1.02] transition-all duration-300 cursor-pointer group",
-              )}>
-                <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300", stat.gradient)} style={{ opacity: 0.1 }} />
-                <CardContent className="p-4 relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={cn("p-2.5 rounded-xl", stat.bgColor)}>
-                      <Icon className={cn("w-5 h-5", stat.iconColor)} />
-                    </div>
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Courses ce mois" value={stats.courses} icon={Calendar} color="text-blue-400" bgColor="bg-blue-500/20" />
+        <StatCard label="Chauffeurs" value={stats.drivers} icon={Car} color="text-violet-400" bgColor="bg-violet-500/20" />
+        <StatCard label="Flottes" value={stats.fleets} icon={Truck} color="text-rose-400" bgColor="bg-rose-500/20" />
+        <StatCard label="Dépenses" value={`${stats.spent}€`} icon={Euro} color="text-amber-400" bgColor="bg-amber-500/20" />
       </div>
 
-      {/* Activity Cards */}
+      {/* Recent Activity */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 hover:border-blue-500/30 transition-colors">
+        <Card className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-blue-500/20">
                   <Calendar className="w-4 h-4 text-blue-400" />
                 </div>
-                <h3 className="font-semibold text-white">Prochaines courses</h3>
+                <h3 className="font-semibold text-white">Courses</h3>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("reservations")} className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10">
-                Voir tout
-                <ChevronRight className="w-4 h-4 ml-1" />
+              <Button variant="ghost" size="sm" onClick={() => onTabChange("courses")} className="text-blue-400 hover:text-blue-300">
+                Gérer <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-3">
-                <Clock className="w-8 h-8 text-blue-400" />
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-3">
+                <Car className="w-7 h-7 text-blue-400" />
               </div>
-              <p className="text-muted-foreground mb-2">Aucune course planifiée</p>
-              <Button onClick={onCreateCourse} className="bg-blue-500 hover:bg-blue-600 text-white">
+              <p className="text-muted-foreground mb-2">{stats.courses} courses ce mois</p>
+              <Button onClick={() => onTabChange("courses")} className="bg-blue-500 hover:bg-blue-600 text-white">
                 <Plus className="w-4 h-4 mr-2" />
-                Réserver maintenant
+                Nouvelle course
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent border-violet-500/20 hover:border-violet-500/30 transition-colors">
+        <Card className="bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-transparent border-violet-500/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-violet-500/20">
                   <Handshake className="w-4 h-4 text-violet-400" />
                 </div>
-                <h3 className="font-semibold text-white">Partenaires actifs</h3>
+                <h3 className="font-semibold text-white">Partenaires</h3>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("partnerships")} className="text-violet-400 hover:text-violet-300 hover:bg-violet-500/10">
-                Voir tout
-                <ChevronRight className="w-4 h-4 ml-1" />
+              <Button variant="ghost" size="sm" onClick={() => onTabChange("partnerships")} className="text-violet-400 hover:text-violet-300">
+                Voir tout <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
-            {stats.drivers > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500/20 to-purple-500/10 border border-violet-500/20">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                    <Car className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-white">{stats.drivers}</p>
-                    <p className="text-sm text-muted-foreground">Chauffeur{stats.drivers > 1 ? 's' : ''} partenaire{stats.drivers > 1 ? 's' : ''}</p>
-                  </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-violet-500/20 to-purple-500/10 border border-violet-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Car className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-white">{stats.drivers}</p>
+                  <p className="text-xs text-muted-foreground">Chauffeurs</p>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-3">
-                  <Handshake className="w-8 h-8 text-violet-400" />
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-rose-500/20 to-pink-500/10 border border-rose-500/20">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
+                  <Truck className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-muted-foreground mb-2">Aucun partenaire pour le moment</p>
-                <Button onClick={() => onNavigate("drivers")} className="bg-violet-500 hover:bg-violet-600 text-white">
-                  <Search className="w-4 h-4 mr-2" />
-                  Trouver des chauffeurs
-                </Button>
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-white">{stats.fleets}</p>
+                  <p className="text-xs text-muted-foreground">Flottes</p>
+                </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+// ============= STATS CARD COMPONENT =============
+function StatCard({ label, value, icon: Icon, color, bgColor }: { 
+  label: string; 
+  value: string | number; 
+  icon: any; 
+  color: string; 
+  bgColor: string;
+}) {
+  return (
+    <Card className="relative overflow-hidden bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10 backdrop-blur-sm">
+      <CardContent className="p-4 relative">
+        <div className="flex items-center justify-between mb-3">
+          <div className={`p-2.5 rounded-xl ${bgColor}`}>
+            <Icon className={`w-5 h-5 ${color}`} />
+          </div>
+          <TrendingUp className="w-4 h-4 text-emerald-400" />
+        </div>
+        <p className="text-2xl sm:text-3xl font-bold text-white mb-1">{value}</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============= COURSES SECTION =============
+function CoursesSection({ companyId }: { companyId: string }) {
+  const [subTab, setSubTab] = useState("requests");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Button 
+          variant={subTab === "requests" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("requests")}
+          className="whitespace-nowrap"
+        >
+          <Calendar className="w-4 h-4 mr-2" />
+          Demandes
+        </Button>
+        <Button 
+          variant={subTab === "list" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("list")}
+          className="whitespace-nowrap"
+        >
+          <Car className="w-4 h-4 mr-2" />
+          Historique
+        </Button>
+        <Button 
+          variant={subTab === "new" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("new")}
+          className="whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nouvelle
+        </Button>
+      </div>
+
+      {subTab === "requests" && <CompanyCourseRequestsManager companyId={companyId} />}
+      {subTab === "list" && <CompanyCoursesList companyId={companyId} onCreateCourse={() => setSubTab("new")} />}
+      {subTab === "new" && <CompanyInlineCourseCreation companyId={companyId} onSuccess={() => setSubTab("list")} onSearchNewDriver={() => {}} />}
+    </div>
+  );
+}
+
+// ============= TEAM SECTION =============
+function TeamSection({ companyId, companyName }: { companyId: string; companyName: string }) {
+  const [subTab, setSubTab] = useState("employees");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Button 
+          variant={subTab === "employees" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("employees")}
+          className="whitespace-nowrap"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Collaborateurs
+        </Button>
+        <Button 
+          variant={subTab === "admins" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("admins")}
+          className="whitespace-nowrap"
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          Administrateurs
+        </Button>
+      </div>
+
+      {subTab === "employees" && <CompanyEmployeesManager companyId={companyId} />}
+      {subTab === "admins" && <CompanyAdministratorsManager companyId={companyId} companyName={companyName} />}
+    </div>
+  );
+}
+
+// ============= FINANCES SECTION =============
+function FinancesSection({ companyId, company }: { companyId: string; company: Company }) {
+  const [subTab, setSubTab] = useState("payments");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Button 
+          variant={subTab === "payments" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("payments")}
+          className="whitespace-nowrap"
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          Paiements
+        </Button>
+        <Button 
+          variant={subTab === "invoices" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("invoices")}
+          className="whitespace-nowrap"
+        >
+          <Receipt className="w-4 h-4 mr-2" />
+          Factures
+        </Button>
+        <Button 
+          variant={subTab === "quotes" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("quotes")}
+          className="whitespace-nowrap"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Devis
+        </Button>
+        <Button 
+          variant={subTab === "expenses" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("expenses")}
+          className="whitespace-nowrap"
+        >
+          <Euro className="w-4 h-4 mr-2" />
+          Notes de frais
+        </Button>
+      </div>
+
+      {subTab === "payments" && <CompanyPaymentsHub companyId={companyId} />}
+      {subTab === "invoices" && <CompanyFacturesList companyId={companyId} />}
+      {subTab === "quotes" && <CompanyDevisList companyId={companyId} />}
+      {subTab === "expenses" && <CompanyExpenseReports companyId={companyId} />}
+    </div>
+  );
+}
+
+// ============= PARTNERSHIPS SECTION =============
+function PartnershipsSection({ 
+  companyId, 
+  companyProfile 
+}: { 
+  companyId: string; 
+  companyProfile: { company_name: string; contact_name: string };
+}) {
+  const [subTab, setSubTab] = useState("agreements");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Button 
+          variant={subTab === "agreements" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("agreements")}
+          className="whitespace-nowrap"
+        >
+          <Handshake className="w-4 h-4 mr-2" />
+          Accords
+        </Button>
+        <Button 
+          variant={subTab === "drivers" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("drivers")}
+          className="whitespace-nowrap"
+        >
+          <Car className="w-4 h-4 mr-2" />
+          Chauffeurs
+        </Button>
+        <Button 
+          variant={subTab === "fleets" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("fleets")}
+          className="whitespace-nowrap"
+        >
+          <Truck className="w-4 h-4 mr-2" />
+          Flottes
+        </Button>
+        <Button 
+          variant={subTab === "qrcode" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("qrcode")}
+          className="whitespace-nowrap"
+        >
+          <Globe className="w-4 h-4 mr-2" />
+          QR Code
+        </Button>
+      </div>
+
+      {subTab === "agreements" && <CompanyDriverAgreements companyId={companyId} />}
+      {subTab === "drivers" && <CompanyDriverSearch companyId={companyId} />}
+      {subTab === "fleets" && (
+        <CompanyFleetPartnerships 
+          companyId={companyId} 
+          companyProfile={{ 
+            company_name: companyProfile.company_name, 
+            contact_name: companyProfile.contact_name 
+          }} 
+        />
+      )}
+      {subTab === "qrcode" && <CompanyPartnershipQRCode companyId={companyId} companyName={companyProfile.company_name} />}
+    </div>
+  );
+}
+
+// ============= SETTINGS SECTION =============
+function SettingsSection({ companyId, company }: { companyId: string; company: Company }) {
+  const [subTab, setSubTab] = useState("billing");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Button 
+          variant={subTab === "billing" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("billing")}
+          className="whitespace-nowrap"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Configuration
+        </Button>
+        <Button 
+          variant={subTab === "public" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("public")}
+          className="whitespace-nowrap"
+        >
+          <Globe className="w-4 h-4 mr-2" />
+          Profil public
+        </Button>
+      </div>
+
+      {subTab === "billing" && <CompanyBillingSettings companyId={companyId} initialData={company} />}
+      {subTab === "public" && <CompanyPublicProfile companyId={companyId} />}
     </div>
   );
 }
