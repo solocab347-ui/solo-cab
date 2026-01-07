@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Crown, Copy, ExternalLink, Plus, Loader2, Download, FileText, Link } from "lucide-react";
+import { Crown, Copy, ExternalLink, Plus, Loader2, Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CongressFlyer } from "./CongressFlyer";
 
@@ -27,8 +27,10 @@ interface CongressLinkTabProps {
 export const CongressLinkTab = ({ invitation, onUpdate }: CongressLinkTabProps) => {
   const [newMaxUses, setNewMaxUses] = useState<number>(invitation?.max_uses || 0);
   const [isUpdatingMax, setIsUpdatingMax] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const flyerRef = useRef<HTMLDivElement>(null);
+  const [isDownloadingA4, setIsDownloadingA4] = useState(false);
+  const [isDownloadingA5, setIsDownloadingA5] = useState(false);
+  const flyerRefA4 = useRef<HTMLDivElement>(null);
+  const flyerRefA5 = useRef<HTMLDivElement>(null);
 
   const invitationLink = invitation 
     ? `${window.location.origin}/inscription-congres?ref=${invitation.slug}`
@@ -59,19 +61,19 @@ export const CongressLinkTab = ({ invitation, onUpdate }: CongressLinkTabProps) 
     }
   };
 
-  const handleDownloadFlyer = async () => {
-    if (!flyerRef.current) return;
-    setIsDownloading(true);
+  const handleDownloadA4 = async () => {
+    if (!flyerRefA4.current) return;
+    setIsDownloadingA4(true);
     
     try {
       const html2canvas = (await import("html2canvas")).default;
       const { default: jsPDF } = await import("jspdf");
 
-      const canvas = await html2canvas(flyerRef.current, {
+      const canvas = await html2canvas(flyerRefA4.current, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#0a0a14",
+        backgroundColor: "#ffffff",
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -79,13 +81,64 @@ export const CongressLinkTab = ({ invitation, onUpdate }: CongressLinkTabProps) 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("SoloCab-Offre-Pionnier-Congres-VTC.pdf");
-      toast.success("Flyer téléchargé !");
+      pdf.save("SoloCab-Offre-Pionnier-A4.pdf");
+      toast.success("Flyer A4 téléchargé !");
     } catch (err) {
       console.error("Error downloading flyer:", err);
       toast.error("Erreur lors du téléchargement");
     } finally {
-      setIsDownloading(false);
+      setIsDownloadingA4(false);
+    }
+  };
+
+  const handleDownloadA5x4 = async () => {
+    if (!flyerRefA5.current) return;
+    setIsDownloadingA5(true);
+    
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { default: jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(flyerRefA5.current, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      
+      // Create A4 PDF with 4 A5 flyers (2x2 grid)
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const a4Width = pdf.internal.pageSize.getWidth(); // 210mm
+      const a4Height = pdf.internal.pageSize.getHeight(); // 297mm
+      const a5Width = a4Width / 2; // 105mm
+      const a5Height = a4Height / 2; // 148.5mm
+
+      // Top-left
+      pdf.addImage(imgData, "PNG", 0, 0, a5Width, a5Height);
+      // Top-right
+      pdf.addImage(imgData, "PNG", a5Width, 0, a5Width, a5Height);
+      // Bottom-left
+      pdf.addImage(imgData, "PNG", 0, a5Height, a5Width, a5Height);
+      // Bottom-right
+      pdf.addImage(imgData, "PNG", a5Width, a5Height, a5Width, a5Height);
+
+      // Add cut lines
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineDashPattern([2, 2], 0);
+      // Vertical center line
+      pdf.line(a5Width, 0, a5Width, a4Height);
+      // Horizontal center line
+      pdf.line(0, a5Height, a4Width, a5Height);
+
+      pdf.save("SoloCab-Offre-Pionnier-A5x4.pdf");
+      toast.success("Flyer A5 (4 par page) téléchargé !");
+    } catch (err) {
+      console.error("Error downloading flyer:", err);
+      toast.error("Erreur lors du téléchargement");
+    } finally {
+      setIsDownloadingA5(false);
     }
   };
 
@@ -169,25 +222,52 @@ export const CongressLinkTab = ({ invitation, onUpdate }: CongressLinkTabProps) 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Flyer A4 - Offre Pionnier
+            Flyers - Offre Pionnier
           </CardTitle>
           <CardDescription>
-            Téléchargez le flyer pour présenter l'offre au congrès
+            Téléchargez les flyers pour présenter l'offre au congrès
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={handleDownloadFlyer} disabled={isDownloading} className="gap-2">
-            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Télécharger le flyer PDF
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleDownloadA4} disabled={isDownloadingA4} className="gap-2">
+              {isDownloadingA4 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Télécharger PDF A4
+            </Button>
+            <Button onClick={handleDownloadA5x4} disabled={isDownloadingA5} variant="outline" className="gap-2">
+              {isDownloadingA5 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Télécharger PDF A5 (4 par page A4)
+            </Button>
+          </div>
 
-          <div className="overflow-auto max-h-[70vh] border border-border rounded-lg">
-            <CongressFlyer
-              ref={flyerRef}
-              invitationLink={invitationLink}
-              trialDays={invitation.trial_days}
-              monthlyPrice={invitation.monthly_price}
-            />
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* A4 Preview */}
+            <div>
+              <p className="text-sm font-medium mb-2">Aperçu A4</p>
+              <div className="overflow-auto max-h-[50vh] border border-border rounded-lg">
+                <CongressFlyer
+                  ref={flyerRefA4}
+                  invitationLink={invitationLink}
+                  trialDays={invitation.trial_days}
+                  monthlyPrice={invitation.monthly_price}
+                  format="A4"
+                />
+              </div>
+            </div>
+            
+            {/* A5 Preview */}
+            <div>
+              <p className="text-sm font-medium mb-2">Aperçu A5</p>
+              <div className="overflow-auto max-h-[50vh] border border-border rounded-lg">
+                <CongressFlyer
+                  ref={flyerRefA5}
+                  invitationLink={invitationLink}
+                  trialDays={invitation.trial_days}
+                  monthlyPrice={invitation.monthly_price}
+                  format="A5"
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
