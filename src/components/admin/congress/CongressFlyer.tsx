@@ -60,81 +60,72 @@ export const CongressFlyer = forwardRef<HTMLDivElement, CongressFlyerProps>(
       return (
         <div
           ref={ref}
-          className="w-[420px] h-[595px] p-5 relative overflow-hidden"
+          className="w-[420px] h-[595px] p-4 relative overflow-hidden flex flex-col"
           style={{
-            background: "linear-gradient(180deg, #ffffff 0%, #f0f4ff 50%, #e0e8ff 100%)",
+            background: "linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)",
           }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <img src={logo} alt="SoloCab" className="h-8 object-contain" />
-            <div className="bg-gradient-to-r from-[#f97316] to-[#ea580c] rounded-full px-3 py-1">
-              <span className="text-white font-bold text-xs">OFFRE PIONNIER</span>
+          {/* Offre badge - top center */}
+          <div className="flex justify-center mb-2">
+            <div className="bg-gradient-to-r from-[#f97316] to-[#ea580c] rounded-full px-4 py-1.5">
+              <span className="text-white font-bold text-xs tracking-wide">OFFRE PIONNIER</span>
             </div>
           </div>
 
-          {/* Congress title */}
-          <div className="bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] rounded-xl p-2 mb-3 text-center">
+          {/* Congress banner */}
+          <div className="bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] rounded-xl py-2 px-3 mb-3 text-center">
             <p className="text-white font-bold text-sm">🎉 CONGRÈS VTC 2026 🎉</p>
           </div>
 
           {/* Main title */}
           <div className="text-center mb-3">
-            <h1 className="text-lg font-bold text-[#1e3a5f]">Rejoignez les Pionniers</h1>
-            <h2 className="text-2xl font-extrabold bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] bg-clip-text text-transparent">
-              SoloCab
-            </h2>
+            <h1 className="text-xl font-bold text-[#1e3a5f] italic">Rejoignez les Pionniers</h1>
           </div>
 
-          {/* QR Code - CENTRAL */}
-          <div className="flex justify-center mb-3">
-            <div className="bg-white p-3 rounded-2xl shadow-xl border-4 border-[#3b82f6]">
+          {/* QR Code - CENTRAL & LARGE */}
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="bg-white p-4 rounded-2xl shadow-xl border-4 border-[#3b82f6] mb-3">
               {qrCodeUrl && (
-                <img src={qrCodeUrl} alt="QR Code" className="w-28 h-28" />
+                <img src={qrCodeUrl} alt="QR Code" className="w-36 h-36" />
               )}
             </div>
+            <p className="text-[#1e3a5f] font-bold text-sm tracking-wide">
+              SCANNEZ POUR VOUS INSCRIRE
+            </p>
           </div>
-          <p className="text-center text-[#1e3a5f] font-bold text-sm mb-3">
-            SCANNEZ POUR VOUS INSCRIRE
-          </p>
 
-          {/* Trial offer */}
-          <div className="bg-white rounded-xl p-2 mb-3 text-center shadow-lg border border-[#8b5cf6]">
-            <span className="text-[#f97316] font-extrabold text-xl">{trialDays} JOURS</span>
-            <span className="text-[#1e3a5f] text-sm ml-2">d'essai gratuit</span>
+          {/* Trial offer box */}
+          <div className="bg-gradient-to-r from-[#dbeafe] to-[#ede9fe] rounded-xl py-3 px-4 mb-4 text-center border border-[#8b5cf6]/30">
+            <span className="text-[#f97316] font-extrabold text-2xl">{trialDays} JOURS</span>
+            <span className="text-[#1e3a5f] text-sm font-semibold ml-2">d'essai gratuit</span>
             <span className="text-[#1e3a5f]/60 text-xs ml-1">puis {monthlyPrice}€/mois</span>
           </div>
 
-          {/* Features - compact 2x4 */}
-          <div className="grid grid-cols-2 gap-1 mb-3">
+          {/* Features - 2 columns x 4 rows compact */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">
             {features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-1 bg-white/80 rounded-lg p-1.5">
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] flex items-center justify-center">
+              <div key={index} className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#3b82f6] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
                   <feature.icon className="h-3 w-3 text-white" />
                 </div>
-                <span className="text-[#1e3a5f] text-[9px] font-medium">{feature.text}</span>
+                <span className="text-[#1e3a5f] text-[10px] font-medium leading-tight">{feature.text}</span>
               </div>
             ))}
           </div>
 
-          {/* Values */}
-          <div className="flex justify-center gap-3 mb-2">
+          {/* Values row */}
+          <div className="flex justify-center gap-4 pt-2 border-t border-[#3b82f6]/20">
             {values.map((value, index) => (
-              <div key={index} className="flex flex-col items-center">
+              <div key={index} className="flex items-center gap-1">
                 <div 
-                  className="w-7 h-7 rounded-full flex items-center justify-center shadow"
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: value.color }}
                 >
-                  <value.icon className="h-4 w-4 text-white" />
+                  <value.icon className="h-3 w-3 text-white" />
                 </div>
-                <span className="text-[#1e3a5f] text-[8px] font-medium mt-0.5">{value.label}</span>
+                <span className="text-[#1e3a5f] text-[9px] font-semibold">{value.label}</span>
               </div>
             ))}
-          </div>
-
-          {/* Footer */}
-          <div className="text-center mt-auto">
-            <p className="text-[#1e3a5f]/50 text-[8px]">SoloCab © 2026 • Indépendance • Technologie • Humanité</p>
           </div>
         </div>
       );
