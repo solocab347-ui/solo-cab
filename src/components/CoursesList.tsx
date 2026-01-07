@@ -342,12 +342,28 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             employeePhone = createdByProfiles[course.created_by_user_id].phone || null;
           }
           
+          // Debug: log if employee info is missing for company courses
+          if (!employeeName && (request || cc.employee_id)) {
+            console.log("[CoursesList] Employee info missing for course:", cc.course_id, {
+              ccEmployeeId: cc.employee_id,
+              requestEmployeeId: request?.employee_id,
+              isGuestEmployee: request?.is_guest_employee,
+              employeeProfilesMapKeys: Object.keys(employeeProfilesMap)
+            });
+          }
+          
           return {
             ...cc,
             employeeName,
             employeePhone
           };
         }) || [];
+        
+        console.log("[CoursesList] Enriched company data:", enrichedCompanyData.map(cc => ({
+          courseId: cc.course_id,
+          employeeName: cc.employeeName,
+          employeePhone: cc.employeePhone
+        })));
         
         setCompanyCoursesData(enrichedCompanyData);
       }
