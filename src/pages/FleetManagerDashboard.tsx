@@ -479,80 +479,29 @@ const FleetManagerDashboard = () => {
           }
           setActiveTab(tab);
         }} className="space-y-6">
-          {/* Navigation Tabs - Compact Design */}
-          <div className="relative">
-            <div className="bg-card/50 backdrop-blur-sm border border-border/50 p-2 rounded-xl space-y-1.5">
-              {/* Première ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-1.5 h-auto bg-transparent p-0">
-                <TabsTrigger 
-                  value="home" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Home className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.home')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="drivers" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Car className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.drivers')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="clients" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-success data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.clients')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="courses" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-info data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Route className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.courses')}</span>
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Deuxième ligne - 4 onglets */}
-              <TabsList className="w-full grid grid-cols-4 gap-1.5 h-auto bg-transparent p-0">
-                <TabsTrigger 
-                  value="stats" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-accent data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.statistics')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="tools" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-warning data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Wrench className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('common.more')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="documents" 
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-cyan-500 data-[state=active]:text-white ${isAccountRestricted ? 'ring-2 ring-destructive' : 'hover:bg-muted/50'}`}
-                >
-                  <FileText className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.documents')}</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="settings" 
-                  disabled={isAccountRestricted}
-                  className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg text-xs transition-all bg-muted/30 data-[state=active]:bg-muted-foreground data-[state=active]:text-white ${isAccountRestricted ? 'opacity-40' : 'hover:bg-muted/50'}`}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span className="font-medium text-[10px]">{t('fleetDashboard.tabs.settings')}</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          {/* Navigation - Compact Dropdown */}
+          <div className="flex items-center gap-2">
+            <select
+              value={activeTab}
+              onChange={(e) => {
+                const tab = e.target.value;
+                if (isAccountRestricted && tab !== "documents") {
+                  toast.error(t('fleetDashboard.accessFeatureError'));
+                  return;
+                }
+                setActiveTab(tab);
+              }}
+              className="flex-1 h-10 px-3 rounded-lg bg-card border border-border text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="home" disabled={isAccountRestricted}>🏠 {t('fleetDashboard.tabs.home')}</option>
+              <option value="drivers" disabled={isAccountRestricted}>🚗 {t('fleetDashboard.tabs.drivers')}</option>
+              <option value="clients" disabled={isAccountRestricted}>👥 {t('fleetDashboard.tabs.clients')}</option>
+              <option value="courses" disabled={isAccountRestricted}>📍 {t('fleetDashboard.tabs.courses')}</option>
+              <option value="stats" disabled={isAccountRestricted}>📊 {t('fleetDashboard.tabs.statistics')}</option>
+              <option value="tools" disabled={isAccountRestricted}>🔧 {t('common.more')}</option>
+              <option value="documents">📄 {t('fleetDashboard.tabs.documents')}</option>
+              <option value="settings" disabled={isAccountRestricted}>⚙️ {t('fleetDashboard.tabs.settings')}</option>
+            </select>
           </div>
 
           {/* Home Tab */}
