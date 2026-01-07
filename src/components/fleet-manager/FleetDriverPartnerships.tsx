@@ -1355,6 +1355,7 @@ export const FleetDriverPartnerships = ({
         paymentSchedule={paymentSchedule}
         partnershipType="fleet"
         mode="propose"
+        signerRole="fleet_manager"
         onConfirmSign={async () => {
           await submitProposal();
           setShowProposalConfirmation(false);
@@ -1919,6 +1920,7 @@ export const FleetDriverPartnerships = ({
         paymentSchedule={counterPaymentSchedule}
         partnershipType="fleet"
         mode="propose"
+        signerRole="fleet_manager"
         onConfirmSign={async () => {
           await submitCounterProposal();
           setShowCounterConfirmation(false);
@@ -1955,6 +1957,7 @@ export const FleetDriverPartnerships = ({
         commissionPercentage={confirmSignaturePartnership?.commission_percentage}
         paymentSchedule={confirmSignaturePartnership?.payment_schedule}
         partnershipType="fleet"
+        signerRole="fleet_manager"
         onConfirmSign={async () => {
           if (confirmSignaturePartnership) {
             setSigningContract(true);
