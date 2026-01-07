@@ -225,6 +225,7 @@ export const FleetDriverPartnerships = ({
   
   // Profile preview before signature
   const [previewProfilePartnership, setPreviewProfilePartnership] = useState<Partnership | null>(null);
+  const [showProfilePreviewOnly, setShowProfilePreviewOnly] = useState(false);
   
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
@@ -919,88 +920,113 @@ export const FleetDriverPartnerships = ({
               ) : (
                 <div className="space-y-4">
                 {pendingPartnerships.map((partnership) => (
-                    <Card key={partnership.id} className="border-warning/30 bg-warning/5 overflow-hidden">
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="flex flex-col gap-3">
+                    <Card key={partnership.id} className="border-warning/30 bg-gradient-to-br from-warning/5 to-transparent overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-4">
                           {/* Header with avatar and info */}
                           <div className="flex items-start gap-3">
-                            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                            <Avatar className="w-14 h-14 border-2 border-warning/30 shrink-0">
                               <AvatarImage src={partnership.driver?.profile?.profile_photo_url || undefined} />
-                              <AvatarFallback>
+                              <AvatarFallback className="bg-warning/10 text-warning-foreground text-lg">
                                 {(partnership.driver?.profile?.full_name || "C").slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm sm:text-base truncate">
+                              <h3 className="font-bold text-base truncate">
                                 {partnership.driver?.profile?.full_name || "Chauffeur"}
                               </h3>
-                              <p className="text-xs sm:text-sm text-muted-foreground">
-                                Commission: {partnership.commission_type === "fixed" 
+                              <p className="text-sm text-muted-foreground">
+                                Rémunération: {partnership.commission_type === "fixed" 
                                   ? `${partnership.commission_fixed_amount}€/course` 
                                   : `${partnership.commission_percentage}%`}
                               </p>
-                              {/* Signature status badges - responsive grid */}
-                              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                              
+                              {/* Signature status badges */}
+                              <div className="flex flex-wrap gap-1.5 mt-2">
                                 <Badge 
                                   variant={partnership.fleet_manager_signed ? "default" : "secondary"}
-                                  className={`text-xs justify-center py-1 ${partnership.fleet_manager_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : 'bg-orange-500/20 text-orange-600 border-orange-500/30'}`}
+                                  className={`text-xs ${partnership.fleet_manager_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : 'bg-orange-500/20 text-orange-600 border-orange-500/30'}`}
                                 >
                                   {partnership.fleet_manager_signed ? "✓ Vous" : "À signer"}
                                 </Badge>
                                 <Badge 
                                   variant={partnership.driver_signed ? "default" : "secondary"}
-                                  className={`text-xs justify-center py-1 ${partnership.driver_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : ''}`}
+                                  className={`text-xs ${partnership.driver_signed ? 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30' : ''}`}
                                 >
-                                  {partnership.driver_signed ? "✓ Chauffeur" : "Attente"}
+                                  {partnership.driver_signed ? "✓ Chauffeur" : "Attente chauffeur"}
                                 </Badge>
                               </div>
                             </div>
                           </div>
+
+                          {/* View profile button - always visible */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2"
+                            onClick={() => {
+                              setPreviewProfilePartnership(partnership);
+                              setShowProfilePreviewOnly(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            Voir le profil du chauffeur
+                          </Button>
                           
-                          {/* Action buttons - stacked on mobile */}
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
-                              <>
-                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="flex-1 gap-1.5 h-9">
-                                  <FileText className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Accepter</span>
+                          {/* Action buttons */}
+                          {!partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
+                            <div className="flex flex-col gap-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button 
+                                  size="lg"
+                                  onClick={() => {
+                                    setPreviewProfilePartnership(partnership);
+                                    setShowProfilePreviewOnly(false);
+                                  }}
+                                  className="gap-2 h-11"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Accepter
                                 </Button>
                                 <Button 
                                   variant="secondary"
-                                  size="sm"
+                                  size="lg"
                                   onClick={() => openCounterProposal(partnership)}
-                                  className="flex-1 gap-1.5 h-9"
+                                  className="gap-2 h-11"
                                 >
-                                  <Edit className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Contre-prop.</span>
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => cancelPartnership(partnership.id)}
-                                  className="h-9 px-3"
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                            {partnership.fleet_manager_signed && !partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
-                              <div className="flex items-center gap-2 flex-1">
-                                <Badge variant="secondary" className="py-1.5 text-xs flex-1 justify-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  Attente chauffeur
-                                </Badge>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => cancelPartnership(partnership.id)}
-                                  className="h-9 px-3"
-                                >
-                                  <X className="w-4 h-4" />
+                                  <Edit className="w-4 h-4" />
+                                  Contre-prop.
                                 </Button>
                               </div>
-                            )}
-                          </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => cancelPartnership(partnership.id)}
+                                className="w-full gap-2"
+                              >
+                                <X className="w-4 h-4" />
+                                Refuser
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {partnership.fleet_manager_signed && !partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
+                            <div className="flex flex-col gap-2">
+                              <Badge variant="secondary" className="py-2 text-sm justify-center">
+                                <Clock className="w-4 h-4 mr-2" />
+                                En attente de signature du chauffeur
+                              </Badge>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => cancelPartnership(partnership.id)}
+                                className="w-full gap-2"
+                              >
+                                <X className="w-4 h-4" />
+                                Annuler la proposition
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -1823,12 +1849,18 @@ export const FleetDriverPartnerships = ({
       {/* Partner Profile Preview before signature */}
       <PartnerPublicProfilePreview
         open={!!previewProfilePartnership}
-        onOpenChange={(open) => !open && setPreviewProfilePartnership(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewProfilePartnership(null);
+            setShowProfilePreviewOnly(false);
+          }
+        }}
         partnerId={previewProfilePartnership?.driver_id || ''}
         partnerType="driver"
         partnerName={previewProfilePartnership?.driver?.profile?.full_name || 'Chauffeur partenaire'}
+        viewOnly={showProfilePreviewOnly}
         onContinue={() => {
-          if (previewProfilePartnership) {
+          if (previewProfilePartnership && !showProfilePreviewOnly) {
             setConfirmSignaturePartnership(previewProfilePartnership);
             setPreviewProfilePartnership(null);
           }
