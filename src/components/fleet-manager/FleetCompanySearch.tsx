@@ -122,12 +122,14 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
       }
 
       // Filter by city (from autocomplete)
+      // Extract city name from full place_name (e.g., "Paris, France" -> "Paris")
       if (filterValues.city) {
-        const cityNorm = normalizeText(filterValues.city);
+        const cityParts = filterValues.city.split(',').map(p => normalizeText(p.trim()));
+        const mainCity = cityParts[0]; // First part is the city name
         result = result.filter((c: any) => {
           const addressNorm = normalizeText(c.address);
           // Check if address contains the city name
-          return addressNorm.includes(cityNorm);
+          return addressNorm.includes(mainCity);
         });
       }
 

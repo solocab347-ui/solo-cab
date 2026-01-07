@@ -301,11 +301,12 @@ export function AdvancedLocationFilter({
   };
 
   const selectCitySuggestion = (suggestion: LocationSuggestion) => {
-    // Extract just the city name from the suggestion text
+    // Use full place name for better display and matching
     onChange({
       ...values,
-      city: suggestion.text,
+      city: suggestion.place_name,
     });
+    setCitySuggestions([]);
     setShowCitySuggestions(false);
   };
 
@@ -580,7 +581,7 @@ export function AdvancedLocationFilter({
               )}
               {values.city && (
                 <Badge variant="secondary" className="text-xs">
-                  Ville: {values.city}
+                  Ville: {values.city.split(',')[0]}
                 </Badge>
               )}
               {values.department && (
