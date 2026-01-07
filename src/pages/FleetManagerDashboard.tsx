@@ -166,6 +166,9 @@ const FleetManagerDashboard = () => {
   const [qrCodeData, setQrCodeData] = useState<string>("");
   const [activeTab, setActiveTab] = useState("home");
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [pendingPartnershipsCount, setPendingPartnershipsCount] = useState(0);
+  const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
+  const [pendingCompanyPartnershipsCount, setPendingCompanyPartnershipsCount] = useState(0);
 
   // Calculer si le compte est restreint (deadline dépassée et documents non soumis)
   const isAccountRestricted = useMemo(() => {
@@ -237,6 +240,16 @@ const FleetManagerDashboard = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'courses' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fleet_driver_partnerships', filter: `fleet_manager_id=eq.${fleetManager.id}` },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'company_fleet_agreements', filter: `fleet_manager_id=eq.${fleetManager.id}` },
         () => fetchData()
       )
       .subscribe();
@@ -377,6 +390,38 @@ const FleetManagerDashboard = () => {
         setInvitations(validInvitations);
       }
 
+      // Fetch pending driver partnerships (demandes reçues)
+      const { count: driverPartnershipsCount } = await supabase
+        .from("fleet_driver_partnerships")
+        .select("*", { count: 'exact', head: true })
+        .eq("fleet_manager_id", fmData.id)
+        .eq("status", "pending")
+        .eq("initiated_by", "driver");
+      
+      setPendingPartnershipsCount(driverPartnershipsCount || 0);
+
+      // Fetch pending company partnerships (demandes reçues)
+      const { count: companyPartnershipsCount } = await supabase
+        .from("company_fleet_agreements")
+        .select("*", { count: 'exact', head: true })
+        .eq("fleet_manager_id", fmData.id)
+        .eq("status", "pending")
+        .eq("proposed_by", "company");
+      
+      setPendingCompanyPartnershipsCount(companyPartnershipsCount || 0);
+
+      // Fetch pending courses (courses assignées en attente de validation)
+      const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
+      if (driverIds.length > 0) {
+        const { count: coursesCount } = await supabase
+          .from("courses")
+          .select("*", { count: 'exact', head: true })
+          .in("driver_id", driverIds)
+          .eq("status", "pending");
+        
+        setPendingCoursesCount(coursesCount || 0);
+      }
+
       // Fetch or generate QR code
       const { data: qrData } = await supabase
         .from("fleet_manager_qr_codes")
@@ -388,7 +433,6 @@ const FleetManagerDashboard = () => {
       const storefrontUrl = `${window.location.origin}/flotte/${fmData.id}`;
       setQrCodeData(storefrontUrl);
       const qr = await QRCode.toDataURL(storefrontUrl, { width: 256 });
-      setQrCodeUrl(qr);
     } catch (error: any) {
       console.error("Error fetching data:", error);
       toast.error("Erreur lors du chargement des données");
@@ -560,6 +604,9 @@ const FleetManagerDashboard = () => {
               drivers={drivers}
               clientsCount={clients.length}
               pendingInvitationsCount={invitations.filter(i => !i.used).length}
+              pendingPartnershipsCount={pendingPartnershipsCount}
+              pendingCoursesCount={pendingCoursesCount}
+              pendingCompanyPartnershipsCount={pendingCompanyPartnershipsCount}
               onTabChange={setActiveTab}
               onViewDriverProfile={handleViewDriverProfile}
             />
