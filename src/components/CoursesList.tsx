@@ -707,7 +707,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (factureError) throw factureError;
 
-      // Si paiement reçu sur place pour course entreprise, marquer la facture comme payée
+      // Si paiement reçu sur place pour course entreprise, marquer la facture comme payée ET créer note de frais
       if (isSelectedCourseCompany && companyPaymentStatus === "received") {
         await supabase
           .from("factures")
@@ -716,6 +716,37 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             paid_at: new Date().toISOString()
           })
           .eq("course_id", selectedCourseId);
+
+        // Créer automatiquement une note de frais pour l'employé (double confirmation)
+        // Le chauffeur déclare avoir reçu le paiement = 1ère confirmation
+        // L'employé devra ensuite confirmer = 2ème confirmation
+        const { data: companyCourseData } = await supabase
+          .from("company_courses")
+          .select("company_id, employee_id")
+          .eq("course_id", selectedCourseId)
+          .maybeSingle();
+        
+        if (companyCourseData?.employee_id && companyCourseData?.company_id) {
+          // Créer note de frais automatiquement
+          const { error: expenseError } = await supabase
+            .from("expense_reports")
+            .insert({
+              company_id: companyCourseData.company_id,
+              employee_id: companyCourseData.employee_id,
+              course_id: selectedCourseId,
+              amount: courseAmount,
+              description: `Course VTC - ${courseToComplete?.pickup_address?.split(",")[0] || 'Départ'} → ${courseToComplete?.destination_address?.split(",")[0] || 'Arrivée'}`,
+              payment_method: paymentMethod || "card",
+              status: "pending", // En attente de confirmation de l'employé + validation admin
+              submitted_at: new Date().toISOString(),
+            } as any);
+
+          if (expenseError) {
+            console.error("Error creating expense report:", expenseError);
+          } else {
+            console.log("[CoursesList] Expense report created automatically for employee:", companyCourseData.employee_id);
+          }
+        }
       }
 
       // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
