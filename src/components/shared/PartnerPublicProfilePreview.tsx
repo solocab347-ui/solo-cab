@@ -24,7 +24,8 @@ import {
   Loader2,
   Settings,
   Sparkles,
-  Users
+  Users,
+  Camera
 } from 'lucide-react';
 import { getServiceLabel, getServiceIcon } from '@/lib/serviceLabels';
 import { getEquipmentLabel, getEquipmentIcon } from '@/lib/vehicleEquipmentDisplay';
@@ -335,6 +336,33 @@ export function PartnerPublicProfilePreview({
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Photos du véhicule */}
+        {driverProfile.vehicle_photos && driverProfile.vehicle_photos.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Camera className="h-4 w-4 text-primary" />
+              Photos du véhicule
+            </h4>
+            <div className="grid grid-cols-3 gap-2">
+              {driverProfile.vehicle_photos.slice(0, 6).map((photo, idx) => (
+                <div 
+                  key={idx} 
+                  className="aspect-video rounded-lg overflow-hidden border border-border"
+                >
+                  <img 
+                    src={photo} 
+                    alt={`Photo véhicule ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Services */}
