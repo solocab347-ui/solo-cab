@@ -292,15 +292,18 @@ export function AdvancedLocationFilter({
   };
 
   const selectSuggestion = (suggestion: LocationSuggestion) => {
+    console.log('📍 Address selected:', suggestion.place_name);
     onChange({
       ...values,
       locationAddress: suggestion.place_name,
       locationCoords: { lat: suggestion.center[1], lng: suggestion.center[0] },
     });
+    setSuggestions([]);
     setShowSuggestions(false);
   };
 
   const selectCitySuggestion = (suggestion: LocationSuggestion) => {
+    console.log('🏙️ City selected:', suggestion.place_name);
     // Use full place name for better display and matching
     onChange({
       ...values,
@@ -408,8 +411,13 @@ export function AdvancedLocationFilter({
                   {citySuggestions.map((suggestion) => (
                     <button
                       key={suggestion.id}
+                      type="button"
                       className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2"
-                      onClick={() => selectCitySuggestion(suggestion)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        selectCitySuggestion(suggestion);
+                      }}
                     >
                       <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="truncate">{suggestion.place_name}</span>
@@ -510,8 +518,13 @@ export function AdvancedLocationFilter({
                   {suggestions.map((suggestion) => (
                     <button
                       key={suggestion.id}
+                      type="button"
                       className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2"
-                      onClick={() => selectSuggestion(suggestion)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        selectSuggestion(suggestion);
+                      }}
                     >
                       <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="truncate">{suggestion.place_name}</span>

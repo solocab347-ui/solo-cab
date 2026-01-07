@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverProfileRealtime, PUBLIC_DRIVERS_QUERY_KEY } from '@/hooks/usePublicDriverProfile';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +18,6 @@ import {
   Star, 
   Car, 
   MapPin, 
-  Filter,
   Loader2,
   Users,
   Building2,
@@ -34,9 +31,7 @@ import {
   Send,
   Handshake,
   Percent,
-  Clock,
-  Navigation,
-  X
+  Clock
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +39,7 @@ import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
 import { extractCityDepartment } from "@/lib/addressPrivacy";
 import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
+import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
 
 interface DriverVehicle {
   id: string;
@@ -155,26 +151,11 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   
-  // Filtres
-  const [searchText, setSearchText] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
-  const [citySearch, setCitySearch] = useState('');
-  const [minRating, setMinRating] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
+  // Advanced location filter state
+  const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
-  
-  // Location-based search
-  const [locationAddress, setLocationAddress] = useState('');
-  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [radiusKm, setRadiusKm] = useState(25);
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
-  const [loadingLocationSuggestions, setLoadingLocationSuggestions] = useState(false);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const locationInputRef = useRef<HTMLInputElement>(null);
-  const locationContainerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  
   // Profil détaillé
   const [selectedDriver, setSelectedDriver] = useState<SearchableDriver | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -391,24 +372,25 @@ Cordialement`;
         .or('visible_to_drivers.eq.true,public_profile_enabled.eq.true')
         .is('fleet_manager_id', null);
 
-      // Apply filters independently
-      if (minRating > 0) {
-        query = query.gte('rating', minRating);
+      // Apply filters independently using filterValues
+      if (filterValues.minRating > 0) {
+        query = query.gte('rating', filterValues.minRating);
       }
 
       // Department filter - search in working_sectors array
-      if (selectedDepartment) {
-        query = query.contains('working_sectors', [selectedDepartment]);
+      if (filterValues.department) {
+        query = query.contains('working_sectors', [filterValues.department]);
       }
 
       // Region filter - search in working_sectors array
-      if (selectedRegion) {
-        query = query.contains('working_sectors', [selectedRegion]);
+      if (filterValues.region) {
+        query = query.contains('working_sectors', [filterValues.region]);
       }
 
-      // City/sector filter
-      if (citySearch.trim()) {
-        query = query.contains('working_sectors', [citySearch.trim()]);
+      // City/sector filter - extract main city name
+      if (filterValues.city) {
+        const mainCity = filterValues.city.split(',')[0].trim();
+        query = query.contains('working_sectors', [mainCity]);
       }
 
       // Vehicle category filter
@@ -448,8 +430,8 @@ Cordialement`;
         }));
 
         // Text search filter (client-side after joining with profiles)
-        if (searchText.trim()) {
-          const searchLower = searchText.toLowerCase();
+        if (filterValues.searchText.trim()) {
+          const searchLower = filterValues.searchText.toLowerCase();
           driversWithProfiles = driversWithProfiles.filter(d => 
             d.profile?.full_name?.toLowerCase().includes(searchLower) ||
             d.company_name?.toLowerCase().includes(searchLower) ||
@@ -459,7 +441,7 @@ Cordialement`;
         }
 
         // Apply location-based filtering with radius if coordinates are set
-        if (locationCoords && mapboxToken) {
+        if (filterValues.locationCoords && mapboxToken) {
           const driversWithDistance = await Promise.all(
             driversWithProfiles.map(async (driver) => {
               if (!driver.home_address) {
@@ -481,11 +463,11 @@ Cordialement`;
                   
                   // Calculate distance using Haversine formula
                   const R = 6371; // Earth's radius in km
-                  const dLat = (driverCoords.lat - locationCoords.lat) * Math.PI / 180;
-                  const dLon = (driverCoords.lng - locationCoords.lng) * Math.PI / 180;
+                  const dLat = (driverCoords.lat - filterValues.locationCoords!.lat) * Math.PI / 180;
+                  const dLon = (driverCoords.lng - filterValues.locationCoords!.lng) * Math.PI / 180;
                   const a = 
                     Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(locationCoords.lat * Math.PI / 180) * Math.cos(driverCoords.lat * Math.PI / 180) * 
+                    Math.cos(filterValues.locationCoords!.lat * Math.PI / 180) * Math.cos(driverCoords.lat * Math.PI / 180) * 
                     Math.sin(dLon/2) * Math.sin(dLon/2);
                   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                   const distance = R * c;
@@ -502,10 +484,10 @@ Cordialement`;
           
           // Filter by radius and sort by distance
           driversWithProfiles = driversWithDistance
-            .filter(d => d.distance !== null && d.distance <= radiusKm)
+            .filter(d => d.distance !== null && d.distance <= filterValues.radiusKm)
             .sort((a, b) => (a.distance || 999) - (b.distance || 999));
             
-          console.log(`📍 Location filter: ${driversWithProfiles.length} drivers within ${radiusKm}km`);
+          console.log(`📍 Location filter: ${driversWithProfiles.length} drivers within ${filterValues.radiusKm}km`);
         }
 
         setDrivers(driversWithProfiles as SearchableDriver[]);
@@ -522,14 +504,7 @@ Cordialement`;
   };
 
   const resetFilters = () => {
-    setSearchText('');
-    setSelectedDepartment('');
-    setSelectedRegion('');
-    setCitySearch('');
-    setLocationAddress('');
-    setLocationCoords(null);
-    setRadiusKm(25);
-    setMinRating(0);
+    setFilterValues(getDefaultFilterValues());
     setSelectedVehicleType('');
     searchDrivers();
   };
@@ -586,283 +561,46 @@ Cordialement`;
         </CardHeader>
       </Card>
 
-      {/* Barre de recherche principale */}
+      {/* Filtres avancés avec autocomplétion */}
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Rechercher par nom, entreprise, véhicule..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="flex-1"
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <Button onClick={handleSearch} disabled={searching}>
-              {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            </Button>
+          <AdvancedLocationFilter
+            values={filterValues}
+            onChange={setFilterValues}
+            onSearch={handleSearch}
+            onReset={resetFilters}
+            searching={searching}
+            showRatingFilter={true}
+            searchPlaceholder="Rechercher par nom, entreprise, véhicule..."
+          />
+          
+          {/* Vehicle Category Filter - Additional filter specific to driver search */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Catégorie de véhicule
+            </Label>
+            <Select value={selectedVehicleType || "all"} onValueChange={(val) => setSelectedVehicleType(val === "all" ? "" : val)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Toutes catégories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes catégories</SelectItem>
+                {VEHICLE_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showFilters ? 'Masquer les filtres' : 'Filtres avancés'}
-          </Button>
-
-          {showFilters && (
-            <div className="space-y-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Chaque filtre fonctionne indépendamment. Vous pouvez les combiner ou utiliser un seul critère.
-              </p>
-              
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Vehicle Category Filter */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Car className="h-4 w-4" />
-                    Catégorie de véhicule
-                  </Label>
-                  <Select value={selectedVehicleType || "all"} onValueChange={(val) => setSelectedVehicleType(val === "all" ? "" : val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Toutes catégories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes catégories</SelectItem>
-                      {VEHICLE_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Department Filter */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Département
-                  </Label>
-                  <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les départements" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les départements</SelectItem>
-                      {FRENCH_DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept.code} value={dept.name}>
-                          {dept.code} - {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Region Filter */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Région
-                  </Label>
-                  <Select value={selectedRegion || "all"} onValueChange={(val) => setSelectedRegion(val === "all" ? "" : val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Toutes les régions" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes les régions</SelectItem>
-                      {FRENCH_REGIONS.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* City/Sector Filter */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Ville / Secteur
-                  </Label>
-                  <Input
-                    placeholder="Paris, Lyon, Marseille..."
-                    value={citySearch}
-                    onChange={(e) => setCitySearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Location-based search with autocomplete */}
-              <div className="space-y-3" ref={locationContainerRef}>
-                <Label className="flex items-center gap-2 text-sm">
-                  <Navigation className="h-4 w-4" />
-                  Recherche par adresse + rayon
-                </Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    ref={locationInputRef}
-                    placeholder="Entrez une adresse pour localiser..."
-                    value={locationAddress}
-                    onChange={(e) => {
-                      setLocationAddress(e.target.value);
-                      setLocationCoords(null);
-                      if (debounceRef.current) clearTimeout(debounceRef.current);
-                      debounceRef.current = setTimeout(async () => {
-                        if (mapboxToken && e.target.value.length >= 2) {
-                          setLoadingLocationSuggestions(true);
-                          try {
-                            const response = await fetch(
-                              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(e.target.value)}.json?access_token=${mapboxToken}&country=fr&types=place,locality,address&language=fr&limit=5`
-                            );
-                            const data = await response.json();
-                            if (data.features) {
-                              setLocationSuggestions(data.features);
-                              setShowLocationSuggestions(true);
-                            }
-                          } catch (error) {
-                            console.error('Error fetching suggestions:', error);
-                          } finally {
-                            setLoadingLocationSuggestions(false);
-                          }
-                        } else {
-                          setLocationSuggestions([]);
-                        }
-                      }, 300);
-                    }}
-                    onFocus={() => locationSuggestions.length > 0 && setShowLocationSuggestions(true)}
-                    className="pl-10 pr-10"
-                  />
-                  {loadingLocationSuggestions && (
-                    <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                  )}
-                  {locationAddress && (
-                    <button
-                      onClick={() => {
-                        setLocationAddress('');
-                        setLocationCoords(null);
-                        setLocationSuggestions([]);
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                
-                {/* Suggestions dropdown */}
-                {showLocationSuggestions && locationSuggestions.length > 0 && locationInputRef.current && createPortal(
-                  <div
-                    className="fixed bg-popover border rounded-md shadow-lg z-[9999] max-h-60 overflow-auto"
-                    style={{
-                      top: locationInputRef.current.getBoundingClientRect().bottom + 4,
-                      left: locationInputRef.current.getBoundingClientRect().left,
-                      width: locationInputRef.current.getBoundingClientRect().width,
-                    }}
-                  >
-                    {locationSuggestions.map((suggestion: any) => (
-                      <button
-                        key={suggestion.id}
-                        className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2"
-                        onClick={() => {
-                          setLocationAddress(suggestion.place_name);
-                          setLocationCoords({ lat: suggestion.center[1], lng: suggestion.center[0] });
-                          setShowLocationSuggestions(false);
-                        }}
-                      >
-                        <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{suggestion.place_name}</span>
-                      </button>
-                    ))}
-                  </div>,
-                  document.body
-                )}
-
-                {/* Radius slider - always visible */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Rayon de recherche:</span>
-                    <Badge variant="secondary">{radiusKm} km</Badge>
-                  </div>
-                  <Slider
-                    value={[radiusKm]}
-                    onValueChange={(v) => setRadiusKm(v[0])}
-                    min={5}
-                    max={50}
-                    step={5}
-                    className="py-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>5 km</span>
-                    <span>50 km</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rating Filter */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Star className="h-4 w-4" />
-                  Note minimum : {minRating > 0 ? `${minRating}/5` : 'Aucune'}
-                </Label>
-                <Slider
-                  value={[minRating]}
-                  onValueChange={(v) => setMinRating(v[0])}
-                  max={5}
-                  step={0.5}
-                />
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2">
-                <Button onClick={handleSearch} className="flex-1">
-                  <Search className="h-4 w-4 mr-2" />
-                  Rechercher
-                </Button>
-                <Button variant="outline" onClick={resetFilters}>
-                  Réinitialiser
-                </Button>
-              </div>
-
-              {/* Active filters display */}
-              {(selectedVehicleType || selectedDepartment || selectedRegion || citySearch || locationCoords || minRating > 0) && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">Filtres actifs :</span>
-                  {selectedVehicleType && (
-                    <Badge variant="secondary" className="text-xs">
-                      {getCategoryLabel(selectedVehicleType)}
-                    </Badge>
-                  )}
-                  {selectedDepartment && (
-                    <Badge variant="secondary" className="text-xs">
-                      {selectedDepartment}
-                    </Badge>
-                  )}
-                  {selectedRegion && (
-                    <Badge variant="secondary" className="text-xs">
-                      {selectedRegion}
-                    </Badge>
-                  )}
-                  {citySearch && (
-                    <Badge variant="secondary" className="text-xs">
-                      {citySearch}
-                    </Badge>
-                  )}
-                  {locationCoords && (
-                    <Badge variant="secondary" className="text-xs">
-                      📍 {radiusKm}km
-                    </Badge>
-                  )}
-                  {minRating > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      ≥ {minRating}/5 ⭐
-                    </Badge>
-                  )}
-                </div>
-              )}
+          
+          {selectedVehicleType && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtre véhicule:</span>
+              <Badge variant="secondary" className="text-xs">
+                {getCategoryLabel(selectedVehicleType)}
+              </Badge>
             </div>
           )}
         </CardContent>
