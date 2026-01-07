@@ -31,11 +31,7 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
           *,
           request:company_course_requests(
             *,
-            company:companies(company_name, contact_name, logo_url),
-            employee:company_employees(
-              user_id,
-              department
-            )
+            company:companies(company_name, contact_name, logo_url)
           )
         `)
         .eq("driver_id", driverId)
@@ -44,34 +40,51 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
 
       if (error) throw error;
       
-      // Fetch employee profiles
-      const employeeUserIds = new Set<string>();
+      // Fetch employee profiles using RPC for reliability
+      const employeeIds = new Set<string>();
       data?.forEach((quote: any) => {
-        if (quote.request?.employee?.user_id) {
-          employeeUserIds.add(quote.request.employee.user_id);
+        if (quote.request?.employee_id && !quote.request?.is_guest_employee) {
+          employeeIds.add(quote.request.employee_id);
         }
       });
       
-      let profilesMap = new Map<string, { full_name: string; phone: string | null }>();
-      if (employeeUserIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, phone")
-          .in("id", Array.from(employeeUserIds));
-        profiles?.forEach((p: any) => {
-          profilesMap.set(p.id, { full_name: p.full_name, phone: p.phone });
-        });
+      let employeeProfilesMap = new Map<string, { full_name: string; phone: string | null }>();
+      
+      // Use RPC function to get employee profiles (bypasses RLS issues)
+      for (const empId of employeeIds) {
+        try {
+          const { data: empData } = await supabase.rpc('get_employee_profile_for_course', { 
+            p_employee_id: empId 
+          });
+          if (empData && empData.length > 0) {
+            employeeProfilesMap.set(empId, { 
+              full_name: empData[0].full_name || "Collaborateur", 
+              phone: empData[0].phone || null 
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching employee profile:", e);
+        }
       }
       
       // Enrich quotes with employee info
       return data?.map((quote: any) => {
-        const employeeProfile = quote.request?.employee?.user_id 
-          ? profilesMap.get(quote.request.employee.user_id) 
-          : null;
+        let employee_name = null;
+        let employee_phone = null;
+        
+        if (quote.request?.is_guest_employee) {
+          employee_name = quote.request?.guest_employee_name || null;
+          employee_phone = quote.request?.guest_employee_phone || null;
+        } else if (quote.request?.employee_id) {
+          const empProfile = employeeProfilesMap.get(quote.request.employee_id);
+          employee_name = empProfile?.full_name || null;
+          employee_phone = empProfile?.phone || null;
+        }
+        
         return {
           ...quote,
-          employee_name: employeeProfile?.full_name || null,
-          employee_phone: employeeProfile?.phone || null
+          employee_name,
+          employee_phone
         };
       }) || [];
     },
