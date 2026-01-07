@@ -377,14 +377,19 @@ Cordialement`;
         query = query.gte('rating', filterValues.minRating);
       }
 
-      // Department filter - search in working_sectors array
+      // Department filter - extract code and search in working_sectors
       if (filterValues.department) {
-        query = query.contains('working_sectors', [filterValues.department]);
+        // Extract department code (e.g., "91" from "91 - Essonne")
+        const deptCodeMatch = filterValues.department.match(/^(\d{2,3})/);
+        const deptCode = deptCodeMatch ? deptCodeMatch[1] : filterValues.department;
+        const deptName = filterValues.department.replace(/^\d+\s*-?\s*/, '').trim();
+        // Search for both code and name in working_sectors
+        query = query.or(`working_sectors.cs.{"${deptCode}"},working_sectors.cs.{"${deptName}"},working_sectors.cs.{"${filterValues.department}"}`);
       }
 
       // Region filter - search in working_sectors array
       if (filterValues.region) {
-        query = query.contains('working_sectors', [filterValues.region]);
+        query = query.or(`working_sectors.cs.{"${filterValues.region}"}`);
       }
 
       // City/sector filter - extract main city name
