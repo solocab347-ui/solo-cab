@@ -296,7 +296,8 @@ const FleetManagerDashboard = () => {
             rating,
             vehicle_photos,
             bio,
-            services_offered
+            services_offered,
+            show_rating_for_sharing
           )
         `)
         .eq("fleet_manager_id", fmData.id);
@@ -318,7 +319,8 @@ const FleetManagerDashboard = () => {
             rating,
             vehicle_photos,
             bio,
-            services_offered
+            services_offered,
+            show_rating_for_sharing
           )
         `)
         .eq("fleet_manager_id", fmData.id)
