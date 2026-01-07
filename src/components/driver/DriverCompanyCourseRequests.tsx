@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
   Building2, MapPin, Calendar, Users, Euro, Clock, 
-  CheckCircle, XCircle, Loader2, AlertCircle, Car, Ban
+  CheckCircle, XCircle, Loader2, AlertCircle, Car, Ban, Phone, User
 } from "lucide-react";
 
 interface DriverCompanyCourseRequestsProps {
@@ -31,7 +31,11 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
           *,
           request:company_course_requests(
             *,
-            company:companies(company_name, contact_name, logo_url)
+            company:companies(company_name, contact_name, logo_url),
+            employee:company_employees(
+              user_id,
+              department
+            )
           )
         `)
         .eq("driver_id", driverId)
@@ -39,7 +43,37 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Fetch employee profiles
+      const employeeUserIds = new Set<string>();
+      data?.forEach((quote: any) => {
+        if (quote.request?.employee?.user_id) {
+          employeeUserIds.add(quote.request.employee.user_id);
+        }
+      });
+      
+      let profilesMap = new Map<string, { full_name: string; phone: string | null }>();
+      if (employeeUserIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone")
+          .in("id", Array.from(employeeUserIds));
+        profiles?.forEach((p: any) => {
+          profilesMap.set(p.id, { full_name: p.full_name, phone: p.phone });
+        });
+      }
+      
+      // Enrich quotes with employee info
+      return data?.map((quote: any) => {
+        const employeeProfile = quote.request?.employee?.user_id 
+          ? profilesMap.get(quote.request.employee.user_id) 
+          : null;
+        return {
+          ...quote,
+          employee_name: employeeProfile?.full_name || null,
+          employee_phone: employeeProfile?.phone || null
+        };
+      }) || [];
     },
   });
 
@@ -138,13 +172,41 @@ export function DriverCompanyCourseRequests({ driverId }: DriverCompanyCourseReq
                 <p className="text-sm text-muted-foreground">
                   {quote.request?.is_guest_employee 
                     ? quote.request?.guest_employee_name
-                    : "Collaborateur"
+                    : quote.employee_name || "Collaborateur non spécifié"
                   }
                 </p>
               </div>
             </div>
             {getQuoteStatusBadge(quote.status)}
           </div>
+
+          {/* Collaborateur info */}
+          {(quote.employee_name || quote.request?.guest_employee_name) && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">
+                  {quote.request?.is_guest_employee 
+                    ? quote.request?.guest_employee_name 
+                    : quote.employee_name}
+                </p>
+                {(quote.employee_phone || quote.request?.guest_employee_phone) && (
+                  <a 
+                    href={`tel:${quote.employee_phone || quote.request?.guest_employee_phone}`}
+                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                  >
+                    <Phone className="w-3 h-3" />
+                    {quote.employee_phone || quote.request?.guest_employee_phone}
+                  </a>
+                )}
+              </div>
+              <Badge variant="outline" className="text-xs bg-primary/10 border-primary/20">
+                Collaborateur
+              </Badge>
+            </div>
+          )}
 
           {/* Date */}
           <div className="flex items-center gap-2 text-sm">

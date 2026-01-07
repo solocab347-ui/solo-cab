@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, MapPin, Calendar, Euro, Check, X, Loader2, Moon, AlertCircle } from "lucide-react";
+import { Building2, MapPin, Calendar, Euro, Check, X, Loader2, Moon, AlertCircle, User, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -38,6 +38,9 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange, onC
             passengers_count,
             notes,
             guest_employee_name,
+            guest_employee_phone,
+            is_guest_employee,
+            employee_id,
             company_id,
             companies!inner(
               id,
@@ -52,12 +55,52 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange, onC
 
       if (error) throw error;
       
-      // Notify parent of count change
-      if (onCountChange) {
-        onCountChange(data?.length || 0);
+      // Fetch employee info
+      const employeeIds = new Set<string>();
+      data?.forEach((q: any) => {
+        if (q.company_course_requests?.employee_id) {
+          employeeIds.add(q.company_course_requests.employee_id);
+        }
+      });
+      
+      let employeesMap = new Map<string, { user_id: string }>();
+      let profilesMap = new Map<string, { full_name: string; phone: string | null }>();
+      
+      if (employeeIds.size > 0) {
+        const { data: employees } = await supabase
+          .from("company_employees")
+          .select("id, user_id")
+          .in("id", Array.from(employeeIds));
+        
+        employees?.forEach((e: any) => employeesMap.set(e.id, e));
+        
+        const userIds = employees?.map((e: any) => e.user_id).filter(Boolean) || [];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, phone")
+            .in("id", userIds);
+          profiles?.forEach((p: any) => profilesMap.set(p.id, p));
+        }
       }
       
-      return data || [];
+      // Enrich quotes with employee info
+      const enrichedData = data?.map((q: any) => {
+        const employee = employeesMap.get(q.company_course_requests?.employee_id);
+        const profile = employee ? profilesMap.get(employee.user_id) : null;
+        return {
+          ...q,
+          employee_name: profile?.full_name || null,
+          employee_phone: profile?.phone || null
+        };
+      }) || [];
+      
+      // Notify parent of count change
+      if (onCountChange) {
+        onCountChange(enrichedData.length);
+      }
+      
+      return enrichedData;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -164,10 +207,33 @@ export function PendingCompanyQuotesInCoursesList({ driverId, onCountChange, onC
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground font-medium">{company.company_name}</p>
-                    {request.guest_employee_name && (
-                      <p className="text-xs text-muted-foreground">Passager: {request.guest_employee_name}</p>
+                  </div>
+                </div>
+
+                {/* Collaborateur info */}
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <User className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-foreground">
+                      {request.is_guest_employee 
+                        ? request.guest_employee_name 
+                        : quote.employee_name || "Collaborateur non spécifié"}
+                    </p>
+                    {(quote.employee_phone || request.guest_employee_phone) && (
+                      <a 
+                        href={`tel:${quote.employee_phone || request.guest_employee_phone}`}
+                        className="text-xs text-purple-400 hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="w-3 h-3" />
+                        {quote.employee_phone || request.guest_employee_phone}
+                      </a>
                     )}
                   </div>
+                  <Badge variant="outline" className="text-xs bg-purple-500/10 border-purple-500/30 text-purple-300">
+                    Passager
+                  </Badge>
                 </div>
 
                 {/* Route info */}
