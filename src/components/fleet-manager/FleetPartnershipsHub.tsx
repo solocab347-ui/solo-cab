@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Car, Building2, Users, Handshake, Euro, MapPin, Loader2, CheckCircle, XCircle, Ban, RefreshCw, Unlock, Lock, Clock, FileText } from "lucide-react";
+import { Car, Building2, Users, Handshake, Euro, MapPin, Loader2, CheckCircle, XCircle, Ban, RefreshCw, Unlock, Lock, Clock, FileText, Eye } from "lucide-react";
 import { FleetDriverSearch } from "./FleetDriverSearch";
 import { FleetDriverPartnerships } from "./FleetDriverPartnerships";
 import { FleetCompanySearch } from "./FleetCompanySearch";
@@ -15,6 +15,7 @@ import { PartnershipSignatureConfirmation } from "@/components/shared/Partnershi
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
 import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
+import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -268,6 +269,7 @@ function FleetCompanyPartnerships({ fleetManagerId, fleetManagerProfile }: {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showContractDialog, setShowContractDialog] = useState(false);
+  const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [selectedPartnership, setSelectedPartnership] = useState<any>(null);
   const [accepting, setAccepting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -529,6 +531,20 @@ function FleetCompanyPartnerships({ fleetManagerId, fleetManagerProfile }: {
                       "{partnership.proposal_message}"
                     </p>
                   )}
+
+                  {/* Bouton voir profil */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-primary mb-3"
+                    onClick={() => {
+                      setSelectedPartnership(partnership);
+                      setShowProfilePreview(true);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Voir le profil de l'entreprise
+                  </Button>
 
                   <div className="flex gap-2">
                     <Button
@@ -846,10 +862,24 @@ function FleetCompanyPartnerships({ fleetManagerId, fleetManagerProfile }: {
             party1Signed: selectedPartnership.fleet_manager_signed,
             party1SignedAt: selectedPartnership.fleet_manager_signed_at,
             party2Signed: selectedPartnership.company_signed,
-            party2SignedAt: selectedPartnership.company_signed_at
+          party2SignedAt: selectedPartnership.company_signed_at
           }}
         />
       )}
+
+      {/* Profile Preview Dialog */}
+      <PartnerPublicProfilePreview
+        open={showProfilePreview}
+        onOpenChange={setShowProfilePreview}
+        partnerId={selectedPartnership?.company?.id || ""}
+        partnerType="company"
+        partnerName={selectedPartnership?.company?.company_name}
+        onContinue={() => {
+          setShowProfilePreview(false);
+          setShowSignatureDialog(true);
+        }}
+        viewOnly={false}
+      />
     </div>
   );
 }
