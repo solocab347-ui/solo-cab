@@ -26,14 +26,14 @@ export function FleetPartnershipsTab({ driverId }: FleetPartnershipsTabProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="partnerships" className="gap-2">
-                <Handshake className="h-4 w-4" />
-                Partenariats
+            <TabsList className="grid grid-cols-2 w-full h-auto">
+              <TabsTrigger value="partnerships" className="gap-1.5 py-2.5 text-xs sm:text-sm">
+                <Handshake className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Partenariats</span>
               </TabsTrigger>
-              <TabsTrigger value="commissions" className="gap-2">
-                <CreditCard className="h-4 w-4" />
-                Commissions
+              <TabsTrigger value="commissions" className="gap-1.5 py-2.5 text-xs sm:text-sm">
+                <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Commissions</span>
               </TabsTrigger>
             </TabsList>
 

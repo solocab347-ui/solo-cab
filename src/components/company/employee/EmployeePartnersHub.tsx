@@ -29,20 +29,20 @@ export function EmployeePartnersHub({
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-2 gap-2 bg-muted/30 p-1 rounded-xl mb-4">
+          <TabsList className="w-full grid grid-cols-2 gap-1.5 sm:gap-2 bg-muted/30 p-1 rounded-xl mb-4 h-auto">
             <TabsTrigger 
               value="drivers"
-              className="flex items-center gap-2 rounded-lg py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+              className="flex items-center gap-1.5 rounded-lg py-2.5 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
             >
-              <Car className="w-4 h-4" />
+              <Car className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Chauffeurs</span>
             </TabsTrigger>
             <TabsTrigger 
               value="fleets"
-              className="flex items-center gap-2 rounded-lg py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-success data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              className="flex items-center gap-1.5 rounded-lg py-2.5 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-accent data-[state=active]:to-success data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
             >
-              <Building2 className="w-4 h-4" />
-              <span>Gestionnaires de flotte</span>
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="truncate">Flottes</span>
             </TabsTrigger>
           </TabsList>
 

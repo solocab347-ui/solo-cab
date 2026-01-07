@@ -544,34 +544,35 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:shrink-0">
+                          {/* Action buttons - stacked on mobile */}
+                          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 sm:shrink-0">
                             {!partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
                               <>
-                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="flex-1 sm:flex-none gap-1.5">
+                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="gap-1.5 h-9">
                                   <Check className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Accepter et signer</span>
+                                  <span className="text-xs sm:text-sm">Accepter</span>
                                 </Button>
                                 <Button 
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => openCounterProposal(partnership)}
-                                  className="flex-1 sm:flex-none gap-1.5"
+                                  className="gap-1.5 h-9"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
-                                  <span className="text-xs sm:text-sm">Contre-proposer</span>
+                                  <span className="text-xs sm:text-sm">Contre-prop.</span>
                                 </Button>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
                                   onClick={() => rejectPartnership(partnership.id, "Refusé par le chauffeur")}
-                                  className="px-2.5"
+                                  className="h-9 px-3"
                                 >
                                   <X className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
                             {partnership.driver_signed && !partnership.fleet_manager_signed && partnership.initiated_by === "driver" && (
-                              <Badge variant="secondary" className="py-1.5 text-xs">
+                              <Badge variant="secondary" className="py-1.5 text-xs justify-center">
                                 <Clock className="w-3 h-3 mr-1" />
                                 Attente réponse
                               </Badge>
