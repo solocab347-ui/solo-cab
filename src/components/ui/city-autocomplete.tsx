@@ -97,6 +97,7 @@ export const CityAutocomplete = ({
   const fetchSuggestions = async (query: string) => {
     if (!query || query.length < 2 || !mapboxToken) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
@@ -106,17 +107,25 @@ export const CityAutocomplete = ({
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
           query
-        )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=5&types=place,locality`
+        )}.json?access_token=${mapboxToken}&country=FR&language=fr&limit=8&types=place,locality`
       );
 
       if (!response.ok) throw new Error("Geocoding failed");
 
       const data = await response.json();
-      setSuggestions(data.features || []);
-      setShowSuggestions(true);
+      console.log("🏙️ City suggestions:", data.features?.length || 0);
+      
+      if (data.features && data.features.length > 0) {
+        setSuggestions(data.features);
+        setShowSuggestions(true);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
     } catch (error) {
       console.error("Error fetching city suggestions:", error);
       setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +133,8 @@ export const CityAutocomplete = ({
 
   const handleInputChange = (newValue: string) => {
     setInputValue(newValue);
-    onChange(newValue);
+    // Ne pas propager le changement immédiatement, seulement le texte local
+    // La valeur sera propagée uniquement lors de la sélection
 
     // Debounce API calls
     if (debounceTimer.current) {
@@ -133,7 +143,7 @@ export const CityAutocomplete = ({
 
     debounceTimer.current = setTimeout(() => {
       fetchSuggestions(newValue);
-    }, 300);
+    }, 250);
   };
 
   const handleSelectSuggestion = (suggestion: CitySuggestion) => {
@@ -155,7 +165,7 @@ export const CityAutocomplete = ({
   };
 
   const renderDropdown = () => {
-    if (!showSuggestions || (!suggestions.length && !isLoading && inputValue.length < 2)) {
+    if (!showSuggestions || (suggestions.length === 0 && !isLoading)) {
       return null;
     }
 
@@ -199,12 +209,12 @@ export const CityAutocomplete = ({
                 </div>
               </button>
             ))
-          ) : inputValue.length >= 2 ? (
+          ) : (
             <div className="px-4 py-4 text-center">
               <p className="text-sm text-muted-foreground">Aucune ville trouvée</p>
               <p className="text-xs text-muted-foreground mt-1">Essayez de modifier votre recherche</p>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     );
