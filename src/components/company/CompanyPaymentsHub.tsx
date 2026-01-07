@@ -1324,9 +1324,6 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="received" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
-            <span className="truncate">Confirmés</span>
-          </TabsTrigger>
           <TabsTrigger value="history" className="flex-1 min-w-0 text-xs sm:text-sm px-2 sm:px-4">
             <History className="w-3 h-3 sm:w-4 sm:h-4 mr-1 shrink-0" />
             <span className="truncate">Historique</span>
@@ -1368,26 +1365,29 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           )}
         </TabsContent>
 
-        <TabsContent value="received" className="mt-4">
-          {receivedPayments.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <CheckCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Aucun paiement confirmé</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {receivedPayments.map((payment) => (
-                <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
-              ))}
+        <TabsContent value="history" className="mt-4">
+          {/* Paiements confirmés */}
+          {receivedPayments.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Paiements confirmés ({receivedPayments.length})
+              </h3>
+              <div className="space-y-4">
+                {receivedPayments.map((payment) => (
+                  <PaymentCard key={`${payment.driverId}-${payment.periodStart.getTime()}`} payment={payment} />
+                ))}
+              </div>
             </div>
           )}
-        </TabsContent>
 
-        <TabsContent value="history" className="mt-4">
+          {/* Filtres pour l'historique des courses */}
           <Card className="mb-4">
             <CardContent className="p-4">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Détail des courses payées
+              </h3>
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1414,12 +1414,19 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
             </CardContent>
           </Card>
 
-          {filteredCourseHistory.length === 0 ? (
+          {filteredCourseHistory.length === 0 && receivedPayments.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <History className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Aucune course trouvée</p>
-                <p className="text-muted-foreground">L'historique de vos courses apparaîtra ici</p>
+                <p className="text-lg font-medium">Aucun historique</p>
+                <p className="text-muted-foreground">Vos paiements confirmés et courses payées apparaîtront ici</p>
+              </CardContent>
+            </Card>
+          ) : filteredCourseHistory.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Aucune course correspondante</p>
               </CardContent>
             </Card>
           ) : (
