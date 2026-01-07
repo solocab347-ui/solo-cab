@@ -97,7 +97,7 @@ export const getDefaultFilterValues = (): LocationFilterValues => ({
   region: "",
   locationAddress: "",
   locationCoords: null,
-  radiusKm: 50,
+  radiusKm: 25,
   minRating: 0,
 });
 
@@ -370,22 +370,25 @@ export function AdvancedLocationFilter({
                 document.body
               )}
 
-              {/* Radius slider */}
-              {values.locationCoords && (
-                <div className="pt-2 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Rayon de recherche:</span>
-                    <Badge variant="secondary">{values.radiusKm} km</Badge>
-                  </div>
-                  <Slider
-                    value={[values.radiusKm]}
-                    onValueChange={(v) => onChange({ ...values, radiusKm: v[0] })}
-                    min={5}
-                    max={200}
-                    step={5}
-                  />
+              {/* Radius slider - always visible */}
+              <div className="pt-2 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Rayon de recherche:</span>
+                  <Badge variant="secondary">{values.radiusKm} km</Badge>
                 </div>
-              )}
+                <Slider
+                  value={[values.radiusKm]}
+                  onValueChange={(v) => onChange({ ...values, radiusKm: v[0] })}
+                  min={5}
+                  max={50}
+                  step={5}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>5 km</span>
+                  <span>50 km</span>
+                </div>
+              </div>
             </div>
           </div>
 

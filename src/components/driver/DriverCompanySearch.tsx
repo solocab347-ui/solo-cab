@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet, Package } from "lucide-react";
+import { Loader2, Search, Building2, MapPin, Phone, Mail, Send, CreditCard, Clock, Car, Users, Star, Briefcase, Eye, Euro, Wallet, Package, Filter, ChevronDown, Navigation, X } from "lucide-react";
 
 interface DriverCompanySearchProps {
   driverId: string;
@@ -40,12 +43,39 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<any>(null);
   
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [locationAddress, setLocationAddress] = useState("");
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState(25);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [loadingLocationSuggestions, setLoadingLocationSuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
+  
   // Proposal form state
   const [presentation, setPresentation] = useState("");
   const [paymentMethods, setPaymentMethods] = useState<string[]>(["card"]);
   const [paymentFrequency, setPaymentFrequency] = useState("per_course");
   const [paymentDay, setPaymentDay] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
+
+  // Fetch Mapbox token
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (!error && data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (error) {
+        console.error('Error fetching Mapbox token:', error);
+      }
+    };
+    fetchToken();
+  }, []);
 
   // Fetch driver profile for auto-fill
   const { data: driverProfile } = useQuery({

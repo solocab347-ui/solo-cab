@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverProfileRealtime, PUBLIC_DRIVERS_QUERY_KEY } from '@/hooks/usePublicDriverProfile';
@@ -33,7 +34,9 @@ import {
   Send,
   Handshake,
   Percent,
-  Clock
+  Clock,
+  Navigation,
+  X
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -164,7 +167,7 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   // Location-based search
   const [locationAddress, setLocationAddress] = useState('');
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [radiusKm, setRadiusKm] = useState(50);
+  const [radiusKm, setRadiusKm] = useState(25);
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [loadingLocationSuggestions, setLoadingLocationSuggestions] = useState(false);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
@@ -475,7 +478,7 @@ Cordialement`;
     setCitySearch('');
     setLocationAddress('');
     setLocationCoords(null);
-    setRadiusKm(50);
+    setRadiusKm(25);
     setMinRating(0);
     setSelectedVehicleType('');
     searchDrivers();
@@ -642,6 +645,113 @@ Cordialement`;
                 </div>
               </div>
 
+              {/* Location-based search with autocomplete */}
+              <div className="space-y-3" ref={locationContainerRef}>
+                <Label className="flex items-center gap-2 text-sm">
+                  <Navigation className="h-4 w-4" />
+                  Recherche par adresse + rayon
+                </Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    ref={locationInputRef}
+                    placeholder="Entrez une adresse pour localiser..."
+                    value={locationAddress}
+                    onChange={(e) => {
+                      setLocationAddress(e.target.value);
+                      setLocationCoords(null);
+                      if (debounceRef.current) clearTimeout(debounceRef.current);
+                      debounceRef.current = setTimeout(async () => {
+                        if (mapboxToken && e.target.value.length >= 3) {
+                          setLoadingLocationSuggestions(true);
+                          try {
+                            const response = await fetch(
+                              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(e.target.value)}.json?access_token=${mapboxToken}&country=fr&types=place,locality,address&language=fr&limit=5`
+                            );
+                            const data = await response.json();
+                            if (data.features) {
+                              setLocationSuggestions(data.features);
+                              setShowLocationSuggestions(true);
+                            }
+                          } catch (error) {
+                            console.error('Error fetching suggestions:', error);
+                          } finally {
+                            setLoadingLocationSuggestions(false);
+                          }
+                        } else {
+                          setLocationSuggestions([]);
+                        }
+                      }, 300);
+                    }}
+                    onFocus={() => locationSuggestions.length > 0 && setShowLocationSuggestions(true)}
+                    className="pl-10 pr-10"
+                  />
+                  {loadingLocationSuggestions && (
+                    <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                  {locationAddress && (
+                    <button
+                      onClick={() => {
+                        setLocationAddress('');
+                        setLocationCoords(null);
+                        setLocationSuggestions([]);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Suggestions dropdown */}
+                {showLocationSuggestions && locationSuggestions.length > 0 && locationInputRef.current && createPortal(
+                  <div
+                    className="fixed bg-popover border rounded-md shadow-lg z-[9999] max-h-60 overflow-auto"
+                    style={{
+                      top: locationInputRef.current.getBoundingClientRect().bottom + window.scrollY + 4,
+                      left: locationInputRef.current.getBoundingClientRect().left + window.scrollX,
+                      width: locationInputRef.current.getBoundingClientRect().width,
+                    }}
+                  >
+                    {locationSuggestions.map((suggestion: any) => (
+                      <button
+                        key={suggestion.id}
+                        className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2"
+                        onClick={() => {
+                          setLocationAddress(suggestion.place_name);
+                          setLocationCoords({ lat: suggestion.center[1], lng: suggestion.center[0] });
+                          setShowLocationSuggestions(false);
+                        }}
+                      >
+                        <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{suggestion.place_name}</span>
+                      </button>
+                    ))}
+                  </div>,
+                  document.body
+                )}
+
+                {/* Radius slider - always visible */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Rayon de recherche:</span>
+                    <Badge variant="secondary">{radiusKm} km</Badge>
+                  </div>
+                  <Slider
+                    value={[radiusKm]}
+                    onValueChange={(v) => setRadiusKm(v[0])}
+                    min={5}
+                    max={50}
+                    step={5}
+                    className="py-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>5 km</span>
+                    <span>50 km</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Rating Filter */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
@@ -668,7 +778,7 @@ Cordialement`;
               </div>
 
               {/* Active filters display */}
-              {(selectedVehicleType || selectedDepartment || selectedRegion || citySearch || minRating > 0) && (
+              {(selectedVehicleType || selectedDepartment || selectedRegion || citySearch || locationCoords || minRating > 0) && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t">
                   <span className="text-sm text-muted-foreground">Filtres actifs :</span>
                   {selectedVehicleType && (
@@ -689,6 +799,11 @@ Cordialement`;
                   {citySearch && (
                     <Badge variant="secondary" className="text-xs">
                       {citySearch}
+                    </Badge>
+                  )}
+                  {locationCoords && (
+                    <Badge variant="secondary" className="text-xs">
+                      📍 {radiusKm}km
                     </Badge>
                   )}
                   {minRating > 0 && (
