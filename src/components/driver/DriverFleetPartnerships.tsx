@@ -430,6 +430,71 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
     }
   };
 
+  // Haversine formula to calculate distance between two points
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Geocoding cache for fleet addresses
+  const [fleetCoords, setFleetCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const [geocodingInProgress, setGeocodingInProgress] = useState(false);
+
+  // Geocode fleet addresses when location filter is used
+  useEffect(() => {
+    const geocodeFleetAddresses = async () => {
+      if (!filterValues.locationCoords || geocodingInProgress) return;
+      
+      const fleetsToGeocode = fleetManagers.filter(f => 
+        f.address && 
+        fleetCoords[f.id] === undefined
+      );
+      
+      if (fleetsToGeocode.length === 0) return;
+      
+      setGeocodingInProgress(true);
+      
+      try {
+        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        if (!data?.token) return;
+        
+        const newCoords: Record<string, { lat: number; lng: number } | null> = { ...fleetCoords };
+        
+        for (const fleet of fleetsToGeocode) {
+          try {
+            const response = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(fleet.address!)}.json?access_token=${data.token}&country=fr&limit=1`
+            );
+            const geoData = await response.json();
+            if (geoData.features?.[0]?.center) {
+              newCoords[fleet.id] = {
+                lng: geoData.features[0].center[0],
+                lat: geoData.features[0].center[1]
+              };
+            } else {
+              newCoords[fleet.id] = null;
+            }
+          } catch {
+            newCoords[fleet.id] = null;
+          }
+        }
+        
+        setFleetCoords(newCoords);
+      } finally {
+        setGeocodingInProgress(false);
+      }
+    };
+    
+    geocodeFleetAddresses();
+  }, [filterValues.locationCoords, fleetManagers]);
+
   // Filter fleets based on advanced filters
   const filteredFleets = fleetManagers.filter(f => {
     const searchTerm = filterValues.searchText.toLowerCase();
@@ -446,10 +511,11 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
       }
     }
     
-    // City filter
+    // City filter - check if address contains the city name
     if (filterValues.city) {
       const address = f.address?.toLowerCase() || "";
-      if (!address.includes(filterValues.city.toLowerCase())) {
+      const cityLower = filterValues.city.toLowerCase();
+      if (!address.includes(cityLower)) {
         return false;
       }
     }
@@ -470,13 +536,26 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
       }
     }
     
+    // Geographic distance filter
+    if (filterValues.locationCoords && fleetCoords[f.id]) {
+      const distance = calculateDistance(
+        filterValues.locationCoords.lat,
+        filterValues.locationCoords.lng,
+        fleetCoords[f.id]!.lat,
+        fleetCoords[f.id]!.lng
+      );
+      if (distance > filterValues.radiusKm) {
+        return false;
+      }
+    }
+    
     return true;
   });
 
   const handleSearchFleets = () => {
     setSearching(true);
-    // Filtrage client-side, pas de requête serveur
-    setTimeout(() => setSearching(false), 300);
+    // Trigger geocoding if location filter is active
+    setTimeout(() => setSearching(false), 500);
   };
 
   const handleResetFilters = () => {
