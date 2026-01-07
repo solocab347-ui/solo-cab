@@ -14,6 +14,7 @@ import { PartnerProfileDialog } from './partnership/PartnerProfileDialog';
 import { ModifyPartnershipDialog } from './partnership/ModifyPartnershipDialog';
 import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
 import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
+import { PartnerPublicProfilePreview } from '@/components/shared/PartnerPublicProfilePreview';
 import { 
   Users, 
   Handshake,
@@ -112,6 +113,9 @@ export function MyPartnersList() {
   // Pre-signature confirmation state
   const [confirmSignatureRequest, setConfirmSignatureRequest] = useState<Partner | null>(null);
   const [signingPartnership, setSigningPartnership] = useState(false);
+  
+  // Profile preview before signature
+  const [previewProfileRequest, setPreviewProfileRequest] = useState<Partner | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -426,6 +430,21 @@ export function MyPartnersList() {
         }}
       />
 
+      {/* Partner Profile Preview before signature */}
+      <PartnerPublicProfilePreview
+        open={!!previewProfileRequest}
+        onOpenChange={(open) => !open && setPreviewProfileRequest(null)}
+        partnerId={previewProfileRequest?.partner_id || ''}
+        partnerType="driver"
+        partnerName={previewProfileRequest?.partner_name || 'Chauffeur partenaire'}
+        onContinue={() => {
+          if (previewProfileRequest) {
+            setConfirmSignatureRequest(previewProfileRequest);
+            setPreviewProfileRequest(null);
+          }
+        }}
+      />
+
       {/* Pre-Signature Confirmation Dialog */}
       <PartnershipSignatureConfirmation
         open={!!confirmSignatureRequest}
@@ -666,7 +685,7 @@ export function MyPartnersList() {
                     <Button 
                       size="sm" 
                       className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700 h-10"
-                      onClick={() => setConfirmSignatureRequest(request)}
+                      onClick={() => setPreviewProfileRequest(request)}
                       disabled={responding === request.id}
                     >
                       {responding === request.id ? (

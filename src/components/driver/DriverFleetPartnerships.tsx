@@ -33,6 +33,7 @@ import { PartnershipModificationDialog } from "@/components/fleet-manager/Partne
 import { PendingModificationBanner } from "@/components/shared/PendingModificationBanner";
 import { UniversalPartnershipContract } from "@/components/shared/UniversalPartnershipContract";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
+import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DriverFleetPartnershipsProps {
@@ -109,6 +110,9 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
   // Pre-signature confirmation state
   const [confirmSignaturePartnership, setConfirmSignaturePartnership] = useState<Partnership | null>(null);
   const [signingContract, setSigningContract] = useState(false);
+  
+  // Profile preview before signature
+  const [previewProfilePartnership, setPreviewProfilePartnership] = useState<Partnership | null>(null);
 
   useEffect(() => {
     if (driverId) {
@@ -543,7 +547,7 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
                           <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:shrink-0">
                             {!partnership.driver_signed && partnership.initiated_by === "fleet_manager" && (
                               <>
-                                <Button size="sm" onClick={() => setConfirmSignaturePartnership(partnership)} className="flex-1 sm:flex-none gap-1.5">
+                                <Button size="sm" onClick={() => setPreviewProfilePartnership(partnership)} className="flex-1 sm:flex-none gap-1.5">
                                   <Check className="w-3.5 h-3.5" />
                                   <span className="text-xs sm:text-sm">Accepter et signer</span>
                                 </Button>
@@ -833,6 +837,21 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Partner Profile Preview before signature */}
+      <PartnerPublicProfilePreview
+        open={!!previewProfilePartnership}
+        onOpenChange={(open) => !open && setPreviewProfilePartnership(null)}
+        partnerId={previewProfilePartnership?.fleet_manager_id || ''}
+        partnerType="fleet"
+        partnerName={previewProfilePartnership?.fleet_manager?.company_name || 'Gestionnaire de flotte'}
+        onContinue={() => {
+          if (previewProfilePartnership) {
+            setConfirmSignaturePartnership(previewProfilePartnership);
+            setPreviewProfilePartnership(null);
+          }
+        }}
+      />
 
       {/* Pre-Signature Confirmation Dialog */}
       <PartnershipSignatureConfirmation
