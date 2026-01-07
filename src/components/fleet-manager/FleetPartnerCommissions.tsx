@@ -51,6 +51,13 @@ interface PartnerCommission {
   // For contracts
   fleet_manager_name?: string;
   fleet_manager_company?: string;
+  // Driver legal info
+  driver_company?: string | null;
+  driver_address?: string | null;
+  driver_siret?: string | null;
+  driver_tva?: string | null;
+  driver_phone?: string | null;
+  driver_email?: string | null;
 }
 
 export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissionsProps) => {
@@ -129,14 +136,14 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
         const driverIds = partnerships.map(p => p.driver_id);
         const { data: drivers } = await supabase
           .from("drivers")
-          .select("id, user_id")
+          .select("id, user_id, company_name, company_address, siret, siren, tva_number, contact_phone, contact_email, home_address")
           .in("id", driverIds);
 
         if (drivers) {
           const userIds = drivers.map(d => d.user_id);
           const { data: profiles } = await supabase
             .from("profiles")
-            .select("id, full_name, profile_photo_url")
+            .select("id, full_name, profile_photo_url, phone, email")
             .in("id", userIds);
 
           const commissionsData: PartnerCommission[] = partnerships.map(p => {
@@ -155,7 +162,14 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
               partnership_suspended: p.partnership_suspended || false,
               fleet_manager_signed_at: p.fleet_manager_signed_at,
               driver_signed_at: p.driver_signed_at,
-              created_at: p.created_at
+              created_at: p.created_at,
+              // Driver legal info
+              driver_company: driver?.company_name || null,
+              driver_address: driver?.company_address || driver?.home_address || null,
+              driver_siret: driver?.siret || driver?.siren || null,
+              driver_tva: driver?.tva_number || null,
+              driver_phone: driver?.contact_phone || profile?.phone || null,
+              driver_email: driver?.contact_email || profile?.email || null
             };
           });
           setCommissions(commissionsData);
@@ -379,6 +393,15 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
                                 email: fleetManagerInfo.email
                               }}
                               driverName={commission.driver_name}
+                              driverInfo={{
+                                name: commission.driver_name,
+                                company: commission.driver_company || undefined,
+                                siret: commission.driver_siret || undefined,
+                                tvaNumber: commission.driver_tva || undefined,
+                                address: commission.driver_address || undefined,
+                                phone: commission.driver_phone || undefined,
+                                email: commission.driver_email || undefined
+                              }}
                               commissionPercentage={commission.commission_percentage}
                               paymentSchedule={commission.payment_schedule}
                               signedAt={commission.created_at}

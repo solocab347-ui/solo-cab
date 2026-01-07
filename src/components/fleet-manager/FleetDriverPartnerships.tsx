@@ -145,6 +145,11 @@ interface IndependentDriver {
   contact_phone?: string | null;
   contact_email?: string | null;
   home_address?: string | null;
+  company_name?: string | null;
+  company_address?: string | null;
+  siret?: string | null;
+  siren?: string | null;
+  tva_number?: string | null;
   vehicles?: DriverVehicle[];
   profile?: {
     full_name: string;
@@ -303,7 +308,7 @@ export const FleetDriverPartnerships = ({
         const driverIds = partnershipsData.map(p => p.driver_id);
         const { data: driversData } = await supabase
           .from("drivers")
-          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, show_pricing_partners, contact_phone, contact_email, home_address")
+          .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, show_pricing_partners, contact_phone, contact_email, home_address, company_name, company_address, siret, siren, tva_number")
           .in("id", driverIds);
 
         // Fetch vehicles for drivers
@@ -343,7 +348,7 @@ export const FleetDriverPartnerships = ({
       // Fetch independent drivers (not in any fleet) with complete data
       const { data: independentData, error: indErr } = await supabase
         .from("drivers")
-        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, show_pricing_partners, contact_phone, contact_email, home_address")
+        .select("id, user_id, vehicle_model, vehicle_brand, vehicle_year, vehicle_color, vehicle_equipment, vehicle_photos, gallery_photos, services_offered, rating, total_rides, working_sectors, bio, service_description, base_fare, per_km_rate, hourly_rate, show_phone, show_email, show_rating_partners, show_pricing_partners, contact_phone, contact_email, home_address, company_name, company_address, siret, siren, tva_number")
         .eq("status", "validated")
         .eq("public_profile_enabled", true)
         .is("fleet_manager_id", null);
@@ -1193,6 +1198,15 @@ export const FleetDriverPartnerships = ({
                                   email: fleetManagerInfo.email
                                 }}
                                 driverName={partnership.driver?.profile?.full_name || "Chauffeur"}
+                                driverInfo={{
+                                  name: partnership.driver?.profile?.full_name || "Chauffeur",
+                                  company: partnership.driver?.company_name || undefined,
+                                  siret: partnership.driver?.siret || partnership.driver?.siren || undefined,
+                                  tvaNumber: partnership.driver?.tva_number || undefined,
+                                  address: partnership.driver?.company_address || partnership.driver?.home_address || undefined,
+                                  phone: partnership.driver?.contact_phone || partnership.driver?.profile?.phone || undefined,
+                                  email: partnership.driver?.contact_email || partnership.driver?.profile?.email || undefined
+                                }}
                                 commissionPercentage={partnership.commission_percentage}
                                 paymentSchedule={partnership.payment_schedule || "per_course"}
                                 signedAt={partnership.created_at}
