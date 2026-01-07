@@ -38,6 +38,7 @@ import {
 import { useVisibleFleets, useFleetProfileRealtime } from '@/hooks/usePublicFleetProfile';
 import { DRIVER_SERVICES } from '@/lib/vehicleEquipment';
 import { FRENCH_SECTORS } from '@/lib/frenchSectors';
+import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 
 interface FleetManagerPublic {
   id: string;
@@ -130,6 +131,9 @@ export function FleetPartnerSearch({ driverId }: Props) {
   const [driverCount, setDriverCount] = useState<Record<string, number>>({});
   const [clientCount, setClientCount] = useState<Record<string, number>>({});
   
+  // Confirmation de signature pour l'envoi de demande
+  const [showSignatureConfirmation, setShowSignatureConfirmation] = useState(false);
+  
   // Partenariats existants
   const [partnerships, setPartnerships] = useState<Partnership[]>([]);
   const [loadingPartnerships, setLoadingPartnerships] = useState(true);
@@ -181,6 +185,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
 
   // Recharger après une proposition
   const handleProposalSuccess = () => {
+    setShowSignatureConfirmation(false);
     setProposalDialogOpen(false);
     setSelectedFleet(null);
     loadPartnerships();
@@ -862,13 +867,29 @@ export function FleetPartnerSearch({ driverId }: Props) {
             <Button variant="outline" onClick={() => setProposalDialogOpen(false)} className="flex-1">
               Annuler
             </Button>
-            <Button onClick={proposePartnership} disabled={submitting} className="flex-1">
-              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-              Envoyer
+            <Button onClick={() => {
+              setProposalDialogOpen(false);
+              setShowSignatureConfirmation(true);
+            }} disabled={submitting} className="flex-1">
+              <Send className="h-4 w-4 mr-2" />
+              Voir les conditions et envoyer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmation des engagements avant envoi */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureConfirmation}
+        onOpenChange={setShowSignatureConfirmation}
+        partnerName={selectedFleet?.company_name || 'ce gestionnaire'}
+        commissionPercentage={proposedCommissionType === "percentage" ? proposedCommission : undefined}
+        paymentSchedule={proposedPaymentSchedule}
+        onConfirmSign={proposePartnership}
+        signing={submitting}
+        partnershipType="fleet"
+        mode="propose"
+      />
     </div>
   );
 }

@@ -40,6 +40,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getEquipmentLabel, getEquipmentIcon, getServiceLabel, getServiceIcon } from "@/lib/vehicleEquipmentDisplay";
 import { extractCityDepartment } from "@/lib/addressPrivacy";
+import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 
 interface DriverVehicle {
   id: string;
@@ -172,6 +173,9 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const [partnershipMessage, setPartnershipMessage] = useState('');
   const [sendingPartnership, setSendingPartnership] = useState(false);
   const [existingPartnerships, setExistingPartnerships] = useState<string[]>([]);
+  
+  // Confirmation de signature pour l'envoi de demande
+  const [showSignatureConfirmation, setShowSignatureConfirmation] = useState(false);
   
   // Dialog pour voir les détails d'un partenariat existant
   const [viewPartnershipDialogOpen, setViewPartnershipDialogOpen] = useState(false);
@@ -336,6 +340,7 @@ Cordialement`;
       });
 
       toast.success('Demande de partenariat envoyée avec succès');
+      setShowSignatureConfirmation(false);
       setPartnershipDialogOpen(false);
       setExistingPartnerships([...existingPartnerships, partnershipDriver.id]);
     } catch (error) {
@@ -1389,17 +1394,29 @@ Cordialement`;
             <Button variant="outline" onClick={() => setPartnershipDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={sendPartnershipRequest} disabled={sendingPartnership}>
-              {sendingPartnership ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              Envoyer la demande
+            <Button onClick={() => {
+              setPartnershipDialogOpen(false);
+              setShowSignatureConfirmation(true);
+            }} disabled={sendingPartnership}>
+              <Send className="h-4 w-4 mr-2" />
+              Voir les conditions et envoyer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmation des engagements avant envoi */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureConfirmation}
+        onOpenChange={setShowSignatureConfirmation}
+        partnerName={partnershipDriver?.profile?.full_name || 'ce chauffeur'}
+        commissionPercentage={partnershipCommission}
+        paymentSchedule={partnershipPaymentSchedule}
+        onConfirmSign={sendPartnershipRequest}
+        signing={sendingPartnership}
+        partnershipType="fleet"
+        mode="propose"
+      />
 
       {/* Dialog de visualisation du partenariat existant */}
       <Dialog open={viewPartnershipDialogOpen} onOpenChange={setViewPartnershipDialogOpen}>
