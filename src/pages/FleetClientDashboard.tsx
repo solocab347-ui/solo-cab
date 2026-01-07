@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { 
   Loader2, 
@@ -22,13 +23,25 @@ import {
   Clock,
   CheckCircle,
   ChevronRight,
-  Plus
+  Plus,
+  Home,
+  StickyNote,
+  User,
+  Menu,
+  Phone,
+  Mail
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import logoSolocab from "@/assets/logo-solocab.png";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { MessagingInterface } from "@/components/messaging/MessagingInterface";
+import ClientNotes from "@/components/client/ClientNotes";
+import ClientProfile from "@/components/client/ClientProfile";
+import { FleetClientDevisFactures } from "@/components/fleet-client/FleetClientDevisFactures";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface FleetInfo {
   id: string;
@@ -60,26 +73,24 @@ interface ClientCourse {
   scheduled_date: string;
   status: string;
   driver_id: string | null;
-  driver?: {
-    vehicle_model: string;
-    vehicle_brand: string | null;
-    profile?: {
-      full_name: string;
-      profile_photo_url: string | null;
-    };
-  };
 }
 
 const FleetClientDashboard = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("home");
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState("accueil");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fleetInfo, setFleetInfo] = useState<FleetInfo | null>(null);
-  const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null; phone: string | null } | null>(null);
   const [drivers, setDrivers] = useState<FleetDriver[]>([]);
   const [courses, setCourses] = useState<ClientCourse[]>([]);
-  const [clientData, setClientData] = useState<{ id: string; favorite_driver_id: string | null } | null>(null);
+  const [clientData, setClientData] = useState<{ id: string; favorite_driver_id: string | null; preferred_fleet_driver_id: string | null } | null>(null);
+  const [stats, setStats] = useState({
+    upcomingCourses: 0,
+    pendingDevis: 0,
+    completedCourses: 0,
+  });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -94,7 +105,7 @@ const FleetClientDashboard = () => {
       // Get user profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, phone")
         .eq("id", user.id)
         .single();
       setUserProfile(profileData);
@@ -102,7 +113,7 @@ const FleetClientDashboard = () => {
       // 1. Get client data
       const { data: client, error: clientError } = await supabase
         .from("clients")
-        .select("id, fleet_manager_id, favorite_driver_id")
+        .select("id, fleet_manager_id, favorite_driver_id, preferred_fleet_driver_id")
         .eq("user_id", user.id)
         .single();
 
@@ -113,7 +124,11 @@ const FleetClientDashboard = () => {
         return;
       }
 
-      setClientData({ id: client.id, favorite_driver_id: client.favorite_driver_id });
+      setClientData({ 
+        id: client.id, 
+        favorite_driver_id: client.favorite_driver_id,
+        preferred_fleet_driver_id: client.preferred_fleet_driver_id 
+      });
 
       // 2. Get fleet manager info
       const { data: fleet, error: fleetError } = await supabase
@@ -180,10 +195,29 @@ const FleetClientDashboard = () => {
         `)
         .eq("client_id", client.id)
         .order("scheduled_date", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (coursesError) throw coursesError;
       setCourses(coursesData || []);
+
+      // 5. Calculate stats
+      const upcoming = (coursesData || []).filter(c => 
+        ["pending", "accepted", "in_progress"].includes(c.status)
+      ).length;
+      const completed = (coursesData || []).filter(c => c.status === "completed").length;
+
+      // Pending devis
+      const { count: devisCount } = await supabase
+        .from("devis")
+        .select("*", { count: "exact", head: true })
+        .eq("client_id", client.id)
+        .eq("status", "pending");
+
+      setStats({
+        upcomingCourses: upcoming,
+        completedCourses: completed,
+        pendingDevis: devisCount || 0,
+      });
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Erreur lors du chargement des données");
@@ -198,12 +232,19 @@ const FleetClientDashboard = () => {
     try {
       const { error } = await supabase
         .from("clients")
-        .update({ favorite_driver_id: driverId })
+        .update({ 
+          favorite_driver_id: driverId,
+          preferred_fleet_driver_id: driverId 
+        })
         .eq("id", clientData.id);
 
       if (error) throw error;
 
-      setClientData({ ...clientData, favorite_driver_id: driverId });
+      setClientData({ 
+        ...clientData, 
+        favorite_driver_id: driverId,
+        preferred_fleet_driver_id: driverId 
+      });
       toast.success("Chauffeur favori mis à jour");
     } catch (error) {
       console.error("Error setting favorite driver:", error);
@@ -212,8 +253,13 @@ const FleetClientDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate("/");
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
   };
 
   const upcomingCourses = useMemo(() => 
@@ -223,6 +269,16 @@ const FleetClientDashboard = () => {
   const completedCourses = useMemo(() => 
     courses.filter(c => c.status === "completed"),
   [courses]);
+
+  const menuItems = [
+    { id: "accueil", label: "Accueil", icon: Home },
+    { id: "chauffeurs", label: "Chauffeurs", icon: Car },
+    { id: "courses", label: "Mes courses", icon: Calendar },
+    { id: "devis-factures", label: "Devis & Factures", icon: FileText },
+    { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "notes", label: "Notes", icon: StickyNote },
+    { id: "compte", label: "Mon compte", icon: User },
+  ];
 
   if (authLoading || loading) {
     return (
@@ -242,58 +298,104 @@ const FleetClientDashboard = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border-b border-border/50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-card rounded-xl p-2 border border-border/50 shadow">
-                {fleetInfo.logo_url ? (
-                  <img src={fleetInfo.logo_url} alt={fleetInfo.company_name} className="w-full h-full object-contain" />
-                ) : (
-                  <img src={logoSolocab} alt="SoloCab" className="w-full h-full object-contain" />
-                )}
-              </div>
-              <div>
-                <h1 className="text-lg font-bold">{fleetInfo.company_name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  Bonjour, {userProfile?.full_name || "Client"}
-                </p>
-              </div>
+  const renderNavigation = () => (
+    <nav className="space-y-1 flex-1">
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleTabChange(item.id)}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+              activeTab === item.id
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            )}
+          >
+            <Icon className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "accueil":
+        return (
+          <div className="space-y-6">
+            {/* Fleet Manager Info Banner */}
+            <Card className="bg-gradient-to-br from-primary/10 via-accent/5 to-transparent border-primary/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-card rounded-2xl p-2 border border-border/50 shadow-lg flex-shrink-0">
+                    {fleetInfo.logo_url ? (
+                      <img src={fleetInfo.logo_url} alt={fleetInfo.company_name} className="w-full h-full object-contain" />
+                    ) : (
+                      <img src={logoSolocab} alt="SoloCab" className="w-full h-full object-contain" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Badge variant="secondary" className="mb-2">Votre gestionnaire</Badge>
+                    <h3 className="text-lg font-bold truncate">{fleetInfo.company_name}</h3>
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                      {fleetInfo.contact_phone && (
+                        <a href={`tel:${fleetInfo.contact_phone}`} className="flex items-center gap-1 hover:text-primary">
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>{fleetInfo.contact_phone}</span>
+                        </a>
+                      )}
+                      <a href={`mailto:${fleetInfo.contact_email}`} className="flex items-center gap-1 hover:text-primary">
+                        <Mail className="w-3.5 h-3.5" />
+                        <span className="truncate max-w-[150px]">{fleetInfo.contact_email}</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card 
+                className="bg-gradient-to-br from-blue-500 to-blue-600 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleTabChange("courses")}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Clock className="w-5 h-5 text-white" />
+                    <h3 className="text-sm font-semibold text-white">Courses à venir</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{stats.upcomingCourses}</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="bg-gradient-to-br from-orange-500 to-orange-600 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleTabChange("devis-factures")}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <FileText className="w-5 h-5 text-white" />
+                    <h3 className="text-sm font-semibold text-white">Devis en attente</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{stats.pendingDevis}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-success to-emerald-600">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                    <h3 className="text-sm font-semibold text-white">Courses effectuées</h3>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{stats.completedCourses}</p>
+                </CardContent>
+              </Card>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="home" className="gap-1">
-              <Route className="w-4 h-4" />
-              <span className="hidden sm:inline">Accueil</span>
-            </TabsTrigger>
-            <TabsTrigger value="drivers" className="gap-1">
-              <Car className="w-4 h-4" />
-              <span className="hidden sm:inline">Chauffeurs</span>
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="gap-1">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Courses</span>
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-1">
-              <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Messages</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Home Tab */}
-          <TabsContent value="home" className="space-y-6">
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2">
               <Card 
@@ -316,7 +418,10 @@ const FleetClientDashboard = () => {
               </Card>
 
               {clientData?.favorite_driver_id && (
-                <Card className="cursor-pointer hover:border-primary/50 transition-all">
+                <Card 
+                  className="cursor-pointer hover:border-primary/50 transition-all"
+                  onClick={() => navigate(`/create-fleet-course?driver=${clientData.favorite_driver_id}`)}
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-4">
                       <div className="p-4 bg-warning/20 rounded-2xl">
@@ -376,30 +481,16 @@ const FleetClientDashboard = () => {
                 </div>
               </div>
             )}
+          </div>
+        );
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{completedCourses.length}</div>
-                  <p className="text-sm text-muted-foreground">Courses effectuées</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-3xl font-bold text-primary">{drivers.length}</div>
-                  <p className="text-sm text-muted-foreground">Chauffeurs disponibles</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Drivers Tab */}
-          <TabsContent value="drivers" className="space-y-6">
+      case "chauffeurs":
+        return (
+          <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Car className="w-5 h-5 text-primary" />
-                Nos chauffeurs
+                Chauffeurs de {fleetInfo.company_name}
               </h2>
             </div>
 
@@ -411,7 +502,7 @@ const FleetClientDashboard = () => {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {drivers.map((driver) => {
-                  const isFavorite = clientData?.favorite_driver_id === driver.id;
+                  const isFavorite = clientData?.favorite_driver_id === driver.id || clientData?.preferred_fleet_driver_id === driver.id;
                   return (
                     <Card 
                       key={driver.id} 
@@ -482,10 +573,12 @@ const FleetClientDashboard = () => {
                 })}
               </div>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Courses Tab */}
-          <TabsContent value="courses" className="space-y-6">
+      case "courses":
+        return (
+          <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
@@ -512,7 +605,7 @@ const FleetClientDashboard = () => {
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <Badge 
                               variant={
                                 course.status === "completed" ? "default" :
@@ -532,32 +625,149 @@ const FleetClientDashboard = () => {
                           </div>
                           <div className="space-y-1 text-sm">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-success rounded-full" />
+                              <div className="w-2 h-2 bg-success rounded-full flex-shrink-0" />
                               <span className="truncate">{course.pickup_address}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-destructive rounded-full" />
+                              <div className="w-2 h-2 bg-destructive rounded-full flex-shrink-0" />
                               <span className="truncate">{course.destination_address}</span>
                             </div>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* Messages Tab */}
-          <TabsContent value="messages" className="space-y-6">
-            <Card className="p-12 text-center">
-              <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-muted-foreground">Fonctionnalité bientôt disponible</p>
-            </Card>
-          </TabsContent>
-        </Tabs>
+      case "devis-factures":
+        return clientData?.id ? (
+          <FleetClientDevisFactures clientId={clientData.id} />
+        ) : null;
+
+      case "messages":
+        return <MessagingInterface />;
+
+      case "notes":
+        return <ClientNotes />;
+
+      case "compte":
+        return <ClientProfile />;
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden md:flex w-64 border-r border-border bg-card/50 p-4 flex-col">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-card rounded-xl p-2 border border-border/50 shadow">
+              {fleetInfo.logo_url ? (
+                <img src={fleetInfo.logo_url} alt={fleetInfo.company_name} className="w-full h-full object-contain" />
+              ) : (
+                <img src={logoSolocab} alt="SoloCab" className="w-full h-full object-contain" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-bold truncate">{fleetInfo.company_name}</h1>
+              <p className="text-xs text-muted-foreground truncate">Espace client</p>
+            </div>
+          </div>
+        </div>
+        {renderNavigation()}
+        <div className="mt-auto pt-4 border-t border-border">
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4" />
+            Déconnexion
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-64 p-4">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-card rounded-xl p-1.5 border border-border/50">
+                {fleetInfo.logo_url ? (
+                  <img src={fleetInfo.logo_url} alt={fleetInfo.company_name} className="w-full h-full object-contain" />
+                ) : (
+                  <img src={logoSolocab} alt="SoloCab" className="w-full h-full object-contain" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-sm truncate">{fleetInfo.company_name}</h1>
+                <p className="text-xs text-muted-foreground">Espace client</p>
+              </div>
+            </div>
+          </div>
+          {renderNavigation()}
+          <div className="mt-auto pt-4 border-t border-border">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              Déconnexion
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="border-b border-border bg-card sticky top-0 z-10">
+          <div className="px-4 md:px-8 py-3 md:py-4 flex items-center justify-between gap-2">
+            {/* Mobile Menu Button */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden flex-shrink-0"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              <div className="hidden sm:block">
+                <h2 className="font-semibold">
+                  Bonjour, {userProfile?.full_name || "Client"}
+                </h2>
+              </div>
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <Button 
+                size="sm"
+                className="gap-2"
+                onClick={() => navigate("/create-fleet-course")}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Réserver</span>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
+          {renderContent()}
+        </main>
       </div>
     </div>
   );

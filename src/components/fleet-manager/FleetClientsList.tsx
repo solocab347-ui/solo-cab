@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,16 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   Users,
   Search,
   Filter,
-  SlidersHorizontal,
   Calendar,
   Car,
   TrendingUp,
   X,
+  Plus,
+  MessageCircle,
+  Phone,
+  Mail,
 } from "lucide-react";
+import { FleetCreateCourseForClient } from "./FleetCreateCourseForClient";
 
 interface FleetClient {
   id: string;
@@ -29,12 +35,14 @@ interface FleetClient {
     profile?: {
       full_name: string;
       email: string;
+      phone?: string;
     };
   };
 }
 
 interface FleetClientsListProps {
   clients: FleetClient[];
+  fleetManagerId?: string;
 }
 
 export const FleetClientsList = ({ clients }: FleetClientsListProps) => {
