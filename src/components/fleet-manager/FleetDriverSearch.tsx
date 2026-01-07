@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverProfileRealtime, PUBLIC_DRIVERS_QUERY_KEY } from '@/hooks/usePublicDriverProfile';
@@ -161,6 +161,17 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>('');
   
+  // Location-based search
+  const [locationAddress, setLocationAddress] = useState('');
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState(50);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [loadingLocationSuggestions, setLoadingLocationSuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const locationContainerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout>();
   // Profil détaillé
   const [selectedDriver, setSelectedDriver] = useState<SearchableDriver | null>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -190,6 +201,21 @@ export function FleetDriverSearch({ fleetManagerId }: FleetDriverSearchProps) {
     accepted_at: string | null;
   }
   const [partnershipsDetails, setPartnershipsDetails] = useState<ExistingPartnership[]>([]);
+
+  // Fetch Mapbox token
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (!error && data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (error) {
+        console.error('Error fetching Mapbox token:', error);
+      }
+    };
+    fetchToken();
+  }, []);
 
   // Initial load only - filters are applied independently with the search button
   useEffect(() => {
@@ -447,6 +473,9 @@ Cordialement`;
     setSelectedDepartment('');
     setSelectedRegion('');
     setCitySearch('');
+    setLocationAddress('');
+    setLocationCoords(null);
+    setRadiusKm(50);
     setMinRating(0);
     setSelectedVehicleType('');
     searchDrivers();
