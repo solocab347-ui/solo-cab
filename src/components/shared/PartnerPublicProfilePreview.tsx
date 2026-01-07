@@ -14,22 +14,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
-  ExternalLink, 
   Star, 
   Car, 
   MapPin, 
-  Phone, 
-  Mail, 
   Building2,
   Trophy,
   Briefcase,
   CheckCircle2,
-  User,
-  Globe,
-  Shield,
   Loader2,
-  Eye
+  Settings,
+  Sparkles
 } from 'lucide-react';
+import { getServiceLabel, getServiceIcon } from '@/lib/serviceLabels';
+import { getEquipmentLabel, getEquipmentIcon } from '@/lib/vehicleEquipmentDisplay';
 import { supabase } from '@/integrations/supabase/client';
 
 export type PartnerType = 'driver' | 'fleet' | 'company';
@@ -55,6 +52,7 @@ interface DriverProfile {
   services_offered?: string[];
   vehicle_equipment?: string[];
   vehicle_photos?: string[];
+  card_photo_url?: string;
   profile?: {
     full_name?: string;
     profile_photo_url?: string;
@@ -125,6 +123,7 @@ export function PartnerPublicProfilePreview({
             services_offered,
             vehicle_equipment,
             vehicle_photos,
+            card_photo_url,
             show_rating_for_sharing,
             profile:profiles!drivers_user_id_fkey(
               full_name,
@@ -214,13 +213,6 @@ export function PartnerPublicProfilePreview({
     }
   };
 
-  const handleViewPublicProfile = () => {
-    if (partnerType === 'driver') {
-      window.open(`/chauffeur/${partnerId}`, '_blank');
-    } else if (partnerType === 'fleet') {
-      window.open(`/flotte/${partnerId}`, '_blank');
-    }
-  };
 
   const renderDriverProfile = () => {
     if (!driverProfile) return null;
@@ -228,62 +220,79 @@ export function PartnerPublicProfilePreview({
     const name = driverProfile.profile?.full_name || driverProfile.company_name || 'Chauffeur';
     const photo = driverProfile.profile?.profile_photo_url;
     const showRating = driverProfile.show_rating_for_sharing !== false;
+    // Use card photo or vehicle photo as main display photo
+    const displayPhoto = driverProfile.card_photo_url || photo || 
+      (driverProfile.vehicle_photos && driverProfile.vehicle_photos.length > 0 ? driverProfile.vehicle_photos[0] : undefined);
 
     return (
       <div className="space-y-4">
-        {/* Header */}
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16 border-2 border-primary/20">
-                <AvatarImage src={photo || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                  {name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-lg">{name}</p>
-                {driverProfile.company_name && driverProfile.company_name !== name && (
-                  <p className="text-sm text-muted-foreground">{driverProfile.company_name}</p>
-                )}
-                
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {showRating && driverProfile.rating && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                      {driverProfile.rating.toFixed(1)}
-                    </Badge>
-                  )}
-                  {showRating && driverProfile.total_rides && driverProfile.total_rides > 0 && (
-                    <Badge variant="outline" className="gap-1">
-                      <Trophy className="h-3 w-3 text-primary" />
-                      {driverProfile.total_rides} courses
-                    </Badge>
-                  )}
-                </div>
-              </div>
+        {/* Photo principale centrée */}
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <Avatar className="h-24 w-24 border-4 border-primary/30 shadow-lg">
+              <AvatarImage src={displayPhoto || undefined} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-3xl font-bold">
+                {name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+              <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5 shadow-md">
+                Chauffeur VTC
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <h3 className="font-bold text-xl">{name}</h3>
+            {driverProfile.company_name && driverProfile.company_name !== name && (
+              <p className="text-sm text-muted-foreground">{driverProfile.company_name}</p>
+            )}
+          </div>
+          
+          {/* Stats */}
+          <div className="flex items-center gap-3 mt-3">
+            {showRating && driverProfile.rating && (
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                <span className="font-semibold">{driverProfile.rating.toFixed(1)}</span>
+              </Badge>
+            )}
+            {showRating && driverProfile.total_rides && driverProfile.total_rides > 0 && (
+              <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="font-medium">{driverProfile.total_rides} courses</span>
+              </Badge>
+            )}
+          </div>
+        </div>
 
         {/* Vehicle */}
         {(driverProfile.vehicle_brand || driverProfile.vehicle_model) && (
-          <div className="p-3 bg-muted/30 rounded-lg">
-            <div className="flex items-center gap-2 text-sm">
-              <Car className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">
-                {[driverProfile.vehicle_brand, driverProfile.vehicle_model, driverProfile.vehicle_color]
-                  .filter(Boolean)
-                  .join(' ')}
-              </span>
-            </div>
-          </div>
+          <Card className="border-muted">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Car className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">
+                    {[driverProfile.vehicle_brand, driverProfile.vehicle_model]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </p>
+                  {driverProfile.vehicle_color && (
+                    <p className="text-xs text-muted-foreground">{driverProfile.vehicle_color}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Bio */}
         {driverProfile.bio && (
           <div className="p-3 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground">{driverProfile.bio}</p>
+            <p className="text-sm text-muted-foreground italic">"{driverProfile.bio}"</p>
           </div>
         )}
 
@@ -291,13 +300,14 @@ export function PartnerPublicProfilePreview({
         {driverProfile.services_offered && driverProfile.services_offered.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-primary" />
               Services proposés
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {driverProfile.services_offered.map((service, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs">
-                  {service}
+                <Badge key={idx} variant="outline" className="text-xs gap-1.5 px-2.5 py-1">
+                  <span className="text-base">{getServiceIcon(service)}</span>
+                  <span>{getServiceLabel(service)}</span>
                 </Badge>
               ))}
             </div>
@@ -307,11 +317,15 @@ export function PartnerPublicProfilePreview({
         {/* Equipment */}
         {driverProfile.vehicle_equipment && driverProfile.vehicle_equipment.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold mb-2">Équipements</h4>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              Équipements
+            </h4>
             <div className="flex flex-wrap gap-1.5">
               {driverProfile.vehicle_equipment.map((equip, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
-                  {equip}
+                <Badge key={idx} variant="secondary" className="text-xs gap-1.5 px-2.5 py-1">
+                  <span className="text-base">{getEquipmentIcon(equip)}</span>
+                  <span>{getEquipmentLabel(equip)}</span>
                 </Badge>
               ))}
             </div>
@@ -454,19 +468,7 @@ export function PartnerPublicProfilePreview({
               {partnerType === 'fleet' && renderFleetProfile()}
               {partnerType === 'company' && renderCompanyProfile()}
 
-              {/* View public profile button */}
-              {(partnerType === 'driver' || partnerType === 'fleet') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-4 gap-2"
-                  onClick={handleViewPublicProfile}
-                >
-                  <Eye className="h-4 w-4" />
-                  Voir le profil public complet
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              )}
+              {/* Le profil complet est affiché directement dans ce modal */}
             </div>
           )}
         </ScrollArea>
