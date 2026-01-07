@@ -25,8 +25,6 @@ interface PricingData {
   weekend_surcharge: number;
   airport_surcharge: number;
   default_commission_percentage: number;
-  assignment_mode: string;
-  favorite_driver_priority: boolean;
 }
 
 export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsProps) => {
@@ -43,8 +41,6 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
     weekend_surcharge: 0,
     airport_surcharge: 0,
     default_commission_percentage: 0,
-    assignment_mode: "manual",
-    favorite_driver_priority: true,
   });
 
   useEffect(() => {
@@ -65,9 +61,7 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           evening_surcharge,
           weekend_surcharge,
           airport_surcharge,
-          default_commission_percentage,
-          assignment_mode,
-          favorite_driver_priority
+          default_commission_percentage
         `)
         .eq("id", fleetManagerId)
         .single();
@@ -86,8 +80,6 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           weekend_surcharge: d.weekend_surcharge || 0,
           airport_surcharge: d.airport_surcharge || 0,
           default_commission_percentage: d.default_commission_percentage || 0,
-          assignment_mode: d.assignment_mode || "manual",
-          favorite_driver_priority: d.favorite_driver_priority !== false,
         });
       }
     } catch (error) {
@@ -113,8 +105,6 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           weekend_surcharge: pricing.weekend_surcharge,
           airport_surcharge: pricing.airport_surcharge,
           default_commission_percentage: pricing.default_commission_percentage,
-          assignment_mode: pricing.assignment_mode,
-          favorite_driver_priority: pricing.favorite_driver_priority,
         } as any)
         .eq("id", fleetManagerId);
 
@@ -302,59 +292,6 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               0% = pas de commission (chauffeurs salariés)
             </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Mode d'assignation */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mode d'assignation des courses</CardTitle>
-          <CardDescription>
-            Choisissez comment les courses sont assignées aux chauffeurs
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-4">
-            <div 
-              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                pricing.assignment_mode === "manual" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-              onClick={() => setPricing({ ...pricing, assignment_mode: "manual" })}
-            >
-              <div className="font-medium">Manuel</div>
-              <p className="text-sm text-muted-foreground">
-                Vous validez et assignez manuellement chaque course
-              </p>
-            </div>
-            <div 
-              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                pricing.assignment_mode === "automatic" 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              }`}
-              onClick={() => setPricing({ ...pricing, assignment_mode: "automatic" })}
-            >
-              <div className="font-medium">Automatique</div>
-              <p className="text-sm text-muted-foreground">
-                Les courses sont automatiquement assignées aux chauffeurs disponibles
-              </p>
-            </div>
-          </div>
-
-          {pricing.assignment_mode === "automatic" && (
-            <div className="flex items-center gap-3 pt-4">
-              <Switch
-                id="favorite_priority"
-                checked={pricing.favorite_driver_priority}
-                onCheckedChange={(checked) => setPricing({ ...pricing, favorite_driver_priority: checked })}
-              />
-              <Label htmlFor="favorite_priority">
-                Priorité au chauffeur favori du client
-              </Label>
-            </div>
-          )}
         </CardContent>
       </Card>
 

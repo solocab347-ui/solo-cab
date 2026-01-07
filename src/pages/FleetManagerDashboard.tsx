@@ -72,9 +72,8 @@ import { FleetClientInvitations } from "@/components/fleet-manager/FleetClientIn
 import { FleetClientsList } from "@/components/fleet-manager/FleetClientsList";
 import { FleetDriverSearch } from "@/components/fleet-manager/FleetDriverSearch";
 import { FleetClientsTab } from "@/components/fleet-manager/FleetClientsTab";
-import { FleetOperationsSettings } from "@/components/fleet-manager/FleetOperationsSettings";
 import { FleetPricingHub } from "@/components/fleet-manager/FleetPricingHub";
-import { FleetDispatchSettings } from "@/components/fleet-manager/FleetDispatchSettings";
+import { FleetSettingsHub } from "@/components/fleet-manager/FleetSettingsHub";
 import FleetDevisList from "@/components/fleet-manager/FleetDevisList";
 import FleetFacturesList from "@/components/fleet-manager/FleetFacturesList";
 import logoSolocab from "@/assets/logo-solocab.png";
@@ -1065,48 +1064,37 @@ const FleetManagerDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Settings Tab - Combined with Pricing, Public Profile and Subscription */}
+          {/* Settings Tab - Unified Hub */}
           <TabsContent value="settings">
             <Tabs defaultValue="general" className="space-y-6">
               <div className="glass-strong p-3 rounded-2xl">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 h-auto bg-transparent p-0">
+                <TabsList className="grid w-full grid-cols-3 gap-2 h-auto bg-transparent p-0">
                   <TabsTrigger value="general" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-blue-600 data-[state=active]:text-white">
-                    Général
-                  </TabsTrigger>
-                  <TabsTrigger value="subscription" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
-                    Abonnement
+                    Paramètres
                   </TabsTrigger>
                   <TabsTrigger value="pricing" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-warning data-[state=active]:to-orange-600 data-[state=active]:text-white">
                     Tarification
                   </TabsTrigger>
-                  <TabsTrigger value="operations" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-info data-[state=active]:to-cyan-600 data-[state=active]:text-white">
-                    Gestion Dispatch
+                  <TabsTrigger value="subscription" className="py-3 px-2 rounded-xl text-xs sm:text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-success data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+                    Abonnement
                   </TabsTrigger>
                 </TabsList>
               </div>
               <TabsContent value="general">
-                <div className="space-y-6">
-                  {/* Public Profile Settings - now merged with general */}
-                  <FleetPublicProfileSettings
-                    fleetManagerId={fleetManager.id}
-                    companyName={fleetManager.company_name}
-                    showDriversInPublic={fleetManager.show_drivers_in_public_storefront}
-                    servicesOffered={fleetManager.services_offered}
-                    onUpdate={fetchData}
-                  />
-                </div>
+                <FleetSettingsHub
+                  fleetManagerId={fleetManager.id}
+                  companyName={fleetManager.company_name}
+                  onUpdate={fetchData}
+                />
+              </TabsContent>
+              <TabsContent value="pricing">
+                <FleetPricingHub fleetManagerId={fleetManager.id} />
               </TabsContent>
               <TabsContent value="subscription">
                 <FleetSubscriptionManager 
                   fleetManagerId={fleetManager.id}
                   onSubscriptionChange={fetchData}
                 />
-              </TabsContent>
-              <TabsContent value="pricing">
-                <FleetPricingHub fleetManagerId={fleetManager.id} />
-              </TabsContent>
-              <TabsContent value="operations">
-                <FleetDispatchSettings fleetManagerId={fleetManager.id} />
               </TabsContent>
             </Tabs>
           </TabsContent>
