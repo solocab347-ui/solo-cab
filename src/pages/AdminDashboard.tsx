@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database, Handshake, Bug } from "lucide-react";
+import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database, Handshake, Bug, Crown } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import AdminOverview from "@/components/admin/AdminOverview";
@@ -27,6 +27,7 @@ import { AdminTestData } from "@/components/admin/AdminTestData";
 import { AdminPartnershipDisputes } from "@/components/admin/AdminPartnershipDisputes";
 import { AdminFleetManagersDocuments } from "@/components/admin/AdminFleetManagersDocuments";
 import { AdminErrorReports } from "@/components/admin/AdminErrorReports";
+import { CongressRegistrationsTab } from "@/components/admin/CongressRegistrationsTab";
 
 const AdminDashboard = () => {
   const { signOut, user } = useAuth();
@@ -92,6 +93,7 @@ const AdminDashboard = () => {
     { id: "free-access", label: "Accès Gratuits", icon: Gift },
     { id: "test-campaign", label: "Campagne Test", icon: Users },
     { id: "test-data", label: "Données Test Alexandre", icon: Database },
+    { id: "congress-pioneers", label: "Congrès Pionniers", icon: Crown },
     { id: "emails", label: "Envoi d'emails", icon: Mail },
     { id: "user-cleanup", label: "Nettoyage Comptes", icon: AlertTriangle },
     { id: "assistant", label: "Demandes Liberty", icon: Bot },
@@ -125,6 +127,8 @@ const AdminDashboard = () => {
         return <AdminInvitationTokens />;
       case "test-data":
         return <AdminTestData />;
+      case "congress-pioneers":
+        return <CongressRegistrationsTab />;
       case "emails":
         return <AdminEmails />;
       case "user-cleanup":
