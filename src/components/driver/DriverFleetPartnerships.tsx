@@ -883,6 +883,7 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
         partnerName={confirmSignaturePartnership?.fleet_manager?.company_name || 'Gestionnaire de flotte'}
         commissionPercentage={confirmSignaturePartnership?.commission_percentage}
         paymentSchedule={confirmSignaturePartnership?.payment_schedule}
+        partnershipType="fleet"
         onConfirmSign={async () => {
           if (confirmSignaturePartnership) {
             setSigningContract(true);

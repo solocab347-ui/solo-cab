@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,11 @@ import {
   ChevronDown,
   Filter,
   Eye,
-  X
+  X,
+  Clock,
+  Handshake,
+  Percent,
+  Check
 } from 'lucide-react';
 import { useVisibleFleets, useFleetProfileRealtime } from '@/hooks/usePublicFleetProfile';
 import { DRIVER_SERVICES } from '@/lib/vehicleEquipment';
@@ -91,6 +95,22 @@ const getDepartmentLabel = (code: string): string => {
   return dept?.label || code;
 };
 
+interface Partnership {
+  id: string;
+  fleet_manager_id: string;
+  commission_percentage: number;
+  status: string;
+  fleet_manager_signed: boolean;
+  driver_signed: boolean;
+  initiated_by: string;
+  proposed_at: string;
+  fleet_manager?: {
+    company_name: string;
+    logo_url: string | null;
+    contact_name: string | null;
+  };
+}
+
 export function FleetPartnerSearch({ driverId }: Props) {
   useFleetProfileRealtime();
 
@@ -109,10 +129,65 @@ export function FleetPartnerSearch({ driverId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [driverCount, setDriverCount] = useState<Record<string, number>>({});
   const [clientCount, setClientCount] = useState<Record<string, number>>({});
+  
+  // Partenariats existants
+  const [partnerships, setPartnerships] = useState<Partnership[]>([]);
+  const [loadingPartnerships, setLoadingPartnerships] = useState(true);
 
   const { data: fleets = [], isLoading: loading, isFetching: searching } = useVisibleFleets({
     searchTerm: searchTerm || undefined
   });
+
+  // Charger les partenariats existants
+  const loadPartnerships = async () => {
+    if (!driverId) return;
+    setLoadingPartnerships(true);
+    try {
+      const { data, error } = await supabase
+        .from('fleet_driver_partnerships')
+        .select(`
+          id,
+          fleet_manager_id,
+          commission_percentage,
+          status,
+          fleet_manager_signed,
+          driver_signed,
+          initiated_by,
+          proposed_at,
+          fleet_manager:fleet_managers(company_name, logo_url, contact_name)
+        `)
+        .eq('driver_id', driverId)
+        .in('status', ['pending', 'accepted']);
+      
+      if (error) throw error;
+      
+      const formatted = (data || []).map(p => ({
+        ...p,
+        fleet_manager: Array.isArray(p.fleet_manager) ? p.fleet_manager[0] : p.fleet_manager
+      }));
+      
+      setPartnerships(formatted as Partnership[]);
+    } catch (error) {
+      console.error('Error loading partnerships:', error);
+    } finally {
+      setLoadingPartnerships(false);
+    }
+  };
+
+  // Charger les partenariats au montage
+  useEffect(() => {
+    loadPartnerships();
+  }, [driverId]);
+
+  // Recharger après une proposition
+  const handleProposalSuccess = () => {
+    setProposalDialogOpen(false);
+    setSelectedFleet(null);
+    loadPartnerships();
+  };
+
+  const activePartnerships = partnerships.filter(p => p.status === 'accepted');
+  const pendingPartnerships = partnerships.filter(p => p.status === 'pending');
 
   // Filtrer les flottes par département et service
   const filteredFleets = useMemo(() => {
@@ -200,8 +275,7 @@ export function FleetPartnerSearch({ driverId }: Props) {
       if (error) throw error;
 
       toast.success('Proposition de partenariat envoyée');
-      setProposalDialogOpen(false);
-      setSelectedFleet(null);
+      handleProposalSuccess();
     } catch (error: any) {
       console.error('Error proposing partnership:', error);
       toast.error('Erreur lors de l\'envoi de la proposition');
@@ -217,6 +291,101 @@ export function FleetPartnerSearch({ driverId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Section Partenariats actifs et en attente */}
+      {(activePartnerships.length > 0 || pendingPartnerships.length > 0) && (
+        <div className="space-y-3">
+          {/* Partenariats actifs */}
+          {activePartnerships.length > 0 && (
+            <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Handshake className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    Partenariats actifs ({activePartnerships.length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {activePartnerships.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 p-2 bg-emerald-500/10 rounded-lg">
+                      <Avatar className="h-10 w-10 border-2 border-emerald-500/30">
+                        <AvatarImage src={p.fleet_manager?.logo_url || undefined} />
+                        <AvatarFallback className="bg-emerald-500/20 text-emerald-600 text-xs">
+                          {(p.fleet_manager?.company_name || "F").substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{p.fleet_manager?.company_name || "Gestionnaire"}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-600 border-emerald-500/30">
+                            <Check className="h-3 w-3 mr-1" />
+                            Actif
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Percent className="h-3 w-3 mr-1" />
+                            {p.commission_percentage}%
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Demandes en attente */}
+          {pendingPartnerships.length > 0 && (
+            <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-transparent">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                    Demandes en attente ({pendingPartnerships.length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {pendingPartnerships.map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 p-2 bg-amber-500/10 rounded-lg">
+                      <Avatar className="h-10 w-10 border-2 border-amber-500/30">
+                        <AvatarImage src={p.fleet_manager?.logo_url || undefined} />
+                        <AvatarFallback className="bg-amber-500/20 text-amber-600 text-xs">
+                          {(p.fleet_manager?.company_name || "F").substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{p.fleet_manager?.company_name || "Gestionnaire"}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <Badge variant="secondary" className="text-xs bg-amber-500/20 text-amber-600 border-amber-500/30">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {p.initiated_by === 'driver' ? 'Envoyée' : 'Reçue'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            <Percent className="h-3 w-3 mr-1" />
+                            {p.commission_percentage}%
+                          </Badge>
+                          {p.driver_signed && !p.fleet_manager_signed && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              Attente signature gest.
+                            </Badge>
+                          )}
+                          {!p.driver_signed && p.fleet_manager_signed && (
+                            <Badge variant="outline" className="text-xs text-primary">
+                              À signer
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Gérez vos demandes dans l'onglet "Mes partenariats"
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
       {/* Search + Filters */}
       <Card>
         <CardContent className="p-3 sm:p-4 space-y-3">
