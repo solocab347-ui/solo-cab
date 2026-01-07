@@ -1560,6 +1560,7 @@ Cordialement`;
         signing={sendingPartnership}
         partnershipType="fleet"
         mode="propose"
+        signerRole="fleet_manager"
       />
 
       {/* Dialog de visualisation du partenariat existant */}

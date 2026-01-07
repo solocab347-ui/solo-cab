@@ -37,6 +37,7 @@ interface PartnershipSignatureConfirmationProps {
   signing?: boolean;
   partnershipType?: 'driver' | 'fleet'; // driver = chauffeur-chauffeur, fleet = chauffeur-gestionnaire
   mode?: 'accept' | 'propose'; // accept = accepter une offre, propose = faire une demande
+  signerRole?: 'driver' | 'fleet_manager'; // qui signe le contrat
 }
 
 const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
@@ -95,7 +96,7 @@ const DRIVER_OBLIGATIONS: Obligation[] = [
   },
 ];
 
-// Obligations pour les partenariats chauffeur-gestionnaire de flotte
+// Obligations pour les partenariats chauffeur-gestionnaire de flotte (côté chauffeur)
 const FLEET_DRIVER_OBLIGATIONS: Obligation[] = [
   {
     id: 'client_protection_fleet',
@@ -137,6 +138,49 @@ const FLEET_DRIVER_OBLIGATIONS: Obligation[] = [
   },
 ];
 
+// Obligations pour le gestionnaire de flotte envers le chauffeur
+const FLEET_MANAGER_OBLIGATIONS: Obligation[] = [
+  {
+    id: 'course_provision',
+    icon: <Users className="h-5 w-5" />,
+    title: 'Fourniture de missions',
+    description: 'Je m\'engage à proposer des courses au chauffeur partenaire dans le cadre de notre collaboration, sans obligation de volume minimum ou maximum. Les missions seront attribuées selon les besoins et disponibilités.',
+    critical: true,
+  },
+  {
+    id: 'timely_communication',
+    icon: <Clock className="h-5 w-5" />,
+    title: 'Transmission rapide des missions',
+    description: 'Je m\'engage à transmettre les demandes de courses au chauffeur dans les meilleurs délais possibles, afin de lui permettre de s\'organiser efficacement et d\'assurer un service de qualité.',
+    critical: true,
+  },
+  {
+    id: 'respectful_clients',
+    icon: <Handshake className="h-5 w-5" />,
+    title: 'Clients respectueux',
+    description: 'Je m\'engage à envoyer des clients qui respectent le travail du chauffeur, son véhicule et son matériel professionnel. En cas de comportement inapproprié signalé, je m\'engage à prendre les mesures nécessaires.',
+  },
+  {
+    id: 'commission_respect',
+    icon: <Euro className="h-5 w-5" />,
+    title: 'Respect des commissions convenues',
+    description: 'Je m\'engage à respecter le taux de commission convenu contractuellement et à ne pas le modifier unilatéralement. Toute modification devra faire l\'objet d\'un accord mutuel préalable.',
+    critical: true,
+  },
+  {
+    id: 'fair_treatment',
+    icon: <Scale className="h-5 w-5" />,
+    title: 'Traitement équitable',
+    description: 'Je m\'engage à traiter le chauffeur partenaire de manière équitable et professionnelle, en respectant son statut d\'indépendant et en maintenant une communication transparente.',
+  },
+  {
+    id: 'payment_transparency',
+    icon: <Shield className="h-5 w-5" />,
+    title: 'Transparence financière',
+    description: 'Je m\'engage à fournir au chauffeur toutes les informations nécessaires concernant les courses effectuées, les montants et les commissions, permettant un suivi clair de notre collaboration.',
+  },
+];
+
 export function PartnershipSignatureConfirmation({
   open,
   onOpenChange,
@@ -147,12 +191,15 @@ export function PartnershipSignatureConfirmation({
   signing,
   partnershipType = 'driver',
   mode = 'accept',
+  signerRole = 'driver',
 }: PartnershipSignatureConfirmationProps) {
   const [acceptedObligations, setAcceptedObligations] = useState<Set<string>>(new Set());
   const [globalAcceptance, setGlobalAcceptance] = useState(false);
 
-  // Sélectionner les obligations selon le type de partenariat
-  const obligations = partnershipType === 'fleet' ? FLEET_DRIVER_OBLIGATIONS : DRIVER_OBLIGATIONS;
+  // Sélectionner les obligations selon le type de partenariat ET le rôle du signataire
+  const obligations = partnershipType === 'fleet' 
+    ? (signerRole === 'fleet_manager' ? FLEET_MANAGER_OBLIGATIONS : FLEET_DRIVER_OBLIGATIONS)
+    : DRIVER_OBLIGATIONS;
 
   const allObligationsAccepted = obligations.every(o => acceptedObligations.has(o.id));
   const canSign = allObligationsAccepted && globalAcceptance;
