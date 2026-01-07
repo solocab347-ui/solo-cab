@@ -35,6 +35,7 @@ interface PartnershipSignatureConfirmationProps {
   paymentSchedule?: string;
   onConfirmSign: () => void;
   signing?: boolean;
+  partnershipType?: 'driver' | 'fleet'; // driver = chauffeur-chauffeur, fleet = chauffeur-gestionnaire
 }
 
 const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
@@ -51,7 +52,8 @@ interface Obligation {
   critical?: boolean;
 }
 
-const OBLIGATIONS: Obligation[] = [
+// Obligations pour les partenariats chauffeur-chauffeur
+const DRIVER_OBLIGATIONS: Obligation[] = [
   {
     id: 'client_protection',
     icon: <UserX className="h-5 w-5" />,
@@ -92,6 +94,48 @@ const OBLIGATIONS: Obligation[] = [
   },
 ];
 
+// Obligations pour les partenariats chauffeur-gestionnaire de flotte
+const FLEET_DRIVER_OBLIGATIONS: Obligation[] = [
+  {
+    id: 'client_protection_fleet',
+    icon: <UserX className="h-5 w-5" />,
+    title: 'Protection de la clientèle du gestionnaire',
+    description: 'Je m\'engage à NE PAS solliciter, démarcher ou détourner les clients du gestionnaire de flotte. Les clients qui me sont confiés via ce partenariat restent exclusivement liés au gestionnaire. Toute tentative de détournement entraînera la résiliation immédiate et des poursuites judiciaires.',
+    critical: true,
+  },
+  {
+    id: 'payment_respect',
+    icon: <Euro className="h-5 w-5" />,
+    title: 'Respect des paiements',
+    description: 'Je m\'engage à verser les commissions dues dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités de retard et la suspension du partenariat.',
+    critical: true,
+  },
+  {
+    id: 'deadline_respect',
+    icon: <Clock className="h-5 w-5" />,
+    title: 'Respect des délais',
+    description: 'Je m\'engage à respecter scrupuleusement les horaires de prise en charge convenus. Toute annulation tardive ou non-présentation porte atteinte à la réputation du gestionnaire de flotte.',
+  },
+  {
+    id: 'service_quality',
+    icon: <Handshake className="h-5 w-5" />,
+    title: 'Qualité de service',
+    description: 'Je m\'engage à fournir un service irréprochable aux clients qui me sont confiés, représentant dignement l\'image du gestionnaire de flotte. La satisfaction client est primordiale.',
+  },
+  {
+    id: 'confidentiality',
+    icon: <Shield className="h-5 w-5" />,
+    title: 'Confidentialité des informations',
+    description: 'Je m\'engage à préserver la confidentialité de toutes les informations commerciales (coordonnées clients, tarifs, stratégies) et à ne pas les utiliser en dehors du cadre de ce partenariat.',
+  },
+  {
+    id: 'legal_compliance',
+    icon: <Scale className="h-5 w-5" />,
+    title: 'Conformité légale',
+    description: 'Je confirme être en possession de toutes les autorisations nécessaires à l\'exercice de mon activité (carte VTC, assurance professionnelle, immatriculation) et m\'engage à les maintenir valides.',
+  },
+];
+
 export function PartnershipSignatureConfirmation({
   open,
   onOpenChange,
@@ -100,11 +144,15 @@ export function PartnershipSignatureConfirmation({
   paymentSchedule,
   onConfirmSign,
   signing,
+  partnershipType = 'driver',
 }: PartnershipSignatureConfirmationProps) {
   const [acceptedObligations, setAcceptedObligations] = useState<Set<string>>(new Set());
   const [globalAcceptance, setGlobalAcceptance] = useState(false);
 
-  const allObligationsAccepted = OBLIGATIONS.every(o => acceptedObligations.has(o.id));
+  // Sélectionner les obligations selon le type de partenariat
+  const obligations = partnershipType === 'fleet' ? FLEET_DRIVER_OBLIGATIONS : DRIVER_OBLIGATIONS;
+
+  const allObligationsAccepted = obligations.every(o => acceptedObligations.has(o.id));
   const canSign = allObligationsAccepted && globalAcceptance;
 
   const toggleObligation = (id: string) => {
@@ -180,7 +228,7 @@ export function PartnershipSignatureConfirmation({
               Engagements contractuels
             </h4>
             
-            {OBLIGATIONS.map((obligation) => (
+            {obligations.map((obligation) => (
               <div 
                 key={obligation.id}
                 className={`p-3 rounded-lg border transition-colors ${

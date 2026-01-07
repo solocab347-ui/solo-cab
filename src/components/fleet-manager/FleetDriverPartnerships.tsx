@@ -1874,6 +1874,7 @@ export const FleetDriverPartnerships = ({
         partnerName={confirmSignaturePartnership?.driver?.profile?.full_name || 'Chauffeur partenaire'}
         commissionPercentage={confirmSignaturePartnership?.commission_percentage}
         paymentSchedule={confirmSignaturePartnership?.payment_schedule}
+        partnershipType="fleet"
         onConfirmSign={async () => {
           if (confirmSignaturePartnership) {
             setSigningContract(true);
