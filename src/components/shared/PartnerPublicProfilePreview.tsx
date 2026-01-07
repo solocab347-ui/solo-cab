@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   Loader2,
   Settings,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 import { getServiceLabel, getServiceIcon } from '@/lib/serviceLabels';
 import { getEquipmentLabel, getEquipmentIcon } from '@/lib/vehicleEquipmentDisplay';
@@ -69,7 +70,16 @@ interface FleetProfile {
   company_name: string;
   contact_name?: string;
   description?: string;
+  driver_profile_description?: string;
   logo_url?: string;
+  address?: string;
+  total_drivers?: number;
+  total_clients?: number;
+  services_offered?: string[];
+  show_driver_count_public?: boolean;
+  show_client_count_public?: boolean;
+  show_address?: boolean;
+  show_contact_name?: boolean;
   profile?: {
     full_name?: string;
     profile_photo_url?: string;
@@ -153,7 +163,16 @@ export function PartnerPublicProfilePreview({
             company_name,
             contact_name,
             description,
+            driver_profile_description,
             logo_url,
+            address,
+            total_drivers,
+            total_clients,
+            services_offered,
+            show_driver_count_public,
+            show_client_count_public,
+            show_address,
+            show_contact_name,
             user_id
           `)
           .eq('id', partnerId)
@@ -171,7 +190,16 @@ export function PartnerPublicProfilePreview({
             company_name: data.company_name,
             contact_name: data.contact_name || undefined,
             description: data.description || undefined,
+            driver_profile_description: data.driver_profile_description || undefined,
             logo_url: data.logo_url || undefined,
+            address: data.address || undefined,
+            total_drivers: data.total_drivers || 0,
+            total_clients: data.total_clients || 0,
+            services_offered: data.services_offered || undefined,
+            show_driver_count_public: data.show_driver_count_public,
+            show_client_count_public: data.show_client_count_public,
+            show_address: data.show_address,
+            show_contact_name: data.show_contact_name,
             profile: profile || undefined
           });
         }
@@ -349,41 +377,116 @@ export function PartnerPublicProfilePreview({
   const renderFleetProfile = () => {
     if (!fleetProfile) return null;
     
-    const name = fleetProfile.profile?.full_name || fleetProfile.contact_name || fleetProfile.company_name;
+    const showContactName = fleetProfile.show_contact_name !== false;
+    const showDriverCount = fleetProfile.show_driver_count_public !== false;
+    const showClientCount = fleetProfile.show_client_count_public !== false;
+    const showAddress = fleetProfile.show_address !== false;
+    
+    const name = showContactName 
+      ? (fleetProfile.profile?.full_name || fleetProfile.contact_name || fleetProfile.company_name)
+      : fleetProfile.company_name;
     const photo = fleetProfile.profile?.profile_photo_url || fleetProfile.logo_url;
 
     return (
       <div className="space-y-4">
-        {/* Header */}
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16 border-2 border-primary/20">
-                <AvatarImage src={photo || undefined} />
-                <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                  {fleetProfile.company_name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-lg">{name}</p>
-                <p className="text-sm text-muted-foreground">{fleetProfile.company_name}</p>
-                
-                <Badge variant="secondary" className="mt-2 gap-1">
-                  <Briefcase className="h-3 w-3" />
-                  Gestionnaire de Flotte
-                </Badge>
-              </div>
+        {/* Photo et nom centrés */}
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <Avatar className="h-24 w-24 border-4 border-primary/30 shadow-lg">
+              <AvatarImage src={photo || undefined} className="object-cover" />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-3xl font-bold">
+                {fleetProfile.company_name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+              <Badge className="bg-primary text-primary-foreground text-xs px-2 py-0.5 shadow-md">
+                <Briefcase className="h-3 w-3 mr-1" />
+                Gestionnaire
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <h3 className="font-bold text-xl">{fleetProfile.company_name}</h3>
+            {showContactName && fleetProfile.contact_name && (
+              <p className="text-sm text-muted-foreground">Géré par {name}</p>
+            )}
+          </div>
+          
+          {/* Stats - respecting visibility settings */}
+          <div className="flex items-center gap-3 mt-3">
+            {showDriverCount && (
+              <Badge variant="secondary" className="gap-1.5 px-3 py-1">
+                <Car className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{fleetProfile.total_drivers || 0} chauffeurs</span>
+              </Badge>
+            )}
+            {showClientCount && (
+              <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{fleetProfile.total_clients || 0} clients</span>
+              </Badge>
+            )}
+          </div>
+        </div>
 
-        {/* Description */}
-        {fleetProfile.description && (
-          <div className="p-3 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground">{fleetProfile.description}</p>
+        {/* Adresse */}
+        {showAddress && fleetProfile.address && (
+          <Card className="border-muted">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <MapPin className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground">{fleetProfile.address}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Description pour chauffeurs */}
+        {fleetProfile.driver_profile_description && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Présentation
+            </h4>
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <p className="text-sm text-muted-foreground">{fleetProfile.driver_profile_description}</p>
+            </div>
           </div>
         )}
 
+        {/* Description générale si pas de description chauffeur */}
+        {!fleetProfile.driver_profile_description && fleetProfile.description && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Présentation
+            </h4>
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <p className="text-sm text-muted-foreground">{fleetProfile.description}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Services proposés */}
+        {fleetProfile.services_offered && fleetProfile.services_offered.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Services proposés
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
+              {fleetProfile.services_offered.map((service, idx) => (
+                <Badge key={idx} variant="outline" className="text-xs gap-1.5 px-2.5 py-1">
+                  <span className="text-base">{getServiceIcon(service)}</span>
+                  <span>{getServiceLabel(service)}</span>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
