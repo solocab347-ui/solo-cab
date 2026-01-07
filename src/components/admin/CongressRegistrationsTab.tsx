@@ -30,6 +30,8 @@ interface CongressRegistration {
     contact_phone: string | null;
     contact_email: string | null;
     is_pioneer: boolean | null;
+    solo_number?: string | null;
+    public_profile_enabled?: boolean | null;
   } | null;
   profile?: {
     full_name: string | null;
@@ -60,7 +62,7 @@ export const CongressRegistrationsTab = () => {
 
       const { data: registrationsData, error: registrationsError } = await supabase
         .from("congress_registrations")
-        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer)`)
+        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer, solo_number, public_profile_enabled)`)
         .order("registered_at", { ascending: false });
 
       if (registrationsError) throw registrationsError;
