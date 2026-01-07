@@ -18,6 +18,7 @@ import {
   Loader2, Search, Users, MapPin, Send, 
   Eye, Phone, Mail, Building2, Filter, RotateCcw, Car, Briefcase, Navigation, X
 } from "lucide-react";
+import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 
 const SERVICES_OPTIONS = [
   { id: 'airport', label: 'Transferts aéroport' },
@@ -81,6 +82,7 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
   const [selectedFleet, setSelectedFleet] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -763,26 +765,38 @@ ${companyProfile.company_name}`;
                 Annuler
               </Button>
               <Button 
-                onClick={() => selectedFleet && sendProposal.mutate(selectedFleet.id)}
+                onClick={() => {
+                  setShowProposalDialog(false);
+                  setShowSignatureDialog(true);
+                }}
                 disabled={sendProposal.isPending || !proposalMessage.trim()}
                 className="flex-1"
               >
-                {sendProposal.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Envoi...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Envoyer la proposition
-                  </>
-                )}
+                <Send className="w-4 h-4 mr-2" />
+                Continuer
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureDialog}
+        onOpenChange={setShowSignatureDialog}
+        partnerName={selectedFleet?.company_name || ""}
+        paymentSchedule={paymentFrequency}
+        onConfirmSign={() => {
+          if (selectedFleet) {
+            sendProposal.mutate(selectedFleet.id);
+          }
+          setShowSignatureDialog(false);
+        }}
+        signing={sendProposal.isPending}
+        partnershipType="company_fleet"
+        mode="propose"
+        signerRole="company"
+      />
     </div>
   );
 }

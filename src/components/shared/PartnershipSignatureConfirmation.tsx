@@ -35,9 +35,9 @@ interface PartnershipSignatureConfirmationProps {
   paymentSchedule?: string;
   onConfirmSign: () => void;
   signing?: boolean;
-  partnershipType?: 'driver' | 'fleet'; // driver = chauffeur-chauffeur, fleet = chauffeur-gestionnaire
+  partnershipType?: 'driver' | 'fleet' | 'company_fleet'; // driver = chauffeur-chauffeur, fleet = chauffeur-gestionnaire, company_fleet = entreprise-gestionnaire
   mode?: 'accept' | 'propose'; // accept = accepter une offre, propose = faire une demande
-  signerRole?: 'driver' | 'fleet_manager'; // qui signe le contrat
+  signerRole?: 'driver' | 'fleet_manager' | 'company'; // qui signe le contrat
 }
 
 const PAYMENT_SCHEDULE_LABELS: Record<string, string> = {
@@ -181,6 +181,92 @@ const FLEET_MANAGER_OBLIGATIONS: Obligation[] = [
   },
 ];
 
+// Obligations pour l'entreprise envers le gestionnaire de flotte
+const COMPANY_OBLIGATIONS: Obligation[] = [
+  {
+    id: 'timely_payment',
+    icon: <Euro className="h-5 w-5" />,
+    title: 'Respect des délais de paiement',
+    description: 'Je m\'engage à régler les factures dans les délais convenus. Tout retard de paiement supérieur à 15 jours pourra entraîner des pénalités et la suspension des services.',
+    critical: true,
+  },
+  {
+    id: 'accurate_booking',
+    icon: <Clock className="h-5 w-5" />,
+    title: 'Informations de réservation exactes',
+    description: 'Je m\'engage à fournir des informations précises et complètes pour chaque réservation (adresses, horaires, nombre de passagers) afin de garantir la qualité du service.',
+    critical: true,
+  },
+  {
+    id: 'respectful_employees',
+    icon: <Handshake className="h-5 w-5" />,
+    title: 'Comportement respectueux des passagers',
+    description: 'Je m\'engage à informer mes collaborateurs des règles de bonne conduite à adopter dans les véhicules et à prendre les mesures nécessaires en cas de comportement inapproprié signalé.',
+  },
+  {
+    id: 'timely_cancellation',
+    icon: <Users className="h-5 w-5" />,
+    title: 'Annulations dans les délais',
+    description: 'Je m\'engage à prévenir le gestionnaire de flotte au plus tôt en cas d\'annulation d\'une course. Les annulations tardives (moins de 2h avant) pourront être facturées.',
+  },
+  {
+    id: 'partnership_terms',
+    icon: <Scale className="h-5 w-5" />,
+    title: 'Respect des termes du partenariat',
+    description: 'Je m\'engage à respecter les conditions tarifaires et les modalités de facturation convenues. Toute modification nécessitera un accord mutuel préalable.',
+    critical: true,
+  },
+  {
+    id: 'data_confidentiality',
+    icon: <Shield className="h-5 w-5" />,
+    title: 'Confidentialité',
+    description: 'Je m\'engage à préserver la confidentialité des informations partagées dans le cadre de ce partenariat (tarifs, conditions commerciales, coordonnées des chauffeurs).',
+  },
+];
+
+// Obligations pour le gestionnaire de flotte envers l'entreprise
+const FLEET_TO_COMPANY_OBLIGATIONS: Obligation[] = [
+  {
+    id: 'service_quality',
+    icon: <Handshake className="h-5 w-5" />,
+    title: 'Qualité de service garantie',
+    description: 'Je m\'engage à fournir des chauffeurs professionnels et des véhicules en parfait état pour chaque course. La satisfaction de vos collaborateurs est notre priorité.',
+    critical: true,
+  },
+  {
+    id: 'availability',
+    icon: <Clock className="h-5 w-5" />,
+    title: 'Disponibilité et réactivité',
+    description: 'Je m\'engage à répondre rapidement aux demandes de réservation et à assurer une disponibilité optimale pour vos besoins de transport.',
+    critical: true,
+  },
+  {
+    id: 'punctuality',
+    icon: <Users className="h-5 w-5" />,
+    title: 'Ponctualité',
+    description: 'Je m\'engage à ce que les chauffeurs soient présents à l\'heure convenue. En cas de retard exceptionnel, vous serez informé immédiatement.',
+  },
+  {
+    id: 'transparent_billing',
+    icon: <Euro className="h-5 w-5" />,
+    title: 'Facturation transparente',
+    description: 'Je m\'engage à fournir des factures claires et détaillées selon la périodicité convenue, respectant les tarifs et conditions du partenariat.',
+    critical: true,
+  },
+  {
+    id: 'confidentiality',
+    icon: <Shield className="h-5 w-5" />,
+    title: 'Confidentialité des informations',
+    description: 'Je m\'engage à préserver la confidentialité des informations concernant votre entreprise et vos collaborateurs (destinations, horaires, contacts).',
+  },
+  {
+    id: 'professionalism',
+    icon: <Scale className="h-5 w-5" />,
+    title: 'Professionnalisme',
+    description: 'Je garantis que tous les chauffeurs disposent des autorisations légales (carte VTC, assurances) et respectent les standards de qualité de notre flotte.',
+  },
+];
+
 export function PartnershipSignatureConfirmation({
   open,
   onOpenChange,
@@ -197,9 +283,20 @@ export function PartnershipSignatureConfirmation({
   const [globalAcceptance, setGlobalAcceptance] = useState(false);
 
   // Sélectionner les obligations selon le type de partenariat ET le rôle du signataire
-  const obligations = partnershipType === 'fleet' 
-    ? (signerRole === 'fleet_manager' ? FLEET_MANAGER_OBLIGATIONS : FLEET_DRIVER_OBLIGATIONS)
-    : DRIVER_OBLIGATIONS;
+  const getObligations = (): Obligation[] => {
+    if (partnershipType === 'company_fleet') {
+      // Partenariat entreprise-gestionnaire de flotte
+      return signerRole === 'company' ? COMPANY_OBLIGATIONS : FLEET_TO_COMPANY_OBLIGATIONS;
+    } else if (partnershipType === 'fleet') {
+      // Partenariat chauffeur-gestionnaire de flotte
+      return signerRole === 'fleet_manager' ? FLEET_MANAGER_OBLIGATIONS : FLEET_DRIVER_OBLIGATIONS;
+    } else {
+      // Partenariat chauffeur-chauffeur
+      return DRIVER_OBLIGATIONS;
+    }
+  };
+
+  const obligations = getObligations();
 
   const allObligationsAccepted = obligations.every(o => acceptedObligations.has(o.id));
   const canSign = allObligationsAccepted && globalAcceptance;

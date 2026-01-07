@@ -16,6 +16,7 @@ import {
   Eye, Phone, Mail, Users, Euro
 } from "lucide-react";
 import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
+import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 
 // Haversine formula to calculate distance between two coordinates
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -59,6 +60,7 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   
   // Advanced location filter
   const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
@@ -775,19 +777,36 @@ Cordialement`;
               Annuler
             </Button>
             <Button 
-              onClick={() => selectedCompany && sendProposal.mutate(selectedCompany.id)}
+              onClick={() => {
+                setShowProposalDialog(false);
+                setShowSignatureDialog(true);
+              }}
               disabled={sendProposal.isPending || !proposalMessage.trim()}
             >
-              {sendProposal.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Envoyer la proposition
+              <Send className="w-4 h-4 mr-2" />
+              Continuer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureDialog}
+        onOpenChange={setShowSignatureDialog}
+        partnerName={selectedCompany?.company_name || ""}
+        paymentSchedule={paymentFrequency}
+        onConfirmSign={() => {
+          if (selectedCompany) {
+            sendProposal.mutate(selectedCompany.id);
+          }
+          setShowSignatureDialog(false);
+        }}
+        signing={sendProposal.isPending}
+        partnershipType="company_fleet"
+        mode="propose"
+        signerRole="fleet_manager"
+      />
     </div>
   );
 }
