@@ -289,13 +289,13 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
     return true;
   });
 
-  // Check existing agreements
+  // Check existing agreements - include proposed_by to know who initiated
   const { data: existingAgreements } = useQuery({
     queryKey: ["fleet-company-agreements", fleetManagerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_fleet_agreements")
-        .select("company_id, status")
+        .select("company_id, status, proposed_by")
         .eq("fleet_manager_id", fleetManagerId);
 
       if (error) throw error;
@@ -370,8 +370,16 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
     setFilterValues(getDefaultFilterValues());
   };
 
+  const getAgreement = (companyId: string) => {
+    return existingAgreements?.find((a) => a.company_id === companyId);
+  };
+
   const getAgreementStatus = (companyId: string) => {
-    return existingAgreements?.find((a) => a.company_id === companyId)?.status;
+    return getAgreement(companyId)?.status;
+  };
+
+  const getProposedBy = (companyId: string) => {
+    return getAgreement(companyId)?.proposed_by;
   };
 
   const handleOpenProposal = (company: any) => {
@@ -439,10 +447,13 @@ Cordialement`;
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {companies.map((company: any) => {
             const agreementStatus = getAgreementStatus(company.id);
+            const proposedBy = getProposedBy(company.id);
             const hasAgreement = !!agreementStatus;
+            const isPendingFromCompany = agreementStatus === "pending" && proposedBy === "company";
+            const isPendingSentByUs = agreementStatus === "pending" && proposedBy === "fleet_manager";
 
             return (
-              <Card key={company.id} className={hasAgreement ? "opacity-75" : ""}>
+              <Card key={company.id} className={hasAgreement && !isPendingFromCompany ? "opacity-75" : ""}>
                 <CardContent className="p-4">
                   <div className="flex gap-3 mb-4">
                     <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
@@ -465,6 +476,8 @@ Cordialement`;
                             ? "bg-green-500" 
                             : agreementStatus === "rejected" 
                             ? "bg-red-500" 
+                            : isPendingFromCompany
+                            ? "bg-blue-500"
                             : "bg-yellow-500"
                         }
                       >
@@ -472,6 +485,8 @@ Cordialement`;
                           ? "Partenaire" 
                           : agreementStatus === "rejected" 
                           ? "Refusé" 
+                          : isPendingFromCompany
+                          ? "Proposition reçue"
                           : "En attente"}
                       </Badge>
                     )}
@@ -521,8 +536,14 @@ Cordialement`;
                       onClick={() => handleOpenProposal(company)}
                       disabled={hasAgreement}
                     >
-                      {hasAgreement ? (
+                      {isPendingSentByUs ? (
                         "Proposition envoyée"
+                      ) : isPendingFromCompany ? (
+                        "Voir dans Partenariats"
+                      ) : agreementStatus === "accepted" ? (
+                        "Déjà partenaire"
+                      ) : agreementStatus === "rejected" ? (
+                        "Proposition refusée"
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-1" />

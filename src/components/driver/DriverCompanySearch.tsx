@@ -314,13 +314,13 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
 
   const companies = filteredCompanies;
 
-  // Check existing proposals
+  // Check existing proposals - include proposed_by to know who initiated
   const { data: existingProposals } = useQuery({
     queryKey: ["driver-company-proposals", driverId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_driver_agreements")
-        .select("company_id, status")
+        .select("company_id, status, proposed_by")
         .eq("driver_id", driverId);
 
       if (error) throw error;
@@ -379,9 +379,16 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
     setNotes("");
   };
 
+  const getProposal = (companyId: string) => {
+    return existingProposals?.find((p) => p.company_id === companyId);
+  };
+
   const getProposalStatus = (companyId: string) => {
-    const existing = existingProposals?.find((p) => p.company_id === companyId);
-    return existing?.status;
+    return getProposal(companyId)?.status;
+  };
+
+  const getProposedBy = (companyId: string) => {
+    return getProposal(companyId)?.proposed_by;
   };
 
   // Vérifie si on peut refaire une demande (après un refus)
@@ -438,10 +445,13 @@ Cordialement.`;
         <div className="grid gap-4 md:grid-cols-2">
           {companies.map((company: any) => {
             const proposalStatus = getProposalStatus(company.id);
+            const proposedBy = getProposedBy(company.id);
             const hasProposal = !!proposalStatus;
+            const isPendingFromCompany = proposalStatus === "pending" && proposedBy === "company";
+            const isPendingSentByUs = proposalStatus === "pending" && proposedBy === "driver";
 
             return (
-              <Card key={company.id} className={hasProposal ? "opacity-75" : ""}>
+              <Card key={company.id} className={hasProposal && !isPendingFromCompany ? "opacity-75" : ""}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-3">
@@ -478,6 +488,8 @@ Cordialement.`;
                             ? "bg-green-500" 
                             : proposalStatus === "rejected" 
                             ? "bg-red-500" 
+                            : isPendingFromCompany
+                            ? "bg-blue-500"
                             : "bg-yellow-500"
                         }
                       >
@@ -485,6 +497,8 @@ Cordialement.`;
                           ? "Partenaire" 
                           : proposalStatus === "rejected" 
                           ? "Refusé" 
+                          : isPendingFromCompany
+                          ? "Proposition reçue"
                           : "En attente"}
                       </Badge>
                     )}
@@ -555,12 +569,14 @@ Cordialement.`;
                     <Button
                       className="flex-1"
                       onClick={() => handleOpenProposal(company)}
-                      disabled={proposalStatus === "pending" || proposalStatus === "accepted"}
+                      disabled={hasProposal && proposalStatus !== "rejected"}
                     >
-                      {proposalStatus === "accepted" ? (
-                        "Partenaire"
-                      ) : proposalStatus === "pending" ? (
-                        "En attente"
+                      {isPendingSentByUs ? (
+                        "Proposition envoyée"
+                      ) : isPendingFromCompany ? (
+                        "Voir dans Partenariats"
+                      ) : proposalStatus === "accepted" ? (
+                        "Déjà partenaire"
                       ) : proposalStatus === "rejected" ? (
                         <>
                           <Send className="w-4 h-4 mr-2" />
