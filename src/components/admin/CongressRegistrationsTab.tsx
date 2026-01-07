@@ -85,18 +85,42 @@ export const CongressRegistrationsTab = () => {
         setNewMaxUses(invitationsData[0].max_uses);
       }
 
-      // Load registrations with driver and profile info
+      // Load registrations with driver info
       const { data: registrationsData, error: registrationsError } = await supabase
         .from("congress_registrations")
         .select(`
           *,
-          driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer),
-          profile:profiles(full_name, email, phone)
+          driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer)
         `)
         .order("registered_at", { ascending: false });
 
       if (registrationsError) throw registrationsError;
-      setRegistrations(registrationsData || []);
+
+      // Fetch profiles separately using user_id
+      const userIds = registrationsData?.map(r => r.user_id).filter(Boolean) || [];
+      let profilesMap: Record<string, { full_name: string | null; email: string | null; phone: string | null }> = {};
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", userIds);
+        
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, p) => {
+            acc[p.id] = { full_name: p.full_name, email: p.email, phone: p.phone };
+            return acc;
+          }, {} as Record<string, { full_name: string | null; email: string | null; phone: string | null }>);
+        }
+      }
+
+      // Combine registrations with profiles
+      const enrichedRegistrations = (registrationsData || []).map(reg => ({
+        ...reg,
+        profile: reg.user_id ? profilesMap[reg.user_id] || null : null
+      }));
+
+      setRegistrations(enrichedRegistrations as CongressRegistration[]);
     } catch (err) {
       console.error("Error loading data:", err);
       toast.error("Erreur lors du chargement des données");
@@ -352,33 +376,6 @@ export const CongressRegistrationsTab = () => {
                               {reg.profile?.full_name || "Chauffeur"}
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="nfc">Numéro du tag NFC</Label>
-                            <Input
-                              id="nfc"
-                              placeholder="Ex: NFC-001"
-                              value={nfcTagNumber}
-                              onChange={(e) => setNfcTagNumber(e.target.value)}
-                            />
-                          </div>
-                          <Button 
-                            className="w-full" 
-                            onClick={updateNfcTag}
-                            disabled={isUpdatingNfc || !nfcTagNumber}
-                          >
-                            {isUpdatingNfc ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                              <Tag className="h-4 w-4 mr-2" />
-                            )}
-                            Enregistrer
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
                           <div className="space-y-2">
                             <Label htmlFor="nfc">Numéro du tag NFC</Label>
                             <Input
