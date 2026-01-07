@@ -73,6 +73,7 @@ interface CourseData {
     vehicle_brand: string | null;
     vehicle_model: string | null;
     vehicle_color: string | null;
+    show_phone: boolean | null;
     profile: {
       full_name: string | null;
       phone: string | null;
@@ -293,7 +294,7 @@ export function EmployeeCoursesList({
         driverIds.length > 0
           ? supabase
               .from("drivers")
-              .select("id, company_name, company_address, siret, siren, tva_number, vehicle_brand, vehicle_model, vehicle_color, user_id")
+              .select("id, company_name, company_address, siret, siren, tva_number, vehicle_brand, vehicle_model, vehicle_color, user_id, show_phone")
               .in("id", driverIds)
           : Promise.resolve({ data: [] as any[] }),
         // Devis - only select columns that exist
@@ -375,6 +376,7 @@ export function EmployeeCoursesList({
           vehicle_brand: driverData.vehicle_brand,
           vehicle_model: driverData.vehicle_model,
           vehicle_color: driverData.vehicle_color,
+          show_phone: driverData.show_phone,
           profile: profileData
         } : null;
 
@@ -1127,7 +1129,8 @@ export function EmployeeCoursesList({
                 >
                   <User className="w-4 h-4" />
                 </Button>
-                {course.driver.profile?.phone && (
+                {/* Show phone button if driver allows it */}
+                {course.driver.show_phone && course.driver.profile?.phone && (
                   <a 
                     href={`tel:${course.driver.profile.phone}`}
                     className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors"
