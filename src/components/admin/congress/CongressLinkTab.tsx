@@ -32,8 +32,10 @@ export const CongressLinkTab = ({ invitation, onUpdate }: CongressLinkTabProps) 
   const flyerRefA4 = useRef<HTMLDivElement>(null);
   const flyerRefA5 = useRef<HTMLDivElement>(null);
 
+  // Use production domain for the link (solocab.fr)
+  const productionDomain = "https://solocab.fr";
   const invitationLink = invitation 
-    ? `${window.location.origin}/inscription-congres?ref=${invitation.slug}`
+    ? `${productionDomain}/inscription-congres?ref=${invitation.slug}`
     : "";
 
   const copyToClipboard = (text: string) => {
