@@ -241,38 +241,80 @@ export function FleetPartnerSearch({ driverId }: Props) {
 
     setSubmitting(true);
     try {
+      // Vérifier si un blocage existe
+      const { data: blocked } = await supabase
+        .from('fleet_driver_blocks')
+        .select('id')
+        .eq('fleet_manager_id', selectedFleet.id)
+        .eq('driver_id', driverId)
+        .maybeSingle();
+
+      if (blocked) {
+        toast.error('Vous ne pouvez pas contacter ce gestionnaire');
+        setSubmitting(false);
+        return;
+      }
+
       // Vérifier si un partenariat existe déjà
-      const { data: existing } = await supabase
+      const { data: existingPartnership } = await supabase
         .from('fleet_driver_partnerships')
         .select('id, status')
         .eq('fleet_manager_id', selectedFleet.id)
         .eq('driver_id', driverId)
-        .in('status', ['pending', 'accepted'])
         .maybeSingle();
 
-      if (existing) {
-        toast.error(existing.status === 'pending' 
-          ? 'Une demande de partenariat est déjà en attente'
-          : 'Vous avez déjà un partenariat actif avec cette flotte');
-        return;
+      if (existingPartnership) {
+        if (existingPartnership.status === 'pending') {
+          toast.error('Une demande de partenariat est déjà en attente');
+          setSubmitting(false);
+          return;
+        }
+        if (existingPartnership.status === 'accepted') {
+          toast.error('Vous avez déjà un partenariat actif avec cette flotte');
+          setSubmitting(false);
+          return;
+        }
+        // Si refusé ou terminé, mettre à jour le partenariat existant
+        const { error } = await supabase
+          .from('fleet_driver_partnerships')
+          .update({
+            initiated_by: 'driver',
+            commission_type: proposedCommissionType,
+            commission_percentage: proposedCommissionType === "percentage" ? proposedCommission : 0,
+            commission_fixed_amount: proposedCommissionType === "fixed" ? parseFloat(proposedFixedAmount) : null,
+            payment_schedule: proposedPaymentSchedule,
+            proposal_message: proposalMessage,
+            status: 'pending',
+            driver_signed: true,
+            driver_signed_at: new Date().toISOString(),
+            fleet_manager_signed: false,
+            fleet_manager_signed_at: null,
+            rejection_reason: null,
+            rejected_at: null,
+            terminated_at: null,
+            proposed_at: new Date().toISOString(),
+          })
+          .eq('id', existingPartnership.id);
+
+        if (error) throw error;
+      } else {
+        // Créer un nouveau partenariat
+        const { error } = await supabase
+          .from('fleet_driver_partnerships')
+          .insert({
+            fleet_manager_id: selectedFleet.id,
+            driver_id: driverId,
+            commission_type: proposedCommissionType,
+            commission_percentage: proposedCommissionType === "percentage" ? proposedCommission : 0,
+            commission_fixed_amount: proposedCommissionType === "fixed" ? parseFloat(proposedFixedAmount) : null,
+            payment_schedule: proposedPaymentSchedule,
+            proposal_message: proposalMessage,
+            initiated_by: 'driver',
+            status: 'pending'
+          });
+
+        if (error) throw error;
       }
-
-      // Créer la proposition de partenariat
-      const { error } = await supabase
-        .from('fleet_driver_partnerships')
-        .insert({
-          fleet_manager_id: selectedFleet.id,
-          driver_id: driverId,
-          commission_type: proposedCommissionType,
-          commission_percentage: proposedCommissionType === "percentage" ? proposedCommission : 0,
-          commission_fixed_amount: proposedCommissionType === "fixed" ? parseFloat(proposedFixedAmount) : null,
-          payment_schedule: proposedPaymentSchedule,
-          proposal_message: proposalMessage,
-          initiated_by: 'driver',
-          status: 'pending'
-        });
-
-      if (error) throw error;
 
       toast.success('Proposition de partenariat envoyée');
       handleProposalSuccess();

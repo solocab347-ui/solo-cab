@@ -4063,6 +4063,86 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_blocks: {
+        Row: {
+          block_reason: string | null
+          blocked_at: string
+          blocked_by: string
+          created_at: string
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+        }
+        Insert: {
+          block_reason?: string | null
+          blocked_at?: string
+          blocked_by: string
+          created_at?: string
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+        }
+        Update: {
+          block_reason?: string | null
+          blocked_at?: string
+          blocked_by?: string
+          created_at?: string
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_declined_courses: {
         Row: {
           course_id: string
@@ -8361,6 +8441,10 @@ export type Database = {
           p_driver_id?: string
           p_fleet_manager_id?: string
         }
+        Returns: boolean
+      }
+      is_fleet_driver_blocked: {
+        Args: { p_driver_id: string; p_fleet_manager_id: string }
         Returns: boolean
       }
       is_valid_employee_invitation: {

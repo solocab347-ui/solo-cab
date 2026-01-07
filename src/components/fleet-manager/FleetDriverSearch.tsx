@@ -253,21 +253,78 @@ Cordialement`;
     
     setSendingPartnership(true);
     try {
-      const { error } = await supabase
-        .from('fleet_driver_partnerships')
-        .insert({
-          fleet_manager_id: fleetManagerId,
-          driver_id: partnershipDriver.id,
-          initiated_by: 'fleet_manager',
-          commission_percentage: partnershipCommission,
-          payment_schedule: partnershipPaymentSchedule,
-          proposal_message: partnershipMessage || null,
-          status: 'pending',
-          fleet_manager_signed: true,
-          fleet_manager_signed_at: new Date().toISOString()
-        });
+      // Vérifier si un blocage existe
+      const { data: blocked } = await supabase
+        .from('fleet_driver_blocks')
+        .select('id')
+        .eq('fleet_manager_id', fleetManagerId)
+        .eq('driver_id', partnershipDriver.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (blocked) {
+        toast.error('Vous ne pouvez pas contacter ce chauffeur');
+        setSendingPartnership(false);
+        return;
+      }
+
+      // Vérifier si un partenariat existe déjà (actif ou en attente)
+      const { data: existingPartnership } = await supabase
+        .from('fleet_driver_partnerships')
+        .select('id, status')
+        .eq('fleet_manager_id', fleetManagerId)
+        .eq('driver_id', partnershipDriver.id)
+        .maybeSingle();
+
+      if (existingPartnership) {
+        if (existingPartnership.status === 'pending') {
+          toast.error('Une demande de partenariat est déjà en attente');
+          setSendingPartnership(false);
+          return;
+        }
+        if (existingPartnership.status === 'accepted') {
+          toast.error('Vous avez déjà un partenariat actif avec ce chauffeur');
+          setSendingPartnership(false);
+          return;
+        }
+        // Si refusé ou terminé, mettre à jour le partenariat existant
+        const { error } = await supabase
+          .from('fleet_driver_partnerships')
+          .update({
+            initiated_by: 'fleet_manager',
+            commission_percentage: partnershipCommission,
+            payment_schedule: partnershipPaymentSchedule,
+            proposal_message: partnershipMessage || null,
+            status: 'pending',
+            fleet_manager_signed: true,
+            fleet_manager_signed_at: new Date().toISOString(),
+            driver_signed: false,
+            driver_signed_at: null,
+            rejection_reason: null,
+            rejected_at: null,
+            terminated_at: null,
+            proposed_at: new Date().toISOString(),
+          })
+          .eq('id', existingPartnership.id);
+
+        if (error) throw error;
+      } else {
+        // Créer un nouveau partenariat
+        const { error } = await supabase
+          .from('fleet_driver_partnerships')
+          .insert({
+            fleet_manager_id: fleetManagerId,
+            driver_id: partnershipDriver.id,
+            initiated_by: 'fleet_manager',
+            commission_percentage: partnershipCommission,
+            payment_schedule: partnershipPaymentSchedule,
+            proposal_message: partnershipMessage || null,
+            status: 'pending',
+            fleet_manager_signed: true,
+            fleet_manager_signed_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
 
       // Notify driver
       await supabase.from('notifications').insert({
