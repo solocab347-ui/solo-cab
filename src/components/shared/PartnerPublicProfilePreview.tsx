@@ -50,6 +50,7 @@ interface DriverProfile {
   vehicle_model?: string;
   vehicle_color?: string;
   bio?: string;
+  service_description?: string;
   rating?: number;
   total_rides?: number;
   services_offered?: string[];
@@ -132,6 +133,7 @@ export function PartnerPublicProfilePreview({
             vehicle_model,
             vehicle_color,
             bio,
+            service_description,
             rating,
             total_rides,
             services_offered,
@@ -299,16 +301,18 @@ export function PartnerPublicProfilePreview({
             )}
           </div>
           
-          {/* Présentation / Bio - affiché juste après les stats */}
-          {driverProfile.bio && (
+          {/* Description du service - affiché juste après les stats */}
+          {(driverProfile.service_description || driverProfile.bio) && (
             <div className="w-full mt-3">
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                 <CardContent className="p-3">
                   <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-primary" />
-                    Présentation
+                    Description du service
                   </h4>
-                  <p className="text-sm text-muted-foreground italic">"{driverProfile.bio}"</p>
+                  <p className="text-sm text-muted-foreground">
+                    {driverProfile.service_description || driverProfile.bio}
+                  </p>
                 </CardContent>
               </Card>
             </div>
