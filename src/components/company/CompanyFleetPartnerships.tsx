@@ -18,6 +18,7 @@ import { fr } from "date-fns/locale";
 import { CompanyFleetSearch } from "./CompanyFleetSearch";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 import { BlockReasonDialog } from "@/components/shared/BlockReasonDialog";
+import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 
 const PAYMENT_METHODS = [
   { value: "card", label: "Carte bancaire", icon: "💳" },
@@ -210,6 +211,7 @@ export function CompanyFleetPartnerships({ companyId, companyProfile }: CompanyF
   const [activeTab, setActiveTab] = useState("search");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
 
   // Fetch existing fleet agreements
