@@ -72,6 +72,7 @@ const RegisterCongressDriver = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   // Form state - Step 1
   const [email, setEmail] = useState("");
@@ -79,12 +80,6 @@ const RegisterCongressDriver = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-
-  // Form state - Step 2
-  const [licenseNumber, setLicenseNumber] = useState("");
-  const [vehicleModel, setVehicleModel] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [siret, setSiret] = useState("");
 
   useEffect(() => {
     loadInvitation();
@@ -133,9 +128,12 @@ const RegisterCongressDriver = () => {
       return;
     }
 
+    if (!invitation) return;
+
     setIsSubmitting(true);
 
     try {
+      // 1. Create user account
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -151,8 +149,10 @@ const RegisterCongressDriver = () => {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error("Échec de création du compte");
 
-      setUserId(authData.user.id);
+      const newUserId = authData.user.id;
+      setUserId(newUserId);
 
+      // 2. Update profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
@@ -160,35 +160,18 @@ const RegisterCongressDriver = () => {
           full_name: fullName,
           roles: ["driver"],
         })
-        .eq("id", authData.user.id);
+        .eq("id", newUserId);
 
       if (profileError) throw profileError;
 
-      toast.success("Compte créé avec succès !");
-      setCurrentStep(2);
-    } catch (error: any) {
-      console.error("Erreur step 1:", error);
-      toast.error(error.message || "Erreur lors de la création du compte");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleStep2 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId || !invitation) return;
-
-    setIsSubmitting(true);
-
-    try {
+      // 3. Create driver record (pending status - documents to upload later)
+      // license_number and vehicle_model are required fields, use placeholders
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
-          user_id: userId,
-          license_number: licenseNumber,
-          vehicle_model: vehicleModel,
-          company_name: companyName || null,
-          siret: siret || null,
+          user_id: newUserId,
+          license_number: "À compléter",
+          vehicle_model: "À compléter",
           status: "pending",
           is_pioneer: true,
           pioneer_since: new Date().toISOString(),
@@ -201,10 +184,13 @@ const RegisterCongressDriver = () => {
 
       if (driverError) throw driverError;
 
+      setDriverId(driverData.id);
+
+      // 4. Add driver role
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
-          user_id: userId,
+          user_id: newUserId,
           role: "driver",
         });
 
@@ -212,52 +198,47 @@ const RegisterCongressDriver = () => {
         throw roleError;
       }
 
+      // 5. Create congress registration
       const { error: regError } = await supabase
         .from("congress_registrations")
         .insert({
           invitation_id: invitation.id,
           driver_id: driverData.id,
-          user_id: userId,
+          user_id: newUserId,
           subscription_status: "trial",
         });
 
       if (regError) throw regError;
 
+      // 6. Update invitation usage count
       await supabase
         .from("congress_invitations")
         .update({ current_uses: (invitation.current_uses || 0) + 1 })
         .eq("id", invitation.id);
 
-      toast.success("Profil chauffeur créé !");
-      setCurrentStep(3);
+      toast.success("Compte créé avec succès !");
+      setCurrentStep(2);
     } catch (error: any) {
-      console.error("Erreur step 2:", error);
-      toast.error(error.message || "Erreur lors de la création du profil");
+      console.error("Erreur step 1:", error);
+      toast.error(error.message || "Erreur lors de la création du compte");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleStep3Payment = async () => {
-    if (!userId) return;
+  const handleStep2Payment = async () => {
+    if (!driverId) return;
 
     setIsSubmitting(true);
 
     try {
-      const { data: driverData, error: driverError } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
-
-      if (driverError || !driverData) throw new Error("Chauffeur non trouvé");
-
       const { data, error } = await supabase.functions.invoke("create-pioneer-subscription", {
-        body: { driver_id: driverData.id },
+        body: { driver_id: driverId },
       });
 
       if (error) {
         console.error("Checkout error:", error);
+        // Fallback: redirect to pending validation
         toast.success("🎉 Bienvenue parmi les Pionniers SoloCab !");
         navigate("/driver-pending-validation");
         return;
@@ -270,7 +251,7 @@ const RegisterCongressDriver = () => {
         navigate("/driver-pending-validation");
       }
     } catch (error: any) {
-      console.error("Erreur step 3:", error);
+      console.error("Erreur step 2:", error);
       toast.error(error.message || "Erreur lors du paiement");
       setIsSubmitting(false);
     }
@@ -324,9 +305,9 @@ const RegisterCongressDriver = () => {
           <p className="text-sm md:text-base text-muted-foreground">Rejoignez l'élite des chauffeurs VTC indépendants</p>
         </div>
 
-        {/* Progress indicator */}
+        {/* Progress indicator - 2 steps now */}
         <div className="flex items-center justify-center gap-1 md:gap-2 mb-6 md:mb-8">
-          {[1, 2, 3].map((step) => (
+          {[1, 2].map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-semibold text-sm md:text-base transition-all ${
@@ -337,9 +318,9 @@ const RegisterCongressDriver = () => {
               >
                 {currentStep > step ? <CheckCircle className="w-4 h-4 md:w-5 md:h-5" /> : step}
               </div>
-              {step < 3 && (
+              {step < 2 && (
                 <div
-                  className={`w-8 md:w-16 h-1 mx-1 md:mx-2 rounded transition-all ${
+                  className={`w-12 md:w-24 h-1 mx-1 md:mx-2 rounded transition-all ${
                     currentStep > step ? "bg-gradient-to-r from-amber-500 to-primary" : "bg-muted"
                   }`}
                 />
@@ -350,7 +331,7 @@ const RegisterCongressDriver = () => {
 
         <div className="grid lg:grid-cols-5 gap-6 md:gap-8">
           {/* Left side - Features (hidden on step forms for mobile) */}
-          <div className={`lg:col-span-2 space-y-4 ${currentStep < 3 ? 'hidden lg:block' : ''}`}>
+          <div className={`lg:col-span-2 space-y-4 ${currentStep < 2 ? 'hidden lg:block' : ''}`}>
             {/* Pioneer advantages */}
             <Card className="p-4 md:p-6 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
               <h3 className="font-bold mb-4 flex items-center gap-2 text-sm md:text-base">
@@ -519,85 +500,16 @@ const RegisterCongressDriver = () => {
                     size="lg"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Continuer
+                    Continuer vers le paiement
                   </Button>
                 </form>
               </Card>
             )}
 
-            {/* Step 2: Driver info */}
+            {/* Step 2: Payment */}
             {currentStep === 2 && (
               <Card className="p-4 md:p-8">
-                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 2 : Informations professionnelles</h2>
-                <form onSubmit={handleStep2} className="space-y-4">
-                  <div>
-                    <Label htmlFor="licenseNumber">Numéro de carte VTC *</Label>
-                    <Input
-                      id="licenseNumber"
-                      value={licenseNumber}
-                      onChange={(e) => setLicenseNumber(e.target.value)}
-                      required
-                      placeholder="VTC123456"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="vehicleModel">Modèle de véhicule *</Label>
-                    <Input
-                      id="vehicleModel"
-                      value={vehicleModel}
-                      onChange={(e) => setVehicleModel(e.target.value)}
-                      required
-                      placeholder="Mercedes Classe E"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="companyName">Nom de l'entreprise (optionnel)</Label>
-                    <Input
-                      id="companyName"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="VTC Transport"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="siret">SIRET (optionnel)</Label>
-                    <Input
-                      id="siret"
-                      value={siret}
-                      onChange={(e) => setSiret(e.target.value)}
-                      placeholder="123 456 789 00010"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCurrentStep(1)}
-                      className="flex-1"
-                    >
-                      Retour
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmitting} 
-                      className="flex-1 bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
-                    >
-                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Continuer
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            )}
-
-            {/* Step 3: Payment */}
-            {currentStep === 3 && (
-              <Card className="p-4 md:p-8">
-                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 3 : Finaliser l'inscription</h2>
+                <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">Étape 2 : Finaliser l'inscription</h2>
                 
                 <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
                   <Crown className="w-5 h-5 text-amber-500" />
@@ -652,15 +564,32 @@ const RegisterCongressDriver = () => {
                   </p>
                 </div>
 
-                <Button
-                  onClick={handleStep3Payment}
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
-                  size="lg"
-                >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CreditCard className="w-5 h-5 mr-2" />}
-                  Procéder au paiement sécurisé
-                </Button>
+                <Alert className="mb-6 bg-blue-500/10 border-blue-500/30">
+                  <CheckCircle className="w-5 h-5 text-blue-500" />
+                  <AlertDescription>
+                    <strong>Après le paiement :</strong> Vous accéderez à votre espace chauffeur où vous pourrez téléverser vos documents professionnels (carte VTC, Kbis, etc.)
+                  </AlertDescription>
+                </Alert>
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep(1)}
+                    className="flex-1"
+                  >
+                    Retour
+                  </Button>
+                  <Button
+                    onClick={handleStep2Payment}
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-primary hover:from-amber-600 hover:to-primary/90"
+                    size="lg"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <CreditCard className="w-5 h-5 mr-2" />}
+                    Procéder au paiement
+                  </Button>
+                </div>
 
                 <p className="text-xs text-center text-muted-foreground mt-4">
                   🔒 Paiement sécurisé par Stripe. Vous recevrez un email de confirmation.
