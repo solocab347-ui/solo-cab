@@ -93,16 +93,6 @@ export const FleetHome = ({
   useEffect(() => {
     const loadStats = async () => {
       try {
-        // Get all driver IDs from the fleet (passed as props, already includes partners)
-        const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
-        
-        if (driverIds.length === 0) {
-          // Even with no direct drivers, we should check for partner drivers stats
-          setStats({ totalCourses: 0, monthRevenue: 0, completedCourses: 0 });
-          setLoading(false);
-          return;
-        }
-
         // Get current month boundaries for monthly stats
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
@@ -111,37 +101,82 @@ export const FleetHome = ({
         const endOfMonth = new Date(startOfMonth);
         endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
-        // Get courses count for current month only
-        const { count: coursesCount } = await supabase
-          .from('courses')
+        // First, get all clients belonging to this fleet manager
+        const { data: fleetClients } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('fleet_manager_id', fleetManager.id);
+
+        const fleetClientIds = fleetClients?.map(c => c.id) || [];
+        
+        // Also get clients from fleet_manager_clients table
+        const { data: fleetManagerClients } = await supabase
+          .from('fleet_manager_clients')
+          .select('client_id')
+          .eq('fleet_manager_id', fleetManager.id);
+        
+        const linkedClientIds = fleetManagerClients?.map(c => c.client_id) || [];
+        
+        // Combine both lists and remove duplicates
+        const allFleetClientIds = [...new Set([...fleetClientIds, ...linkedClientIds])];
+
+        let totalCourses = 0;
+        let completedCourses = 0;
+
+        if (allFleetClientIds.length > 0) {
+          // Count courses for fleet clients only (courses created by fleet clients)
+          const { count: coursesCount } = await supabase
+            .from('courses')
+            .select('*', { count: 'exact', head: true })
+            .in('client_id', allFleetClientIds)
+            .gte('scheduled_date', startOfMonth.toISOString())
+            .lt('scheduled_date', endOfMonth.toISOString());
+
+          // Get completed courses for fleet clients
+          const { count: completedCount } = await supabase
+            .from('courses')
+            .select('*', { count: 'exact', head: true })
+            .in('client_id', allFleetClientIds)
+            .eq('status', 'completed')
+            .gte('scheduled_date', startOfMonth.toISOString())
+            .lt('scheduled_date', endOfMonth.toISOString());
+
+          totalCourses = coursesCount || 0;
+          completedCourses = completedCount || 0;
+        }
+
+        // Also count unassigned courses created by the fleet manager
+        const { count: unassignedCount } = await supabase
+          .from('unassigned_fleet_courses')
           .select('*', { count: 'exact', head: true })
-          .in('driver_id', driverIds)
-          .gte('scheduled_date', startOfMonth.toISOString())
-          .lt('scheduled_date', endOfMonth.toISOString());
+          .eq('fleet_manager_id', fleetManager.id)
+          .is('resolved_at', null);
 
-        // Get completed courses for current month only
-        const { count: completedCount } = await supabase
-          .from('courses')
-          .select('*', { count: 'exact', head: true })
-          .in('driver_id', driverIds)
-          .eq('status', 'completed')
-          .gte('scheduled_date', startOfMonth.toISOString())
-          .lt('scheduled_date', endOfMonth.toISOString());
+        // Get month revenue from fleet factures only (clients belonging to fleet)
+        let monthRevenue = 0;
+        const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
+        
+        if (driverIds.length > 0 && allFleetClientIds.length > 0) {
+          // Get factures for courses of fleet clients executed by fleet drivers
+          const { data: factures } = await supabase
+            .from('factures')
+            .select('amount, course:courses!inner(client_id)')
+            .in('driver_id', driverIds)
+            .eq('payment_status', 'paid')
+            .gte('paid_at', startOfMonth.toISOString())
+            .lt('paid_at', endOfMonth.toISOString());
 
-        // Get month revenue
-        const { data: factures } = await supabase
-          .from('factures')
-          .select('amount')
-          .in('driver_id', driverIds)
-          .eq('payment_status', 'paid')
-          .gte('paid_at', startOfMonth.toISOString())
-          .lt('paid_at', endOfMonth.toISOString());
-
-        const monthRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
+          // Filter factures for fleet clients only
+          const fleetFactures = factures?.filter(f => 
+            f.course && allFleetClientIds.includes(f.course.client_id)
+          ) || [];
+          
+          monthRevenue = fleetFactures.reduce((sum, f) => sum + Number(f.amount), 0);
+        }
 
         setStats({
-          totalCourses: coursesCount || 0,
-          completedCourses: completedCount || 0,
+          totalCourses: totalCourses + (unassignedCount || 0),
+          completedCourses: completedCourses,
           monthRevenue
         });
       } catch (error) {
@@ -152,7 +187,7 @@ export const FleetHome = ({
     };
 
     loadStats();
-  }, [drivers]);
+  }, [drivers, fleetManager.id]);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-4 animate-fade-in">
