@@ -175,10 +175,10 @@ export function PartnershipRejectDialog({
             </div>
 
             {blockPartner && (
-              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+              <Alert className="bg-muted border-muted-foreground/20">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Le blocage est définitif. Pour le débloquer, contactez le support.
+                  Vous pourrez débloquer ce profil à tout moment depuis l'onglet "Bloqués".
                 </AlertDescription>
               </Alert>
             )}

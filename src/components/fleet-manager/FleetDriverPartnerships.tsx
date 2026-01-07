@@ -51,7 +51,8 @@ import { PendingModificationBanner } from "@/components/shared/PendingModificati
 import { PartnershipContractDocument } from "./PartnershipContractDocument";
 import { PartnershipSignatureConfirmation } from "@/components/shared/PartnershipSignatureConfirmation";
 import { PartnerPublicProfilePreview } from "@/components/shared/PartnerPublicProfilePreview";
-import { FleetDriverBlockManager } from "@/components/shared/FleetDriverBlockManager";
+import { FleetDriverBlockManager, useFleetDriverBlocks } from "@/components/shared/FleetDriverBlockManager";
+import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
 
 // Vehicle categories
 const VEHICLE_CATEGORIES = [
@@ -228,6 +229,14 @@ export const FleetDriverPartnerships = ({
   // Profile preview before signature
   const [previewProfilePartnership, setPreviewProfilePartnership] = useState<Partnership | null>(null);
   const [showProfilePreviewOnly, setShowProfilePreviewOnly] = useState(false);
+  
+  // Reject dialog state
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectingPartnership, setRejectingPartnership] = useState<Partnership | null>(null);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  
+  // Blocks hook
+  const { blockEntity } = useFleetDriverBlocks(fleetManagerId, 'fleet_manager');
   
   // Advanced filters
   const [showFilters, setShowFilters] = useState(false);
@@ -459,21 +468,44 @@ export const FleetDriverPartnerships = ({
     }
   };
 
-  const cancelPartnership = async (partnershipId: string) => {
+  const openRejectDialog = (partnership: Partnership) => {
+    setRejectingPartnership(partnership);
+    setShowRejectDialog(true);
+  };
+
+  const handleRejectPartnership = async (reason: string, shouldBlock: boolean) => {
+    if (!rejectingPartnership) return;
+    
+    setRejectLoading(true);
     try {
+      // Reject/cancel the partnership
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .update({
-          status: "cancelled"
+          status: "rejected",
+          rejection_reason: reason,
+          rejected_at: new Date().toISOString()
         })
-        .eq("id", partnershipId);
+        .eq("id", rejectingPartnership.id);
 
       if (error) throw error;
-      toast.success("Partenariat annulé");
+
+      // Block if requested
+      if (shouldBlock) {
+        await blockEntity(rejectingPartnership.driver_id, reason);
+        toast.success("Partenariat refusé et chauffeur bloqué");
+      } else {
+        toast.success("Partenariat refusé");
+      }
+
+      setShowRejectDialog(false);
+      setRejectingPartnership(null);
       fetchData();
     } catch (error) {
-      console.error("Error cancelling partnership:", error);
-      toast.error("Erreur lors de l'annulation");
+      console.error("Error rejecting partnership:", error);
+      toast.error("Erreur lors du refus");
+    } finally {
+      setRejectLoading(false);
     }
   };
 
@@ -1007,7 +1039,7 @@ export const FleetDriverPartnerships = ({
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => cancelPartnership(partnership.id)}
+                                onClick={() => openRejectDialog(partnership)}
                                 className="w-full gap-2"
                               >
                                 <X className="w-4 h-4" />
@@ -1025,7 +1057,7 @@ export const FleetDriverPartnerships = ({
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => cancelPartnership(partnership.id)}
+                                onClick={() => openRejectDialog(partnership)}
                                 className="w-full gap-2"
                               >
                                 <X className="w-4 h-4" />
@@ -1899,6 +1931,16 @@ export const FleetDriverPartnerships = ({
           }
         }}
         signing={signingContract}
+      />
+
+      {/* Reject Partnership Dialog */}
+      <PartnershipRejectDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        partnerName={rejectingPartnership?.driver?.profile?.full_name || 'Chauffeur'}
+        partnerType="driver"
+        onReject={handleRejectPartnership}
+        isLoading={rejectLoading}
       />
     </div>
   );
