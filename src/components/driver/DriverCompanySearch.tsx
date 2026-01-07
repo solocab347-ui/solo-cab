@@ -55,28 +55,37 @@ const normalizeText = (text: string | null | undefined): string => {
     .trim();
 };
 
-// Department to region mapping for France
-const departmentToRegion: Record<string, string> = {
-  'paris': 'ile-de-france',
-  'seine-et-marne': 'ile-de-france',
-  'yvelines': 'ile-de-france',
-  'essonne': 'ile-de-france',
-  'hauts-de-seine': 'ile-de-france',
-  'seine-saint-denis': 'ile-de-france',
-  'val-de-marne': 'ile-de-france',
-  'val-d\'oise': 'ile-de-france',
-  'bouches-du-rhone': 'provence-alpes-cote d\'azur',
-  'rhone': 'auvergne-rhone-alpes',
-  'haute-garonne': 'occitanie',
-  'gironde': 'nouvelle-aquitaine',
-  'nord': 'hauts-de-france',
-  'alpes-maritimes': 'provence-alpes-cote d\'azur',
-  'loire-atlantique': 'pays de la loire',
-  'bas-rhin': 'grand est',
-  'herault': 'occitanie',
-  'ille-et-vilaine': 'bretagne',
-  'seine-maritime': 'normandie',
-  'finistere': 'bretagne',
+// Department code to region mapping for France
+const departmentCodeToRegion: Record<string, string> = {
+  '75': 'Île-de-France', '77': 'Île-de-France', '78': 'Île-de-France', 
+  '91': 'Île-de-France', '92': 'Île-de-France', '93': 'Île-de-France', 
+  '94': 'Île-de-France', '95': 'Île-de-France',
+  '13': "Provence-Alpes-Côte d'Azur", '06': "Provence-Alpes-Côte d'Azur", 
+  '83': "Provence-Alpes-Côte d'Azur", '84': "Provence-Alpes-Côte d'Azur",
+  '04': "Provence-Alpes-Côte d'Azur", '05': "Provence-Alpes-Côte d'Azur",
+  '69': 'Auvergne-Rhône-Alpes', '01': 'Auvergne-Rhône-Alpes', '03': 'Auvergne-Rhône-Alpes',
+  '07': 'Auvergne-Rhône-Alpes', '15': 'Auvergne-Rhône-Alpes', '26': 'Auvergne-Rhône-Alpes',
+  '38': 'Auvergne-Rhône-Alpes', '42': 'Auvergne-Rhône-Alpes', '43': 'Auvergne-Rhône-Alpes',
+  '63': 'Auvergne-Rhône-Alpes', '73': 'Auvergne-Rhône-Alpes', '74': 'Auvergne-Rhône-Alpes',
+  '31': 'Occitanie', '09': 'Occitanie', '11': 'Occitanie', '12': 'Occitanie',
+  '30': 'Occitanie', '32': 'Occitanie', '34': 'Occitanie', '46': 'Occitanie',
+  '48': 'Occitanie', '65': 'Occitanie', '66': 'Occitanie', '81': 'Occitanie', '82': 'Occitanie',
+  '33': 'Nouvelle-Aquitaine', '16': 'Nouvelle-Aquitaine', '17': 'Nouvelle-Aquitaine',
+  '19': 'Nouvelle-Aquitaine', '23': 'Nouvelle-Aquitaine', '24': 'Nouvelle-Aquitaine',
+  '40': 'Nouvelle-Aquitaine', '47': 'Nouvelle-Aquitaine', '64': 'Nouvelle-Aquitaine',
+  '79': 'Nouvelle-Aquitaine', '86': 'Nouvelle-Aquitaine', '87': 'Nouvelle-Aquitaine',
+  '59': 'Hauts-de-France', '02': 'Hauts-de-France', '60': 'Hauts-de-France', '62': 'Hauts-de-France', '80': 'Hauts-de-France',
+  '67': 'Grand Est', '68': 'Grand Est', '08': 'Grand Est', '10': 'Grand Est', 
+  '51': 'Grand Est', '52': 'Grand Est', '54': 'Grand Est', '55': 'Grand Est', '57': 'Grand Est', '88': 'Grand Est',
+  '44': 'Pays de la Loire', '49': 'Pays de la Loire', '53': 'Pays de la Loire', '72': 'Pays de la Loire', '85': 'Pays de la Loire',
+  '35': 'Bretagne', '22': 'Bretagne', '29': 'Bretagne', '56': 'Bretagne',
+  '76': 'Normandie', '14': 'Normandie', '27': 'Normandie', '50': 'Normandie', '61': 'Normandie',
+  '21': 'Bourgogne-Franche-Comté', '25': 'Bourgogne-Franche-Comté', '39': 'Bourgogne-Franche-Comté',
+  '58': 'Bourgogne-Franche-Comté', '70': 'Bourgogne-Franche-Comté', '71': 'Bourgogne-Franche-Comté',
+  '89': 'Bourgogne-Franche-Comté', '90': 'Bourgogne-Franche-Comté',
+  '18': 'Centre-Val de Loire', '28': 'Centre-Val de Loire', '36': 'Centre-Val de Loire',
+  '37': 'Centre-Val de Loire', '41': 'Centre-Val de Loire', '45': 'Centre-Val de Loire',
+  '2A': 'Corse', '2B': 'Corse', '20': 'Corse',
 };
 
 export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
@@ -264,19 +273,23 @@ export function DriverCompanySearch({ driverId }: DriverCompanySearchProps) {
       if (!matches) return false;
     }
 
-    // Region filter
+    // Region filter - extract postal code from address to determine region
     if (filterValues.region) {
       const regionNorm = normalizeText(filterValues.region);
       const addressNorm = normalizeText(c.address);
-      const companyDeptNorm = normalizeText(c.department);
       
+      // Direct match in address (unlikely but check)
       if (!addressNorm.includes(regionNorm)) {
+        // Extract postal code and determine region from it
         let regionMatch = false;
-        for (const [dept, reg] of Object.entries(departmentToRegion)) {
-          if ((addressNorm.includes(dept) || companyDeptNorm.includes(dept)) && 
-              normalizeText(reg).includes(regionNorm)) {
-            regionMatch = true;
-            break;
+        if (c.address) {
+          const postalCodeMatch = c.address.match(/\b(\d{5})\b/);
+          if (postalCodeMatch) {
+            const deptCode = postalCodeMatch[1].substring(0, 2);
+            const companyRegion = departmentCodeToRegion[deptCode];
+            if (companyRegion && normalizeText(companyRegion).includes(regionNorm)) {
+              regionMatch = true;
+            }
           }
         }
         if (!regionMatch) return false;

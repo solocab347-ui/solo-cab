@@ -444,7 +444,7 @@ export function AdvancedLocationFilter({
                 <SelectContent>
                   <SelectItem value="all">Tous les départements</SelectItem>
                   {FRENCH_DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept.code} value={dept.name}>
+                    <SelectItem key={dept.code} value={`${dept.code} - ${dept.name}`}>
                       {dept.code} - {dept.name}
                     </SelectItem>
                   ))}
@@ -599,7 +599,7 @@ export function AdvancedLocationFilter({
               )}
               {values.department && (
                 <Badge variant="secondary" className="text-xs">
-                  Dép: {values.department}
+                  Dép: {values.department.split(' - ')[1] || values.department}
                 </Badge>
               )}
               {values.region && (

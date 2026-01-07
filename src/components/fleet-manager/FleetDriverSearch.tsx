@@ -377,17 +377,31 @@ Cordialement`;
         query = query.gte('rating', filterValues.minRating);
       }
 
-      // Department filter - extract code and search in working_sectors
+      // Department filter - extract code and search in working_sectors with multiple formats
       if (filterValues.department) {
         // Extract department code (e.g., "91" from "91 - Essonne")
         const deptCodeMatch = filterValues.department.match(/^(\d{2,3})/);
-        const deptCode = deptCodeMatch ? deptCodeMatch[1] : filterValues.department;
+        const deptCode = deptCodeMatch ? deptCodeMatch[1] : '';
         const deptName = filterValues.department.replace(/^\d+\s*-?\s*/, '').trim();
-        // Search for both code and name in working_sectors
-        query = query.or(`working_sectors.cs.{"${deptCode}"},working_sectors.cs.{"${deptName}"},working_sectors.cs.{"${filterValues.department}"}`);
+        
+        // Build search patterns for different formats in working_sectors:
+        // - "91" (code only)
+        // - "Essonne" (name only)
+        // - "91 - Essonne" (full format)
+        // - "Essonne (91)" (alternative format)
+        const patterns = [];
+        if (deptCode) patterns.push(`working_sectors.cs.{"${deptCode}"}`);
+        if (deptName) patterns.push(`working_sectors.cs.{"${deptName}"}`);
+        if (deptCode && deptName) {
+          patterns.push(`working_sectors.cs.{"${deptCode} - ${deptName}"}`);
+          patterns.push(`working_sectors.cs.{"${deptName} (${deptCode})"}`);
+        }
+        if (patterns.length > 0) {
+          query = query.or(patterns.join(','));
+        }
       }
 
-      // Region filter - search in working_sectors array
+      // Region filter - search in working_sectors array with flexible matching
       if (filterValues.region) {
         query = query.or(`working_sectors.cs.{"${filterValues.region}"}`);
       }
