@@ -203,6 +203,18 @@ const App = () => (
                 }
               />
               <Route
+                path="/driver-dashboard/direct-course-creation"
+                element={
+                  <ProtectedRoute allowedRoles={["driver"]} requireValidatedDriver>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ErrorBoundary>
+                        <DriverCreateDirectCourse />
+                      </ErrorBoundary>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/driver-pending-validation"
                 element={
                   <ProtectedRoute allowedRoles={["driver"]}>
