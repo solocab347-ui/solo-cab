@@ -501,6 +501,21 @@ export function CompanyPaymentsHub({ companyId }: CompanyPaymentsHubProps) {
           );
         }
 
+        // IMPORTANT: Vérifier si toutes les courses de ce paiement ont été payées sur place
+        // Si oui, on ne devrait pas afficher ce paiement dans la section "Envoyés/À payer"
+        const allPaidOnSpot = relatedInvoices.length > 0 && relatedInvoices.every((inv: any) => {
+          const courseData = inv.courses;
+          return courseData?.company_payment_status === 'paid_on_spot' || 
+                 courseData?.actual_payment_method === 'employee_paid_spot' ||
+                 courseData?.actual_payment_method === 'employee_personal';
+        });
+        
+        // Si toutes les courses ont été payées sur place ET que le paiement n'est pas "received",
+        // on skip car ce paiement n'aurait pas dû être créé
+        if (allPaidOnSpot && payment.status !== 'received') {
+          return; // Skip this payment - it shouldn't be in the pending/sent list
+        }
+
         // Build proper course data from invoices if available
         const invoicesWithCoursesLocal = relatedInvoices.length > 0 ? relatedInvoices : driverInvoices.filter((inv: any) => 
           inv.driver_id === agreement.driver_id
