@@ -2333,6 +2333,137 @@ export type Database = {
           },
         ]
       }
+      congress_invitations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          discount_percentage: number | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          monthly_price: number | null
+          name: string
+          slug: string
+          trial_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          monthly_price?: number | null
+          name: string
+          slug: string
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          monthly_price?: number | null
+          name?: string
+          slug?: string
+          trial_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      congress_registrations: {
+        Row: {
+          driver_id: string
+          id: string
+          invitation_id: string
+          nfc_tag_number: string | null
+          notes: string | null
+          registered_at: string
+          subscription_started_at: string | null
+          subscription_status: string | null
+          user_id: string
+        }
+        Insert: {
+          driver_id: string
+          id?: string
+          invitation_id: string
+          nfc_tag_number?: string | null
+          notes?: string | null
+          registered_at?: string
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          user_id: string
+        }
+        Update: {
+          driver_id?: string
+          id?: string
+          invitation_id?: string
+          nfc_tag_number?: string | null
+          notes?: string | null
+          registered_at?: string
+          subscription_started_at?: string | null
+          subscription_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "congress_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -3687,16 +3818,19 @@ export type Database = {
           invoice_counter: number | null
           is_demo_account: boolean | null
           is_fleet_driver: boolean | null
+          is_pioneer: boolean | null
           license_number: string
           max_daily_courses: number | null
           max_passengers: number
           minimum_price: number | null
+          nfc_tag_number: string | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null
           partnerships_suspended_at: string | null
           partnerships_suspended_reason: string | null
           per_km_rate: number | null
+          pioneer_since: string | null
           preferred_zones: string[] | null
           public_profile_enabled: boolean | null
           quote_counter: number | null
@@ -3788,16 +3922,19 @@ export type Database = {
           invoice_counter?: number | null
           is_demo_account?: boolean | null
           is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
           license_number: string
           max_daily_courses?: number | null
           max_passengers?: number
           minimum_price?: number | null
+          nfc_tag_number?: string | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
           per_km_rate?: number | null
+          pioneer_since?: string | null
           preferred_zones?: string[] | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
@@ -3889,16 +4026,19 @@ export type Database = {
           invoice_counter?: number | null
           is_demo_account?: boolean | null
           is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
           license_number?: string
           max_daily_courses?: number | null
           max_passengers?: number
           minimum_price?: number | null
+          nfc_tag_number?: string | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
           partnerships_suspended_at?: string | null
           partnerships_suspended_reason?: string | null
           per_km_rate?: number | null
+          pioneer_since?: string | null
           preferred_zones?: string[] | null
           public_profile_enabled?: boolean | null
           quote_counter?: number | null
