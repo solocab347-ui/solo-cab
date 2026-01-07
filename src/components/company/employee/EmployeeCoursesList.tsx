@@ -25,8 +25,10 @@ import {
   Building2,
   CreditCard,
   Receipt,
-  Send
+  Send,
+  User
 } from "lucide-react";
+import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -131,6 +133,8 @@ export function EmployeeCoursesList({
   const [refreshing, setRefreshing] = useState(false);
   const [cancelCourseId, setCancelCourseId] = useState<string | null>(null);
   const [generatingDevisId, setGeneratingDevisId] = useState<string | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [driverProfileOpen, setDriverProfileOpen] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -1079,14 +1083,28 @@ export function EmployeeCoursesList({
           {/* Info chauffeur */}
           {course.driver && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30 mb-4 border border-border/30">
-              <Avatar className="h-11 w-11 ring-2 ring-primary/20">
-                <AvatarImage src={course.driver.profile?.profile_photo_url || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
-                  <Car className="w-5 h-5 text-primary" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate text-sm">
+              <button
+                onClick={() => {
+                  setSelectedDriverId(course.driver.id);
+                  setDriverProfileOpen(true);
+                }}
+                className="cursor-pointer"
+              >
+                <Avatar className="h-11 w-11 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                  <AvatarImage src={course.driver.profile?.profile_photo_url || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20">
+                    <Car className="w-5 h-5 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+              <div 
+                className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  setSelectedDriverId(course.driver.id);
+                  setDriverProfileOpen(true);
+                }}
+              >
+                <p className="font-semibold truncate text-sm text-primary underline-offset-2 hover:underline">
                   {course.driver.profile?.full_name || course.driver.company_name || "Chauffeur"}
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -1097,14 +1115,27 @@ export function EmployeeCoursesList({
                   )}
                 </p>
               </div>
-              {course.driver.profile?.phone && (
-                <a 
-                  href={`tel:${course.driver.profile.phone}`}
-                  className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="p-2 h-auto bg-primary/10 hover:bg-primary/20 text-primary"
+                  onClick={() => {
+                    setSelectedDriverId(course.driver.id);
+                    setDriverProfileOpen(true);
+                  }}
                 >
-                  <Phone className="w-4 h-4" />
-                </a>
-              )}
+                  <User className="w-4 h-4" />
+                </Button>
+                {course.driver.profile?.phone && (
+                  <a 
+                    href={`tel:${course.driver.profile.phone}`}
+                    className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </div>
           )}
 
@@ -1562,6 +1593,13 @@ export function EmployeeCoursesList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog profil chauffeur */}
+      <DriverProfileDialog
+        driverId={selectedDriverId}
+        open={driverProfileOpen}
+        onOpenChange={setDriverProfileOpen}
+      />
     </div>
   );
 }
