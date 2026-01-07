@@ -235,6 +235,12 @@ export const FleetDriverPartnerships = ({
   const [rejectingPartnership, setRejectingPartnership] = useState<Partnership | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
   
+  // Pre-proposal signature confirmation
+  const [showProposalConfirmation, setShowProposalConfirmation] = useState(false);
+  
+  // Pre-counter-proposal signature confirmation
+  const [showCounterConfirmation, setShowCounterConfirmation] = useState(false);
+  
   // Blocks hook
   const { blockEntity } = useFleetDriverBlocks(fleetManagerId, 'fleet_manager');
   
@@ -1332,17 +1338,29 @@ export const FleetDriverPartnerships = ({
             <Button variant="outline" onClick={() => setShowProposalDialog(false)}>
               Annuler
             </Button>
-            <Button onClick={submitProposal} disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Envoyer la proposition
+            <Button onClick={() => setShowProposalConfirmation(true)}>
+              <Send className="w-4 h-4 mr-2" />
+              Continuer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pre-Proposal Signature Confirmation */}
+      <PartnershipSignatureConfirmation
+        open={showProposalConfirmation}
+        onOpenChange={setShowProposalConfirmation}
+        partnerName={selectedDriver?.profile?.full_name || 'Chauffeur'}
+        commissionPercentage={commissionType === "percentage" ? parseFloat(commissionRate) : undefined}
+        paymentSchedule={paymentSchedule}
+        partnershipType="fleet"
+        mode="propose"
+        onConfirmSign={async () => {
+          await submitProposal();
+          setShowProposalConfirmation(false);
+        }}
+        signing={submitting}
+      />
 
       {/* Profile View Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
@@ -1881,17 +1899,32 @@ export const FleetDriverPartnerships = ({
             <Button variant="outline" onClick={() => setShowCounterProposalDialog(false)}>
               Annuler
             </Button>
-            <Button onClick={submitCounterProposal} disabled={submittingCounter}>
-              {submittingCounter ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Envoyer la contre-proposition
+            <Button 
+              onClick={() => setShowCounterConfirmation(true)} 
+              disabled={!counterReason.trim()}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Continuer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pre-Counter-Proposal Signature Confirmation */}
+      <PartnershipSignatureConfirmation
+        open={showCounterConfirmation}
+        onOpenChange={setShowCounterConfirmation}
+        partnerName={counterProposingPartnership?.driver?.profile?.full_name || 'Chauffeur'}
+        commissionPercentage={counterCommission}
+        paymentSchedule={counterPaymentSchedule}
+        partnershipType="fleet"
+        mode="propose"
+        onConfirmSign={async () => {
+          await submitCounterProposal();
+          setShowCounterConfirmation(false);
+        }}
+        signing={submittingCounter}
+      />
 
       {/* Partner Profile Preview before signature */}
       <PartnerPublicProfilePreview
