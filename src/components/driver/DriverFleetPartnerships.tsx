@@ -385,23 +385,29 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="explore" className="space-y-4 sm:space-y-6">
+          <Tabs defaultValue={pendingPartnerships.length > 0 ? "pending" : "explore"} className="space-y-4 sm:space-y-6">
             <TabsList className="grid w-full grid-cols-3 h-auto">
-              <TabsTrigger value="explore" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+              <TabsTrigger value="explore" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5">
                 <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Explorer</span>
+                <span>Rechercher</span>
               </TabsTrigger>
-              <TabsTrigger value="pending" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+              <TabsTrigger value="pending" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5 relative">
                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">En attente</span>
-                <span className="xs:hidden">{pendingPartnerships.length}</span>
-                <span className="hidden xs:inline">({pendingPartnerships.length})</span>
+                <span>En attente</span>
+                {pendingPartnerships.length > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg">
+                    {pendingPartnerships.length}
+                  </span>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="active" className="gap-1.5 text-xs sm:text-sm px-2 py-2">
+              <TabsTrigger value="active" className="gap-1.5 text-xs sm:text-sm px-2 py-2.5">
                 <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Actifs</span>
-                <span className="xs:hidden">{activePartnerships.length}</span>
-                <span className="hidden xs:inline">({activePartnerships.length})</span>
+                <span>Validés</span>
+                {activePartnerships.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                    {activePartnerships.length}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
