@@ -96,30 +96,39 @@ export const FleetHome = ({
           return;
         }
 
-        // Get courses count
+        // Get current month boundaries for monthly stats
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        
+        const endOfMonth = new Date(startOfMonth);
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+        // Get courses count for current month only
         const { count: coursesCount } = await supabase
           .from('courses')
           .select('*', { count: 'exact', head: true })
-          .in('driver_id', driverIds);
+          .in('driver_id', driverIds)
+          .gte('scheduled_date', startOfMonth.toISOString())
+          .lt('scheduled_date', endOfMonth.toISOString());
 
-        // Get completed courses
+        // Get completed courses for current month only
         const { count: completedCount } = await supabase
           .from('courses')
           .select('*', { count: 'exact', head: true })
           .in('driver_id', driverIds)
-          .eq('status', 'completed');
+          .eq('status', 'completed')
+          .gte('scheduled_date', startOfMonth.toISOString())
+          .lt('scheduled_date', endOfMonth.toISOString());
 
         // Get month revenue
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
         const { data: factures } = await supabase
           .from('factures')
           .select('amount')
           .in('driver_id', driverIds)
           .eq('payment_status', 'paid')
-          .gte('paid_at', startOfMonth.toISOString());
+          .gte('paid_at', startOfMonth.toISOString())
+          .lt('paid_at', endOfMonth.toISOString());
 
         const monthRevenue = factures?.reduce((sum, f) => sum + Number(f.amount), 0) || 0;
 
@@ -289,36 +298,47 @@ export const FleetHome = ({
         </div>
       </div>
 
-      {/* Statistiques - Compact Stats Row */}
-      <div className="grid grid-cols-4 gap-2">
-        <Card className="p-3 text-center border-border/50">
-          <div className="flex flex-col items-center gap-1">
-            <Car className="w-4 h-4 text-primary" />
-            <span className="text-xl font-bold text-foreground tabular-nums">{drivers.length}</span>
-            <span className="text-[10px] text-muted-foreground uppercase">Chauffeurs</span>
-          </div>
-        </Card>
-        <Card className="p-3 text-center border-border/50">
-          <div className="flex flex-col items-center gap-1">
-            <Users className="w-4 h-4 text-success" />
-            <span className="text-xl font-bold text-foreground tabular-nums">{clientsCount}</span>
-            <span className="text-[10px] text-muted-foreground uppercase">Clients</span>
-          </div>
-        </Card>
-        <Card className="p-3 text-center border-border/50">
-          <div className="flex flex-col items-center gap-1">
-            <TrendingUp className="w-4 h-4 text-accent" />
-            <span className="text-xl font-bold text-foreground tabular-nums">{loading ? "..." : stats.totalCourses}</span>
-            <span className="text-[10px] text-muted-foreground uppercase">Courses</span>
-          </div>
-        </Card>
-        <Card className="p-3 text-center border-border/50">
-          <div className="flex flex-col items-center gap-1">
-            <Send className="w-4 h-4 text-warning" />
-            <span className="text-xl font-bold text-foreground tabular-nums">{pendingInvitationsCount}</span>
-            <span className="text-[10px] text-muted-foreground uppercase">Invitations</span>
-          </div>
-        </Card>
+      {/* Statistiques Mensuelles - Compact Stats Row */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Statistiques Mensuelles
+          </h2>
+          <Badge variant="outline" className="text-xs">
+            {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+          </Badge>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          <Card className="p-3 text-center border-border/50">
+            <div className="flex flex-col items-center gap-1">
+              <Car className="w-4 h-4 text-primary" />
+              <span className="text-xl font-bold text-foreground tabular-nums">{drivers.length}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">Chauffeurs</span>
+            </div>
+          </Card>
+          <Card className="p-3 text-center border-border/50">
+            <div className="flex flex-col items-center gap-1">
+              <Users className="w-4 h-4 text-success" />
+              <span className="text-xl font-bold text-foreground tabular-nums">{clientsCount}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">Clients</span>
+            </div>
+          </Card>
+          <Card className="p-3 text-center border-border/50">
+            <div className="flex flex-col items-center gap-1">
+              <TrendingUp className="w-4 h-4 text-accent" />
+              <span className="text-xl font-bold text-foreground tabular-nums">{loading ? "..." : stats.totalCourses}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">Courses</span>
+            </div>
+          </Card>
+          <Card className="p-3 text-center border-border/50">
+            <div className="flex flex-col items-center gap-1">
+              <Send className="w-4 h-4 text-warning" />
+              <span className="text-xl font-bold text-foreground tabular-nums">{pendingInvitationsCount}</span>
+              <span className="text-[10px] text-muted-foreground uppercase">Invitations</span>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Mes Chauffeurs - Compact Driver List */}
