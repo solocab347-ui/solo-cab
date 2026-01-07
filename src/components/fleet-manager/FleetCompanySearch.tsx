@@ -163,17 +163,22 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
         });
       }
 
-      // Filter by radius (if coordinates are set from address autocomplete)
-      if (filterValues.locationCoords && filterValues.locationAddress) {
-        // For now, use address text matching since companies don't have coordinates
+      // Filter by radius/address (if location is specified)
+      if (filterValues.locationAddress) {
         const locationNorm = normalizeText(filterValues.locationAddress);
-        // Extract city/area from the full address (first part before comma usually)
-        const locationParts = locationNorm.split(',').map(p => p.trim());
+        // Extract city/area from the full address (split by comma)
+        const locationParts = locationNorm.split(',').map(p => p.trim()).filter(p => p.length > 2);
+        
+        // Also extract individual words for better matching
+        const locationWords = locationNorm.split(/[\s,]+/).filter(w => w.length > 2);
         
         result = result.filter((c: any) => {
           const addressNorm = normalizeText(c.address);
           // Check if any part of the searched location is in the company address
-          return locationParts.some(part => part.length > 2 && addressNorm.includes(part));
+          const partMatch = locationParts.some(part => addressNorm.includes(part));
+          // Or check if any significant word matches
+          const wordMatch = locationWords.some(word => addressNorm.includes(word));
+          return partMatch || wordMatch;
         });
       }
 
@@ -290,7 +295,7 @@ Cordialement`;
     setShowProfileDialog(true);
   };
 
-  const hasActiveFilters = filterValues.searchText || filterValues.city || filterValues.department || filterValues.region || filterValues.locationCoords;
+  const hasActiveFilters = filterValues.searchText || filterValues.city || filterValues.department || filterValues.region || filterValues.locationAddress || filterValues.locationCoords;
 
   return (
     <div className="space-y-6">

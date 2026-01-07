@@ -146,29 +146,51 @@ export function AdvancedLocationFilter({
     fetchToken();
   }, []);
 
-  // Update dropdown position for address
+  // Update dropdown position for address - use fixed positioning relative to viewport
   useEffect(() => {
-    if (inputRef.current && showSuggestions) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [showSuggestions, values.locationAddress]);
+    const updatePosition = () => {
+      if (inputRef.current && showSuggestions) {
+        const rect = inputRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+    updatePosition();
+    
+    // Update on scroll/resize
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showSuggestions, values.locationAddress, suggestions]);
 
-  // Update dropdown position for city
+  // Update dropdown position for city - use fixed positioning relative to viewport
   useEffect(() => {
-    if (cityInputRef.current && showCitySuggestions) {
-      const rect = cityInputRef.current.getBoundingClientRect();
-      setCityDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [showCitySuggestions, values.city]);
+    const updatePosition = () => {
+      if (cityInputRef.current && showCitySuggestions) {
+        const rect = cityInputRef.current.getBoundingClientRect();
+        setCityDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+    updatePosition();
+    
+    // Update on scroll/resize
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [showCitySuggestions, values.city, citySuggestions]);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -185,23 +207,30 @@ export function AdvancedLocationFilter({
   }, []);
 
   const fetchSuggestions = async (query: string) => {
-    if (!mapboxToken || query.length < 3) {
+    if (!mapboxToken || query.length < 2) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
     setLoadingSuggestions(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=place,locality,address&language=fr&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=place,locality,address&language=fr&limit=8`
       );
       const data = await response.json();
-      if (data.features) {
+      console.log('Mapbox address suggestions:', data.features?.length || 0);
+      if (data.features && data.features.length > 0) {
         setSuggestions(data.features);
         setShowSuggestions(true);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -211,21 +240,28 @@ export function AdvancedLocationFilter({
   const fetchCitySuggestions = async (query: string) => {
     if (!mapboxToken || query.length < 2) {
       setCitySuggestions([]);
+      setShowCitySuggestions(false);
       return;
     }
 
     setLoadingCitySuggestions(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=place,locality&language=fr&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&country=fr&types=place,locality&language=fr&limit=8`
       );
       const data = await response.json();
-      if (data.features) {
+      console.log('Mapbox city suggestions:', data.features?.length || 0);
+      if (data.features && data.features.length > 0) {
         setCitySuggestions(data.features);
         setShowCitySuggestions(true);
+      } else {
+        setCitySuggestions([]);
+        setShowCitySuggestions(false);
       }
     } catch (error) {
       console.error('Error fetching city suggestions:', error);
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
     } finally {
       setLoadingCitySuggestions(false);
     }
@@ -286,6 +322,7 @@ export function AdvancedLocationFilter({
     values.city || 
     values.department || 
     values.region || 
+    values.locationAddress ||
     values.locationCoords || 
     values.minRating > 0;
 
@@ -556,9 +593,9 @@ export function AdvancedLocationFilter({
                   Région: {values.region}
                 </Badge>
               )}
-              {values.locationCoords && (
+              {values.locationAddress && (
                 <Badge variant="secondary" className="text-xs">
-                  📍 {values.radiusKm}km
+                  📍 {values.locationAddress.split(',')[0]}{values.locationCoords ? ` (${values.radiusKm}km)` : ''}
                 </Badge>
               )}
               {values.minRating > 0 && (
