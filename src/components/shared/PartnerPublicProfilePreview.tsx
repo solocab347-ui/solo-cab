@@ -61,6 +61,7 @@ interface DriverProfile {
     email?: string;
   };
   show_rating_for_sharing?: boolean;
+  show_rides_for_sharing?: boolean;
 }
 
 interface FleetProfile {
@@ -127,6 +128,7 @@ export function PartnerPublicProfilePreview({
             vehicle_photos,
             card_photo_url,
             show_rating_for_sharing,
+            show_rides_for_sharing,
             profile:profiles!drivers_user_id_fkey(
               full_name,
               profile_photo_url,
@@ -222,6 +224,7 @@ export function PartnerPublicProfilePreview({
     const name = driverProfile.profile?.full_name || driverProfile.company_name || 'Chauffeur';
     const photo = driverProfile.profile?.profile_photo_url;
     const showRating = driverProfile.show_rating_for_sharing !== false;
+    const showRides = driverProfile.show_rides_for_sharing !== false;
     // Use card photo or vehicle photo as main display photo
     const displayPhoto = driverProfile.card_photo_url || photo || 
       (driverProfile.vehicle_photos && driverProfile.vehicle_photos.length > 0 ? driverProfile.vehicle_photos[0] : undefined);
@@ -251,15 +254,15 @@ export function PartnerPublicProfilePreview({
             )}
           </div>
           
-          {/* Stats */}
+          {/* Stats - respecting visibility settings */}
           <div className="flex items-center gap-3 mt-3">
-            {showRating && driverProfile.rating && (
+            {showRating && driverProfile.rating && driverProfile.rating > 0 && (
               <Badge variant="secondary" className="gap-1.5 px-3 py-1">
                 <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                 <span className="font-semibold">{driverProfile.rating.toFixed(1)}</span>
               </Badge>
             )}
-            {showRating && driverProfile.total_rides && driverProfile.total_rides > 0 && (
+            {showRides && driverProfile.total_rides && driverProfile.total_rides > 0 && (
               <Badge variant="outline" className="gap-1.5 px-3 py-1">
                 <Trophy className="h-4 w-4 text-primary" />
                 <span className="font-medium">{driverProfile.total_rides} courses</span>
@@ -291,10 +294,16 @@ export function PartnerPublicProfilePreview({
           </Card>
         )}
 
-        {/* Bio */}
+        {/* Présentation / Bio */}
         {driverProfile.bio && (
-          <div className="p-3 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground italic">"{driverProfile.bio}"</p>
+          <div>
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Présentation
+            </h4>
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <p className="text-sm text-muted-foreground">"{driverProfile.bio}"</p>
+            </div>
           </div>
         )}
 
