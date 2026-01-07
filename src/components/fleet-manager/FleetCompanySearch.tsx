@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { 
-  Loader2, Search, Building2, MapPin, Send, 
-  Eye, Phone, Mail, Filter, RotateCcw, Users, Euro, Briefcase
+  Loader2, Building2, MapPin, Send, 
+  Eye, Phone, Mail, Users, Euro
 } from "lucide-react";
+import { AdvancedLocationFilter, LocationFilterValues, getDefaultFilterValues } from "@/components/shared/AdvancedLocationFilter";
 
 const PAYMENT_METHODS = [
   { value: "card", label: "Carte bancaire", icon: "💳" },
@@ -31,23 +31,6 @@ const PAYMENT_FREQUENCIES = [
   { value: "mixed", label: "Mixte", description: "Selon l'accord" },
 ];
 
-const FRENCH_DEPARTMENTS = [
-  { code: '75', name: 'Paris' },
-  { code: '77', name: 'Seine-et-Marne' },
-  { code: '78', name: 'Yvelines' },
-  { code: '91', name: 'Essonne' },
-  { code: '92', name: 'Hauts-de-Seine' },
-  { code: '93', name: 'Seine-Saint-Denis' },
-  { code: '94', name: 'Val-de-Marne' },
-  { code: '95', name: "Val-d'Oise" },
-  { code: '13', name: 'Bouches-du-Rhône' },
-  { code: '69', name: 'Rhône' },
-  { code: '31', name: 'Haute-Garonne' },
-  { code: '33', name: 'Gironde' },
-  { code: '59', name: 'Nord' },
-  { code: '06', name: 'Alpes-Maritimes' },
-];
-
 interface FleetCompanySearchProps {
   fleetManagerId: string;
   fleetManagerProfile?: {
@@ -60,14 +43,13 @@ interface FleetCompanySearchProps {
 
 export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: FleetCompanySearchProps) {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   
-  // Filters
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState("");
+  // Advanced location filter
+  const [filterValues, setFilterValues] = useState<LocationFilterValues>(getDefaultFilterValues());
+  const [isSearching, setIsSearching] = useState(false);
   
   // Proposal form state
   const [proposalMessage, setProposalMessage] = useState("");
@@ -77,8 +59,8 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
   const [notes, setNotes] = useState("");
 
   // Fetch companies visible to fleet managers
-  const { data: companies, isLoading } = useQuery({
-    queryKey: ["public-companies-for-fleets", searchTerm, selectedDepartment],
+  const { data: companies, isLoading, refetch } = useQuery({
+    queryKey: ["public-companies-for-fleets", filterValues],
     queryFn: async () => {
       let query = supabase
         .from("companies")
@@ -95,8 +77,8 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
       let result = data || [];
 
       // Filter by search term
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
+      if (filterValues.searchText) {
+        const searchLower = filterValues.searchText.toLowerCase();
         result = result.filter((c: any) =>
           c.company_name?.toLowerCase().includes(searchLower) ||
           c.contact_name?.toLowerCase().includes(searchLower) ||
@@ -104,11 +86,40 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
         );
       }
 
-      // Filter by department
-      if (selectedDepartment) {
+      // Filter by city
+      if (filterValues.city) {
+        const cityLower = filterValues.city.toLowerCase();
         result = result.filter((c: any) => 
-          c.address?.toLowerCase().includes(selectedDepartment.toLowerCase())
+          c.address?.toLowerCase().includes(cityLower)
         );
+      }
+
+      // Filter by department
+      if (filterValues.department) {
+        result = result.filter((c: any) => 
+          c.address?.toLowerCase().includes(filterValues.department.toLowerCase()) ||
+          c.department?.toLowerCase().includes(filterValues.department.toLowerCase())
+        );
+      }
+
+      // Filter by region
+      if (filterValues.region) {
+        const regionLower = filterValues.region.toLowerCase();
+        result = result.filter((c: any) => 
+          c.address?.toLowerCase().includes(regionLower)
+        );
+      }
+
+      // Filter by radius (if coordinates are set)
+      if (filterValues.locationCoords) {
+        const { lat, lng } = filterValues.locationCoords;
+        const radiusKm = filterValues.radiusKm;
+        
+        result = result.filter((c: any) => {
+          // Companies need to have geocoded address, otherwise include them if no precise filtering
+          // For now, we'll do basic matching on address for companies without coordinates
+          return true; // Keep all for now since companies don't have coordinates
+        });
       }
 
       return result;
@@ -187,9 +198,13 @@ export function FleetCompanySearch({ fleetManagerId, fleetManagerProfile }: Flee
     setNotes("");
   };
 
-  const resetFilters = () => {
-    setSearchTerm("");
-    setSelectedDepartment("");
+  const handleSearch = () => {
+    setIsSearching(true);
+    refetch().finally(() => setIsSearching(false));
+  };
+
+  const handleResetFilters = () => {
+    setFilterValues(getDefaultFilterValues());
   };
 
   const getAgreementStatus = (companyId: string) => {
@@ -220,7 +235,7 @@ Cordialement`;
     setShowProfileDialog(true);
   };
 
-  const activeFiltersCount = [selectedDepartment].filter(Boolean).length;
+  const hasActiveFilters = filterValues.searchText || filterValues.city || filterValues.department || filterValues.region || filterValues.locationCoords;
 
   return (
     <div className="space-y-6">
@@ -239,64 +254,16 @@ Cordialement`;
 
       {/* Search & Filters */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Rechercher par nom d'entreprise, contact..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button
-              variant={showFilters ? "secondary" : "outline"}
-              onClick={() => setShowFilters(!showFilters)}
-              className="gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filtres
-              {activeFiltersCount > 0 && (
-                <Badge className="h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {activeFiltersCount}
-                </Badge>
-              )}
-            </Button>
-          </div>
-
-          {showFilters && (
-            <div className="space-y-4 pt-4 border-t">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Département
-                  </Label>
-                  <Select value={selectedDepartment || "all"} onValueChange={(val) => setSelectedDepartment(val === "all" ? "" : val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les départements" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les départements</SelectItem>
-                      {FRENCH_DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept.code} value={dept.name}>
-                          {dept.code} - {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {activeFiltersCount > 0 && (
-                <Button variant="ghost" onClick={resetFilters} className="gap-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Réinitialiser les filtres
-                </Button>
-              )}
-            </div>
-          )}
+        <CardContent className="pt-6">
+          <AdvancedLocationFilter
+            values={filterValues}
+            onChange={setFilterValues}
+            onSearch={handleSearch}
+            onReset={handleResetFilters}
+            searching={isSearching}
+            showRatingFilter={false}
+            searchPlaceholder="Rechercher par nom d'entreprise, contact..."
+          />
         </CardContent>
       </Card>
 
@@ -411,11 +378,11 @@ Cordialement`;
           <CardContent className="py-12 text-center">
             <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-semibold mb-2">
-              {searchTerm ? "Aucune entreprise trouvée" : "Aucune entreprise disponible"}
+              {hasActiveFilters ? "Aucune entreprise trouvée" : "Aucune entreprise disponible"}
             </h3>
             <p className="text-muted-foreground">
-              {searchTerm 
-                ? "Essayez avec d'autres termes de recherche"
+              {hasActiveFilters 
+                ? "Essayez avec d'autres critères de recherche"
                 : "Aucune entreprise n'a activé son profil public"}
             </p>
           </CardContent>
@@ -505,7 +472,7 @@ Cordialement`;
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5" />
+              <Send className="w-5 h-5" />
               Proposer un partenariat
             </DialogTitle>
             <DialogDescription>
