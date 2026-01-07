@@ -168,13 +168,13 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
     },
   });
 
-  // Check existing agreements
+  // Check existing agreements - include proposed_by to know who initiated
   const { data: existingAgreements } = useQuery({
     queryKey: ["company-fleet-agreements", companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_fleet_agreements")
-        .select("fleet_manager_id, status")
+        .select("fleet_manager_id, status, proposed_by")
         .eq("company_id", companyId);
 
       if (error) throw error;
@@ -232,8 +232,16 @@ export function CompanyFleetSearch({ companyId, companyProfile }: CompanyFleetSe
     setLocationSuggestions([]);
   };
 
+  const getAgreement = (fleetManagerId: string) => {
+    return existingAgreements?.find((a) => a.fleet_manager_id === fleetManagerId);
+  };
+
   const getAgreementStatus = (fleetManagerId: string) => {
-    return existingAgreements?.find((a) => a.fleet_manager_id === fleetManagerId)?.status;
+    return getAgreement(fleetManagerId)?.status;
+  };
+
+  const getProposedBy = (fleetManagerId: string) => {
+    return getAgreement(fleetManagerId)?.proposed_by;
   };
 
   const handleOpenProposal = (fleet: any) => {
@@ -458,10 +466,13 @@ ${companyProfile.company_name}`;
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {fleetManagers.map((fleet: any) => {
             const agreementStatus = getAgreementStatus(fleet.id);
+            const proposedBy = getProposedBy(fleet.id);
             const hasAgreement = !!agreementStatus;
+            const isPendingFromFleet = agreementStatus === "pending" && proposedBy === "fleet_manager";
+            const isPendingSentByUs = agreementStatus === "pending" && proposedBy === "company";
 
             return (
-              <Card key={fleet.id} className={hasAgreement ? "opacity-75" : ""}>
+              <Card key={fleet.id} className={hasAgreement && !isPendingFromFleet ? "opacity-75" : ""}>
                 <CardContent className="p-4">
                   <div className="flex gap-3 mb-4">
                     <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
@@ -498,6 +509,8 @@ ${companyProfile.company_name}`;
                             ? "bg-green-500" 
                             : agreementStatus === "rejected" 
                             ? "bg-red-500" 
+                            : isPendingFromFleet
+                            ? "bg-blue-500"
                             : "bg-yellow-500"
                         }
                       >
@@ -505,6 +518,8 @@ ${companyProfile.company_name}`;
                           ? "Partenaire" 
                           : agreementStatus === "rejected" 
                           ? "Refusé" 
+                          : isPendingFromFleet
+                          ? "Proposition reçue"
                           : "En attente"}
                       </Badge>
                     )}
@@ -539,8 +554,14 @@ ${companyProfile.company_name}`;
                       onClick={() => handleOpenProposal(fleet)}
                       disabled={hasAgreement}
                     >
-                      {hasAgreement ? (
+                      {isPendingSentByUs ? (
                         "Proposition envoyée"
+                      ) : isPendingFromFleet ? (
+                        "Voir dans Partenariats"
+                      ) : agreementStatus === "accepted" ? (
+                        "Déjà partenaire"
+                      ) : agreementStatus === "rejected" ? (
+                        "Proposition refusée"
                       ) : (
                         <>
                           <Send className="w-4 h-4 mr-1" />
