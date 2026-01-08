@@ -3154,6 +3154,99 @@ export type Database = {
           },
         ]
       }
+      document_reminders: {
+        Row: {
+          created_at: string
+          document_type: string
+          driver_id: string
+          id: string
+          read_at: string | null
+          reminder_message: string | null
+          sent_at: string
+          sent_by: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          driver_id: string
+          id?: string
+          read_at?: string | null
+          reminder_message?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          driver_id?: string
+          id?: string
+          read_at?: string | null
+          reminder_message?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "driver_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_availability_slots: {
         Row: {
           created_at: string | null
@@ -3661,6 +3754,111 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_vehicle_documents: {
+        Row: {
+          created_at: string
+          document_name: string | null
+          document_type: string
+          document_url: string | null
+          driver_id: string
+          id: string
+          rejection_reason: string | null
+          status: string | null
+          updated_at: string
+          uploaded_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_name?: string | null
+          document_type: string
+          document_url?: string | null
+          driver_id: string
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          updated_at?: string
+          uploaded_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          document_name?: string | null
+          document_type?: string
+          document_url?: string | null
+          driver_id?: string
+          id?: string
+          rejection_reason?: string | null
+          status?: string | null
+          updated_at?: string
+          uploaded_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "driver_vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -6596,6 +6794,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           is_read: boolean
@@ -6607,6 +6806,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -6618,6 +6818,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
