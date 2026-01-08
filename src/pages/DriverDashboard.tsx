@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -45,6 +45,8 @@ import { PioneerBanner } from "@/components/driver/PioneerBanner";
 import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
 import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
+import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
+import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 // DriverCompanyCourseRequests removed - company quotes now integrated in DriverDevisList
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -490,6 +492,13 @@ const DriverDashboard = () => {
           <FleetRemovalNotice userId={user.id} driverId={driverProfile.driver.id} />
         )}
 
+        {/* Course Queue Alert - Alerte file d'attente intelligente */}
+        {driverProfile?.driver?.id && (
+          <div className="mb-4">
+            <CourseQueueAlert driverId={driverProfile.driver.id} />
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full bg-white/5 backdrop-blur-sm flex flex-col gap-2 h-auto p-2 shadow-lg border border-white/10">
             {/* Première ligne */}
@@ -550,6 +559,10 @@ const DriverDashboard = () => {
                   <DropdownMenuItem onClick={() => setActiveTab("planning")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:text-white">
                     <Calendar className="w-4 h-4" />
                     {t('driverDashboard.menu.planning')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("queue")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-warning hover:to-orange-600 hover:text-white">
+                    <Timer className="w-4 h-4" />
+                    File d'attente
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white">
                     <Calculator className="w-4 h-4" />
@@ -646,6 +659,24 @@ const DriverDashboard = () => {
                   </div>
                 </div>
                 <DriverPlanning driverId={driverProfile.driver.id} />
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Course Queue Tab - File d'attente intelligente */}
+          <TabsContent value="queue">
+            {driverProfile?.driver?.id && (
+              <Card className="p-6 bg-card/50 backdrop-blur border border-border/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                    <Timer className="w-5 h-5 text-warning" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">File d'attente intelligente</h2>
+                    <p className="text-sm text-muted-foreground">Gérez les courses en conflit de planning</p>
+                  </div>
+                </div>
+                <CourseQueueManager driverId={driverProfile.driver.id} />
               </Card>
             )}
           </TabsContent>

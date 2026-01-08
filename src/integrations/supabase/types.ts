@@ -2761,9 +2761,14 @@ export type Database = {
           driver_id: string
           expires_at: string | null
           id: string
+          last_retry_at: string | null
+          max_retries: number | null
+          next_retry_at: string | null
           priority: number | null
           resolved_action: string | null
           resolved_at: string | null
+          retry_count: number | null
+          retry_interval_minutes: number | null
           shared_to_driver_id: string | null
           source_id: string | null
           source_type: string
@@ -2781,9 +2786,14 @@ export type Database = {
           driver_id: string
           expires_at?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           priority?: number | null
           resolved_action?: string | null
           resolved_at?: string | null
+          retry_count?: number | null
+          retry_interval_minutes?: number | null
           shared_to_driver_id?: string | null
           source_id?: string | null
           source_type?: string
@@ -2801,9 +2811,14 @@ export type Database = {
           driver_id?: string
           expires_at?: string | null
           id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           priority?: number | null
           resolved_action?: string | null
           resolved_at?: string | null
+          retry_count?: number | null
+          retry_interval_minutes?: number | null
           shared_to_driver_id?: string | null
           source_id?: string | null
           source_type?: string
@@ -4920,6 +4935,188 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_course_escalations: {
+        Row: {
+          company_request_id: string | null
+          course_id: string | null
+          created_at: string
+          driver_id: string | null
+          escalation_reason: string | null
+          escalation_type: string
+          fleet_manager_id: string
+          id: string
+          last_retry_at: string | null
+          max_retries: number | null
+          next_retry_at: string | null
+          original_status: string | null
+          reassigned_to_driver_id: string | null
+          resolution_action: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          retry_count: number | null
+          retry_interval_minutes: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_request_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          escalation_reason?: string | null
+          escalation_type?: string
+          fleet_manager_id: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
+          original_status?: string | null
+          reassigned_to_driver_id?: string | null
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          retry_count?: number | null
+          retry_interval_minutes?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_request_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          escalation_reason?: string | null
+          escalation_type?: string
+          fleet_manager_id?: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
+          original_status?: string | null
+          reassigned_to_driver_id?: string | null
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          retry_count?: number | null
+          retry_interval_minutes?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_course_escalations_company_request_id_fkey"
+            columns: ["company_request_id"]
+            isOneToOne: false
+            referencedRelation: "company_course_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_company_request_id_fkey"
+            columns: ["company_request_id"]
+            isOneToOne: false
+            referencedRelation: "company_fleet_course_requests_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -10036,6 +10233,22 @@ export type Database = {
         Returns: undefined
       }
       notify_overdue_company_payments: { Args: never; Returns: undefined }
+      process_course_queue_retries: {
+        Args: never
+        Returns: {
+          action_taken: string
+          course_id: string
+          queue_id: string
+        }[]
+      }
+      process_fleet_escalation_retries: {
+        Args: never
+        Returns: {
+          action_taken: string
+          course_id: string
+          escalation_id: string
+        }[]
+      }
       refresh_driver_statistics: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
