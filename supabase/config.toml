@@ -167,3 +167,21 @@ verify_jwt = false
 
 [functions.create-company-course]
 verify_jwt = false
+
+[functions.sync-fleet-subscription]
+verify_jwt = true
+
+[functions.manage-fleet-free-access]
+verify_jwt = true
+
+[functions.create-pioneer-subscription]
+verify_jwt = true
+
+[functions.test-interleaved-courses]
+verify_jwt = true
+
+[functions.analyze-error]
+verify_jwt = true
+
+[functions.process-course-queue-retries]
+verify_jwt = true

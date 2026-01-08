@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { differenceInDays } from "date-fns";
 import {
   CreditCard,
   Loader2,
@@ -16,6 +17,9 @@ import {
   Euro,
   Car,
   Info,
+  Gift,
+  RefreshCw,
+  Infinity,
 } from "lucide-react";
 
 interface FleetSubscriptionManagerProps {
@@ -25,19 +29,31 @@ interface FleetSubscriptionManagerProps {
 
 interface SubscriptionData {
   subscribed: boolean;
+  subscription_status: string;
   subscription_end: string | null;
+  is_free_access?: boolean;
+  free_access_type?: string;
+  is_trial?: boolean;
+  trial_days_left?: number;
   fleet_manager: {
     subscription_status: string;
     subscription_paid: boolean;
     max_free_drivers: number;
     extra_drivers_count: number;
     base_subscription_cost: number;
+    free_access_granted?: boolean;
+    free_access_end_date?: string;
+    free_access_type?: string;
   } | null;
   billing: {
     base_cost: number;
     extra_drivers_count: number;
     extra_drivers_cost: number;
     total_monthly: number;
+    is_free?: boolean;
+    is_trial?: boolean;
+    next_billing_amount?: number;
+    next_billing_date?: string;
   };
   drivers: {
     total: number;
@@ -53,13 +69,10 @@ export const FleetSubscriptionManager = ({
 }: FleetSubscriptionManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
 
-  useEffect(() => {
-    checkSubscription();
-  }, [fleetManagerId]);
-
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.access_token) {
@@ -79,6 +92,41 @@ export const FleetSubscriptionManager = ({
       toast.error("Erreur lors de la vérification de l'abonnement");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkSubscription();
+  }, [fleetManagerId, checkSubscription]);
+
+  const syncDriverCount = async () => {
+    setSyncing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.access_token) {
+        throw new Error("Session invalide");
+      }
+
+      const { data, error } = await supabase.functions.invoke("sync-fleet-subscription", {
+        body: { 
+          fleet_manager_id: fleetManagerId,
+          action: "recalculate"
+        },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message || "Abonnement synchronisé");
+      await checkSubscription();
+      onSubscriptionChange?.();
+    } catch (error: any) {
+      console.error("Error syncing subscription:", error);
+      toast.error(error.message || "Erreur lors de la synchronisation");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -123,22 +171,130 @@ export const FleetSubscriptionManager = ({
   }
 
   const isSubscribed = subscriptionData?.subscribed;
+  const isFreeAccess = subscriptionData?.is_free_access || subscriptionData?.billing?.is_free;
+  const isTrial = subscriptionData?.is_trial || subscriptionData?.billing?.is_trial;
+  const freeAccessType = subscriptionData?.free_access_type || subscriptionData?.fleet_manager?.free_access_type;
   const drivers = subscriptionData?.drivers;
   const billing = subscriptionData?.billing;
   const maxFreeDrivers = subscriptionData?.fleet_manager?.max_free_drivers || 10;
+  
+  const freeAccessEndDate = subscriptionData?.fleet_manager?.free_access_end_date;
+  const freeAccessDaysLeft = freeAccessEndDate 
+    ? Math.max(0, differenceInDays(new Date(freeAccessEndDate), new Date())) 
+    : null;
 
   return (
     <div className="space-y-6">
+      {/* Free Access Banner */}
+      {isFreeAccess && (
+        <Card className="border-2 border-purple-500/50 bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500/20 rounded-full">
+                <Gift className="w-8 h-8 text-purple-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400">
+                    Accès Gratuit Actif
+                  </h3>
+                  {freeAccessType === "unlimited" ? (
+                    <Badge className="bg-purple-500 text-white">
+                      <Infinity className="w-3 h-3 mr-1" />
+                      Illimité
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-purple-500 text-purple-600">
+                      {freeAccessDaysLeft !== null ? `${freeAccessDaysLeft} jours restants` : "Limité"}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {freeAccessType === "unlimited" 
+                    ? "Vous bénéficiez d'un accès gratuit permanent avec chauffeurs illimités."
+                    : freeAccessEndDate 
+                      ? `Votre accès gratuit expire le ${new Date(freeAccessEndDate).toLocaleDateString("fr-FR")}`
+                      : "Vous bénéficiez d'un accès gratuit temporaire."
+                  }
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-purple-500/10 rounded-lg">
+              <p className="text-sm text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>Aucun prélèvement ne sera effectué pendant cette période</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Trial Banner */}
+      {isTrial && !isFreeAccess && (
+        <Card className="border-2 border-green-500/50 bg-gradient-to-br from-green-500/10 to-green-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-500/20 rounded-full">
+                <Clock className="w-8 h-8 text-green-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-green-700 dark:text-green-400">
+                    Période d'essai
+                  </h3>
+                  <Badge className="bg-green-500 text-white">
+                    {subscriptionData?.trial_days_left || 30} jours restants
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Profitez de toutes les fonctionnalités gratuitement. 
+                  {billing?.next_billing_date && (
+                    <span> Premier prélèvement le {new Date(billing.next_billing_date).toLocaleDateString("fr-FR")}.</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {billing?.next_billing_amount && (
+              <div className="mt-4 p-3 bg-green-500/10 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  <span>Montant prévu après l'essai : <strong>{billing.next_billing_amount.toFixed(2)} €/mois</strong></span>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Subscription Status Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-primary" />
-            Abonnement Gestionnaire de Flotte
-          </CardTitle>
-          <CardDescription>
-            Gérez votre abonnement SoloCab
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                Abonnement Gestionnaire de Flotte
+              </CardTitle>
+              <CardDescription>
+                Gérez votre abonnement SoloCab
+              </CardDescription>
+            </div>
+            {isSubscribed && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={syncDriverCount}
+                disabled={syncing}
+              >
+                {syncing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                <span className="ml-2 hidden sm:inline">Synchroniser</span>
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {isSubscribed ? (
@@ -148,21 +304,26 @@ export const FleetSubscriptionManager = ({
                   <CheckCircle className="w-6 h-6 text-green-500" />
                   <div>
                     <p className="font-semibold text-green-700 dark:text-green-400">
-                      Abonnement Actif
+                      {isFreeAccess ? "Accès Gratuit" : isTrial ? "Essai Gratuit" : "Abonnement Actif"}
                     </p>
-                    {subscriptionData?.subscription_end && (
+                    {!isFreeAccess && subscriptionData?.subscription_end && (
                       <p className="text-sm text-muted-foreground">
-                        Prochain renouvellement :{" "}
+                        {isTrial ? "Fin de l'essai : " : "Prochain renouvellement : "}
                         {new Date(subscriptionData.subscription_end).toLocaleDateString("fr-FR")}
                       </p>
                     )}
                   </div>
                 </div>
-                <Badge variant="default" className="bg-green-500">Actif</Badge>
+                <Badge 
+                  variant="default" 
+                  className={isFreeAccess ? "bg-purple-500" : isTrial ? "bg-green-500" : "bg-green-500"}
+                >
+                  {isFreeAccess ? "Gratuit" : isTrial ? "Essai" : "Actif"}
+                </Badge>
               </div>
 
-              {/* Billing Summary */}
-              {billing && (
+              {/* Billing Summary - Only show if not free access */}
+              {billing && !isFreeAccess && !isTrial && (
                 <Card className="bg-muted/50">
                   <CardContent className="pt-6">
                     <h4 className="font-semibold mb-4 flex items-center gap-2">
@@ -189,6 +350,32 @@ export const FleetSubscriptionManager = ({
                         <span className="text-primary">{billing.total_monthly.toFixed(2)} €</span>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Free access billing info */}
+              {isFreeAccess && (
+                <Card className="bg-purple-500/5 border-purple-500/20">
+                  <CardContent className="pt-6">
+                    <h4 className="font-semibold mb-4 flex items-center gap-2 text-purple-700 dark:text-purple-400">
+                      <Gift className="w-4 h-4" />
+                      Avantages accès gratuit
+                    </h4>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-purple-500" />
+                        <span>Chauffeurs illimités sans surcoût</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-purple-500" />
+                        <span>Aucun prélèvement bancaire</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-purple-500" />
+                        <span>Toutes les fonctionnalités incluses</span>
+                      </li>
+                    </ul>
                   </CardContent>
                 </Card>
               )}
