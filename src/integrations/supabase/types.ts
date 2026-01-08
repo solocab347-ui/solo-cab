@@ -9703,6 +9703,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_expired_free_access: { Args: never; Returns: undefined }
       check_vehicle_documents_status: {
         Args: { _vehicle_id: string }
         Returns: boolean
