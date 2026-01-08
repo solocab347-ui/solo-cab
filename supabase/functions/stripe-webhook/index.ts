@@ -39,26 +39,44 @@ serve(async (req) => {
 
     console.log("[STRIPE-WEBHOOK] Event received:", event.type);
 
-    // Handle subscription events for driver subscriptions
+    // Handle subscription events for driver subscriptions (including trialing for pioneers)
     if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
       console.log("[STRIPE-WEBHOOK] Subscription event:", subscription.id, subscription.status);
 
       const driverId = subscription.metadata?.driver_id;
+      const isPioneer = subscription.metadata?.is_pioneer === "true";
+      const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+      
       if (driverId) {
+        // For pioneers in trial, treat "trialing" as "active" for access purposes
+        const effectiveStatus = (subscription.status === "active" || subscription.status === "trialing") ? "active" : subscription.status;
+        
+        const updateData: any = {
+          subscription_status: effectiveStatus,
+          subscription_stripe_id: subscription.id,
+          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+        };
+        
+        // CRITICAL: Also update stripe_customer_id
+        if (customerId) {
+          updateData.stripe_customer_id = customerId;
+        }
+        
+        // For trialing subscriptions (pioneers), set subscription_paid to true for access
+        if (subscription.status === "trialing" && isPioneer) {
+          updateData.subscription_paid = true;
+        }
+        
         const { error } = await supabaseClient
           .from("drivers")
-          .update({
-            subscription_status: subscription.status === "active" ? "active" : subscription.status,
-            subscription_stripe_id: subscription.id,
-            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-          })
+          .update(updateData)
           .eq("id", driverId);
 
         if (error) {
           console.error("[STRIPE-WEBHOOK] Error updating driver subscription:", error);
         } else {
-          console.log("[STRIPE-WEBHOOK] Driver subscription updated:", driverId);
+          console.log("[STRIPE-WEBHOOK] Driver subscription updated:", driverId, { status: effectiveStatus, customerId, isPioneer });
         }
       }
       
@@ -81,6 +99,7 @@ serve(async (req) => {
             subscription_status: "canceled",
             subscription_stripe_id: null,
             subscription_end_date: null,
+            subscription_paid: false,
           })
           .eq("id", driverId);
 

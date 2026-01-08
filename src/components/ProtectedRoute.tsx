@@ -111,7 +111,7 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -132,6 +132,15 @@ export const ProtectedRoute = ({
       const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
         driver.free_access_end_date && 
         new Date(driver.free_access_end_date) > new Date();
+
+      // CRITICAL: Pour les pionniers, vérifier s'ils ont un stripe_customer_id
+      // S'ils n'en ont pas, ils doivent finaliser le paiement
+      if (driver.is_pioneer && !driver.stripe_customer_id) {
+        logger.info("Pionnier sans stripe_customer_id - paiement non finalisé");
+        setDriverStatus("pioneer_payment_required");
+        setCheckingDriver(false);
+        return;
+      }
 
       // Accès valide = payé OU accès gratuit illimité OU essai en cours
       const hasValidAccess = driver.subscription_paid || 
@@ -196,6 +205,15 @@ export const ProtectedRoute = ({
   if (requireCompanyEmployee && isCompanyEmployeeChecked && authIsCompanyEmployee === false) {
     // Rediriger vers le client dashboard s'il n'est pas un vrai collaborateur
     return <Navigate to="/client-dashboard" replace />;
+  }
+
+  // Rediriger les pionniers sans paiement finalisé vers la page de paiement Pioneer
+  if (
+    requireValidatedDriver &&
+    userRole === "driver" &&
+    driverStatus === "pioneer_payment_required"
+  ) {
+    return <Navigate to="/pioneer-payment" replace />;
   }
 
   // Rediriger les chauffeurs sans paiement vers une page d'erreur claire
