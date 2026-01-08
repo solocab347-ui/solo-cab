@@ -211,7 +211,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 className="bg-gradient-premium w-full sm:w-auto text-xs sm:text-base px-2 sm:px-4"
               >
                 <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
-                <span className="truncate">Souscrire - 49,99€/mois</span>
+                <span className="truncate">1 mois gratuit puis 49,99€/mois</span>
               </Button>
             </div>
           </div>
@@ -275,8 +275,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
           ) : !hasFreeAccess && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
-              <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel</span>
-              <span className="font-bold text-sm sm:text-base text-white">49,99€ / mois</span>
+              <span className="text-xs sm:text-sm text-gray-300">Offre</span>
+              <div className="flex flex-col items-end">
+                <Badge className="bg-green-500 mb-1">1 mois gratuit</Badge>
+                <span className="font-bold text-sm sm:text-base text-white">puis 49,99€ / mois</span>
+              </div>
             </div>
           )}
 
@@ -334,7 +337,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">
-                {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : 'Activer - 49,99€/mois'}
+                {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : '1 mois gratuit puis 49,99€/mois'}
               </span>
             </Button>
           )}
@@ -355,7 +358,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </div>
             <div className="bg-premium-foreground rounded-lg p-3 sm:p-4">
               <p className="text-premium/80 mb-1 sm:mb-2 text-xs sm:text-sm">SoloCab</p>
-              <p className="text-lg sm:text-2xl font-bold text-premium break-words">49,99€/mois</p>
+              <p className="text-lg sm:text-2xl font-bold text-premium break-words">
+                <span className="text-green-400 text-sm">1 mois gratuit</span>
+                <br />49,99€/mois
+              </p>
               <p className="text-premium/70 text-xs">0% commission</p>
             </div>
           </div>
