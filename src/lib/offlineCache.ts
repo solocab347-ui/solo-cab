@@ -2,10 +2,11 @@
  * Service de cache offline pour SoloCab
  * Stocke les données critiques (courses, clients) dans IndexedDB
  * pour consultation en mode sans échec
+ * Supporte: clients, chauffeurs, gestionnaires de flotte, entreprises, collaborateurs
  */
 
 const DB_NAME = 'solocab-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface OfflineClient {
   id: string;
@@ -23,7 +24,10 @@ interface OfflineClient {
 interface OfflineCourse {
   id: string;
   client_id?: string;
+  driver_id?: string;
   client_name?: string;
+  driver_name?: string;
+  driver_phone?: string;
   guest_name?: string;
   guest_phone?: string;
   pickup_address: string;
@@ -45,6 +49,9 @@ interface OfflineDriver {
   email?: string;
   license_number?: string;
   subscription_status?: string;
+  company_name?: string;
+  vehicle_model?: string;
+  vehicle_color?: string;
   cached_at: string;
 }
 
@@ -54,6 +61,17 @@ interface OfflineFleetDriver {
   driver_name?: string;
   driver_phone?: string;
   status: string;
+  cached_at: string;
+}
+
+interface OfflineCompanyEmployee {
+  id: string;
+  user_id: string;
+  employee_name?: string;
+  phone?: string;
+  email?: string;
+  department?: string;
+  job_title?: string;
   cached_at: string;
 }
 
@@ -89,38 +107,45 @@ class OfflineCacheService {
         request.onupgradeneeded = (event) => {
           const db = (event.target as IDBOpenDBRequest).result;
 
+          // Supprimer les anciens stores si on upgrade
+          const storeNames = ['clients', 'courses', 'driver_profile', 'fleet_drivers', 'metadata', 'my_drivers', 'company_employees'];
+          storeNames.forEach(name => {
+            if (db.objectStoreNames.contains(name)) {
+              db.deleteObjectStore(name);
+            }
+          });
+
           // Store pour les clients
-          if (!db.objectStoreNames.contains('clients')) {
-            const clientsStore = db.createObjectStore('clients', { keyPath: 'id' });
-            clientsStore.createIndex('user_id', 'user_id', { unique: false });
-            clientsStore.createIndex('full_name', 'full_name', { unique: false });
-          }
+          const clientsStore = db.createObjectStore('clients', { keyPath: 'id' });
+          clientsStore.createIndex('user_id', 'user_id', { unique: false });
+          clientsStore.createIndex('full_name', 'full_name', { unique: false });
 
           // Store pour les courses
-          if (!db.objectStoreNames.contains('courses')) {
-            const coursesStore = db.createObjectStore('courses', { keyPath: 'id' });
-            coursesStore.createIndex('status', 'status', { unique: false });
-            coursesStore.createIndex('scheduled_date', 'scheduled_date', { unique: false });
-            coursesStore.createIndex('client_id', 'client_id', { unique: false });
-          }
+          const coursesStore = db.createObjectStore('courses', { keyPath: 'id' });
+          coursesStore.createIndex('status', 'status', { unique: false });
+          coursesStore.createIndex('scheduled_date', 'scheduled_date', { unique: false });
+          coursesStore.createIndex('client_id', 'client_id', { unique: false });
+          coursesStore.createIndex('driver_id', 'driver_id', { unique: false });
 
           // Store pour le profil driver
-          if (!db.objectStoreNames.contains('driver_profile')) {
-            db.createObjectStore('driver_profile', { keyPath: 'id' });
-          }
+          db.createObjectStore('driver_profile', { keyPath: 'id' });
 
           // Store pour les chauffeurs de flotte
-          if (!db.objectStoreNames.contains('fleet_drivers')) {
-            const fleetStore = db.createObjectStore('fleet_drivers', { keyPath: 'id' });
-            fleetStore.createIndex('status', 'status', { unique: false });
-          }
+          const fleetStore = db.createObjectStore('fleet_drivers', { keyPath: 'id' });
+          fleetStore.createIndex('status', 'status', { unique: false });
+
+          // Store pour les chauffeurs favoris (pour clients)
+          const myDriversStore = db.createObjectStore('my_drivers', { keyPath: 'id' });
+          myDriversStore.createIndex('driver_id', 'driver_id', { unique: false });
+
+          // Store pour les collaborateurs d'entreprise
+          const employeesStore = db.createObjectStore('company_employees', { keyPath: 'id' });
+          employeesStore.createIndex('user_id', 'user_id', { unique: false });
 
           // Store pour les métadonnées
-          if (!db.objectStoreNames.contains('metadata')) {
-            db.createObjectStore('metadata', { keyPath: 'key' });
-          }
+          db.createObjectStore('metadata', { keyPath: 'key' });
 
-          console.log('[OfflineCache] Stores créés');
+          console.log('[OfflineCache] Stores créés (v2)');
         };
       } catch (error) {
         console.error('[OfflineCache] Erreur init:', error);
@@ -293,6 +318,94 @@ class OfflineCacheService {
     });
   }
 
+  // ===== MY DRIVERS (pour clients) =====
+  async saveMyDrivers(drivers: OfflineDriver[]): Promise<boolean> {
+    const store = await this.getStore('my_drivers', 'readwrite');
+    if (!store) return false;
+
+    return new Promise((resolve) => {
+      try {
+        const cached_at = new Date().toISOString();
+        let completed = 0;
+
+        if (drivers.length === 0) {
+          resolve(true);
+          return;
+        }
+
+        drivers.forEach((driver) => {
+          const request = store.put({ ...driver, cached_at });
+          request.onsuccess = () => {
+            completed++;
+            if (completed === drivers.length) {
+              console.log(`[OfflineCache] ${drivers.length} chauffeurs sauvegardés (client)`);
+              resolve(true);
+            }
+          };
+          request.onerror = () => resolve(false);
+        });
+      } catch (error) {
+        console.error('[OfflineCache] Erreur sauvegarde chauffeurs:', error);
+        resolve(false);
+      }
+    });
+  }
+
+  async getMyDrivers(): Promise<OfflineDriver[]> {
+    const store = await this.getStore('my_drivers');
+    if (!store) return [];
+
+    return new Promise((resolve) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  }
+
+  // ===== COMPANY EMPLOYEES =====
+  async saveCompanyEmployees(employees: OfflineCompanyEmployee[]): Promise<boolean> {
+    const store = await this.getStore('company_employees', 'readwrite');
+    if (!store) return false;
+
+    return new Promise((resolve) => {
+      try {
+        const cached_at = new Date().toISOString();
+        let completed = 0;
+
+        if (employees.length === 0) {
+          resolve(true);
+          return;
+        }
+
+        employees.forEach((emp) => {
+          const request = store.put({ ...emp, cached_at });
+          request.onsuccess = () => {
+            completed++;
+            if (completed === employees.length) {
+              console.log(`[OfflineCache] ${employees.length} collaborateurs sauvegardés`);
+              resolve(true);
+            }
+          };
+          request.onerror = () => resolve(false);
+        });
+      } catch (error) {
+        console.error('[OfflineCache] Erreur sauvegarde collaborateurs:', error);
+        resolve(false);
+      }
+    });
+  }
+
+  async getCompanyEmployees(): Promise<OfflineCompanyEmployee[]> {
+    const store = await this.getStore('company_employees');
+    if (!store) return [];
+
+    return new Promise((resolve) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  }
+
   // ===== METADATA =====
   async saveMetadata(metadata: CacheMetadata): Promise<boolean> {
     const store = await this.getStore('metadata', 'readwrite');
@@ -328,7 +441,7 @@ class OfflineCacheService {
   async clearAll(): Promise<boolean> {
     if (!this.db) return false;
 
-    const stores = ['clients', 'courses', 'driver_profile', 'fleet_drivers', 'metadata'];
+    const stores = ['clients', 'courses', 'driver_profile', 'fleet_drivers', 'my_drivers', 'company_employees', 'metadata'];
     
     for (const storeName of stores) {
       const store = await this.getStore(storeName, 'readwrite');
@@ -345,18 +458,21 @@ class OfflineCacheService {
     return true;
   }
 
-  async getStats(): Promise<{ clients: number; courses: number; lastSync: string | null }> {
+  async getStats(): Promise<{ clients: number; courses: number; drivers: number; lastSync: string | null }> {
     const clients = await this.getClients();
     const courses = await this.getCourses();
+    const myDrivers = await this.getMyDrivers();
+    const fleetDrivers = await this.getFleetDrivers();
     const metadata = await this.getMetadata();
 
     return {
       clients: clients.length,
       courses: courses.length,
+      drivers: myDrivers.length + fleetDrivers.length,
       lastSync: metadata?.lastSync || null,
     };
   }
 }
 
 export const offlineCache = new OfflineCacheService();
-export type { OfflineClient, OfflineCourse, OfflineDriver, OfflineFleetDriver, CacheMetadata };
+export type { OfflineClient, OfflineCourse, OfflineDriver, OfflineFleetDriver, OfflineCompanyEmployee, CacheMetadata };

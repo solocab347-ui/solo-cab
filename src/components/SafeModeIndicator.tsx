@@ -83,12 +83,12 @@ export const SafeModeIndicator = () => {
           {/* Statistiques cache */}
           <div className="bg-muted/50 rounded-lg p-3 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Clients en cache</span>
-              <span className="font-medium">{stats.clients}</span>
-            </div>
-            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Courses en cache</span>
               <span className="font-medium">{stats.courses}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Contacts en cache</span>
+              <span className="font-medium">{stats.clients + stats.drivers}</span>
             </div>
             {lastSync && (
               <div className="flex justify-between text-sm">
