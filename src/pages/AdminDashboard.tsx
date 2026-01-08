@@ -4,29 +4,30 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Activity, Mail, Gift, Shield, LogOut, Bot, AlertTriangle, TrendingUp, Lightbulb, Database, Handshake, Bug, Crown } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { 
+  Home, 
+  Users, 
+  Activity, 
+  Mail, 
+  Shield, 
+  LogOut, 
+  Crown,
+  HeadphonesIcon,
+  Wrench,
+  Settings,
+  Menu,
+  X
+} from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
-import AdminOverview from "@/components/admin/AdminOverview";
-import AdminSubscriptionStats from "@/components/admin/AdminSubscriptionStats";
-import AdminDriversManagement from "@/components/admin/AdminDriversManagement";
-import AdminSubscriptions from "@/components/admin/AdminSubscriptions";
-import AdminEmails from "@/components/admin/AdminEmails";
-import AdminFreeAccess from "@/components/admin/AdminFreeAccess";
-import AdminRGPD from "@/components/admin/AdminRGPD";
-import { AdminAssistantRequests } from "@/components/admin/AdminAssistantRequests";
-import AdminDisputes from "@/components/admin/AdminDisputes";
-import AdminFeedback from "@/components/admin/AdminFeedback";
-import { AdminDataIntegrity } from "@/components/admin/AdminDataIntegrity";
-import { AdminRLSAudit } from "@/components/admin/AdminRLSAudit";
-import { AdminInvitationTokens } from "@/components/admin/AdminInvitationTokens";
-import AdminSettings from "@/components/admin/AdminSettings";
-import AdminSocialLinks from "@/components/admin/AdminSocialLinks";
-import AdminUserCleanup from "@/components/admin/AdminUserCleanup";
-import { AdminTestData } from "@/components/admin/AdminTestData";
-import { AdminPartnershipDisputes } from "@/components/admin/AdminPartnershipDisputes";
-import { AdminFleetManagersDocuments } from "@/components/admin/AdminFleetManagersDocuments";
-import { AdminErrorReports } from "@/components/admin/AdminErrorReports";
+import AdminHomeHub from "@/components/admin/hubs/AdminHomeHub";
+import AdminUsersHub from "@/components/admin/hubs/AdminUsersHub";
+import AdminSubscriptionsHub from "@/components/admin/hubs/AdminSubscriptionsHub";
+import AdminSupportHub from "@/components/admin/hubs/AdminSupportHub";
+import AdminTechHub from "@/components/admin/hubs/AdminTechHub";
+import AdminCommunicationsHub from "@/components/admin/hubs/AdminCommunicationsHub";
+import AdminSettingsHub from "@/components/admin/hubs/AdminSettingsHub";
 import { CongressRegistrationsTab } from "@/components/admin/CongressRegistrationsTab";
 
 const AdminDashboard = () => {
@@ -34,7 +35,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState("home");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -85,123 +87,133 @@ const AdminDashboard = () => {
   }
 
   const menuItems = [
-    { id: "overview", label: "Vue d'ensemble", icon: Home },
-    { id: "stats", label: "Statistiques", icon: TrendingUp },
-    { id: "drivers", label: "Gestion Chauffeurs", icon: Users },
-    { id: "fleet-managers", label: "Gestionnaires Flotte", icon: Users },
+    { id: "home", label: "Accueil", icon: Home },
+    { id: "users", label: "Utilisateurs", icon: Users },
     { id: "subscriptions", label: "Abonnements", icon: Activity },
-    { id: "free-access", label: "Accès Gratuits", icon: Gift },
-    { id: "test-campaign", label: "Campagne Test", icon: Users },
-    { id: "test-data", label: "Données Test Alexandre", icon: Database },
-    { id: "congress-pioneers", label: "Congrès Pionniers", icon: Crown },
-    { id: "emails", label: "Envoi d'emails", icon: Mail },
-    { id: "user-cleanup", label: "Nettoyage Comptes", icon: AlertTriangle },
-    { id: "assistant", label: "Demandes Liberty", icon: Bot },
-    { id: "disputes", label: "Signalement et litige", icon: AlertTriangle },
-    { id: "error-reports", label: "Rapports d'erreurs", icon: Bug },
-    { id: "partnership-disputes", label: "Litiges Partenaires", icon: Handshake },
-    { id: "feedback", label: "Feedbacks Chauffeurs", icon: Lightbulb },
-    { id: "data-integrity", label: "Intégrité des Données", icon: Database },
-    { id: "rls-audit", label: "Audit Sécurité RLS", icon: Shield },
-    { id: "rgpd", label: "RGPD", icon: Shield },
-    { id: "social-links", label: "Réseaux Sociaux", icon: Activity },
-    { id: "settings", label: "Paramètres Admin", icon: Shield },
-    { id: "reset", label: "⚠️ Réinitialiser", icon: AlertTriangle },
+    { id: "congress", label: "Congrès Pionniers", icon: Crown },
+    { id: "support", label: "Litiges & Support", icon: HeadphonesIcon },
+    { id: "tech", label: "Technique", icon: Wrench },
+    { id: "communications", label: "Communications", icon: Mail },
+    { id: "settings", label: "Paramètres", icon: Settings },
   ];
+
+  const handleMenuClick = (id: string) => {
+    setActiveSection(id);
+    setMobileMenuOpen(false);
+  };
 
   const renderContent = () => {
     switch (activeSection) {
-      case "overview":
-        return <AdminOverview />;
-      case "stats":
-        return <AdminSubscriptionStats />;
-      case "drivers":
-        return <AdminDriversManagement />;
-      case "fleet-managers":
-        return <AdminFleetManagersDocuments />;
+      case "home":
+        return <AdminHomeHub />;
+      case "users":
+        return <AdminUsersHub />;
       case "subscriptions":
-        return <AdminSubscriptions />;
-      case "free-access":
-        return <AdminFreeAccess />;
-      case "test-campaign":
-        return <AdminInvitationTokens />;
-      case "test-data":
-        return <AdminTestData />;
-      case "congress-pioneers":
+        return <AdminSubscriptionsHub />;
+      case "congress":
         return <CongressRegistrationsTab />;
-      case "emails":
-        return <AdminEmails />;
-      case "user-cleanup":
-        return <AdminUserCleanup />;
-      case "assistant":
-        return <AdminAssistantRequests />;
-      case "disputes":
-        return <AdminDisputes />;
-      case "error-reports":
-        return <AdminErrorReports />;
-      case "partnership-disputes":
-        return <AdminPartnershipDisputes />;
-      case "feedback":
-        return <AdminFeedback />;
-      case "data-integrity":
-        return <AdminDataIntegrity />;
-      case "rls-audit":
-        return <AdminRLSAudit />;
-      case "rgpd":
-        return <AdminRGPD />;
-      case "social-links":
-        return <AdminSocialLinks />;
+      case "support":
+        return <AdminSupportHub />;
+      case "tech":
+        return <AdminTechHub />;
+      case "communications":
+        return <AdminCommunicationsHub />;
       case "settings":
-        return <AdminSettings />;
+        return <AdminSettingsHub />;
       default:
-        return <AdminOverview />;
+        return <AdminHomeHub />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border min-h-screen">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-3 mb-4">
-            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
+  const SidebarContent = () => (
+    <>
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-3 mb-4">
+          <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+          <span className="font-bold text-lg hidden sm:block">SoloCab</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <span className="text-primary font-semibold text-sm sm:text-base">A</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-primary font-semibold">A</span>
-            </div>
-            <div>
-              <p className="font-semibold">Admin</p>
-              <p className="text-xs text-muted-foreground">admin@solocab.fr</p>
-            </div>
+          <div className="hidden sm:block">
+            <p className="font-semibold text-sm">Admin</p>
+            <p className="text-xs text-muted-foreground">admin@solocab.fr</p>
           </div>
         </div>
+      </div>
 
-        <nav className="p-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-                  isActive
-                    ? "bg-primary/20 text-primary"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+      <nav className="p-2 sm:p-4 flex-1">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeSection === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleMenuClick(item.id)}
+              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-lg mb-1 sm:mb-2 transition-colors ${
+                isActive
+                  ? "bg-primary/20 text-primary"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium truncate">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="p-2 sm:p-4 border-t border-border">
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={signOut}
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm">Déconnexion</span>
+        </Button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:flex-col w-64 bg-card border-r border-border min-h-screen fixed left-0 top-0">
+        <SidebarContent />
       </aside>
 
+      {/* Mobile Header */}
+      <header className="lg:hidden sticky top-0 z-50 border-b border-border bg-card">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0 flex flex-col">
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+            <img src={logo} alt="SoloCab" className="w-8 h-8 object-contain" />
+            <span className="font-bold text-sm">Admin</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" onClick={signOut}>
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
       {/* Main Content */}
-      <div className="flex-1">
-        <header className="border-b border-border bg-card">
+      <div className="flex-1 lg:ml-64">
+        {/* Desktop Header */}
+        <header className="hidden lg:block border-b border-border bg-card sticky top-0 z-40">
           <div className="px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">
@@ -210,14 +222,18 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               <NotificationBell />
-              <Button variant="ghost" size="icon" onClick={signOut}>
-                <LogOut className="w-5 h-5" />
-              </Button>
             </div>
           </div>
         </header>
 
-        <main className="p-6">{renderContent()}</main>
+        {/* Mobile Title */}
+        <div className="lg:hidden px-4 py-3 bg-muted/30">
+          <h1 className="text-lg font-bold">
+            {menuItems.find((item) => item.id === activeSection)?.label}
+          </h1>
+        </div>
+
+        <main className="p-3 sm:p-4 lg:p-6">{renderContent()}</main>
       </div>
     </div>
   );
