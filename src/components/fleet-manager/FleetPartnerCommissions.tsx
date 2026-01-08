@@ -187,10 +187,36 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
 
   const handleMarkPaid = async (partnershipId: string, amount: number) => {
     try {
-      // Update total_paid and reset total_owed
       const partnership = commissions.find(c => c.partnership_id === partnershipId);
       if (!partnership) return;
 
+      // Update fleet_partner_courses payment status
+      const { error: fpcError } = await supabase
+        .from("fleet_partner_courses")
+        .update({
+          payment_settled: true,
+          payment_settled_at: new Date().toISOString(),
+          fleet_payment_to_driver_status: 'paid'
+        })
+        .eq("partnership_id", partnershipId)
+        .eq("status", "completed")
+        .eq("payment_settled", false);
+
+      if (fpcError) console.error("Error updating fleet_partner_courses:", fpcError);
+
+      // Update partnership_course_commissions
+      const { error: pccError } = await supabase
+        .from("partnership_course_commissions")
+        .update({
+          payment_status: 'paid',
+          paid_at: new Date().toISOString()
+        })
+        .eq("partnership_id", partnershipId)
+        .eq("payment_status", "pending");
+
+      if (pccError) console.error("Error updating partnership_course_commissions:", pccError);
+
+      // Update total_paid and reset total_owed in partnership
       const { error } = await supabase
         .from("fleet_driver_partnerships")
         .update({
@@ -202,7 +228,7 @@ export const FleetPartnerCommissions = ({ fleetManagerId }: FleetPartnerCommissi
 
       if (error) throw error;
 
-      toast.success("Paiement enregistré");
+      toast.success("Paiement reçu enregistré");
       fetchCommissions();
     } catch (error) {
       console.error("Error marking paid:", error);
