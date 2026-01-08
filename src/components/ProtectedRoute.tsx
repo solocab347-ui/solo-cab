@@ -111,9 +111,9 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date")
         .eq("user_id", user.id)
-        .maybeSingle(); // Utiliser maybeSingle au lieu de single
+        .maybeSingle();
 
       if (error) {
         logger.error("Error checking driver status", { error });
@@ -128,17 +128,25 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // SÉCURITÉ CRITIQUE : Vérifier paiement ou accès gratuit
-      if (!driver.subscription_paid && !driver.free_access_granted) {
+      // Vérifier si l'essai gratuit (trial) est encore valide
+      const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
+        driver.free_access_end_date && 
+        new Date(driver.free_access_end_date) > new Date();
+
+      // Accès valide = payé OU accès gratuit illimité OU essai en cours
+      const hasValidAccess = driver.subscription_paid || 
+        driver.free_access_granted || 
+        hasActiveTrialAccess;
+
+      if (!hasValidAccess) {
         logger.error("Accès refusé : paiement requis");
         setDriverStatus("payment_required");
-      } else if (driver.status === "on_hold" && !driver.free_access_granted) {
-        // ⚠️ SÉCURITÉ: Bloquer les drivers "on_hold" sans paiement ni accès gratuit
+      } else if (driver.status === "on_hold" && !driver.free_access_granted && !hasActiveTrialAccess) {
         logger.error("Accès refusé : inscription incomplète");
         setDriverStatus("payment_required");
-      } else if (driver.free_access_granted) {
-        // ✅ Accès gratuit = validation automatique
-        logger.info("Accès gratuit accordé : validation automatique");
+      } else if (hasValidAccess) {
+        // ✅ Accès valide = accès direct au dashboard (plus de page d'attente)
+        logger.info("Accès accordé : validation automatique");
         setDriverStatus("validated");
       } else {
         setDriverStatus(driver.status);

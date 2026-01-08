@@ -38,7 +38,7 @@ const DriverPendingValidation = () => {
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date")
         .eq("user_id", user.id)
         .single();
 
@@ -46,11 +46,18 @@ const DriverPendingValidation = () => {
 
       setDriverStatus(driver.status);
 
-      // Rediriger si validé ET (payé OU accès gratuit)
-      if (
-        driver.status === "validated" && 
-        (driver.subscription_paid === true || driver.free_access_granted === true)
-      ) {
+      // Vérifier si l'essai gratuit (trial) est encore valide
+      const hasActiveTrialAccess = driver.free_access_type === 'trial' && 
+        driver.free_access_end_date && 
+        new Date(driver.free_access_end_date) > new Date();
+
+      // Accès valide = payé OU accès gratuit illimité OU essai en cours
+      const hasValidAccess = driver.subscription_paid || 
+        driver.free_access_granted || 
+        hasActiveTrialAccess;
+
+      // Rediriger si accès valide (peu importe le statut de validation)
+      if (hasValidAccess) {
         navigate("/driver-dashboard");
       }
     } catch (error) {

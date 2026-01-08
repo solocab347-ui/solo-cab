@@ -238,9 +238,9 @@ const RegisterCongressDriver = () => {
 
       if (error) {
         console.error("Checkout error:", error);
-        // Fallback: redirect to pending validation
+        // Fallback: redirect to driver dashboard directly (trial access is active)
         toast.success("🎉 Bienvenue parmi les Pionniers SoloCab !");
-        navigate("/driver-pending-validation");
+        navigate("/driver-dashboard");
         return;
       }
 
@@ -248,7 +248,7 @@ const RegisterCongressDriver = () => {
         window.location.href = data.url;
       } else {
         toast.success("🎉 Bienvenue parmi les Pionniers SoloCab !");
-        navigate("/driver-pending-validation");
+        navigate("/driver-dashboard");
       }
     } catch (error: any) {
       console.error("Erreur step 2:", error);
