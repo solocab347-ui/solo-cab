@@ -46,17 +46,55 @@ serve(async (req) => {
     // Check for free access first
     const { data: driver } = await supabaseClient
       .from("drivers")
-      .select("id, free_access_granted, free_access_end_date, free_access_type")
+      .select("id, free_access_granted, free_access_end_date, free_access_type, is_pioneer")
       .eq("user_id", user.id)
       .single();
 
-    logStep("Driver data retrieved", { driverId: driver?.id, hasFreeAccess: driver?.free_access_granted });
+    logStep("Driver data retrieved", { 
+      driverId: driver?.id, 
+      hasFreeAccess: driver?.free_access_granted,
+      isPioneer: driver?.is_pioneer,
+      freeAccessType: driver?.free_access_type
+    });
 
-    // If driver has free access granted
-    if (driver?.free_access_granted) {
-      const now = new Date();
-      const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+    // Check if this is a pioneer with active trial
+    const now = new Date();
+    const endDate = driver?.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+    const isPioneerTrialActive = driver?.is_pioneer && 
+      driver?.free_access_type === "trial" && 
+      endDate && 
+      endDate > now;
+
+    // If pioneer with active trial, grant access
+    if (isPioneerTrialActive) {
+      logStep("Pioneer trial active, granting access", { 
+        trialEnds: driver.free_access_end_date,
+        daysLeft: Math.ceil((endDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      });
       
+      // Ensure subscription_status is active
+      await supabaseClient
+        .from("drivers")
+        .update({
+          subscription_status: "active",
+          subscription_end_date: driver.free_access_end_date,
+        })
+        .eq("id", driver.id);
+      
+      return new Response(JSON.stringify({
+        subscribed: true,
+        subscription_status: "active",
+        subscription_end: driver.free_access_end_date,
+        is_free_access: true,
+        is_pioneer_trial: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // If driver has free access granted (admin granted)
+    if (driver?.free_access_granted) {
       // Check if free access is still valid (no end date = unlimited, or end date is in future)
       const isFreeAccessValid = !endDate || endDate > now;
       
