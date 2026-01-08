@@ -141,7 +141,7 @@ const RegisterFleetManager = () => {
                 <span className="text-2xl font-bold text-green-500">30 jours GRATUITS</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                puis 49,99€/mois • Sans engagement • Empreinte bancaire 0€
+                puis 69,99€/mois (10 chauffeurs inclus) • +10€/chauffeur supplémentaire
               </p>
             </div>
           </CardContent>
