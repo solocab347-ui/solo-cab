@@ -45,6 +45,8 @@ import GuestEmployeeCourseTracking from "./pages/GuestEmployeeCourseTracking";
 import JoinCompany from "./pages/JoinCompany";
 import RegisterCongressDriver from "./pages/RegisterCongressDriver";
 import PioneerPayment from "./pages/PioneerPayment";
+import SafeMode from "./pages/SafeMode";
+import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 // Lazy load heavy dashboards and authenticated pages
 const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
@@ -368,9 +370,12 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              {/* Mode sans échec - accessible toujours */}
+              <Route path="/safe-mode" element={<SafeMode />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <SafeModeIndicator />
           </ErrorBoundary>
         </TooltipProvider>
       </AuthProvider>
