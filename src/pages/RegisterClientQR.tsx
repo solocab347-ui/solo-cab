@@ -63,62 +63,37 @@ const RegisterClientQR = () => {
         return;
       }
 
-      // Utiliser la fonction RPC pour obtenir les données du chauffeur (bypass RLS)
+      // Utiliser la fonction RPC unifiée pour obtenir les données du chauffeur (bypass RLS)
+      // Cette fonction gère automatiquement: validés, pionniers, nouveaux inscrits (30j)
       const { data: driverData, error: driverError } = await supabase
-        .rpc("get_public_driver_profile", { driver_id_param: qrData.driver_id });
+        .rpc("get_public_driver_profile_by_id", { driver_id_param: qrData.driver_id });
 
-      if (driverError || !driverData || driverData.length === 0) {
+      // La fonction RPC retourne un tableau
+      const driverDataArray = Array.isArray(driverData) ? driverData : (driverData ? [driverData] : []);
+
+      if (driverError || driverDataArray.length === 0) {
         console.error("Erreur driver RPC:", driverError);
         toast.error("Chauffeur introuvable");
         navigate("/");
         return;
       }
 
-      const driver = driverData[0];
+      const driver = driverDataArray[0];
 
-      // Récupérer card_photo_url directement depuis la table drivers (policy publique existe)
-      const { data: driverExtra, error: extraError } = await supabase
-        .from("drivers")
-        .select("card_photo_url, status, is_pioneer, free_access_type, free_access_end_date")
-        .eq("id", qrData.driver_id)
-        .single();
-
-      if (extraError) {
-        console.error("Erreur driver extra:", extraError);
-      }
-
-      // Utiliser la fonction RPC pour obtenir le profil (bypass RLS)
-      const { data: profileData, error: profileError } = await supabase
-        .rpc("get_public_profile_info", { user_id_param: driver.user_id });
-
-      if (profileError) {
-        console.error("Erreur profil RPC:", profileError);
-      }
-
-      const profile = profileData && profileData.length > 0 ? profileData[0] : null;
-
-      // Vérifier que le chauffeur est validé OU est un pionnier avec accès actif
-      const isValidated = driverExtra?.status === "validated";
-      const isPioneerWithActiveAccess = driverExtra?.is_pioneer && 
-        driverExtra?.free_access_type === "trial" && 
-        driverExtra?.free_access_end_date && 
-        new Date(driverExtra.free_access_end_date) > new Date();
-      
-      if (!isValidated && !isPioneerWithActiveAccess) {
-        toast.error("Ce chauffeur n'est pas encore validé");
-        navigate("/");
-        return;
-      }
-
-      // Combiner les données - PRIORITÉ à card_photo_url
+      // Combiner les données - La RPC retourne déjà toutes les infos nécessaires
       const completeDriverInfo = {
         ...driver,
-        card_photo_url: driverExtra?.card_photo_url,
-        status: driverExtra?.status,
-        is_pioneer: driverExtra?.is_pioneer,
-        profile: profile || {},
-        // Photo: priorité card_photo_url > profile_photo_url (from profile)
-        display_photo: driverExtra?.card_photo_url || profile?.profile_photo_url
+        card_photo_url: driver.profile_photo_url,
+        status: driver.status,
+        is_pioneer: driver.is_pioneer,
+        profile: {
+          full_name: driver.profile_full_name,
+          email: driver.profile_email,
+          phone: driver.profile_phone,
+          profile_photo_url: driver.profile_photo_url,
+        },
+        // Photo: priorité à profile_photo_url de la RPC
+        display_photo: driver.profile_photo_url
       };
 
       setDriverInfo(completeDriverInfo);

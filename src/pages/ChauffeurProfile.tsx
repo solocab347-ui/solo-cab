@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { Button } from "@/components/ui/button";
@@ -72,105 +72,143 @@ const ChauffeurProfile = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Chargement simple UNE SEULE FOIS au montage
+  // Fonction de chargement réutilisable pour le realtime
+  const loadDriver = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      console.log("🔍 Loading/Refreshing driver profile:", id);
+      
+      // Utilisation de la fonction RPC SECURITY DEFINER pour contourner les RLS
+      // et permettre l'affichage de TOUS les profils publics
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_public_driver_profile_by_id', { driver_id_param: id });
+
+      // La fonction RPC retourne un tableau, même pour un seul résultat
+      const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
+      
+      if (rpcError || driverDataArray.length === 0) {
+        console.error("❌ Driver not found:", rpcError, "Data:", rpcData);
+        toast.error("Chauffeur non trouvé ou profil non public");
+        navigate("/chauffeurs");
+        return;
+      }
+
+      const driverData = driverDataArray[0];
+
+      console.log("✅ Driver data loaded");
+
+      // Statistiques globales (incluant toutes les sources de courses)
+      const globalStats = await getDriverGlobalStats(id);
+      
+      const totalRides = globalStats.totalRides;
+      const averageRating = globalStats.averageRating;
+
+      // Créer le profil complet à partir des données RPC
+      const profile: DriverProfile = {
+        id: driverData.id,
+        user_id: driverData.user_id,
+        company_name: driverData.company_name || "",
+        vehicle_model: driverData.vehicle_model || "",
+        vehicle_brand: driverData.vehicle_brand || null,
+        vehicle_year: driverData.vehicle_year || null,
+        vehicle_color: driverData.vehicle_color || null,
+        service_description: driverData.service_description || "",
+        bio: driverData.service_description || "",
+        base_rate: driverData.base_rate || 0,
+        per_km_rate: driverData.per_km_rate || 0,
+        working_sectors: driverData.working_sectors || [],
+        vehicle_equipment: driverData.vehicle_equipment || [],
+        services_offered: driverData.services_offered || [],
+        vehicle_photos: driverData.vehicle_photos || [],
+        gallery_photos: driverData.gallery_photos || [],
+        show_phone: driverData.show_phone ?? false,
+        show_email: driverData.show_email ?? false,
+        display_driver_name: driverData.display_driver_name ?? true,
+        display_company_name: driverData.display_company_name ?? true,
+        is_pioneer: driverData.is_pioneer || false,
+        // Données du profil utilisateur
+        full_name: driverData.profile_full_name || "Chauffeur",
+        email: driverData.contact_email || driverData.profile_email || "",
+        phone: driverData.contact_phone || driverData.profile_phone || "",
+        contact_phone: driverData.contact_phone,
+        contact_email: driverData.contact_email,
+        profile_photo_url: driverData.profile_photo_url || null,
+        // Statistiques calculées
+        rating: averageRating,
+        total_rides: totalRides,
+        created_at: driverData.created_at || "",
+      };
+
+      console.log("✅ Profile complete");
+      setDriver(profile);
+      setLoading(false);
+    } catch (error) {
+      console.error("❌ Error loading driver:", error);
+      toast.error("Erreur lors du chargement");
+      navigate("/chauffeurs");
+    }
+  }, [id, navigate]);
+
+  // Chargement initial
   useEffect(() => {
     if (!id) {
       navigate("/chauffeurs");
       return;
     }
-
-    let isMounted = true;
-
-    const loadDriver = async () => {
-      try {
-        console.log("🔍 Loading driver profile:", id);
-        
-        // Utilisation de la fonction RPC SECURITY DEFINER pour contourner les RLS
-        // et permettre l'affichage des profils pionniers avec statut pending
-        const { data: rpcData, error: rpcError } = await supabase
-          .rpc('get_public_driver_profile_by_id', { driver_id_param: id });
-
-        if (!isMounted) return;
-
-        // La fonction RPC retourne un tableau, même pour un seul résultat
-        const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
-        
-        if (rpcError || driverDataArray.length === 0) {
-          console.error("❌ Driver not found:", rpcError, "Data:", rpcData);
-          toast.error("Chauffeur non trouvé ou profil non public");
-          navigate("/chauffeurs");
-          return;
-        }
-
-        const driverData = driverDataArray[0];
-
-        console.log("✅ Driver data loaded");
-
-        // Statistiques globales (incluant toutes les sources de courses)
-        const globalStats = await getDriverGlobalStats(id);
-        
-        const totalRides = globalStats.totalRides;
-        const averageRating = globalStats.averageRating;
-
-        if (!isMounted) return;
-
-        // Créer le profil complet à partir des données RPC
-        const profile: DriverProfile = {
-          id: driverData.id,
-          user_id: driverData.user_id,
-          company_name: driverData.company_name || "",
-          vehicle_model: driverData.vehicle_model || "",
-          vehicle_brand: driverData.vehicle_brand || null,
-          vehicle_year: driverData.vehicle_year || null,
-          vehicle_color: driverData.vehicle_color || null,
-          service_description: driverData.service_description || "",
-          bio: driverData.service_description || "",
-          base_rate: driverData.base_rate || 0,
-          per_km_rate: driverData.per_km_rate || 0,
-          working_sectors: driverData.working_sectors || [],
-          vehicle_equipment: driverData.vehicle_equipment || [],
-          services_offered: driverData.services_offered || [],
-          vehicle_photos: driverData.vehicle_photos || [],
-          gallery_photos: driverData.gallery_photos || [],
-          show_phone: driverData.show_phone ?? false,
-          show_email: driverData.show_email ?? false,
-          display_driver_name: driverData.display_driver_name ?? true,
-          display_company_name: driverData.display_company_name ?? true,
-          is_pioneer: driverData.is_pioneer || false,
-          // Données du profil utilisateur
-          full_name: driverData.profile_full_name || "Chauffeur",
-          email: driverData.contact_email || driverData.profile_email || "",
-          phone: driverData.contact_phone || driverData.profile_phone || "",
-          contact_phone: driverData.contact_phone,
-          contact_email: driverData.contact_email,
-          profile_photo_url: driverData.profile_photo_url || null,
-          // Statistiques calculées
-          rating: averageRating,
-          total_rides: totalRides,
-          created_at: driverData.created_at || "",
-        };
-
-        console.log("✅ Profile complete");
-        setDriver(profile);
-      } catch (error) {
-        console.error("❌ Error loading driver:", error);
-        if (isMounted) {
-          toast.error("Erreur lors du chargement");
-          navigate("/chauffeurs");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     loadDriver();
+  }, [id, navigate, loadDriver]);
+
+  // Mises à jour instantanées via Supabase Realtime
+  useEffect(() => {
+    if (!id) return;
+
+    console.log("📡 Setting up realtime subscription for driver:", id);
+
+    // Écouter les changements sur la table drivers pour ce chauffeur
+    const driversChannel = supabase
+      .channel(`public-driver-profile-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'drivers',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log('🔄 Driver profile updated in realtime:', payload);
+          loadDriver(); // Recharger le profil instantanément
+        }
+      )
+      .subscribe();
+
+    // Écouter aussi les changements sur profiles (nom, photo, etc.)
+    const profilesChannel = supabase
+      .channel(`public-user-profile-for-driver-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          // Si c'est le profil associé au driver, recharger
+          if (driver?.user_id && payload.new && (payload.new as any).id === driver.user_id) {
+            console.log('🔄 User profile updated in realtime:', payload);
+            loadDriver();
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
-      isMounted = false;
+      console.log("📡 Cleaning up realtime subscriptions");
+      supabase.removeChannel(driversChannel);
+      supabase.removeChannel(profilesChannel);
     };
-  }, [id, navigate]);
+  }, [id, driver?.user_id, loadDriver]);
 
   const handleRegisterWithDriver = () => {
     if (!id) return;
