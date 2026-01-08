@@ -3857,6 +3857,7 @@ export type Database = {
           smart_buffer_fallback_action: string | null
           smart_buffer_min_minutes: number | null
           status: Database["public"]["Enums"]["driver_status"]
+          stripe_customer_id: string | null
           subscription_end_date: string | null
           subscription_paid: boolean | null
           subscription_status: string | null
@@ -3961,6 +3962,7 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"]
+          stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -4065,6 +4067,7 @@ export type Database = {
           smart_buffer_fallback_action?: string | null
           smart_buffer_min_minutes?: number | null
           status?: Database["public"]["Enums"]["driver_status"]
+          stripe_customer_id?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
