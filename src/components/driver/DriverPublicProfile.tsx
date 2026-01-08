@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package, Users, Star, DollarSign, Eye, Shield } from "lucide-react";
+import { Globe, MapPin, AlertCircle, Building2, User, Phone, Mail, Car, Package, Users, Star, DollarSign, Eye, Shield, Copy, Check, ExternalLink } from "lucide-react";
 import { DualProfilePhotoUpload } from "./DualProfilePhotoUpload";
 import { SectorSelector } from "./SectorSelector";
 import { EquipmentSelector } from "./EquipmentSelector";
 import { ServicesSelector } from "./ServicesSelector";
+import { toast } from "sonner";
 
 import { VehicleCategorySelector } from "./VehicleCategorySelector";
 import { DriverVehiclesManager } from "./DriverVehiclesManager";
@@ -113,6 +114,8 @@ export const DriverPublicProfile = memo(({
   onShowRatingPartnersChange,
   onShowPricingPartnersChange,
 }: DriverPublicProfileProps) => {
+  const [linkCopied, setLinkCopied] = useState(false);
+  
   // Guard contre les données manquantes
   if (!driverProfile || !userId) {
     return (
@@ -124,6 +127,18 @@ export const DriverPublicProfile = memo(({
 
   const driverName = driverProfile?.full_name || "Chauffeur";
   const driverId = driverProfile?.driver?.id;
+  const isPioneer = driverProfile?.driver?.is_pioneer;
+  
+  // Générer le lien du profil public
+  const publicProfileUrl = driverId ? `${window.location.origin}/chauffeur/${driverId}` : "";
+  
+  const handleCopyLink = () => {
+    if (!publicProfileUrl) return;
+    navigator.clipboard.writeText(publicProfileUrl);
+    setLinkCopied(true);
+    toast.success("Lien copié dans le presse-papier !");
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   return (
     <div className="space-y-6">
@@ -141,14 +156,14 @@ export const DriverPublicProfile = memo(({
               </p>
             </div>
           </div>
-          {driverId && publicProfileEnabled && (
+          {driverId && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => window.open(`/chauffeur/${driverId}`, '_blank')}
               className="gap-2"
             >
-              <Globe className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" />
               Voir mon profil
             </Button>
           )}
@@ -167,11 +182,36 @@ export const DriverPublicProfile = memo(({
           />
         </div>
 
-        {publicProfileEnabled && (
-          <div className="mt-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
-            <p className="text-sm text-primary font-medium">
-              ✓ Votre profil est visible dans la vitrine publique
-            </p>
+        {/* Lien du profil public - toujours visible pour les pionniers */}
+        {driverId && (publicProfileEnabled || isPioneer) && (
+          <div className="mt-4 space-y-3">
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary font-medium">
+                  {isPioneer ? "✓ Votre profil pionnier est accessible immédiatement" : "✓ Votre profil est visible dans la vitrine publique"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={publicProfileUrl}
+                  readOnly
+                  className="flex-1 text-xs bg-background/50"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="gap-1 shrink-0"
+                >
+                  {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {linkCopied ? "Copié" : "Copier"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Partagez ce lien avec vos clients potentiels
+              </p>
+            </div>
           </div>
         )}
 
