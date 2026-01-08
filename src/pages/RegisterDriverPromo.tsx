@@ -18,20 +18,19 @@ const RegisterDriverPromo = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Step 1: Account creation
+  // All info in step 1
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-
-  // Step 2: Driver info
   const [licenseNumber, setLicenseNumber] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [siret, setSiret] = useState("");
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,15 +64,47 @@ const RegisterDriverPromo = () => {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error("Échec de création du compte");
 
-      setUserId(authData.user.id);
+      const newUserId = authData.user.id;
+      setUserId(newUserId);
 
       // Update profile with phone
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ phone })
-        .eq("id", authData.user.id);
+        .eq("id", newUserId);
 
       if (profileError) throw profileError;
+
+      // Create driver profile immediately
+      const { data: driverData, error: driverError } = await supabase
+        .from("drivers")
+        .insert({
+          user_id: newUserId,
+          license_number: licenseNumber || "À compléter",
+          vehicle_model: vehicleModel || "À compléter",
+          company_name: companyName || null,
+          siret: siret || null,
+          status: "pending",
+          registration_step: 2,
+        })
+        .select()
+        .single();
+
+      if (driverError) throw driverError;
+
+      setDriverId(driverData.id);
+
+      // Add driver role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: newUserId,
+          role: "driver",
+        });
+
+      if (roleError && !roleError.message.includes("duplicate")) {
+        throw roleError;
+      }
 
       toast.success("Compte créé avec succès !");
       setCurrentStep(2);
@@ -85,68 +116,15 @@ const RegisterDriverPromo = () => {
     }
   };
 
-  const handleStep2 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId) return;
+  const handleStep2Payment = async () => {
+    if (!driverId) return;
 
     setLoading(true);
 
     try {
-      // Create driver profile
-      const { data: driverData, error: driverError } = await supabase
-        .from("drivers")
-        .insert({
-          user_id: userId,
-          license_number: licenseNumber,
-          vehicle_model: vehicleModel,
-          company_name: companyName,
-          siret,
-          status: "pending",
-          registration_step: 2,
-        })
-        .select()
-        .single();
-
-      if (driverError) throw driverError;
-
-      // Add driver role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: userId,
-          role: "driver",
-        });
-
-      if (roleError) throw roleError;
-
-      toast.success("Profil chauffeur créé !");
-      setCurrentStep(3);
-    } catch (error: any) {
-      console.error("Erreur step 2:", error);
-      toast.error(error.message || "Erreur lors de la création du profil");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStep3Payment = async () => {
-    if (!userId) return;
-
-    setLoading(true);
-
-    try {
-      // Get driver_id
-      const { data: driverData, error: driverError } = await supabase
-        .from("drivers")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
-
-      if (driverError || !driverData) throw new Error("Driver not found");
-
       // Create Stripe checkout with promo
       const { data, error } = await supabase.functions.invoke("create-driver-subscription", {
-        body: { driver_id: driverData.id },
+        body: { driver_id: driverId },
       });
 
       if (error) throw error;
@@ -155,7 +133,7 @@ const RegisterDriverPromo = () => {
       // Redirect to Stripe
       window.location.href = data.url;
     } catch (error: any) {
-      console.error("Erreur step 3:", error);
+      console.error("Erreur step 2:", error);
       toast.error(error.message || "Erreur lors de la création du paiement");
       setLoading(false);
     }
@@ -192,9 +170,9 @@ const RegisterDriverPromo = () => {
           <p className="text-muted-foreground">Rejoignez SoloCab et développez votre activité</p>
         </div>
 
-        {/* Progress indicator */}
+        {/* Progress indicator - 2 steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3].map((step) => (
+          {[1, 2].map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -205,9 +183,9 @@ const RegisterDriverPromo = () => {
               >
                 {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
               </div>
-              {step < 3 && (
+              {step < 2 && (
                 <div
-                  className={`w-12 h-1 mx-2 ${
+                  className={`w-16 h-1 mx-2 ${
                     currentStep > step ? "bg-gradient-premium" : "bg-muted"
                   }`}
                 />
@@ -216,24 +194,37 @@ const RegisterDriverPromo = () => {
           ))}
         </div>
 
-        {/* Step 1: Account */}
+        {/* Step 1: Account + Driver Info */}
         {currentStep === 1 && (
           <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Étape 1 : Créer votre compte</h2>
+            <h2 className="text-2xl font-bold mb-6">Étape 1 : Vos informations</h2>
             <form onSubmit={handleStep1} className="space-y-4">
-              <div>
-                <Label htmlFor="fullName">Nom complet</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  placeholder="Jean Dupont"
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="fullName">Nom complet *</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    placeholder="06 12 34 56 78"
+                  />
+                </div>
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -243,119 +234,109 @@ const RegisterDriverPromo = () => {
                   placeholder="jean@example.com"
                 />
               </div>
-              <div>
-                <Label htmlFor="phone">Téléphone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  placeholder="06 12 34 56 78"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Mot de passe</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder="Minimum 6 caractères"
-                    minLength={6}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="password">Mot de passe *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Minimum 6 caractères"
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">Confirmer *</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      placeholder="Confirmer le mot de passe"
+                      minLength={6}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    placeholder="Confirmer le mot de passe"
-                    minLength={6}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-sm text-destructive mt-1">Les mots de passe ne correspondent pas</p>
-                )}
-              </div>
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Continuer
-              </Button>
-            </form>
-          </Card>
-        )}
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-sm text-destructive">Les mots de passe ne correspondent pas</p>
+              )}
 
-        {/* Step 2: Driver info */}
-        {currentStep === 2 && (
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Étape 2 : Informations professionnelles</h2>
-            <form onSubmit={handleStep2} className="space-y-4">
-              <div>
-                <Label htmlFor="licenseNumber">Numéro de carte VTC</Label>
-                <Input
-                  id="licenseNumber"
-                  type="text"
-                  value={licenseNumber}
-                  onChange={(e) => setLicenseNumber(e.target.value)}
-                  required
-                  placeholder="VTC123456"
-                />
+              {/* Driver info section */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <Car className="w-4 h-4" />
+                  Informations professionnelles (optionnel)
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Vous pourrez compléter ces informations plus tard dans votre espace personnel.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="licenseNumber">Numéro de carte VTC</Label>
+                    <Input
+                      id="licenseNumber"
+                      type="text"
+                      value={licenseNumber}
+                      onChange={(e) => setLicenseNumber(e.target.value)}
+                      placeholder="VTC123456"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vehicleModel">Modèle de véhicule</Label>
+                    <Input
+                      id="vehicleModel"
+                      type="text"
+                      value={vehicleModel}
+                      onChange={(e) => setVehicleModel(e.target.value)}
+                      placeholder="Mercedes Classe E"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="companyName">Nom de l'entreprise</Label>
+                    <Input
+                      id="companyName"
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="VTC Transport"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="siret">SIRET</Label>
+                    <Input
+                      id="siret"
+                      type="text"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      placeholder="123 456 789 00010"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="vehicleModel">Modèle de véhicule</Label>
-                <Input
-                  id="vehicleModel"
-                  type="text"
-                  value={vehicleModel}
-                  onChange={(e) => setVehicleModel(e.target.value)}
-                  required
-                  placeholder="Mercedes Classe E"
-                />
-              </div>
-              <div>
-                <Label htmlFor="companyName">Nom de l'entreprise (optionnel)</Label>
-                <Input
-                  id="companyName"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="VTC Transport"
-                />
-              </div>
-              <div>
-                <Label htmlFor="siret">SIRET (optionnel)</Label>
-                <Input
-                  id="siret"
-                  type="text"
-                  value={siret}
-                  onChange={(e) => setSiret(e.target.value)}
-                  placeholder="123 456 789 00010"
-                />
-              </div>
+
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Continuer vers le paiement
@@ -364,10 +345,10 @@ const RegisterDriverPromo = () => {
           </Card>
         )}
 
-        {/* Step 3: Payment */}
-        {currentStep === 3 && (
+        {/* Step 2: Payment */}
+        {currentStep === 2 && (
           <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Étape 3 : Finaliser l'inscription</h2>
+            <h2 className="text-2xl font-bold mb-6">Étape 2 : Finaliser l'inscription</h2>
             
             <Alert className="mb-6 bg-green-500/10 border-green-500/30">
               <Sparkles className="w-5 h-5 text-green-500" />
@@ -432,7 +413,7 @@ const RegisterDriverPromo = () => {
             </div>
 
             <Button
-              onClick={handleStep3Payment}
+              onClick={handleStep2Payment}
               disabled={loading}
               className="w-full bg-gradient-premium text-premium-foreground shadow-premium"
               size="lg"
