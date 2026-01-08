@@ -175,7 +175,7 @@ const RegisterCongressDriver = () => {
           status: "pending",
           is_pioneer: true,
           pioneer_since: new Date().toISOString(),
-          subscription_status: "trial",
+          subscription_status: "active",
           free_access_type: "trial",
           free_access_end_date: new Date(Date.now() + invitation.trial_days * 24 * 60 * 60 * 1000).toISOString(),
         })
