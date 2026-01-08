@@ -273,6 +273,22 @@ export function useCourseQueue({ driverId, autoRefresh = true }: UseCourseQueueO
     fetchQueue();
   }, [fetchQueue]);
 
+  // Auto-refresh every 15 minutes to check for auto-placement opportunities
+  useEffect(() => {
+    if (!driverId || !autoRefresh) return;
+
+    const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
+    
+    const intervalId = setInterval(() => {
+      console.log('Auto-refresh: checking queue placement opportunities...');
+      checkAutoPlace();
+    }, REFRESH_INTERVAL);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [driverId, autoRefresh]);
+
   // Realtime subscription
   useEffect(() => {
     if (!driverId || !autoRefresh) return;
