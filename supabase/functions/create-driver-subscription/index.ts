@@ -191,9 +191,8 @@ serve(async (req) => {
     }
     console.log("[CREATE-DRIVER-SUBSCRIPTION] 🌐 Origin:", origin);
 
-    // Create checkout session for SUBSCRIPTION (not one-time payment)
-    // AVEC PROMOTION DÉCEMBRE 2024: 9,99€ pour le premier mois
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] 💳 Creating checkout session with December promo...");
+    // Create checkout session for SUBSCRIPTION with 1 MONTH FREE TRIAL
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] 💳 Creating checkout session with 30-day free trial...");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -203,20 +202,22 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      discounts: [
-        {
-          coupon: "aaqzuCLz", // Coupon Promotion Décembre 2024 (-40€ premier mois)
+      subscription_data: {
+        trial_period_days: 30, // 1 mois gratuit
+        metadata: {
+          driver_id: driver_id,
+          user_id: user.id,
+          type: "driver_subscription",
         },
-      ],
+      },
       success_url: `${origin}/registration-success?driver_id=${driver_id}`,
       cancel_url: `${origin}/register-driver-promo`,
       metadata: {
         driver_id: driver_id,
         user_id: user.id,
         type: "driver_subscription",
-        promo: "december_2024",
       },
-      allow_promotion_codes: false, // Désactiver les codes promo manuels
+      allow_promotion_codes: false,
       billing_address_collection: "auto",
     });
 

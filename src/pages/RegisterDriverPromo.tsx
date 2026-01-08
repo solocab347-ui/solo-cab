@@ -174,18 +174,16 @@ const RegisterDriverPromo = () => {
             <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6">
               <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium">
                 <Sparkles className="w-3 h-3 mr-1" />
-                OFFRE DÉCEMBRE 2025 - Valable tout le mois
+                OFFRE SPÉCIALE - 1 MOIS GRATUIT
               </Badge>
               <div className="flex items-center justify-center gap-4 mb-2">
-                <span className="text-3xl font-bold text-muted-foreground line-through">49,99€</span>
-                <ArrowRight className="w-6 h-6 text-premium" />
-                <span className="text-5xl font-bold text-premium">9,99€</span>
+                <span className="text-5xl font-bold text-green-500">GRATUIT</span>
               </div>
               <p className="text-lg text-muted-foreground">
-                pour le premier mois, puis <span className="font-semibold text-foreground">49,99€/mois</span>
+                1 mois d'essai gratuit, puis <span className="font-semibold text-foreground">49,99€/mois</span>
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Profitez de 40€ de réduction sur votre premier mois d'abonnement
+                Testez toutes les fonctionnalités sans engagement pendant 30 jours
               </p>
             </Card>
           </div>
@@ -371,10 +369,10 @@ const RegisterDriverPromo = () => {
           <Card className="p-8">
             <h2 className="text-2xl font-bold mb-6">Étape 3 : Finaliser l'inscription</h2>
             
-            <Alert className="mb-6 bg-premium/5 border-premium/30">
-              <Sparkles className="w-5 h-5 text-premium" />
+            <Alert className="mb-6 bg-green-500/10 border-green-500/30">
+              <Sparkles className="w-5 h-5 text-green-500" />
               <AlertDescription className="text-sm">
-                <strong>Offre spéciale décembre :</strong> Profitez de votre premier mois à seulement 9,99€ au lieu de 49,99€ !
+                <strong>Offre spéciale :</strong> Profitez d'un mois d'essai gratuit pour tester toutes les fonctionnalités !
               </AlertDescription>
             </Alert>
 
@@ -420,17 +418,13 @@ const RegisterDriverPromo = () => {
 
             <div className="bg-muted/50 rounded-lg p-4 mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-muted-foreground">Prix normal</span>
-                <span className="line-through text-muted-foreground">49,99€</span>
-              </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-muted-foreground">Réduction décembre</span>
-                <span className="text-success font-semibold">-40,00€</span>
+                <span className="text-muted-foreground">Essai gratuit</span>
+                <Badge className="bg-green-500">30 jours</Badge>
               </div>
               <div className="h-px bg-border my-3"></div>
               <div className="flex justify-between items-center">
                 <span className="font-bold text-lg">Premier mois</span>
-                <span className="font-bold text-2xl text-premium">9,99€</span>
+                <span className="font-bold text-2xl text-green-500">GRATUIT</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
                 Puis 49,99€/mois - Sans engagement
