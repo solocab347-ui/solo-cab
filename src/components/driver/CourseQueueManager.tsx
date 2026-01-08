@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,27 @@ export function CourseQueueManager({ driverId }: CourseQueueManagerProps) {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedQueueItem, setSelectedQueueItem] = useState<QueuedCourse | null>(null);
+  const [nextRefreshIn, setNextRefreshIn] = useState(15 * 60); // 15 minutes in seconds
+
+  // Countdown timer for next auto-refresh
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNextRefreshIn(prev => {
+        if (prev <= 1) {
+          return 15 * 60; // Reset to 15 minutes
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleForceAccept = async (item: QueuedCourse) => {
     setProcessingId(item.id);
@@ -112,7 +133,7 @@ export function CourseQueueManager({ driverId }: CourseQueueManagerProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Timer className="h-5 w-5 text-warning" />
           <h3 className="font-semibold">File d'attente intelligente</h3>
@@ -120,20 +141,28 @@ export function CourseQueueManager({ driverId }: CourseQueueManagerProps) {
             {queue.length} course{queue.length > 1 ? 's' : ''}
           </Badge>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={checkAutoPlace}
-          disabled={refreshing}
-          className="gap-2"
-        >
-          {refreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">Vérifier les créneaux</span>
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            Prochain rafraîchissement: <span className="font-mono">{formatCountdown(nextRefreshIn)}</span>
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              checkAutoPlace();
+              setNextRefreshIn(15 * 60); // Reset timer on manual refresh
+            }}
+            disabled={refreshing}
+            className="gap-2"
+          >
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Vérifier</span>
+          </Button>
+        </div>
       </div>
 
       <Alert className="border-blue-200 bg-blue-50">
