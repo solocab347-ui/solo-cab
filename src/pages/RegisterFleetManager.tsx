@@ -133,6 +133,20 @@ const RegisterFleetManager = () => {
           </p>
         </div>
 
+        {/* Pricing Banner */}
+        <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+          <CardContent className="py-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-2xl font-bold text-green-500">30 jours GRATUITS</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                puis 49,99€/mois • Sans engagement • Empreinte bancaire 0€
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

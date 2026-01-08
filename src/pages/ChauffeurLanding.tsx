@@ -34,7 +34,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import SocialLinks from "@/components/SocialLinks";
-import CountdownTimer from "@/components/CountdownTimer";
 
 const ChauffeurLanding = () => {
   const [revenue, setRevenue] = useState([5000]);
@@ -43,13 +42,6 @@ const ChauffeurLanding = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
-
-  // Check if promo is active (jusqu'au 31 décembre 2025)
-  const promoEndDate = new Date('2025-12-31T23:59:59');
-  const isPromoActive = () => {
-    const now = new Date();
-    return now <= promoEndDate;
-  };
 
   const calculateCosts = (monthlyRevenue: number) => {
     const uber = { rate: 0.25, monthly: monthlyRevenue * 0.25, annual: monthlyRevenue * 0.25 * 12 };
@@ -149,74 +141,42 @@ const ChauffeurLanding = () => {
               </Card>
             </div>
 
-            {/* Pricing with promo */}
-            {isPromoActive() ? (
-              <div className="mb-8">
-                <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6 max-w-2xl mx-auto">
-                  <div className="absolute inset-0 bg-gradient-premium opacity-10 blur-xl"></div>
-                  <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium relative z-10">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    OFFRE DÉCEMBRE 2025
-                  </Badge>
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-center gap-4 mb-3">
-                      <span className="text-3xl font-bold text-muted-foreground line-through">49,99€</span>
-                      <ArrowRight className="w-6 h-6 text-premium" />
-                      <span className="text-5xl font-bold text-premium">9,99€</span>
-                    </div>
-                    <p className="text-lg text-center mb-2">
-                      pour le premier mois, puis <span className="font-semibold">49,99€/mois</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground text-center mb-4">
-                      Profitez de 40€ de réduction sur votre premier mois d'abonnement
-                    </p>
-                    
-                    {/* Countdown Timer */}
-                    <div className="my-6">
-                      <CountdownTimer targetDate={promoEndDate} />
-                    </div>
-                    
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                      <p className="text-sm flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>Abonnement mensuel sans engagement</span>
-                      </p>
-                      <p className="text-sm flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>Résiliable à tout moment depuis votre dashboard</span>
-                      </p>
-                      <p className="text-sm flex items-center gap-2">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>0% de commission sur vos courses</span>
-                      </p>
-                    </div>
+            {/* Pricing - 1 mois gratuit */}
+            <div className="mb-8">
+              <Card className="relative border-green-500/30 bg-gradient-to-br from-green-500/10 to-[#1a2332] p-6 max-w-2xl mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 opacity-50 blur-xl"></div>
+                <Badge className="mb-3 bg-green-500 text-white shadow-lg relative z-10">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  OFFRE SPÉCIALE - 1 MOIS GRATUIT
+                </Badge>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-center gap-4 mb-3">
+                    <span className="text-5xl font-bold text-green-400">GRATUIT</span>
                   </div>
-                </Card>
-              </div>
-            ) : (
-              <div className="mb-8">
-                <Card className="p-6 max-w-2xl mx-auto bg-[#1a2332]/50 border-blue-500/30">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-white mb-2">49,99€/mois</p>
-                    <p className="text-lg text-gray-400 mb-4">Tout compris • 0% de commission</p>
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                      <p className="text-sm flex items-center gap-2 justify-center">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>Abonnement mensuel sans engagement</span>
-                      </p>
-                      <p className="text-sm flex items-center gap-2 justify-center">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>Résiliable à tout moment depuis votre dashboard</span>
-                      </p>
-                      <p className="text-sm flex items-center gap-2 justify-center">
-                        <Check className="w-4 h-4 text-success" />
-                        <span>Gardez 100% de vos revenus</span>
-                      </p>
-                    </div>
+                  <p className="text-lg text-center text-white mb-2">
+                    pendant 30 jours, puis <span className="font-semibold">49,99€/mois</span>
+                  </p>
+                  <p className="text-sm text-gray-400 text-center mb-4">
+                    Testez toutes les fonctionnalités sans engagement
+                  </p>
+                  
+                  <div className="bg-[#0f1e35]/50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm flex items-center gap-2 text-white">
+                      <Check className="w-4 h-4 text-green-400" />
+                      <span>Abonnement mensuel sans engagement</span>
+                    </p>
+                    <p className="text-sm flex items-center gap-2 text-white">
+                      <Check className="w-4 h-4 text-green-400" />
+                      <span>Résiliable à tout moment depuis votre dashboard</span>
+                    </p>
+                    <p className="text-sm flex items-center gap-2 text-white">
+                      <Check className="w-4 h-4 text-green-400" />
+                      <span>0% de commission sur vos courses</span>
+                    </p>
                   </div>
-                </Card>
-              </div>
-            )}
+                </div>
+              </Card>
+            </div>
 
             <Link to="/register-driver-promo">
               <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl">
