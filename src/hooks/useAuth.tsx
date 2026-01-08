@@ -378,13 +378,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         duration: 3000,
       });
 
-      // Check if driver is a fleet driver
+      // Check if driver is a fleet driver OR Pioneer without payment
       if (role === "driver") {
         const { data: driverData } = await supabase
           .from("drivers")
-          .select("is_fleet_driver, fleet_manager_id")
+          .select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id, subscription_paid")
           .eq("user_id", data.user.id)
           .single();
+        
+        // Pioneer sans paiement finalisé -> rediriger vers la page de paiement
+        if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
+          navigate("/pioneer-payment", { replace: true });
+          return;
+        }
         
         if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
           navigate("/fleet-driver-dashboard", { replace: true });
