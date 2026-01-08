@@ -8873,6 +8873,7 @@ export type Database = {
           display_driver_name: boolean | null
           gallery_photos: string[] | null
           id: string | null
+          is_pioneer: boolean | null
           max_passengers: number | null
           rating: number | null
           service_description: string | null
@@ -8897,6 +8898,7 @@ export type Database = {
           display_driver_name?: boolean | null
           gallery_photos?: string[] | null
           id?: string | null
+          is_pioneer?: boolean | null
           max_passengers?: number | null
           rating?: number | null
           service_description?: string | null
@@ -8921,6 +8923,7 @@ export type Database = {
           display_driver_name?: boolean | null
           gallery_photos?: string[] | null
           id?: string | null
+          is_pioneer?: boolean | null
           max_passengers?: number | null
           rating?: number | null
           service_description?: string | null

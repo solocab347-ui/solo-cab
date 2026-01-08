@@ -57,6 +57,7 @@ interface DriverProfile {
   services_offered: string[];
   vehicle_photos: string[];
   gallery_photos: string[];
+  is_pioneer?: boolean;
 }
 
 const ChauffeurProfile = () => {
@@ -85,6 +86,7 @@ const ChauffeurProfile = () => {
         console.log("🔍 Loading driver profile:", id);
         
         // Récupération simple du chauffeur avec profil
+        // Pioneers can have pending status, so we use OR condition
         const { data: driverData, error: driverError } = await supabase
           .from("drivers")
           .select(`
@@ -98,7 +100,7 @@ const ChauffeurProfile = () => {
           `)
           .eq("id", id)
           .eq("public_profile_enabled", true)
-          .eq("status", "validated")
+          .or("status.eq.validated,and(is_pioneer.eq.true,status.in.(pending,validated))")
           .maybeSingle();
 
         if (!isMounted) return;
@@ -242,7 +244,12 @@ const ChauffeurProfile = () => {
                     <span>{driver.full_name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {driver.total_rides > 0 && (
+                {(driver as any).is_pioneer && (
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 rounded-full shadow-lg">
+                    <span className="text-sm font-bold text-white">🏆 Pionnier SoloCab</span>
+                  </div>
+                )}
+                {!((driver as any).is_pioneer) && driver.total_rides > 0 && (
                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary px-4 py-2 rounded-full shadow-lg">
                     <span className="text-sm font-bold text-primary-foreground">Chauffeur Professionnel</span>
                   </div>
