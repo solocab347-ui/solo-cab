@@ -75,14 +75,11 @@ export function useDriverSubscription(
   callback: (payload: any) => void,
   debounceMs: number = 1000 // Debounce plus long pour stabilité
 ) {
-  // Skip si pas de driverId
-  if (!driverId) return;
-
   useOptimizedSubscription(
-    `driver:${driverId}:${table}`,
+    driverId ? `driver:${driverId}:${table}` : '',
     {
       table,
-      filter: `driver_id=eq.${driverId}`,
+      filter: driverId ? `driver_id=eq.${driverId}` : undefined,
       debounceMs
     },
     callback,
@@ -99,14 +96,11 @@ export function useClientSubscription(
   callback: (payload: any) => void,
   debounceMs: number = 1000 // Debounce plus long pour stabilité
 ) {
-  // Skip si pas de clientId
-  if (!clientId) return;
-
   useOptimizedSubscription(
-    `client:${clientId}:${table}`,
+    clientId ? `client:${clientId}:${table}` : '',
     {
       table,
-      filter: `client_id=eq.${clientId}`,
+      filter: clientId ? `client_id=eq.${clientId}` : undefined,
       debounceMs
     },
     callback,

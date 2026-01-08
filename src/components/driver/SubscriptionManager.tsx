@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, AlertCircle, Calendar, Gift } from "lucide-react";
+import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
@@ -17,6 +17,13 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   const [loading, setLoading] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
+
+  // Pioneer-specific values
+  const isPioneer = driverProfile?.driver?.is_pioneer === true;
+  const pioneerTrialEnd = driverProfile?.driver?.free_access_end_date;
+  const pioneerTrialDaysLeft = pioneerTrialEnd 
+    ? Math.max(0, differenceInDays(new Date(pioneerTrialEnd), new Date())) 
+    : null;
 
   useEffect(() => {
     checkSubscription();
@@ -48,7 +55,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     try {
       toast.loading("Redirection vers le paiement...");
       
-      const { data, error } = await supabase.functions.invoke("create-driver-subscription");
+      // Use pioneer subscription for pioneers
+      const functionName = isPioneer ? "create-pioneer-subscription" : "create-driver-subscription";
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: isPioneer ? { driver_id: driverProfile?.driver?.id } : undefined
+      });
 
       if (error) throw error;
 
@@ -66,10 +77,10 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   // Use subscription status from API call which checks free access + Stripe
   const effectiveStatus = subscriptionStatus?.subscription_status || driverProfile?.driver?.subscription_status || "inactive";
-  const isActive = effectiveStatus === "active" || subscriptionStatus?.is_free_access;
-  const isInactive = effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access;
+  const isActive = effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const isInactive = effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isPastDue = effectiveStatus === "past_due";
-  const hasFreeAccess = driverProfile?.driver?.free_access_granted;
+  const hasFreeAccess = driverProfile?.driver?.free_access_granted || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
   
@@ -80,6 +91,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       case "1_month": return "1 mois";
       case "2_months": return "2 mois";
       case "3_months": return "3 mois";
+      case "trial": return "30 jours d'essai";
       case "unlimited": return "Illimité";
       case "custom": return "Personnalisé";
       default: return "Non défini";
@@ -96,8 +108,53 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
-      {/* Free Access Alert */}
-      {hasFreeAccess && (
+      {/* Pioneer Alert - Special for pioneers */}
+      {isPioneer && (
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 flex-shrink-0" />
+            <div className="flex-1 w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-base sm:text-lg text-amber-600 dark:text-amber-400">
+                  🏆 Pionnier SoloCab
+                </h3>
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                  Offre Exclusive
+                </Badge>
+              </div>
+              <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <p className="text-amber-700 dark:text-amber-300 font-medium">
+                  Vous faites partie des 350 pionniers de SoloCab !
+                </p>
+                {pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0 ? (
+                  <>
+                    <p>
+                      <span className="font-medium">Essai gratuit :</span>{" "}
+                      <Badge className="bg-green-500 ml-1">
+                        {pioneerTrialDaysLeft} jour{pioneerTrialDaysLeft > 1 ? "s" : ""} restant{pioneerTrialDaysLeft > 1 ? "s" : ""}
+                      </Badge>
+                    </p>
+                    <p>
+                      <span className="font-medium">Fin de l'essai :</span>{" "}
+                      {format(new Date(pioneerTrialEnd!), "d MMMM yyyy", { locale: fr })}
+                    </p>
+                    <p className="pt-2 text-amber-600 dark:text-amber-400 font-semibold">
+                      💰 Après l'essai : 39,99€/mois au lieu de 49,99€ (à vie !)
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-green-600 dark:text-green-400 font-medium">
+                    ✓ Vous bénéficiez du tarif Pioneer : 39,99€/mois à vie !
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Regular Free Access Alert - Only for non-pioneers */}
+      {hasFreeAccess && !isPioneer && (
         <Card className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/10 border-green-500">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
@@ -178,15 +235,22 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {/* Subscription Info */}
-      <Card className="p-4 sm:p-6 bg-card/80 border-white/10">
+      <Card className={`p-4 sm:p-6 bg-card/80 border-white/10 ${isPioneer ? 'ring-2 ring-amber-500/50' : ''}`}>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
           <div>
-            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-white">Abonnement SoloCab</h3>
+            <h3 className="font-bold text-lg sm:text-xl mb-1 sm:mb-2 text-white">
+              {isPioneer ? 'Abonnement Pionnier SoloCab' : 'Abonnement SoloCab'}
+            </h3>
             <p className="text-xs sm:text-sm text-gray-300">
-              Accès complet à la plateforme professionnelle
+              {isPioneer ? 'Tarif exclusif à vie pour les pionniers' : 'Accès complet à la plateforme professionnelle'}
             </p>
           </div>
-          {hasFreeAccess ? (
+          {isPioneer ? (
+            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 self-start">
+              <Trophy className="w-3 h-3 mr-1" />
+              Pionnier
+            </Badge>
+          ) : hasFreeAccess ? (
             <Badge className="bg-green-500 self-start">
               <Gift className="w-3 h-3 mr-1" />
               Accès Gratuit
@@ -200,8 +264,16 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </div>
 
         <div className="space-y-3 sm:space-y-4">
-          {/* Masquer le prix pour les accès gratuits illimités */}
-          {!hasFreeAccess && (
+          {/* Prix - Différent selon pioneer ou non */}
+          {isPioneer ? (
+            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
+              <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel Pionnier</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm line-through text-gray-500">49,99€</span>
+                <span className="font-bold text-sm sm:text-base text-amber-400">39,99€ / mois</span>
+              </div>
+            </div>
+          ) : !hasFreeAccess && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Tarif mensuel</span>
               <span className="font-bold text-sm sm:text-base text-white">49,99€ / mois</span>
@@ -258,17 +330,19 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
-              className="w-full bg-gradient-premium text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4"
+              className={`w-full text-xs sm:text-lg py-4 sm:py-6 px-2 sm:px-4 ${isPioneer ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' : 'bg-gradient-premium'}`}
             >
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
-              <span className="truncate">Activer - 49,99€/mois</span>
+              <span className="truncate">
+                {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : 'Activer - 49,99€/mois'}
+              </span>
             </Button>
           )}
         </div>
       </Card>
 
-      {/* Comparison */}
-      {isInactive && !hasFreeAccess && (
+      {/* Comparison - Updated for pioneers */}
+      {isInactive && !hasFreeAccess && !isPioneer && (
         <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
           <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
             💰 Économisez jusqu'à 15 000€/an
@@ -285,6 +359,29 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <p className="text-premium/70 text-xs">0% commission</p>
             </div>
           </div>
+        </Card>
+      )}
+
+      {/* Pioneer specific comparison */}
+      {isPioneer && (
+        <Card className="p-3 sm:p-6 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/50 overflow-hidden">
+          <h4 className="font-bold text-sm sm:text-lg text-amber-600 dark:text-amber-400 mb-2 sm:mb-4 text-center sm:text-left">
+            🏆 Avantage Pionnier à vie
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+            <div className="bg-white/10 dark:bg-black/20 rounded-lg p-3 sm:p-4">
+              <p className="text-muted-foreground mb-1 sm:mb-2 text-xs sm:text-sm">Tarif Standard</p>
+              <p className="text-lg sm:text-2xl font-bold text-muted-foreground line-through break-words">49,99€/mois</p>
+            </div>
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg p-3 sm:p-4">
+              <p className="text-white/80 mb-1 sm:mb-2 text-xs sm:text-sm">Votre Tarif Pionnier</p>
+              <p className="text-lg sm:text-2xl font-bold text-white break-words">39,99€/mois</p>
+              <p className="text-white/80 text-xs">À vie • 0% commission</p>
+            </div>
+          </div>
+          <p className="text-center text-xs sm:text-sm text-amber-600 dark:text-amber-400 mt-4 font-medium">
+            💰 Vous économisez 120€/an par rapport au tarif standard !
+          </p>
         </Card>
       )}
     </div>
