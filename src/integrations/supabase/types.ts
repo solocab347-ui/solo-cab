@@ -9531,6 +9531,41 @@ export type Database = {
           working_sectors: string[]
         }[]
       }
+      get_public_driver_profile_by_id: {
+        Args: { driver_id_param: string }
+        Returns: {
+          base_rate: number
+          company_name: string
+          contact_email: string
+          contact_phone: string
+          display_company_name: boolean
+          display_driver_name: boolean
+          free_access_end_date: string
+          free_access_type: string
+          gallery_photos: string[]
+          id: string
+          is_pioneer: boolean
+          per_km_rate: number
+          profile_email: string
+          profile_full_name: string
+          profile_phone: string
+          profile_photo_url: string
+          service_description: string
+          services_offered: string[]
+          show_email: boolean
+          show_phone: boolean
+          show_rating_public: boolean
+          status: string
+          user_id: string
+          vehicle_brand: string
+          vehicle_color: string
+          vehicle_equipment: string[]
+          vehicle_model: string
+          vehicle_photos: string[]
+          vehicle_year: number
+          working_sectors: string[]
+        }[]
+      }
       get_public_profile_info: {
         Args: { user_id_param: string }
         Returns: {

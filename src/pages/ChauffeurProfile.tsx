@@ -85,32 +85,21 @@ const ChauffeurProfile = () => {
       try {
         console.log("🔍 Loading driver profile:", id);
         
-        // Récupération simple du chauffeur avec profil
-        // Pioneers can have pending status, so we use OR condition
-        const { data: driverData, error: driverError } = await supabase
-          .from("drivers")
-          .select(`
-            *,
-            profiles!drivers_user_id_fkey (
-              full_name,
-              email,
-              phone,
-              profile_photo_url
-            )
-          `)
-          .eq("id", id)
-          .eq("public_profile_enabled", true)
-          .or("status.eq.validated,and(is_pioneer.eq.true,status.in.(pending,validated))")
-          .maybeSingle();
+        // Utilisation de la fonction RPC SECURITY DEFINER pour contourner les RLS
+        // et permettre l'affichage des profils pionniers avec statut pending
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_public_driver_profile_by_id', { driver_id_param: id });
 
         if (!isMounted) return;
 
-        if (driverError || !driverData) {
-          console.error("❌ Driver not found:", driverError);
+        if (rpcError || !rpcData || rpcData.length === 0) {
+          console.error("❌ Driver not found:", rpcError);
           toast.error("Chauffeur non trouvé ou profil non public");
           navigate("/chauffeurs");
           return;
         }
+
+        const driverData = rpcData[0];
 
         console.log("✅ Driver data loaded");
 
@@ -122,20 +111,40 @@ const ChauffeurProfile = () => {
 
         if (!isMounted) return;
 
-        // Créer le profil complet
+        // Créer le profil complet à partir des données RPC
         const profile: DriverProfile = {
-          ...driverData,
-          full_name: driverData.profiles?.full_name || "Chauffeur",
-          email: (driverData as any).contact_email || driverData.profiles?.email || "",
-          phone: (driverData as any).contact_phone || driverData.profiles?.phone || "",
-          contact_phone: (driverData as any).contact_phone,
-          contact_email: (driverData as any).contact_email,
-          profile_photo_url: driverData.profiles?.profile_photo_url || null,
-          rating: averageRating,
-          total_rides: totalRides,
+          id: driverData.id,
+          user_id: driverData.user_id,
+          company_name: driverData.company_name || "",
+          vehicle_model: driverData.vehicle_model || "",
           vehicle_brand: driverData.vehicle_brand || null,
           vehicle_year: driverData.vehicle_year || null,
           vehicle_color: driverData.vehicle_color || null,
+          service_description: driverData.service_description || "",
+          bio: driverData.service_description || "",
+          base_rate: driverData.base_rate || 0,
+          per_km_rate: driverData.per_km_rate || 0,
+          working_sectors: driverData.working_sectors || [],
+          vehicle_equipment: driverData.vehicle_equipment || [],
+          services_offered: driverData.services_offered || [],
+          vehicle_photos: driverData.vehicle_photos || [],
+          gallery_photos: driverData.gallery_photos || [],
+          show_phone: driverData.show_phone ?? false,
+          show_email: driverData.show_email ?? false,
+          display_driver_name: driverData.display_driver_name ?? true,
+          display_company_name: driverData.display_company_name ?? true,
+          is_pioneer: driverData.is_pioneer || false,
+          // Données du profil utilisateur
+          full_name: driverData.profile_full_name || "Chauffeur",
+          email: driverData.contact_email || driverData.profile_email || "",
+          phone: driverData.contact_phone || driverData.profile_phone || "",
+          contact_phone: driverData.contact_phone,
+          contact_email: driverData.contact_email,
+          profile_photo_url: driverData.profile_photo_url || null,
+          // Statistiques calculées
+          rating: averageRating,
+          total_rides: totalRides,
+          created_at: "",
         };
 
         console.log("✅ Profile complete");
