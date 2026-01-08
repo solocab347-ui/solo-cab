@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCheck, Activity, DollarSign, TrendingUp, Gift, CreditCard } from "lucide-react";
+import { Users, UserCheck, Activity, DollarSign, TrendingUp, Gift, CreditCard, Building2, Truck } from "lucide-react";
 import { startOfMonth } from "date-fns";
 
 const AdminOverview = () => {
@@ -11,6 +11,8 @@ const AdminOverview = () => {
     validated_drivers: 0,
     pending_drivers: 0,
     total_clients: 0,
+    total_companies: 0,
+    total_fleet_managers: 0,
     active_subscriptions: 0,
     free_access_count: 0,
     inactive_subscriptions: 0,
@@ -35,11 +37,6 @@ const AdminOverview = () => {
       
       if (driversError) throw driversError;
 
-      // Compter les utilisateurs totaux (profiles)
-      const { count: totalUsers } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
       // Récupérer les IDs des chauffeurs démo pour les exclure
       const { data: demoDrivers } = await supabase
         .from("drivers")
@@ -62,7 +59,20 @@ const AdminOverview = () => {
       
       const { count: totalClients } = await clientsQuery;
 
+      // Compter les entreprises
+      const { count: totalCompanies } = await supabase
+        .from("companies")
+        .select("*", { count: "exact", head: true });
+
+      // Compter les gestionnaires de flotte
+      const { count: totalFleetManagers } = await supabase
+        .from("fleet_managers")
+        .select("*", { count: "exact", head: true });
+
       const totalDrivers = driversData?.length || 0;
+
+      // Total utilisateurs = chauffeurs + clients + entreprises + gestionnaires de flotte
+      const totalUsers = totalDrivers + (totalClients || 0) + (totalCompanies || 0) + (totalFleetManagers || 0);
 
       // Compter les chauffeurs validés
       const validatedDrivers = driversData?.filter(d => d.status === 'validated').length || 0;
@@ -105,11 +115,13 @@ const AdminOverview = () => {
       ).length || 0;
 
       setStats({
-        total_users: totalUsers || 0,
+        total_users: totalUsers,
         total_drivers: totalDrivers,
         validated_drivers: validatedDrivers,
         pending_drivers: pendingDrivers,
         total_clients: totalClients || 0,
+        total_companies: totalCompanies || 0,
+        total_fleet_managers: totalFleetManagers || 0,
         active_subscriptions: activeSubscriptions,
         free_access_count: freeAccessCount,
         inactive_subscriptions: inactiveSubscriptions,
@@ -200,7 +212,7 @@ const AdminOverview = () => {
           <Users className="w-5 h-5 text-primary" />
           Vue d'ensemble de la plateforme
         </h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
@@ -209,33 +221,59 @@ const AdminOverview = () => {
             <CardContent>
               <div className="text-2xl font-bold">{stats.total_users}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.total_drivers} chauffeurs, {stats.total_clients} clients
+                Tous types confondus
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Chauffeurs Validés</CardTitle>
+              <CardTitle className="text-sm font-medium">Chauffeurs</CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.validated_drivers}</div>
+              <div className="text-2xl font-bold">{stats.total_drivers}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.pending_drivers} en attente de validation
+                {stats.validated_drivers} validés, {stats.pending_drivers} en attente
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Abonnements Inactifs</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Clients</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.inactive_subscriptions}</div>
+              <div className="text-2xl font-bold">{stats.total_clients}</div>
               <p className="text-xs text-muted-foreground">
-                Chauffeurs sans abonnement actif
+                Utilisateurs particuliers
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Entreprises</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total_companies}</div>
+              <p className="text-xs text-muted-foreground">
+                Comptes entreprise
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gestionnaires Flotte</CardTitle>
+              <Truck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total_fleet_managers}</div>
+              <p className="text-xs text-muted-foreground">
+                Fleet managers
               </p>
             </CardContent>
           </Card>
@@ -252,7 +290,7 @@ const AdminOverview = () => {
                   : 0}%
               </div>
               <p className="text-xs text-muted-foreground">
-                Chauffeurs validés → abonnés
+                Validés → abonnés
               </p>
             </CardContent>
           </Card>
