@@ -39,6 +39,7 @@ interface Driver {
   created_at: string;
   is_pioneer: boolean;
   is_demo_account: boolean;
+  sharing_number: number | null;
   profiles: {
     full_name: string;
     email: string;
@@ -117,6 +118,7 @@ const AdminDriversManagement = () => {
           created_at,
           is_pioneer,
           is_demo_account,
+          sharing_number,
           profiles!inner(full_name, email, phone, profile_photo_url)
         `
         )
@@ -327,6 +329,11 @@ const AdminDriversManagement = () => {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="font-bold text-lg">{driver.profiles.full_name}</h3>
+              {driver.sharing_number && (
+                <Badge variant="outline" className="font-mono text-xs">
+                  #{driver.sharing_number}
+                </Badge>
+              )}
               {driver.is_pioneer && (
                 <Badge className="bg-amber-500 text-white gap-1">
                   <Crown className="w-3 h-3" />
