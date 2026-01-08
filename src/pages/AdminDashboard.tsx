@@ -4,20 +4,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Home, 
   Users, 
   Activity, 
   Mail, 
-  Shield, 
   LogOut, 
   Crown,
   HeadphonesIcon,
   Wrench,
   Settings,
-  Menu,
-  X
+  ArrowLeft
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
@@ -35,8 +33,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("home");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -77,7 +74,10 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Vérification des permissions...</p>
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <img src={logo} alt="SoloCab" className="w-16 h-16 opacity-50" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
       </div>
     );
   }
@@ -87,20 +87,15 @@ const AdminDashboard = () => {
   }
 
   const menuItems = [
-    { id: "home", label: "Accueil", icon: Home },
-    { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "subscriptions", label: "Abonnements", icon: Activity },
-    { id: "congress", label: "Congrès Pionniers", icon: Crown },
-    { id: "support", label: "Litiges & Support", icon: HeadphonesIcon },
-    { id: "tech", label: "Technique", icon: Wrench },
-    { id: "communications", label: "Communications", icon: Mail },
-    { id: "settings", label: "Paramètres", icon: Settings },
+    { id: "home", label: "Accueil", icon: Home, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+    { id: "users", label: "Utilisateurs", icon: Users, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+    { id: "subscriptions", label: "Abonnements", icon: Activity, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
+    { id: "congress", label: "Congrès", icon: Crown, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+    { id: "support", label: "Support", icon: HeadphonesIcon, color: "bg-red-500/10 text-red-600 dark:text-red-400" },
+    { id: "tech", label: "Technique", icon: Wrench, color: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
+    { id: "communications", label: "Communications", icon: Mail, color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
+    { id: "settings", label: "Paramètres", icon: Settings, color: "bg-gray-500/10 text-gray-600 dark:text-gray-400" },
   ];
-
-  const handleMenuClick = (id: string) => {
-    setActiveSection(id);
-    setMobileMenuOpen(false);
-  };
 
   const renderContent = () => {
     switch (activeSection) {
@@ -121,120 +116,98 @@ const AdminDashboard = () => {
       case "settings":
         return <AdminSettingsHub />;
       default:
-        return <AdminHomeHub />;
+        return null;
     }
   };
 
-  const SidebarContent = () => (
-    <>
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3 mb-4">
-          <img src={logo} alt="SoloCab" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-          <span className="font-bold text-lg hidden sm:block">SoloCab</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-primary font-semibold text-sm sm:text-base">A</span>
-          </div>
-          <div className="hidden sm:block">
-            <p className="font-semibold text-sm">Admin</p>
-            <p className="text-xs text-muted-foreground">admin@solocab.fr</p>
-          </div>
-        </div>
-      </div>
+  const getCurrentSectionLabel = () => {
+    return menuItems.find((item) => item.id === activeSection)?.label || "";
+  };
 
-      <nav className="p-2 sm:p-4 flex-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleMenuClick(item.id)}
-              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-3 rounded-lg mb-1 sm:mb-2 transition-colors ${
-                isActive
-                  ? "bg-primary/20 text-primary"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium truncate">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="p-2 sm:p-4 border-t border-border">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={signOut}
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="text-sm">Déconnexion</span>
-        </Button>
-      </div>
-    </>
-  );
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-64 bg-card border-r border-border min-h-screen fixed left-0 top-0">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-50 border-b border-border bg-card">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0 flex flex-col">
-                <SidebarContent />
-              </SheetContent>
-            </Sheet>
-            <img src={logo} alt="SoloCab" className="w-8 h-8 object-contain" />
-            <span className="font-bold text-sm">Admin</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            <Button variant="ghost" size="icon" onClick={signOut}>
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-64">
-        {/* Desktop Header */}
-        <header className="hidden lg:block border-b border-border bg-card sticky top-0 z-40">
-          <div className="px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">
-                {menuItems.find((item) => item.id === activeSection)?.label}
-              </h1>
+  // Vue principale avec grille de navigation
+  if (activeSection === null) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+          <div className="px-4 py-4 flex items-center justify-between max-w-5xl mx-auto">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="SoloCab" className="w-10 h-10 object-contain" />
+              <div>
+                <h1 className="font-bold text-lg">Administration</h1>
+                <p className="text-xs text-muted-foreground">Panneau de contrôle</p>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <NotificationBell />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={signOut}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </header>
 
-        {/* Mobile Title */}
-        <div className="lg:hidden px-4 py-3 bg-muted/30">
-          <h1 className="text-lg font-bold">
-            {menuItems.find((item) => item.id === activeSection)?.label}
-          </h1>
-        </div>
-
-        <main className="p-3 sm:p-4 lg:p-6">{renderContent()}</main>
+        {/* Grille de navigation */}
+        <main className="p-4 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card 
+                  key={item.id}
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border-border/50"
+                  onClick={() => setActiveSection(item.id)}
+                >
+                  <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center gap-3">
+                    <div className={`p-3 sm:p-4 rounded-xl ${item.color}`}>
+                      <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
+                    </div>
+                    <span className="font-medium text-sm sm:text-base">{item.label}</span>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </main>
       </div>
+    );
+  }
+
+  // Vue de section avec bouton retour
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header avec bouton retour */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="px-4 py-3 flex items-center justify-between max-w-5xl mx-auto">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setActiveSection(null)}
+              className="shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="SoloCab" className="w-8 h-8 object-contain" />
+              <h1 className="font-bold text-lg truncate">{getCurrentSectionLabel()}</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+          </div>
+        </div>
+      </header>
+
+      {/* Contenu de la section */}
+      <main className="p-4 max-w-5xl mx-auto">
+        {renderContent()}
+      </main>
     </div>
   );
 };
