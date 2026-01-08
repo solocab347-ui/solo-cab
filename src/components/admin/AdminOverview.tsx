@@ -11,6 +11,9 @@ const AdminOverview = () => {
     validated_drivers: 0,
     pending_drivers: 0,
     total_clients: 0,
+    clients_driver: 0,
+    clients_company: 0,
+    clients_fleet: 0,
     total_companies: 0,
     total_fleet_managers: 0,
     active_subscriptions: 0,
@@ -45,7 +48,7 @@ const AdminOverview = () => {
       
       const demoDriverIds = demoDrivers?.map(d => d.id) || [];
 
-      // Compter les clients HORS ceux liés aux chauffeurs démo
+      // 1. Clients de chauffeurs (table clients) - TOUS les clients de la table clients
       let clientsQuery = supabase
         .from("clients")
         .select("*", { count: "exact", head: true });
@@ -57,7 +60,33 @@ const AdminOverview = () => {
           .or(`driver_id.is.null`);
       }
       
-      const { count: totalClients } = await clientsQuery;
+      const { count: clientsFromTable } = await clientsQuery;
+
+      // Clients liés à un chauffeur indépendant (driver_id non null, fleet_manager_id null)
+      let driverClientsQuery = supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .not("driver_id", "is", null)
+        .is("fleet_manager_id", null);
+      
+      if (demoDriverIds.length > 0) {
+        driverClientsQuery = driverClientsQuery
+          .not("driver_id", "in", `(${demoDriverIds.join(",")})`)
+      }
+      
+      const { count: clientsDriver } = await driverClientsQuery;
+
+      // Clients liés à un gestionnaire de flotte
+      const { count: clientsFleet } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .not("fleet_manager_id", "is", null);
+
+      // 2. Collaborateurs d'entreprises (table company_employees)
+      const { count: companyEmployees } = await supabase
+        .from("company_employees")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true);
 
       // Compter les entreprises
       const { count: totalCompanies } = await supabase
@@ -71,8 +100,11 @@ const AdminOverview = () => {
 
       const totalDrivers = driversData?.length || 0;
 
-      // Total utilisateurs = chauffeurs + clients + entreprises + gestionnaires de flotte
-      const totalUsers = totalDrivers + (totalClients || 0) + (totalCompanies || 0) + (totalFleetManagers || 0);
+      // Total clients = clients table + collaborateurs entreprises
+      const totalClients = (clientsFromTable || 0) + (companyEmployees || 0);
+
+      // Total utilisateurs = chauffeurs + clients globaux + entreprises + gestionnaires de flotte
+      const totalUsers = totalDrivers + totalClients + (totalCompanies || 0) + (totalFleetManagers || 0);
 
       // Compter les chauffeurs validés
       const validatedDrivers = driversData?.filter(d => d.status === 'validated').length || 0;
@@ -83,34 +115,33 @@ const AdminOverview = () => {
       ).length || 0;
 
       // CRITIQUE: Calculer les abonnements payants actifs
-      // UNIQUEMENT les drivers validés qui ont payé
       const activeSubscriptions = driversData?.filter(d => 
-        d.status === 'validated' && // DOIT être validé
+        d.status === 'validated' &&
         (d.subscription_paid === true || d.subscription_status === 'active') && 
-        !d.free_access_granted // Exclure accès gratuits
+        !d.free_access_granted
       ).length || 0;
 
-      // Compter les accès gratuits actifs (tous statuts confondus)
+      // Compter les accès gratuits actifs
       const freeAccessCount = driversData?.filter(d => 
         d.free_access_granted === true
       ).length || 0;
 
-      // Compter les abonnements inactifs (validés mais pas payé ET pas d'accès gratuit)
+      // Compter les abonnements inactifs
       const inactiveSubscriptions = driversData?.filter(d => 
-        d.status === 'validated' && // Seulement les validés
+        d.status === 'validated' &&
         d.subscription_paid !== true && 
         d.subscription_status !== 'active' && 
         !d.free_access_granted
       ).length || 0;
 
-      // Revenus mensuels (49.99€ par abonnement actif PAYANT et VALIDÉ uniquement)
+      // Revenus mensuels
       const monthlyRevenue = activeSubscriptions * 49.99;
 
-      // Nouveaux abonnements ce mois (validés ET payants uniquement)
+      // Nouveaux abonnements ce mois
       const startOfCurrentMonth = startOfMonth(new Date());
       const newSubscriptionsMonth = driversData?.filter(d => 
         new Date(d.created_at) >= startOfCurrentMonth && 
-        d.status === 'validated' && // DOIT être validé
+        d.status === 'validated' &&
         (d.subscription_paid === true || d.subscription_status === 'active')
       ).length || 0;
 
@@ -119,14 +150,17 @@ const AdminOverview = () => {
         total_drivers: totalDrivers,
         validated_drivers: validatedDrivers,
         pending_drivers: pendingDrivers,
-        total_clients: totalClients || 0,
+        total_clients: totalClients,
+        clients_driver: clientsDriver || 0,
+        clients_company: companyEmployees || 0,
+        clients_fleet: clientsFleet || 0,
         total_companies: totalCompanies || 0,
         total_fleet_managers: totalFleetManagers || 0,
         active_subscriptions: activeSubscriptions,
         free_access_count: freeAccessCount,
         inactive_subscriptions: inactiveSubscriptions,
         monthly_revenue: monthlyRevenue,
-        total_revenue: monthlyRevenue, // Simplification
+        total_revenue: monthlyRevenue,
         new_subscriptions_month: newSubscriptionsMonth,
         churned_subscriptions_month: 0,
       });
@@ -247,7 +281,7 @@ const AdminOverview = () => {
             <CardContent>
               <div className="text-2xl font-bold">{stats.total_clients}</div>
               <p className="text-xs text-muted-foreground">
-                Utilisateurs particuliers
+                {stats.clients_driver} chauffeurs, {stats.clients_company} entreprises, {stats.clients_fleet} flottes
               </p>
             </CardContent>
           </Card>
