@@ -175,16 +175,16 @@ const FleetManagerLanding = () => {
                     <span className="text-muted-foreground">pendant 30 jours</span>
                   </div>
                   <p className="text-lg text-muted-foreground mb-4">
-                    puis <span className="font-semibold text-foreground">49,99€/mois</span>
+                    puis <span className="font-semibold text-foreground">69,99€/mois</span>
                   </p>
                   <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
                     <p className="flex items-center gap-2 justify-center">
                       <Check className="w-4 h-4 text-green-500" />
-                      <span>Accès complet à toutes les fonctionnalités</span>
+                      <span>10 chauffeurs inclus</span>
                     </p>
                     <p className="flex items-center gap-2 justify-center">
                       <Check className="w-4 h-4 text-green-500" />
-                      <span>Chauffeurs illimités</span>
+                      <span>+10€/mois par chauffeur supplémentaire</span>
                     </p>
                     <p className="flex items-center gap-2 justify-center">
                       <Check className="w-4 h-4 text-green-500" />

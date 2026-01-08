@@ -207,11 +207,19 @@ export const FleetSubscriptionManager = ({
               </Alert>
 
               <div className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                <Badge className="mb-3 bg-green-500 text-white">
+                  🎉 30 jours d'essai GRATUIT
+                </Badge>
                 <h3 className="text-xl font-bold mb-4">
                   Abonnement Gestionnaire de Flotte
                 </h3>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-3xl font-bold text-green-500">GRATUIT</span>
+                  <span className="text-muted-foreground">pendant 30 jours</span>
+                </div>
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-4xl font-bold text-primary">69,99 €</span>
+                  <span className="text-lg text-muted-foreground">puis</span>
+                  <span className="text-2xl font-bold text-primary">69,99 €</span>
                   <span className="text-muted-foreground">/ mois</span>
                 </div>
                 <ul className="space-y-2 mb-6">
@@ -240,14 +248,14 @@ export const FleetSubscriptionManager = ({
                   <p className="text-sm flex items-center gap-2">
                     <Info className="w-4 h-4 text-muted-foreground" />
                     <span>
-                      <strong>10 € / mois</strong> par chauffeur supplémentaire au-delà des 10 inclus
+                      <strong>+10 € / mois</strong> par chauffeur supplémentaire au-delà des 10 inclus
                     </span>
                   </p>
                 </div>
                 <Button
                   onClick={handleSubscribe}
                   disabled={subscribing}
-                  className="w-full"
+                  className="w-full bg-green-500 hover:bg-green-600"
                   size="lg"
                 >
                   {subscribing ? (
@@ -258,10 +266,13 @@ export const FleetSubscriptionManager = ({
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4 mr-2" />
-                      S'abonner maintenant
+                      Démarrer l'essai gratuit
                     </>
                   )}
                 </Button>
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  Empreinte bancaire 0€ • Sans engagement
+                </p>
               </div>
             </>
           )}
