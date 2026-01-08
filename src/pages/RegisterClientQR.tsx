@@ -115,6 +115,7 @@ const RegisterClientQR = () => {
         ...driver,
         card_photo_url: driverExtra?.card_photo_url,
         status: driverExtra?.status,
+        is_pioneer: driverExtra?.is_pioneer,
         profile: profile || {},
         // Photo: priorité card_photo_url > profile_photo_url (from profile)
         display_photo: driverExtra?.card_photo_url || profile?.profile_photo_url
@@ -271,6 +272,12 @@ const RegisterClientQR = () => {
 
                   {/* Badges harmonieux */}
                   <div className="flex flex-wrap gap-3 justify-center items-center">
+                    {driverInfo.is_pioneer && (
+                      <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-lg px-4 py-1.5 flex items-center gap-1.5">
+                        🏆
+                        <span className="font-semibold">Pionnier SoloCab</span>
+                      </Badge>
+                    )}
                     <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors px-4 py-1.5 flex items-center gap-1.5">
                       <Star className="w-4 h-4 fill-primary" />
                       <span className="font-semibold">{driverInfo.rating?.toFixed(1) || "5.0"}</span>

@@ -9724,6 +9724,7 @@ export type Database = {
           full_name: string
           gallery_photos: string[]
           id: string
+          is_pioneer: boolean
           profile_photo_url: string
           rating: number
           service_description: string
