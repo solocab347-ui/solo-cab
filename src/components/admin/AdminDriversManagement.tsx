@@ -10,6 +10,7 @@ import {
   X,
   Clock,
   AlertCircle,
+  Crown,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -36,6 +37,8 @@ interface Driver {
   company_name: string | null;
   documents: any;
   created_at: string;
+  is_pioneer: boolean;
+  is_demo_account: boolean;
   profiles: {
     full_name: string;
     email: string;
@@ -112,14 +115,17 @@ const AdminDriversManagement = () => {
           company_name,
           documents,
           created_at,
+          is_pioneer,
+          is_demo_account,
           profiles!inner(full_name, email, phone, profile_photo_url)
         `
         )
+        .eq("is_demo_account", false) // Exclure les comptes démo
         .order("created_at", { ascending: false })
         .limit(1000); // Limite explicite pour performance
 
       if (error) throw error;
-      setDrivers(data || []);
+      setDrivers((data as Driver[]) || []);
     } catch (error: any) {
       console.error("Error fetching drivers:", error);
       toast.error("Erreur lors du chargement des chauffeurs");
@@ -319,8 +325,14 @@ const AdminDriversManagement = () => {
           )}
 
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="font-bold text-lg">{driver.profiles.full_name}</h3>
+              {driver.is_pioneer && (
+                <Badge className="bg-amber-500 text-white gap-1">
+                  <Crown className="w-3 h-3" />
+                  Pionnier
+                </Badge>
+              )}
               {getStatusBadge(driver.status)}
             </div>
             <p className="text-sm text-muted-foreground mb-1">{driver.profiles.email}</p>

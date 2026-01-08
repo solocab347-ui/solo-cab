@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Users, Car, FileText, Euro, TrendingUp, CheckCircle } from "lucide-react";
+import { Users, Car, FileText, Euro, TrendingUp, CheckCircle, Crown, Clock } from "lucide-react";
 import { logger } from "@/lib/productionLogger";
 
 const AdminStats = () => {
@@ -53,6 +53,19 @@ const AdminStats = () => {
       color: "bg-yellow-500",
     },
     {
+      title: "Pionniers",
+      value: `${stats.validated_pioneers || 0}/${stats.total_pioneers || 0}`,
+      description: `${stats.pioneers_in_trial || 0} en essai, ${stats.pioneers_with_subscription || 0} abonnés`,
+      icon: Crown,
+      color: "bg-amber-500",
+    },
+    {
+      title: "Pionniers en attente",
+      value: stats.pending_pioneers || 0,
+      icon: Clock,
+      color: "bg-amber-400",
+    },
+    {
       title: "Clients totaux",
       value: stats.total_clients,
       description: `${stats.exclusive_clients} exclusifs, ${stats.free_clients} libres`,
@@ -89,7 +102,7 @@ const AdminStats = () => {
   ];
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
       {statCards.map((stat, index) => (
         <Card key={index} className="p-6">
           <div className="flex items-start justify-between mb-4">
