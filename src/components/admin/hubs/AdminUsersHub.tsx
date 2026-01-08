@@ -1,46 +1,53 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Users, Building2, Trash2 } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
 import { AdminFleetManagersDocuments } from "../AdminFleetManagersDocuments";
 import AdminUserCleanup from "../AdminUserCleanup";
 
 const AdminUsersHub = () => {
-  const [activeTab, setActiveTab] = useState("drivers");
+  const [activeTab, setActiveTab] = useState<"drivers" | "fleet" | "cleanup">("drivers");
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="drivers" className="flex items-center gap-2 py-3 text-xs sm:text-sm">
-            <Users className="w-4 h-4" />
-            <span className="hidden sm:inline">Chauffeurs</span>
-            <span className="sm:hidden">Chauff.</span>
-          </TabsTrigger>
-          <TabsTrigger value="fleet-managers" className="flex items-center gap-2 py-3 text-xs sm:text-sm">
-            <Building2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Gestionnaires</span>
-            <span className="sm:hidden">Flottes</span>
-          </TabsTrigger>
-          <TabsTrigger value="cleanup" className="flex items-center gap-2 py-3 text-xs sm:text-sm">
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Nettoyage</span>
-            <span className="sm:hidden">Suppr.</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Navigation simplifiée */}
+      <div className="flex flex-wrap gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+        <Button
+          variant={activeTab === "drivers" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("drivers")}
+          className="gap-2"
+        >
+          <Users className="w-4 h-4" />
+          <span className="hidden sm:inline">Chauffeurs</span>
+          <span className="sm:hidden">Chauff.</span>
+        </Button>
+        <Button
+          variant={activeTab === "fleet" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("fleet")}
+          className="gap-2"
+        >
+          <Building2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Gestionnaires</span>
+          <span className="sm:hidden">Flottes</span>
+        </Button>
+        <Button
+          variant={activeTab === "cleanup" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("cleanup")}
+          className="gap-2"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Nettoyage</span>
+          <span className="sm:hidden">Suppr.</span>
+        </Button>
+      </div>
 
-        <TabsContent value="drivers" className="mt-4">
-          <AdminDriversManagement />
-        </TabsContent>
-
-        <TabsContent value="fleet-managers" className="mt-4">
-          <AdminFleetManagersDocuments />
-        </TabsContent>
-
-        <TabsContent value="cleanup" className="mt-4">
-          <AdminUserCleanup />
-        </TabsContent>
-      </Tabs>
+      {/* Contenu */}
+      {activeTab === "drivers" && <AdminDriversManagement />}
+      {activeTab === "fleet" && <AdminFleetManagersDocuments />}
+      {activeTab === "cleanup" && <AdminUserCleanup />}
     </div>
   );
 };
