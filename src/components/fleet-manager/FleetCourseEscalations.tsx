@@ -53,15 +53,21 @@ export function FleetCourseEscalations({ fleetManagerId }: FleetCourseEscalation
   useEffect(() => {
     fetchEscalations();
     
+    // Auto-refresh every 15 minutes
+    const refreshInterval = setInterval(() => {
+      console.log('Auto-refresh: checking fleet escalations...');
+      fetchEscalations();
+    }, 15 * 60 * 1000);
+    
     // Realtime subscription
     const channel = supabase
-      .channel('escalations-changes')
+      .channel('fleet-escalations-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'course_escalations',
+          table: 'fleet_course_escalations',
           filter: `fleet_manager_id=eq.${fleetManagerId}`
         },
         () => fetchEscalations()
@@ -69,6 +75,7 @@ export function FleetCourseEscalations({ fleetManagerId }: FleetCourseEscalation
       .subscribe();
 
     return () => {
+      clearInterval(refreshInterval);
       supabase.removeChannel(channel);
     };
   }, [fleetManagerId]);
@@ -76,7 +83,7 @@ export function FleetCourseEscalations({ fleetManagerId }: FleetCourseEscalation
   const fetchEscalations = async () => {
     try {
       const { data, error } = await supabase
-        .from('course_escalations')
+        .from('fleet_course_escalations')
         .select(`
           *,
           course:courses(
@@ -87,14 +94,27 @@ export function FleetCourseEscalations({ fleetManagerId }: FleetCourseEscalation
           )
         `)
         .eq('fleet_manager_id', fleetManagerId)
-        .eq('resolution_status', 'pending')
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Map escalation data to expected format
       const mapped = (data || []).map(item => ({
-        ...item,
-        suggested_actions: (item.suggested_actions as unknown) as SuggestedAction[] | null
+        id: item.id,
+        course_id: item.course_id || '',
+        escalation_reason: item.escalation_reason || item.escalation_type,
+        escalation_level: item.retry_count || 0,
+        suggested_actions: [
+          { action: 'reassign', label: 'Réassigner' },
+          { action: 'share_with_partner', label: 'Partager' },
+          { action: 'cancel', label: 'Annuler' }
+        ] as SuggestedAction[],
+        resolution_status: item.status,
+        created_at: item.created_at,
+        course: item.course
       }));
+      
       setEscalations(mapped);
     } catch (error) {
       console.error('Error fetching escalations:', error);
@@ -107,28 +127,37 @@ export function FleetCourseEscalations({ fleetManagerId }: FleetCourseEscalation
     setProcessingId(escalationId);
     try {
       let newStatus = 'resolved';
+      let resolutionAction = action;
       
       if (action === 'share_with_partner' || action === 'share_externally') {
-        newStatus = 'shared_with_partner';
-        // TODO: Open share dialog
+        newStatus = 'resolved';
+        resolutionAction = 'shared_with_partner';
         toast.info('Ouvrir le dialogue de partage avec partenaire');
       } else if (action === 'cancel') {
-        newStatus = 'cancelled';
-        // Cancel the course
+        newStatus = 'resolved';
+        resolutionAction = 'cancelled';
         await supabase
           .from('courses')
           .update({ status: 'cancelled' })
           .eq('id', courseId);
-      } else if (action === 'notify_company') {
-        // TODO: Send notification to company
-        toast.info('Notification envoyée à l\'entreprise');
+      } else if (action === 'reassign') {
+        newStatus = 'pending';
+        resolutionAction = 'retry_requested';
+        // Trigger immediate retry
+        await supabase.rpc('process_fleet_escalation_retries');
+        toast.success('Recherche d\'un nouveau chauffeur en cours...');
+        fetchEscalations();
+        setProcessingId(null);
+        return;
       }
 
       const { error } = await supabase
-        .from('course_escalations')
+        .from('fleet_course_escalations')
         .update({
-          resolution_status: newStatus,
-          resolved_at: new Date().toISOString()
+          status: newStatus,
+          resolved_at: new Date().toISOString(),
+          resolution_action: resolutionAction,
+          updated_at: new Date().toISOString()
         })
         .eq('id', escalationId);
 

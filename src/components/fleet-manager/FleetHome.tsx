@@ -19,9 +19,11 @@ import {
   CreditCard,
   Route,
   Handshake,
-  Tag
+  Tag,
+  AlertTriangle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { FleetCourseEscalations } from "./FleetCourseEscalations";
 
 interface FleetDriver {
   id: string;
@@ -399,7 +401,8 @@ export const FleetHome = ({
         </div>
       </div>
 
-      {/* Mes Chauffeurs - Compact Driver List */}
+      {/* Escalades en attente */}
+      <FleetCourseEscalations fleetManagerId={fleetManager.id} />
       {drivers.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
