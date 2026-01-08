@@ -6233,6 +6233,8 @@ export type Database = {
           smart_buffer_min_minutes: number | null
           status: string
           stripe_customer_id: string | null
+          stripe_subscription_paused: boolean | null
+          stripe_subscription_paused_at: string | null
           subscription_end_date: string | null
           subscription_paid: boolean | null
           subscription_status: string | null
@@ -6312,6 +6314,8 @@ export type Database = {
           smart_buffer_min_minutes?: number | null
           status?: string
           stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
@@ -6391,6 +6395,8 @@ export type Database = {
           smart_buffer_min_minutes?: number | null
           status?: string
           stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
           subscription_end_date?: string | null
           subscription_paid?: boolean | null
           subscription_status?: string | null
