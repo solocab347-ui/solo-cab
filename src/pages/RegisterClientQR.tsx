@@ -79,7 +79,7 @@ const RegisterClientQR = () => {
       // Récupérer card_photo_url directement depuis la table drivers (policy publique existe)
       const { data: driverExtra, error: extraError } = await supabase
         .from("drivers")
-        .select("card_photo_url, status")
+        .select("card_photo_url, status, is_pioneer, free_access_type, free_access_end_date")
         .eq("id", qrData.driver_id)
         .single();
 
@@ -97,8 +97,14 @@ const RegisterClientQR = () => {
 
       const profile = profileData && profileData.length > 0 ? profileData[0] : null;
 
-      // Vérifier que le chauffeur est validé
-      if (driverExtra?.status !== "validated") {
+      // Vérifier que le chauffeur est validé OU est un pionnier avec accès actif
+      const isValidated = driverExtra?.status === "validated";
+      const isPioneerWithActiveAccess = driverExtra?.is_pioneer && 
+        driverExtra?.free_access_type === "trial" && 
+        driverExtra?.free_access_end_date && 
+        new Date(driverExtra.free_access_end_date) > new Date();
+      
+      if (!isValidated && !isPioneerWithActiveAccess) {
         toast.error("Ce chauffeur n'est pas encore validé");
         navigate("/");
         return;

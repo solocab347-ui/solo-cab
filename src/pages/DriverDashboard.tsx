@@ -41,6 +41,7 @@ import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocume
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
 import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreements";
+import { PioneerBanner } from "@/components/driver/PioneerBanner";
 import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
 import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
 import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
@@ -413,22 +414,30 @@ const DriverDashboard = () => {
             <NotificationBell />
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || t('driverDashboard.driver')}</span>
-              <Badge 
-                variant="outline" 
-                className={`text-xs border ${
-                  driverProfile?.driver?.free_access_granted 
-                    ? "border-success/50 text-success bg-success/10" 
+              {driverProfile?.driver?.is_pioneer ? (
+                <Badge 
+                  className="text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-md"
+                >
+                  🏆 Pionnier
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs border ${
+                    driverProfile?.driver?.free_access_granted 
+                      ? "border-success/50 text-success bg-success/10" 
+                      : driverProfile?.driver?.subscription_status === "active" 
+                        ? "border-primary/50 text-primary bg-primary/10"
+                        : "border-muted-foreground/50 text-muted-foreground bg-muted"
+                  }`}
+                >
+                  {driverProfile?.driver?.free_access_granted 
+                    ? t('driverDashboard.freeAccess') 
                     : driverProfile?.driver?.subscription_status === "active" 
-                      ? "border-primary/50 text-primary bg-primary/10"
-                      : "border-muted-foreground/50 text-muted-foreground bg-muted"
-                }`}
-              >
-                {driverProfile?.driver?.free_access_granted 
-                  ? t('driverDashboard.freeAccess') 
-                  : driverProfile?.driver?.subscription_status === "active" 
-                    ? t('driverDashboard.active') 
-                    : t('driverDashboard.inactive')}
-              </Badge>
+                      ? t('driverDashboard.active') 
+                      : t('driverDashboard.inactive')}
+                </Badge>
+              )}
             </div>
             <Link to="/rgpd-data">
               <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground hover:bg-muted" title={t('driverDashboard.rgpdData')}>
@@ -444,8 +453,20 @@ const DriverDashboard = () => {
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
 
-        {/* Subscription Alert */}
-        {driverProfile?.driver?.subscription_status !== "active" && !driverProfile?.driver?.free_access_granted && (
+        {/* Pioneer Banner - Affichage pour les pionniers */}
+        {driverProfile?.driver?.is_pioneer && (
+          <PioneerBanner
+            freeAccessEndDate={driverProfile.driver.free_access_end_date}
+            subscriptionStatus={driverProfile.driver.subscription_status}
+            freeAccessType={driverProfile.driver.free_access_type}
+          />
+        )}
+
+        {/* Subscription Alert - masqué pour les pionniers avec accès actif */}
+        {driverProfile?.driver?.subscription_status !== "active" && 
+         !driverProfile?.driver?.free_access_granted && 
+         !(driverProfile?.driver?.is_pioneer && driverProfile?.driver?.free_access_type === "trial" && 
+           driverProfile?.driver?.free_access_end_date && new Date(driverProfile.driver.free_access_end_date) > new Date()) && (
           <Alert className="mb-6 bg-destructive/10 border-destructive">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertTitle className="text-destructive">{t('driverDashboard.subscriptionInactive')}</AlertTitle>
