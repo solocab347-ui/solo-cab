@@ -26,7 +26,8 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
     );
 
     // Get authenticated user
@@ -72,6 +73,7 @@ serve(async (req) => {
           metadata: {
             fleet_manager_id: fleet_manager_id,
             user_id: user.id,
+            type: "fleet_manager",
           },
         });
         customerId = customer.id;
@@ -94,13 +96,13 @@ serve(async (req) => {
     if (!product) {
       product = await stripe.products.create({
         name: "Abonnement Gestionnaire de Flotte SoloCab",
-        description: "Abonnement mensuel avec 10 chauffeurs inclus",
+        description: "Abonnement mensuel avec 10 chauffeurs inclus - 1er mois GRATUIT",
         metadata: { type: "fleet_manager_subscription" },
       });
       logStep("Product created", { productId: product.id });
     }
 
-    // Get or create price
+    // Get or create price (69.99€/month)
     let price;
     const prices = await stripe.prices.list({ product: product.id, active: true, limit: 1 });
     if (prices.data.length > 0) {
@@ -116,8 +118,10 @@ serve(async (req) => {
       logStep("Price created", { priceId: price.id });
     }
 
-    // Create checkout session
+    // Create checkout session with 30-day FREE TRIAL (empreinte bancaire de 0€)
     const origin = req.headers.get("origin") || "https://solocab.fr";
+    const trialEndDate = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days from now
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -134,14 +138,33 @@ serve(async (req) => {
         type: "fleet_manager_subscription",
       },
       subscription_data: {
+        trial_period_days: 30, // 1 MOIS GRATUIT
         metadata: {
           fleet_manager_id: fleet_manager_id,
           type: "fleet_manager_subscription",
         },
       },
+      // Collect payment method for future charges (0€ today)
+      payment_method_collection: "always",
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created with 30-day trial", { 
+      sessionId: session.id, 
+      url: session.url,
+      trialDays: 30 
+    });
+
+    // Update fleet manager with trial dates
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    await supabaseClient
+      .from("fleet_managers")
+      .update({
+        trial_started_at: now.toISOString(),
+        trial_ends_at: trialEnd.toISOString(),
+      })
+      .eq("id", fleet_manager_id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

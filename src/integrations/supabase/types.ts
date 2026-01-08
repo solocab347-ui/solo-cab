@@ -6204,6 +6204,10 @@ export type Database = {
           first_order_commission_reduction: number | null
           first_order_discount_fixed: number | null
           first_order_discount_percentage: number | null
+          free_access_end_date: string | null
+          free_access_granted: boolean | null
+          free_access_start_date: string | null
+          free_access_type: string | null
           hourly_rate: number | null
           id: string
           logo_url: string | null
@@ -6235,6 +6239,8 @@ export type Database = {
           subscription_stripe_id: string | null
           total_clients: number | null
           total_drivers: number | null
+          trial_ends_at: string | null
+          trial_started_at: string | null
           tva_included: boolean | null
           tva_number: string | null
           tva_rate: number | null
@@ -6277,6 +6283,10 @@ export type Database = {
           first_order_commission_reduction?: number | null
           first_order_discount_fixed?: number | null
           first_order_discount_percentage?: number | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
           hourly_rate?: number | null
           id?: string
           logo_url?: string | null
@@ -6308,6 +6318,8 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_clients?: number | null
           total_drivers?: number | null
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           tva_included?: boolean | null
           tva_number?: string | null
           tva_rate?: number | null
@@ -6350,6 +6362,10 @@ export type Database = {
           first_order_commission_reduction?: number | null
           first_order_discount_fixed?: number | null
           first_order_discount_percentage?: number | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
           hourly_rate?: number | null
           id?: string
           logo_url?: string | null
@@ -6381,6 +6397,8 @@ export type Database = {
           subscription_stripe_id?: string | null
           total_clients?: number | null
           total_drivers?: number | null
+          trial_ends_at?: string | null
+          trial_started_at?: string | null
           tva_included?: boolean | null
           tva_number?: string | null
           tva_rate?: number | null
