@@ -147,18 +147,51 @@ const FleetManagerLanding = () => {
               </Link>
             </div>
 
-            <div className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-500" />
-                <span>7-day free trial</span>
+                <span>30 jours d'essai gratuit</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-500" />
-                <span>No credit card required</span>
+                <span>Empreinte bancaire 0€</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-500" />
-                <span>Cancel anytime</span>
+                <span>Sans engagement</span>
+              </div>
+            </div>
+
+            {/* Pricing Card */}
+            <div className="mt-8 max-w-md mx-auto">
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
+                <div className="text-center">
+                  <Badge className="mb-3 bg-green-500 text-white">
+                    <Zap className="w-3 h-3 mr-1" />
+                    OFFRE LANCEMENT
+                  </Badge>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-4xl font-bold text-green-500">GRATUIT</span>
+                    <span className="text-muted-foreground">pendant 30 jours</span>
+                  </div>
+                  <p className="text-lg text-muted-foreground mb-4">
+                    puis <span className="font-semibold text-foreground">49,99€/mois</span>
+                  </p>
+                  <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                    <p className="flex items-center gap-2 justify-center">
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span>Accès complet à toutes les fonctionnalités</span>
+                    </p>
+                    <p className="flex items-center gap-2 justify-center">
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span>Chauffeurs illimités</span>
+                    </p>
+                    <p className="flex items-center gap-2 justify-center">
+                      <Check className="w-4 h-4 text-green-500" />
+                      <span>Résiliable à tout moment</span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
