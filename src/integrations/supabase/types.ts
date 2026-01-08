@@ -9538,6 +9538,7 @@ export type Database = {
           company_name: string
           contact_email: string
           contact_phone: string
+          created_at: string
           display_company_name: boolean
           display_driver_name: boolean
           free_access_end_date: string

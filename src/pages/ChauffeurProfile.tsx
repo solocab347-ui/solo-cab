@@ -92,14 +92,17 @@ const ChauffeurProfile = () => {
 
         if (!isMounted) return;
 
-        if (rpcError || !rpcData || rpcData.length === 0) {
-          console.error("❌ Driver not found:", rpcError);
+        // La fonction RPC retourne un tableau, même pour un seul résultat
+        const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
+        
+        if (rpcError || driverDataArray.length === 0) {
+          console.error("❌ Driver not found:", rpcError, "Data:", rpcData);
           toast.error("Chauffeur non trouvé ou profil non public");
           navigate("/chauffeurs");
           return;
         }
 
-        const driverData = rpcData[0];
+        const driverData = driverDataArray[0];
 
         console.log("✅ Driver data loaded");
 
@@ -144,7 +147,7 @@ const ChauffeurProfile = () => {
           // Statistiques calculées
           rating: averageRating,
           total_rides: totalRides,
-          created_at: "",
+          created_at: driverData.created_at || "",
         };
 
         console.log("✅ Profile complete");
