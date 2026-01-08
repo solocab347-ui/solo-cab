@@ -43,12 +43,20 @@ const SafeMode = () => {
     clients, 
     courses, 
     driverProfile,
+    myDrivers,
     fleetDrivers,
+    companyEmployees,
     stats 
   } = useOfflineData();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('courses');
+
+  // Déterminer les onglets disponibles
+  const hasClients = clients.length > 0;
+  const hasMyDrivers = myDrivers.length > 0;
+  const hasFleetDrivers = fleetDrivers.length > 0;
+  const hasEmployees = companyEmployees.length > 0;
 
   // Filtrage des courses
   const filteredCourses = useMemo(() => {
@@ -58,8 +66,10 @@ const SafeMode = () => {
       c.pickup_address?.toLowerCase().includes(term) ||
       c.destination_address?.toLowerCase().includes(term) ||
       c.client_name?.toLowerCase().includes(term) ||
+      c.driver_name?.toLowerCase().includes(term) ||
       c.guest_name?.toLowerCase().includes(term) ||
       c.guest_phone?.includes(term) ||
+      c.driver_phone?.includes(term) ||
       c.status?.toLowerCase().includes(term)
     );
   }, [courses, searchTerm]);
@@ -75,6 +85,17 @@ const SafeMode = () => {
     );
   }, [clients, searchTerm]);
 
+  // Filtrage des chauffeurs (pour clients ou collaborateurs)
+  const filteredMyDrivers = useMemo(() => {
+    if (!searchTerm) return myDrivers;
+    const term = searchTerm.toLowerCase();
+    return myDrivers.filter(d => 
+      d.display_name?.toLowerCase().includes(term) ||
+      d.phone?.includes(term) ||
+      d.company_name?.toLowerCase().includes(term)
+    );
+  }, [myDrivers, searchTerm]);
+
   // Filtrage des chauffeurs de flotte
   const filteredFleetDrivers = useMemo(() => {
     if (!searchTerm) return fleetDrivers;
@@ -84,6 +105,17 @@ const SafeMode = () => {
       d.driver_phone?.includes(term)
     );
   }, [fleetDrivers, searchTerm]);
+
+  // Filtrage des collaborateurs
+  const filteredEmployees = useMemo(() => {
+    if (!searchTerm) return companyEmployees;
+    const term = searchTerm.toLowerCase();
+    return companyEmployees.filter(e => 
+      e.employee_name?.toLowerCase().includes(term) ||
+      e.phone?.includes(term) ||
+      e.department?.toLowerCase().includes(term)
+    );
+  }, [companyEmployees, searchTerm]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -162,7 +194,7 @@ const SafeMode = () => {
         )}
 
         {/* Statistiques */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           <Card>
             <CardContent className="p-3 text-center">
               <Car className="h-5 w-5 mx-auto mb-1 text-primary" />
@@ -179,11 +211,18 @@ const SafeMode = () => {
           </Card>
           <Card>
             <CardContent className="p-3 text-center">
+              <User className="h-5 w-5 mx-auto mb-1 text-primary" />
+              <p className="text-2xl font-bold">{stats.drivers}</p>
+              <p className="text-xs text-muted-foreground">Chauffeurs</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
               <Clock className="h-5 w-5 mx-auto mb-1 text-primary" />
               <p className="text-sm font-medium">
                 {lastSync ? format(lastSync, 'HH:mm', { locale: fr }) : '--:--'}
               </p>
-              <p className="text-xs text-muted-foreground">Dernière sync</p>
+              <p className="text-xs text-muted-foreground">Sync</p>
             </CardContent>
           </Card>
         </div>
@@ -199,24 +238,44 @@ const SafeMode = () => {
           />
         </div>
 
-        {/* Onglets */}
+        {/* Onglets dynamiques selon le type d'utilisateur */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="courses" className="flex items-center gap-1">
+          <TabsList className="w-full flex overflow-x-auto">
+            <TabsTrigger value="courses" className="flex items-center gap-1 flex-1">
               <Car className="h-4 w-4" />
               <span className="hidden sm:inline">Courses</span>
               <Badge variant="secondary" className="ml-1">{filteredCourses.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="clients" className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Clients</span>
-              <Badge variant="secondary" className="ml-1">{filteredClients.length}</Badge>
-            </TabsTrigger>
-            {fleetDrivers.length > 0 && (
-              <TabsTrigger value="fleet" className="flex items-center gap-1">
+            
+            {hasClients && (
+              <TabsTrigger value="clients" className="flex items-center gap-1 flex-1">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Clients</span>
+                <Badge variant="secondary" className="ml-1">{filteredClients.length}</Badge>
+              </TabsTrigger>
+            )}
+            
+            {hasMyDrivers && (
+              <TabsTrigger value="drivers" className="flex items-center gap-1 flex-1">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Chauffeurs</span>
+                <Badge variant="secondary" className="ml-1">{filteredMyDrivers.length}</Badge>
+              </TabsTrigger>
+            )}
+            
+            {hasFleetDrivers && (
+              <TabsTrigger value="fleet" className="flex items-center gap-1 flex-1">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Flotte</span>
                 <Badge variant="secondary" className="ml-1">{filteredFleetDrivers.length}</Badge>
+              </TabsTrigger>
+            )}
+
+            {hasEmployees && (
+              <TabsTrigger value="employees" className="flex items-center gap-1 flex-1">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Équipe</span>
+                <Badge variant="secondary" className="ml-1">{filteredEmployees.length}</Badge>
               </TabsTrigger>
             )}
           </TabsList>
@@ -369,6 +428,58 @@ const SafeMode = () => {
             </ScrollArea>
           </TabsContent>
 
+          {/* Liste des chauffeurs (pour clients/collaborateurs) */}
+          <TabsContent value="drivers" className="mt-4">
+            <ScrollArea className="h-[calc(100vh-380px)]">
+              <div className="space-y-3">
+                {filteredMyDrivers.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      <User className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>Aucun chauffeur en cache</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredMyDrivers.map((driver) => (
+                    <Card key={driver.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{driver.display_name || driver.company_name || 'Chauffeur'}</p>
+                              {driver.phone && (
+                                <p className="text-sm text-muted-foreground">{driver.phone}</p>
+                              )}
+                              {driver.vehicle_model && (
+                                <p className="text-xs text-muted-foreground">
+                                  {driver.vehicle_model} {driver.vehicle_color && `- ${driver.vehicle_color}`}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {driver.phone && (
+                            <a
+                              href={`tel:${driver.phone}`}
+                              onClick={(e) => !isOnline && e.preventDefault()}
+                            >
+                              <Button size="icon" variant="outline" className="h-8 w-8">
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
           {/* Liste des chauffeurs de flotte */}
           <TabsContent value="fleet" className="mt-4">
             <ScrollArea className="h-[calc(100vh-380px)]">
@@ -412,6 +523,56 @@ const SafeMode = () => {
                               </a>
                             )}
                           </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Liste des collaborateurs */}
+          <TabsContent value="employees" className="mt-4">
+            <ScrollArea className="h-[calc(100vh-380px)]">
+              <div className="space-y-3">
+                {filteredEmployees.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>Aucun collaborateur en cache</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <Card key={employee.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{employee.employee_name || 'Collaborateur'}</p>
+                              {employee.department && (
+                                <p className="text-sm text-muted-foreground">{employee.department}</p>
+                              )}
+                              {employee.job_title && (
+                                <p className="text-xs text-muted-foreground">{employee.job_title}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {employee.phone && (
+                            <a
+                              href={`tel:${employee.phone}`}
+                              onClick={(e) => !isOnline && e.preventDefault()}
+                            >
+                              <Button size="icon" variant="outline" className="h-8 w-8">
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
