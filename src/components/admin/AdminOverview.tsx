@@ -48,33 +48,17 @@ const AdminOverview = () => {
       
       const demoDriverIds = demoDrivers?.map(d => d.id) || [];
 
-      // 1. Clients de chauffeurs (table clients) - TOUS les clients de la table clients
-      let clientsQuery = supabase
+      // 1. TOUS les clients de la table clients (sans exclusion complexe)
+      const { count: clientsFromTable } = await supabase
         .from("clients")
         .select("*", { count: "exact", head: true });
-      
-      // Exclure les clients des chauffeurs démo
-      if (demoDriverIds.length > 0) {
-        clientsQuery = clientsQuery
-          .not("driver_id", "in", `(${demoDriverIds.join(",")})`)
-          .or(`driver_id.is.null`);
-      }
-      
-      const { count: clientsFromTable } = await clientsQuery;
 
       // Clients liés à un chauffeur indépendant (driver_id non null, fleet_manager_id null)
-      let driverClientsQuery = supabase
+      const { count: clientsDriver } = await supabase
         .from("clients")
         .select("*", { count: "exact", head: true })
         .not("driver_id", "is", null)
         .is("fleet_manager_id", null);
-      
-      if (demoDriverIds.length > 0) {
-        driverClientsQuery = driverClientsQuery
-          .not("driver_id", "in", `(${demoDriverIds.join(",")})`)
-      }
-      
-      const { count: clientsDriver } = await driverClientsQuery;
 
       // Clients liés à un gestionnaire de flotte
       const { count: clientsFleet } = await supabase
