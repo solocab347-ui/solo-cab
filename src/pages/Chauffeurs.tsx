@@ -42,6 +42,7 @@ interface PublicDriver {
   display_driver_name?: boolean;
   display_company_name?: boolean;
   show_rating_public?: boolean;
+  is_pioneer?: boolean;
 }
 
 const Chauffeurs = () => {

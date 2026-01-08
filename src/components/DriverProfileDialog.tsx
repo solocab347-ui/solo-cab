@@ -56,6 +56,7 @@ interface DriverProfile {
   services_offered: string[];
   vehicle_photos: string[];
   gallery_photos: string[];
+  is_pioneer?: boolean;
   // Note: vehicle_plate is deliberately excluded from public profile for security
 }
 
@@ -116,6 +117,10 @@ export const DriverProfileDialog = ({
             show_email,
             show_rating_public,
             card_photo_url,
+            is_pioneer,
+            status,
+            free_access_type,
+            free_access_end_date,
             profiles!drivers_user_id_fkey (
               full_name,
               email,
@@ -125,7 +130,6 @@ export const DriverProfileDialog = ({
           `)
           .eq("id", driverId)
           .eq("public_profile_enabled", true)
-          .eq("status", "validated")
           .maybeSingle();
 
         if (!isMounted) return;
@@ -137,9 +141,24 @@ export const DriverProfileDialog = ({
           return;
         }
 
+        // Vérifier que le chauffeur est validé OU est un pionnier avec accès actif
+        const isValidated = driverData.status === "validated";
+        const isPioneerWithActiveAccess = driverData.is_pioneer && 
+          driverData.free_access_type === "trial" && 
+          driverData.free_access_end_date && 
+          new Date(driverData.free_access_end_date) > new Date();
+        
+        if (!isValidated && !isPioneerWithActiveAccess) {
+          console.error("❌ Driver not validated and not pioneer with active access");
+          toast.error("Chauffeur non trouvé ou profil non public");
+          onOpenChange(false);
+          return;
+        }
+
         console.log("✅ Driver data loaded:", {
           card_photo_url: driverData.card_photo_url,
-          profile_photo_url: driverData.profiles?.profile_photo_url
+          profile_photo_url: driverData.profiles?.profile_photo_url,
+          is_pioneer: driverData.is_pioneer
         });
 
         // Statistiques globales (incluant toutes les sources de courses)
@@ -164,6 +183,7 @@ export const DriverProfileDialog = ({
           vehicle_brand: driverData.vehicle_brand || null,
           vehicle_year: driverData.vehicle_year || null,
           vehicle_color: driverData.vehicle_color || null,
+          is_pioneer: driverData.is_pioneer || false,
         };
 
         console.log("✅ Profile complete");
@@ -257,13 +277,17 @@ export const DriverProfileDialog = ({
                     <span className="text-white">{driver.full_name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                {driver.total_rides > 0 && (
+                {driver.is_pioneer ? (
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-1.5 rounded-full shadow-lg">
+                    <span className="text-xs font-bold text-white">🏆 Pionnier SoloCab</span>
+                  </div>
+                ) : driver.total_rides > 0 ? (
                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary px-3 py-1 rounded-full shadow-lg">
                     <span className="text-xs font-bold text-primary-foreground">
                       Chauffeur Pro
                     </span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="w-full space-y-3">

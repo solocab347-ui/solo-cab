@@ -31,6 +31,7 @@ interface DriverCardProps {
     display_company_name?: boolean;
     distance_km?: number;
     show_rating_public?: boolean;
+    is_pioneer?: boolean;
   };
   cardIndex?: number;
   onViewProfile?: (driverId: string) => void;
@@ -62,10 +63,17 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
   const cardColor = cardColors[cardIndex % 3];
 
   return (
-    <Card className={`group overflow-hidden hover:shadow-elegant hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col border-2 ${cardColor}`}>
+    <Card className={`group overflow-hidden hover:shadow-elegant hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col border-2 ${cardColor} ${driver.is_pioneer ? 'ring-2 ring-amber-400/50' : ''}`}>
       {/* Large Profile Photo Section */}
       <div className="relative h-80 overflow-hidden bg-gradient-to-br from-foreground/5 via-background to-primary/10">
-        {/* Distance Badge */}
+        {/* Pioneer Badge - Top Left */}
+        {driver.is_pioneer && (
+          <Badge className="absolute top-4 left-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-lg z-10 gap-1">
+            🏆 Pionnier
+          </Badge>
+        )}
+        
+        {/* Distance Badge - Top Right */}
         {driver.distance_km !== undefined && (
           <Badge className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm z-10">
             {driver.distance_km.toFixed(1)} km
