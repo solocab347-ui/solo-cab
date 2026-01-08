@@ -87,77 +87,29 @@ export const DriverProfileDialog = ({
     const loadDriver = async () => {
       setLoading(true);
       try {
-        console.log("🔍 Loading driver profile:", driverId);
+        console.log("🔍 Loading driver profile via RPC:", driverId);
 
-        // SÉCURITÉ: SELECT explicite excluant les colonnes sensibles
-        // Colonnes publiques uniquement (pas de GPS, permis, SIRET, tarifs, etc.)
-        const { data: driverData, error: driverError } = await supabase
-          .from("drivers")
-          .select(`
-            id,
-            user_id,
-            bio,
-            rating,
-            total_rides,
-            vehicle_model,
-            vehicle_brand,
-            vehicle_color,
-            vehicle_year,
-            max_passengers,
-            working_sectors,
-            service_description,
-            services_offered,
-            vehicle_equipment,
-            gallery_photos,
-            vehicle_photos,
-            display_driver_name,
-            display_company_name,
-            company_name,
-            show_phone,
-            show_email,
-            show_rating_public,
-            card_photo_url,
-            is_pioneer,
-            status,
-            free_access_type,
-            free_access_end_date,
-            profiles!drivers_user_id_fkey (
-              full_name,
-              email,
-              phone,
-              profile_photo_url
-            )
-          `)
-          .eq("id", driverId)
-          .eq("public_profile_enabled", true)
-          .maybeSingle();
+        // Utilisation de la fonction RPC SECURITY DEFINER pour contourner les RLS
+        // et permettre l'affichage de TOUS les profils publics (validés, pionniers, nouveaux inscrits 30j)
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_public_driver_profile_by_id', { driver_id_param: driverId });
 
         if (!isMounted) return;
 
-        if (driverError || !driverData) {
-          console.error("❌ Driver not found:", driverError);
-          toast.error("Chauffeur non trouvé ou profil non public");
-          onOpenChange(false);
-          return;
-        }
-
-        // Vérifier que le chauffeur est validé OU est un pionnier avec accès actif
-        const isValidated = driverData.status === "validated";
-        const isPioneerWithActiveAccess = driverData.is_pioneer && 
-          driverData.free_access_type === "trial" && 
-          driverData.free_access_end_date && 
-          new Date(driverData.free_access_end_date) > new Date();
+        // La fonction RPC retourne un tableau
+        const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
         
-        if (!isValidated && !isPioneerWithActiveAccess) {
-          console.error("❌ Driver not validated and not pioneer with active access");
+        if (rpcError || driverDataArray.length === 0) {
+          console.error("❌ Driver not found via RPC:", rpcError, "Data:", rpcData);
           toast.error("Chauffeur non trouvé ou profil non public");
           onOpenChange(false);
           return;
         }
 
-        console.log("✅ Driver data loaded:", {
-          card_photo_url: driverData.card_photo_url,
-          profile_photo_url: driverData.profiles?.profile_photo_url,
+        const driverData = driverDataArray[0];
+
+        console.log("✅ Driver data loaded via RPC:", {
+          profile_photo_url: driverData.profile_photo_url,
           is_pioneer: driverData.is_pioneer
         });
 
@@ -169,20 +121,34 @@ export const DriverProfileDialog = ({
 
         if (!isMounted) return;
 
-        // Priorité: card_photo_url du driver > profile_photo_url du profil
-        const photoUrl = driverData.card_photo_url || driverData.profiles?.profile_photo_url || null;
-
+        // La RPC retourne directement profile_photo_url depuis le profil
         const profile: DriverProfile = {
-          ...driverData,
-          full_name: driverData.profiles?.full_name || "Chauffeur",
-          email: driverData.profiles?.email || "",
-          phone: driverData.profiles?.phone || "",
-          profile_photo_url: photoUrl,
-          rating: averageRating,
-          total_rides: totalRides,
+          id: driverData.id,
+          user_id: driverData.user_id,
+          company_name: driverData.company_name || "",
+          vehicle_model: driverData.vehicle_model || "",
           vehicle_brand: driverData.vehicle_brand || null,
           vehicle_year: driverData.vehicle_year || null,
           vehicle_color: driverData.vehicle_color || null,
+          bio: driverData.service_description || "",
+          service_description: driverData.service_description || "",
+          working_sectors: driverData.working_sectors || [],
+          vehicle_equipment: driverData.vehicle_equipment || [],
+          services_offered: driverData.services_offered || [],
+          vehicle_photos: driverData.vehicle_photos || [],
+          gallery_photos: driverData.gallery_photos || [],
+          show_phone: driverData.show_phone ?? false,
+          show_email: driverData.show_email ?? false,
+          display_driver_name: driverData.display_driver_name ?? true,
+          display_company_name: driverData.display_company_name ?? true,
+          // Données du profil utilisateur (viennent de la RPC)
+          full_name: driverData.profile_full_name || "Chauffeur",
+          email: driverData.contact_email || driverData.profile_email || "",
+          phone: driverData.contact_phone || driverData.profile_phone || "",
+          profile_photo_url: driverData.profile_photo_url || null,
+          // Statistiques calculées
+          rating: averageRating,
+          total_rides: totalRides,
           is_pioneer: driverData.is_pioneer || false,
         };
 
