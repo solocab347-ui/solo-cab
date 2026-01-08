@@ -2749,6 +2749,126 @@ export type Database = {
           },
         ]
       }
+      course_queue: {
+        Row: {
+          actual_gap_minutes: number | null
+          auto_check_enabled: boolean | null
+          buffer_minutes_needed: number | null
+          conflict_reason: string
+          conflicting_course_id: string | null
+          course_id: string
+          created_at: string
+          driver_id: string
+          expires_at: string | null
+          id: string
+          priority: number | null
+          resolved_action: string | null
+          resolved_at: string | null
+          shared_to_driver_id: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_gap_minutes?: number | null
+          auto_check_enabled?: boolean | null
+          buffer_minutes_needed?: number | null
+          conflict_reason?: string
+          conflicting_course_id?: string | null
+          course_id: string
+          created_at?: string
+          driver_id: string
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          resolved_action?: string | null
+          resolved_at?: string | null
+          shared_to_driver_id?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_gap_minutes?: number | null
+          auto_check_enabled?: boolean | null
+          buffer_minutes_needed?: number | null
+          conflict_reason?: string
+          conflicting_course_id?: string | null
+          course_id?: string
+          created_at?: string
+          driver_id?: string
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          resolved_action?: string | null
+          resolved_at?: string | null
+          shared_to_driver_id?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_queue_conflicting_course_id_fkey"
+            columns: ["conflicting_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_queue_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           client_id: string | null
@@ -9329,6 +9449,21 @@ export type Database = {
         Returns: Json
       }
       check_company_payment_reminders: { Args: never; Returns: undefined }
+      check_course_buffer_conflict: {
+        Args: {
+          p_course_id: string
+          p_driver_id: string
+          p_duration_minutes?: number
+          p_scheduled_date: string
+        }
+        Returns: {
+          actual_gap: number
+          buffer_needed: number
+          conflict_type: string
+          conflicting_course_id: string
+          has_conflict: boolean
+        }[]
+      }
       check_driver_availability: {
         Args: {
           p_driver_id: string
@@ -9994,6 +10129,14 @@ export type Database = {
       set_favorite_vehicle: {
         Args: { _driver_id: string; _vehicle_id: string }
         Returns: boolean
+      }
+      try_auto_place_queued_courses: {
+        Args: never
+        Returns: {
+          course_id: string
+          placed: boolean
+          queue_id: string
+        }[]
       }
       validate_driver_numbering: {
         Args: { _driver_id: string }
