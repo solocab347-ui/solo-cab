@@ -53,6 +53,9 @@ interface CommissionDetail {
   due_date: string | null;
   paid_at: string | null;
   created_at: string;
+  source?: 'partnership_commissions' | 'fleet_partner_courses';
+  pickup_address?: string;
+  destination_address?: string;
 }
 
 export const DriverFleetCommissions = ({ driverId }: DriverFleetCommissionsProps) => {
@@ -107,14 +110,61 @@ export const DriverFleetCommissions = ({ driverId }: DriverFleetCommissionsProps
   const fetchCommissionDetails = async (partnershipId: string) => {
     setLoadingDetails(true);
     try {
-      const { data, error } = await supabase
+      // Fetch from partnership_course_commissions
+      const { data: pccData, error: pccError } = await supabase
         .from("partnership_course_commissions")
         .select("*")
         .eq("partnership_id", partnershipId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setCommissionDetails(data || []);
+      if (pccError) throw pccError;
+
+      // Also fetch from fleet_partner_courses for courses not yet in partnership_course_commissions
+      const { data: fpcData, error: fpcError } = await supabase
+        .from("fleet_partner_courses")
+        .select(`
+          id,
+          course_id,
+          course_amount,
+          commission_percentage,
+          commission_amount,
+          payment_settled,
+          payment_settled_at,
+          created_at,
+          course:courses(pickup_address, destination_address)
+        `)
+        .eq("partnership_id", partnershipId)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false });
+
+      if (fpcError) throw fpcError;
+
+      // Merge data, prioritizing partnership_course_commissions
+      const existingCourseIds = new Set(pccData?.map(d => d.course_id) || []);
+      
+      const pccDetails: CommissionDetail[] = (pccData || []).map(d => ({
+        ...d,
+        source: 'partnership_commissions' as const
+      }));
+
+      const fpcDetails: CommissionDetail[] = (fpcData || [])
+        .filter(d => !existingCourseIds.has(d.course_id))
+        .map(d => ({
+          id: d.id,
+          course_id: d.course_id,
+          course_amount: d.course_amount || 0,
+          commission_percentage: d.commission_percentage || 0,
+          commission_amount: d.commission_amount || 0,
+          payment_status: d.payment_settled ? 'paid' : 'pending',
+          due_date: null,
+          paid_at: d.payment_settled_at,
+          created_at: d.created_at,
+          source: 'fleet_partner_courses' as const,
+          pickup_address: d.course?.pickup_address,
+          destination_address: d.course?.destination_address
+        }));
+
+      setCommissionDetails([...pccDetails, ...fpcDetails]);
     } catch (error) {
       console.error("Error fetching commission details:", error);
       toast.error("Erreur lors du chargement des détails");
@@ -149,10 +199,27 @@ export const DriverFleetCommissions = ({ driverId }: DriverFleetCommissionsProps
     setPaying(true);
 
     try {
-      const { error } = await supabase
-        .rpc("mark_commission_paid", { _commission_ids: selectedCommissions });
+      // Separate by source
+      const pccIds = selectedCommissions.filter(id => 
+        commissionDetails.find(c => c.id === id && c.source === 'partnership_commissions')
+      );
+      const fpcIds = selectedCommissions.filter(id => 
+        commissionDetails.find(c => c.id === id && c.source === 'fleet_partner_courses')
+      );
 
-      if (error) throw error;
+      // Mark partnership_course_commissions as paid
+      if (pccIds.length > 0) {
+        const { error } = await supabase
+          .rpc("mark_commission_paid", { _commission_ids: pccIds });
+        if (error) throw error;
+      }
+
+      // Mark fleet_partner_courses as paid
+      if (fpcIds.length > 0) {
+        const { error } = await supabase
+          .rpc("mark_fleet_partner_commission_paid", { p_fleet_partner_course_ids: fpcIds });
+        if (error) throw error;
+      }
 
       toast.success("Commissions marquées comme payées");
       setShowPayDialog(false);

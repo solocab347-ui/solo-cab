@@ -10232,6 +10232,10 @@ export type Database = {
         Args: { _commission_ids: string[] }
         Returns: undefined
       }
+      mark_fleet_partner_commission_paid: {
+        Args: { p_fleet_partner_course_ids: string[] }
+        Returns: undefined
+      }
       notify_overdue_company_payments: { Args: never; Returns: undefined }
       process_course_queue_retries: {
         Args: never
