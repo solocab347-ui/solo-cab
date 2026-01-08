@@ -231,22 +231,25 @@ const AdminEmails = () => {
       <AdminEmailTest />
       
       <Tabs defaultValue="send" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="send">
-            <Mail className="w-4 h-4 mr-2" />
-            Envoyer un email
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full">
+          <TabsTrigger value="send" className="flex-1 min-w-[80px] text-xs sm:text-sm gap-1 px-2 py-1.5">
+            <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Envoyer</span>
+            <span className="sm:hidden">Envoi</span>
           </TabsTrigger>
-          <TabsTrigger value="diagnostic">
-            <Activity className="w-4 h-4 mr-2" />
-            Diagnostic Système
+          <TabsTrigger value="diagnostic" className="flex-1 min-w-[80px] text-xs sm:text-sm gap-1 px-2 py-1.5">
+            <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Diagnostic</span>
+            <span className="sm:hidden">Diag.</span>
           </TabsTrigger>
-          <TabsTrigger value="templates">
-            <Save className="w-4 h-4 mr-2" />
-            Templates
+          <TabsTrigger value="templates" className="flex-1 min-w-[80px] text-xs sm:text-sm gap-1 px-2 py-1.5">
+            <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span>Templates</span>
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <Clock className="w-4 h-4 mr-2" />
-            Historique
+          <TabsTrigger value="history" className="flex-1 min-w-[80px] text-xs sm:text-sm gap-1 px-2 py-1.5">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Historique</span>
+            <span className="sm:hidden">Hist.</span>
           </TabsTrigger>
         </TabsList>
 
@@ -357,9 +360,9 @@ const AdminEmails = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-primary/5 rounded-lg">
               <div>
-                <p className="font-medium">
+                <p className="font-medium text-sm sm:text-base">
                   Prêt à envoyer à{" "}
                   {recipientType === "all_drivers"
                     ? `${driversCount} destinataire(s)`
@@ -367,16 +370,17 @@ const AdminEmails = () => {
                     ? `${clientsCount} destinataire(s)`
                     : "0 destinataire(s)"}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {recipientType ? getRecipientTypeLabel(recipientType) : "Sélectionnez les destinataires"}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" disabled={!subject || !content}>
+                    <Button variant="outline" size="sm" disabled={!subject || !content} className="w-full sm:w-auto">
                       <Save className="w-4 h-4 mr-2" />
-                      Sauvegarder template
+                      <span className="hidden sm:inline">Sauvegarder template</span>
+                      <span className="sm:hidden">Sauver</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -398,9 +402,9 @@ const AdminEmails = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button onClick={handleSendEmails} disabled={sending || !recipientType || !subject || !content}>
+                <Button onClick={handleSendEmails} disabled={sending || !recipientType || !subject || !content} size="sm" className="w-full sm:w-auto">
                   <Send className="w-4 h-4 mr-2" />
-                  {sending ? "Envoi..." : "Envoyer les emails"}
+                  {sending ? "Envoi..." : "Envoyer"}
                 </Button>
               </div>
             </div>
