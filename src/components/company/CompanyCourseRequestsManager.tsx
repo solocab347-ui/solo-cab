@@ -13,7 +13,7 @@ import { fr } from "date-fns/locale";
 import { 
   Plus, MapPin, Calendar, Users, Clock, CheckCircle, 
   XCircle, Send, Loader2, Euro, Car, RefreshCw, AlertTriangle,
-  Copy, ExternalLink, Play, Phone, Mail, ChevronDown, ChevronUp
+  Copy, ExternalLink, Play, Phone, Mail, ChevronDown, ChevronUp, Truck, Building2
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CompanyCourseBookingWizard, WizardStep } from "./course-booking";
@@ -158,6 +158,14 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             status,
             driver_id,
             updated_at
+          ),
+          fleet_manager:fleet_managers(
+            id,
+            company_name,
+            contact_name,
+            user_id,
+            contact_phone,
+            contact_email
           )
         `)
         .eq("company_id", companyId)
@@ -165,13 +173,15 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
       if (error) throw error;
 
-      // Fetch profiles - include final_course driver
+      // Fetch profiles - include final_course driver and fleet manager
       const userIds = new Set<string>();
       const courseDriverIds = new Set<string>();
+      const fleetDispatchedDriverIds = new Set<string>();
       
       data?.forEach((r: any) => {
         if (r.employee?.user_id) userIds.add(r.employee.user_id);
         if (r.accepted_driver?.user_id) userIds.add(r.accepted_driver.user_id);
+        if (r.fleet_manager?.user_id) userIds.add(r.fleet_manager.user_id);
         r.quotes?.forEach((q: any) => {
           if (q.driver?.user_id) userIds.add(q.driver.user_id);
         });
@@ -179,15 +189,20 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         if (r.final_course?.driver_id) {
           courseDriverIds.add(r.final_course.driver_id);
         }
+        // Collect fleet dispatched driver IDs
+        if (r.fleet_dispatched_driver_id) {
+          fleetDispatchedDriverIds.add(r.fleet_dispatched_driver_id);
+        }
       });
 
       // Fetch course drivers separately
       let courseDrivers: any[] = [];
-      if (courseDriverIds.size > 0) {
+      const allDriverIds = new Set([...courseDriverIds, ...fleetDispatchedDriverIds]);
+      if (allDriverIds.size > 0) {
         const { data: driversData } = await supabase
           .from("drivers")
           .select("id, user_id, company_name, contact_phone, contact_email, show_phone, show_email")
-          .in("id", Array.from(courseDriverIds));
+          .in("id", Array.from(allDriverIds));
         courseDrivers = driversData || [];
         
         // Add their user_ids to fetch profiles
@@ -213,6 +228,13 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         const courseDriver = courseDrivers.find(d => d.id === r.final_course?.driver_id);
         const courseDriverProfile = courseDriver ? profiles?.find(p => p.id === courseDriver.user_id) : null;
         
+        // Get fleet dispatched driver info
+        const fleetDispatchedDriver = courseDrivers.find(d => d.id === r.fleet_dispatched_driver_id);
+        const fleetDispatchedDriverProfile = fleetDispatchedDriver ? profiles?.find(p => p.id === fleetDispatchedDriver.user_id) : null;
+        
+        // Get fleet manager profile
+        const fleetManagerProfile = r.fleet_manager?.user_id ? profiles?.find(p => p.id === r.fleet_manager.user_id) : null;
+        
         return {
           ...r,
           employeeProfile: profiles?.find(p => p.id === r.employee?.user_id),
@@ -222,6 +244,13 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             ...courseDriver,
             profile: courseDriverProfile
           } : null,
+          // Add fleet dispatched driver info
+          fleetDispatchedDriver: fleetDispatchedDriver ? {
+            ...fleetDispatchedDriver,
+            profile: fleetDispatchedDriverProfile
+          } : null,
+          // Add fleet manager profile
+          fleetManagerProfile,
           trackingToken: invitations?.find(i => i.request_id === r.id)?.token,
           quotesWithProfiles: r.quotes?.map((q: any) => ({
             ...q,
@@ -248,6 +277,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30"><Clock className="w-3 h-3 mr-1" />Devis générés</Badge>;
       case "sent_to_drivers":
         return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30"><Send className="w-3 h-3 mr-1" />Envoyé aux chauffeurs</Badge>;
+      case "dispatched_to_fleet":
+        return <Badge variant="outline" className="bg-violet-500/10 text-violet-600 border-violet-500/30"><Truck className="w-3 h-3 mr-1" />Envoyé à la flotte</Badge>;
       case "accepted":
         return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Chauffeur confirmé</Badge>;
       case "all_refused":
@@ -282,7 +313,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
 
   // Séparer: en attente de réponse, confirmées/en cours, et terminées
   // Prendre en compte le statut de la course finale (completed = historique)
-  const pendingRequests = requests?.filter(r => ["draft", "quotes_generated", "sent_to_drivers"].includes(r.status)) || [];
+  // Inclure les demandes envoyées aux flottes dans les demandes en attente
+  const pendingRequests = requests?.filter(r => ["draft", "quotes_generated", "sent_to_drivers", "dispatched_to_fleet"].includes(r.status)) || [];
   const allRefusedRequests = requests?.filter(r => r.status === "all_refused") || [];
   // Courses acceptées mais pas encore terminées (course en cours ou confirmée)
   const acceptedRequests = requests?.filter(r => 
@@ -437,7 +469,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   </div>
                 )}
 
-                {/* Timeline de progression */}
+                {/* Timeline de progression - adapté selon le flux (direct ou flotte) */}
                 <div className="p-3 bg-muted/30 rounded-lg">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Progression</p>
                   <div className="space-y-2">
@@ -449,55 +481,106 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                         {format(new Date(request.created_at), "d/MM HH:mm")}
                       </span>
                     </div>
-                    {/* Devis générés */}
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                        ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
-                          ? "bg-primary" : "bg-muted-foreground/30"
-                      }`} />
-                      <span className={`text-xs flex-1 ${
-                        ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
-                          ? "font-medium" : "text-muted-foreground"
-                      }`}>Devis générés</span>
-                      {request.quotes_generated_at && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(request.quotes_generated_at), "d/MM HH:mm")}
-                        </span>
-                      )}
-                    </div>
-                    {/* Envoyé aux chauffeurs */}
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                        ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
-                          ? "bg-primary" : "bg-muted-foreground/30"
-                      }`} />
-                      <span className={`text-xs flex-1 ${
-                        ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
-                          ? "font-medium" : "text-muted-foreground"
-                      }`}>Envoyé au(x) chauffeur(s)</span>
-                      {request.sent_to_drivers_at && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(request.sent_to_drivers_at), "d/MM HH:mm")}
-                        </span>
-                      )}
-                    </div>
-                    {/* Chauffeur confirmé */}
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                        request.status === "accepted" || courseStatus
-                          ? "bg-primary" : "bg-muted-foreground/30"
-                      }`} />
-                      <span className={`text-xs flex-1 ${
-                        request.status === "accepted" || courseStatus
-                          ? "font-medium" : "text-muted-foreground"
-                      }`}>Chauffeur confirmé</span>
-                      {request.accepted_at && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(request.accepted_at), "d/MM HH:mm")}
-                        </span>
-                      )}
-                    </div>
-                    {/* Course en cours */}
+                    
+                    {/* Flux FLOTTE: envoyé à la flotte */}
+                    {request.target_fleet_manager_id ? (
+                      <>
+                        {/* Envoyé à la flotte */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            request.dispatched_to_fleet_at ? "bg-violet-500" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            request.dispatched_to_fleet_at ? "font-medium text-violet-600" : "text-muted-foreground"
+                          }`}>Envoyé à la flotte</span>
+                          {request.dispatched_to_fleet_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(request.dispatched_to_fleet_at), "d/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Chauffeur assigné par la flotte */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            request.fleet_dispatched_driver_id ? "bg-violet-500" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            request.fleet_dispatched_driver_id ? "font-medium text-violet-600" : "text-muted-foreground"
+                          }`}>Chauffeur assigné</span>
+                        </div>
+                        
+                        {/* Chauffeur confirmé */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            request.status === "accepted" || courseStatus
+                              ? "bg-green-500" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            request.status === "accepted" || courseStatus
+                              ? "font-medium text-green-600" : "text-muted-foreground"
+                          }`}>Confirmé</span>
+                          {request.accepted_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(request.accepted_at), "d/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Flux DIRECT: Devis générés */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                              ? "bg-primary" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            ["quotes_generated", "sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                              ? "font-medium" : "text-muted-foreground"
+                          }`}>Devis générés</span>
+                          {request.quotes_generated_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(request.quotes_generated_at), "d/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                        {/* Envoyé aux chauffeurs */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                              ? "bg-primary" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            ["sent_to_drivers", "accepted"].includes(request.status) || courseStatus
+                              ? "font-medium" : "text-muted-foreground"
+                          }`}>Envoyé au(x) chauffeur(s)</span>
+                          {request.sent_to_drivers_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(request.sent_to_drivers_at), "d/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                        {/* Chauffeur confirmé */}
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                            request.status === "accepted" || courseStatus
+                              ? "bg-primary" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className={`text-xs flex-1 ${
+                            request.status === "accepted" || courseStatus
+                              ? "font-medium" : "text-muted-foreground"
+                          }`}>Chauffeur confirmé</span>
+                          {request.accepted_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(request.accepted_at), "d/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Course en cours (commun aux deux flux) */}
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                         courseStatus === "in_progress" || courseStatus === "completed"
@@ -531,6 +614,130 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                     </div>
                   </div>
                 </div>
+                
+                {/* Fleet Manager Info - pour les demandes flotte */}
+                {request.target_fleet_manager_id && request.fleet_manager && (
+                  <div className="p-3 bg-violet-500/10 rounded-lg space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building2 className="w-4 h-4 text-violet-600" />
+                      <span className="text-xs font-medium text-violet-600">Gestionnaire de flotte</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={request.fleetManagerProfile?.profile_photo_url} />
+                        <AvatarFallback className="bg-violet-600/20 text-violet-600 text-sm">
+                          {request.fleet_manager?.contact_name?.charAt(0) || request.fleet_manager?.company_name?.charAt(0) || "F"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">
+                          {request.fleetManagerProfile?.full_name || request.fleet_manager?.contact_name || request.fleet_manager?.company_name}
+                        </span>
+                        {request.fleet_manager?.company_name && (
+                          <p className="text-xs text-muted-foreground">{request.fleet_manager.company_name}</p>
+                        )}
+                        <p className="text-xs text-violet-600">
+                          {request.status === "dispatched_to_fleet" 
+                            ? request.fleet_dispatched_driver_id 
+                              ? "Chauffeur en cours d'assignation..." 
+                              : "En attente d'assignation du chauffeur..."
+                            : request.status === "accepted" 
+                              ? "Chauffeur assigné ✓"
+                              : "Demande en traitement"
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    {/* Contact fleet manager */}
+                    {(request.fleet_manager?.contact_phone || request.fleet_manager?.contact_email) && (
+                      <div className="flex gap-2 flex-wrap pt-2 border-t border-violet-500/20">
+                        {request.fleet_manager?.contact_phone && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 min-w-[100px] h-8 text-xs border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
+                            asChild
+                          >
+                            <a href={`tel:${request.fleet_manager.contact_phone}`} onClick={(e) => e.stopPropagation()}>
+                              <Phone className="w-3 h-3 mr-1" />
+                              Appeler
+                            </a>
+                          </Button>
+                        )}
+                        {request.fleet_manager?.contact_email && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 min-w-[100px] h-8 text-xs border-violet-500/30 text-violet-600 hover:bg-violet-500/10"
+                            asChild
+                          >
+                            <a href={`mailto:${request.fleet_manager.contact_email}`} onClick={(e) => e.stopPropagation()}>
+                              <Mail className="w-3 h-3 mr-1" />
+                              Email
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Fleet Dispatched Driver Info - chauffeur assigné par la flotte */}
+                {request.fleet_dispatched_driver_id && request.fleetDispatchedDriver && (
+                  <div className="p-3 bg-green-500/10 rounded-lg space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Car className="w-4 h-4 text-green-600" />
+                      <span className="text-xs font-medium text-green-600">Chauffeur assigné</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={request.fleetDispatchedDriver?.profile?.profile_photo_url} />
+                        <AvatarFallback className="bg-green-600/20 text-green-600 text-sm">
+                          {request.fleetDispatchedDriver?.profile?.full_name?.charAt(0) || request.fleetDispatchedDriver?.company_name?.charAt(0) || "C"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">
+                          {request.fleetDispatchedDriver?.profile?.full_name || request.fleetDispatchedDriver?.company_name}
+                        </span>
+                        {request.fleetDispatchedDriver?.company_name && request.fleetDispatchedDriver?.profile?.full_name && (
+                          <p className="text-xs text-muted-foreground">{request.fleetDispatchedDriver.company_name}</p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Contact driver */}
+                    {(request.fleetDispatchedDriver?.show_phone || request.fleetDispatchedDriver?.show_email) && (
+                      <div className="flex gap-2 flex-wrap pt-2 border-t border-green-500/20">
+                        {request.fleetDispatchedDriver?.show_phone && request.fleetDispatchedDriver?.contact_phone && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 min-w-[100px] h-8 text-xs border-green-500/30 text-green-600 hover:bg-green-500/10"
+                            asChild
+                          >
+                            <a href={`tel:${request.fleetDispatchedDriver.contact_phone}`} onClick={(e) => e.stopPropagation()}>
+                              <Phone className="w-3 h-3 mr-1" />
+                              Appeler
+                            </a>
+                          </Button>
+                        )}
+                        {request.fleetDispatchedDriver?.show_email && request.fleetDispatchedDriver?.contact_email && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 min-w-[100px] h-8 text-xs border-green-500/30 text-green-600 hover:bg-green-500/10"
+                            asChild
+                          >
+                            <a href={`mailto:${request.fleetDispatchedDriver.contact_email}`} onClick={(e) => e.stopPropagation()}>
+                              <Mail className="w-3 h-3 mr-1" />
+                              Email
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Quotes info */}
                 {renderQuotesList(request.quotesWithProfiles)}

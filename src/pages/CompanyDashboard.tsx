@@ -513,7 +513,7 @@ function CoursesSection({ companyId, onTabChange }: { companyId: string; onTabCh
           variant={subTab === "requests" ? "default" : "outline"} 
           size="sm"
           onClick={() => setSubTab("requests")}
-          className="whitespace-nowrap"
+          className="whitespace-nowrap rounded-full"
         >
           <Calendar className="w-4 h-4 mr-2" />
           Demandes
@@ -522,7 +522,7 @@ function CoursesSection({ companyId, onTabChange }: { companyId: string; onTabCh
           variant={subTab === "list" ? "default" : "outline"} 
           size="sm"
           onClick={() => setSubTab("list")}
-          className="whitespace-nowrap"
+          className="whitespace-nowrap rounded-full"
         >
           <Car className="w-4 h-4 mr-2" />
           Historique
