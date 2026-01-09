@@ -201,7 +201,9 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             )
           `)
           .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .gte("scheduled_date", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
           .order("scheduled_date", { ascending: true })
+          .limit(500)
       ]);
 
       const driverData = driverResult.data;
