@@ -184,35 +184,21 @@ export function PendingFleetCoursesInCoursesList({
   const handleAccept = async (course: PendingFleetCourse) => {
     setActionLoading(course.id);
     try {
-      // Assigner la course au chauffeur
-      const { error } = await supabase
-        .from('courses')
-        .update({ 
-          driver_id: driverId, 
-          status: 'accepted' 
-        })
-        .eq('id', course.id)
-        .is('driver_id', null); // S'assurer que personne d'autre n'a déjà pris la course
+      // Utiliser la fonction RPC sécurisée avec verrouillage atomique
+      const { data, error } = await supabase
+        .rpc('accept_fleet_course_safely', {
+          p_course_id: course.id,
+          p_driver_id: driverId
+        });
 
       if (error) throw error;
 
-      // Notifier le gestionnaire
-      if (course.fleet_manager_id) {
-        const { data: fmData } = await supabase
-          .from('fleet_managers')
-          .select('user_id')
-          .eq('id', course.fleet_manager_id)
-          .single();
-
-        if (fmData?.user_id) {
-          await supabase.from('notifications').insert({
-            user_id: fmData.user_id,
-            title: '✅ Course acceptée',
-            message: `Un chauffeur a accepté la course du ${format(new Date(course.scheduled_date), "d MMM à HH:mm", { locale: fr })}`,
-            type: 'success',
-            link: '/fleet-dashboard?tab=courses'
-          });
-        }
+      // Handle response - RPC returns array or single object
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result || !(result as { success: boolean }).success) {
+        toast.error((result as { message: string })?.message || 'Cette course a déjà été prise par un autre chauffeur');
+        fetchCourses();
+        return;
       }
 
       toast.success('Course acceptée !');
@@ -220,11 +206,7 @@ export function PendingFleetCoursesInCoursesList({
       fetchCourses();
     } catch (error: any) {
       console.error('Error accepting course:', error);
-      if (error.message?.includes('driver_id')) {
-        toast.error('Cette course a déjà été prise par un autre chauffeur');
-      } else {
-        toast.error('Erreur lors de l\'acceptation');
-      }
+      toast.error('Cette course a déjà été prise par un autre chauffeur');
       fetchCourses();
     } finally {
       setActionLoading(null);
@@ -240,9 +222,14 @@ export function PendingFleetCoursesInCoursesList({
     if (!selectedCourse) return;
     setActionLoading(selectedCourse.id);
     try {
-      // Ne rien faire côté course (elle reste disponible pour d'autres)
-      // Juste notifier le gestionnaire si nécessaire
+      // Ajouter le chauffeur à la liste d'exclusion pour cette course
+      await supabase.from('course_driver_exclusions').insert({
+        course_id: selectedCourse.id,
+        driver_id: driverId,
+        exclusion_reason: declineReason || 'Refus manuel'
+      });
 
+      // Notifier le gestionnaire
       if (selectedCourse.fleet_manager_id) {
         const { data: fmData } = await supabase
           .from('fleet_managers')
@@ -250,7 +237,7 @@ export function PendingFleetCoursesInCoursesList({
           .eq('id', selectedCourse.fleet_manager_id)
           .single();
 
-        if (fmData?.user_id && declineReason) {
+        if (fmData?.user_id) {
           await supabase.from('notifications').insert({
             user_id: fmData.user_id,
             title: '❌ Course refusée',
