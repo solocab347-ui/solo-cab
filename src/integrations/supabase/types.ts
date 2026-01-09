@@ -5862,6 +5862,150 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_indirect_payments: {
+        Row: {
+          amount_to_pay_driver: number
+          commission_amount: number
+          confirmed_at: string | null
+          confirmed_by_user_id: string | null
+          contract_id: string
+          course_ids: string[] | null
+          courses_count: number | null
+          created_at: string
+          dispute_created_at: string | null
+          dispute_reason: string | null
+          dispute_resolution: string | null
+          dispute_resolved_at: string | null
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
+          payment_reference: string | null
+          period_end: string | null
+          period_start: string | null
+          sent_at: string | null
+          sent_by_user_id: string | null
+          status: string
+          total_collected: number
+          updated_at: string
+        }
+        Insert: {
+          amount_to_pay_driver: number
+          commission_amount?: number
+          confirmed_at?: string | null
+          confirmed_by_user_id?: string | null
+          contract_id: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_resolution?: string | null
+          dispute_resolved_at?: string | null
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
+          total_collected: number
+          updated_at?: string
+        }
+        Update: {
+          amount_to_pay_driver?: number
+          commission_amount?: number
+          confirmed_at?: string | null
+          confirmed_by_user_id?: string | null
+          contract_id?: string
+          course_ids?: string[] | null
+          courses_count?: number | null
+          created_at?: string
+          dispute_created_at?: string | null
+          dispute_reason?: string | null
+          dispute_resolution?: string | null
+          dispute_resolved_at?: string | null
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          payment_reference?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
+          total_collected?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_indirect_payment_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_invitations: {
         Row: {
           commission_accepted: boolean | null
@@ -6165,6 +6309,141 @@ export type Database = {
             columns: ["fleet_manager_id"]
             isOneToOne: false
             referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_indirect_payment_contracts: {
+        Row: {
+          clauses: Json | null
+          commission_percentage: number
+          contract_signed: boolean | null
+          contract_signed_at: string | null
+          contract_type: string
+          created_at: string
+          current_balance_owed_to_driver: number | null
+          driver_id: string
+          driver_signed: boolean | null
+          driver_signed_at: string | null
+          fleet_manager_id: string
+          fleet_manager_signed: boolean | null
+          fleet_manager_signed_at: string | null
+          id: string
+          last_settlement_date: string | null
+          notes: string | null
+          partnership_id: string
+          payment_day: number | null
+          payment_frequency: string
+          status: string
+          total_collected_by_fleet: number | null
+          total_paid_to_driver: number | null
+          updated_at: string
+        }
+        Insert: {
+          clauses?: Json | null
+          commission_percentage?: number
+          contract_signed?: boolean | null
+          contract_signed_at?: string | null
+          contract_type?: string
+          created_at?: string
+          current_balance_owed_to_driver?: number | null
+          driver_id: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          fleet_manager_id: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          last_settlement_date?: string | null
+          notes?: string | null
+          partnership_id: string
+          payment_day?: number | null
+          payment_frequency?: string
+          status?: string
+          total_collected_by_fleet?: number | null
+          total_paid_to_driver?: number | null
+          updated_at?: string
+        }
+        Update: {
+          clauses?: Json | null
+          commission_percentage?: number
+          contract_signed?: boolean | null
+          contract_signed_at?: string | null
+          contract_type?: string
+          created_at?: string
+          current_balance_owed_to_driver?: number | null
+          driver_id?: string
+          driver_signed?: boolean | null
+          driver_signed_at?: string | null
+          fleet_manager_id?: string
+          fleet_manager_signed?: boolean | null
+          fleet_manager_signed_at?: string | null
+          id?: string
+          last_settlement_date?: string | null
+          notes?: string | null
+          partnership_id?: string
+          payment_day?: number | null
+          payment_frequency?: string
+          status?: string
+          total_collected_by_fleet?: number | null
+          total_paid_to_driver?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_driver_partnerships"
             referencedColumns: ["id"]
           },
         ]
@@ -6872,6 +7151,9 @@ export type Database = {
           created_at: string
           decline_reason: string | null
           declined_at: string | null
+          driver_commission_paid_at: string | null
+          driver_commission_paid_to_fleet: boolean | null
+          driver_commission_to_fleet: number | null
           driver_id: string
           driver_notified_at: string | null
           earnings_for_driver: number | null
@@ -6880,9 +7162,18 @@ export type Database = {
           fleet_notified_at: string | null
           fleet_payment_to_driver_status: string | null
           fleet_pays_driver_amount: number | null
+          fleet_to_driver_payment_confirmed: boolean | null
+          fleet_to_driver_payment_confirmed_at: string | null
+          fleet_to_driver_payment_pending: number | null
+          fleet_to_driver_payment_sent: boolean | null
+          fleet_to_driver_payment_sent_at: string | null
           id: string
           partnership_id: string
+          payment_declared_at: string | null
+          payment_declared_by_driver: boolean | null
+          payment_handled_by: string | null
           payment_method_used: string | null
+          payment_notes: string | null
           payment_settled: boolean | null
           payment_settled_at: string | null
           payment_source: string | null
@@ -6910,6 +7201,9 @@ export type Database = {
           created_at?: string
           decline_reason?: string | null
           declined_at?: string | null
+          driver_commission_paid_at?: string | null
+          driver_commission_paid_to_fleet?: boolean | null
+          driver_commission_to_fleet?: number | null
           driver_id: string
           driver_notified_at?: string | null
           earnings_for_driver?: number | null
@@ -6918,9 +7212,18 @@ export type Database = {
           fleet_notified_at?: string | null
           fleet_payment_to_driver_status?: string | null
           fleet_pays_driver_amount?: number | null
+          fleet_to_driver_payment_confirmed?: boolean | null
+          fleet_to_driver_payment_confirmed_at?: string | null
+          fleet_to_driver_payment_pending?: number | null
+          fleet_to_driver_payment_sent?: boolean | null
+          fleet_to_driver_payment_sent_at?: string | null
           id?: string
           partnership_id: string
+          payment_declared_at?: string | null
+          payment_declared_by_driver?: boolean | null
+          payment_handled_by?: string | null
           payment_method_used?: string | null
+          payment_notes?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           payment_source?: string | null
@@ -6948,6 +7251,9 @@ export type Database = {
           created_at?: string
           decline_reason?: string | null
           declined_at?: string | null
+          driver_commission_paid_at?: string | null
+          driver_commission_paid_to_fleet?: boolean | null
+          driver_commission_to_fleet?: number | null
           driver_id?: string
           driver_notified_at?: string | null
           earnings_for_driver?: number | null
@@ -6956,9 +7262,18 @@ export type Database = {
           fleet_notified_at?: string | null
           fleet_payment_to_driver_status?: string | null
           fleet_pays_driver_amount?: number | null
+          fleet_to_driver_payment_confirmed?: boolean | null
+          fleet_to_driver_payment_confirmed_at?: string | null
+          fleet_to_driver_payment_pending?: number | null
+          fleet_to_driver_payment_sent?: boolean | null
+          fleet_to_driver_payment_sent_at?: string | null
           id?: string
           partnership_id?: string
+          payment_declared_at?: string | null
+          payment_declared_by_driver?: boolean | null
+          payment_handled_by?: string | null
           payment_method_used?: string | null
+          payment_notes?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           payment_source?: string | null
@@ -9863,6 +10178,128 @@ export type Database = {
           },
         ]
       }
+      fleet_company_courses_view: {
+        Row: {
+          commission_amount: number | null
+          commission_percentage: number | null
+          company_id: string | null
+          company_logo: string | null
+          company_name: string | null
+          company_request_id: string | null
+          completed_at: string | null
+          course_amount: number | null
+          course_id: string | null
+          course_status: Database["public"]["Enums"]["course_status"] | null
+          created_at: string | null
+          destination_address: string | null
+          driver_commission_paid_to_fleet: boolean | null
+          driver_commission_to_fleet: number | null
+          driver_id: string | null
+          earnings_for_driver: number | null
+          equipment_type: string | null
+          fleet_manager_id: string | null
+          fleet_to_driver_payment_pending: number | null
+          fleet_to_driver_payment_sent: boolean | null
+          guest_employee_email: string | null
+          guest_employee_name: string | null
+          id: string | null
+          partnership_id: string | null
+          payment_declared_at: string | null
+          payment_declared_by_driver: boolean | null
+          payment_handled_by: string | null
+          payment_method_requested: string | null
+          payment_source: string | null
+          pickup_address: string | null
+          scheduled_date: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_partner_courses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_company_request_id_fkey"
+            columns: ["company_request_id"]
+            isOneToOne: false
+            referencedRelation: "company_course_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_company_request_id_fkey"
+            columns: ["company_request_id"]
+            isOneToOne: false
+            referencedRelation: "company_fleet_course_requests_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_driver_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_searchable_drivers: {
         Row: {
           base_fare: number | null
@@ -10287,6 +10724,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      declare_fleet_course_payment_on_site: {
+        Args: { p_course_id: string; p_payment_method?: string }
+        Returns: Json
+      }
       decline_shared_course: {
         Args: {
           p_driver_id: string
@@ -10300,6 +10741,10 @@ export type Database = {
       }
       dispatch_company_course_to_fleet: {
         Args: { p_company_request_id: string; p_fleet_manager_id: string }
+        Returns: Json
+      }
+      driver_confirm_fleet_payment: {
+        Args: { p_payment_id: string }
         Returns: Json
       }
       find_available_fleet_driver:
@@ -10410,6 +10855,26 @@ export type Database = {
             }
             Returns: string
           }
+      fleet_receive_company_payment: {
+        Args: {
+          p_amount: number
+          p_course_id: string
+          p_payment_method?: string
+        }
+        Returns: Json
+      }
+      fleet_send_payment_to_driver: {
+        Args: {
+          p_amount: number
+          p_contract_id: string
+          p_course_ids: string[]
+          p_payment_method: string
+          p_payment_reference?: string
+          p_period_end?: string
+          p_period_start?: string
+        }
+        Returns: Json
+      }
       format_sharing_number: { Args: { _number: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
