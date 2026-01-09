@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export function BookingConfirmationStep({
 }: BookingConfirmationStepProps) {
   const [sent, setSent] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const selectedQuotes = generatedQuotes.filter(q => q.selected);
 
@@ -79,6 +80,9 @@ export function BookingConfirmationStep({
     onSuccess: (data) => {
       setSent(true);
       toast.success("Devis envoyés aux chauffeurs !");
+      
+      // Invalider le cache pour que la liste des demandes se rafraîchisse avec le token
+      queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
       
       if (data.invitationToken) {
         const link = `${window.location.origin}/suivi-course-entreprise?token=${data.invitationToken}`;
