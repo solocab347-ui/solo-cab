@@ -127,12 +127,21 @@ export function CompanyInlineCourseCreation({
       if (fleetManagerIds.length === 0) return [];
 
       const driversCountPromises = fleetManagerIds.map(async (fmId: string) => {
-        const { count } = await supabase
+        // Count internal drivers (fleet_manager_drivers)
+        const { count: internalCount } = await supabase
           .from("fleet_manager_drivers")
           .select("*", { count: "exact", head: true })
           .eq("fleet_manager_id", fmId)
           .eq("status", "active");
-        return { fmId, count: count || 0 };
+        
+        // Count partner drivers (fleet_driver_partnerships)
+        const { count: partnerCount } = await supabase
+          .from("fleet_driver_partnerships")
+          .select("*", { count: "exact", head: true })
+          .eq("fleet_manager_id", fmId)
+          .eq("status", "accepted");
+        
+        return { fmId, count: (internalCount || 0) + (partnerCount || 0) };
       });
 
       const driversCounts = await Promise.all(driversCountPromises);
