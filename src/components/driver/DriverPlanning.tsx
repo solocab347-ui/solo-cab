@@ -83,6 +83,10 @@ interface EnrichedCourse {
   commissionPercentage?: number;
   commissionAmount?: number;
   courseAmount?: number;
+  // Fleet course specific fields
+  isFleetCourse?: boolean;
+  fleetPartnerCourseId?: string;
+  earningsForDriver?: number;
 }
 
 const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
@@ -123,7 +127,7 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
 
       if (coursesError) throw coursesError;
 
-      // ALSO fetch received shared courses (courses shared TO this driver)
+      // ALSO fetch received shared courses (courses shared TO this driver by other drivers)
       const { data: receivedSharedCourses } = await supabase
         .from('shared_courses')
         .select(`
@@ -153,6 +157,40 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           )
         `)
         .eq('receiver_driver_id', driverId)
+        .in('status', ['accepted', 'in_progress']);
+
+      // ALSO fetch fleet shared courses (courses shared TO this driver by fleet managers)
+      const { data: fleetSharedCourses } = await supabase
+        .from('fleet_partner_courses')
+        .select(`
+          id,
+          course_id,
+          fleet_manager_id,
+          course_amount,
+          commission_percentage,
+          commission_amount,
+          earnings_for_driver,
+          equipment_type,
+          status,
+          courses!inner(
+            id,
+            pickup_address,
+            destination_address,
+            scheduled_date,
+            passengers_count,
+            distance_km,
+            duration_minutes,
+            status,
+            course_number,
+            notes
+          ),
+          fleet_managers!inner(
+            id,
+            company_name,
+            logo_url
+          )
+        `)
+        .eq('driver_id', driverId)
         .in('status', ['accepted', 'in_progress']);
 
       // Collect sender driver IDs for profiles
@@ -220,6 +258,55 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
           commissionPercentage: sc.commission_percentage,
           commissionAmount: sc.commission_amount,
           courseAmount: sc.course_amount
+        };
+      });
+
+      // Convert fleet shared courses to EnrichedCourse format
+      const fleetCoursesEnriched: EnrichedCourse[] = (fleetSharedCourses || []).map(fsc => {
+        const course = fsc.courses as any;
+        const fleetManager = fsc.fleet_managers as any;
+        
+        // Map fleet_partner_courses status to CourseStatus
+        let mappedStatus: CourseStatus = 'accepted';
+        if (fsc.status === 'in_progress') mappedStatus = 'in_progress';
+        
+        return {
+          id: course.id,
+          scheduled_date: course.scheduled_date,
+          status: mappedStatus,
+          pickup_address: course.pickup_address,
+          destination_address: course.destination_address,
+          distance_km: course.distance_km,
+          duration_minutes: course.duration_minutes,
+          passengers_count: course.passengers_count,
+          notes: course.notes,
+          course_number: course.course_number,
+          driver_id: null,
+          driver_ids: null,
+          clients: null,
+          devis: [],
+          shared_courses: [],
+          company_courses: [],
+          courseType: {
+            type: 'fleet' as CourseType,
+            label: 'Course gestionnaire',
+            shortLabel: 'Gestionnaire',
+            icon: 'building2',
+            color: 'text-blue-600 dark:text-blue-400',
+            bgColor: 'bg-blue-500/10',
+            borderColor: 'border-blue-500/30',
+            partnerName: fleetManager?.company_name || 'Gestionnaire',
+            partnerType: 'Flotte'
+          },
+          isReceivedSharedCourse: true,
+          isFleetCourse: true,
+          fleetPartnerCourseId: fsc.id,
+          senderDriverName: fleetManager?.company_name || 'Gestionnaire',
+          senderDriverPhoto: fleetManager?.logo_url,
+          commissionPercentage: fsc.commission_percentage,
+          commissionAmount: fsc.commission_amount,
+          courseAmount: fsc.course_amount,
+          earningsForDriver: fsc.earnings_for_driver
         };
       });
 
@@ -340,14 +427,17 @@ const DriverPlanning = ({ driverId }: DriverPlanningProps) => {
         });
       }
       
-      // Merge own courses with received shared courses
-      // Avoid duplicates by filtering out own courses that are in receivedCoursesEnriched
+      // Merge own courses with received shared courses AND fleet courses
+      // Avoid duplicates by filtering out own courses that are in receivedCoursesEnriched or fleetCoursesEnriched
       const receivedCourseIds = new Set(receivedCoursesEnriched.map(c => c.id));
-      const filteredOwnCourses = enrichedOwnCourses.filter(c => !receivedCourseIds.has(c.id));
+      const fleetCourseIds = new Set(fleetCoursesEnriched.map(c => c.id));
+      const filteredOwnCourses = enrichedOwnCourses.filter(c => 
+        !receivedCourseIds.has(c.id) && !fleetCourseIds.has(c.id)
+      );
       
-      const allCourses = [...filteredOwnCourses, ...receivedCoursesEnriched];
+      const allCourses = [...filteredOwnCourses, ...receivedCoursesEnriched, ...fleetCoursesEnriched];
       
-      console.log('Planning - Fetched courses:', allCourses.length, '(own:', filteredOwnCourses.length, ', received:', receivedCoursesEnriched.length, ')');
+      console.log('Planning - Fetched courses:', allCourses.length, '(own:', filteredOwnCourses.length, ', partner:', receivedCoursesEnriched.length, ', fleet:', fleetCoursesEnriched.length, ')');
       setCourses(allCourses);
     } catch (error: any) {
       console.error("Planning - Error:", error);
