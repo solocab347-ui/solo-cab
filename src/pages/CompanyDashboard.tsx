@@ -506,11 +506,6 @@ function StatCard({ label, value, icon: Icon, color, bgColor }: {
 function CoursesSection({ companyId, onTabChange }: { companyId: string; onTabChange: (tab: string) => void }) {
   const [subTab, setSubTab] = useState("requests");
 
-  const handleSearchNewDriver = () => {
-    // Navigate to partnerships tab with search sub-tab
-    onTabChange("partnerships");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex gap-2 overflow-x-auto pb-2">
@@ -532,20 +527,10 @@ function CoursesSection({ companyId, onTabChange }: { companyId: string; onTabCh
           <Car className="w-4 h-4 mr-2" />
           Historique
         </Button>
-        <Button 
-          variant={subTab === "new" ? "default" : "outline"} 
-          size="sm"
-          onClick={() => setSubTab("new")}
-          className="whitespace-nowrap"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle
-        </Button>
       </div>
 
       {subTab === "requests" && <CompanyCourseRequestsManager companyId={companyId} />}
-      {subTab === "list" && <CompanyCoursesList companyId={companyId} onCreateCourse={() => setSubTab("new")} />}
-      {subTab === "new" && <CompanyInlineCourseCreation companyId={companyId} onSuccess={() => setSubTab("list")} onSearchNewDriver={handleSearchNewDriver} />}
+      {subTab === "list" && <CompanyCoursesList companyId={companyId} onCreateCourse={() => setSubTab("requests")} />}
     </div>
   );
 }
