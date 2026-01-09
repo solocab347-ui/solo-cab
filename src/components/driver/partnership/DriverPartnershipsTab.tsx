@@ -104,17 +104,17 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="grid grid-cols-3 w-full h-auto gap-3 p-0 bg-transparent">
               {/* Ligne 1 */}
-              <TabsTrigger value="received" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(16,185,129,0.6)] data-[state=active]:border-emerald-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-950/80 data-[state=active]:via-emerald-900/60 data-[state=active]:to-emerald-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 group-hover:from-emerald-500/20 group-hover:to-emerald-600/10 group-data-[state=active]:from-emerald-500/30 group-data-[state=active]:to-emerald-600/20 transition-all"></div>
+              <TabsTrigger value="received" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(16,185,129,0.6)] data-[state=active]:border-emerald-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-950/80 data-[state=active]:via-emerald-900/60 data-[state=active]:to-emerald-950/80 transition-all duration-300 h-auto group">
+                {receivedCount > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg z-50 border-2 border-background">
+                    {receivedCount}
+                  </Badge>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 group-hover:from-emerald-500/20 group-hover:to-emerald-600/10 group-data-[state=active]:from-emerald-500/30 group-data-[state=active]:to-emerald-600/20 transition-all rounded-2xl"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-[0_4px_20px_rgb(16,185,129,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(16,185,129,0.7)] transition-transform">
                   <Inbox className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>
                 <span className="relative z-10 text-[11px] font-semibold text-foreground text-center group-data-[state=active]:text-emerald-400">Courses reçues</span>
-                {receivedCount > 0 && (
-                  <Badge className="absolute -top-1.5 -right-1.5 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white animate-pulse shadow-lg">
-                    {receivedCount}
-                  </Badge>
-                )}
               </TabsTrigger>
               
               <TabsTrigger value="search" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(59,130,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(59,130,246,0.6)] data-[state=active]:border-blue-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-950/80 data-[state=active]:via-blue-900/60 data-[state=active]:to-blue-950/80 transition-all duration-300 h-auto group">
