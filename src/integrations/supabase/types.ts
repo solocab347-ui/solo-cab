@@ -10444,15 +10444,18 @@ export type Database = {
         Returns: {
           created_at: string
           destination_address: string
+          driver_avatar_url: string
           driver_company: string
           driver_name: string
           driver_phone: string
           guest_estimated_price: number
           guest_name: string
           id: string
+          is_shared_course: boolean
           pickup_address: string
           scheduled_date: string
-          status: Database["public"]["Enums"]["course_status"]
+          shared_drivers: Json
+          status: string
         }[]
       }
       get_my_driver_statistics: {

@@ -241,6 +241,31 @@ export function useDirectCourseCreation() {
         });
       }
 
+      // ENVOI EMAIL DE SUIVI AU CLIENT (si email fourni)
+      if (guestEmail) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke(
+            'send-guest-tracking-email',
+            { body: { course_id: course.id } }
+          );
+
+          if (!emailError) {
+            logger.info("Guest tracking email sent", { courseId: course.id, guestEmail });
+          } else {
+            logger.warn("Failed to send guest tracking email", { 
+              courseId: course.id, 
+              error: emailError 
+            });
+          }
+        } catch (invokeError) {
+          logger.warn("Error sending guest tracking email", { 
+            courseId: course.id, 
+            error: invokeError 
+          });
+          // Ne pas bloquer si l'email échoue
+        }
+      }
+
       return course;
     } catch (error: any) {
       logger.exception(error, { context: "useDirectCourseCreation.createDirectCourse" });

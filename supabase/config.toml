@@ -185,3 +185,6 @@ verify_jwt = true
 
 [functions.process-course-queue-retries]
 verify_jwt = true
+
+[functions.send-guest-tracking-email]
+verify_jwt = true
