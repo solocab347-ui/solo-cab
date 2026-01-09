@@ -188,13 +188,42 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
         .eq("contract_signed", true);
 
       const dateRange = getDateRange(period);
-      let coursesQuery = supabase.from("courses").select("*").in("driver_id", driverIds);
+      
+      // SÉCURITÉ CRITIQUE: Ne récupérer QUE les courses créées par le gestionnaire
+      // JAMAIS les courses personnelles des chauffeurs (même partenaires)
+      let coursesQuery = supabase.from("courses").select("*").eq("fleet_manager_id", fleetManagerId);
       if (dateRange.start && dateRange.end) {
         coursesQuery = coursesQuery
           .gte("scheduled_date", dateRange.start.toISOString())
           .lte("scheduled_date", dateRange.end.toISOString());
       }
-      const { data: courses } = await coursesQuery;
+      const { data: fleetCourses } = await coursesQuery;
+      
+      // Récupérer également les courses partagées via fleet_partner_courses
+      const { data: sharedLinks } = await supabase
+        .from("fleet_partner_courses")
+        .select("course_id")
+        .eq("fleet_manager_id", fleetManagerId)
+        .not("status", "in", "(cancelled,declined)");
+      
+      const sharedCourseIds = sharedLinks?.map(s => s.course_id) || [];
+      let sharedCourses: any[] = [];
+      if (sharedCourseIds.length > 0) {
+        let sharedQuery = supabase.from("courses").select("*").in("id", sharedCourseIds);
+        if (dateRange.start && dateRange.end) {
+          sharedQuery = sharedQuery
+            .gte("scheduled_date", dateRange.start.toISOString())
+            .lte("scheduled_date", dateRange.end.toISOString());
+        }
+        const { data: sharedData } = await sharedQuery;
+        sharedCourses = sharedData || [];
+      }
+      
+      // Combiner sans doublons
+      const courseMap = new Map<string, any>();
+      fleetCourses?.forEach(c => courseMap.set(c.id, c));
+      sharedCourses.forEach(c => { if (!courseMap.has(c.id)) courseMap.set(c.id, c); });
+      const courses = Array.from(courseMap.values());
 
       let facturesQuery = supabase.from("factures").select("*").in("driver_id", driverIds).eq("payment_status", "paid");
       if (dateRange.start && dateRange.end) {
@@ -253,7 +282,8 @@ export const FleetStatisticsDashboard = ({ fleetManagerId }: FleetStatisticsDash
       // Fetch previous period stats for comparison
       const prevRange = getPreviousDateRange(period);
       if (prevRange) {
-        let prevCoursesQuery = supabase.from("courses").select("*").in("driver_id", driverIds);
+        // SÉCURITÉ: Utiliser fleet_manager_id au lieu de driver_id
+        let prevCoursesQuery = supabase.from("courses").select("*").eq("fleet_manager_id", fleetManagerId);
         prevCoursesQuery = prevCoursesQuery
           .gte("scheduled_date", prevRange.start.toISOString())
           .lte("scheduled_date", prevRange.end.toISOString());
