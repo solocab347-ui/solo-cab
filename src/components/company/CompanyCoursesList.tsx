@@ -374,9 +374,9 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
           <h2 className="text-xl font-semibold">Mes réservations</h2>
           <p className="text-sm text-muted-foreground">Gérez les courses de votre entreprise</p>
         </div>
-        <Button onClick={onCreateCourse}>
+        <Button onClick={onCreateCourse} className="rounded-full">
           <Plus className="w-4 h-4 mr-2" />
-          Nouvelle réservation
+          Nouvelle course
         </Button>
       </div>
 
