@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,7 @@ export function FleetConfirmationStep({
   const [isSending, setIsSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch fleet manager info
   const { data: fleetManager, isLoading } = useQuery({
@@ -156,6 +157,9 @@ export function FleetConfirmationStep({
     onSuccess: (data) => {
       setSent(true);
       toast.success("Demande envoyée au gestionnaire de flotte");
+      
+      // Invalider le cache pour que la liste des demandes se rafraîchisse avec le token
+      queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
       
       if (data.invitationToken) {
         const link = `${window.location.origin}/suivi-course-entreprise?token=${data.invitationToken}`;
