@@ -2506,6 +2506,80 @@ export type Database = {
           },
         ]
       }
+      course_driver_exclusions: {
+        Row: {
+          course_id: string
+          driver_id: string
+          excluded_at: string
+          exclusion_reason: string
+          id: string
+        }
+        Insert: {
+          course_id: string
+          driver_id: string
+          excluded_at?: string
+          exclusion_reason: string
+          id?: string
+        }
+        Update: {
+          course_id?: string
+          driver_id?: string
+          excluded_at?: string
+          exclusion_reason?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_driver_exclusions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_escalations: {
         Row: {
           company_request_id: string | null
@@ -10073,15 +10147,26 @@ export type Database = {
         Args: { p_company_request_id: string; p_fleet_manager_id: string }
         Returns: Json
       }
-      find_available_fleet_driver: {
-        Args: {
-          p_duration_minutes?: number
-          p_excluded_driver_id?: string
-          p_fleet_manager_id: string
-          p_scheduled_date: string
-        }
-        Returns: string
-      }
+      find_available_fleet_driver:
+        | {
+            Args: {
+              p_duration_minutes?: number
+              p_excluded_driver_id?: string
+              p_fleet_manager_id: string
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_course_id?: string
+              p_duration_minutes?: number
+              p_excluded_driver_id?: string
+              p_fleet_manager_id: string
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
       find_driver_by_code: {
         Args: { _code: string }
         Returns: {
@@ -10114,6 +10199,18 @@ export type Database = {
       find_nearest_available_fleet_driver:
         | {
             Args: {
+              p_course_id?: string
+              p_duration_minutes?: number
+              p_excluded_driver_id?: string
+              p_fleet_manager_id: string
+              p_pickup_latitude: number
+              p_pickup_longitude: number
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               p_duration_minutes?: number
               p_favorite_driver_id?: string
               p_fleet_manager_id: string
@@ -10134,17 +10231,30 @@ export type Database = {
             }
             Returns: string
           }
-      find_nearest_available_fleet_partner: {
-        Args: {
-          p_duration_minutes?: number
-          p_favorite_driver_id?: string
-          p_fleet_manager_id: string
-          p_pickup_latitude?: number
-          p_pickup_longitude?: number
-          p_scheduled_date: string
-        }
-        Returns: string
-      }
+      find_nearest_available_fleet_partner:
+        | {
+            Args: {
+              p_course_id?: string
+              p_duration_minutes?: number
+              p_favorite_driver_id?: string
+              p_fleet_manager_id: string
+              p_pickup_latitude: number
+              p_pickup_longitude: number
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_duration_minutes?: number
+              p_favorite_driver_id?: string
+              p_fleet_manager_id: string
+              p_pickup_latitude?: number
+              p_pickup_longitude?: number
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
       format_sharing_number: { Args: { _number: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
