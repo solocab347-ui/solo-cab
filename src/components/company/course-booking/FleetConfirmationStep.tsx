@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { 
   Building2, MapPin, Calendar, Users, Clock, 
-  Send, Loader2, CheckCircle, Truck, Euro 
+  Send, Loader2, CheckCircle, Truck, Euro, Link2, Copy 
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -34,6 +35,7 @@ export function FleetConfirmationStep({
 }: FleetConfirmationStepProps) {
   const [isSending, setIsSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [trackingLink, setTrackingLink] = useState<string | null>(null);
 
   // Fetch fleet manager info
   const { data: fleetManager, isLoading } = useQuery({
@@ -97,13 +99,44 @@ export function FleetConfirmationStep({
 
       if (requestError) throw requestError;
 
-      // 2. The notification will be created automatically by the trigger
+      // 2. Create tracking invitation for guest employees
+      let invitationToken: string | null = null;
+      if (formData.isGuestEmployee && formData.guestEmployeeName) {
+        const { data: invitation, error: invError } = await supabase
+          .from("company_employee_course_invitations")
+          .insert({
+            company_id: companyId,
+            request_id: request.id,
+            guest_name: formData.guestEmployeeName,
+            guest_phone: formData.guestEmployeePhone || null,
+            guest_email: formData.guestEmployeeEmail || null,
+            scheduled_date: request.scheduled_date,
+            pickup_address: request.pickup_address,
+            destination_address: request.destination_address,
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+          })
+          .select("token")
+          .single();
+
+        if (invError) {
+          console.error("Error creating invitation:", invError);
+        } else if (invitation) {
+          invitationToken = invitation.token;
+        }
+      }
+
+      // 3. The notification will be created automatically by the trigger
       
-      return request;
+      return { request, invitationToken };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSent(true);
       toast.success("Demande envoyée au gestionnaire de flotte");
+      
+      if (data.invitationToken) {
+        const link = `${window.location.origin}/suivi-course-entreprise?token=${data.invitationToken}`;
+        setTrackingLink(link);
+      }
     },
     onError: (error) => {
       console.error("Error sending to fleet:", error);
@@ -128,6 +161,13 @@ export function FleetConfirmationStep({
     );
   }
 
+  const copyTrackingLink = () => {
+    if (trackingLink) {
+      navigator.clipboard.writeText(trackingLink);
+      toast.success("Lien copié !");
+    }
+  };
+
   if (sent) {
     return (
       <div className="text-center py-8 space-y-6">
@@ -144,6 +184,33 @@ export function FleetConfirmationStep({
             Vous recevrez une notification dès qu'un chauffeur sera assigné.
           </p>
         </div>
+
+        {/* Tracking link for guest employee */}
+        {trackingLink && (
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20 text-left max-w-md mx-auto">
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-primary" />
+              Lien de suivi pour {formData.guestEmployeeName}
+            </h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              Partagez ce lien avec le collaborateur pour qu'il puisse suivre sa course en temps réel.
+            </p>
+            <div className="flex gap-2">
+              <Input 
+                value={trackingLink} 
+                readOnly 
+                className="text-xs bg-background"
+              />
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={copyTrackingLink}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Button onClick={onSuccess} className="gap-2">
           <CheckCircle className="w-4 h-4" />
