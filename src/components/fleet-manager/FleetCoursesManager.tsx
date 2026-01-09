@@ -257,7 +257,7 @@ export const FleetCoursesManager = ({
 
   const fetchData = async () => {
     try {
-      // Récupérer les chauffeurs de la flotte
+      // Récupérer les chauffeurs internes de la flotte
       const { data: fleetDrivers } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -273,8 +273,41 @@ export const FleetCoursesManager = ({
         .eq("fleet_manager_id", fleetManagerId)
         .eq("status", "active");
 
-      if (fleetDrivers && fleetDrivers.length > 0) {
-        const driverUserIds = fleetDrivers
+      // Récupérer les chauffeurs partenaires
+      const { data: partnerDrivers } = await supabase
+        .from("fleet_driver_partnerships")
+        .select(`
+          driver_id,
+          driver:drivers(
+            id,
+            vehicle_model,
+            vehicle_brand,
+            user_id,
+            max_passengers
+          )
+        `)
+        .eq("fleet_manager_id", fleetManagerId)
+        .eq("status", "accepted");
+
+      // Combiner les deux sources sans doublons
+      const allDriversMap = new Map<string, any>();
+      
+      fleetDrivers?.forEach((d: any) => {
+        if (d.driver) {
+          allDriversMap.set(d.driver.id, { driver_id: d.driver.id, driver: d.driver });
+        }
+      });
+      
+      partnerDrivers?.forEach((d: any) => {
+        if (d.driver && !allDriversMap.has(d.driver.id)) {
+          allDriversMap.set(d.driver.id, { driver_id: d.driver.id, driver: d.driver });
+        }
+      });
+
+      const combinedDrivers = Array.from(allDriversMap.values());
+
+      if (combinedDrivers.length > 0) {
+        const driverUserIds = combinedDrivers
           .filter(d => d.driver)
           .map(d => d.driver.user_id);
 
@@ -284,7 +317,7 @@ export const FleetCoursesManager = ({
             .select("id, full_name")
             .in("id", driverUserIds);
 
-          const driversWithProfiles = fleetDrivers.map(d => ({
+          const driversWithProfiles = combinedDrivers.map(d => ({
             ...d,
             driver: d.driver ? {
               ...d.driver,
@@ -294,10 +327,10 @@ export const FleetCoursesManager = ({
 
           setDrivers(driversWithProfiles);
         } else {
-          setDrivers(fleetDrivers);
+          setDrivers(combinedDrivers);
         }
 
-        const driverIds = fleetDrivers.map(d => d.driver_id);
+        const driverIds = combinedDrivers.map(d => d.driver_id);
 
         // Récupérer les courses
         const { data: courses } = await supabase
