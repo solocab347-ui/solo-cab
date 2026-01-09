@@ -217,24 +217,15 @@ export const FleetHome = memo(function FleetHome({
         }
 
         if (!cancelled) {
-
-          totalCourses = results[0].count || 0;
-          completedCourses = results[1].count || 0;
-
-          if (driverIds.length > 0 && results[2]?.data) {
-            const fleetFactures = results[2].data.filter((f: any) => 
-              f.course && allFleetClientIds.includes(f.course.client_id)
-            );
-            monthRevenue = fleetFactures.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
-          }
-        }
-
           setStats({
             totalCourses: totalCourses + (unassignedResult.count || 0),
             completedCourses,
             monthRevenue
           });
+          setLoading(false);
         }
+      } catch (error) {
+        console.error("Error loading fleet stats:", error);
         if (!cancelled) {
           setLoading(false);
         }
