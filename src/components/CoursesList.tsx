@@ -37,6 +37,7 @@ import { PendingFleetCoursesInCoursesList } from "@/components/driver/PendingFle
 import { CourseClientContact } from "@/components/driver/CourseClientContact";
 import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicator";
 import { FleetCourseIndicator } from "@/components/driver/FleetCourseIndicator";
+import { ReturnToFleetManagerDialog } from "@/components/driver/ReturnToFleetManagerDialog";
 import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
 
 interface CoursesListProps {
@@ -98,6 +99,10 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   // État pour le partage avec partenaire
   const [sharePartnerDialogOpen, setSharePartnerDialogOpen] = useState(false);
   const [courseToShareWithPartner, setCourseToShareWithPartner] = useState<any>(null);
+  
+  // État pour le renvoi au gestionnaire
+  const [returnToFleetDialogOpen, setReturnToFleetDialogOpen] = useState(false);
+  const [courseToReturnToFleet, setCourseToReturnToFleet] = useState<any>(null);
   
   // État pour le rappel de commission après complétion
   const [showCommissionDialog, setShowCommissionDialog] = useState(false);
@@ -2288,7 +2293,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-sm sm:text-base text-foreground">
                             {getClientDisplayName(course)}
-                            {course.is_guest_booking && (
+                            {course.is_guest_booking && !course.fleet_manager_id && (
                               <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
                             )}
                           </h3>
@@ -2564,8 +2569,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées (accepted) */}
-                  {course.status === 'accepted' && (
+                  {/* Bouton Partager avec Partenaire - BLOQUÉ pour courses gestionnaire flotte */}
+                  {course.status === 'accepted' && !course.fleet_manager_id && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -2577,6 +2582,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     >
                       <Handshake className="w-4 h-4 mr-2" />
                       Partager avec un partenaire
+                    </Button>
+                  )}
+                  
+                  {/* Bouton Renvoyer au gestionnaire - uniquement pour courses flotte acceptées */}
+                  {course.status === 'accepted' && course.fleet_manager_id && course.fleet_managers && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCourseToReturnToFleet(course);
+                        setReturnToFleetDialogOpen(true);
+                      }}
+                      className="w-full border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Renvoyer au gestionnaire
                     </Button>
                   )}
                   
@@ -2625,7 +2646,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-foreground">
                             {companyCourseInfo?.employeeName || getClientDisplayName(course)}
-                            {course.is_guest_booking && !companyCourseInfo && (
+                            {course.is_guest_booking && !companyCourseInfo && !course.fleet_manager_id && (
                               <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
                             )}
                           </h3>
@@ -2828,8 +2849,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     </Button>
                   </div>
                   
-                  {/* Bouton Partager avec Partenaire - uniquement pour courses confirmées non partagées (ni pending ni active) */}
-                  {course.status === 'accepted' && !shareLockStatus && (
+                  {/* Bouton Partager avec Partenaire - BLOQUÉ pour courses gestionnaire flotte */}
+                  {course.status === 'accepted' && !shareLockStatus && !course.fleet_manager_id && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -2841,6 +2862,22 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                     >
                       <Handshake className="w-4 h-4 mr-2" />
                       Partager avec un partenaire
+                    </Button>
+                  )}
+                  
+                  {/* Bouton Renvoyer au gestionnaire - uniquement pour courses flotte acceptées */}
+                  {course.status === 'accepted' && course.fleet_manager_id && course.fleet_managers && !isActivelySharingOrHandled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCourseToReturnToFleet(course);
+                        setReturnToFleetDialogOpen(true);
+                      }}
+                      className="w-full border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Renvoyer au gestionnaire
                     </Button>
                   )}
                   
@@ -2895,7 +2932,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">
                           {getClientDisplayName(course)}
-                          {course.is_guest_booking && (
+                          {course.is_guest_booking && !course.fleet_manager_id && (
                             <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
                           )}
                         </h3>
@@ -3085,7 +3122,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">
                           {getClientDisplayName(course)}
-                          {course.is_guest_booking && (
+                          {course.is_guest_booking && !course.fleet_manager_id && (
                             <Badge variant="outline" className="ml-2 text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">Non inscrit</Badge>
                           )}
                         </h3>
@@ -3409,6 +3446,21 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         driverId={driverId}
         onSuccess={fetchCourses}
       />
+
+      {/* Return to Fleet Manager Dialog */}
+      {courseToReturnToFleet && courseToReturnToFleet.fleet_managers && (
+        <ReturnToFleetManagerDialog
+          open={returnToFleetDialogOpen}
+          onOpenChange={setReturnToFleetDialogOpen}
+          courseId={courseToReturnToFleet.id}
+          fleetManagerId={courseToReturnToFleet.fleet_manager_id}
+          fleetManagerName={courseToReturnToFleet.fleet_managers.company_name}
+          onSuccess={() => {
+            setCourseToReturnToFleet(null);
+            fetchCourses();
+          }}
+        />
+      )}
 
       {/* Commission Reminder Dialog après complétion */}
       {completedCourseInfo && (
