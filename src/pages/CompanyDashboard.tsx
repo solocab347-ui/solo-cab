@@ -276,7 +276,7 @@ export default function CompanyDashboard() {
 
           {/* Courses Tab */}
           <TabsContent value="courses">
-            <CoursesSection companyId={company.id} />
+            <CoursesSection companyId={company.id} onTabChange={handleTabChange} />
           </TabsContent>
 
           {/* Team Tab */}
@@ -503,8 +503,13 @@ function StatCard({ label, value, icon: Icon, color, bgColor }: {
 }
 
 // ============= COURSES SECTION =============
-function CoursesSection({ companyId }: { companyId: string }) {
+function CoursesSection({ companyId, onTabChange }: { companyId: string; onTabChange: (tab: string) => void }) {
   const [subTab, setSubTab] = useState("requests");
+
+  const handleSearchNewDriver = () => {
+    // Navigate to partnerships tab with search sub-tab
+    onTabChange("partnerships");
+  };
 
   return (
     <div className="space-y-4">
@@ -540,7 +545,7 @@ function CoursesSection({ companyId }: { companyId: string }) {
 
       {subTab === "requests" && <CompanyCourseRequestsManager companyId={companyId} />}
       {subTab === "list" && <CompanyCoursesList companyId={companyId} onCreateCourse={() => setSubTab("new")} />}
-      {subTab === "new" && <CompanyInlineCourseCreation companyId={companyId} onSuccess={() => setSubTab("list")} onSearchNewDriver={() => {}} />}
+      {subTab === "new" && <CompanyInlineCourseCreation companyId={companyId} onSuccess={() => setSubTab("list")} onSearchNewDriver={handleSearchNewDriver} />}
     </div>
   );
 }
