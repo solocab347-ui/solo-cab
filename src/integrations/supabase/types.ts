@@ -1553,6 +1553,7 @@ export type Database = {
           guest_phone: string | null
           id: string
           is_used: boolean | null
+          last_reminder_sent_at: string | null
           pickup_address: string | null
           request_id: string | null
           scheduled_date: string | null
@@ -1571,6 +1572,7 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           is_used?: boolean | null
+          last_reminder_sent_at?: string | null
           pickup_address?: string | null
           request_id?: string | null
           scheduled_date?: string | null
@@ -1589,6 +1591,7 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           is_used?: boolean | null
+          last_reminder_sent_at?: string | null
           pickup_address?: string | null
           request_id?: string | null
           scheduled_date?: string | null
@@ -8453,6 +8456,67 @@ export type Database = {
             columns: ["reporter_driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_confirmation_reminders: {
+        Row: {
+          company_id: string | null
+          course_id: string
+          created_at: string
+          employee_id: string | null
+          guest_email: string | null
+          guest_name: string | null
+          id: string
+          invitation_token: string | null
+          sent_at: string
+          sent_by: string
+        }
+        Insert: {
+          company_id?: string | null
+          course_id: string
+          created_at?: string
+          employee_id?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          invitation_token?: string | null
+          sent_at?: string
+          sent_by: string
+        }
+        Update: {
+          company_id?: string | null
+          course_id?: string
+          created_at?: string
+          employee_id?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          invitation_token?: string | null
+          sent_at?: string
+          sent_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_confirmation_reminders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_confirmation_reminders_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_confirmation_reminders_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
             referencedColumns: ["id"]
           },
         ]
