@@ -130,7 +130,7 @@ export const FleetCreateCourseForClient = ({
         setClients(clientsWithProfiles);
       }
 
-      // Fetch drivers
+      // Fetch internal drivers from fleet_manager_drivers
       const { data: fmDrivers, error: driversError } = await supabase
         .from("fleet_manager_drivers")
         .select(`
@@ -148,22 +148,55 @@ export const FleetCreateCourseForClient = ({
 
       if (driversError) throw driversError;
 
-      if (fmDrivers && fmDrivers.length > 0) {
-        const driverUserIds = fmDrivers
-          .filter((d: any) => d.driver)
-          .map((d: any) => d.driver.user_id);
+      // Fetch partner drivers from fleet_driver_partnerships
+      const { data: partnerDrivers, error: partnersError } = await supabase
+        .from("fleet_driver_partnerships")
+        .select(`
+          driver_id,
+          driver:drivers(
+            id,
+            vehicle_model,
+            vehicle_brand,
+            user_id,
+            rating
+          )
+        `)
+        .eq("fleet_manager_id", fleetManagerId)
+        .eq("status", "accepted");
+
+      if (partnersError) throw partnersError;
+
+      // Combine both sources, avoiding duplicates
+      const allDriversMap = new Map<string, any>();
+      
+      // Add internal drivers
+      fmDrivers?.forEach((d: any) => {
+        if (d.driver) {
+          allDriversMap.set(d.driver.id, d.driver);
+        }
+      });
+      
+      // Add partner drivers
+      partnerDrivers?.forEach((d: any) => {
+        if (d.driver && !allDriversMap.has(d.driver.id)) {
+          allDriversMap.set(d.driver.id, d.driver);
+        }
+      });
+
+      const allDriversList = Array.from(allDriversMap.values());
+
+      if (allDriversList.length > 0) {
+        const driverUserIds = allDriversList.map((d: any) => d.user_id);
 
         const { data: driverProfiles } = await supabase
           .from("profiles")
           .select("id, full_name, profile_photo_url")
           .in("id", driverUserIds);
 
-        const driversWithProfiles: FleetDriver[] = fmDrivers
-          .filter((d: any) => d.driver)
-          .map((d: any) => ({
-            ...d.driver,
-            profile: driverProfiles?.find((p) => p.id === d.driver.user_id),
-          }));
+        const driversWithProfiles: FleetDriver[] = allDriversList.map((d: any) => ({
+          ...d,
+          profile: driverProfiles?.find((p) => p.id === d.user_id),
+        }));
 
         setDrivers(driversWithProfiles);
       }
