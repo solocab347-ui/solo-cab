@@ -723,7 +723,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
         
         <Dialog open={showWizard} onOpenChange={setShowWizard}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 text-sm font-medium">
               <Plus className="w-4 h-4" />
               Nouvelle course
             </Button>
