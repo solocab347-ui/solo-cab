@@ -6,3 +6,4 @@ export { DriverSelectionStep } from "./DriverSelectionStep";
 export { QuotesReviewStep } from "./QuotesReviewStep";
 export { BookingConfirmationStep } from "./BookingConfirmationStep";
 export { FleetConfirmationStep } from "./FleetConfirmationStep";
+export { FleetQuoteStep } from "./FleetQuoteStep";

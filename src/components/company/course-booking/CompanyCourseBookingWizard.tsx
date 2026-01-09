@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
   ArrowRight, ArrowLeft, Users, MapPin, Car, FileText, 
-  Send, Check, Loader2, Building2
+  Send, Check, Loader2, Building2, Euro
 } from "lucide-react";
 import { EmployeeSelectionStep } from "./EmployeeSelectionStep";
 import { CourseDetailsStep } from "./CourseDetailsStep";
@@ -14,6 +14,7 @@ import { DriverSelectionStep } from "./DriverSelectionStep";
 import { QuotesReviewStep } from "./QuotesReviewStep";
 import { BookingConfirmationStep } from "./BookingConfirmationStep";
 import { FleetConfirmationStep } from "./FleetConfirmationStep";
+import { FleetQuoteStep, PriceDetails } from "./FleetQuoteStep";
 
 interface CompanyCourseBookingWizardProps {
   companyId: string;
@@ -23,7 +24,7 @@ interface CompanyCourseBookingWizardProps {
   onSuccess?: () => void;
 }
 
-export type WizardStep = "employee" | "details" | "drivers" | "quotes" | "confirmation" | "fleet_confirmation";
+export type WizardStep = "employee" | "details" | "drivers" | "quotes" | "confirmation" | "fleet_quote" | "fleet_confirmation";
 
 export interface CourseFormData {
   // Employee
@@ -78,6 +79,7 @@ const STEPS_FLEET: { key: WizardStep; label: string; icon: React.ElementType }[]
   { key: "employee", label: "Collaborateur", icon: Users },
   { key: "details", label: "Trajet", icon: MapPin },
   { key: "drivers", label: "Partenaire", icon: Building2 },
+  { key: "fleet_quote", label: "Devis", icon: Euro },
   { key: "fleet_confirmation", label: "Confirmation", icon: Check },
 ];
 
@@ -120,6 +122,10 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
 
   const [selectedDrivers, setSelectedDrivers] = useState<SelectedDriver[]>([]);
   
+  // Fleet quote state
+  const [fleetGeneratedPrice, setFleetGeneratedPrice] = useState<number | null>(null);
+  const [fleetPriceDetails, setFleetPriceDetails] = useState<PriceDetails | null>(null);
+  
   // Pre-load generated quotes if resuming from quotes or confirmation step
   const [generatedQuotes, setGeneratedQuotes] = useState<GeneratedQuote[]>(() => {
     if (existingRequest?.quotesWithProfiles && (resumeStep === "quotes" || resumeStep === "confirmation")) {
@@ -156,6 +162,8 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
         return selectionMode === "fleet" ? !!selectedFleetManagerId : selectedDrivers.length > 0;
       case "quotes":
         return generatedQuotes.some(q => q.selected);
+      case "fleet_quote":
+        return fleetGeneratedPrice !== null && fleetGeneratedPrice > 0;
       default:
         return true;
     }
@@ -230,12 +238,26 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
             }}
           />
         );
+      case "fleet_quote":
+        return (
+          <FleetQuoteStep
+            companyId={companyId}
+            formData={formData}
+            fleetManagerId={selectedFleetManagerId!}
+            generatedPrice={fleetGeneratedPrice}
+            setGeneratedPrice={setFleetGeneratedPrice}
+            priceDetails={fleetPriceDetails}
+            setPriceDetails={setFleetPriceDetails}
+          />
+        );
       case "fleet_confirmation":
         return (
           <FleetConfirmationStep
             companyId={companyId}
             formData={formData}
             fleetManagerId={selectedFleetManagerId!}
+            estimatedPrice={fleetGeneratedPrice}
+            priceDetails={fleetPriceDetails}
             onSuccess={() => {
               queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
               if (onSuccess) onSuccess();
