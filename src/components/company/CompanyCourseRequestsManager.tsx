@@ -136,7 +136,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             user_id,
             department
           ),
-          accepted_driver:drivers(
+          accepted_driver:drivers!company_course_requests_accepted_driver_id_fkey(
             id,
             company_name,
             user_id,
