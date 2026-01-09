@@ -449,23 +449,37 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                   </div>
                 </div>
 
-                {/* Tracking link for guest employees */}
-                {request.is_guest_employee && request.trackingToken && (
-                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Lien de suivi</span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="ml-auto h-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyTrackingLink(request.trackingToken);
-                      }}
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copier
-                    </Button>
+                {/* Tracking link - afficher pour toutes les courses avec un token */}
+                {request.trackingToken && (
+                  <div className="flex items-center gap-2 p-2 bg-primary/5 border border-primary/20 rounded-lg">
+                    <ExternalLink className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">Lien de suivi</span>
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyTrackingLink(request.trackingToken);
+                        }}
+                      >
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copier
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`${window.location.origin}/suivi-course-entreprise?token=${request.trackingToken}`, '_blank');
+                        }}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        Ouvrir
+                      </Button>
+                    </div>
                   </div>
                 )}
 
