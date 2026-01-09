@@ -368,70 +368,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Erreur de connexion");
 
-      // Récupérer le rôle - SIMPLE et RAPIDE
-      const role = await fetchUserRole(data.user.id);
+      const userId = data.user.id;
+
+      // OPTIMISATION: Récupérer toutes les données en PARALLÈLE
+      const [rolesResult, driverResult, employeeResult] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("drivers").select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id").eq("user_id", userId).maybeSingle(),
+        supabase.from("company_employees").select("id").eq("user_id", userId).eq("is_active", true).maybeSingle()
+      ]);
+
+      // Traiter les rôles
+      const roles = rolesResult.data?.map((r) => r.role) || [];
+      const role: UserRole = roles.includes("admin") 
+        ? "admin" 
+        : roles.includes("fleet_manager")
+        ? "fleet_manager"
+        : roles.includes("company")
+        ? "company"
+        : roles.includes("driver")
+        ? "driver"
+        : roles.includes("client")
+        ? "client"
+        : null;
+
+      // Mettre à jour les états immédiatement
+      setUserRoles(roles);
+      setUserRole(role);
       
-      // Toast de succès avec description claire
+      const isEmployee = !!employeeResult.data;
+      setIsCompanyEmployee(isEmployee);
+      setIsCompanyEmployeeChecked(true);
+
+      // Toast de succès
       const roleLabel = role === "admin" ? "Administrateur" : role === "fleet_manager" ? "Gestionnaire de flotte" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
       toast.success("Connexion réussie !", {
-        description: `Bienvenue ${roleLabel} ! Redirection vers votre espace...`,
-        duration: 3000,
+        description: `Bienvenue ${roleLabel} !`,
+        duration: 2000,
       });
 
-      // Check if driver is a fleet driver OR Pioneer without payment
-      if (role === "driver") {
-        const { data: driverData } = await supabase
-          .from("drivers")
-          .select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id, subscription_paid")
-          .eq("user_id", data.user.id)
-          .single();
-        
-        // Pioneer sans paiement finalisé -> rediriger vers la page de paiement
-        if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
-          navigate("/pioneer-payment", { replace: true });
-          return;
-        }
-        
-        if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
-          navigate("/fleet-driver-dashboard", { replace: true });
-          return;
-        }
-      }
-
-      // Navigation basée sur le rôle
+      // Navigation rapide basée sur le rôle
       if (role === "admin") {
         navigate("/admin-dashboard", { replace: true });
       } else if (role === "fleet_manager") {
         navigate("/fleet-dashboard", { replace: true });
       } else if (role === "driver") {
-        navigate("/driver-dashboard", { replace: true });
+        const driverData = driverResult.data;
+        if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
+          navigate("/pioneer-payment", { replace: true });
+        } else if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
+          navigate("/fleet-driver-dashboard", { replace: true });
+        } else {
+          navigate("/driver-dashboard", { replace: true });
+        }
       } else if (role === "company") {
         navigate("/company-dashboard", { replace: true });
       } else if (role === "client") {
-        // La vérification est déjà faite par fetchUserRole, utiliser directement isCompanyEmployee
-        // On attend un petit délai pour laisser le temps aux états de se mettre à jour
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Relire l'état depuis la vérification déjà effectuée par fetchUserRole
-        const { data: employeeData } = await supabase
-          .from("company_employees")
-          .select("id, is_active")
-          .eq("user_id", data.user.id)
-          .eq("is_active", true)
-          .maybeSingle();
-        
-        const isEmployee = !!employeeData;
-        // CRITIQUE: S'assurer que les états sont synchronisés
-        setIsCompanyEmployee(isEmployee);
-        setIsCompanyEmployeeChecked(true);
-        
-        if (isEmployee) {
-          navigate("/company-employee-dashboard", { replace: true });
-        } else {
-          navigate("/client-dashboard", { replace: true });
-        }
+        navigate(isEmployee ? "/company-employee-dashboard" : "/client-dashboard", { replace: true });
       } else {
-        logger.warn("Unknown role, redirecting to home");
         navigate("/", { replace: true });
       }
     } catch (error: any) {
