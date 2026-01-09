@@ -8,36 +8,17 @@ import { useLocale } from "@/hooks/useLocale";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo-solocab.png";
 import SocialLinks from "@/components/SocialLinks";
+import { ClientHeroSection } from "@/components/landing/ClientHeroSection";
+import { DriverHeroSection } from "@/components/landing/DriverHeroSection";
+import { CompanyHeroSection } from "@/components/landing/CompanyHeroSection";
+import { FleetHeroSection } from "@/components/landing/FleetHeroSection";
 import {
   Car,
   Users,
-  QrCode,
-  Euro,
-  BarChart3,
-  Star,
-  MessageSquare,
-  Calendar,
-  Shield,
-  Zap,
-  CheckCircle,
   ArrowRight,
   Search,
-  Globe,
-  DollarSign,
-  FileText,
-  Target,
-  Bell,
-  Lock,
-  Heart,
-  ClipboardList,
-  MessageCircle,
-  CreditCard,
-  CalendarCheck,
-  TrendingUp,
+  Zap,
   Building2,
-  Briefcase,
-  Receipt,
-  UserCheck,
   Truck,
 } from "lucide-react";
 
@@ -74,209 +55,7 @@ const Index = () => {
     );
   }
 
-  const clientFeatures = [
-    {
-      icon: Search,
-      title: t('landing.client.findRightDriver'),
-      description: t('landing.client.findRightDriverDesc'),
-      gradient: "from-pink-500 to-purple-600",
-    },
-    {
-      icon: DollarSign,
-      title: t('landing.client.transparentPricing'),
-      description: t('landing.client.transparentPricingDesc'),
-      gradient: "from-green-500 to-emerald-600",
-    },
-    {
-      icon: Shield,
-      title: t('landing.client.verifiedDrivers'),
-      description: t('landing.client.verifiedDriversDesc'),
-      gradient: "from-blue-500 to-cyan-600",
-    },
-    {
-      icon: Heart,
-      title: t('landing.client.favoriteDriver'),
-      description: t('landing.client.favoriteDriverDesc'),
-      gradient: "from-red-500 to-pink-600",
-    },
-    {
-      icon: CalendarCheck,
-      title: t('landing.client.easyBooking'),
-      description: t('landing.client.easyBookingDesc'),
-      gradient: "from-cyan-500 to-blue-600",
-    },
-    {
-      icon: MessageCircle,
-      title: t('landing.client.directCommunication'),
-      description: t('landing.client.directCommunicationDesc'),
-      gradient: "from-orange-500 to-red-600",
-    },
-    {
-      icon: Bell,
-      title: t('landing.client.realTimeNotifications'),
-      description: t('landing.client.realTimeNotificationsDesc'),
-      gradient: "from-amber-500 to-orange-600",
-    },
-    {
-      icon: CreditCard,
-      title: t('landing.client.securePayment'),
-      description: t('landing.client.securePaymentDesc'),
-      gradient: "from-purple-500 to-pink-600",
-    },
-  ];
-
-  const driverFeatures = [
-    {
-      icon: Globe,
-      title: t('landing.driver.publicProfile'),
-      description: t('landing.driver.publicProfileDesc'),
-      gradient: "from-blue-500 to-cyan-600",
-    },
-    {
-      icon: Users,
-      title: t('landing.driver.privateClients'),
-      description: t('landing.driver.privateClientsDesc'),
-      gradient: "from-pink-500 to-purple-600",
-    },
-    {
-      icon: QrCode,
-      title: t('landing.driver.personalQR'),
-      description: t('landing.driver.personalQRDesc'),
-      gradient: "from-orange-500 to-red-600",
-    },
-    {
-      icon: DollarSign,
-      title: t('landing.driver.zeroCommission'),
-      description: t('landing.driver.zeroCommissionDesc'),
-      gradient: "from-green-500 to-emerald-600",
-    },
-    {
-      icon: ClipboardList,
-      title: t('landing.driver.completeManagement'),
-      description: t('landing.driver.completeManagementDesc'),
-      gradient: "from-cyan-500 to-blue-600",
-    },
-    {
-      icon: BarChart3,
-      title: t('landing.driver.statisticsGoals'),
-      description: t('landing.driver.statisticsGoalsDesc'),
-      gradient: "from-purple-500 to-pink-600",
-    },
-    {
-      icon: Star,
-      title: t('landing.driver.ratingSystem'),
-      description: t('landing.driver.ratingSystemDesc'),
-      gradient: "from-amber-500 to-orange-600",
-    },
-    {
-      icon: Target,
-      title: t('landing.driver.marketingCampaigns'),
-      description: t('landing.driver.marketingCampaignsDesc'),
-      gradient: "from-red-500 to-pink-600",
-    },
-  ];
-
-  const companyFeatures = [
-    {
-      icon: Users,
-      title: "Plusieurs Chauffeurs",
-      description: "Accédez à un réseau de chauffeurs professionnels pour tous vos besoins",
-      gradient: "from-emerald-500 to-teal-600",
-    },
-    {
-      icon: Receipt,
-      title: "Facturation Automatique",
-      description: "Factures générées automatiquement avec récapitulatif mensuel",
-      gradient: "from-blue-500 to-cyan-600",
-    },
-    {
-      icon: Briefcase,
-      title: "Compte Entreprise",
-      description: "Gestion centralisée des déplacements de vos collaborateurs",
-      gradient: "from-purple-500 to-pink-600",
-    },
-    {
-      icon: FileText,
-      title: "Justificatifs Comptables",
-      description: "Téléchargez tous vos justificatifs pour votre comptabilité",
-      gradient: "from-amber-500 to-orange-600",
-    },
-    {
-      icon: Shield,
-      title: "Chauffeurs Vérifiés",
-      description: "Tous nos chauffeurs sont des professionnels certifiés VTC",
-      gradient: "from-green-500 to-emerald-600",
-    },
-    {
-      icon: UserCheck,
-      title: "Chauffeurs Favoris",
-      description: "Enregistrez vos chauffeurs préférés pour des réservations rapides",
-      gradient: "from-pink-500 to-rose-600",
-    },
-    {
-      icon: BarChart3,
-      title: "Suivi des Dépenses",
-      description: "Tableau de bord avec statistiques et budget mensuel",
-      gradient: "from-cyan-500 to-blue-600",
-    },
-    {
-      icon: Calendar,
-      title: "Réservation Simplifiée",
-      description: "Réservez en quelques clics pour vous ou vos collaborateurs",
-      gradient: "from-indigo-500 to-purple-600",
-    },
-  ];
-
-  const fleetFeatures = [
-    {
-      icon: Truck,
-      title: "Gestion Multi-Véhicules",
-      description: "Gérez l'ensemble de votre flotte de véhicules depuis un seul tableau de bord",
-      gradient: "from-indigo-500 to-violet-600",
-    },
-    {
-      icon: Users,
-      title: "Équipe de Chauffeurs",
-      description: "Attribuez des chauffeurs à vos véhicules et suivez leur activité",
-      gradient: "from-blue-500 to-cyan-600",
-    },
-    {
-      icon: BarChart3,
-      title: "Analytics Avancés",
-      description: "Statistiques détaillées sur les performances de votre flotte",
-      gradient: "from-purple-500 to-pink-600",
-    },
-    {
-      icon: Calendar,
-      title: "Planning Centralisé",
-      description: "Planifiez les courses et optimisez l'utilisation de vos véhicules",
-      gradient: "from-emerald-500 to-teal-600",
-    },
-    {
-      icon: Receipt,
-      title: "Facturation Groupée",
-      description: "Factures consolidées pour tous vos chauffeurs et véhicules",
-      gradient: "from-amber-500 to-orange-600",
-    },
-    {
-      icon: TrendingUp,
-      title: "Rentabilité par Véhicule",
-      description: "Analysez la rentabilité de chaque véhicule de votre flotte",
-      gradient: "from-green-500 to-emerald-600",
-    },
-    {
-      icon: Shield,
-      title: "Conformité Garantie",
-      description: "Suivi des documents et assurances de tous vos véhicules",
-      gradient: "from-red-500 to-pink-600",
-    },
-    {
-      icon: MessageSquare,
-      title: "Communication Équipe",
-      description: "Messagerie intégrée pour coordonner votre équipe de chauffeurs",
-      gradient: "from-cyan-500 to-blue-600",
-    },
-  ];
+  // Features are now in individual components
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
@@ -363,144 +142,16 @@ const Index = () => {
           </div>
 
           {/* Clients View */}
-          {activeView === "clients" && (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                {t('landing.client.heroTitle').split(' ').slice(0, 2).join(' ')} <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">{t('landing.client.heroTitle').split(' ').slice(2).join(' ')}</span>
-              </h1>
-              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                {t('landing.client.heroSubtitle')}
-              </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {clientFeatures.map((feature, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
-                  >
-                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
-                      <feature.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-12">
-                <Link to="/chauffeurs">
-                  <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg">
-                    <Search className="w-5 h-5 mr-2" />
-                    {t('landing.client.searchDriver')}
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+          {activeView === "clients" && <ClientHeroSection />}
 
           {/* Drivers View */}
-          {activeView === "drivers" && (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                {t('landing.driver.heroTitle').split(' ').slice(0, 2).join(' ')} <span className="bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">{t('landing.driver.heroTitle').split(' ').slice(2).join(' ')}</span>
-              </h1>
-              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                {t('landing.driver.heroSubtitle')}
-              </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {driverFeatures.map((feature, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
-                  >
-                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
-                      <feature.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-12">
-                <Link to="/devenir-chauffeur">
-                  <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
-                    <Zap className="w-5 h-5 mr-2" />
-                    {t('landing.driver.joinCommunity')}
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+          {activeView === "drivers" && <DriverHeroSection />}
 
           {/* Companies View */}
-          {activeView === "companies" && (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">{t('landing.company.heroTitle')}</span>
-              </h1>
-              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                {t('landing.company.heroSubtitle')}
-              </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {companyFeatures.map((feature, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
-                  >
-                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
-                      <feature.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-12">
-                <Link to="/register-company">
-                  <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
-                    <Building2 className="w-5 h-5 mr-2" />
-                    {t('landing.company.registerCompany')}
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+          {activeView === "companies" && <CompanyHeroSection />}
 
           {/* Fleet Manager View */}
-          {activeView === "fleet" && (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-white">
-                <span className="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">{t('landing.fleet.heroTitle')}</span>
-              </h1>
-              <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                {t('landing.fleet.heroSubtitle')}
-              </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                {fleetFeatures.map((feature, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50"
-                  >
-                    <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br", feature.gradient)}>
-                      <feature.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-                  </Card>
-                ))}
-              </div>
-              <div className="mt-12">
-                <Link to="/register-fleet">
-                  <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-lg">
-                    <Truck className="w-5 h-5 mr-2" />
-                    {t('landing.fleet.registerFleet')}
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+          {activeView === "fleet" && <FleetHeroSection />}
         </div>
       </section>
 
@@ -580,88 +231,43 @@ const Index = () => {
         </div>
       </section>
 
-      {/* For Clients Section */}
-      <section className="py-20 bg-[#1a2942]">
+      {/* Extra CTA for Companies and Fleet Managers */}
+      <section className="py-16 bg-[#1a2942]">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-pink-500 text-pink-500">
-              Pour les Clients
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-              Trouvez Votre <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">Chauffeur de Confiance</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Des professionnels indépendants, des tarifs transparents
-            </p>
-          </div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Company CTA */}
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border-emerald-500/20">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white">Vous êtes une entreprise ?</h3>
+              <p className="text-gray-400 mb-4 text-sm">
+                Centralisez les déplacements de vos collaborateurs avec un compte entreprise dédié
+              </p>
+              <Link to="/register-company">
+                <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white">
+                  Créer un compte entreprise
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </Card>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {clientFeatures.map((feature, index) => (
-              <Card 
-                key={index} 
-                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50 animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
-                  <feature.icon className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/chauffeurs">
-              <Button size="lg" className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg">
-                <Search className="w-5 h-5 mr-2" />
-                Rechercher un chauffeur
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* For Drivers Section */}
-      <section className="py-20 bg-secondary/20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-blue-500 text-blue-500">
-              Pour les Chauffeurs
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-              Devenez un <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Chauffeur Indépendant</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Profil automatique, clients privés, zéro commission
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {driverFeatures.map((feature, index) => (
-              <Card 
-                key={index} 
-                className="p-6 hover:shadow-elegant transition-all cursor-pointer group bg-white/5 backdrop-blur-sm border-white/10 hover:border-primary/50 animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br transition-transform group-hover:scale-110", feature.gradient)}>
-                  <feature.icon className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="font-bold text-base mb-2 text-white group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{feature.description}</p>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/devenir-chauffeur">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg">
-                <Zap className="w-5 h-5 mr-2" />
-                Rejoindre la communauté
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
+            {/* Fleet Manager CTA */}
+            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-gradient-to-br from-indigo-500/10 to-violet-600/10 border-indigo-500/20">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-4">
+                <Truck className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white">Gestionnaire de flotte ?</h3>
+              <p className="text-gray-400 mb-4 text-sm">
+                Gérez plusieurs chauffeurs et développez votre activité avec notre plateforme
+              </p>
+              <Link to="/register-fleet">
+                <Button className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white">
+                  Créer ma flotte VTC
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </Card>
           </div>
         </div>
       </section>
