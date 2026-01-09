@@ -5,11 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NavigationHeader } from "@/components/NavigationHeader";
-import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car } from "lucide-react";
+import { Calendar, MapPin, Clock, Phone, User, CheckCircle, XCircle, Clock3, UserPlus, RefreshCw, Car, Users } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-solocab.png";
+
+interface SharedDriver {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+}
 
 interface BookingInfo {
   id: string;
@@ -22,7 +29,10 @@ interface BookingInfo {
   driver_name: string | null;
   driver_company: string | null;
   driver_phone: string | null;
+  driver_avatar_url: string | null;
   created_at: string;
+  is_shared_course: boolean;
+  shared_drivers: SharedDriver[];
 }
 
 const GuestBookingTracking = () => {
@@ -42,7 +52,29 @@ const GuestBookingTracking = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setBooking(data[0] as BookingInfo);
+        const rawBooking = data[0];
+        // Parse shared_drivers from JSON - cast through unknown for type safety
+        const sharedDrivers: SharedDriver[] = rawBooking.shared_drivers 
+          ? (rawBooking.shared_drivers as unknown as SharedDriver[])
+          : [];
+        
+        const parsedBooking: BookingInfo = {
+          id: rawBooking.id,
+          pickup_address: rawBooking.pickup_address,
+          destination_address: rawBooking.destination_address,
+          scheduled_date: rawBooking.scheduled_date,
+          status: rawBooking.status,
+          guest_name: rawBooking.guest_name,
+          guest_estimated_price: rawBooking.guest_estimated_price,
+          driver_name: rawBooking.driver_name,
+          driver_company: rawBooking.driver_company,
+          driver_phone: rawBooking.driver_phone,
+          driver_avatar_url: rawBooking.driver_avatar_url,
+          created_at: rawBooking.created_at,
+          is_shared_course: rawBooking.is_shared_course ?? false,
+          shared_drivers: sharedDrivers
+        };
+        setBooking(parsedBooking);
       } else {
         setBooking(null);
       }
@@ -243,16 +275,21 @@ const GuestBookingTracking = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Car className="h-5 w-5" />
-              Votre chauffeur
+              {booking.is_shared_course ? "Vos chauffeurs" : "Votre chauffeur"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Main driver */}
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                <User className="w-7 h-7 text-muted-foreground" />
-              </div>
+              <Avatar className="w-14 h-14">
+                <AvatarImage src={booking.driver_avatar_url || undefined} alt={driverDisplayName} />
+                <AvatarFallback className="bg-primary/10">
+                  <User className="w-7 h-7 text-primary" />
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <p className="font-semibold">{driverDisplayName}</p>
+                <p className="text-xs text-muted-foreground">Chauffeur principal</p>
                 {booking.driver_phone && booking.status === 'accepted' && (
                   <a 
                     href={`tel:${booking.driver_phone}`}
@@ -264,6 +301,32 @@ const GuestBookingTracking = () => {
                 )}
               </div>
             </div>
+
+            {/* Shared drivers */}
+            {booking.is_shared_course && booking.shared_drivers && booking.shared_drivers.length > 0 && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-amber-500" />
+                  <p className="text-sm font-medium text-amber-700">Course partagée</p>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Cette course peut être assurée en partenariat avec les chauffeurs suivants :
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {booking.shared_drivers.map((driver) => (
+                    <div key={driver.id} className="flex items-center gap-2 bg-muted/50 rounded-full py-1 px-3">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={driver.avatar_url || undefined} alt={driver.name} />
+                        <AvatarFallback className="text-xs">
+                          {driver.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{driver.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {booking.status === 'pending' && (
               <p className="text-sm text-muted-foreground mt-3">
