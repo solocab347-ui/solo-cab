@@ -13,6 +13,7 @@ import { CourseDetailsStep } from "./CourseDetailsStep";
 import { DriverSelectionStep } from "./DriverSelectionStep";
 import { QuotesReviewStep } from "./QuotesReviewStep";
 import { BookingConfirmationStep } from "./BookingConfirmationStep";
+import { FleetConfirmationStep } from "./FleetConfirmationStep";
 
 interface CompanyCourseBookingWizardProps {
   companyId: string;
@@ -22,7 +23,7 @@ interface CompanyCourseBookingWizardProps {
   onSuccess?: () => void;
 }
 
-export type WizardStep = "employee" | "details" | "drivers" | "quotes" | "confirmation";
+export type WizardStep = "employee" | "details" | "drivers" | "quotes" | "confirmation" | "fleet_confirmation";
 
 export interface CourseFormData {
   // Employee
@@ -65,7 +66,7 @@ export interface GeneratedQuote {
   selected: boolean;
 }
 
-const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
+const STEPS_DRIVERS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
   { key: "employee", label: "Collaborateur", icon: Users },
   { key: "details", label: "Trajet", icon: MapPin },
   { key: "drivers", label: "Chauffeurs", icon: Car },
@@ -73,8 +74,19 @@ const STEPS: { key: WizardStep; label: string; icon: React.ElementType }[] = [
   { key: "confirmation", label: "Confirmation", icon: Check },
 ];
 
+const STEPS_FLEET: { key: WizardStep; label: string; icon: React.ElementType }[] = [
+  { key: "employee", label: "Collaborateur", icon: Users },
+  { key: "details", label: "Trajet", icon: MapPin },
+  { key: "drivers", label: "Partenaire", icon: Building2 },
+  { key: "fleet_confirmation", label: "Confirmation", icon: Check },
+];
+
 export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeStep, onClose, onSuccess }: CompanyCourseBookingWizardProps) {
   const queryClient = useQueryClient();
+  
+  // Selection mode: drivers or fleet manager
+  const [selectionMode, setSelectionMode] = useState<"drivers" | "fleet">("drivers");
+  const [selectedFleetManagerId, setSelectedFleetManagerId] = useState<string | null>(null);
   
   // Determine starting step: resumeStep > existingRequest logic > default
   const getInitialStep = (): WizardStep => {
@@ -129,6 +141,8 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
     return [];
   });
 
+  // Choose the right steps based on selection mode
+  const STEPS = selectionMode === "fleet" ? STEPS_FLEET : STEPS_DRIVERS;
   const currentStepIndex = STEPS.findIndex(s => s.key === currentStep);
 
   const canGoNext = () => {
@@ -138,7 +152,8 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
       case "details":
         return formData.pickupAddress && formData.destinationAddress && formData.scheduledDate;
       case "drivers":
-        return selectedDrivers.length > 0;
+        // In fleet mode, need a fleet manager selected; in drivers mode, need drivers
+        return selectionMode === "fleet" ? !!selectedFleetManagerId : selectedDrivers.length > 0;
       case "quotes":
         return generatedQuotes.some(q => q.selected);
       default:
@@ -183,6 +198,10 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
             companyId={companyId}
             selectedDrivers={selectedDrivers}
             setSelectedDrivers={setSelectedDrivers}
+            selectedFleetManagerId={selectedFleetManagerId}
+            setSelectedFleetManagerId={setSelectedFleetManagerId}
+            selectionMode={selectionMode}
+            setSelectionMode={setSelectionMode}
           />
         );
       case "quotes":
@@ -205,7 +224,19 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
             formData={formData}
             companyId={companyId}
             onSuccess={() => {
-              // Invalider avec la clé complète incluant companyId
+              queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
+              if (onSuccess) onSuccess();
+              if (onClose) onClose();
+            }}
+          />
+        );
+      case "fleet_confirmation":
+        return (
+          <FleetConfirmationStep
+            companyId={companyId}
+            formData={formData}
+            fleetManagerId={selectedFleetManagerId!}
+            onSuccess={() => {
               queryClient.invalidateQueries({ queryKey: ["company-course-requests", companyId] });
               if (onSuccess) onSuccess();
               if (onClose) onClose();
@@ -264,7 +295,7 @@ export function CompanyCourseBookingWizard({ companyId, existingRequest, resumeS
           {currentStepIndex === 0 ? "Annuler" : "Retour"}
         </Button>
 
-        {currentStep !== "confirmation" && (
+        {currentStep !== "confirmation" && currentStep !== "fleet_confirmation" && (
           <Button
             onClick={goNext}
             disabled={!canGoNext()}

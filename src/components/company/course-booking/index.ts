@@ -5,3 +5,4 @@ export { CourseDetailsStep } from "./CourseDetailsStep";
 export { DriverSelectionStep } from "./DriverSelectionStep";
 export { QuotesReviewStep } from "./QuotesReviewStep";
 export { BookingConfirmationStep } from "./BookingConfirmationStep";
+export { FleetConfirmationStep } from "./FleetConfirmationStep";
