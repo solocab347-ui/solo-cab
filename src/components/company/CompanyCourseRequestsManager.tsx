@@ -165,7 +165,8 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             contact_name,
             user_id,
             contact_phone,
-            contact_email
+            contact_email,
+            logo_url
           )
         `)
         .eq("company_id", companyId)
@@ -638,7 +639,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
                     </div>
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarImage src={request.fleetManagerProfile?.profile_photo_url} />
+                        <AvatarImage src={request.fleet_manager?.logo_url || request.fleetManagerProfile?.profile_photo_url} />
                         <AvatarFallback className="bg-violet-600/20 text-violet-600 text-sm">
                           {request.fleet_manager?.contact_name?.charAt(0) || request.fleet_manager?.company_name?.charAt(0) || "F"}
                         </AvatarFallback>
