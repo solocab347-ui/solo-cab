@@ -159,7 +159,7 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
             driver_id,
             updated_at
           ),
-          fleet_manager:fleet_managers(
+          fleet_manager:fleet_managers!company_course_requests_target_fleet_manager_id_fkey(
             id,
             company_name,
             contact_name,
