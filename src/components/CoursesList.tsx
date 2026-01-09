@@ -36,6 +36,7 @@ import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCo
 import { PendingFleetCoursesInCoursesList } from "@/components/driver/PendingFleetCoursesInCoursesList";
 import { CourseClientContact } from "@/components/driver/CourseClientContact";
 import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicator";
+import { FleetCourseIndicator } from "@/components/driver/FleetCourseIndicator";
 import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
 
 interface CoursesListProps {

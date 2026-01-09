@@ -150,26 +150,69 @@ export const useFleetDispatch = () => {
       const settings = await getDispatchSettings(params.fleetManagerId);
       if (!settings) throw new Error("Impossible de récupérer les paramètres");
 
+      // Récupérer les infos du gestionnaire pour les notifications
+      const { data: fleetManager } = await supabase
+        .from("fleet_managers")
+        .select("company_name, user_id")
+        .eq("id", params.fleetManagerId)
+        .single();
+
+      // Si chauffeur sélectionné, vérifier s'il a l'auto-accept activé
+      let finalStatus = "pending";
+      if (params.selectedDriverId) {
+        const { data: driverData } = await supabase
+          .from("drivers")
+          .select("auto_accept_from_partners, user_id")
+          .eq("id", params.selectedDriverId)
+          .single();
+        
+        // Si auto-accept activé, la course passe directement en accepted
+        if (driverData?.auto_accept_from_partners) {
+          finalStatus = "accepted";
+        }
+      }
+
       // Si dispatch manuel ou chauffeur déjà sélectionné
       if (!settings.auto_dispatch_enabled || params.selectedDriverId) {
         // Créer directement la course
+        const courseInsert = {
+          client_id: params.clientId,
+          driver_id: params.selectedDriverId || null,
+          pickup_address: params.pickupAddress,
+          destination_address: params.destinationAddress,
+          scheduled_date: params.scheduledDate,
+          passengers_count: params.passengersCount || 1,
+          notes: params.notes,
+          status: (params.selectedDriverId ? finalStatus : "pending") as "pending" | "accepted",
+          fleet_manager_id: params.fleetManagerId,
+        };
+        
         const { data: course, error: courseError } = await supabase
           .from("courses")
-          .insert({
-            client_id: params.clientId,
-            driver_id: params.selectedDriverId || null,
-            pickup_address: params.pickupAddress,
-            destination_address: params.destinationAddress,
-            scheduled_date: params.scheduledDate,
-            passengers_count: params.passengersCount || 1,
-            notes: params.notes,
-            status: params.selectedDriverId ? "pending" : "pending",
-            fleet_manager_id: params.fleetManagerId,
-          })
+          .insert(courseInsert)
           .select()
           .single();
 
         if (courseError) throw courseError;
+
+        // Envoyer notification au chauffeur si assigné
+        if (params.selectedDriverId) {
+          const { data: driverData } = await supabase
+            .from("drivers")
+            .select("user_id")
+            .eq("id", params.selectedDriverId)
+            .single();
+
+          if (driverData?.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: finalStatus === "accepted" ? "✅ Nouvelle course auto-acceptée" : "🚗 Nouvelle course reçue",
+              message: `${fleetManager?.company_name || 'Un gestionnaire'} vous ${finalStatus === "accepted" ? "a attribué" : "propose"} une course`,
+              type: finalStatus === "accepted" ? "success" : "info",
+              link: "/driver-dashboard?tab=courses"
+            });
+          }
+        }
 
         // Si pas de chauffeur, créer une entrée dans la queue pour dispatch manuel
         if (!params.selectedDriverId) {
@@ -187,7 +230,7 @@ export const useFleetDispatch = () => {
           });
         }
 
-        return { success: true, course, mode: "manual" };
+        return { success: true, course, mode: params.selectedDriverId ? "assigned" : "manual" };
       }
 
       // Dispatch automatique
@@ -212,7 +255,7 @@ export const useFleetDispatch = () => {
             scheduled_date: params.scheduledDate,
             passengers_count: params.passengersCount || 1,
             notes: params.notes,
-            status: "pending",
+            status: "pending" as const,
             fleet_manager_id: params.fleetManagerId,
           })
           .select()
@@ -247,7 +290,7 @@ export const useFleetDispatch = () => {
           scheduled_date: params.scheduledDate,
           passengers_count: params.passengersCount || 1,
           notes: params.notes,
-          status: "pending",
+          status: "pending" as const,
           fleet_manager_id: params.fleetManagerId,
         })
         .select()
@@ -295,6 +338,15 @@ export const useFleetDispatch = () => {
           dispatch_id: dispatch.id,
           driver_id: driver.id,
           notified_at: new Date().toISOString(),
+        });
+        
+        // Envoyer notification push
+        await supabase.from("notifications").insert({
+          user_id: driver.user_id,
+          title: "🚗 Nouvelle course disponible",
+          message: `${fleetManager?.company_name || 'Un gestionnaire'} vous propose une course`,
+          type: "info",
+          link: "/driver-dashboard?tab=courses"
         });
       }
 

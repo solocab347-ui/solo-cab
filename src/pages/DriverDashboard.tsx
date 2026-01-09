@@ -172,6 +172,7 @@ const DriverDashboard = () => {
   const [showRatingPartners, setShowRatingPartners] = useState(false);
   const [showPricingPartners, setShowPricingPartners] = useState(false);
   const [vehicleCategories, setVehicleCategories] = useState<string[]>([]);
+  const [autoAcceptFromPartners, setAutoAcceptFromPartners] = useState(false);
 
   // Callback stable pour les mises à jour de photos
   const handleVehiclePhotosUpdate = useCallback((newVehiclePhotos: string[], newGalleryPhotos: string[]) => {
@@ -238,6 +239,7 @@ const DriverDashboard = () => {
     setShowRatingPartners((driver as any).show_rating_partners || false);
     setShowPricingPartners((driver as any).show_pricing_partners || false);
     setVehicleCategories(driver.vehicle_category || []);
+    setAutoAcceptFromPartners((driver as any).auto_accept_from_partners || false);
   }, [driverProfile?.driver?.id]); // UNIQUEMENT quand l'ID change
 
   useEffect(() => {
@@ -358,6 +360,7 @@ const DriverDashboard = () => {
         show_rating_partners: showRatingPartners,
         show_pricing_partners: showPricingPartners,
         vehicle_category: vehicleCategories,
+        auto_accept_from_partners: autoAcceptFromPartners,
       };
 
       logger.info("Mise à jour de la table drivers");
@@ -916,6 +919,32 @@ const DriverDashboard = () => {
 
                 <p className="text-xs text-white/80 bg-white/5 p-3 rounded-lg border border-white/10">
                   💡 <span className="font-medium">Info :</span> Mettez 0 si vous ne souhaitez pas appliquer d'augmentation. Les pourcentages sont appliqués automatiquement lors du calcul des prix.
+                </p>
+              </div>
+            </Card>
+
+            {/* Automatisations */}
+            <Card className="p-6 bg-gradient-to-br from-amber-600/20 to-amber-700/20 border-amber-500/30 shadow-elegant">
+              <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-400" />
+                Automatisations
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <div>
+                    <Label htmlFor="autoAcceptFromPartners" className="font-semibold text-white">Acceptation automatique des courses gestionnaire</Label>
+                    <p className="text-xs text-white/70 mt-1">
+                      Quand un gestionnaire de flotte vous attribue une course, elle sera automatiquement acceptée sans validation manuelle.
+                    </p>
+                  </div>
+                  <Switch
+                    id="autoAcceptFromPartners"
+                    checked={autoAcceptFromPartners}
+                    onCheckedChange={setAutoAcceptFromPartners}
+                  />
+                </div>
+                <p className="text-xs text-amber-300/80 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                  ⚡ <span className="font-medium">Conseil :</span> Activez cette option si vous travaillez régulièrement avec un gestionnaire de confiance. Les courses iront directement dans vos courses "Confirmées".
                 </p>
               </div>
             </Card>
