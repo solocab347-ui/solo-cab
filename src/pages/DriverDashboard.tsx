@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -47,6 +47,7 @@ import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissio
 import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
 import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
+import { DriverDispatchRequests } from "@/components/driver/DriverDispatchRequests";
 // DriverCompanyCourseRequests removed - company quotes now integrated in DriverDevisList
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -564,6 +565,10 @@ const DriverDashboard = () => {
                     <Timer className="w-4 h-4" />
                     File d'attente
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("dispatch")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-primary hover:to-blue-600 hover:text-white">
+                    <Zap className="w-4 h-4" />
+                    Missions dispatch
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setActiveTab("calculator")} className="gap-2 cursor-pointer text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white">
                     <Calculator className="w-4 h-4" />
                     {t('driverDashboard.menu.calculator')}
@@ -678,6 +683,13 @@ const DriverDashboard = () => {
                 </div>
                 <CourseQueueManager driverId={driverProfile.driver.id} />
               </Card>
+            )}
+          </TabsContent>
+
+          {/* Dispatch Requests Tab - Missions reçues des gestionnaires */}
+          <TabsContent value="dispatch">
+            {driverProfile?.driver?.id && (
+              <DriverDispatchRequests driverId={driverProfile.driver.id} />
             )}
           </TabsContent>
 

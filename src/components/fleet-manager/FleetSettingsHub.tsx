@@ -79,6 +79,10 @@ interface SettingsData {
   smart_buffer_min_minutes: number;
   course_buffer_minutes: number;
   smart_buffer_fallback_action: "notify_manager" | "assign_available" | "auto_reject";
+  // Nouveaux paramètres de dispatch avancé
+  dispatch_driver_priority: "internal_first" | "external_first" | "balanced";
+  dispatch_notification_mode: "sequential" | "broadcast";
+  dispatch_timeout_minutes: number;
   
   // Services
   services_offered: string[];
@@ -122,6 +126,9 @@ export const FleetSettingsHub = ({ fleetManagerId, companyName, onUpdate }: Flee
     smart_buffer_min_minutes: 15,
     course_buffer_minutes: 60,
     smart_buffer_fallback_action: "notify_manager",
+    dispatch_driver_priority: "internal_first",
+    dispatch_notification_mode: "sequential",
+    dispatch_timeout_minutes: 5,
     services_offered: [],
     default_partnership_commission: 10,
     partnership_terms: "",
@@ -177,6 +184,9 @@ export const FleetSettingsHub = ({ fleetManagerId, companyName, onUpdate }: Flee
           smart_buffer_min_minutes: d.smart_buffer_min_minutes || 15,
           course_buffer_minutes: d.course_buffer_minutes || 60,
           smart_buffer_fallback_action: d.smart_buffer_fallback_action || "notify_manager",
+          dispatch_driver_priority: d.dispatch_driver_priority || "internal_first",
+          dispatch_notification_mode: d.dispatch_notification_mode || "sequential",
+          dispatch_timeout_minutes: d.dispatch_timeout_minutes || 5,
           services_offered: d.services_offered || [],
           default_partnership_commission: d.default_partnership_commission || 10,
           partnership_terms: d.partnership_terms || "",
@@ -273,6 +283,9 @@ export const FleetSettingsHub = ({ fleetManagerId, companyName, onUpdate }: Flee
           smart_buffer_min_minutes: settings.smart_buffer_min_minutes,
           course_buffer_minutes: settings.course_buffer_minutes,
           smart_buffer_fallback_action: settings.smart_buffer_fallback_action,
+          dispatch_driver_priority: settings.dispatch_driver_priority,
+          dispatch_notification_mode: settings.dispatch_notification_mode,
+          dispatch_timeout_minutes: settings.dispatch_timeout_minutes,
           services_offered: allServices.length > 0 ? allServices : null,
           default_partnership_commission: settings.default_partnership_commission,
           partnership_terms: settings.partnership_terms || null,
@@ -657,6 +670,44 @@ export const FleetSettingsHub = ({ fleetManagerId, companyName, onUpdate }: Flee
                     <RadioOption value="availability" label="Disponibilité" description="Chauffeur le moins chargé" checked={settings.dispatch_priority === "availability"} />
                     <RadioOption value="rating" label="Note" description="Chauffeur le mieux noté" checked={settings.dispatch_priority === "rating"} />
                   </RadioGroup>
+
+                  <Separator />
+                  <Label className="text-base font-medium">Priorité des chauffeurs</Label>
+                  <RadioGroup
+                    value={settings.dispatch_driver_priority}
+                    onValueChange={(v) => setSettings({ ...settings, dispatch_driver_priority: v as any })}
+                    className="grid gap-3"
+                  >
+                    <RadioOption value="internal_first" label="Internes d'abord" description="Priorité aux chauffeurs de votre flotte" checked={settings.dispatch_driver_priority === "internal_first"} />
+                    <RadioOption value="external_first" label="Partenaires d'abord" description="Priorité aux chauffeurs partenaires" checked={settings.dispatch_driver_priority === "external_first"} />
+                    <RadioOption value="balanced" label="Équilibré" description="Sélection basée sur la note et disponibilité" checked={settings.dispatch_driver_priority === "balanced"} />
+                  </RadioGroup>
+
+                  <Separator />
+                  <Label className="text-base font-medium">Mode de notification</Label>
+                  <RadioGroup
+                    value={settings.dispatch_notification_mode}
+                    onValueChange={(v) => setSettings({ ...settings, dispatch_notification_mode: v as any })}
+                    className="grid gap-3"
+                  >
+                    <RadioOption value="sequential" label="Séquentiel" description="Un chauffeur à la fois, puis le suivant si refus" checked={settings.dispatch_notification_mode === "sequential"} />
+                    <RadioOption value="broadcast" label="Diffusion" description="Tous les chauffeurs reçoivent la demande simultanément" checked={settings.dispatch_notification_mode === "broadcast"} />
+                  </RadioGroup>
+
+                  <div className="space-y-2 pt-4">
+                    <Label>Délai de réponse (minutes)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={settings.dispatch_timeout_minutes}
+                      onChange={(e) => setSettings({ ...settings, dispatch_timeout_minutes: parseInt(e.target.value) || 5 })}
+                      className="max-w-[120px]"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Temps accordé à chaque chauffeur pour accepter ou refuser
+                    </p>
+                  </div>
                 </>
               )}
             </CardContent>
