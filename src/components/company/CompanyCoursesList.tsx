@@ -18,7 +18,10 @@ import {
   Download,
   Plus,
   Euro,
-  Phone
+  Phone,
+  ExternalLink,
+  Building2,
+  Copy
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -175,6 +178,7 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
     
     try {
       // Récupérer les demandes en attente (pas encore confirmées par un chauffeur)
+      // Inclure dispatched_to_fleet pour les courses envoyées au gestionnaire
       const { data: requests, error } = await supabase
         .from("company_course_requests")
         .select(`
@@ -183,10 +187,16 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
             id,
             user_id,
             department
+          ),
+          fleet_manager:fleet_managers!company_course_requests_target_fleet_manager_id_fkey(
+            id,
+            company_name,
+            contact_name,
+            logo_url
           )
         `)
         .eq("company_id", companyId)
-        .in("status", ["draft", "quotes_generated", "sent_to_drivers"])
+        .in("status", ["draft", "quotes_generated", "sent_to_drivers", "dispatched_to_fleet", "fleet_driver_assigned"])
         .order("scheduled_date", { ascending: true });
 
       if (error) throw error;
@@ -195,6 +205,18 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
         setPendingRequests([]);
         return;
       }
+
+      // Récupérer les invitations de suivi associées
+      const requestIds = requests.map(r => r.id);
+      const { data: invitations } = await supabase
+        .from("company_employee_course_invitations")
+        .select("id, token, request_id")
+        .in("request_id", requestIds);
+
+      const invitationsMap: Record<string, any> = {};
+      invitations?.forEach(inv => {
+        if (inv.request_id) invitationsMap[inv.request_id] = inv;
+      });
 
       // Récupérer les profils des employés
       const userIds = requests
@@ -213,11 +235,12 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
         });
       }
 
-      // Enrichir les demandes avec les infos des profils
+      // Enrichir les demandes avec les infos des profils et invitations
       const enrichedRequests = requests.map(req => ({
         ...req,
         employee_name: req.employee?.user_id ? profilesMap[req.employee.user_id]?.full_name : null,
         employee_phone: req.employee?.user_id ? profilesMap[req.employee.user_id]?.phone : null,
+        tracking_invitation: invitationsMap[req.id] || null,
       }));
 
       setPendingRequests(enrichedRequests);
@@ -319,6 +342,8 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
       draft: "bg-muted text-muted-foreground border-muted",
       quotes_generated: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       sent_to_drivers: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      dispatched_to_fleet: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      fleet_driver_assigned: "bg-green-500/10 text-green-500 border-green-500/20",
     };
 
     const labels: Record<string, string> = {
@@ -330,6 +355,8 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
       draft: "Brouillon",
       quotes_generated: "Devis générés",
       sent_to_drivers: "Envoyé aux chauffeurs",
+      dispatched_to_fleet: "Envoyé au gestionnaire",
+      fleet_driver_assigned: "Chauffeur assigné",
     };
 
     return (
@@ -420,18 +447,25 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
             <div className="space-y-4">
               {/* Pending requests (from company_course_requests) */}
               {pendingRequests.map((request) => (
-                <Card key={request.id} className="overflow-hidden border-l-4 border-l-orange-500">
+                <Card key={request.id} className={`overflow-hidden border-l-4 ${
+                  request.status === 'dispatched_to_fleet' || request.status === 'fleet_driver_assigned' 
+                    ? 'border-l-purple-500' 
+                    : 'border-l-orange-500'
+                }`}>
                   <CardContent className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(request.status)}
-                          <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
-                            Demande en cours
-                          </Badge>
+                          {request.target_fleet_manager_id && request.fleet_manager && (
+                            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                              <Building2 className="w-3 h-3 mr-1" />
+                              {request.fleet_manager.company_name}
+                            </Badge>
+                          )}
                           {(request.employee_name || request.guest_employee_name) && (
                             <Badge variant="outline">
-                              {request.is_guest_employee ? "Invité:" : "Collaborateur:"} {request.guest_employee_name || request.employee_name}
+                              {request.is_guest_employee ? "Invité:" : "Pour:"} {request.guest_employee_name || request.employee_name}
                             </Badge>
                           )}
                         </div>
@@ -487,6 +521,38 @@ export const CompanyCoursesList = ({ companyId, onCreateCourse }: CompanyCourses
                                 <Phone className="w-4 h-4" />
                               </a>
                             )}
+                          </div>
+                        )}
+
+                        {/* Lien de suivi */}
+                        {request.tracking_invitation && (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <span className="text-xs text-muted-foreground">Lien de suivi:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                const trackingUrl = `${window.location.origin}/guest-employee-tracking?token=${request.tracking_invitation.token}`;
+                                navigator.clipboard.writeText(trackingUrl);
+                                toast.success("Lien copié!");
+                              }}
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copier
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                const trackingUrl = `${window.location.origin}/guest-employee-tracking?token=${request.tracking_invitation.token}`;
+                                window.open(trackingUrl, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Ouvrir
+                            </Button>
                           </div>
                         )}
                       </div>
