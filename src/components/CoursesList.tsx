@@ -33,6 +33,7 @@ import { PaymentMethodBadge } from "@/components/shared/CoursePaymentMethodSelec
 import { SharedCoursesInCoursesList } from "@/components/driver/SharedCoursesInCoursesList";
 import { CompletedPartnerCoursesList } from "@/components/driver/CompletedPartnerCoursesList";
 import { PendingCompanyQuotesInCoursesList } from "@/components/driver/PendingCompanyQuotesInCoursesList";
+import { PendingFleetCoursesInCoursesList } from "@/components/driver/PendingFleetCoursesInCoursesList";
 import { CourseClientContact } from "@/components/driver/CourseClientContact";
 import { CompanyCourseIndicator } from "@/components/driver/CompanyCourseIndicator";
 import { CompanyPaymentStatusSelector } from "@/components/driver/CompanyPaymentStatusSelector";
@@ -85,6 +86,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   const [completedPartnerCoursesCount, setCompletedPartnerCoursesCount] = useState(0);
   // État pour le compteur de devis entreprise en attente
   const [pendingCompanyQuotesCount, setPendingCompanyQuotesCount] = useState(0);
+  // État pour le compteur de courses flotte en attente
+  const [pendingFleetCoursesCount, setPendingFleetCoursesCount] = useState(0);
   const [fleetDriverInfo, setFleetDriverInfo] = useState<any>(null);
   
   // État pour le signalement
@@ -2198,7 +2201,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           >
             <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="text-xs sm:text-sm font-bold">En attente</span>
-            <Badge className="bg-yellow-500/30 text-yellow-200 text-xs font-bold">{pendingCourses.length + pendingCompanyQuotesCount}</Badge>
+            <Badge className="bg-yellow-500/30 text-yellow-200 text-xs font-bold">{pendingCourses.length + pendingCompanyQuotesCount + pendingFleetCoursesCount}</Badge>
           </TabsTrigger>
           <TabsTrigger 
             value="confirmed"
@@ -2227,6 +2230,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3 sm:space-y-4 mt-4">
+          {/* Courses gestionnaire de flotte en attente */}
+          <PendingFleetCoursesInCoursesList 
+            driverId={driverId} 
+            onCountChange={setPendingFleetCoursesCount}
+            onCourseAccepted={fetchCourses}
+          />
+          
           {/* Demandes entreprises en attente */}
           <PendingCompanyQuotesInCoursesList 
             driverId={driverId} 
@@ -2234,7 +2244,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             onCourseAccepted={fetchCourses}
           />
           
-          {pendingCourses.length === 0 && pendingCompanyQuotesCount === 0 ? (
+          {pendingCourses.length === 0 && pendingCompanyQuotesCount === 0 && pendingFleetCoursesCount === 0 ? (
             <p className="text-center text-muted-foreground py-8">Aucune course en attente</p>
           ) : pendingCourses.length > 0 ? (
             pendingCourses.map((course) => {
