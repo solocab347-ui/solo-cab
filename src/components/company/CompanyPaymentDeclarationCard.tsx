@@ -15,7 +15,8 @@ import {
   Loader2,
   AlertCircle,
   ShieldCheck,
-  Info
+  Info,
+  Wallet
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -116,23 +117,35 @@ export function CompanyPaymentDeclarationCard({
   // Si le client a déjà confirmé son choix
   if (clientAlreadyConfirmed) {
     const isCompanyWillPay = clientAlreadyConfirmed === "company_will_pay";
+    const isPaidCompanyCard = clientAlreadyConfirmed === "paid_company_card";
+    const isPaidPersonal = clientAlreadyConfirmed === "paid_personal" || clientAlreadyConfirmed === "paid_on_spot";
+    
     return (
-      <Card className={isCompanyWillPay ? "border-blue-500/30 bg-blue-500/5" : "border-green-500/30 bg-green-500/5"}>
+      <Card className={isCompanyWillPay ? "border-blue-500/30 bg-blue-500/5" : isPaidCompanyCard ? "border-purple-500/30 bg-purple-500/5" : "border-green-500/30 bg-green-500/5"}>
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
             {isCompanyWillPay ? (
               <Building2 className="w-5 h-5 text-blue-600" />
+            ) : isPaidCompanyCard ? (
+              <CreditCard className="w-5 h-5 text-purple-600" />
             ) : (
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <Wallet className="w-5 h-5 text-green-600" />
             )}
             <div>
-              <p className={`font-medium ${isCompanyWillPay ? 'text-blue-700' : 'text-green-700'}`}>
-                {isCompanyWillPay ? "Paiement entreprise confirmé" : "Paiement sur place confirmé"}
+              <p className={`font-medium ${isCompanyWillPay ? 'text-blue-700' : isPaidCompanyCard ? 'text-purple-700' : 'text-green-700'}`}>
+                {isCompanyWillPay 
+                  ? "Facturation entreprise confirmée" 
+                  : isPaidCompanyCard 
+                    ? "Paiement carte entreprise confirmé"
+                    : "Paiement personnel confirmé"
+                }
               </p>
               <p className="text-sm text-muted-foreground">
                 {isCompanyWillPay 
-                  ? "Vous avez confirmé ne pas avoir réglé sur place. L'entreprise gérera le paiement."
-                  : "Vous avez confirmé avoir payé directement le chauffeur."
+                  ? "L'entreprise gérera le paiement au chauffeur."
+                  : isPaidCompanyCard
+                    ? "Payé avec la carte professionnelle."
+                    : "Note de frais à rembourser."
                 }
               </p>
             </div>
@@ -150,6 +163,9 @@ export function CompanyPaymentDeclarationCard({
 
   const declarePaymentMutation = useMutation({
     mutationFn: async (type: string) => {
+      const isPaidOnSpot = type === "paid_personal" || type === "paid_company_card" || type === "paid_on_spot";
+      const requiresExpenseReport = type === "paid_personal";
+
       // Mettre à jour la course avec la déclaration de paiement du client
       const updateData: any = {
         client_payment_confirmation: type,
@@ -157,7 +173,7 @@ export function CompanyPaymentDeclarationCard({
       };
 
       // Si le client dit avoir payé sur place
-      if (type === "paid_on_spot") {
+      if (isPaidOnSpot) {
         updateData.company_payment_status = "paid_on_spot";
         updateData.employee_declared_paid_at = new Date().toISOString();
       }
@@ -169,13 +185,22 @@ export function CompanyPaymentDeclarationCard({
 
       if (courseError) throw courseError;
 
+      // Determine actual_payment_method
+      const actualMethod = type === "paid_personal" 
+        ? "employee_personal" 
+        : type === "paid_company_card" 
+          ? "company_card_spot" 
+          : type === "company_will_pay"
+            ? "company_deferred"
+            : "employee_paid_spot";
+
       // Mettre à jour company_courses avec la confirmation client
       const { error: ccError } = await supabase
         .from("company_courses")
         .update({
           client_confirmed_payment_method: type,
           client_confirmed_at: new Date().toISOString(),
-          actual_payment_method: type === "paid_on_spot" ? "employee_paid_spot" : "company_deferred",
+          actual_payment_method: actualMethod,
           payment_declared_at: new Date().toISOString(),
           payment_declared_by: "employee"
         })
@@ -184,7 +209,7 @@ export function CompanyPaymentDeclarationCard({
       if (ccError) throw ccError;
 
       // Si payé sur place, mettre à jour le statut de la facture
-      if (type === "paid_on_spot") {
+      if (isPaidOnSpot) {
         await supabase
           .from("factures")
           .update({ 
@@ -194,17 +219,27 @@ export function CompanyPaymentDeclarationCard({
           .eq("course_id", courseId);
       }
 
-      return type;
+      return { type, requiresExpenseReport };
     },
-    onSuccess: (type) => {
+    onSuccess: ({ type, requiresExpenseReport }) => {
       queryClient.invalidateQueries({ queryKey: ["guest-employee-course-tracking"] });
       queryClient.invalidateQueries({ queryKey: ["course-payment-confirmation"] });
       queryClient.invalidateQueries({ queryKey: ["company-payments"] });
       
-      if (type === "paid_on_spot") {
-        toast.success("Merci ! Votre paiement a été confirmé");
+      if (type === "paid_personal") {
+        toast.success("Paiement personnel confirmé", {
+          description: "Une note de frais sera créée pour remboursement"
+        });
+      } else if (type === "paid_company_card") {
+        toast.success("Carte entreprise confirmée", {
+          description: "Aucune note de frais nécessaire"
+        });
+      } else if (type === "paid_on_spot") {
+        toast.success("Paiement sur place confirmé");
       } else {
-        toast.success("Confirmation enregistrée. L'entreprise sera notifiée pour le paiement.");
+        toast.success("Confirmation enregistrée", {
+          description: "L'entreprise sera notifiée pour le paiement"
+        });
       }
       onPaymentDeclared?.();
     },
@@ -233,29 +268,45 @@ export function CompanyPaymentDeclarationCard({
             </AlertDescription>
           </Alert>
 
-          <RadioGroup value={paymentChoice} onValueChange={setPaymentChoice}>
+          <RadioGroup value={paymentChoice} onValueChange={setPaymentChoice} className="space-y-2">
+            {/* Option 1: Facturer entreprise */}
             <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
               <RadioGroupItem value="company_will_pay" id="confirm_company" className="mt-0.5" />
               <Label htmlFor="confirm_company" className="flex-1 cursor-pointer">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium">Je confirme ne pas avoir payé</span>
+                  <span className="font-medium">Facturer l'entreprise</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  C'est bien à mon entreprise de régler cette course
+                  L'entreprise réglera directement le chauffeur
                 </p>
               </Label>
             </div>
             
-            <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-              <RadioGroupItem value="paid_on_spot" id="actually_paid" className="mt-0.5" />
-              <Label htmlFor="actually_paid" className="flex-1 cursor-pointer">
+            {/* Option 2: Carte entreprise */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors">
+              <RadioGroupItem value="paid_company_card" id="paid_company_card" className="mt-0.5" />
+              <Label htmlFor="paid_company_card" className="flex-1 cursor-pointer">
                 <div className="flex items-center gap-2">
-                  <Banknote className="w-4 h-4 text-green-600" />
-                  <span className="font-medium">J'ai en fait payé sur place</span>
+                  <CreditCard className="w-4 h-4 text-purple-600" />
+                  <span className="font-medium">Payé avec la carte entreprise</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  J'ai réglé directement le chauffeur (espèces, CB, etc.)
+                  Carte professionnelle • Pas de remboursement
+                </p>
+              </Label>
+            </div>
+
+            {/* Option 3: Frais personnels */}
+            <div className="flex items-start space-x-3 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+              <RadioGroupItem value="paid_personal" id="paid_personal" className="mt-0.5" />
+              <Label htmlFor="paid_personal" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                  <span className="font-medium">Payé à titre personnel</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  J'ai avancé les frais • Note de frais à rembourser
                 </p>
               </Label>
             </div>
@@ -278,7 +329,7 @@ export function CompanyPaymentDeclarationCard({
     );
   }
 
-  // Sinon afficher la question standard
+  // Sinon afficher la question standard avec 3 options
   return (
     <Card className="border-amber-500/30 bg-amber-500/5">
       <CardHeader className="pb-3">
@@ -288,29 +339,45 @@ export function CompanyPaymentDeclarationCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <RadioGroup value={paymentChoice} onValueChange={setPaymentChoice}>
+        <RadioGroup value={paymentChoice} onValueChange={setPaymentChoice} className="space-y-2">
+          {/* Option 1: Facturer entreprise */}
           <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="paid_on_spot" id="paid_spot" className="mt-0.5" />
-            <Label htmlFor="paid_spot" className="flex-1 cursor-pointer">
+            <RadioGroupItem value="company_will_pay" id="std_company_pays" className="mt-0.5" />
+            <Label htmlFor="std_company_pays" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-green-600" />
-                <span className="font-medium">J'ai payé directement le chauffeur</span>
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <span className="font-medium">Facturer l'entreprise</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Paiement en espèces, carte bancaire ou autre sur place
+                L'entreprise réglera directement le chauffeur
+              </p>
+            </Label>
+          </div>
+
+          {/* Option 2: Carte entreprise */}
+          <div className="flex items-start space-x-3 p-3 rounded-lg border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors">
+            <RadioGroupItem value="paid_company_card" id="std_paid_company_card" className="mt-0.5" />
+            <Label htmlFor="std_paid_company_card" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-purple-600" />
+                <span className="font-medium">Payé avec la carte entreprise</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Carte professionnelle • Pas de remboursement
               </p>
             </Label>
           </div>
           
-          <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="company_will_pay" id="company_pays" className="mt-0.5" />
-            <Label htmlFor="company_pays" className="flex-1 cursor-pointer">
+          {/* Option 3: Frais personnels */}
+          <div className="flex items-start space-x-3 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+            <RadioGroupItem value="paid_personal" id="std_paid_personal" className="mt-0.5" />
+            <Label htmlFor="std_paid_personal" className="flex-1 cursor-pointer">
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">L'entreprise paiera</span>
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                <span className="font-medium">Payé à titre personnel</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Le paiement sera géré par mon entreprise
+                J'ai avancé les frais • Note de frais à rembourser
               </p>
             </Label>
           </div>
