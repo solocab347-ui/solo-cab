@@ -69,9 +69,9 @@ export const useFleetDispatch = () => {
         driver:drivers(
           id,
           user_id,
-          is_available,
+          status,
           rating,
-          vehicle_capacity
+          max_passengers
         )
       `)
       .eq("fleet_manager_id", fleetManagerId)
@@ -85,20 +85,21 @@ export const useFleetDispatch = () => {
         driver:drivers(
           id,
           user_id,
-          is_available,
+          status,
           rating,
-          vehicle_capacity
+          max_passengers
         )
       `)
       .eq("fleet_manager_id", fleetManagerId)
       .eq("status", "accepted");
 
+    // Filtrer les chauffeurs actifs (status = 'active' ou 'validated')
     const internal = (internalDrivers || [])
-      .filter((d: any) => d.driver?.is_available)
+      .filter((d: any) => d.driver && ["active", "validated"].includes(d.driver.status))
       .map((d: any) => ({ ...d.driver, isInternal: true }));
 
     const external = (partnerDrivers || [])
-      .filter((d: any) => d.driver?.is_available)
+      .filter((d: any) => d.driver && ["active", "validated"].includes(d.driver.status))
       .map((d: any) => ({ ...d.driver, isInternal: false }));
 
     let allDrivers: any[] = [];
@@ -451,11 +452,125 @@ export const useFleetDispatch = () => {
     }
   }, []);
 
+  // Dispatcher une course existante (relance de dispatch)
+  const dispatchExistingCourse = useCallback(async (
+    courseId: string,
+    fleetManagerId: string
+  ) => {
+    setLoading(true);
+    try {
+      // Récupérer la course
+      const { data: course, error: courseError } = await supabase
+        .from("courses")
+        .select("*, client:clients(id, user_id, favorite_driver_id, preferred_fleet_driver_id)")
+        .eq("id", courseId)
+        .single();
+
+      if (courseError || !course) {
+        throw new Error("Course introuvable");
+      }
+
+      // Vérifier si un dispatch existe déjà pour cette course
+      const { data: existingDispatch } = await supabase
+        .from("fleet_dispatch_queue")
+        .select("id, status")
+        .eq("course_id", courseId)
+        .in("status", ["pending", "dispatching"])
+        .maybeSingle();
+
+      if (existingDispatch) {
+        toast.info("Un dispatch est déjà en cours pour cette course");
+        return { success: false, error: "dispatch_already_exists" };
+      }
+
+      // Récupérer les settings
+      const settings = await getDispatchSettings(fleetManagerId);
+      if (!settings) throw new Error("Impossible de récupérer les paramètres");
+
+      // Récupérer les chauffeurs disponibles
+      const favoriteDriverId = course.client?.preferred_fleet_driver_id || course.client?.favorite_driver_id;
+      const availableDrivers = await getAvailableDrivers(fleetManagerId, settings, favoriteDriverId);
+
+      if (availableDrivers.length === 0) {
+        // Créer en mode manuel car aucun chauffeur disponible
+        await supabase.from("fleet_dispatch_queue").insert({
+          fleet_manager_id: fleetManagerId,
+          course_id: courseId,
+          client_id: course.client_id,
+          pickup_address: course.pickup_address,
+          destination_address: course.destination_address,
+          scheduled_date: course.scheduled_date,
+          passengers_count: course.passengers_count || 1,
+          notes: course.notes,
+          status: "pending",
+          dispatch_mode: "automatic",
+        });
+
+        toast.warning("Aucun chauffeur disponible, course en attente d'assignation manuelle");
+        return { success: true, mode: "pending" };
+      }
+
+      // Créer le dispatch automatique
+      const timeoutAt = new Date();
+      timeoutAt.setMinutes(timeoutAt.getMinutes() + settings.dispatch_timeout_minutes);
+
+      const firstDriver = availableDrivers[0];
+
+      const { data: dispatch, error: dispatchError } = await supabase
+        .from("fleet_dispatch_queue")
+        .insert({
+          fleet_manager_id: fleetManagerId,
+          course_id: courseId,
+          client_id: course.client_id,
+          pickup_address: course.pickup_address,
+          destination_address: course.destination_address,
+          scheduled_date: course.scheduled_date,
+          passengers_count: course.passengers_count || 1,
+          notes: course.notes,
+          status: "dispatching",
+          dispatch_mode: "automatic",
+          current_driver_id: settings.dispatch_notification_mode === "sequential" ? firstDriver.id : null,
+          notified_driver_ids: settings.dispatch_notification_mode === "broadcast" 
+            ? availableDrivers.map((d: any) => d.id) 
+            : [firstDriver.id],
+          timeout_at: timeoutAt.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (dispatchError) throw dispatchError;
+
+      // Créer les notifications pour les chauffeurs
+      const driversToNotify = settings.dispatch_notification_mode === "broadcast" 
+        ? availableDrivers 
+        : [firstDriver];
+
+      for (const driver of driversToNotify) {
+        await supabase.from("fleet_dispatch_responses").insert({
+          dispatch_id: dispatch.id,
+          driver_id: driver.id,
+          notified_at: new Date().toISOString(),
+        });
+      }
+
+      toast.success(`Dispatch lancé ! ${driversToNotify.length} chauffeur(s) notifié(s)`);
+      return { success: true, dispatch, mode: "automatic" };
+
+    } catch (error) {
+      console.error("Error dispatching existing course:", error);
+      toast.error("Erreur lors du dispatch");
+      return { success: false, error };
+    } finally {
+      setLoading(false);
+    }
+  }, [getDispatchSettings, getAvailableDrivers]);
+
   return {
     loading,
     createDispatch,
     respondToDispatch,
     manualAssign,
+    dispatchExistingCourse,
     getDispatchSettings,
     getAvailableDrivers,
   };

@@ -76,6 +76,7 @@ import {
   Radio,
 } from "lucide-react";
 import { FleetDispatchQueue } from "./FleetDispatchQueue";
+import { useFleetDispatch } from "@/hooks/useFleetDispatch";
 
 interface Course {
   id: string;
@@ -158,6 +159,9 @@ export const FleetCoursesManager = ({
   const [activeSection, setActiveSection] = useState<"overview" | "pending" | "today" | "upcoming" | "history" | "unassigned" | "dispatch">("overview");
   const [activeMainTab, setActiveMainTab] = useState<"courses" | "dispatch">("courses");
   
+  // Hook de dispatch
+  const { dispatchExistingCourse, loading: dispatching } = useFleetDispatch();
+  
   // Filtres et recherche
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
@@ -198,6 +202,14 @@ export const FleetCoursesManager = ({
   // Détail course
   const [showCourseDetail, setShowCourseDetail] = useState(false);
   const [detailCourse, setDetailCourse] = useState<Course | null>(null);
+
+  // Fonction pour lancer le dispatch d'une course existante
+  const handleDispatchCourse = async (course: Course) => {
+    const result = await dispatchExistingCourse(course.id, fleetManagerId);
+    if (result.success) {
+      fetchData(); // Rafraîchir les données
+    }
+  };
 
   // Stats calculées
   const stats = useMemo(() => {
@@ -993,6 +1005,7 @@ export const FleetCoursesManager = ({
             setDetailCourse(course);
             setShowCourseDetail(true);
           }}
+          onDispatch={handleDispatchCourse}
         />
       )}
 
@@ -1011,6 +1024,7 @@ export const FleetCoursesManager = ({
             setDetailCourse(course);
             setShowCourseDetail(true);
           }}
+          onDispatch={handleDispatchCourse}
         />
       )}
 
@@ -1632,6 +1646,7 @@ interface CoursesSectionProps {
   onApprove?: (course: Course) => void;
   onReject?: (course: Course) => void;
   onView: (course: Course) => void;
+  onDispatch?: (course: Course) => void;
 }
 
 const CoursesSection = ({ 
@@ -1646,7 +1661,8 @@ const CoursesSection = ({
   showActions,
   onApprove,
   onReject,
-  onView
+  onView,
+  onDispatch
 }: CoursesSectionProps) => (
   <Card>
     <CardHeader>
@@ -1675,6 +1691,7 @@ const CoursesSection = ({
               onApprove={onApprove ? () => onApprove(course) : undefined}
               onReject={onReject ? () => onReject(course) : undefined}
               onView={() => onView(course)}
+              onDispatch={onDispatch ? () => onDispatch(course) : undefined}
             />
           ))}
         </div>
@@ -1738,12 +1755,14 @@ interface ModernCourseCardProps {
   onApprove?: () => void;
   onReject?: () => void;
   onView: () => void;
+  onDispatch?: () => void;
 }
 
-const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onReject, onView }: ModernCourseCardProps) => {
+const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onReject, onView, onDispatch }: ModernCourseCardProps) => {
   const statusConfig = getStatusConfig(course.status);
   const StatusIcon = statusConfig.icon;
   const clientName = course.guest_name || course.client?.profile?.full_name || "Client";
+  const hasNoDriver = !course.driver?.id;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all group">
@@ -1791,7 +1810,9 @@ const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onR
           {/* Info chauffeur */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Car className="w-4 h-4" />
-            <span className="truncate">{course.driver?.profile?.full_name || "Non assigné"}</span>
+            <span className={`truncate ${hasNoDriver ? "text-destructive font-medium" : ""}`}>
+              {course.driver?.profile?.full_name || "Non assigné"}
+            </span>
             <span className="text-muted-foreground/50">•</span>
             <Users className="w-4 h-4" />
             <span>{course.passengers_count}</span>
@@ -1803,6 +1824,12 @@ const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onR
               <Eye className="w-4 h-4 mr-1" />
               Détails
             </Button>
+            {hasNoDriver && onDispatch && (
+              <Button size="sm" className="gap-1 bg-accent hover:bg-accent/90" onClick={onDispatch}>
+                <Zap className="w-4 h-4" />
+                Dispatcher
+              </Button>
+            )}
             {showActions && (
               <>
                 <Button size="sm" className="bg-success hover:bg-success/90" onClick={onApprove}>
