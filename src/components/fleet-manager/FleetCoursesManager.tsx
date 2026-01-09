@@ -332,19 +332,14 @@ export const FleetCoursesManager = ({
 
         const driverIds = combinedDrivers.map(d => d.driver_id);
 
-        // D'abord, récupérer les client_ids liés à ce fleet manager
-        const { data: fleetClients } = await supabase
-          .from("fleet_manager_clients")
-          .select("client_id")
-          .eq("fleet_manager_id", fleetManagerId);
+        // SÉCURITÉ: Isolation stricte des courses
+        // Le gestionnaire ne voit QUE :
+        // 1. Les courses qu'il a lui-même créées (fleet_manager_id = fleetManagerId)
+        // 2. Les courses partagées avec lui via fleet_partner_courses
+        // JAMAIS les courses personnelles des chauffeurs partenaires
         
-        const fleetClientIds = fleetClients?.map(c => c.client_id) || [];
-
-        // Récupérer les courses - uniquement celles liées au gestionnaire:
-        // 1. Créées par le gestionnaire (fleet_manager_id)
-        // 2. Pour des clients du gestionnaire
-        // 3. Pour des invités du gestionnaire (is_guest_booking avec fleet_manager_id)
-        const { data: courses } = await supabase
+        // 1. Récupérer les courses créées PAR le gestionnaire
+        const { data: fleetCreatedCourses } = await supabase
           .from("courses")
           .select(`
             *,
@@ -359,9 +354,51 @@ export const FleetCoursesManager = ({
               user_id
             )
           `)
-          .in("driver_id", driverIds)
-          .or(`fleet_manager_id.eq.${fleetManagerId}${fleetClientIds.length > 0 ? `,client_id.in.(${fleetClientIds.join(',')})` : ''}`)
+          .eq("fleet_manager_id", fleetManagerId)
           .order("scheduled_date", { ascending: false });
+
+        // 2. Récupérer les courses partagées PAR les chauffeurs AU gestionnaire
+        const { data: sharedCourseLinks } = await supabase
+          .from("fleet_partner_courses")
+          .select("course_id")
+          .eq("fleet_manager_id", fleetManagerId)
+          .not("status", "eq", "cancelled");
+        
+        const sharedCourseIds = sharedCourseLinks?.map(sc => sc.course_id) || [];
+        
+        let sharedCourses: any[] = [];
+        if (sharedCourseIds.length > 0) {
+          const { data: sharedCoursesData } = await supabase
+            .from("courses")
+            .select(`
+              *,
+              client:clients(
+                id,
+                user_id
+              ),
+              driver:drivers(
+                id,
+                vehicle_model,
+                vehicle_brand,
+                user_id
+              )
+            `)
+            .in("id", sharedCourseIds)
+            .order("scheduled_date", { ascending: false });
+          
+          sharedCourses = sharedCoursesData || [];
+        }
+
+        // Combiner sans doublons
+        const coursesMap = new Map<string, any>();
+        fleetCreatedCourses?.forEach(c => coursesMap.set(c.id, { ...c, source: 'created' }));
+        sharedCourses.forEach(c => {
+          if (!coursesMap.has(c.id)) {
+            coursesMap.set(c.id, { ...c, source: 'shared' });
+          }
+        });
+        
+        const courses = Array.from(coursesMap.values());
 
         if (courses) {
           const clientUserIds = courses
