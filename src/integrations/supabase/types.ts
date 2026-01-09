@@ -5131,6 +5131,275 @@ export type Database = {
           },
         ]
       }
+      fleet_dispatch_queue: {
+        Row: {
+          assigned_at: string | null
+          assigned_driver_id: string | null
+          client_id: string | null
+          course_id: string | null
+          course_request_id: string | null
+          created_at: string | null
+          current_driver_id: string | null
+          declined_driver_ids: string[] | null
+          destination_address: string
+          dispatch_mode: string | null
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          notified_driver_ids: string[] | null
+          passengers_count: number | null
+          pickup_address: string
+          scheduled_date: string
+          status: string | null
+          timeout_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_driver_id?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          course_request_id?: string | null
+          created_at?: string | null
+          current_driver_id?: string | null
+          declined_driver_ids?: string[] | null
+          destination_address: string
+          dispatch_mode?: string | null
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          notified_driver_ids?: string[] | null
+          passengers_count?: number | null
+          pickup_address: string
+          scheduled_date: string
+          status?: string | null
+          timeout_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_driver_id?: string | null
+          client_id?: string | null
+          course_id?: string | null
+          course_request_id?: string | null
+          created_at?: string | null
+          current_driver_id?: string | null
+          declined_driver_ids?: string[] | null
+          destination_address?: string
+          dispatch_mode?: string | null
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          notified_driver_ids?: string[] | null
+          passengers_count?: number | null
+          pickup_address?: string
+          scheduled_date?: string
+          status?: string | null
+          timeout_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_course_request_id_fkey"
+            columns: ["course_request_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_manager_course_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_dispatch_responses: {
+        Row: {
+          decline_reason: string | null
+          dispatch_id: string
+          driver_id: string
+          id: string
+          notified_at: string | null
+          responded_at: string | null
+          response: string | null
+        }
+        Insert: {
+          decline_reason?: string | null
+          dispatch_id: string
+          driver_id: string
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          response?: string | null
+        }
+        Update: {
+          decline_reason?: string | null
+          dispatch_id?: string
+          driver_id?: string
+          id?: string
+          notified_at?: string | null
+          responded_at?: string | null
+          response?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_dispatch_responses_dispatch_id_fkey"
+            columns: ["dispatch_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_dispatch_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_blocks: {
         Row: {
           block_reason: string | null
@@ -6202,7 +6471,10 @@ export type Database = {
           default_partnership_commission_type: string
           default_payment_schedule: string | null
           description: string | null
+          dispatch_driver_priority: string | null
+          dispatch_notification_mode: string | null
           dispatch_priority: string | null
+          dispatch_timeout_minutes: number | null
           documents: Json | null
           documents_deadline: string | null
           documents_status: string | null
@@ -6283,7 +6555,10 @@ export type Database = {
           default_partnership_commission_type?: string
           default_payment_schedule?: string | null
           description?: string | null
+          dispatch_driver_priority?: string | null
+          dispatch_notification_mode?: string | null
           dispatch_priority?: string | null
+          dispatch_timeout_minutes?: number | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
@@ -6364,7 +6639,10 @@ export type Database = {
           default_partnership_commission_type?: string
           default_payment_schedule?: string | null
           description?: string | null
+          dispatch_driver_priority?: string | null
+          dispatch_notification_mode?: string | null
           dispatch_priority?: string | null
+          dispatch_timeout_minutes?: number | null
           documents?: Json | null
           documents_deadline?: string | null
           documents_status?: string | null
