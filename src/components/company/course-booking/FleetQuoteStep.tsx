@@ -300,65 +300,25 @@ export function FleetQuoteStep({
         </CardContent>
       </Card>
 
-      {/* Price Card */}
+      {/* Price Card - Simplified for client */}
       {priceDetails && (
         <Card className="border-primary bg-primary/5">
-          <CardContent className="p-4 space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <Euro className="w-4 h-4 text-primary" />
-              Détail du prix
-            </h4>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Prix de base</span>
-                <span>{priceDetails.base_price.toFixed(2)} €</span>
+          <CardContent className="p-6">
+            <div className="text-center space-y-2">
+              <h4 className="font-medium flex items-center justify-center gap-2 text-muted-foreground">
+                <Euro className="w-4 h-4" />
+                Prix estimé
+              </h4>
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-4xl font-bold text-primary">
+                  {priceDetails.total_price.toFixed(2)}
+                </span>
+                <span className="text-2xl font-bold text-primary">€</span>
               </div>
-              {priceDetails.distance_price > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Distance ({priceDetails.distance_km.toFixed(1)} km)</span>
-                  <span>{priceDetails.distance_price.toFixed(2)} €</span>
-                </div>
-              )}
-              {priceDetails.time_price > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Temps ({priceDetails.duration_minutes} min)</span>
-                  <span>{priceDetails.time_price.toFixed(2)} €</span>
-                </div>
-              )}
-              {priceDetails.surcharge_evening > 0 && (
-                <div className="flex justify-between text-amber-600">
-                  <span>Supplément soirée</span>
-                  <span>+{priceDetails.surcharge_evening.toFixed(2)} €</span>
-                </div>
-              )}
-              {priceDetails.surcharge_weekend > 0 && (
-                <div className="flex justify-between text-amber-600">
-                  <span>Supplément week-end</span>
-                  <span>+{priceDetails.surcharge_weekend.toFixed(2)} €</span>
-                </div>
-              )}
-              {priceDetails.tva_amount > 0 && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>TVA</span>
-                  <span>{priceDetails.tva_amount.toFixed(2)} €</span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-3 border-t flex justify-between items-center">
-              <span className="font-semibold">Total TTC</span>
-              <span className="text-2xl font-bold text-primary flex items-center gap-1">
-                {priceDetails.total_price.toFixed(2)}
-                <Euro className="w-5 h-5" />
-              </span>
-            </div>
-
-            {priceDetails.pricing_source && (
-              <p className="text-xs text-muted-foreground text-center">
-                Tarification: {priceDetails.pricing_source === 'city' ? 'Grille ville' : 'Grille générale'}
+              <p className="text-xs text-muted-foreground">
+                TTC - Prix final à la confirmation
               </p>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}
