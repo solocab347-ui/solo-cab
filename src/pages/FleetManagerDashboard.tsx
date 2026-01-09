@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
 import { useUserLanguage } from "@/hooks/useUserLanguage";
+import { useFleetDashboardOptimized } from "@/hooks/useFleetDashboardOptimized";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavigationHeader } from "@/components/NavigationHeader";
