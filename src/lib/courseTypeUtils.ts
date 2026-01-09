@@ -113,13 +113,22 @@ export function getCourseType(
     };
   }
 
-  // Check for fleet course
+  // Check for fleet course - now properly detects courses with fleet_manager_id
   const fleetInfo = course.fleet_course_info || additionalInfo?.fleetDriverInfo;
   if (fleetInfo && fleetInfo.fleet_manager_id) {
     return {
       type: 'fleet',
       ...COURSE_TYPE_CONFIG.fleet,
       partnerName: fleetInfo.fleet_name || 'Gestionnaire de flotte'
+    };
+  }
+
+  // Also check if course has fleet_managers embedded relation (from CoursesList query)
+  if ((course as any).fleet_managers?.id) {
+    return {
+      type: 'fleet',
+      ...COURSE_TYPE_CONFIG.fleet,
+      partnerName: (course as any).fleet_managers.company_name || 'Gestionnaire de flotte'
     };
   }
 

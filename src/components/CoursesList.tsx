@@ -139,137 +139,160 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const fetchCourses = async () => {
     try {
-      // Fetch driver info for PDF generation
-      const { data: driverData } = await supabase
-        .from("drivers")
-        .select(`
-          *,
-          profiles:user_id(full_name, phone),
-          fleet_manager_id
-        `)
-        .eq("id", driverId)
-        .single();
-      
-      setDriverInfo(driverData);
+      // Lancer les requêtes principales en parallèle pour réduire la latence
+      const [driverResult, coursesResult] = await Promise.all([
+        // Fetch driver info for PDF generation
+        supabase
+          .from("drivers")
+          .select(`
+            *,
+            profiles:user_id(full_name, phone),
+            fleet_manager_id
+          `)
+          .eq("id", driverId)
+          .single(),
+        // Fetch courses - inclut maintenant fleet_managers directement
+        supabase
+          .from("courses")
+          .select(`
+            *,
+            clients(
+              user_id,
+              is_exclusive,
+              profiles:user_id(full_name, phone, profile_photo_url)
+            ),
+            fleet_managers:fleet_manager_id(
+              id,
+              company_name,
+              logo_url,
+              phone
+            ),
+            devis:devis(
+              id,
+              amount,
+              status,
+              quote_number,
+              valid_until,
+              base_price,
+              distance_price,
+              time_price,
+              evening_surcharge_amount,
+              weekend_surcharge_amount,
+              discount_amount,
+              promo_code,
+              created_at
+            ),
+            factures:factures(
+              id,
+              invoice_number,
+              invoice_number_generated,
+              amount,
+              payment_status,
+              payment_method,
+              paid_at,
+              discount_amount,
+              promo_code,
+              created_at
+            )
+          `)
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .order("scheduled_date", { ascending: true })
+      ]);
 
-      // Fetch fleet info if driver belongs to a fleet
+      const driverData = driverResult.data;
+      const coursesData = coursesResult.data;
+      const error = coursesResult.error;
+
+      if (error) throw error;
+      
+      // Mettre à jour les courses IMMÉDIATEMENT pour réduire la latence perçue
+      setCourses(coursesData || []);
+      setDriverInfo(driverData);
+      setLoading(false); // Afficher les courses plus tôt
+
+      // Fetch fleet info si le chauffeur appartient à une flotte (en arrière-plan)
       if (driverData?.fleet_manager_id) {
-        const { data: fleetData } = await supabase
+        supabase
           .from("fleet_managers")
           .select("id, company_name")
           .eq("id", driverData.fleet_manager_id)
-          .single();
-        
-        if (fleetData) {
-          setFleetDriverInfo({
-            fleet_manager_id: fleetData.id,
-            fleet_name: fleetData.company_name
+          .single()
+          .then(({ data: fleetData }) => {
+            if (fleetData) {
+              setFleetDriverInfo({
+                fleet_manager_id: fleetData.id,
+                fleet_name: fleetData.company_name
+              });
+            }
           });
-        }
       }
 
-      const { data: coursesData, error } = await supabase
-        .from("courses")
-        .select(`
-          *,
-          clients(
-            user_id,
-            is_exclusive,
-            profiles:user_id(full_name, phone, profile_photo_url)
-          ),
-          devis:devis(
-            id,
-            amount,
-            status,
-            quote_number,
-            valid_until,
-            base_price,
-            distance_price,
-            time_price,
-            evening_surcharge_amount,
-            weekend_surcharge_amount,
-            discount_amount,
-            promo_code,
-            created_at
-          ),
-          factures:factures(
-            id,
-            invoice_number,
-            invoice_number_generated,
-            amount,
-            payment_status,
-            payment_method,
-            paid_at,
-            discount_amount,
-            promo_code,
-            created_at
-          )
-        `)
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .order("scheduled_date", { ascending: true });
-
-      if (error) throw error;
-      setCourses(coursesData || []);
-
-      // Fetch shared courses data (courses partagées entre chauffeurs)
+      // Fetch les données supplémentaires en parallèle (en arrière-plan)
       const courseIds = (coursesData || []).map(c => c.id);
       if (courseIds.length > 0) {
-        const { data: sharedData } = await supabase
-          .from("shared_courses")
-          .select(`
-            course_id,
-            sender_driver_id,
-            receiver_driver_id,
-            status
-          `)
-          .in("course_id", courseIds);
-        
-        setSharedCoursesData(sharedData || []);
+        // Lancer toutes les requêtes secondaires en parallèle
+        const [sharedResult, companyResult, requestsResult, receivedCountResult, completedCountResult] = await Promise.all([
+          supabase
+            .from("shared_courses")
+            .select(`course_id, sender_driver_id, receiver_driver_id, status`)
+            .in("course_id", courseIds),
+          supabase
+            .from("company_courses")
+            .select(`
+              course_id,
+              company_id,
+              employee_id,
+              company:companies(
+                id,
+                company_name, 
+                logo_url,
+                siret,
+                siren,
+                tva_number,
+                address,
+                billing_address,
+                contact_email,
+                contact_phone
+              )
+            `)
+            .in("course_id", courseIds),
+          supabase
+            .from("company_course_requests")
+            .select(`
+              final_course_id,
+              guest_employee_name,
+              guest_employee_phone,
+              is_guest_employee,
+              employee_id
+            `)
+            .in("final_course_id", courseIds),
+          supabase
+            .from("shared_courses")
+            .select("*", { count: "exact", head: true })
+            .eq("receiver_driver_id", driverId)
+            .in("status", ["accepted", "in_progress"]),
+          supabase
+            .from("partner_order_documents")
+            .select("*", { count: "exact", head: true })
+            .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
+        ]);
 
-        // Fetch company courses data avec logo et infos entreprise
-        const { data: companyData } = await supabase
-          .from("company_courses")
-          .select(`
-            course_id,
-            company_id,
-            employee_id,
-            company:companies(
-              id,
-              company_name, 
-              logo_url,
-              siret,
-              siren,
-              tva_number,
-              address,
-              billing_address,
-              contact_email,
-              contact_phone
-            )
-          `)
-          .in("course_id", courseIds);
+        setSharedCoursesData(sharedResult.data || []);
+        setReceivedSharedCoursesCount(receivedCountResult.count || 0);
+        setCompletedPartnerCoursesCount(completedCountResult.count || 0);
         
-        // Enrichir avec les données des company_course_requests pour les guest employees
-        const { data: requestsData } = await supabase
-          .from("company_course_requests")
-          .select(`
-            final_course_id,
-            guest_employee_name,
-            guest_employee_phone,
-            is_guest_employee,
-            employee_id
-          `)
-          .in("final_course_id", courseIds);
+        const companyData = companyResult.data;
+        const requestsData = requestsResult.data;
         
         // Collecter tous les employee_ids pour récupérer leurs profils
         const employeeIdsFromRequests = requestsData?.filter(r => r.employee_id && !r.is_guest_employee).map(r => r.employee_id) || [];
         const employeeIdsFromCompanyCourses = companyData?.filter(cc => cc.employee_id).map(cc => cc.employee_id) || [];
         const allEmployeeIds = [...new Set([...employeeIdsFromRequests, ...employeeIdsFromCompanyCourses])];
         
-        // Fetch employee profiles via RPC SECURITY DEFINER function (évite les problèmes RLS)
+        // Fetch employee profiles en parallèle si nécessaire
         let employeeProfilesMap: Record<string, { name: string; phone: string | null }> = {};
         
         if (allEmployeeIds.length > 0) {
-          // Utiliser la fonction RPC pour chaque employee_id
           const employeePromises = allEmployeeIds.map(async (empId) => {
             const { data } = await supabase.rpc('get_employee_profile_for_course', { 
               p_employee_id: empId 
@@ -295,7 +318,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           });
         }
         
-        // Also fetch profiles for courses created_by_user_id (for inline employee course creation - fallback)
+        // Fetch profiles for created_by_user_id
         const createdByUserIds = coursesData
           ?.filter(c => c.created_by_user_id && companyData?.some(cc => cc.course_id === c.id))
           .map(c => c.created_by_user_id)
@@ -323,7 +346,6 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
           let employeeName: string | null = null;
           let employeePhone: string | null = null;
           
-          // Priority 1: from company_course_requests (guest or registered employee)
           if (request) {
             if (request.is_guest_employee) {
               employeeName = request.guest_employee_name;
@@ -334,60 +356,36 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
             }
           }
           
-          // Priority 2: from company_courses.employee_id (inline creation)
           if (!employeeName && cc.employee_id && employeeProfilesMap[cc.employee_id]) {
             employeeName = employeeProfilesMap[cc.employee_id].name;
             employeePhone = employeeProfilesMap[cc.employee_id].phone;
           }
           
-          // Priority 3: from courses.created_by_user_id (fallback)
           if (!employeeName && course?.created_by_user_id && createdByProfiles[course.created_by_user_id]) {
             employeeName = createdByProfiles[course.created_by_user_id].name;
             employeePhone = createdByProfiles[course.created_by_user_id].phone || null;
           }
           
-          // Debug: log if employee info is missing for company courses
-          if (!employeeName && (request || cc.employee_id)) {
-            console.log("[CoursesList] Employee info missing for course:", cc.course_id, {
-              ccEmployeeId: cc.employee_id,
-              requestEmployeeId: request?.employee_id,
-              isGuestEmployee: request?.is_guest_employee,
-              employeeProfilesMapKeys: Object.keys(employeeProfilesMap)
-            });
-          }
-          
-          return {
-            ...cc,
-            employeeName,
-            employeePhone
-          };
+          return { ...cc, employeeName, employeePhone };
         }) || [];
         
-        console.log("[CoursesList] Enriched company data:", enrichedCompanyData.map(cc => ({
-          courseId: cc.course_id,
-          employeeName: cc.employeeName,
-          employeePhone: cc.employeePhone
-        })));
-        
         setCompanyCoursesData(enrichedCompanyData);
+      } else {
+        // Pas de courses - mettre à jour les compteurs quand même
+        const [receivedCountResult, completedCountResult] = await Promise.all([
+          supabase
+            .from("shared_courses")
+            .select("*", { count: "exact", head: true })
+            .eq("receiver_driver_id", driverId)
+            .in("status", ["accepted", "in_progress"]),
+          supabase
+            .from("partner_order_documents")
+            .select("*", { count: "exact", head: true })
+            .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`)
+        ]);
+        setReceivedSharedCoursesCount(receivedCountResult.count || 0);
+        setCompletedPartnerCoursesCount(completedCountResult.count || 0);
       }
-      
-      // Fetch received shared courses count (courses partenaires acceptées/en cours)
-      const { count: receivedCount } = await supabase
-        .from("shared_courses")
-        .select("*", { count: "exact", head: true })
-        .eq("receiver_driver_id", driverId)
-        .in("status", ["accepted", "in_progress"]);
-      
-      setReceivedSharedCoursesCount(receivedCount || 0);
-      
-      // Fetch completed partner courses count (both sender and receiver - all partner courses completed)
-      const { count: completedPartnerCount } = await supabase
-        .from("partner_order_documents")
-        .select("*", { count: "exact", head: true })
-        .or(`sender_driver_id.eq.${driverId},receiver_driver_id.eq.${driverId}`);
-      
-      setCompletedPartnerCoursesCount(completedPartnerCount || 0);
     } catch (error: any) {
       console.error("Error fetching courses:", error);
       toast.error("Erreur lors du chargement des courses");
@@ -402,10 +400,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       const sharedCourse = sharedCoursesData.find(sc => sc.course_id === course.id);
       const companyCourse = companyCoursesData.find(cc => cc.course_id === course.id);
       
+      // Priorité: Si la course a un fleet_manager_id avec des données, c'est une course flotte
+      const courseFleetInfo = course.fleet_managers ? {
+        fleet_manager_id: course.fleet_managers.id,
+        fleet_name: course.fleet_managers.company_name,
+        fleet_logo: course.fleet_managers.logo_url,
+        fleet_phone: course.fleet_managers.phone
+      } : null;
+      
       return getCourseType(course, driverId, {
         sharedCourses: sharedCourse ? [sharedCourse] : [],
         companyCourses: companyCourse ? [companyCourse] : [],
-        fleetDriverInfo: fleetDriverInfo
+        fleetDriverInfo: courseFleetInfo || fleetDriverInfo
       });
     };
   }, [sharedCoursesData, companyCoursesData, fleetDriverInfo, driverId]);
@@ -442,6 +448,24 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       employeePhone: companyCourse.employeePhone
     };
   };
+
+  // Helper pour récupérer les infos du gestionnaire de flotte d'une course
+  const getFleetCourseInfo = (course: any): {
+    fleetManagerName: string;
+    fleetManagerLogo?: string | null;
+    fleetManagerPhone?: string | null;
+    clientName?: string | null;
+    clientPhone?: string | null;
+  } | null => {
+    if (!course.fleet_managers) return null;
+    return {
+      fleetManagerName: course.fleet_managers.company_name,
+      fleetManagerLogo: course.fleet_managers.logo_url,
+      fleetManagerPhone: course.fleet_managers.phone,
+      clientName: course.clients?.profiles?.full_name,
+      clientPhone: course.clients?.profiles?.phone
+    };
+  }
 
   // Helper to check if course is being handled by a partner (sender can't act on it)
   const isCourseHandledByPartner = (courseId: string): boolean => {
@@ -2281,6 +2305,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground/70" />
                           <span className="truncate">{format(new Date(course.scheduled_date), "d MMM yyyy 'à' HH:mm", { locale: fr })}</span>
                         </p>
+                        {/* Indicateur gestionnaire flotte si applicable - EN HAUT pour visibilité */}
+                        {getFleetCourseInfo(course) && !getCompanyCourseInfo(course.id) && (
+                          <FleetCourseIndicator 
+                            fleetManagerName={getFleetCourseInfo(course)!.fleetManagerName}
+                            fleetManagerLogo={getFleetCourseInfo(course)!.fleetManagerLogo}
+                            fleetManagerPhone={getFleetCourseInfo(course)!.fleetManagerPhone}
+                            clientName={getFleetCourseInfo(course)!.clientName}
+                            clientPhone={getFleetCourseInfo(course)!.clientPhone}
+                          />
+                        )}
                         {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
                         {getCompanyCourseInfo(course.id) && (
                           <CompanyCourseIndicator 
@@ -2608,6 +2642,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur gestionnaire flotte si applicable - EN HAUT pour visibilité */}
+                      {getFleetCourseInfo(course) && !companyCourseInfo && (
+                        <FleetCourseIndicator 
+                          fleetManagerName={getFleetCourseInfo(course)!.fleetManagerName}
+                          fleetManagerLogo={getFleetCourseInfo(course)!.fleetManagerLogo}
+                          fleetManagerPhone={getFleetCourseInfo(course)!.fleetManagerPhone}
+                          clientName={getFleetCourseInfo(course)!.clientName}
+                          clientPhone={getFleetCourseInfo(course)!.clientPhone}
+                        />
+                      )}
                       {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
                       {companyCourseInfo && (
                         <CompanyCourseIndicator 
@@ -2875,6 +2919,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur gestionnaire flotte si applicable - EN HAUT pour visibilité */}
+                      {getFleetCourseInfo(course) && !getCompanyCourseInfo(course.id) && (
+                        <FleetCourseIndicator 
+                          fleetManagerName={getFleetCourseInfo(course)!.fleetManagerName}
+                          fleetManagerLogo={getFleetCourseInfo(course)!.fleetManagerLogo}
+                          fleetManagerPhone={getFleetCourseInfo(course)!.fleetManagerPhone}
+                          clientName={getFleetCourseInfo(course)!.clientName}
+                          clientPhone={getFleetCourseInfo(course)!.clientPhone}
+                        />
+                      )}
                       {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
                       {getCompanyCourseInfo(course.id) && (
                         <CompanyCourseIndicator 
@@ -3042,6 +3096,16 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         <Calendar className="w-4 h-4 text-muted-foreground/70" />
                         {format(new Date(course.scheduled_date), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      {/* Indicateur gestionnaire flotte si applicable - EN HAUT pour visibilité */}
+                      {getFleetCourseInfo(course) && !getCompanyCourseInfo(course.id) && (
+                        <FleetCourseIndicator 
+                          fleetManagerName={getFleetCourseInfo(course)!.fleetManagerName}
+                          fleetManagerLogo={getFleetCourseInfo(course)!.fleetManagerLogo}
+                          fleetManagerPhone={getFleetCourseInfo(course)!.fleetManagerPhone}
+                          clientName={getFleetCourseInfo(course)!.clientName}
+                          clientPhone={getFleetCourseInfo(course)!.clientPhone}
+                        />
+                      )}
                       {/* Indicateur entreprise si applicable - EN HAUT pour visibilité */}
                       {getCompanyCourseInfo(course.id) && (
                         <CompanyCourseIndicator 
