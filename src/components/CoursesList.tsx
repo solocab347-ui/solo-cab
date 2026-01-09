@@ -165,7 +165,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               id,
               company_name,
               logo_url,
-              phone
+              contact_phone
             ),
             devis:devis(
               id,
@@ -405,7 +405,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         fleet_manager_id: course.fleet_managers.id,
         fleet_name: course.fleet_managers.company_name,
         fleet_logo: course.fleet_managers.logo_url,
-        fleet_phone: course.fleet_managers.phone
+        fleet_phone: course.fleet_managers.contact_phone
       } : null;
       
       return getCourseType(course, driverId, {
@@ -461,7 +461,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     return {
       fleetManagerName: course.fleet_managers.company_name,
       fleetManagerLogo: course.fleet_managers.logo_url,
-      fleetManagerPhone: course.fleet_managers.phone,
+      fleetManagerPhone: course.fleet_managers.contact_phone,
       clientName: course.clients?.profiles?.full_name,
       clientPhone: course.clients?.profiles?.phone
     };
