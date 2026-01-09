@@ -84,7 +84,6 @@ export function FleetConfirmationStep({
           payment_method_requested: formData.paymentMethod,
           status: "dispatched_to_fleet",
           target_fleet_manager_id: fleetManagerId,
-          fleet_status: "pending",
           payment_flow: "via_fleet",
           dispatched_to_fleet_at: new Date().toISOString(),
         })
