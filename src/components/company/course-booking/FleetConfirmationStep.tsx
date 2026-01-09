@@ -8,16 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Building2, MapPin, Calendar, Users, Clock, 
-  Send, Loader2, CheckCircle, Truck 
+  Send, Loader2, CheckCircle, Truck, Euro 
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CourseFormData } from "./CompanyCourseBookingWizard";
+import { PriceDetails } from "./FleetQuoteStep";
 
 interface FleetConfirmationStepProps {
   companyId: string;
   formData: CourseFormData;
   fleetManagerId: string;
+  estimatedPrice?: number | null;
+  priceDetails?: PriceDetails | null;
   onSuccess: () => void;
 }
 
@@ -25,6 +28,8 @@ export function FleetConfirmationStep({
   companyId, 
   formData, 
   fleetManagerId,
+  estimatedPrice,
+  priceDetails,
   onSuccess 
 }: FleetConfirmationStepProps) {
   const [isSending, setIsSending] = useState(false);
@@ -183,6 +188,31 @@ export function FleetConfirmationStep({
           </div>
         </CardContent>
       </Card>
+
+      {/* Price Summary */}
+      {estimatedPrice && (
+        <Card className="border-primary bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium flex items-center gap-2">
+                  <Euro className="w-4 h-4 text-primary" />
+                  Prix estimé
+                </h4>
+                {priceDetails && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {priceDetails.distance_km?.toFixed(1)} km • ~{priceDetails.duration_minutes} min
+                  </p>
+                )}
+              </div>
+              <span className="text-2xl font-bold text-primary flex items-center gap-1">
+                {estimatedPrice.toFixed(2)}
+                <Euro className="w-5 h-5" />
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Course Details Summary */}
       <Card>
