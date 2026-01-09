@@ -57,6 +57,7 @@ import { CompanyCourseRequestsManager } from "@/components/company/CompanyCourse
 import { BillingWarningBanner } from "@/components/company/BillingWarningBanner";
 import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
 import { CompanyAdministratorsManager } from "@/components/company/CompanyAdministratorsManager";
+import { EmployeeUpgradeRequestsManager } from "@/components/company/EmployeeUpgradeRequestsManager";
 import { Link } from "react-router-dom";
 
 interface Company {
@@ -552,6 +553,15 @@ function TeamSection({ companyId, companyName }: { companyId: string; companyNam
           Collaborateurs
         </Button>
         <Button 
+          variant={subTab === "promotions" ? "default" : "outline"} 
+          size="sm"
+          onClick={() => setSubTab("promotions")}
+          className="whitespace-nowrap"
+        >
+          <TrendingUp className="w-4 h-4 mr-2" />
+          Demandes de promotion
+        </Button>
+        <Button 
           variant={subTab === "admins" ? "default" : "outline"} 
           size="sm"
           onClick={() => setSubTab("admins")}
@@ -563,6 +573,7 @@ function TeamSection({ companyId, companyName }: { companyId: string; companyNam
       </div>
 
       {subTab === "employees" && <CompanyEmployeesManager companyId={companyId} />}
+      {subTab === "promotions" && <EmployeeUpgradeRequestsManager companyId={companyId} />}
       {subTab === "admins" && <CompanyAdministratorsManager companyId={companyId} companyName={companyName} />}
     </div>
   );

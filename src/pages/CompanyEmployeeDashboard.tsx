@@ -48,6 +48,7 @@ import { EmployeeCoursePaymentDeclaration } from "@/components/company/employee/
 import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineCourseCreation";
 import { EmployeeCoursesList } from "@/components/company/employee/EmployeeCoursesList";
 import { EmployeeBudgetGauge } from "@/components/company/employee/EmployeeBudgetGauge";
+import { EmployeeRoleUpgradeRequest } from "@/components/company-employee/EmployeeRoleUpgradeRequest";
 
 interface EmployeeData {
   id: string;
@@ -617,6 +618,18 @@ export default function CompanyEmployeeDashboard() {
                 </Card>
               )}
             </div>
+
+            {/* Role Upgrade Request - Only for managed employees (not autonomous) */}
+            {!(employee.can_create_courses && employee.can_view_invoices) && (
+              <EmployeeRoleUpgradeRequest
+                employeeId={employee.id}
+                companyId={employee.company_id}
+                userId={user?.id || ""}
+                canCreateCourses={employee.can_create_courses}
+                canViewInvoices={employee.can_view_invoices}
+                canInviteDrivers={employee.can_invite_drivers}
+              />
+            )}
 
             {/* Quick Actions */}
             {employee.can_create_courses && (
