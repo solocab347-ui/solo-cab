@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,7 +66,41 @@ interface FleetHomeProps {
   onViewDriverProfile: (driverId: string) => void;
 }
 
-export const FleetHome = ({ 
+// Composant Quick Action mémorisé pour éviter les re-renders
+const QuickActionCard = memo(function QuickActionCard({
+  onClick,
+  icon: Icon,
+  iconBgClass,
+  label,
+  badge
+}: {
+  onClick: () => void;
+  icon: React.ElementType;
+  iconBgClass: string;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <Card 
+      className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative will-change-transform"
+      onClick={onClick}
+    >
+      {badge && badge > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
+          {badge}
+        </span>
+      )}
+      <div className="flex flex-col items-center text-center gap-1.5">
+        <div className={`w-10 h-10 ${iconBgClass} rounded-xl flex items-center justify-center group-hover:opacity-80 transition-opacity`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <span className="text-xs font-medium text-foreground">{label}</span>
+      </div>
+    </Card>
+  );
+});
+
+export const FleetHome = memo(function FleetHome({ 
   fleetManager, 
   userProfile,
   drivers,
@@ -77,7 +111,7 @@ export const FleetHome = ({
   pendingCompanyPartnershipsCount = 0,
   onTabChange,
   onViewDriverProfile
-}: FleetHomeProps) => {
+}: FleetHomeProps) {
   const [stats, setStats] = useState({
     totalCourses: 0,
     monthRevenue: 0,
@@ -85,15 +119,21 @@ export const FleetHome = ({
   });
   const [loading, setLoading] = useState(true);
 
-  const avatarUrl = userProfile?.profile_photo_url;
-  const initials = (userProfile?.full_name || fleetManager.contact_name || "FM")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  // Mémoiser les valeurs calculées
+  const { avatarUrl, initials } = useMemo(() => ({
+    avatarUrl: userProfile?.profile_photo_url,
+    initials: (userProfile?.full_name || fleetManager.contact_name || "FM")
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }), [userProfile?.profile_photo_url, userProfile?.full_name, fleetManager.contact_name]);
 
+  // Optimisation: Charger les stats avec requêtes parallèles
   useEffect(() => {
+    let cancelled = false;
+    
     const loadStats = async () => {
       try {
         // Get current month boundaries for monthly stats
@@ -104,92 +144,108 @@ export const FleetHome = ({
         const endOfMonth = new Date(startOfMonth);
         endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
-        // First, get all clients belonging to this fleet manager
-        const { data: fleetClients } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('fleet_manager_id', fleetManager.id);
+        // ÉTAPE 1: Récupérer les IDs clients en parallèle
+        const [fleetClientsResult, fleetManagerClientsResult, unassignedResult] = await Promise.all([
+          supabase
+            .from('clients')
+            .select('id')
+            .eq('fleet_manager_id', fleetManager.id),
+          supabase
+            .from('fleet_manager_clients')
+            .select('client_id')
+            .eq('fleet_manager_id', fleetManager.id),
+          supabase
+            .from('unassigned_fleet_courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('fleet_manager_id', fleetManager.id)
+            .is('resolved_at', null)
+        ]);
 
-        const fleetClientIds = fleetClients?.map(c => c.id) || [];
-        
-        // Also get clients from fleet_manager_clients table
-        const { data: fleetManagerClients } = await supabase
-          .from('fleet_manager_clients')
-          .select('client_id')
-          .eq('fleet_manager_id', fleetManager.id);
-        
-        const linkedClientIds = fleetManagerClients?.map(c => c.client_id) || [];
-        
-        // Combine both lists and remove duplicates
+        if (cancelled) return;
+
+        const fleetClientIds = fleetClientsResult.data?.map(c => c.id) || [];
+        const linkedClientIds = fleetManagerClientsResult.data?.map(c => c.client_id) || [];
         const allFleetClientIds = [...new Set([...fleetClientIds, ...linkedClientIds])];
 
         let totalCourses = 0;
         let completedCourses = 0;
+        let monthRevenue = 0;
 
         if (allFleetClientIds.length > 0) {
-          // Count courses for fleet clients only (courses created by fleet clients)
-          const { count: coursesCount } = await supabase
-            .from('courses')
-            .select('*', { count: 'exact', head: true })
-            .in('client_id', allFleetClientIds)
-            .gte('scheduled_date', startOfMonth.toISOString())
-            .lt('scheduled_date', endOfMonth.toISOString());
-
-          // Get completed courses for fleet clients
-          const { count: completedCount } = await supabase
-            .from('courses')
-            .select('*', { count: 'exact', head: true })
-            .in('client_id', allFleetClientIds)
-            .eq('status', 'completed')
-            .gte('scheduled_date', startOfMonth.toISOString())
-            .lt('scheduled_date', endOfMonth.toISOString());
-
-          totalCourses = coursesCount || 0;
-          completedCourses = completedCount || 0;
-        }
-
-        // Also count unassigned courses created by the fleet manager
-        const { count: unassignedCount } = await supabase
-          .from('unassigned_fleet_courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('fleet_manager_id', fleetManager.id)
-          .is('resolved_at', null);
-
-        // Get month revenue from fleet factures only (clients belonging to fleet)
-        let monthRevenue = 0;
-        const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
-        
-        if (driverIds.length > 0 && allFleetClientIds.length > 0) {
-          // Get factures for courses of fleet clients executed by fleet drivers
-          const { data: factures } = await supabase
-            .from('factures')
-            .select('amount, course:courses!inner(client_id)')
-            .in('driver_id', driverIds)
-            .eq('payment_status', 'paid')
-            .gte('paid_at', startOfMonth.toISOString())
-            .lt('paid_at', endOfMonth.toISOString());
-
-          // Filter factures for fleet clients only
-          const fleetFactures = factures?.filter(f => 
-            f.course && allFleetClientIds.includes(f.course.client_id)
-          ) || [];
+          // ÉTAPE 2: Récupérer courses et factures en parallèle
+          const driverIds = drivers.map(d => d.driver_id).filter(Boolean);
           
-          monthRevenue = fleetFactures.reduce((sum, f) => sum + Number(f.amount), 0);
+          // Requêtes parallèles pour les courses
+          const [coursesResult, completedResult] = await Promise.all([
+            supabase
+              .from('courses')
+              .select('*', { count: 'exact', head: true })
+              .in('client_id', allFleetClientIds)
+              .gte('scheduled_date', startOfMonth.toISOString())
+              .lt('scheduled_date', endOfMonth.toISOString()),
+            supabase
+              .from('courses')
+              .select('*', { count: 'exact', head: true })
+              .in('client_id', allFleetClientIds)
+              .eq('status', 'completed')
+              .gte('scheduled_date', startOfMonth.toISOString())
+              .lt('scheduled_date', endOfMonth.toISOString())
+          ]);
+
+          if (cancelled) return;
+
+          totalCourses = coursesResult.count || 0;
+          completedCourses = completedResult.count || 0;
+
+          // Factures séparément si on a des chauffeurs
+          if (driverIds.length > 0) {
+            const { data: factures } = await supabase
+              .from('factures')
+              .select('amount, course:courses!inner(client_id)')
+              .in('driver_id', driverIds)
+              .eq('payment_status', 'paid')
+              .gte('paid_at', startOfMonth.toISOString())
+              .lt('paid_at', endOfMonth.toISOString());
+
+            if (cancelled) return;
+
+            const fleetFactures = factures?.filter((f: any) => 
+              f.course && allFleetClientIds.includes(f.course.client_id)
+            ) || [];
+            monthRevenue = fleetFactures.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
+          }
         }
 
-        setStats({
-          totalCourses: totalCourses + (unassignedCount || 0),
-          completedCourses: completedCourses,
-          monthRevenue
-        });
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      } finally {
-        setLoading(false);
+        if (!cancelled) {
+
+          totalCourses = results[0].count || 0;
+          completedCourses = results[1].count || 0;
+
+          if (driverIds.length > 0 && results[2]?.data) {
+            const fleetFactures = results[2].data.filter((f: any) => 
+              f.course && allFleetClientIds.includes(f.course.client_id)
+            );
+            monthRevenue = fleetFactures.reduce((sum: number, f: any) => sum + Number(f.amount), 0);
+          }
+        }
+
+          setStats({
+            totalCourses: totalCourses + (unassignedResult.count || 0),
+            completedCourses,
+            monthRevenue
+          });
+        }
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadStats();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [drivers, fleetManager.id]);
 
   return (
@@ -236,125 +292,67 @@ export const FleetHome = ({
         </div>
       </div>
 
-      {/* Accès Rapide - Compact Grid */}
+      {/* Accès Rapide - Compact Grid avec composants mémorisés */}
       <div>
         <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Accès Rapide</h2>
         
         {/* Première ligne - 4 boutons */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
+          <QuickActionCard
             onClick={() => onTabChange("courses")}
-          >
-            {pendingCoursesCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
-                {pendingCoursesCount}
-              </span>
-            )}
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center group-hover:bg-info/20 transition-colors">
-                <Route className="w-5 h-5 text-info" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Courses</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            icon={Route}
+            iconBgClass="bg-info/10 text-info"
+            label="Courses"
+            badge={pendingCoursesCount}
+          />
+          <QuickActionCard
             onClick={() => onTabChange("drivers")}
-          >
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Car className="w-5 h-5 text-primary" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Chauffeurs</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            icon={Car}
+            iconBgClass="bg-primary/10 text-primary"
+            label="Chauffeurs"
+          />
+          <QuickActionCard
             onClick={() => onTabChange("clients")}
-          >
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center group-hover:bg-success/20 transition-colors">
-                <Users className="w-5 h-5 text-success" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Clients</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            icon={Users}
+            iconBgClass="bg-success/10 text-success"
+            label="Clients"
+          />
+          <QuickActionCard
             onClick={() => onTabChange("settings")}
-          >
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                <Globe className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Vitrine</span>
-            </div>
-          </Card>
+            icon={Globe}
+            iconBgClass="bg-muted text-muted-foreground"
+            label="Vitrine"
+          />
         </div>
 
         {/* Deuxième ligne - 4 boutons (Outils) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
+          <QuickActionCard
             onClick={() => onTabChange("partnerships")}
-          >
-            {(pendingPartnershipsCount + pendingCompanyPartnershipsCount) > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
-                {pendingPartnershipsCount + pendingCompanyPartnershipsCount}
-              </span>
-            )}
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-warning/10 rounded-xl flex items-center justify-center group-hover:bg-warning/20 transition-colors">
-                <Handshake className="w-5 h-5 text-warning" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Partenariats</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50 relative"
+            icon={Handshake}
+            iconBgClass="bg-warning/10 text-warning"
+            label="Partenariats"
+            badge={pendingPartnershipsCount + pendingCompanyPartnershipsCount}
+          />
+          <QuickActionCard
             onClick={() => onTabChange("invitations")}
-          >
-            {pendingInvitationsCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse shadow-lg z-10">
-                {pendingInvitationsCount}
-              </span>
-            )}
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-success/10 rounded-xl flex items-center justify-center group-hover:bg-success/20 transition-colors">
-                <Send className="w-5 h-5 text-success" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Invitations</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            icon={Send}
+            iconBgClass="bg-success/10 text-success"
+            label="Invitations"
+            badge={pendingInvitationsCount}
+          />
+          <QuickActionCard
             onClick={() => onTabChange("qrcode")}
-          >
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <QrCode className="w-5 h-5 text-accent" />
-              </div>
-              <span className="text-xs font-medium text-foreground">QR Code</span>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-3 cursor-pointer group hover:bg-accent/10 transition-colors border-border/50"
+            icon={QrCode}
+            iconBgClass="bg-accent/10 text-accent"
+            label="QR Code"
+          />
+          <QuickActionCard
             onClick={() => onTabChange("planning")}
-          >
-            <div className="flex flex-col items-center text-center gap-1.5">
-              <div className="w-10 h-10 bg-info/10 rounded-xl flex items-center justify-center group-hover:bg-info/20 transition-colors">
-                <Calendar className="w-5 h-5 text-info" />
-              </div>
-              <span className="text-xs font-medium text-foreground">Planning</span>
-            </div>
-          </Card>
+            icon={Calendar}
+            iconBgClass="bg-info/10 text-info"
+            label="Planning"
+          />
         </div>
       </div>
 
@@ -494,4 +492,4 @@ export const FleetHome = ({
       )}
     </div>
   );
-};
+});
