@@ -1215,7 +1215,7 @@ export const DriverFleetPartnerships = ({ driverId }: DriverFleetPartnershipsPro
           company: driverCompany || undefined,
         }}
         party2={{
-          name: selectedContractPartnership?.fleet_manager?.company_name || 'Gestionnaire',
+          name: selectedContractPartnership?.fleet_manager?.contact_name || 'Gestionnaire de Flotte',
           company: selectedContractPartnership?.fleet_manager?.company_name || undefined,
         }}
         terms={{
