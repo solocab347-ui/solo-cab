@@ -121,10 +121,13 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
         .in("id", driverUserIds);
 
       const dateRange = getDateRange();
+      
+      // IMPORTANT: Ne compter QUE les courses créées par ce gestionnaire (fleet_manager_id)
+      // et non pas toutes les courses de ses chauffeurs (qui peuvent être des courses personnelles)
       let coursesQuery = supabase
         .from("courses")
         .select("*")
-        .in("driver_id", driverIds);
+        .eq("fleet_manager_id", fleetManagerId);
 
       if (dateRange.start && dateRange.end) {
         coursesQuery = coursesQuery
@@ -134,6 +137,7 @@ export const FleetStatistics = ({ fleetManagerId }: FleetStatisticsProps) => {
 
       const { data: courses } = await coursesQuery;
 
+      // Pour les factures, on garde les factures des chauffeurs de la flotte
       let facturesQuery = supabase
         .from("factures")
         .select("*")

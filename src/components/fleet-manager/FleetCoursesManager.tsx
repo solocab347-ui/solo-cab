@@ -1824,10 +1824,18 @@ const ModernCourseCard = ({ course, getStatusConfig, showActions, onApprove, onR
               <Eye className="w-4 h-4 mr-1" />
               Détails
             </Button>
+            {/* Bouton Dispatcher pour courses sans chauffeur */}
             {hasNoDriver && onDispatch && (
               <Button size="sm" className="gap-1 bg-accent hover:bg-accent/90" onClick={onDispatch}>
                 <Zap className="w-4 h-4" />
                 Dispatcher
+              </Button>
+            )}
+            {/* Bouton Relancer pour courses avec chauffeur (reset dispatch) */}
+            {!hasNoDriver && onDispatch && (
+              <Button size="sm" variant="outline" className="gap-1 border-warning text-warning hover:bg-warning/10" onClick={onDispatch}>
+                <RefreshCw className="w-4 h-4" />
+                Relancer
               </Button>
             )}
             {showActions && (
