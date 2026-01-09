@@ -10603,6 +10603,10 @@ export type Database = {
           success: boolean
         }[]
       }
+      return_course_to_fleet_manager: {
+        Args: { p_course_id: string; p_reason: string }
+        Returns: boolean
+      }
       search_available_partners: {
         Args: {
           _city?: string

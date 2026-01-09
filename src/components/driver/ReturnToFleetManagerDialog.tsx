@@ -61,16 +61,12 @@ export function ReturnToFleetManagerDialog({
 
     setLoading(true);
     try {
-      // Update course status to return it to fleet manager
+      // Use RPC function to return course (bypasses RLS restrictions)
       const { error: courseError } = await supabase
-        .from("courses")
-        .update({
-          status: "pending",
-          driver_id: null, // Remove driver assignment
-          notes: `[RETOURNÉ AU GESTIONNAIRE] Motif: ${reason}`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", courseId);
+        .rpc("return_course_to_fleet_manager", {
+          p_course_id: courseId,
+          p_reason: reason,
+        });
 
       if (courseError) throw courseError;
 
