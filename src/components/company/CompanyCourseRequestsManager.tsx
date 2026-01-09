@@ -831,13 +831,9 @@ export function CompanyCourseRequestsManager({ companyId }: CompanyCourseRequest
           <CardContent className="py-12 text-center">
             <Car className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-semibold mb-2">Aucune demande de course</h3>
-            <p className="text-muted-foreground mb-4">
-              Créez votre première demande de course pour vos collaborateurs
+            <p className="text-muted-foreground">
+              Utilisez le bouton "Nouvelle" ci-dessus pour créer une course
             </p>
-            <Button onClick={() => setShowWizard(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Nouvelle course
-            </Button>
           </CardContent>
         </Card>
       )}
