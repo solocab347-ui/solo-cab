@@ -9873,6 +9873,13 @@ export type Database = {
           success: boolean
         }[]
       }
+      accept_fleet_course_safely: {
+        Args: { p_course_id: string; p_driver_id: string }
+        Returns: {
+          message: string
+          success: boolean
+        }[]
+      }
       accept_shared_course: {
         Args: { p_driver_id: string; p_shared_course_id: string }
         Returns: {
