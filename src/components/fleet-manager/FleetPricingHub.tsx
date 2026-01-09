@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FleetPricingSettings } from "./FleetPricingSettings";
+import { FleetPriceCalculator } from "./FleetPriceCalculator";
 import { CityPricingManager } from "../shared/CityPricingManager";
 import { Euro, MapPin, Calculator } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -45,26 +46,30 @@ export const FleetPricingHub = ({ fleetManagerId }: FleetPricingHubProps) => {
       {/* Sub-tabs for sections */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
         <div className="bg-muted/30 p-2 rounded-xl">
-          <TabsList className="grid w-full grid-cols-2 gap-2 h-auto bg-transparent p-0">
+          <TabsList className="grid w-full grid-cols-3 gap-2 h-auto bg-transparent p-0">
             <TabsTrigger 
               value="general" 
               className="flex items-center gap-2 py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
             >
               <Euro className="w-4 h-4" />
-              <span>Tarifs Généraux</span>
-              <Badge variant="outline" className="ml-1 hidden md:flex text-xs">
-                Par défaut
-              </Badge>
+              <span className="hidden sm:inline">Tarifs Généraux</span>
+              <span className="sm:hidden">Général</span>
             </TabsTrigger>
             <TabsTrigger 
               value="city" 
               className="flex items-center gap-2 py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
             >
               <MapPin className="w-4 h-4" />
-              <span>Tarifs par Ville</span>
-              <Badge variant="outline" className="ml-1 hidden md:flex text-xs">
-                Prioritaire
-              </Badge>
+              <span className="hidden sm:inline">Tarifs par Ville</span>
+              <span className="sm:hidden">Villes</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="calculator" 
+              className="flex items-center gap-2 py-3 px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-md transition-all"
+            >
+              <Calculator className="w-4 h-4" />
+              <span className="hidden sm:inline">Calculateur</span>
+              <span className="sm:hidden">Calcul</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -77,6 +82,11 @@ export const FleetPricingHub = ({ fleetManagerId }: FleetPricingHubProps) => {
         {/* City Pricing Section */}
         <TabsContent value="city" className="space-y-6 mt-0">
           <CityPricingManager fleetManagerId={fleetManagerId} />
+        </TabsContent>
+
+        {/* Price Calculator Section */}
+        <TabsContent value="calculator" className="space-y-6 mt-0">
+          <FleetPriceCalculator fleetManagerId={fleetManagerId} />
         </TabsContent>
       </Tabs>
     </div>
