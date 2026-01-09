@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useFleetDispatch } from "@/hooks/useFleetDispatch";
 
 interface FleetClient {
   id: string;
@@ -61,6 +62,7 @@ export const FleetCreateCourseForClient = ({
   preselectedClientId 
 }: FleetCreateCourseForClientProps) => {
   const navigate = useNavigate();
+  const { createDispatch, loading: dispatchLoading } = useFleetDispatch();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [clients, setClients] = useState<FleetClient[]>([]);
@@ -221,54 +223,44 @@ export const FleetCreateCourseForClient = ({
     try {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
 
-      // Create the course request
-      const { data: courseRequest, error: requestError } = await supabase
-        .from("fleet_manager_course_requests")
-        .insert({
-          fleet_manager_id: fleetManagerId,
-          client_id: selectedClient,
-          pickup_address: pickupAddress,
-          destination_address: destinationAddress,
-          scheduled_date: scheduledDateTime.toISOString(),
-          notes: notes || null,
-          assigned_driver_id: selectedDriver || null,
-          status: selectedDriver ? "assigned" : "pending",
-          created_by_fleet_manager: true,
-        })
-        .select()
-        .single();
+      // Utiliser le système de dispatch pour créer la course
+      const result = await createDispatch({
+        fleetManagerId,
+        clientId: selectedClient,
+        pickupAddress,
+        destinationAddress,
+        scheduledDate: scheduledDateTime.toISOString(),
+        passengersCount: parseInt(passengers) || 1,
+        notes: notes || undefined,
+        selectedDriverId: selectedDriver || undefined,
+      });
 
-      if (requestError) throw requestError;
-
-      // If driver is assigned, create the actual course
-      if (selectedDriver) {
-        const { data: courseData, error: courseError } = await supabase
-          .from("courses")
+      if (result.success) {
+        // Créer aussi l'entrée dans fleet_manager_course_requests pour tracking
+        await supabase
+          .from("fleet_manager_course_requests")
           .insert({
+            fleet_manager_id: fleetManagerId,
             client_id: selectedClient,
-            driver_id: selectedDriver,
             pickup_address: pickupAddress,
             destination_address: destinationAddress,
             scheduled_date: scheduledDateTime.toISOString(),
             notes: notes || null,
-            status: "pending",
-            passengers_count: parseInt(passengers) || 1,
-            fleet_manager_id: fleetManagerId, // Marquer la course comme appartenant à ce gestionnaire
-          })
-          .select()
-          .single();
+            assigned_driver_id: selectedDriver || null,
+            status: selectedDriver ? "assigned" : "pending",
+            created_by_fleet_manager: true,
+            course_id: result.course?.id || null,
+          });
 
-        if (courseError) throw courseError;
-
-        // Update the request with the course ID
-        await supabase
-          .from("fleet_manager_course_requests")
-          .update({ course_id: courseData.id })
-          .eq("id", courseRequest.id);
+        if (result.mode === "automatic") {
+          toast.success("Course créée et envoyée aux chauffeurs disponibles !");
+        } else if (result.mode === "pending") {
+          toast.info("Course créée, en attente d'assignation manuelle");
+        } else {
+          toast.success("Course créée avec succès !");
+        }
+        onClose();
       }
-
-      toast.success("Course créée avec succès !");
-      onClose();
     } catch (error) {
       console.error("Error creating course:", error);
       toast.error("Erreur lors de la création de la course");
