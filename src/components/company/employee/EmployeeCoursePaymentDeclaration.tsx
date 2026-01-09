@@ -185,20 +185,16 @@ export function EmployeeCoursePaymentDeclaration({
           })
           .eq("course_id", selectedCourse.id);
 
-        // Create expense report for employee AND company
+        // Create expense report via RPC (with anti-duplicate check)
         if (selectedCourse.amount) {
-          const { error: expenseError } = await supabase
-            .from("expense_reports")
-            .insert({
-              company_id: companyId,
-              employee_id: employeeId,
-              course_id: selectedCourse.id,
-              amount: selectedCourse.amount,
-              description: `Course VTC - ${selectedCourse.pickup_address.split(",")[0]} → ${selectedCourse.destination_address.split(",")[0]}`,
-              payment_method: "card",
-              status: "pending", // Pending company approval/reimbursement
-              submitted_at: new Date().toISOString(),
-            } as any);
+          const { error: expenseError } = await supabase.rpc(
+            "create_expense_report_for_course",
+            {
+              p_course_id: selectedCourse.id,
+              p_employee_id: employeeId,
+              p_amount: selectedCourse.amount
+            }
+          );
 
           if (expenseError) {
             console.error("Expense error:", expenseError);

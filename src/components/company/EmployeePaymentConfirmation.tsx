@@ -130,7 +130,12 @@ export function EmployeePaymentConfirmation({ employeeId }: EmployeePaymentConfi
   });
 
   const confirmPaymentMutation = useMutation({
-    mutationFn: async ({ courseId, type }: { courseId: string; type: string }) => {
+    mutationFn: async ({ courseId, type, employeeId: empId, amount }: { 
+      courseId: string; 
+      type: string; 
+      employeeId: string;
+      amount: number;
+    }) => {
       const updateData: any = {
         client_payment_confirmation: type,
         client_payment_confirmation_at: new Date().toISOString()
@@ -162,7 +167,7 @@ export function EmployeePaymentConfirmation({ employeeId }: EmployeePaymentConfi
 
       if (ccError) throw ccError;
 
-      // Si payé sur place, mettre à jour la facture
+      // Si payé sur place, créer note de frais via RPC (anti-duplicata)
       if (type === "paid_on_spot") {
         await supabase
           .from("factures")
@@ -171,6 +176,15 @@ export function EmployeePaymentConfirmation({ employeeId }: EmployeePaymentConfi
             paid_at: new Date().toISOString()
           })
           .eq("course_id", courseId);
+
+        // Créer la note de frais
+        if (amount > 0) {
+          await supabase.rpc("create_expense_report_for_course", {
+            p_course_id: courseId,
+            p_employee_id: empId,
+            p_amount: amount
+          });
+        }
       }
 
       return type;
@@ -286,7 +300,9 @@ export function EmployeePaymentConfirmation({ employeeId }: EmployeePaymentConfi
               className="w-full"
               onClick={() => confirmPaymentMutation.mutate({ 
                 courseId: course.course_id, 
-                type: selectedChoice[course.course_id] 
+                type: selectedChoice[course.course_id],
+                employeeId,
+                amount: course.amount
               })}
               disabled={!selectedChoice[course.course_id] || confirmPaymentMutation.isPending}
             >
