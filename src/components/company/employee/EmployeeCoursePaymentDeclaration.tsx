@@ -16,6 +16,8 @@ import {
   Car,
   Clock,
   ShieldCheck,
+  CreditCard,
+  Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -144,19 +146,28 @@ export function EmployeeCoursePaymentDeclaration({
     }
   };
 
-  const handleConfirmPayment = async (confirmedPaidByEmployee: boolean) => {
+  // paymentType: "company_will_pay" | "paid_company_card" | "paid_personal"
+  const handleConfirmPayment = async (paymentType: "company_will_pay" | "paid_company_card" | "paid_personal") => {
     if (!selectedCourse) return;
 
     setDeclaring(true);
     try {
-      const paymentMethod = confirmedPaidByEmployee ? "paid_on_spot" : "company_will_pay";
+      const isPaidOnSpot = paymentType === "paid_personal" || paymentType === "paid_company_card";
+      const requiresExpenseReport = paymentType === "paid_personal";
+
+      // Determine actual_payment_method
+      const actualMethod = paymentType === "paid_personal" 
+        ? "employee_personal" 
+        : paymentType === "paid_company_card" 
+          ? "company_card_spot" 
+          : "company_account";
 
       // Update company_courses with employee confirmation
       const { error: updateError } = await supabase
         .from("company_courses")
         .update({
-          actual_payment_method: confirmedPaidByEmployee ? "employee_personal" : "company_account",
-          client_confirmed_payment_method: paymentMethod,
+          actual_payment_method: actualMethod,
+          client_confirmed_payment_method: paymentType,
           client_confirmed_at: new Date().toISOString(),
           payment_declared_at: new Date().toISOString(),
         })
@@ -168,15 +179,14 @@ export function EmployeeCoursePaymentDeclaration({
       await supabase
         .from("courses")
         .update({
-          client_payment_confirmation: paymentMethod,
+          client_payment_confirmation: paymentType,
           client_payment_confirmation_at: new Date().toISOString(),
-          company_payment_status: paymentMethod,
+          company_payment_status: isPaidOnSpot ? "paid_on_spot" : "company_will_pay",
         })
         .eq("id", selectedCourse.id);
 
-      // If employee paid personally
-      if (confirmedPaidByEmployee) {
-        // Mark invoice as paid
+      // If paid on spot (either type), mark invoice as paid
+      if (isPaidOnSpot) {
         await supabase
           .from("factures")
           .update({
@@ -185,8 +195,8 @@ export function EmployeeCoursePaymentDeclaration({
           })
           .eq("course_id", selectedCourse.id);
 
-        // Create expense report via RPC (with anti-duplicate check)
-        if (selectedCourse.amount) {
+        // Create expense report ONLY for personal payment
+        if (requiresExpenseReport && selectedCourse.amount) {
           const { error: expenseError } = await supabase.rpc(
             "create_expense_report_for_course",
             {
@@ -205,6 +215,10 @@ export function EmployeeCoursePaymentDeclaration({
           });
           
           onExpenseCreated?.();
+        } else if (paymentType === "paid_company_card") {
+          toast.success("Paiement carte entreprise confirmé ✓", {
+            description: "Aucune note de frais nécessaire"
+          });
         }
       } else {
         toast.success("Double vérification validée ✓", {
@@ -443,81 +457,61 @@ export function EmployeeCoursePaymentDeclaration({
                 <p className="font-semibold text-lg">Cette information est-elle correcte ?</p>
               </div>
 
-              {/* Action buttons - contextual */}
+              {/* Action buttons - 3 options */}
               <div className="grid grid-cols-1 gap-3">
-                {selectedCourse.driver_declared_paid ? (
-                  <>
-                    <Button
-                      size="lg"
-                      className="h-auto py-4 bg-emerald-600 hover:bg-emerald-700 shadow-lg"
-                      onClick={() => handleConfirmPayment(true)}
-                      disabled={declaring}
-                    >
-                      {declaring ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="w-6 h-6" />
-                          <div className="text-left">
-                            <div className="font-bold">Oui, j'ai payé le chauffeur</div>
-                            <div className="text-xs opacity-80 font-normal">Une note de frais sera créée automatiquement</div>
-                          </div>
-                        </div>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-auto py-4 border-2"
-                      onClick={() => handleConfirmPayment(false)}
-                      disabled={declaring}
-                    >
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-500" />
-                        <div className="text-left">
-                          <div className="font-medium">Non, facturer l'entreprise</div>
-                          <div className="text-xs text-muted-foreground">Corriger la déclaration du chauffeur</div>
-                        </div>
+                {/* Option 1: Facturer entreprise */}
+                <Button
+                  size="lg"
+                  className="h-auto py-4 bg-blue-600 hover:bg-blue-700 shadow-lg"
+                  onClick={() => handleConfirmPayment("company_will_pay")}
+                  disabled={declaring}
+                >
+                  {declaring ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Building2 className="w-6 h-6" />
+                      <div className="text-left">
+                        <div className="font-bold">Facturer l'entreprise</div>
+                        <div className="text-xs opacity-80 font-normal">Paiement différé via compte entreprise</div>
                       </div>
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      size="lg"
-                      className="h-auto py-4 bg-blue-600 hover:bg-blue-700 shadow-lg"
-                      onClick={() => handleConfirmPayment(false)}
-                      disabled={declaring}
-                    >
-                      {declaring ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <Building2 className="w-6 h-6" />
-                          <div className="text-left">
-                            <div className="font-bold">Confirmer : Facturer l'entreprise</div>
-                            <div className="text-xs opacity-80 font-normal">Paiement différé via compte entreprise</div>
-                          </div>
-                        </div>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-auto py-4 border-2"
-                      onClick={() => handleConfirmPayment(true)}
-                      disabled={declaring}
-                    >
-                      <div className="flex items-center gap-3">
-                        <User className="w-5 h-5 text-emerald-600" />
-                        <div className="text-left">
-                          <div className="font-medium">J'ai payé personnellement</div>
-                          <div className="text-xs text-muted-foreground">Créer une note de frais</div>
-                        </div>
-                      </div>
-                    </Button>
-                  </>
-                )}
+                    </div>
+                  )}
+                </Button>
+
+                {/* Option 2: Carte entreprise */}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-auto py-4 border-2 border-purple-300 hover:bg-purple-50 dark:border-purple-700 dark:hover:bg-purple-950"
+                  onClick={() => handleConfirmPayment("paid_company_card")}
+                  disabled={declaring}
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="w-5 h-5 text-purple-600" />
+                    <div className="text-left">
+                      <div className="font-medium">Payé avec la carte entreprise</div>
+                      <div className="text-xs text-muted-foreground">Pas de remboursement nécessaire</div>
+                    </div>
+                  </div>
+                </Button>
+
+                {/* Option 3: Frais personnels */}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-auto py-4 border-2 border-emerald-300 hover:bg-emerald-50 dark:border-emerald-700 dark:hover:bg-emerald-950"
+                  onClick={() => handleConfirmPayment("paid_personal")}
+                  disabled={declaring}
+                >
+                  <div className="flex items-center gap-3">
+                    <Wallet className="w-5 h-5 text-emerald-600" />
+                    <div className="text-left">
+                      <div className="font-medium">Payé à titre personnel</div>
+                      <div className="text-xs text-muted-foreground">Note de frais à rembourser</div>
+                    </div>
+                  </div>
+                </Button>
               </div>
 
               <Button
