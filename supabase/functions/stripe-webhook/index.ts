@@ -62,11 +62,9 @@ serve(async (req) => {
           updateData.stripe_customer_id = customerId;
         }
         
-        if (subscription.status === "trialing" && isPioneer) {
-          updateData.subscription_paid = true;
-        }
-        
-        if (subscription.status === "active") {
+        // CRITICAL FIX: Set subscription_paid=true for ALL trialing or active subscriptions
+        // Not just Pioneer subscriptions - standard trial also counts as paid
+        if (subscription.status === "trialing" || subscription.status === "active") {
           updateData.subscription_paid = true;
         }
         

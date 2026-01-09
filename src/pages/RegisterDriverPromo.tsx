@@ -75,7 +75,8 @@ const RegisterDriverPromo = () => {
 
       if (profileError) throw profileError;
 
-      // Create driver profile immediately
+      // Create driver profile - SECURITY: status = "on_hold" until payment confirmed
+      // This prevents users from bypassing payment step
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
         .insert({
@@ -84,7 +85,8 @@ const RegisterDriverPromo = () => {
           vehicle_model: vehicleModel || "À compléter",
           company_name: companyName || null,
           siret: siret || null,
-          status: "pending",
+          status: "on_hold", // CRITICAL: Not "pending" - wait for payment
+          subscription_status: "payment_required",
           registration_step: 2,
         })
         .select()
