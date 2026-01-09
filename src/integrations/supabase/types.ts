@@ -2906,6 +2906,7 @@ export type Database = {
           driver_ids: string[] | null
           duration_minutes: number | null
           employee_declared_paid_at: string | null
+          fleet_manager_id: string | null
           fleet_manager_name: string | null
           guest_email: string | null
           guest_estimated_price: number | null
@@ -2950,6 +2951,7 @@ export type Database = {
           driver_ids?: string[] | null
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
+          fleet_manager_id?: string | null
           fleet_manager_name?: string | null
           guest_email?: string | null
           guest_estimated_price?: number | null
@@ -2994,6 +2996,7 @@ export type Database = {
           driver_ids?: string[] | null
           duration_minutes?: number | null
           employee_declared_paid_at?: string | null
+          fleet_manager_id?: string | null
           fleet_manager_name?: string | null
           guest_email?: string | null
           guest_estimated_price?: number | null
@@ -3072,6 +3075,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
             referencedColumns: ["id"]
           },
         ]

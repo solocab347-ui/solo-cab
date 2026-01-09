@@ -252,8 +252,8 @@ export const FleetCreateCourseForClient = ({
             scheduled_date: scheduledDateTime.toISOString(),
             notes: notes || null,
             status: "pending",
-            passengers: parseInt(passengers) || 1,
-            fleet_manager_name: null, // Will be populated by trigger if needed
+            passengers_count: parseInt(passengers) || 1,
+            fleet_manager_id: fleetManagerId, // Marquer la course comme appartenant à ce gestionnaire
           })
           .select()
           .single();

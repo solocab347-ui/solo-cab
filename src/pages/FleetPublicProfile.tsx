@@ -359,6 +359,7 @@ const FleetPublicProfile = () => {
           is_guest_booking: true,
           guest_tracking_token: crypto.randomUUID(),
           status: courseStatus,
+          fleet_manager_id: id, // Marquer la course comme appartenant à ce gestionnaire
         })
         .select()
         .single();

@@ -359,6 +359,7 @@ const CreateFleetCourse = () => {
           status: "pending",
           created_by_user_id: user.id,
           payment_method_requested: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : null,
+          fleet_manager_id: fleetManagerId, // Marquer la course comme appartenant à ce gestionnaire
         })
         .select()
         .single();
