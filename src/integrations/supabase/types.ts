@@ -2960,6 +2960,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          auto_dispatch_enabled: boolean | null
           client_id: string | null
           client_payment_confirmation: string | null
           client_payment_confirmation_at: string | null
@@ -2973,6 +2974,7 @@ export type Database = {
           destination_latitude: number | null
           destination_longitude: number | null
           discount_amount: number | null
+          dispatch_round: number | null
           distance_km: number | null
           driver_declared_payment_at: string | null
           driver_declared_payment_received: boolean | null
@@ -2990,6 +2992,7 @@ export type Database = {
           guest_tracking_token: string | null
           id: string
           is_guest_booking: boolean | null
+          last_dispatched_at: string | null
           notes: string | null
           passengers_count: number
           payment_confirmed_at: string | null
@@ -3005,6 +3008,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_dispatch_enabled?: boolean | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3018,6 +3022,7 @@ export type Database = {
           destination_latitude?: number | null
           destination_longitude?: number | null
           discount_amount?: number | null
+          dispatch_round?: number | null
           distance_km?: number | null
           driver_declared_payment_at?: string | null
           driver_declared_payment_received?: boolean | null
@@ -3035,6 +3040,7 @@ export type Database = {
           guest_tracking_token?: string | null
           id?: string
           is_guest_booking?: boolean | null
+          last_dispatched_at?: string | null
           notes?: string | null
           passengers_count?: number
           payment_confirmed_at?: string | null
@@ -3050,6 +3056,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_dispatch_enabled?: boolean | null
           client_id?: string | null
           client_payment_confirmation?: string | null
           client_payment_confirmation_at?: string | null
@@ -3063,6 +3070,7 @@ export type Database = {
           destination_latitude?: number | null
           destination_longitude?: number | null
           discount_amount?: number | null
+          dispatch_round?: number | null
           distance_km?: number | null
           driver_declared_payment_at?: string | null
           driver_declared_payment_received?: boolean | null
@@ -3080,6 +3088,7 @@ export type Database = {
           guest_tracking_token?: string | null
           id?: string
           is_guest_booking?: boolean | null
+          last_dispatched_at?: string | null
           notes?: string | null
           passengers_count?: number
           payment_confirmed_at?: string | null
@@ -9929,6 +9938,14 @@ export type Database = {
           p_scheduled_date: string
         }
         Returns: string
+      }
+      auto_dispatch_fleet_course: {
+        Args: { p_course_id: string }
+        Returns: {
+          assigned_driver_id: string
+          message: string
+          success: boolean
+        }[]
       }
       calculate_city_course_price: {
         Args: {
