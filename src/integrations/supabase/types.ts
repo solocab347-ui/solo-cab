@@ -4605,6 +4605,63 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_role_upgrade_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          request_message: string | null
+          responded_at: string | null
+          responded_by: string | null
+          response_message: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          request_message?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          request_message?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_role_upgrade_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_role_upgrade_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "company_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_reports: {
         Row: {
           additional_context: Json | null

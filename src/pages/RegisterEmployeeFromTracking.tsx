@@ -1,0 +1,436 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo-solocab.png";
+import { Building2, User, Mail, Phone, Eye, EyeOff, Check, Loader2, XCircle, Info } from "lucide-react";
+import { sanitizeString, sanitizeEmail, sanitizePhone } from "@/lib/inputSanitizer";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLocale } from "@/hooks/useLocale";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface InvitationData {
+  id: string;
+  company_id: string;
+  guest_name: string;
+  guest_phone: string | null;
+  guest_email: string | null;
+  company_name: string;
+  logo_url: string | null;
+}
+
+export default function RegisterEmployeeFromTracking() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { locale } = useLocale();
+  const token = searchParams.get("token");
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [invitation, setInvitation] = useState<InvitationData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    department: "",
+    jobTitle: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  useEffect(() => {
+    if (token) {
+      validateToken();
+    } else {
+      setError("Lien d'invitation invalide");
+      setLoading(false);
+    }
+  }, [token]);
+
+  const validateToken = async () => {
+    try {
+      // Récupérer l'invitation de course avec les infos de l'entreprise
+      const { data, error } = await supabase
+        .from("company_employee_course_invitations")
+        .select(`
+          id,
+          company_id,
+          guest_name,
+          guest_phone,
+          guest_email,
+          is_used,
+          company:companies(company_name, logo_url)
+        `)
+        .eq("token", token)
+        .maybeSingle();
+
+      if (error || !data) {
+        setError("Ce lien est invalide");
+        return;
+      }
+
+      if (data.is_used) {
+        setError("Ce lien a déjà été utilisé pour créer un compte");
+        return;
+      }
+
+      const companyData = data.company as unknown as { company_name: string; logo_url: string | null };
+      
+      setInvitation({
+        id: data.id,
+        company_id: data.company_id,
+        guest_name: data.guest_name,
+        guest_phone: data.guest_phone,
+        guest_email: data.guest_email,
+        company_name: companyData.company_name,
+        logo_url: companyData.logo_url,
+      });
+      
+      // Pré-remplir les champs avec les infos de l'invitation
+      setFormData(prev => ({
+        ...prev,
+        fullName: data.guest_name || "",
+        email: data.guest_email || "",
+        phone: data.guest_phone || "",
+      }));
+    } catch (err) {
+      console.error("Erreur validation token:", err);
+      setError("Erreur lors de la validation de l'invitation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!invitation) return;
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // 1. Créer le compte utilisateur
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: sanitizeEmail(formData.email),
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: sanitizeString(formData.fullName),
+          },
+        },
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+
+      // 2. Attendre que le profil soit créé par le trigger
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 3. Mettre à jour le profil avec le téléphone et la langue
+      await supabase
+        .from("profiles")
+        .update({ 
+          phone: formData.phone ? sanitizePhone(formData.phone) : null,
+          preferred_language: locale 
+        })
+        .eq("id", authData.user.id);
+
+      // 4. Créer l'entrée company_employees en tant que "collaborateur géré"
+      // (can_create_courses = false, can_view_invoices = false, can_invite_drivers = false)
+      const { error: employeeError } = await supabase
+        .from("company_employees")
+        .insert({
+          company_id: invitation.company_id,
+          user_id: authData.user.id,
+          department: formData.department ? sanitizeString(formData.department) : null,
+          job_title: formData.jobTitle ? sanitizeString(formData.jobTitle) : null,
+          can_create_courses: false,  // Collaborateur géré
+          can_view_invoices: false,
+          can_invite_drivers: false,
+        });
+
+      if (employeeError) throw employeeError;
+
+      // 5. Ajouter le rôle client
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "client" as const,
+        });
+
+      if (roleError) throw roleError;
+
+      // 6. Marquer l'invitation comme utilisée
+      await supabase
+        .from("company_employee_course_invitations")
+        .update({
+          is_used: true,
+          used_at: new Date().toISOString(),
+          used_by_user_id: authData.user.id,
+        })
+        .eq("id", invitation.id);
+
+      // 7. Envoyer l'email de bienvenue
+      try {
+        await supabase.functions.invoke("send-company-employee-welcome", {
+          body: {
+            user_id: authData.user.id,
+            company_id: invitation.company_id,
+          },
+        });
+      } catch (emailErr) {
+        console.error("Erreur envoi email bienvenue:", emailErr);
+      }
+
+      toast.success("Compte créé avec succès ! Vous êtes maintenant collaborateur de " + invitation.company_name);
+      navigate("/login");
+      
+    } catch (error: any) {
+      console.error("Erreur inscription employé:", error);
+      if (error.code === "user_already_exists" || error.message?.includes("already registered")) {
+        toast.error("Cette adresse email est déjà utilisée");
+      } else {
+        toast.error(error.message || "Erreur lors de l'inscription");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Vérification du lien...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !invitation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <XCircle className="w-16 h-16 mx-auto text-destructive mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Lien invalide</h2>
+            <p className="text-muted-foreground mb-4">
+              {error || "Ce lien est invalide ou a déjà été utilisé."}
+            </p>
+            <Button onClick={() => navigate("/")} variant="outline">
+              Retour à l'accueil
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background via-muted/10 to-background flex items-center justify-center p-4">
+      {/* Language Selector */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
+      <Card className="w-full max-w-lg shadow-elegant">
+        <CardHeader className="text-center pb-2">
+          {invitation.logo_url ? (
+            <img src={invitation.logo_url} alt={invitation.company_name} className="w-16 h-16 mx-auto mb-4 rounded-lg object-contain" />
+          ) : (
+            <img src={logo} alt="SoloCab" className="w-16 h-16 mx-auto mb-4" />
+          )}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-primary">{invitation.company_name}</span>
+          </div>
+          <CardTitle className="text-2xl">Créer votre espace collaborateur</CardTitle>
+          <CardDescription>
+            Rejoignez {invitation.company_name} pour gérer vos courses VTC
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <Alert className="mb-4 bg-blue-500/10 border-blue-500/30">
+            <Info className="w-4 h-4 text-blue-500" />
+            <AlertDescription className="text-sm">
+              Vos informations ont été pré-remplies par votre entreprise. Vous pouvez les modifier si nécessaire.
+              Vous serez inscrit en tant que <strong>collaborateur géré</strong>. Vous pourrez demander à devenir autonome après votre inscription.
+            </AlertDescription>
+          </Alert>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Nom complet *</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="Jean Dupont"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email professionnel *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="jean.dupont@entreprise.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    placeholder="06 12 34 56 78"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Service</Label>
+                <Input
+                  id="department"
+                  name="department"
+                  placeholder="Marketing, RH..."
+                  value={formData.department}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="jobTitle">Poste</Label>
+              <Input
+                id="jobTitle"
+                name="jobTitle"
+                placeholder="Directeur commercial, Assistante..."
+                value={formData.jobTitle}
+                onChange={handleChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className={formData.confirmPassword && formData.password !== formData.confirmPassword ? "border-destructive" : formData.confirmPassword && formData.password === formData.confirmPassword ? "border-green-500" : ""}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
+              )}
+              {formData.confirmPassword && formData.password === formData.confirmPassword && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Les mots de passe correspondent
+                </p>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Création en cours...
+                </>
+              ) : (
+                "Créer mon compte"
+              )}
+            </Button>
+          </form>
+          
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Vous avez déjà un compte ?{" "}
+            <Button variant="link" className="p-0 h-auto" onClick={() => navigate("/login")}>
+              Se connecter
+            </Button>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
