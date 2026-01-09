@@ -188,3 +188,9 @@ verify_jwt = true
 
 [functions.send-guest-tracking-email]
 verify_jwt = true
+
+[functions.check-expired-free-access]
+verify_jwt = false
+
+[functions.manage-driver-free-access]
+verify_jwt = true
