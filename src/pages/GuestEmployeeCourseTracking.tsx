@@ -28,6 +28,15 @@ interface DriverInfo {
   vehicles?: Array<{ brand?: string; model?: string; plate?: string; color?: string }>;
 }
 
+interface FleetManagerInfo {
+  id: string;
+  company_name?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  logo_url?: string;
+}
+
 interface TrackingData {
   id: string;
   token: string;
@@ -52,6 +61,11 @@ interface TrackingData {
     quotes_generated_at?: string;
     sent_to_drivers_at?: string;
     accepted_at?: string;
+    dispatched_to_fleet_at?: string;
+    target_fleet_manager_id?: string;
+    fleet_dispatched_driver_id?: string;
+    fleet_manager?: FleetManagerInfo;
+    fleet_dispatched_driver?: DriverInfo;
     quotes?: Array<{
       id: string;
       status: string;
@@ -170,13 +184,64 @@ export default function GuestEmployeeCourseTracking() {
           .from("company_course_requests")
           .select(`
             id, scheduled_date, pickup_address, destination_address, passengers_count, 
-            payment_method_requested, status, created_at, quotes_generated_at, sent_to_drivers_at, accepted_at
+            payment_method_requested, status, created_at, quotes_generated_at, sent_to_drivers_at, accepted_at,
+            dispatched_to_fleet_at, target_fleet_manager_id, fleet_dispatched_driver_id
           `)
           .eq("id", result.request_id)
           .maybeSingle();
         
         if (requestData) {
           result.request = requestData;
+
+          // Fetch fleet manager info if this is a fleet request
+          if ((requestData as any).target_fleet_manager_id) {
+            const { data: fleetData } = await supabase
+              .from("fleet_managers")
+              .select("id, company_name, contact_name, contact_phone, contact_email, logo_url")
+              .eq("id", (requestData as any).target_fleet_manager_id)
+              .maybeSingle();
+            
+            if (fleetData) {
+              result.request.fleet_manager = fleetData;
+            }
+          }
+
+          // Fetch fleet dispatched driver if assigned
+          if ((requestData as any).fleet_dispatched_driver_id) {
+            const { data: fleetDriverData } = await supabase
+              .from("drivers")
+              .select("id, user_id, company_name, contact_phone, contact_email, show_phone, show_email")
+              .eq("id", (requestData as any).fleet_dispatched_driver_id)
+              .maybeSingle();
+            
+            if (fleetDriverData) {
+              result.request.fleet_dispatched_driver = { ...fleetDriverData };
+              
+              // Fetch profile via RPC function (bypasses RLS for guest access)
+              if (fleetDriverData.user_id) {
+                const { data: profileData } = await supabase
+                  .rpc('get_company_course_driver_profile', { driver_user_id: fleetDriverData.user_id });
+                
+                if (profileData && profileData.length > 0) {
+                  result.request.fleet_dispatched_driver.profile = {
+                    full_name: profileData[0].full_name,
+                    profile_photo_url: profileData[0].profile_photo_url,
+                    phone: profileData[0].phone,
+                    email: profileData[0].email
+                  };
+                }
+              }
+              
+              // Fetch vehicles
+              const { data: vehicles } = await supabase
+                .from("driver_vehicles")
+                .select("brand, model, plate, color")
+                .eq("driver_id", fleetDriverData.id)
+                .eq("is_active", true)
+                .limit(1);
+              result.request.fleet_dispatched_driver.vehicles = vehicles || [];
+            }
+          }
 
           // Fetch quotes for this request with driver info
           const { data: quotesData } = await supabase
@@ -354,10 +419,15 @@ export default function GuestEmployeeCourseTracking() {
   const course = data.course;
   const company = data.company;
   
+  // Check if this is a fleet flow
+  const isFleetFlow = !!request?.target_fleet_manager_id;
+  const fleetManager = request?.fleet_manager;
+  const fleetDispatchedDriver = request?.fleet_dispatched_driver;
+  
   // Find accepted quote/driver - prioritize course driver (has real-time status)
   const acceptedQuote = request?.quotes?.find((q: any) => q.status === "accepted");
-  // PRIORITY: course.driver over acceptedQuote.driver (course driver is more accurate for in_progress/completed)
-  const acceptedDriver = course?.driver || acceptedQuote?.driver;
+  // PRIORITY: course.driver over fleetDispatchedDriver over acceptedQuote.driver
+  const acceptedDriver = course?.driver || fleetDispatchedDriver || acceptedQuote?.driver;
   const driverVehicle = acceptedDriver?.vehicles?.[0];
 
   // Determine current status - check course status first for accurate tracking
@@ -367,6 +437,12 @@ export default function GuestEmployeeCourseTracking() {
     if (course?.status === "cancelled") return "cancelled";
     if (course?.status === "in_progress") return "in_progress";
     if (course?.status === "accepted" || course?.status === "confirmed") return "confirmed";
+    
+    // Fleet flow statuses
+    if (isFleetFlow) {
+      if (request?.fleet_dispatched_driver_id) return "fleet_driver_assigned";
+      if (request?.status === "dispatched_to_fleet") return "dispatched_to_fleet";
+    }
     
     // Fall back to quote/request status
     if (acceptedQuote || request?.status === "accepted") return "confirmed";
@@ -385,6 +461,10 @@ export default function GuestEmployeeCourseTracking() {
         return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30"><Car className="w-3 h-3 mr-1" />En cours</Badge>;
       case "confirmed":
         return <Badge className="bg-green-500/20 text-green-600 border-green-500/30"><CheckCircle className="w-3 h-3 mr-1" />Chauffeur confirmé</Badge>;
+      case "fleet_driver_assigned":
+        return <Badge className="bg-violet-500/20 text-violet-600 border-violet-500/30"><Car className="w-3 h-3 mr-1" />Chauffeur assigné</Badge>;
+      case "dispatched_to_fleet":
+        return <Badge className="bg-violet-500/20 text-violet-600 border-violet-500/30"><Building2 className="w-3 h-3 mr-1" />Envoyé à la flotte</Badge>;
       case "waiting_driver":
         return <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30"><Clock className="w-3 h-3 mr-1" />En attente du chauffeur</Badge>;
       case "quotes_ready":
@@ -630,21 +710,45 @@ export default function GuestEmployeeCourseTracking() {
                 done={true}
                 date={request?.created_at}
               />
-              <TimelineItem 
-                label="Devis générés" 
-                done={["quotes_ready", "waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
-                date={request?.quotes_generated_at}
-              />
-              <TimelineItem 
-                label="Envoyé au(x) chauffeur(s)" 
-                done={["waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
-                date={request?.sent_to_drivers_at}
-              />
-              <TimelineItem 
-                label="Chauffeur confirmé" 
-                done={["confirmed", "in_progress", "completed"].includes(status)}
-                date={acceptedQuote?.driver_response_at || request?.accepted_at}
-              />
+              
+              {/* Fleet Flow Timeline */}
+              {isFleetFlow ? (
+                <>
+                  <TimelineItem 
+                    label={`Envoyé à ${fleetManager?.company_name || 'la flotte'}`}
+                    done={["dispatched_to_fleet", "fleet_driver_assigned", "confirmed", "in_progress", "completed"].includes(status)}
+                    date={request?.dispatched_to_fleet_at}
+                  />
+                  <TimelineItem 
+                    label="Chauffeur assigné" 
+                    done={["fleet_driver_assigned", "confirmed", "in_progress", "completed"].includes(status)}
+                  />
+                  <TimelineItem 
+                    label="Course confirmée" 
+                    done={["confirmed", "in_progress", "completed"].includes(status)}
+                    date={request?.accepted_at}
+                  />
+                </>
+              ) : (
+                <>
+                  <TimelineItem 
+                    label="Devis générés" 
+                    done={["quotes_ready", "waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
+                    date={request?.quotes_generated_at}
+                  />
+                  <TimelineItem 
+                    label="Envoyé au(x) chauffeur(s)" 
+                    done={["waiting_driver", "confirmed", "in_progress", "completed"].includes(status)}
+                    date={request?.sent_to_drivers_at}
+                  />
+                  <TimelineItem 
+                    label="Chauffeur confirmé" 
+                    done={["confirmed", "in_progress", "completed"].includes(status)}
+                    date={acceptedQuote?.driver_response_at || request?.accepted_at}
+                  />
+                </>
+              )}
+              
               <TimelineItem 
                 label="Course en cours" 
                 done={["in_progress", "completed"].includes(status)}
