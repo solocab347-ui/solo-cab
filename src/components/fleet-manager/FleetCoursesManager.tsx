@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,9 @@ import {
   LayoutGrid,
   List,
   FileText,
+  Radio,
 } from "lucide-react";
+import { FleetDispatchQueue } from "./FleetDispatchQueue";
 
 interface Course {
   id: string;
@@ -152,7 +155,8 @@ export const FleetCoursesManager = ({
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeSection, setActiveSection] = useState<"overview" | "pending" | "today" | "upcoming" | "history" | "unassigned">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "pending" | "today" | "upcoming" | "history" | "unassigned" | "dispatch">("overview");
+  const [activeMainTab, setActiveMainTab] = useState<"courses" | "dispatch">("courses");
   
   // Filtres et recherche
   const [searchQuery, setSearchQuery] = useState("");
@@ -775,29 +779,42 @@ export const FleetCoursesManager = ({
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec stats rapides */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Route className="w-7 h-7 text-primary" />
-            Centre de Gestion des Courses
-          </h2>
-          <p className="text-muted-foreground mt-1">Pilotez toutes vos courses en temps réel</p>
+      {/* Onglets principaux Courses / Dispatch */}
+      <Tabs value={activeMainTab} onValueChange={(v) => setActiveMainTab(v as any)} className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Route className="w-7 h-7 text-primary" />
+              Centre de Gestion des Courses
+            </h2>
+            <p className="text-muted-foreground mt-1">Pilotez toutes vos courses en temps réel</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="courses" className="gap-2">
+                <Route className="w-4 h-4" />
+                Courses
+              </TabsTrigger>
+              <TabsTrigger value="dispatch" className="gap-2">
+                <Radio className="w-4 h-4" />
+                Dispatch en direct
+              </TabsTrigger>
+            </TabsList>
+            <Button variant="outline" size="sm" onClick={fetchData} className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Actualiser
+            </Button>
+            <Button onClick={() => setShowCreateDialog(true)} className="gap-2 bg-gradient-to-r from-primary to-accent text-white">
+              <Plus className="w-4 h-4" />
+              Nouvelle course
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" size="sm" onClick={fetchData} className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Actualiser
-          </Button>
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-2 bg-gradient-to-r from-primary to-accent text-white">
-            <Plus className="w-4 h-4" />
-            Nouvelle course
-          </Button>
-        </div>
-      </div>
 
-      {/* Cartes de navigation rapide */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Onglet Courses */}
+        <TabsContent value="courses" className="space-y-6 mt-0">
+          {/* Cartes de navigation rapide */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <NavigationCard
           title="Vue d'ensemble"
           count={allCourses.length}
@@ -1553,6 +1570,13 @@ export const FleetCoursesManager = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        {/* Onglet Dispatch en direct */}
+        <TabsContent value="dispatch" className="space-y-6 mt-0">
+          <FleetDispatchQueue fleetManagerId={fleetManagerId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
