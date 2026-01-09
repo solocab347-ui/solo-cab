@@ -90,21 +90,37 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       } else {
-        // Create new QR code
+        // Create new QR code - use upsert to handle race conditions
         const { data, error } = await supabaseClient
           .from('qr_codes')
-          .insert({
+          .upsert({
             id: qrCodeId,
             driver_id: driverId,
             code: qrCodeId,
             qr_code_image: qrCodeImage,
             is_active: true,
+          }, {
+            onConflict: 'driver_id',
+            ignoreDuplicates: false
           })
           .select()
           .single();
 
         if (error) {
-          console.error('Error creating QR:', error);
+          // If still fails, try to fetch existing one
+          console.log('Upsert failed, fetching existing:', error);
+          const { data: existing } = await supabaseClient
+            .from('qr_codes')
+            .select('id, driver_id, code, is_active, qr_code_image, created_at, updated_at')
+            .eq('driver_id', driverId)
+            .eq('is_active', true)
+            .single();
+          
+          if (existing) {
+            return new Response(JSON.stringify(existing), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
           throw error;
         }
         
