@@ -332,7 +332,18 @@ export const FleetCoursesManager = ({
 
         const driverIds = combinedDrivers.map(d => d.driver_id);
 
-        // Récupérer les courses
+        // D'abord, récupérer les client_ids liés à ce fleet manager
+        const { data: fleetClients } = await supabase
+          .from("fleet_manager_clients")
+          .select("client_id")
+          .eq("fleet_manager_id", fleetManagerId);
+        
+        const fleetClientIds = fleetClients?.map(c => c.client_id) || [];
+
+        // Récupérer les courses - uniquement celles liées au gestionnaire:
+        // 1. Créées par le gestionnaire (fleet_manager_id)
+        // 2. Pour des clients du gestionnaire
+        // 3. Pour des invités du gestionnaire (is_guest_booking avec fleet_manager_id)
         const { data: courses } = await supabase
           .from("courses")
           .select(`
@@ -349,6 +360,7 @@ export const FleetCoursesManager = ({
             )
           `)
           .in("driver_id", driverIds)
+          .or(`fleet_manager_id.eq.${fleetManagerId}${fleetClientIds.length > 0 ? `,client_id.in.(${fleetClientIds.join(',')})` : ''}`)
           .order("scheduled_date", { ascending: false });
 
         if (courses) {
@@ -644,6 +656,8 @@ export const FleetCoursesManager = ({
         passengers_count: newCourse.passengersCount,
         notes: newCourse.notes || null,
         status,
+        fleet_manager_id: fleetManagerId, // Marquer la course comme appartenant à ce gestionnaire
+        guest_tracking_token: crypto.randomUUID(), // Token pour suivi invité
       };
 
       if (isManualClient) {
