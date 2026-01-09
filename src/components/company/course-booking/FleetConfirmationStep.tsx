@@ -99,30 +99,54 @@ export function FleetConfirmationStep({
 
       if (requestError) throw requestError;
 
-      // 2. Create tracking invitation for guest employees
+      // 2. Create tracking invitation for ALL requests (guests and employees)
+      // This allows sharing tracking link with the passenger
       let invitationToken: string | null = null;
-      if (formData.isGuestEmployee && formData.guestEmployeeName) {
-        const { data: invitation, error: invError } = await supabase
-          .from("company_employee_course_invitations")
-          .insert({
-            company_id: companyId,
-            request_id: request.id,
-            guest_name: formData.guestEmployeeName,
-            guest_phone: formData.guestEmployeePhone || null,
-            guest_email: formData.guestEmployeeEmail || null,
-            scheduled_date: request.scheduled_date,
-            pickup_address: request.pickup_address,
-            destination_address: request.destination_address,
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-          })
-          .select("token")
+      let guestName = formData.isGuestEmployee 
+        ? formData.guestEmployeeName 
+        : "Collaborateur";
+      
+      // If not a guest, try to get employee name from database
+      if (!formData.isGuestEmployee && formData.employeeId) {
+        const { data: empData } = await supabase
+          .from("company_employees")
+          .select("user_id")
+          .eq("id", formData.employeeId)
           .single();
-
-        if (invError) {
-          console.error("Error creating invitation:", invError);
-        } else if (invitation) {
-          invitationToken = invitation.token;
+        
+        if (empData?.user_id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", empData.user_id)
+            .single();
+          
+          if (profile?.full_name) {
+            guestName = profile.full_name;
+          }
         }
+      }
+      
+      const { data: invitation, error: invError } = await supabase
+        .from("company_employee_course_invitations")
+        .insert({
+          company_id: companyId,
+          request_id: request.id,
+          guest_name: guestName,
+          guest_phone: formData.isGuestEmployee ? formData.guestEmployeePhone : null,
+          guest_email: formData.isGuestEmployee ? formData.guestEmployeeEmail : null,
+          scheduled_date: request.scheduled_date,
+          pickup_address: request.pickup_address,
+          destination_address: request.destination_address,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        })
+        .select("token")
+        .single();
+
+      if (invError) {
+        console.error("Error creating invitation:", invError);
+      } else if (invitation) {
+        invitationToken = invitation.token;
       }
 
       // 3. The notification will be created automatically by the trigger
