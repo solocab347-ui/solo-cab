@@ -10122,6 +10122,28 @@ export type Database = {
               tva_amount: number
             }[]
           }
+        | {
+            Args: {
+              p_destination_city?: string
+              p_distance_km: number
+              p_duration_minutes: number
+              p_fleet_manager_id: string
+              p_pickup_city?: string
+              p_scheduled_date?: string
+              p_use_hourly_rate?: boolean
+            }
+            Returns: {
+              base_price: number
+              distance_price: number
+              pricing_source: string
+              subtotal: number
+              surcharge_evening: number
+              surcharge_weekend: number
+              time_price: number
+              total_price: number
+              tva_amount: number
+            }[]
+          }
       calculate_fleet_monthly_billing: {
         Args: { _fleet_manager_id: string }
         Returns: {
