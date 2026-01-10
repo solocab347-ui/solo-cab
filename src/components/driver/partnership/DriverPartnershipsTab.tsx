@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   UsersRound, 
   Search, 
@@ -12,7 +13,9 @@ import {
   FileText,
   Handshake,
   CreditCard,
-  Receipt
+  Receipt,
+  Bell,
+  ArrowRight
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePartnershipNotificationCount } from '@/hooks/usePartnershipNotificationCount';
@@ -34,6 +37,7 @@ interface DriverPartnershipsTabProps {
 export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: DriverPartnershipsTabProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices'>(initialSubTab);
   const [receivedCount, setReceivedCount] = useState(0);
+  const [pendingPartnershipRequestsCount, setPendingPartnershipRequestsCount] = useState(0);
   
   // Get the function to mark notifications as read
   const { markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverId);
@@ -88,8 +92,62 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
     };
   }, [driverId]);
 
+  // Count pending partnership requests (demandes reçues)
+  useEffect(() => {
+    if (!driverId) return;
+
+    const loadPendingPartnershipRequests = async () => {
+      try {
+        // Demandes reçues = status pending ET proposed_by !== moi
+        const { count } = await supabase
+          .from('driver_partnerships')
+          .select('*', { count: 'exact', head: true })
+          .or(`driver_a_id.eq.${driverId},driver_b_id.eq.${driverId}`)
+          .eq('status', 'pending')
+          .neq('proposed_by', driverId);
+        
+        setPendingPartnershipRequestsCount(count || 0);
+      } catch (error) {
+        console.error('Error loading pending partnership requests count:', error);
+      }
+    };
+
+    loadPendingPartnershipRequests();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('pending-partnership-requests-count')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'driver_partnerships' },
+        () => loadPendingPartnershipRequests()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driverId]);
+
   return (
     <div className="space-y-4">
+      {/* Alerte de guidance pour les demandes de partenariat en attente */}
+      {pendingPartnershipRequestsCount > 0 && activeTab !== 'list' && (
+        <Alert className="border-orange-500/50 bg-orange-500/10 cursor-pointer hover:bg-orange-500/20 transition-colors" onClick={() => setActiveTab('list')}>
+          <Bell className="h-4 w-4 text-orange-500" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm">
+              <strong className="text-orange-500">{pendingPartnershipRequestsCount} demande{pendingPartnershipRequestsCount > 1 ? 's' : ''} de partenariat</strong>
+              {' '}en attente de votre réponse
+            </span>
+            <Button size="sm" variant="ghost" className="gap-1 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10">
+              Voir dans Partenaires
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
@@ -134,8 +192,13 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               </TabsTrigger>
               
               {/* Ligne 2 */}
-              <TabsTrigger value="list" className="relative overflow-hidden flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(139,92,246,0.6)] data-[state=active]:border-violet-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-950/80 data-[state=active]:via-violet-900/60 data-[state=active]:to-violet-950/80 transition-all duration-300 h-auto group">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5 group-hover:from-violet-500/20 group-hover:to-violet-600/10 group-data-[state=active]:from-violet-500/30 group-data-[state=active]:to-violet-600/20 transition-all"></div>
+              <TabsTrigger value="list" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(139,92,246,0.6)] data-[state=active]:border-violet-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-950/80 data-[state=active]:via-violet-900/60 data-[state=active]:to-violet-950/80 transition-all duration-300 h-auto group">
+                {pendingPartnershipRequestsCount > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-orange-500 text-white animate-pulse shadow-lg z-50 border-2 border-background">
+                    {pendingPartnershipRequestsCount}
+                  </Badge>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5 group-hover:from-violet-500/20 group-hover:to-violet-600/10 group-data-[state=active]:from-violet-500/30 group-data-[state=active]:to-violet-600/20 transition-all rounded-2xl"></div>
                 <div className="relative z-10 h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center shadow-[0_4px_20px_rgb(139,92,246,0.5)] group-hover:scale-110 group-data-[state=active]:scale-110 group-data-[state=active]:shadow-[0_4px_25px_rgb(139,92,246,0.7)] transition-transform">
                   <Handshake className="h-6 w-6 text-white" strokeWidth={2.5} />
                 </div>

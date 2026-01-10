@@ -147,14 +147,22 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
         </Alert>
       )}
 
-      {/* Pending requests notification */}
+      {/* Pending requests notification with guidance */}
       {pendingCount > 0 && (
-        <Card className="bg-warning/10 border-warning/30">
+        <Card 
+          className="bg-warning/10 border-warning/30 cursor-pointer hover:bg-warning/20 transition-colors"
+          onClick={() => setMainTab('drivers')}
+        >
           <CardContent className="py-3 px-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-warning">
-                {pendingCount} demande{pendingCount > 1 ? 's' : ''} en attente de réponse
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-warning">
+                  {pendingCount} demande{pendingCount > 1 ? 's' : ''} en attente de réponse
+                </span>
+              </div>
+              <span className="text-xs text-warning/80 underline hover:text-warning">
+                Aller aux Chauffeurs →
               </span>
             </div>
           </CardContent>
