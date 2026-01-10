@@ -809,7 +809,7 @@ const DriverDashboard = () => {
                     value={baseFare}
                     onChange={setBaseFare}
                     placeholder="10.00"
-                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/80">Prix de départ de la course</p>
                 </div>
@@ -821,7 +821,7 @@ const DriverDashboard = () => {
                     value={perKmRate}
                     onChange={setPerKmRate}
                     placeholder="1.50"
-                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/80">Coût par km parcouru</p>
                 </div>
@@ -833,7 +833,7 @@ const DriverDashboard = () => {
                     value={hourlyRate}
                     onChange={setHourlyRate}
                     placeholder="45.00"
-                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/80">Pour les mises à disposition (obligatoire)</p>
                 </div>
@@ -845,7 +845,7 @@ const DriverDashboard = () => {
                     value={minimumPrice}
                     onChange={setMinimumPrice}
                     placeholder="15.00"
-                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/80">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
                 </div>
@@ -861,7 +861,7 @@ const DriverDashboard = () => {
                     placeholder="4"
                     min={1}
                     max={20}
-                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/80">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
@@ -894,7 +894,7 @@ const DriverDashboard = () => {
                       value={eveningSurcharge}
                       onChange={setEveningSurcharge}
                       placeholder="0"
-                      className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                      className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du soir (20h-6h). <span className="font-semibold">Exemples : 10%, 15%, 20%</span></p>
                   </div>
@@ -906,7 +906,7 @@ const DriverDashboard = () => {
                       value={weekendSurcharge}
                       onChange={setWeekendSurcharge}
                       placeholder="0"
-                      className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                      className="bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
                   </div>
@@ -922,7 +922,7 @@ const DriverDashboard = () => {
                     value={airportSurcharge}
                     onChange={setAirportSurcharge}
                     placeholder="0"
-                    className="max-w-xs bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
+                    className="max-w-xs bg-white border-2 border-gray-300 text-gray-900 placeholder:text-gray-400 font-bold text-xl"
                   />
                   <p className="text-xs text-white/70">
                     Forfait fixe ajouté automatiquement pour toutes les courses depuis/vers un aéroport français (Roissy CDG, Orly, Lyon Saint-Exupéry, Nice, Marseille, etc.)
