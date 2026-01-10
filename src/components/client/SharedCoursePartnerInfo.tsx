@@ -127,7 +127,7 @@ export function SharedCoursePartnerInfo({ courseId, userId }: Props) {
                 <span>
                   {[partnerInfo.partner_vehicle_model, partnerInfo.partner_vehicle_color]
                     .filter(Boolean)
-                    .join(' - ')}
+                    .join(' ')}
                 </span>
               </div>
             )}
