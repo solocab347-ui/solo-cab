@@ -54,9 +54,9 @@ const PioneerPayment = () => {
         }
       }
 
-      // Si ce n'est pas un pionnier, rediriger vers l'inscription normale
+      // Si ce n'est pas un pionnier, rediriger vers le dashboard
       if (!driver.is_pioneer) {
-        navigate("/driver-pending-validation");
+        navigate("/driver-dashboard");
         return;
       }
     } catch (error) {
