@@ -22,14 +22,20 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Client avec anon key pour l'authentification utilisateur
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Client avec service role key pour bypasser RLS (insertions/requêtes)
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get authorization header
     const authHeader = req.headers.get("Authorization")!;
     
     // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
 
@@ -51,13 +57,15 @@ serve(async (req) => {
     }
 
     // Verify driver exists and has full access (validated, pioneer, or within 30-day grace period)
-    const { data: driver, error: driverError } = await supabase
+    // Use SERVICE_ROLE to bypass RLS (driver may have status blocking RLS)
+    const { data: driver, error: driverError } = await supabaseService
       .from("drivers")
       .select("id, public_profile_enabled, status, is_pioneer, free_access_end_date, created_at")
       .eq("id", driver_id)
       .single();
 
     if (driverError || !driver) {
+      console.error('❌ Erreur récupération chauffeur:', driverError);
       return new Response(
         JSON.stringify({ error: "Chauffeur non trouvé" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -78,6 +86,18 @@ serve(async (req) => {
 
     const hasFullAccess = isValidated || isPioneerActive || isInGracePeriod;
 
+    console.log('🔍 Vérification accès chauffeur:', {
+      driver_id,
+      status: driver.status,
+      is_pioneer: driver.is_pioneer,
+      free_access_end_date: driver.free_access_end_date,
+      public_profile_enabled: driver.public_profile_enabled,
+      isValidated,
+      isPioneerActive,
+      isInGracePeriod,
+      hasFullAccess
+    });
+
     if (!driver.public_profile_enabled || !hasFullAccess) {
       return new Response(
         JSON.stringify({ error: "Ce chauffeur n'accepte pas de nouveaux clients" }),
@@ -85,8 +105,8 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is already a client
-    const { data: existingClient, error: checkError } = await supabase
+    // Check if user is already a client - use SERVICE_ROLE to bypass RLS
+    const { data: existingClient, error: checkError } = await supabaseService
       .from("clients")
       .select("id, is_exclusive, driver_id, driver_ids")
       .eq("user_id", user.id)
@@ -124,10 +144,10 @@ serve(async (req) => {
         );
       }
 
-      // Add driver to existing free client's driver list
+      // Add driver to existing free client's driver list - use SERVICE_ROLE
       const updatedDriverIds = [...(existingClient.driver_ids || []), driver_id];
       
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseService
         .from("clients")
         .update({ 
           driver_ids: updatedDriverIds,
@@ -149,10 +169,6 @@ serve(async (req) => {
 
     // CRITIQUE: Récupérer et mettre à jour le téléphone depuis les métadonnées auth
     const userMetadata = user.user_metadata || {};
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
     
     if (userMetadata.phone || userMetadata.address) {
       console.log('📞 [CLIENT-DRIVER] Mise à jour téléphone/adresse depuis métadonnées:', userMetadata.phone);
@@ -171,8 +187,8 @@ serve(async (req) => {
       }
     }
 
-    // Create new free client (is_exclusive: false)
-    const { data: newClient, error: insertError } = await supabase
+    // Create new free client (is_exclusive: false) - use SERVICE_ROLE to bypass RLS
+    const { data: newClient, error: insertError } = await supabaseService
       .from("clients")
       .insert({
         user_id: user.id,
@@ -183,10 +199,14 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('❌ Erreur insertion client:', insertError);
+      throw insertError;
+    }
+
+    console.log('✅ Client créé avec succès:', newClient?.id);
 
     // CRITIQUE: Créer le rôle 'client' dans user_roles pour éviter les problèmes de redirection
-    // supabaseService est déjà défini plus haut
     const { error: roleError } = await supabaseService
       .from("user_roles")
       .insert({
@@ -204,7 +224,7 @@ serve(async (req) => {
 
     // Envoyer l'email de bienvenue au client AVEC RETRY
     try {
-      const { data: profileData } = await supabase
+      const { data: profileData } = await supabaseService
         .from("profiles")
         .select("full_name, email")
         .eq("id", user.id)
@@ -308,6 +328,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
+    console.error('❌❌❌ ERREUR GLOBALE register-client-driver:', error);
     return new Response(
       JSON.stringify({ error: error.message || "Erreur serveur" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
