@@ -42,6 +42,7 @@ import {
 interface CityPricingManagerProps {
   driverId?: string;
   fleetManagerId?: string;
+  onSave?: () => void; // Callback to trigger profile save after city pricing save
 }
 
 interface CityPricing {
@@ -139,7 +140,7 @@ const defaultPricing: Omit<CityPricing, "id"> = {
   priority: 0,
 };
 
-export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingManagerProps) => {
+export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPricingManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricings, setPricings] = useState<CityPricing[]>([]);
@@ -302,7 +303,11 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
         if (error) throw error;
       }
 
-      toast.success("Tarification enregistrée");
+      toast.success("Tarification par ville enregistrée");
+      // Trigger parent profile save if callback provided
+      if (onSave) {
+        onSave();
+      }
     } catch (error) {
       console.error("Error saving pricing:", error);
       toast.error("Erreur lors de l'enregistrement");
