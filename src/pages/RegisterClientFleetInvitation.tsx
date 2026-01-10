@@ -160,6 +160,9 @@ const RegisterClientFleetInvitation = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("Erreur lors de la création du compte");
 
+      // CRITIQUE: Attendre que le profil soit créé par le trigger handle_new_user
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // 2. Update profile with phone
       const { error: profileError } = await supabase
         .from("profiles")

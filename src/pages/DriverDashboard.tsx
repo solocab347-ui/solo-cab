@@ -468,8 +468,8 @@ const DriverDashboard = () => {
           />
         )}
 
-        {/* Subscription Alert - UNIQUEMENT si pas d'accès complet (calculé synchrone = pas de flickering) */}
-        {!accessStatus.hasFullAccess && (
+        {/* Subscription Alert - UNIQUEMENT si pas d'accès complet ET profil chargé (évite le flickering) */}
+        {!profileLoading && driverProfile?.driver && !accessStatus.hasFullAccess && (
           <Alert className="mb-6 bg-destructive/10 border-destructive">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertTitle className="text-destructive">{t('driverDashboard.subscriptionInactive')}</AlertTitle>

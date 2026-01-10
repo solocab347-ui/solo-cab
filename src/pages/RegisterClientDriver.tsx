@@ -72,11 +72,20 @@ const RegisterClientDriver = () => {
       // CRITIQUE: Attendre que le profil soit créé par le trigger handle_new_user
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Sauvegarder la langue préférée
-      await supabase
+      // CRITIQUE: Mettre à jour le profil avec le téléphone et l'adresse
+      // Le trigger handle_new_user ne récupère pas toujours les métadonnées correctement
+      const { error: updateError } = await supabase
         .from('profiles')
-        .update({ preferred_language: locale })
+        .update({ 
+          phone: formData.phone,
+          address: formData.address,
+          preferred_language: locale 
+        })
         .eq('id', authData.user.id);
+
+      if (updateError) {
+        console.error("Erreur mise à jour profil:", updateError);
+      }
 
       // Appeler l'edge function pour créer le client
       const { data, error } = await supabase.functions.invoke("register-client-driver", {
