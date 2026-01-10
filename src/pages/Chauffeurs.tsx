@@ -127,6 +127,7 @@ const Chauffeurs = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [includeFleets, setIncludeFleets] = useState(false); // Flottes exclues par défaut
+  const [registeredDriverIds, setRegisteredDriverIds] = useState<string[]>([]); // IDs des chauffeurs associés
   const navigate = useNavigate();
 
   // Restaurer les résultats UNIQUEMENT (pas de recherche auto)
@@ -171,13 +172,27 @@ const Chauffeurs = () => {
     try {
       const { data: client } = await supabase
         .from("clients")
-        .select("is_exclusive")
+        .select("is_exclusive, driver_id, driver_ids")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (client?.is_exclusive) {
         setIsExclusiveClient(true);
       }
+      
+      // Collecter tous les IDs de chauffeurs associés
+      const driverIds: string[] = [];
+      if (client?.driver_id) {
+        driverIds.push(client.driver_id);
+      }
+      if (client?.driver_ids && Array.isArray(client.driver_ids)) {
+        client.driver_ids.forEach((id: string) => {
+          if (!driverIds.includes(id)) {
+            driverIds.push(id);
+          }
+        });
+      }
+      setRegisteredDriverIds(driverIds);
     } catch (error) {
       console.error("Error checking client access:", error);
     } finally {
@@ -687,6 +702,7 @@ const Chauffeurs = () => {
                         key={driver.id}
                         driver={driver}
                         cardIndex={index}
+                        isRegistered={registeredDriverIds.includes(driver.id)}
                         onViewProfile={(driverId) => {
                           setSelectedDriverId(driverId);
                           setDialogOpen(true);
