@@ -1,12 +1,61 @@
 /**
  * Hook ULTRA-OPTIMISÉ pour le profil driver
  * Cache agressif + moins de re-renders
+ * Calcul synchrone du statut d'accès pour éviter le flickering
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+
+// Helper pour calculer le statut d'accès de manière synchrone
+const calculateAccessStatus = (driver: any) => {
+  if (!driver) {
+    return {
+      hasFullAccess: false,
+      isInGracePeriod: false,
+      isPioneerTrialActive: false,
+      hasFreeAccess: false,
+      gracePeriodDaysLeft: 0,
+      pioneerTrialDaysLeft: 0,
+    };
+  }
+
+  const now = new Date();
+  const createdAt = driver.created_at ? new Date(driver.created_at) : null;
+  const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+  const isInGracePeriod = gracePeriodEnd ? now < gracePeriodEnd : false;
+  const gracePeriodDaysLeft = gracePeriodEnd ? Math.max(0, Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+
+  const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+  const isPioneerTrialActive = driver.is_pioneer && 
+    driver.free_access_type === "trial" && 
+    freeAccessEndDate && 
+    freeAccessEndDate > now;
+  const pioneerTrialDaysLeft = isPioneerTrialActive && freeAccessEndDate 
+    ? Math.ceil((freeAccessEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) 
+    : 0;
+
+  const hasFreeAccess = driver.free_access_granted || 
+    (driver.free_access_type === "unlimited");
+
+  const hasFullAccess = 
+    driver.subscription_status === "active" ||
+    driver.subscription_paid === true ||
+    isInGracePeriod ||
+    isPioneerTrialActive ||
+    hasFreeAccess;
+
+  return {
+    hasFullAccess,
+    isInGracePeriod,
+    isPioneerTrialActive,
+    hasFreeAccess,
+    gracePeriodDaysLeft,
+    pioneerTrialDaysLeft,
+  };
+};
 
 export function useOptimizedDriverProfile(userId: string | undefined) {
   const queryClient = useQueryClient();
@@ -37,6 +86,11 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+
+  // Calculer le statut d'accès de manière synchrone (pas d'appel async = pas de flickering)
+  const accessStatus = useMemo(() => {
+    return calculateAccessStatus(driverProfile?.driver);
+  }, [driverProfile?.driver]);
 
   // Mutation optimisée avec confirmation instantanée
   const updateProfile = useMutation({
@@ -111,5 +165,7 @@ export function useOptimizedDriverProfile(userId: string | undefined) {
     error,
     updateProfile: handleUpdateProfile,
     isUpdating: updateProfile.isPending,
+    // Statut d'accès calculé de manière synchrone
+    accessStatus,
   };
 }

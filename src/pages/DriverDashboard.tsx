@@ -72,7 +72,7 @@ const DriverDashboard = () => {
   useUserLanguage(); // Sync language with user profile
   const { signOut, user } = useAuth();
   const queryClient = useQueryClient();
-  const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating } = useOptimizedDriverProfile(user?.id);
+  const { driverProfile, isLoading: profileLoading, updateProfile, isUpdating, accessStatus } = useOptimizedDriverProfile(user?.id);
   const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState<any>(null);
   const [loadingQR, setLoadingQR] = useState(false);
@@ -468,11 +468,8 @@ const DriverDashboard = () => {
           />
         )}
 
-        {/* Subscription Alert - masqué pour les pionniers avec accès actif */}
-        {driverProfile?.driver?.subscription_status !== "active" && 
-         !driverProfile?.driver?.free_access_granted && 
-         !(driverProfile?.driver?.is_pioneer && driverProfile?.driver?.free_access_type === "trial" && 
-           driverProfile?.driver?.free_access_end_date && new Date(driverProfile.driver.free_access_end_date) > new Date()) && (
+        {/* Subscription Alert - UNIQUEMENT si pas d'accès complet (calculé synchrone = pas de flickering) */}
+        {!accessStatus.hasFullAccess && (
           <Alert className="mb-6 bg-destructive/10 border-destructive">
             <AlertCircle className="h-4 w-4 text-destructive" />
             <AlertTitle className="text-destructive">{t('driverDashboard.subscriptionInactive')}</AlertTitle>

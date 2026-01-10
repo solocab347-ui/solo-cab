@@ -58,6 +58,68 @@ serve(async (req) => {
     }
 
     const now = new Date();
+    const createdAt = fleetManager.created_at ? new Date(fleetManager.created_at) : null;
+
+    // ========================================
+    // CHECK 0: 30-day grace period for new fleet managers
+    // ========================================
+    const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+    const isInGracePeriod = gracePeriodEnd && now < gracePeriodEnd;
+
+    if (isInGracePeriod) {
+      const daysLeft = Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      logStep("Fleet manager in 30-day grace period", { 
+        createdAt: fleetManager.created_at,
+        gracePeriodEnd: gracePeriodEnd.toISOString(),
+        daysLeft 
+      });
+      
+      // Update status to active during grace period
+      await supabaseClient
+        .from("fleet_managers")
+        .update({
+          subscription_status: "active",
+          subscription_paid: true,
+        })
+        .eq("id", fleetManager.id);
+      
+      // Count drivers
+      const { count: driverCount } = await supabaseClient
+        .from("fleet_manager_drivers")
+        .select("*", { count: "exact", head: true })
+        .eq("fleet_manager_id", fleetManager.id)
+        .eq("status", "active");
+      
+      return new Response(JSON.stringify({ 
+        subscribed: true,
+        subscription_status: "active",
+        subscription_end: gracePeriodEnd.toISOString(),
+        is_free_access: true,
+        is_grace_period: true,
+        grace_period_days_left: daysLeft,
+        fleet_manager: {
+          ...fleetManager,
+          subscription_status: "active",
+          subscription_paid: true,
+        },
+        billing: {
+          base_cost: 0,
+          extra_drivers_count: 0,
+          extra_drivers_cost: 0,
+          total_monthly: 0,
+          is_free: true,
+        },
+        drivers: {
+          total: driverCount || 0,
+          free_used: Math.min(driverCount || 0, fleetManager.max_free_drivers || 10),
+          free_remaining: Math.max(0, (fleetManager.max_free_drivers || 10) - (driverCount || 0)),
+          paid_count: 0,
+        }
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
     
     // ========================================
     // CHECK 1: Admin-granted free access
