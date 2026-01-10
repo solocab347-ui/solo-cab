@@ -50,10 +50,10 @@ serve(async (req) => {
       );
     }
 
-    // Verify driver exists and is validated (or is a pioneer with active trial)
+    // Verify driver exists and has full access (validated, pioneer, or within 30-day grace period)
     const { data: driver, error: driverError } = await supabase
       .from("drivers")
-      .select("id, public_profile_enabled, status, is_pioneer, free_access_end_date")
+      .select("id, public_profile_enabled, status, is_pioneer, free_access_end_date, created_at")
       .eq("id", driver_id)
       .single();
 
@@ -64,12 +64,21 @@ serve(async (req) => {
       );
     }
 
-    // Allow validated drivers OR pioneers with active trial
+    // Check if driver has full access:
+    // 1. Validated driver
+    // 2. Pioneer with active trial
+    // 3. Any driver within 30 days of registration (grace period)
+    const isValidated = driver.status === "validated";
     const isPioneerActive = driver.is_pioneer && 
       driver.free_access_end_date && 
       new Date(driver.free_access_end_date) > new Date();
+    const isInGracePeriod = driver.created_at && 
+      new Date(driver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) &&
+      (driver.status === "pending" || driver.status === "validated");
 
-    if (!driver.public_profile_enabled || (driver.status !== "validated" && !isPioneerActive)) {
+    const hasFullAccess = isValidated || isPioneerActive || isInGracePeriod;
+
+    if (!driver.public_profile_enabled || !hasFullAccess) {
       return new Response(
         JSON.stringify({ error: "Ce chauffeur n'accepte pas de nouveaux clients" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
