@@ -12293,6 +12293,8 @@ export type Database = {
           airport_fee: number
           base_price: number
           distance_price: number
+          peak_hours_surcharge: number
+          pricing_source: string
           subtotal: number
           surcharge_evening: number
           surcharge_weekend: number
