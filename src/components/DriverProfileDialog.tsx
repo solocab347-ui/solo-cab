@@ -18,6 +18,8 @@ import {
   Award,
   UserPlus,
   Loader2,
+  UserCheck,
+  CalendarPlus,
 } from "lucide-react";
 import {
   Carousel,
@@ -30,6 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getDriverGlobalStats } from "@/hooks/useDriverGlobalStats";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DriverProfile {
   id: string;
@@ -64,17 +67,58 @@ interface DriverProfileDialogProps {
   driverId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isRegistered?: boolean;
 }
 
 export const DriverProfileDialog = ({
   driverId,
   open,
   onOpenChange,
+  isRegistered = false,
 }: DriverProfileDialogProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(isRegistered);
+
+  // Update alreadyRegistered when isRegistered prop changes
+  useEffect(() => {
+    setAlreadyRegistered(isRegistered);
+  }, [isRegistered]);
+
+  // Check if user is already registered with this driver
+  useEffect(() => {
+    if (!open || !driverId || !user || isRegistered) {
+      return;
+    }
+
+    const checkRegistration = async () => {
+      try {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("driver_id, driver_ids, is_exclusive")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (client) {
+          const driverIds: string[] = [];
+          if (client.driver_id) driverIds.push(client.driver_id);
+          if (client.driver_ids && Array.isArray(client.driver_ids)) {
+            client.driver_ids.forEach((id: string) => {
+              if (!driverIds.includes(id)) driverIds.push(id);
+            });
+          }
+          setAlreadyRegistered(driverIds.includes(driverId));
+        }
+      } catch (error) {
+        console.error("Error checking registration:", error);
+      }
+    };
+
+    checkRegistration();
+  }, [open, driverId, user, isRegistered]);
 
   useEffect(() => {
     if (!open || !driverId) {
@@ -317,24 +361,47 @@ export const DriverProfileDialog = ({
               </div>
             </div>
 
-            <Button
-              onClick={handleRegisterWithDriver}
-              disabled={registering}
-              size="lg"
-              className="w-full bg-gradient-premium hover:opacity-90"
-            >
-              {registering ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Inscription...
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  S'inscrire avec ce chauffeur
-                </>
-              )}
-            </Button>
+            {/* Action Button - Different based on registration status */}
+            {alreadyRegistered ? (
+              <div className="space-y-3">
+                <div className="w-full p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 text-center">
+                  <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold mb-2">
+                    <UserCheck className="w-5 h-5" />
+                    Déjà inscrit avec ce chauffeur
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Vous êtes déjà client de ce chauffeur. Retrouvez-le dans votre espace "Mes chauffeurs".
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate(`/create-course?driver_id=${driverId}`)}
+                  size="lg"
+                  className="w-full bg-gradient-premium hover:opacity-90"
+                >
+                  <CalendarPlus className="w-5 h-5 mr-2" />
+                  Réserver une course
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleRegisterWithDriver}
+                disabled={registering}
+                size="lg"
+                className="w-full bg-gradient-premium hover:opacity-90"
+              >
+                {registering ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Inscription...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 mr-2" />
+                    S'inscrire avec ce chauffeur
+                  </>
+                )}
+              </Button>
+            )}
 
             {/* Description */}
             {driver.service_description &&
