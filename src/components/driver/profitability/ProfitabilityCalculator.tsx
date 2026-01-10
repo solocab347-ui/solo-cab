@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -144,10 +144,9 @@ export const ProfitabilityCalculator = () => {
 
               <div>
                 <Label>Valeur neuve du véhicule (€) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.vehicleValue}
-                  onChange={(e) => setFormData({ ...formData, vehicleValue: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, vehicleValue: value })}
                   placeholder="35000"
                 />
               </div>
@@ -161,20 +160,18 @@ export const ProfitabilityCalculator = () => {
             <div className="space-y-4">
               <div>
                 <Label>Kilométrage total annuel (incluant trajets à vide) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.totalKmPerYear}
-                  onChange={(e) => setFormData({ ...formData, totalKmPerYear: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, totalKmPerYear: value })}
                   placeholder="47200"
                 />
               </div>
 
               <div>
                 <Label>Kilométrage facturable annuel (estimation) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.billableKmPerYear}
-                  onChange={(e) => setFormData({ ...formData, billableKmPerYear: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, billableKmPerYear: value })}
                   placeholder="35400"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -194,22 +191,18 @@ export const ProfitabilityCalculator = () => {
             <div className="space-y-4">
               <div>
                 <Label>Consommation (L/100 km ou kWh/100 km) :</Label>
-                <Input
-                  type="number"
-                  step="0.1"
+                <NumericInput
                   value={formData.consumption}
-                  onChange={(e) => setFormData({ ...formData, consumption: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, consumption: value })}
                   placeholder="6"
                 />
               </div>
 
               <div>
                 <Label>Coût du carburant/énergie (€/L ou €/kWh) :</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+                <NumericInput
                   value={formData.fuelCost}
-                  onChange={(e) => setFormData({ ...formData, fuelCost: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, fuelCost: value })}
                   placeholder="2"
                 />
               </div>
@@ -223,10 +216,9 @@ export const ProfitabilityCalculator = () => {
             <div className="space-y-4">
               <div>
                 <Label>Chiffre d'affaires annuel estimé (en €) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.annualRevenue}
-                  onChange={(e) => setFormData({ ...formData, annualRevenue: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, annualRevenue: value })}
                   placeholder="30000"
                 />
               </div>
@@ -240,10 +232,9 @@ export const ProfitabilityCalculator = () => {
             <div className="space-y-4">
               <div>
                 <Label>Assurance RCP (mensuel) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.rcpMonthly}
-                  onChange={(e) => setFormData({ ...formData, rcpMonthly: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, rcpMonthly: value })}
                   placeholder="30"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -253,10 +244,9 @@ export const ProfitabilityCalculator = () => {
 
               <div>
                 <Label>Assurance RCC (mensuel) :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.rccMonthly}
-                  onChange={(e) => setFormData({ ...formData, rccMonthly: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, rccMonthly: value })}
                   placeholder="5"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
@@ -266,10 +256,9 @@ export const ProfitabilityCalculator = () => {
 
               <div>
                 <Label>Entretien & réparations annuel :</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   value={formData.annualMaintenance}
-                  onChange={(e) => setFormData({ ...formData, annualMaintenance: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, annualMaintenance: value })}
                   placeholder="6000"
                 />
               </div>
@@ -282,10 +271,9 @@ export const ProfitabilityCalculator = () => {
             
             <div>
               <Label>Nombre d'années d'amortissement :</Label>
-              <Input
-                type="number"
+              <NumericInput
                 value={formData.depreciationYears}
-                onChange={(e) => setFormData({ ...formData, depreciationYears: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, depreciationYears: value })}
                 placeholder="5"
               />
             </div>
@@ -297,11 +285,9 @@ export const ProfitabilityCalculator = () => {
             
             <div>
               <Label>Taux de marge souhaité (ex. 0.10 pour 10%) :</Label>
-              <Input
-                type="number"
-                step="0.01"
+              <NumericInput
                 value={formData.profitMargin}
-                onChange={(e) => setFormData({ ...formData, profitMargin: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, profitMargin: value })}
                 placeholder="0.10"
               />
             </div>
