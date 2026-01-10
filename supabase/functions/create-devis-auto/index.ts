@@ -284,6 +284,7 @@ Deno.serve(async (req) => {
             promo_code: promoCode,
             evening_surcharge_amount: pricing.surcharge_evening || 0,
             weekend_surcharge_amount: pricing.surcharge_weekend || 0,
+            peak_hours_surcharge_amount: pricing.peak_adjustment || 0, // Majoration heures de pointe
             valid_until: validUntil.toISOString(),
             status: 'pending',
           })

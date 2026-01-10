@@ -3492,6 +3492,7 @@ export type Database = {
           evening_surcharge_amount: number | null
           id: string
           notes: string | null
+          peak_hours_surcharge_amount: number | null
           promo_code: string | null
           quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
@@ -3515,6 +3516,7 @@ export type Database = {
           evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
+          peak_hours_surcharge_amount?: number | null
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
@@ -3538,6 +3540,7 @@ export type Database = {
           evening_surcharge_amount?: number | null
           id?: string
           notes?: string | null
+          peak_hours_surcharge_amount?: number | null
           promo_code?: string | null
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
