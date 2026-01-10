@@ -10787,8 +10787,6 @@ export type Database = {
         Args: { _number: string }
         Returns: {
           company_name: string
-          display_company_name: boolean
-          display_driver_name: boolean
           formatted_sharing_number: string
           full_name: string
           id: string
@@ -10797,7 +10795,6 @@ export type Database = {
           rating: number
           sharing_number: number
           total_rides: number
-          user_id: string
         }[]
       }
       find_nearest_available_fleet_driver:

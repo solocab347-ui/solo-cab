@@ -227,11 +227,11 @@ Cordialement.`;
         }
         setDrivers([{
           id: found.id,
-          user_id: found.user_id,
+          user_id: '', // Non retourné par find_driver_by_sharing_number
           sharing_number: found.sharing_number,
           formatted_sharing_number: found.formatted_sharing_number,
           working_sectors: [],
-          rating: found.rating || 0,
+          rating: found.rating || 5,
           total_rides: found.total_rides || 0,
           company_name: found.company_name,
           full_name: found.full_name,
