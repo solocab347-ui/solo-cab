@@ -1150,7 +1150,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     doc.text("TARIFICATION", 20, yPos);
     yPos += 8;
 
-    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0);
+    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0) +
+      (devis.peak_hours_surcharge_amount || 0) + (devis.evening_surcharge_amount || 0) + (devis.weekend_surcharge_amount || 0);
     const tvaRate = devis.time_price > 0 ? 20 : 10;
     const tvaAmount = subtotal * (tvaRate / 100);
     
@@ -1202,7 +1203,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         yPos += 9;
       }
       
-      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      // Afficher les augmentations heures de pointe/soir/weekend si présentes (version chauffeur uniquement)
+      if (devis.peak_hours_surcharge_amount && devis.peak_hours_surcharge_amount > 0) {
+        doc.setFillColor(255, 240, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Heures de pointe", 25, yPos + 5);
+        doc.text(`+${devis.peak_hours_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       if (devis.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
         doc.setFillColor(255, 245, 220);
         doc.rect(20, yPos, 170, 7, 'F');
