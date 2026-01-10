@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
-import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap } from "lucide-react";
+import { Car, Users, Calendar, TrendingUp, QrCode, LogOut, Settings, Building2, FileText, MapPin, CreditCard, AlertCircle, LayoutGrid, MessageSquare, Globe, Calculator, Wrench, ChevronDown, BarChart3, PieChart, Megaphone, Shield, Lightbulb, Sparkles, Home, Handshake, FolderOpen, Timer, Zap, Save, Loader2 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import logo from "@/assets/logo-solocab.png";
 import CoursesList from "@/components/CoursesList";
@@ -767,62 +767,93 @@ const DriverDashboard = () => {
               </AlertDescription>
             </Alert>
 
+            {/* Bouton d'enregistrement en haut - très visible */}
+            <div className="sticky top-0 z-10 p-4 bg-gradient-to-r from-primary via-primary/90 to-primary rounded-xl border-2 border-primary shadow-lg">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 text-white">
+                  <Save className="w-6 h-6" />
+                  <div>
+                    <p className="font-bold text-lg">N'oubliez pas d'enregistrer !</p>
+                    <p className="text-sm text-white/80">Tous les paramètres seront sauvegardés ensemble</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleUpdateProfile} 
+                  disabled={loading || isUpdating} 
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 font-bold px-6 py-3 shadow-lg min-w-[200px]"
+                >
+                  {loading || isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Enregistrer tout
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
             {/* Pricing */}
             <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               <h2 className="text-xl font-bold mb-6 text-white">Tarification Professionnelle</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="baseFare" className="text-white">Forfait de base (€)</Label>
+                  <Label htmlFor="baseFare" className="text-white font-medium">Forfait de base (€)</Label>
                   <NumericInput
                     id="baseFare"
                     value={baseFare}
                     onChange={setBaseFare}
                     placeholder="10.00"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
-                  <p className="text-xs text-white">Prix de départ de la course</p>
+                  <p className="text-xs text-white/80">Prix de départ de la course</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="perKm" className="text-white">Prix par kilomètre (€)</Label>
+                  <Label htmlFor="perKm" className="text-white font-medium">Prix par kilomètre (€)</Label>
                   <NumericInput
                     id="perKm"
                     value={perKmRate}
                     onChange={setPerKmRate}
                     placeholder="1.50"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
-                  <p className="text-xs text-white">Coût par km parcouru</p>
+                  <p className="text-xs text-white/80">Coût par km parcouru</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="hourly" className="text-white">Tarif horaire (€)</Label>
+                  <Label htmlFor="hourly" className="text-white font-medium">Tarif horaire (€)</Label>
                   <NumericInput
                     id="hourly"
                     value={hourlyRate}
                     onChange={setHourlyRate}
                     placeholder="45.00"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
-                  <p className="text-xs text-white">Pour les mises à disposition (obligatoire)</p>
+                  <p className="text-xs text-white/80">Pour les mises à disposition (obligatoire)</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="minimumPrice" className="text-white">Prix minimum par course (€)</Label>
+                  <Label htmlFor="minimumPrice" className="text-white font-medium">Prix minimum par course (€)</Label>
                   <NumericInput
                     id="minimumPrice"
                     value={minimumPrice}
                     onChange={setMinimumPrice}
                     placeholder="15.00"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
-                  <p className="text-xs text-white">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
+                  <p className="text-xs text-white/80">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 mt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="maxPassengers" className="text-white">Nombre maximum de passagers</Label>
+                  <Label htmlFor="maxPassengers" className="text-white font-medium">Nombre maximum de passagers</Label>
                   <NumericInput
                     id="maxPassengers"
                     value={maxPassengers}
@@ -830,9 +861,9 @@ const DriverDashboard = () => {
                     placeholder="4"
                     min={1}
                     max={20}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
-                  <p className="text-xs text-white">Places disponibles (4 par défaut, augmentez pour van)</p>
+                  <p className="text-xs text-white/80">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
 
                 <div className="col-span-2">
@@ -857,25 +888,25 @@ const DriverDashboard = () => {
 
                 <div className="grid md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
                   <div className="space-y-2">
-                    <Label htmlFor="eveningSurcharge" className="text-white">Augmentation Soir (%)</Label>
+                    <Label htmlFor="eveningSurcharge" className="text-white font-medium">Augmentation Soir (%)</Label>
                     <NumericInput
                       id="eveningSurcharge"
                       value={eveningSurcharge}
                       onChange={setEveningSurcharge}
                       placeholder="0"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                      className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du soir (20h-6h). <span className="font-semibold">Exemples : 10%, 15%, 20%</span></p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="weekendSurcharge" className="text-white">Augmentation Weekend (%)</Label>
+                    <Label htmlFor="weekendSurcharge" className="text-white font-medium">Augmentation Weekend (%)</Label>
                     <NumericInput
                       id="weekendSurcharge"
                       value={weekendSurcharge}
                       onChange={setWeekendSurcharge}
                       placeholder="0"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                      className="bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
                   </div>
@@ -883,7 +914,7 @@ const DriverDashboard = () => {
 
                 {/* Forfait Aéroport */}
                 <div className="space-y-2 border-t border-white/10 pt-6">
-                  <Label htmlFor="airportSurcharge" className="text-white flex items-center gap-2">
+                  <Label htmlFor="airportSurcharge" className="text-white font-medium flex items-center gap-2">
                     ✈️ Forfait Aéroport (€)
                   </Label>
                   <NumericInput
@@ -891,7 +922,7 @@ const DriverDashboard = () => {
                     value={airportSurcharge}
                     onChange={setAirportSurcharge}
                     placeholder="0"
-                    className="max-w-xs bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="max-w-xs bg-white border-white/50 text-foreground placeholder:text-muted-foreground font-medium text-lg"
                   />
                   <p className="text-xs text-white/70">
                     Forfait fixe ajouté automatiquement pour toutes les courses depuis/vers un aéroport français (Roissy CDG, Orly, Lyon Saint-Exupéry, Nice, Marseille, etc.)
@@ -936,7 +967,10 @@ const DriverDashboard = () => {
             {/* City Pricing */}
             <Card className="p-6 bg-gradient-to-br from-[#1e3a5f]/80 to-[#2a4a6f]/80 border-white/10 shadow-elegant">
               {driverProfile?.driver?.id && (
-                <CityPricingManager driverId={driverProfile.driver.id} />
+                <CityPricingManager 
+                  driverId={driverProfile.driver.id} 
+                  onSave={handleUpdateProfile}
+                />
               )}
             </Card>
 
@@ -1006,10 +1040,35 @@ const DriverDashboard = () => {
               </div>
             </Card>
 
-            <div className="flex justify-end">
-              <Button onClick={handleUpdateProfile} disabled={loading} size="lg">
-                {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-              </Button>
+            {/* Bouton d'enregistrement en bas - très visible */}
+            <div className="p-4 bg-gradient-to-r from-primary via-primary/90 to-primary rounded-xl border-2 border-primary shadow-lg">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 text-white">
+                  <Save className="w-6 h-6" />
+                  <div>
+                    <p className="font-bold text-lg">Enregistrer tous les paramètres</p>
+                    <p className="text-sm text-white/80">Tarifs + Entreprise + Véhicule + Tarifs par ville</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleUpdateProfile} 
+                  disabled={loading || isUpdating} 
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 font-bold px-8 py-4 shadow-lg min-w-[220px] text-lg"
+                >
+                  {loading || isUpdating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 mr-2" />
+                      Enregistrer tout
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
