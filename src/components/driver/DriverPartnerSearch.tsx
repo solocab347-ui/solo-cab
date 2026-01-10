@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 import { 
   Search, 
   UserPlus, 
@@ -107,6 +108,9 @@ export function DriverPartnerSearch({ driverId }: Props) {
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
   const [proposalMessage, setProposalMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Signature confirmation before sending
+  const [showSignatureConfirmation, setShowSignatureConfirmation] = useState(false);
 
   // Driver profile dialog
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
@@ -642,15 +646,29 @@ Cordialement.`;
             <Button variant="outline" onClick={() => setProposalDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={proposePartnership} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Envoyer la demande
+            <Button onClick={() => {
+              setProposalDialogOpen(false);
+              setShowSignatureConfirmation(true);
+            }} disabled={submitting}>
+              Voir les conditions et signer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Driver Public Profile Dialog */}
+      {/* Partnership Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureConfirmation}
+        onOpenChange={setShowSignatureConfirmation}
+        partnerName={selectedDriver?.full_name || ''}
+        commissionPercentage={proposedCommission}
+        paymentSchedule={proposedPaymentSchedule}
+        onConfirmSign={proposePartnership}
+        signing={submitting}
+        partnershipType="driver"
+        mode="propose"
+        signerRole="driver"
+      />
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>

@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 import { 
   ArrowLeft, 
   Search, 
@@ -103,6 +104,7 @@ export default function DriverPartnerSearch() {
   const [proposedCommission, setProposedCommission] = useState(10);
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
   const [submitting, setSubmitting] = useState(false);
+  const [showSignatureConfirmation, setShowSignatureConfirmation] = useState(false);
 
   // IDs des chauffeurs trouvés pour vérifier les statuts
   const driverIds = useMemo(() => drivers.map(d => d.id), [drivers]);
@@ -611,13 +613,29 @@ export default function DriverPartnerSearch() {
             <Button variant="outline" onClick={() => setProposalDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={proposePartnership} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Envoyer la demande
+            <Button onClick={() => {
+              setProposalDialogOpen(false);
+              setShowSignatureConfirmation(true);
+            }} disabled={submitting}>
+              Voir les conditions et signer
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Partnership Signature Confirmation Dialog */}
+      <PartnershipSignatureConfirmation
+        open={showSignatureConfirmation}
+        onOpenChange={setShowSignatureConfirmation}
+        partnerName={selectedDriver?.full_name || ''}
+        commissionPercentage={proposedCommission}
+        paymentSchedule={proposedPaymentSchedule}
+        onConfirmSign={proposePartnership}
+        signing={submitting}
+        partnershipType="driver"
+        mode="propose"
+        signerRole="driver"
+      />
     </div>
   );
 }
