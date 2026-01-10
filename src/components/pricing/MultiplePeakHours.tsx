@@ -35,13 +35,13 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 // Options de pourcentage claires
 const PERCENTAGE_OPTIONS = [
-  { value: 1.1, label: "+10%", color: "bg-yellow-500" },
-  { value: 1.15, label: "+15%", color: "bg-yellow-600" },
-  { value: 1.2, label: "+20%", color: "bg-orange-500" },
-  { value: 1.25, label: "+25%", color: "bg-orange-600" },
-  { value: 1.3, label: "+30%", color: "bg-red-500" },
-  { value: 1.4, label: "+40%", color: "bg-red-600" },
-  { value: 1.5, label: "+50%", color: "bg-red-700" },
+  { value: 1.1, label: "+10%" },
+  { value: 1.15, label: "+15%" },
+  { value: 1.2, label: "+20%" },
+  { value: 1.25, label: "+25%" },
+  { value: 1.3, label: "+30%" },
+  { value: 1.4, label: "+40%" },
+  { value: 1.5, label: "+50%" },
 ];
 
 const PeakPeriodEditor = ({
@@ -62,20 +62,20 @@ const PeakPeriodEditor = ({
   const currentPercentage = Math.round((period.multiplier - 1) * 100);
 
   return (
-    <div className="p-4 rounded-xl border-2 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800">
+    <div className="p-4 rounded-xl border-2 bg-white border-orange-300">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
-          <span className="font-semibold text-foreground">{label}</span>
+          <span className="font-bold text-gray-900 text-lg">{label}</span>
         </div>
         {canRemove && onRemove && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onRemove}
-            className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 w-8 p-0"
+            className="text-red-600 hover:text-red-700 hover:bg-red-100 h-8 w-8 p-0"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -85,12 +85,12 @@ const PeakPeriodEditor = ({
       <div className="grid gap-4 md:grid-cols-3">
         {/* Heure de début */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-foreground">Début</Label>
+          <Label className="text-sm font-bold text-gray-800">Début</Label>
           <Select
             value={period.start || ""}
             onValueChange={(value) => onChange({ ...period, start: value })}
           >
-            <SelectTrigger className="h-11 bg-white dark:bg-gray-800 border-2 font-medium">
+            <SelectTrigger className="h-12 bg-white border-2 border-gray-300 font-bold text-gray-900 text-lg">
               <SelectValue placeholder="--:--" />
             </SelectTrigger>
             <SelectContent>
@@ -105,12 +105,12 @@ const PeakPeriodEditor = ({
         
         {/* Heure de fin */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-foreground">Fin</Label>
+          <Label className="text-sm font-bold text-gray-800">Fin</Label>
           <Select
             value={period.end || ""}
             onValueChange={(value) => onChange({ ...period, end: value })}
           >
-            <SelectTrigger className="h-11 bg-white dark:bg-gray-800 border-2 font-medium">
+            <SelectTrigger className="h-12 bg-white border-2 border-gray-300 font-bold text-gray-900 text-lg">
               <SelectValue placeholder="--:--" />
             </SelectTrigger>
             <SelectContent>
@@ -125,30 +125,25 @@ const PeakPeriodEditor = ({
         
         {/* Majoration en pourcentage - SIMPLIFIÉ */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-foreground">Majoration</Label>
+          <Label className="text-sm font-bold text-gray-800">Majoration</Label>
           <Select
             value={period.multiplier.toString()}
             onValueChange={(value) => onChange({ ...period, multiplier: parseFloat(value) })}
           >
-            <SelectTrigger className="h-11 bg-white dark:bg-gray-800 border-2 font-bold text-orange-600 dark:text-orange-400">
+            <SelectTrigger className="h-12 bg-orange-50 border-2 border-orange-400 font-bold text-orange-700 text-lg">
               <SelectValue>
-                <span className="flex items-center gap-2">
-                  <Badge className="bg-orange-500 text-white font-bold">
-                    +{currentPercentage}%
-                  </Badge>
-                </span>
+                <Badge className="bg-orange-500 text-white font-bold text-base px-3 py-1">
+                  +{currentPercentage}%
+                </Badge>
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {PERCENTAGE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value.toString()}>
                   <span className="flex items-center gap-2">
-                    <Badge className={`${option.color} text-white font-bold`}>
+                    <Badge className="bg-orange-500 text-white font-bold">
                       {option.label}
                     </Badge>
-                    <span className="text-muted-foreground text-xs">
-                      (×{option.value.toFixed(2)})
-                    </span>
                   </span>
                 </SelectItem>
               ))}
@@ -158,13 +153,13 @@ const PeakPeriodEditor = ({
       </div>
 
       {/* Résumé clair */}
-      <div className="mt-3 p-2 bg-white/50 dark:bg-black/20 rounded-lg">
-        <p className="text-sm text-center text-foreground">
-          <span className="font-medium">{period.start || "--:--"}</span>
-          <span className="mx-2">→</span>
-          <span className="font-medium">{period.end || "--:--"}</span>
-          <span className="mx-2">:</span>
-          <Badge className="bg-orange-500 text-white font-bold ml-1">
+      <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
+        <p className="text-base text-center text-gray-900 font-medium">
+          De <span className="font-bold text-gray-900">{period.start || "--:--"}</span>
+          {" "}à{" "}
+          <span className="font-bold text-gray-900">{period.end || "--:--"}</span>
+          {" "}: {" "}
+          <Badge className="bg-orange-500 text-white font-bold">
             +{currentPercentage}% sur le tarif
           </Badge>
         </p>
@@ -203,7 +198,7 @@ export const MultiplePeakHours = ({
   return (
     <div className="space-y-4">
       {/* Activation principale */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 border-2 border-orange-300 dark:border-orange-700">
+      <div className="flex items-center justify-between p-4 rounded-xl bg-white border-2 border-orange-400">
         <div className="flex items-center gap-3">
           <Switch
             checked={period1.enabled}
@@ -223,7 +218,7 @@ export const MultiplePeakHours = ({
           />
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-orange-600" />
-            <Label className="font-semibold text-foreground">Activer les heures de pointe</Label>
+            <Label className="font-bold text-gray-900">Activer les heures de pointe</Label>
           </div>
         </div>
         {activePeriods > 0 && (
@@ -268,16 +263,16 @@ export const MultiplePeakHours = ({
             <Button
               variant="outline"
               onClick={handleAddPeriod}
-              className="w-full gap-2 h-12 text-orange-600 border-2 border-dashed border-orange-300 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-semibold"
+              className="w-full gap-2 h-12 text-orange-600 border-2 border-dashed border-orange-400 hover:border-orange-500 hover:bg-orange-50 font-bold bg-white"
             >
               <Plus className="w-5 h-5" />
               Ajouter une période ({3 - activePeriods} restante{3 - activePeriods > 1 ? 's' : ''})
             </Button>
           )}
 
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-lg border border-gray-300">
+            <Clock className="w-4 h-4 text-gray-600" />
+            <p className="text-sm text-gray-700 font-medium">
               Configurez jusqu'à 3 périodes avec des majorations différentes
             </p>
           </div>
