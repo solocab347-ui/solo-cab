@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { DriverCard } from "@/components/DriverCard";
-import { Car, Search, MapPin, AlertTriangle, Navigation, Lock, Building2, Users } from "lucide-react";
+import { Car, Search, MapPin, AlertTriangle, Navigation, Lock, Building2, Users, ArrowLeft, Home } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
@@ -372,6 +372,32 @@ const Chauffeurs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation for logged-in clients */}
+      {user && userRole === 'client' && (
+        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-500 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/client-dashboard')}
+              className="text-white hover:bg-white/20 gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/client-dashboard')}
+              className="text-white hover:bg-white/20 gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Mon tableau de bord
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Hero Section with Gradient */}
       <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-500 text-white">
         <div className="container mx-auto px-4 py-16 text-center">
