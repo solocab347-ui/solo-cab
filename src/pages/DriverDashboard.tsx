@@ -51,6 +51,7 @@ import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
 import { DriverDispatchRequests } from "@/components/driver/DriverDispatchRequests";
 // DriverCompanyCourseRequests removed - company quotes now integrated in DriverDevisList
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
+import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { Link, useSearchParams } from "react-router-dom";
@@ -834,18 +835,12 @@ const DriverDashboard = () => {
                   <p className="text-xs text-white">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                    <div>
-                      <Label htmlFor="tvaIncluded" className="font-semibold text-white">TVA comprise</Label>
-                      <p className="text-xs text-white">Vos tarifs incluent-ils déjà la TVA ?</p>
-                    </div>
-                    <Switch
-                      id="tvaIncluded"
-                      checked={tvaIncluded}
-                      onCheckedChange={setTvaIncluded}
-                    />
-                  </div>
+                <div className="col-span-2">
+                  <TvaToggle
+                    checked={tvaIncluded}
+                    onCheckedChange={setTvaIncluded}
+                    className="bg-white/10 border-white/20"
+                  />
                 </div>
               </div>
 
