@@ -60,7 +60,7 @@ const CreateCompanyCourse = lazy(() => import("./pages/CreateCompanyCourse"));
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
 const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
-const DriverPendingValidation = lazy(() => import("./pages/DriverPendingValidation"));
+// DriverPendingValidation SUPPRIMÉ - Tous les chauffeurs accèdent directement au dashboard
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
@@ -222,16 +222,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/driver-pending-validation"
-                element={
-                  <ProtectedRoute allowedRoles={["driver"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <DriverPendingValidation />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
+              {/* Route /driver-pending-validation SUPPRIMÉE - Les chauffeurs accèdent directement au dashboard */}
               <Route
                 path="/client-dashboard"
                 element={

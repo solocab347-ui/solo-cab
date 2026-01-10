@@ -155,15 +155,11 @@ export const ProtectedRoute = ({
       if (!hasValidAccess) {
         logger.error("Accès refusé : paiement requis");
         setDriverStatus("payment_required");
-      } else if (driver.status === "on_hold" && !driver.free_access_granted && !hasActiveTrialAccess && !isInGracePeriod) {
-        logger.error("Accès refusé : inscription incomplète");
-        setDriverStatus("payment_required");
-      } else if (hasValidAccess) {
-        // ✅ Accès valide = accès direct au dashboard (plus de page d'attente)
-        logger.info("Accès accordé : validation automatique (validé, pionnier, essai ou période de grâce)");
-        setDriverStatus("validated");
       } else {
-        setDriverStatus(driver.status);
+        // ✅ Accès valide = accès direct au dashboard (PLUS JAMAIS de page d'attente)
+        // Tous les chauffeurs avec un accès valide ont le statut "validated" pour le routage
+        logger.info("Accès accordé : validation automatique (payé, pionnier, essai ou période de grâce 30j)");
+        setDriverStatus("validated");
       }
     } catch (error) {
       logger.error("Erreur vérification driver", { error });
@@ -256,15 +252,9 @@ export const ProtectedRoute = ({
     );
   }
 
-  // Rediriger les chauffeurs non validés vers la page d'attente
-  if (
-    requireValidatedDriver && 
-    userRole === "driver" && 
-    driverStatus !== "validated" &&
-    location.pathname !== "/driver-pending-validation"
-  ) {
-    return <Navigate to="/driver-pending-validation" replace />;
-  }
+  // NOTE: La page /driver-pending-validation n'existe plus
+  // Tous les chauffeurs avec un accès valide (paiement, essai, période de grâce) 
+  // ont automatiquement le statut "validated" et accèdent directement au dashboard
 
   return <div className="page-transition">{children}</div>;
 };
