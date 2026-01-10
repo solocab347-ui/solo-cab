@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter, Calendar as CalendarIcon, Eye } from "lucide-react";
+import { Crown, Users, Search, MessageSquare, Trash2, AlertTriangle, Plus, Filter, Calendar as CalendarIcon, Eye, Phone, Mail } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -495,8 +495,30 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
                   </div>
 
                   <div className="space-y-1 text-sm text-white/80">
-                    <p>📧 {client.profiles?.email || "Email non renseigné"}</p>
-                    <p>📞 {client.profiles?.phone || "Téléphone non renseigné"}</p>
+                    <p className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 flex-shrink-0" />
+                      {client.profiles?.email ? (
+                        <a 
+                          href={`mailto:${client.profiles.email}`}
+                          className="hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {client.profiles.email}
+                        </a>
+                      ) : "Email non renseigné"}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 flex-shrink-0" />
+                      {client.profiles?.phone ? (
+                        <a 
+                          href={`tel:${client.profiles.phone}`}
+                          className="hover:underline font-medium"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {client.profiles.phone}
+                        </a>
+                      ) : "Téléphone non renseigné"}
+                    </p>
                     <p className="text-white font-medium mt-2">
                       {client.completed_courses_count || 0} course{(client.completed_courses_count || 0) !== 1 ? "s" : ""} effectuée{(client.completed_courses_count || 0) !== 1 ? "s" : ""}
                     </p>
