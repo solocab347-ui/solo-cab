@@ -156,19 +156,23 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
 
   const getStatusBadge = () => {
     if (status.active_share) {
+      // Course acceptée ou en cours par un partenaire - AFFICHER LE NOM
+      const partnerName = status.active_share.receiver_name;
+      const shortName = partnerName.split(' ')[0]; // Premier prénom seulement pour compacité
+      
       switch (status.active_share.status) {
         case 'in_progress':
           return (
             <Badge className="bg-blue-500/20 text-blue-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
               <Play className="w-3 h-3 mr-1" />
-              En cours par partenaire
+              En cours par {shortName}
             </Badge>
           );
         case 'accepted':
           return (
             <Badge className="bg-green-500/20 text-green-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
               <CheckCircle2 className="w-3 h-3 mr-1" />
-              Acceptée par partenaire
+              Acceptée par {shortName}
             </Badge>
           );
       }
@@ -176,11 +180,12 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
 
     if (status.pending_share) {
       if (status.pending_share.sharing_mode === 'pool') {
+        // Envoyée à plusieurs partenaires
         return (
           <div className="flex items-center gap-1 flex-wrap">
             <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
               <Users className="w-3 h-3 mr-1" />
-              Proposée à {status.pending_share.pending_count} partenaires
+              Envoyée à {status.pending_share.pending_count} partenaires
             </Badge>
             <Button
               variant="ghost"
@@ -194,11 +199,16 @@ export function CourseShareStatusIndicator({ courseId, driverId, onCancelSuccess
           </div>
         );
       }
+      
+      // Envoyée à un seul partenaire - afficher son nom
+      const receiverName = status.pending_share.receiver_name;
+      const shortReceiverName = receiverName ? receiverName.split(' ')[0] : 'partenaire';
+      
       return (
         <div className="flex items-center gap-1 flex-wrap">
           <Badge className="bg-amber-500/20 text-amber-600 border-0 cursor-pointer" onClick={() => setShowDetails(true)}>
             <Clock className="w-3 h-3 mr-1" />
-            Partagée - En attente
+            Envoyée à {shortReceiverName}
           </Badge>
           <Button
             variant="ghost"
