@@ -26,6 +26,7 @@ interface PendingPartnerCourse {
   scheduled_date: string;
   passengers_count: number;
   distance_km: number | null;
+  course_number: string | null;
   sender_name: string;
   sender_photo: string | null;
   sender_company: string | null;
@@ -69,7 +70,8 @@ export function PendingPartnerCoursesInCoursesList({
             destination_address,
             scheduled_date,
             passengers_count,
-            distance_km
+            distance_km,
+            course_number
           )
         `)
         .eq('receiver_driver_id', driverId)
@@ -119,6 +121,7 @@ export function PendingPartnerCoursesInCoursesList({
             scheduled_date: course.scheduled_date,
             passengers_count: course.passengers_count,
             distance_km: course.distance_km,
+            course_number: course.course_number,
             sender_name: profile?.full_name || driverData.company_name || 'Partenaire',
             sender_photo: senderPhoto,
             sender_company: driverData.company_name,
@@ -255,9 +258,16 @@ export function PendingPartnerCoursesInCoursesList({
                     )}
                   </div>
                 </div>
-                <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
-                  Pour vous
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {course.course_number && (
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      #{course.course_number}
+                    </Badge>
+                  )}
+                  <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30">
+                    Pour vous
+                  </Badge>
+                </div>
               </div>
 
               {/* Infos course */}

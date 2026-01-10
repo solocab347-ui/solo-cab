@@ -20,20 +20,20 @@ import {
   ExternalLink,
   MessageSquare,
   CalendarPlus,
-  Share2,
   Phone,
-  Mail
+  Mail,
+  ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import ShareButtons from "@/components/ShareButtons";
 
 interface Driver {
   id: string;
   company_name: string | null;
   vehicle_model: string;
   vehicle_brand: string | null;
+  vehicle_color: string | null;
   rating: number | null;
   display_driver_name: boolean;
   display_company_name: boolean;
@@ -85,6 +85,7 @@ export function FavoriteDriverSection({
         company_name,
         vehicle_model,
         vehicle_brand,
+        vehicle_color,
         rating,
         display_driver_name,
         display_company_name,
@@ -109,7 +110,6 @@ export function FavoriteDriverSection({
           const favorite = driversData.find((d: any) => d.id === favoriteDriverId);
           setFavoriteDriver(favorite as any || null);
         } else if (driversData.length > 0) {
-          // Si pas de favori défini mais il y a des chauffeurs, prendre le premier
           setFavoriteDriver(driversData[0] as any);
         }
       }
@@ -162,8 +162,12 @@ export function FavoriteDriverSection({
     return "Chauffeur VTC";
   };
 
-  const handleViewPublicProfile = (driverId: string) => {
-    navigate(`/chauffeur/${driverId}`);
+  const getVehicleDescription = (driver: Driver): string => {
+    const parts = [];
+    if (driver.vehicle_brand) parts.push(driver.vehicle_brand);
+    if (driver.vehicle_model) parts.push(driver.vehicle_model);
+    if (driver.vehicle_color) parts.push(driver.vehicle_color);
+    return parts.join(' ') || '';
   };
 
   const handleBookCourse = (driverId: string) => {
@@ -184,9 +188,7 @@ export function FavoriteDriverSection({
 
   if (loading) {
     return (
-      <Card className="p-6 animate-pulse">
-        <div className="h-20 bg-muted rounded" />
-      </Card>
+      <div className="animate-pulse h-20 bg-muted/30 rounded-xl" />
     );
   }
 
@@ -196,145 +198,136 @@ export function FavoriteDriverSection({
 
   return (
     <>
-      <Card className="p-4 md:p-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-            <h2 className="text-lg md:text-xl font-bold">Mon chauffeur favori</h2>
-          </div>
-          {favoriteDriver && (
-            <ShareButtons
-              title={`Découvrez ${getDriverDisplayName(favoriteDriver)} sur SoloCab`}
-              message={`Je vous recommande mon chauffeur VTC ${getDriverDisplayName(favoriteDriver)} sur SoloCab ! Un service de qualité, ponctuel et professionnel. 🚗✨`}
-              url={`${window.location.origin}/chauffeur/${favoriteDriver.id}`}
-            />
-          )}
-        </div>
-        
-        {favoriteDriver ? (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Avatar className="w-16 h-16 md:w-20 md:h-20 border-2 border-primary/30">
+      {favoriteDriver ? (
+        <Card className="group relative overflow-hidden border border-border/50 bg-gradient-to-r from-card via-card to-primary/5 hover:shadow-lg transition-all duration-300">
+          {/* Subtle glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <div className="relative p-4 flex items-center gap-4">
+            {/* Avatar with favorite badge */}
+            <div className="relative flex-shrink-0">
+              <Avatar className="w-14 h-14 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
                 <AvatarImage 
                   src={favoriteDriver.profiles?.profile_photo_url || undefined} 
                   alt={getDriverDisplayName(favoriteDriver)} 
                 />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-orange-500 text-white font-bold">
                   {getDriverDisplayName(favoriteDriver).charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              
-              <div className="flex-1 text-center sm:text-left">
-                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
-                  <h3 className="font-bold text-lg">{getDriverDisplayName(favoriteDriver)}</h3>
-                  <Badge variant="default" className="bg-red-500 gap-1">
-                    <Heart className="w-3 h-3 fill-current" />
-                    Favori
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
+                <Heart className="w-3 h-3 text-white fill-white" />
+              </div>
+            </div>
+            
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-semibold text-foreground truncate">
+                  {getDriverDisplayName(favoriteDriver)}
+                </h3>
+                {favoriteDriver.rating && favoriteDriver.rating > 0 && favoriteDriver.show_rating_public && (
+                  <Badge variant="secondary" className="gap-0.5 text-xs px-1.5 py-0">
+                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                    {favoriteDriver.rating.toFixed(1)}
                   </Badge>
-                </div>
-                
-                {favoriteDriver.company_name && favoriteDriver.display_company_name && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center sm:justify-start mt-1">
-                    <Building2 className="w-3 h-3" />
-                    {favoriteDriver.company_name}
-                  </p>
                 )}
-                
-                <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
-                  {favoriteDriver.vehicle_brand && favoriteDriver.vehicle_model && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Car className="w-3 h-3" />
-                      {favoriteDriver.vehicle_brand} {favoriteDriver.vehicle_model}
-                    </Badge>
-                  )}
-                  {favoriteDriver.rating && favoriteDriver.rating > 0 && favoriteDriver.show_rating_public && (
-                    <Badge variant="outline" className="gap-1">
-                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      {favoriteDriver.rating.toFixed(1)}
-                    </Badge>
-                  )}
-                </div>
               </div>
               
-              {allDrivers.length > 1 && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowSelectDialog(true)}
-                  className="flex-shrink-0"
-                >
-                  Changer
-                </Button>
+              {favoriteDriver.company_name && favoriteDriver.display_company_name && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  <span className="truncate">{favoriteDriver.company_name}</span>
+                </p>
+              )}
+              
+              {getVehicleDescription(favoriteDriver) && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Car className="w-3 h-3" />
+                  <span className="truncate">{getVehicleDescription(favoriteDriver)}</span>
+                </p>
               )}
             </div>
-
-            {/* Actions rapides */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
+            
+            {/* Quick actions */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <Button 
                 size="sm"
                 onClick={() => handleBookCourse(favoriteDriver.id)}
-                className="gap-1"
+                className="bg-primary hover:bg-primary/90 h-9 px-3"
               >
-                <CalendarPlus className="w-4 h-4" />
-                Réserver
+                <CalendarPlus className="w-4 h-4 mr-1.5" />
+                <span className="hidden sm:inline">Réserver</span>
               </Button>
               
               <Button 
-                variant="outline" 
-                size="sm"
+                variant="ghost" 
+                size="icon"
                 onClick={handleMessage}
-                className="gap-1"
+                className="h-9 w-9"
               >
                 <MessageSquare className="w-4 h-4" />
-                Message
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleViewPublicProfile(favoriteDriver.id)}
-                className="gap-1"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Voir profil
               </Button>
 
               {favoriteDriver.show_phone && favoriteDriver.profiles?.phone && (
                 <Button 
-                  variant="secondary" 
-                  size="sm"
+                  variant="ghost" 
+                  size="icon"
                   onClick={() => handleCall(favoriteDriver.profiles.phone!)}
-                  className="gap-1"
+                  className="h-9 w-9 text-green-600"
                 >
                   <Phone className="w-4 h-4" />
-                  Appeler
                 </Button>
               )}
 
               {favoriteDriver.show_email && favoriteDriver.profiles?.email && (
                 <Button 
-                  variant="secondary" 
-                  size="sm"
+                  variant="ghost" 
+                  size="icon"
                   onClick={() => handleEmail(favoriteDriver.profiles.email!)}
-                  className="gap-1"
+                  className="h-9 w-9 text-blue-600"
                 >
                   <Mail className="w-4 h-4" />
-                  Email
+                </Button>
+              )}
+              
+              {allDrivers.length > 1 && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setShowSelectDialog(true)}
+                  className="h-9 w-9"
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
               )}
             </div>
           </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground mb-4">Aucun chauffeur favori défini</p>
+        </Card>
+      ) : (
+        <Card className="p-4 border-dashed border-2 border-muted-foreground/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                <Heart className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Aucun chauffeur favori</p>
+                <p className="text-xs text-muted-foreground/70">Sélectionnez votre chauffeur préféré</p>
+              </div>
+            </div>
             {allDrivers.length > 0 && (
-              <Button onClick={() => setShowSelectDialog(true)}>
-                Choisir un favori
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowSelectDialog(true)}
+              >
+                Choisir
               </Button>
             )}
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Dialog pour sélectionner le chauffeur favori */}
       <Dialog open={showSelectDialog} onOpenChange={setShowSelectDialog}>
@@ -345,62 +338,53 @@ export function FavoriteDriverSection({
               Choisir mon chauffeur favori
             </DialogTitle>
             <DialogDescription>
-              Votre chauffeur favori apparaîtra en premier dans vos options de réservation
+              Votre chauffeur favori apparaîtra en premier pour vos réservations
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-3 mt-4">
+          <div className="space-y-2 mt-4">
             {allDrivers.map((driver) => {
               const isCurrentFavorite = favoriteDriver?.id === driver.id;
               
               return (
-                <Card 
+                <div 
                   key={driver.id}
                   className={cn(
-                    "p-4 cursor-pointer transition-all hover:shadow-md",
+                    "p-3 rounded-lg cursor-pointer transition-all flex items-center gap-3 border",
                     isCurrentFavorite 
-                      ? "border-2 border-red-500 bg-red-50 dark:bg-red-950/20" 
-                      : "hover:border-primary/50"
+                      ? "border-red-500 bg-red-500/10" 
+                      : "border-border hover:border-primary/50 hover:bg-accent/50"
                   )}
                   onClick={() => !changing && handleChangeFavorite(driver.id)}
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage 
-                        src={driver.profiles?.profile_photo_url || undefined} 
-                        alt={getDriverDisplayName(driver)} 
-                      />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                        {getDriverDisplayName(driver).charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{getDriverDisplayName(driver)}</p>
-                      {driver.company_name && driver.display_company_name && (
-                        <p className="text-sm text-muted-foreground truncate">
-                          {driver.company_name}
-                        </p>
-                      )}
-                    </div>
-                    
-                    {isCurrentFavorite ? (
-                      <Badge variant="default" className="bg-red-500 gap-1 flex-shrink-0">
-                        <Heart className="w-3 h-3 fill-current" />
-                        Actuel
-                      </Badge>
-                    ) : (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        disabled={changing}
-                        className="flex-shrink-0"
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
+                  <Avatar className="w-11 h-11">
+                    <AvatarImage 
+                      src={driver.profiles?.profile_photo_url || undefined} 
+                      alt={getDriverDisplayName(driver)} 
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-orange-500 text-white text-sm">
+                      {getDriverDisplayName(driver).charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate text-sm">{getDriverDisplayName(driver)}</p>
+                    {driver.company_name && driver.display_company_name && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {driver.company_name}
+                      </p>
                     )}
                   </div>
-                </Card>
+                  
+                  {isCurrentFavorite ? (
+                    <Badge className="bg-red-500 text-white gap-1 text-xs">
+                      <Heart className="w-3 h-3 fill-current" />
+                      Actuel
+                    </Badge>
+                  ) : (
+                    <Check className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
               );
             })}
           </div>

@@ -15,7 +15,7 @@ import {
   Clock,
   StickyNote,
   Users,
-  QrCode,
+  QrCode, // Keep for potential future use
   User,
   Sparkles,
   Menu,
@@ -33,7 +33,7 @@ import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
 import ClientDriversWithProfile from "@/components/client/ClientDriversWithProfile";
-import ClientQRScanner from "@/components/client/ClientQRScanner";
+// ClientQRScanner removed - QR scanning handled via direct URL
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
@@ -251,7 +251,6 @@ const ClientDashboard = () => {
       icon: Users, 
       hideForExclusive: false 
     },
-    { id: "scanner", label: t('clientDashboard.menu.scanQR'), icon: QrCode, hideForExclusive: true },
     { id: "vitrine", label: t('clientDashboard.menu.publicShowcase'), icon: Car, isLink: true, path: "/chauffeurs", hideForExclusive: true },
     { id: "compte", label: t('clientDashboard.menu.myAccount'), icon: User },
     { id: "rgpd", label: t('clientDashboard.menu.myData'), icon: Sparkles, isLink: true, path: "/rgpd-data" },

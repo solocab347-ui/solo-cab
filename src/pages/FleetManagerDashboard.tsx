@@ -686,13 +686,19 @@ const FleetManagerDashboard = () => {
               </TabsList>
               
               <TabsContent value="my-drivers" className="space-y-6">
-                {/* Note: Documents validation moved to Documents tab */}
+                {/* Storefront visibility manager */}
+                {drivers.length > 0 && (
+                  <FleetStorefrontManager 
+                    fleetManagerId={fleetManager.id} 
+                    onUpdate={fetchData}
+                  />
+                )}
 
                 <Card className="bg-card/50 backdrop-blur border-white/10">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Car className="w-5 h-5 text-primary" />
-                      Mes Chauffeurs
+                      Liste des Chauffeurs
                     </CardTitle>
                     <CardDescription>
                       Cliquez sur un chauffeur pour voir son profil complet
