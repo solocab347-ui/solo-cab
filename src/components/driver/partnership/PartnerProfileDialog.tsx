@@ -124,23 +124,51 @@ export function PartnerProfileDialog({
     
     setLoading(true);
     try {
-      // Utiliser la fonction RPC SECURITY DEFINER pour contourner RLS
-      // et permettre l'accès aux profils des chauffeurs (validés, pionniers, période de grâce)
+      // Essayer d'abord via la fonction RPC SECURITY DEFINER
       const { data: rpcData, error: rpcError } = await supabase
         .rpc('get_public_driver_profile_by_id', { driver_id_param: driverId });
       
       const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
       
-      if (rpcError || driverDataArray.length === 0) {
-        console.error('Driver not found via RPC:', rpcError, 'Data:', rpcData);
-        setProfile(null);
-        return;
-      }
+      let driverData: Record<string, unknown> | null = null;
       
-      // Cast explicite car les types supabase ne sont pas encore à jour après migration
-      const driverData = driverDataArray[0] as Record<string, unknown>;
+      if (!rpcError && driverDataArray.length > 0) {
+        driverData = driverDataArray[0] as Record<string, unknown>;
+      } else {
+        // Fallback: récupérer directement depuis les tables pour les partenaires existants
+        // Ceci fonctionne si l'utilisateur actuel a une relation de partenariat avec ce chauffeur
+        console.log('RPC returned empty, trying direct query for partner:', driverId);
+        
+        const { data: directData, error: directError } = await supabase
+          .from('drivers')
+          .select(`
+            id, user_id, company_name, service_description, rating, total_rides,
+            working_sectors, services_offered, vehicle_equipment, card_photo_url,
+            sharing_number, show_phone_for_sharing, show_email, show_rating_for_sharing, 
+            show_rides_for_sharing, contact_phone, contact_email,
+            profiles:user_id (full_name, profile_photo_url, phone, email)
+          `)
+          .eq('id', driverId)
+          .single();
+        
+        if (directError || !directData) {
+          console.error('Driver not found:', directError);
+          setProfile(null);
+          return;
+        }
+        
+        // Transformer les données directes dans le même format
+        const profileData = directData.profiles as { full_name: string; profile_photo_url: string | null; phone: string | null; email: string | null } | null;
+        driverData = {
+          ...directData,
+          profile_photo_url: directData.card_photo_url || profileData?.profile_photo_url,
+          profile_full_name: profileData?.full_name || 'Partenaire',
+          profile_phone: profileData?.phone,
+          profile_email: profileData?.email,
+        };
+      }
 
-      // Récupérer les véhicules séparément (pas de restriction RLS sur driver_vehicles pour le propriétaire)
+      // Récupérer les véhicules séparément
       const { data: vehiclesData } = await supabase
         .from('driver_vehicles')
         .select('id, brand, model, color, category, max_passengers, photos, equipment')
@@ -148,7 +176,7 @@ export function PartnerProfileDialog({
         .eq('is_active', true)
         .order('is_favorite', { ascending: false });
 
-      // Mapper les données RPC vers le format DriverProfile
+      // Mapper les données vers le format DriverProfile
       setProfile({
         id: driverData.id as string,
         user_id: driverData.user_id as string,
