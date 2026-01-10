@@ -12984,12 +12984,18 @@ export type Database = {
           profile_full_name: string
           profile_phone: string
           profile_photo_url: string
+          rating: number
           service_description: string
           services_offered: string[]
+          sharing_number: number
           show_email: boolean
           show_phone: boolean
+          show_phone_for_sharing: boolean
+          show_rating_for_sharing: boolean
           show_rating_public: boolean
+          show_rides_for_sharing: boolean
           status: string
+          total_rides: number
           user_id: string
           vehicle_brand: string
           vehicle_color: string
