@@ -2,14 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { NumericInput } from "@/components/ui/numeric-input";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Save, Euro, Percent, Clock, Moon, Calendar, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TvaToggle } from "@/components/pricing/TvaToggle";
 
 interface FleetPricingSettingsProps {
   fleetManagerId: string;
@@ -196,14 +195,10 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                 <br />• <strong>20%</strong> pour les mises à disposition (tarif horaire)
               </AlertDescription>
             </Alert>
-            <div className="flex items-center gap-3">
-              <Switch
-                id="tva_included"
-                checked={pricing.tva_included}
-                onCheckedChange={(checked) => setPricing({ ...pricing, tva_included: checked })}
-              />
-              <Label htmlFor="tva_included">TVA incluse dans les prix affichés</Label>
-            </div>
+            <TvaToggle
+              checked={pricing.tva_included}
+              onCheckedChange={(checked) => setPricing({ ...pricing, tva_included: checked })}
+            />
           </div>
 
           <Separator />

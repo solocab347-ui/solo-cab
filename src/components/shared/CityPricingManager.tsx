@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Loader2, Save, Plus, Trash2, MapPin, Euro, Clock, 
-  Moon, Calendar, TrendingUp, TrendingDown, ChevronDown, ChevronUp 
+  Moon, Calendar, TrendingDown, ChevronDown, ChevronUp 
 } from "lucide-react";
 import {
   Select,
@@ -25,6 +25,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { TvaToggle } from "@/components/pricing/TvaToggle";
+import { MultiplePeakHours } from "@/components/pricing/MultiplePeakHours";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,10 +57,19 @@ interface CityPricing {
   tva_included: boolean;
   evening_surcharge: number;
   weekend_surcharge: number;
+  // Multiple peak hours support (up to 3 periods)
   peak_hours_enabled: boolean;
   peak_hours_start: string | null;
   peak_hours_end: string | null;
   peak_hours_multiplier: number;
+  peak_hours_2_enabled: boolean;
+  peak_hours_2_start: string | null;
+  peak_hours_2_end: string | null;
+  peak_hours_2_multiplier: number;
+  peak_hours_3_enabled: boolean;
+  peak_hours_3_start: string | null;
+  peak_hours_3_end: string | null;
+  peak_hours_3_multiplier: number;
   off_peak_enabled: boolean;
   off_peak_start: string | null;
   off_peak_end: string | null;
@@ -112,6 +123,14 @@ const defaultPricing: Omit<CityPricing, "id"> = {
   peak_hours_start: null,
   peak_hours_end: null,
   peak_hours_multiplier: 1.0,
+  peak_hours_2_enabled: false,
+  peak_hours_2_start: null,
+  peak_hours_2_end: null,
+  peak_hours_2_multiplier: 1.0,
+  peak_hours_3_enabled: false,
+  peak_hours_3_start: null,
+  peak_hours_3_end: null,
+  peak_hours_3_multiplier: 1.0,
   off_peak_enabled: false,
   off_peak_start: null,
   off_peak_end: null,
@@ -245,6 +264,14 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
         peak_hours_start: pricing.peak_hours_start,
         peak_hours_end: pricing.peak_hours_end,
         peak_hours_multiplier: pricing.peak_hours_multiplier,
+        peak_hours_2_enabled: pricing.peak_hours_2_enabled,
+        peak_hours_2_start: pricing.peak_hours_2_start,
+        peak_hours_2_end: pricing.peak_hours_2_end,
+        peak_hours_2_multiplier: pricing.peak_hours_2_multiplier,
+        peak_hours_3_enabled: pricing.peak_hours_3_enabled,
+        peak_hours_3_start: pricing.peak_hours_3_start,
+        peak_hours_3_end: pricing.peak_hours_3_end,
+        peak_hours_3_multiplier: pricing.peak_hours_3_multiplier,
         off_peak_enabled: pricing.off_peak_enabled,
         off_peak_start: pricing.off_peak_start,
         off_peak_end: pricing.off_peak_end,
@@ -534,13 +561,11 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Switch
-                          checked={pricing.tva_included}
-                          onCheckedChange={(checked) => updatePricing(pricing.id!, { tva_included: checked })}
-                        />
-                        <Label>TVA incluse dans les prix affichés</Label>
-                      </div>
+                      <TvaToggle
+                        checked={pricing.tva_included}
+                        onCheckedChange={(checked) => updatePricing(pricing.id!, { tva_included: checked })}
+                        variant="compact"
+                      />
                     </div>
 
                     <Separator />
@@ -580,52 +605,45 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
 
                     <Separator />
 
-                    {/* Heures de pointe */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <Switch
-                          checked={pricing.peak_hours_enabled}
-                          onCheckedChange={(checked) => updatePricing(pricing.id!, { peak_hours_enabled: checked })}
-                        />
-                        <Label className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-destructive" />
-                          Activer les heures de pointe
-                        </Label>
-                      </div>
-                      {pricing.peak_hours_enabled && (
-                        <div className="grid gap-4 md:grid-cols-3 pl-8">
-                          <div className="space-y-2">
-                            <Label>Début</Label>
-                            <Input
-                              type="time"
-                              value={pricing.peak_hours_start || ""}
-                              onChange={(e) => updatePricing(pricing.id!, { peak_hours_start: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Fin</Label>
-                            <Input
-                              type="time"
-                              value={pricing.peak_hours_end || ""}
-                              onChange={(e) => updatePricing(pricing.id!, { peak_hours_end: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Multiplicateur</Label>
-                            <NumericInput
-                              value={pricing.peak_hours_multiplier}
-                              onChange={(value) => updatePricing(pricing.id!, { peak_hours_multiplier: parseFloat(value) || 1 })}
-                              placeholder="1.5"
-                              min={1}
-                              max={3}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              1.5 = +50%, 2.0 = +100%
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {/* Heures de pointe - jusqu'à 3 périodes */}
+                    <MultiplePeakHours
+                      period1={{
+                        enabled: pricing.peak_hours_enabled,
+                        start: pricing.peak_hours_start,
+                        end: pricing.peak_hours_end,
+                        multiplier: pricing.peak_hours_multiplier,
+                      }}
+                      period2={{
+                        enabled: pricing.peak_hours_2_enabled || false,
+                        start: pricing.peak_hours_2_start || null,
+                        end: pricing.peak_hours_2_end || null,
+                        multiplier: pricing.peak_hours_2_multiplier || 1,
+                      }}
+                      period3={{
+                        enabled: pricing.peak_hours_3_enabled || false,
+                        start: pricing.peak_hours_3_start || null,
+                        end: pricing.peak_hours_3_end || null,
+                        multiplier: pricing.peak_hours_3_multiplier || 1,
+                      }}
+                      onPeriod1Change={(p) => updatePricing(pricing.id!, {
+                        peak_hours_enabled: p.enabled,
+                        peak_hours_start: p.start,
+                        peak_hours_end: p.end,
+                        peak_hours_multiplier: p.multiplier,
+                      })}
+                      onPeriod2Change={(p) => updatePricing(pricing.id!, {
+                        peak_hours_2_enabled: p.enabled,
+                        peak_hours_2_start: p.start,
+                        peak_hours_2_end: p.end,
+                        peak_hours_2_multiplier: p.multiplier,
+                      })}
+                      onPeriod3Change={(p) => updatePricing(pricing.id!, {
+                        peak_hours_3_enabled: p.enabled,
+                        peak_hours_3_start: p.start,
+                        peak_hours_3_end: p.end,
+                        peak_hours_3_multiplier: p.multiplier,
+                      })}
+                    />
 
                     {/* Heures creuses */}
                     <div className="space-y-4">

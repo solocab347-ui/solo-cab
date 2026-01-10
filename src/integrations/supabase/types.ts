@@ -243,6 +243,14 @@ export type Database = {
           off_peak_enabled: boolean | null
           off_peak_end: string | null
           off_peak_start: string | null
+          peak_hours_2_enabled: boolean | null
+          peak_hours_2_end: string | null
+          peak_hours_2_multiplier: number | null
+          peak_hours_2_start: string | null
+          peak_hours_3_enabled: boolean | null
+          peak_hours_3_end: string | null
+          peak_hours_3_multiplier: number | null
+          peak_hours_3_start: string | null
           peak_hours_enabled: boolean | null
           peak_hours_end: string | null
           peak_hours_multiplier: number | null
@@ -272,6 +280,14 @@ export type Database = {
           off_peak_enabled?: boolean | null
           off_peak_end?: string | null
           off_peak_start?: string | null
+          peak_hours_2_enabled?: boolean | null
+          peak_hours_2_end?: string | null
+          peak_hours_2_multiplier?: number | null
+          peak_hours_2_start?: string | null
+          peak_hours_3_enabled?: boolean | null
+          peak_hours_3_end?: string | null
+          peak_hours_3_multiplier?: number | null
+          peak_hours_3_start?: string | null
           peak_hours_enabled?: boolean | null
           peak_hours_end?: string | null
           peak_hours_multiplier?: number | null
@@ -301,6 +317,14 @@ export type Database = {
           off_peak_enabled?: boolean | null
           off_peak_end?: string | null
           off_peak_start?: string | null
+          peak_hours_2_enabled?: boolean | null
+          peak_hours_2_end?: string | null
+          peak_hours_2_multiplier?: number | null
+          peak_hours_2_start?: string | null
+          peak_hours_3_enabled?: boolean | null
+          peak_hours_3_end?: string | null
+          peak_hours_3_multiplier?: number | null
+          peak_hours_3_start?: string | null
           peak_hours_enabled?: boolean | null
           peak_hours_end?: string | null
           peak_hours_multiplier?: number | null
