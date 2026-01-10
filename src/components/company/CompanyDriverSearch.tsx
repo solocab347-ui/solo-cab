@@ -155,10 +155,10 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     queryFn: async () => {
-      // Base query - fetch all validated drivers visible to companies
-      // IMPORTANT: On filtre par visible_to_companies = true explicitement
+      // Utiliser la vue qui inclut les chauffeurs en période de grâce (30 jours)
+      // Cela inclut: validés OU pionniers actifs OU nouveaux en période de grâce
       const { data, error } = await supabase
-        .from("drivers")
+        .from("drivers_visible_to_companies")
         .select(`
           id,
           user_id,
@@ -196,8 +196,6 @@ export function CompanyDriverSearch({ companyId }: CompanyDriverSearchProps) {
           minimum_price,
           home_address
         `)
-        .eq("status", "validated")
-        .eq("visible_to_companies", true)
         .order('rating', { ascending: false, nullsFirst: false })
         .limit(100);
 

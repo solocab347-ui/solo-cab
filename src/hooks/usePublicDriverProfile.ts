@@ -91,20 +91,19 @@ export function useVisibleDrivers(
   return useQuery({
     queryKey: [PUBLIC_DRIVERS_QUERY_KEY, visibilityType, filters],
     queryFn: async () => {
-      // Build query with visibility filter
-      // Fetch drivers - cast to any to avoid deep type inference issues
-      const driversQuery = supabase.from('drivers').select('*');
-      const driversResult = await (driversQuery as any)
-        .eq('status', 'validated')
-        .eq(visibilityField, true)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(100);
+      // Utiliser la fonction RPC pour récupérer les chauffeurs avec accès complet
+      // (validés OU pionniers actifs OU en période de grâce de 30 jours)
+      const { data: driversData, error: driversError } = await supabase
+        .rpc('get_drivers_with_full_access', {
+          visibility_field: visibilityField,
+          limit_count: 100
+        });
 
-      if (driversResult.error) throw driversResult.error;
-      const driversData: any[] = driversResult.data || [];
+      if (driversError) throw driversError;
+      const drivers: any[] = driversData || [];
 
       // Récupérer les profils
-      const userIds = driversData.map((d: any) => d.user_id).filter(Boolean);
+      const userIds = drivers.map((d: any) => d.user_id).filter(Boolean);
       let profilesMap: Record<string, any> = {};
       
       if (userIds.length > 0) {
@@ -122,7 +121,7 @@ export function useVisibleDrivers(
       }
 
       // Attacher les profils
-      let result = driversData.map((driver: any) => ({
+      let result = drivers.map((driver: any) => ({
         ...driver,
         profile: profilesMap[driver.user_id] || null
       }));

@@ -110,10 +110,10 @@ export function useCourseCreation() {
       const sanitizedNotes = sanitizeNotes(notes);
       const sanitizedPromoCode = sanitizePromoCode(promoCode);
 
-      // VALIDATION 5: Vérifier que le driver existe et est validé
+      // VALIDATION 5: Vérifier que le driver existe et a accès complet
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
-        .select("id, status, max_passengers")
+        .select("id, status, max_passengers, is_pioneer, free_access_end_date, created_at")
         .eq("id", driverId)
         .maybeSingle();
 
@@ -128,8 +128,18 @@ export function useCourseCreation() {
         return null;
       }
 
-      if (driverData.status !== "validated") {
-        toast.error("Ce chauffeur n'est pas encore validé");
+      // Vérifier accès complet: validé OU pionnier actif OU période de grâce 30 jours
+      const isValidated = driverData.status === "validated";
+      const isPioneerActive = driverData.is_pioneer && 
+        driverData.free_access_end_date && 
+        new Date(driverData.free_access_end_date) > new Date();
+      const isInGracePeriod = driverData.created_at && 
+        new Date(driverData.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      
+      const hasFullAccess = isValidated || isPioneerActive || isInGracePeriod;
+
+      if (!hasFullAccess) {
+        toast.error("Ce chauffeur n'a pas encore accès à la création de courses");
         return null;
       }
 

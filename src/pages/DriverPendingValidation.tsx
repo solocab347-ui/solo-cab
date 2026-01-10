@@ -38,7 +38,7 @@ const DriverPendingValidation = () => {
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, created_at")
         .eq("user_id", user.id)
         .single();
 
@@ -51,10 +51,15 @@ const DriverPendingValidation = () => {
         driver.free_access_end_date && 
         new Date(driver.free_access_end_date) > new Date();
 
-      // Accès valide = payé OU accès gratuit illimité OU essai en cours
+      // NOUVEAU: Vérifier période de grâce de 30 jours
+      const isInGracePeriod = driver.created_at && 
+        new Date(driver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      // Accès valide = payé OU accès gratuit illimité OU essai en cours OU période de grâce
       const hasValidAccess = driver.subscription_paid || 
         driver.free_access_granted || 
-        hasActiveTrialAccess;
+        hasActiveTrialAccess ||
+        isInGracePeriod;
 
       // Rediriger si accès valide (peu importe le statut de validation)
       if (hasValidAccess) {

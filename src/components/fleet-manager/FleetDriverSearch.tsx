@@ -364,13 +364,11 @@ Cordialement`;
   const searchDrivers = async () => {
     setSearching(true);
     try {
-      // Query drivers directly (same logic as FleetDriverPartnerships)
+      // Utiliser la vue qui inclut les chauffeurs en période de grâce (30 jours)
+      // Cela inclut: validés OU pionniers actifs OU nouveaux en période de grâce
       let query = supabase
-        .from('drivers')
-        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, contact_phone, contact_email, visible_to_drivers, display_driver_name, display_company_name, show_rating_public, show_rating_partners, show_pricing_partners, card_photo_url, minimum_price')
-        .eq('status', 'validated')
-        .or('visible_to_drivers.eq.true,public_profile_enabled.eq.true')
-        .is('fleet_manager_id', null);
+        .from('drivers_visible_to_fleet_managers')
+        .select('id, user_id, company_name, vehicle_brand, vehicle_model, vehicle_year, vehicle_color, vehicle_equipment, vehicle_category, services_offered, working_sectors, bio, service_description, rating, total_rides, base_fare, per_km_rate, hourly_rate, home_address, vehicle_photos, gallery_photos, show_phone, show_email, contact_phone, contact_email, visible_to_drivers, display_driver_name, display_company_name, show_rating_public, show_rating_partners, show_pricing_partners, card_photo_url, minimum_price');
 
       // Apply filters independently using filterValues
       if (filterValues.minRating > 0) {
