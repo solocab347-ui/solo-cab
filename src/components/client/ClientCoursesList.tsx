@@ -514,9 +514,14 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               </div>
             )}
             <div>
-              <h3 className="font-bold">{course.drivers?.profiles?.full_name}</h3>
+              <h3 className="font-bold">{course.drivers?.profiles?.full_name || ''}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{course.drivers?.vehicle_model}</span>
+                {(() => {
+                  const model = course.drivers?.vehicle_model;
+                  const color = course.drivers?.vehicle_color;
+                  const vehicleDisplay = [model, color].filter(Boolean).join(' ');
+                  return vehicleDisplay ? <span>{vehicleDisplay}</span> : null;
+                })()}
                 {course.course_number && (
                   <>
                     <span>•</span>
