@@ -11214,7 +11214,23 @@ export type Database = {
           client_photo: string
         }[]
       }
+      get_user_client_id_secure: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      get_user_company_id_secure: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      get_user_driver_id_secure: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
       get_user_employee_id: { Args: { _user_id: string }; Returns: string }
+      get_user_fleet_manager_id_secure: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -11254,6 +11270,10 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
+      has_role_secure: {
+        Args: { role_name: string; user_uuid: string }
+        Returns: boolean
+      }
       is_airport_address: { Args: { address: string }; Returns: boolean }
       is_company_admin: {
         Args: { _company_id: string; _user_id: string }
