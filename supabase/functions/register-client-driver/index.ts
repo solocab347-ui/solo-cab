@@ -188,6 +188,7 @@ serve(async (req) => {
     }
 
     // Create new free client (is_exclusive: false) - use SERVICE_ROLE to bypass RLS
+    // IMPORTANT: Le premier chauffeur devient automatiquement le favori
     const { data: newClient, error: insertError } = await supabaseService
       .from("clients")
       .insert({
@@ -195,6 +196,7 @@ serve(async (req) => {
         is_exclusive: false,
         driver_ids: [driver_id],
         driver_id: null, // Free clients don't have a single driver_id
+        favorite_driver_id: driver_id, // Premier chauffeur = favori par défaut
       })
       .select()
       .single();

@@ -36,6 +36,7 @@ import ClientDriversWithProfile from "@/components/client/ClientDriversWithProfi
 import ClientQRScanner from "@/components/client/ClientQRScanner";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
+import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import ShareButtons from "@/components/ShareButtons";
 import { cn } from "@/lib/utils";
@@ -342,6 +343,17 @@ const ClientDashboard = () => {
               </Card>
             </div>
 
+            {/* Section chauffeur favori pour les clients FREE */}
+            {!clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_ids?.length > 0 && (
+              <FavoriteDriverSection
+                clientId={clientProfile.client.id}
+                favoriteDriverId={clientProfile.client.favorite_driver_id}
+                driverIds={clientProfile.client.driver_ids}
+                onFavoriteChange={fetchClientProfile}
+              />
+            )}
+
+            {/* Section chauffeur exclusif */}
             {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
               <Card className="p-4 md:p-6">
                 <div className="flex items-center justify-between mb-4">

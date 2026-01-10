@@ -160,7 +160,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid grid-cols-3 w-full h-auto gap-3 p-0 bg-transparent">
+            <TabsList className="grid grid-cols-3 w-full h-auto gap-3 p-0 bg-transparent" style={{ overflow: 'visible' }}>
               {/* Ligne 1 */}
               <TabsTrigger value="received" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(16,185,129,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(16,185,129,0.6)] data-[state=active]:border-emerald-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-950/80 data-[state=active]:via-emerald-900/60 data-[state=active]:to-emerald-950/80 transition-all duration-300 h-auto group">
                 {receivedCount > 0 && (
@@ -194,7 +194,7 @@ export function DriverPartnershipsTab({ driverId, initialSubTab = 'received' }: 
               {/* Ligne 2 */}
               <TabsTrigger value="list" className="relative overflow-visible flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br from-card/80 via-card/60 to-card/80 backdrop-blur-xl border-2 border-transparent shadow-[0_8px_30px_rgb(139,92,246,0.2)] hover:scale-[1.02] data-[state=active]:scale-[1.02] data-[state=active]:shadow-[0_8px_30px_rgb(139,92,246,0.6)] data-[state=active]:border-violet-500 data-[state=active]:bg-gradient-to-br data-[state=active]:from-violet-950/80 data-[state=active]:via-violet-900/60 data-[state=active]:to-violet-950/80 transition-all duration-300 h-auto group">
                 {pendingPartnershipRequestsCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px] bg-orange-500 text-white animate-pulse shadow-lg z-50 border-2 border-background">
+                  <Badge className="absolute -top-3 -right-3 h-6 min-w-6 p-0 flex items-center justify-center text-xs font-bold bg-red-500 text-white animate-pulse shadow-xl border-2 border-background" style={{ zIndex: 100 }}>
                     {pendingPartnershipRequestsCount}
                   </Badge>
                 )}
