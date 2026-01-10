@@ -12649,6 +12649,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_applicable_pricing: {
+        Args: {
+          p_destination_address: string
+          p_driver_id: string
+          p_pickup_address: string
+        }
+        Returns: {
+          city_name: string
+          city_pricing_id: string
+          pricing_type: string
+        }[]
+      }
       get_available_fleet_drivers_for_course: {
         Args: {
           p_duration_minutes?: number
