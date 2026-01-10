@@ -12348,6 +12348,7 @@ export type Database = {
             Returns: {
               base_price: number
               distance_price: number
+              peak_hours_surcharge: number
               pricing_source: string
               subtotal: number
               surcharge_evening: number
@@ -12480,6 +12481,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      detect_city_from_address: { Args: { p_address: string }; Returns: string }
       detect_paris_address: { Args: { p_address: string }; Returns: string }
       dispatch_company_course_to_fleet: {
         Args: { p_company_request_id: string; p_fleet_manager_id: string }
@@ -12655,9 +12657,9 @@ export type Database = {
       }
       get_applicable_pricing: {
         Args: {
-          p_destination_address: string
+          p_destination_address?: string
           p_driver_id: string
-          p_pickup_address: string
+          p_pickup_address?: string
         }
         Returns: {
           city_name: string
