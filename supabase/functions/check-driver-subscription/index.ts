@@ -43,25 +43,74 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check for free access first
+    // Check for free access first - INCLUDE created_at for grace period check
     const { data: driver } = await supabaseClient
       .from("drivers")
-      .select("id, free_access_granted, free_access_end_date, free_access_type, is_pioneer")
+      .select("id, free_access_granted, free_access_end_date, free_access_type, is_pioneer, created_at, subscription_paid")
       .eq("user_id", user.id)
       .single();
 
+    if (!driver) {
+      logStep("No driver found");
+      return new Response(JSON.stringify({
+        subscribed: false,
+        subscription_status: "inactive",
+        subscription_end: null
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     logStep("Driver data retrieved", { 
-      driverId: driver?.id, 
-      hasFreeAccess: driver?.free_access_granted,
-      isPioneer: driver?.is_pioneer,
-      freeAccessType: driver?.free_access_type
+      driverId: driver.id, 
+      hasFreeAccess: driver.free_access_granted,
+      isPioneer: driver.is_pioneer,
+      freeAccessType: driver.free_access_type,
+      createdAt: driver.created_at,
+      subscriptionPaid: driver.subscription_paid
     });
 
-    // Check if this is a pioneer with active trial
     const now = new Date();
-    const endDate = driver?.free_access_end_date ? new Date(driver.free_access_end_date) : null;
-    const isPioneerTrialActive = driver?.is_pioneer && 
-      driver?.free_access_type === "trial" && 
+    const endDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
+
+    // NOUVEAU: Vérifier la période de grâce de 30 jours (tous les chauffeurs nouvellement inscrits)
+    const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+    const isInGracePeriod = gracePeriodEnd && now < gracePeriodEnd;
+
+    if (isInGracePeriod) {
+      logStep("Driver in 30-day grace period, granting access", { 
+        createdAt: driver.created_at,
+        gracePeriodEnd: gracePeriodEnd.toISOString(),
+        daysLeft: Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      });
+      
+      // Ensure subscription_status is active during grace period
+      await supabaseClient
+        .from("drivers")
+        .update({
+          subscription_status: "active",
+          subscription_paid: true,
+        })
+        .eq("id", driver.id);
+      
+      return new Response(JSON.stringify({
+        subscribed: true,
+        subscription_status: "active",
+        subscription_end: gracePeriodEnd.toISOString(),
+        is_free_access: true,
+        is_grace_period: true,
+        grace_period_days_left: Math.ceil((gracePeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Check if this is a pioneer with active trial
+    const isPioneerTrialActive = driver.is_pioneer && 
+      driver.free_access_type === "trial" && 
       endDate && 
       endDate > now;
 
@@ -78,6 +127,7 @@ serve(async (req) => {
         .update({
           subscription_status: "active",
           subscription_end_date: driver.free_access_end_date,
+          subscription_paid: true,
         })
         .eq("id", driver.id);
       
@@ -94,7 +144,7 @@ serve(async (req) => {
     }
 
     // If driver has free access granted (admin granted)
-    if (driver?.free_access_granted) {
+    if (driver.free_access_granted) {
       // Check if free access is still valid (no end date = unlimited, or end date is in future)
       const isFreeAccessValid = !endDate || endDate > now;
       
@@ -107,6 +157,7 @@ serve(async (req) => {
           .update({
             subscription_status: "active",
             subscription_end_date: driver.free_access_end_date,
+            subscription_paid: true,
           })
           .eq("id", driver.id);
         
@@ -135,6 +186,7 @@ serve(async (req) => {
               free_access_start_date: null,
               free_access_type: null,
               subscription_status: "inactive",
+              subscription_paid: false,
             })
             .eq("id", driver.id);
         } else {
@@ -144,6 +196,7 @@ serve(async (req) => {
             .from("drivers")
             .update({
               subscription_status: "active",
+              subscription_paid: true,
             })
             .eq("id", driver.id);
             
@@ -167,6 +220,16 @@ serve(async (req) => {
     
     if (customers.data.length === 0) {
       logStep("No customer found, returning inactive status");
+      
+      // Update to inactive
+      await supabaseClient
+        .from("drivers")
+        .update({
+          subscription_status: "inactive",
+          subscription_paid: false,
+        })
+        .eq("id", driver.id);
+      
       return new Response(JSON.stringify({ 
         subscribed: false,
         subscription_status: "inactive",
@@ -180,52 +243,54 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
+    // Check for active OR trialing subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: "active",
-      limit: 1,
+      limit: 10,
     });
     
-    const hasActiveSub = subscriptions.data.length > 0;
+    // Find any active or trialing subscription
+    const validSubscription = subscriptions.data.find(
+      (sub: { status: string }) => sub.status === "active" || sub.status === "trialing"
+    );
+    
+    const hasActiveSub = !!validSubscription;
     let subscriptionId = null;
     let subscriptionEnd = null;
     let subscriptionStatus = "inactive";
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionId = subscription.id;
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      subscriptionStatus = subscription.status;
-      logStep("Active subscription found", { subscriptionId, endDate: subscriptionEnd, status: subscriptionStatus });
+    if (hasActiveSub && validSubscription) {
+      subscriptionId = validSubscription.id;
+      subscriptionEnd = new Date(validSubscription.current_period_end * 1000).toISOString();
+      subscriptionStatus = validSubscription.status;
+      logStep("Active/trialing subscription found", { subscriptionId, endDate: subscriptionEnd, status: subscriptionStatus });
 
-      // Update driver subscription status in database
-      if (driver) {
-        await supabaseClient
-          .from("drivers")
-          .update({
-            subscription_status: "active",
-            subscription_stripe_id: subscriptionId,
-            subscription_end_date: subscriptionEnd,
-          })
-          .eq("id", driver.id);
-        logStep("Driver subscription status updated in database");
-      }
+      // Update driver subscription status in database - active for both "active" and "trialing"
+      await supabaseClient
+        .from("drivers")
+        .update({
+          subscription_status: "active",
+          subscription_stripe_id: subscriptionId,
+          subscription_end_date: subscriptionEnd,
+          subscription_paid: true,
+        })
+        .eq("id", driver.id);
+      logStep("Driver subscription status updated in database");
     } else {
       logStep("No active subscription found, updating status to inactive");
       // Update driver to inactive if no Stripe subscription
-      if (driver) {
-        await supabaseClient
-          .from("drivers")
-          .update({
-            subscription_status: "inactive",
-          })
-          .eq("id", driver.id);
-      }
+      await supabaseClient
+        .from("drivers")
+        .update({
+          subscription_status: "inactive",
+          subscription_paid: false,
+        })
+        .eq("id", driver.id);
     }
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
-      subscription_status: subscriptionStatus,
+      subscription_status: hasActiveSub ? "active" : "inactive",
       subscription_id: subscriptionId,
       subscription_end: subscriptionEnd,
       is_free_access: false

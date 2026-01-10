@@ -16,7 +16,7 @@ interface SubscriptionManagerProps {
 const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: SubscriptionManagerProps) => {
   const [loading, setLoading] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [checkingSubscription, setCheckingSubscription] = useState(false); // Commence à false pour éviter le flickering
 
   // Pioneer-specific values
   const isPioneer = driverProfile?.driver?.is_pioneer === true;
@@ -25,30 +25,64 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     ? Math.max(0, differenceInDays(new Date(pioneerTrialEnd), new Date())) 
     : null;
 
-  useEffect(() => {
-    checkSubscription();
-  }, []);
+  // NOUVEAU: Calcul synchrone du statut d'accès (évite le flickering)
+  const calculateAccessStatus = () => {
+    const driver = driverProfile?.driver;
+    if (!driver) return { hasFullAccess: false, isInGracePeriod: false };
 
-  const checkSubscription = async () => {
-    try {
-      setCheckingSubscription(true);
-      const { data, error } = await supabase.functions.invoke("check-driver-subscription");
+    const now = new Date();
+    const createdAt = driver.created_at ? new Date(driver.created_at) : null;
+    const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+    const isInGracePeriod = gracePeriodEnd ? now < gracePeriodEnd : false;
 
-      if (error) throw error;
+    const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
+    const isPioneerTrialActive = driver.is_pioneer && 
+      driver.free_access_type === "trial" && 
+      freeAccessEndDate && 
+      freeAccessEndDate > now;
 
-      console.log("Subscription check result:", data);
-      setSubscriptionStatus(data);
-      
-      // Attendre que la mise à jour DB soit propagée, puis recharger le profil
-      setTimeout(() => {
-        onSubscriptionUpdate();
-      }, 500);
-    } catch (error: any) {
-      console.error("Error checking subscription:", error);
-    } finally {
-      setCheckingSubscription(false);
-    }
+    const hasFreeAccess = driver.free_access_granted || 
+      (driver.free_access_type === "unlimited");
+
+    const hasFullAccess = 
+      driver.subscription_status === "active" ||
+      driver.subscription_paid === true ||
+      isInGracePeriod ||
+      isPioneerTrialActive ||
+      hasFreeAccess;
+
+    return { hasFullAccess, isInGracePeriod };
   };
+
+  const localAccessStatus = calculateAccessStatus();
+
+  // Appel async en arrière-plan (pour synchroniser avec Stripe/DB) mais n'affecte pas l'UI immédiatement
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("check-driver-subscription");
+
+        if (error) {
+          console.error("Subscription check error:", error);
+          return;
+        }
+
+        console.log("Subscription check result:", data);
+        setSubscriptionStatus(data);
+        
+        // Attendre que la mise à jour DB soit propagée, puis recharger le profil
+        setTimeout(() => {
+          onSubscriptionUpdate();
+        }, 500);
+      } catch (error: any) {
+        console.error("Error checking subscription:", error);
+      }
+    };
+
+    // Check en arrière-plan après un délai pour ne pas bloquer l'affichage initial
+    const timeoutId = setTimeout(checkSubscription, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [driverProfile?.driver?.id]);
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -75,15 +109,15 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     }
   };
 
-  // Use subscription status from API call which checks free access + Stripe
+  // Utiliser d'abord le statut local (synchrone) puis le statut API si disponible
   const effectiveStatus = subscriptionStatus?.subscription_status || driverProfile?.driver?.subscription_status || "inactive";
-  const isActive = effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
-  const isInactive = effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const isActive = localAccessStatus.hasFullAccess || effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const isInactive = !isActive && effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isPastDue = effectiveStatus === "past_due";
-  const hasFreeAccess = driverProfile?.driver?.free_access_granted || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
+  const hasFreeAccess = driverProfile?.driver?.free_access_granted || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0) || localAccessStatus.isInGracePeriod;
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
-  
+
   const remainingDays = freeAccessEndDate ? differenceInDays(new Date(freeAccessEndDate), new Date()) : null;
 
   const getDurationLabel = (type: string | null) => {
@@ -98,13 +132,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
     }
   };
 
-  if (checkingSubscription) {
-    return (
-      <Card className="p-6">
-        <p className="text-center text-muted-foreground">Vérification de l'abonnement...</p>
-      </Card>
-    );
-  }
+  // Plus de loader - on affiche directement avec le statut calculé localement
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
