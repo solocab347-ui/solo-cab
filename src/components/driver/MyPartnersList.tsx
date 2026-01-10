@@ -15,6 +15,7 @@ import { ModifyPartnershipDialog } from './partnership/ModifyPartnershipDialog';
 import { UniversalPartnershipContract } from '@/components/shared/UniversalPartnershipContract';
 import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
 import { PartnerPublicProfilePreview } from '@/components/shared/PartnerPublicProfilePreview';
+import { PartnershipRejectDialog } from '@/components/shared/PartnershipRejectDialog';
 import { 
   Users, 
   Handshake,
@@ -116,6 +117,10 @@ export function MyPartnersList() {
   
   // Profile preview before signature
   const [previewProfileRequest, setPreviewProfileRequest] = useState<Partner | null>(null);
+  
+  // Reject dialog state
+  const [rejectingRequest, setRejectingRequest] = useState<Partner | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -327,6 +332,68 @@ export function MyPartnersList() {
     }
   };
 
+  const handleRejectWithDialog = async (reason: string, shouldBlock: boolean) => {
+    if (!rejectingRequest) return;
+    
+    setIsRejecting(true);
+    try {
+      // Update partnership status to rejected with reason (use blocked_reason field)
+      const updateData: any = { 
+        status: 'rejected',
+        blocked_reason: reason,
+        updated_at: new Date().toISOString()
+      };
+      
+      // If blocking, also set sharing_blocked
+      if (shouldBlock) {
+        updateData.sharing_blocked = true;
+        updateData.blocked_at = new Date().toISOString();
+      }
+      
+      const { error } = await supabase
+        .from('driver_partnerships')
+        .update(updateData)
+        .eq('id', rejectingRequest.id);
+
+      if (error) throw error;
+      
+      // Notify the sender that the partnership was rejected
+      const senderDriverId = rejectingRequest.proposed_by;
+      const { data: senderDriver } = await supabase
+        .from('drivers')
+        .select('user_id')
+        .eq('id', senderDriverId)
+        .single();
+      
+      if (senderDriver) {
+        const { data: myProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user?.id)
+          .single();
+          
+        await notificationService.notifyDriverPartnershipRejected(
+          senderDriver.user_id,
+          myProfile?.full_name || 'Un chauffeur'
+        );
+      }
+
+      if (shouldBlock) {
+        toast.success('Partenariat refusé et chauffeur bloqué');
+      } else {
+        toast.success('Demande refusée');
+      }
+
+      setRejectingRequest(null);
+      if (driverId) loadPartners(driverId);
+    } catch (error) {
+      console.error('Error rejecting partnership:', error);
+      toast.error('Erreur lors du refus');
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
   const getPaymentScheduleLabel = (schedule: string) => {
     switch (schedule) {
       case 'per_course': return 'Par course';
@@ -463,7 +530,15 @@ export function MyPartnersList() {
         signing={signingPartnership}
       />
 
-      {/* Modify Partnership Dialog */}
+      {/* Reject Partnership Dialog */}
+      <PartnershipRejectDialog
+        open={!!rejectingRequest}
+        onOpenChange={(open) => !open && setRejectingRequest(null)}
+        partnerName={rejectingRequest?.partner_name || 'ce chauffeur'}
+        partnerType="driver"
+        onReject={handleRejectWithDialog}
+        isLoading={isRejecting}
+      />
       {selectedModifyPartner && driverId && (
         <ModifyPartnershipDialog
           open={!!selectedModifyPartner}
@@ -700,7 +775,7 @@ export function MyPartnersList() {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => respondToRequest(request.id, false)}
+                      onClick={() => setRejectingRequest(request)}
                       disabled={responding === request.id}
                       className="h-10 px-4 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
                     >
