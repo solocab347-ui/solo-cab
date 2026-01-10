@@ -81,8 +81,8 @@ const RegisterDriverPromo = () => {
         .from("drivers")
         .insert({
           user_id: newUserId,
-          license_number: licenseNumber || "À compléter",
-          vehicle_model: vehicleModel || "À compléter",
+          license_number: licenseNumber || "",
+          vehicle_model: vehicleModel || "",
           company_name: companyName || null,
           siret: siret || null,
           status: "on_hold", // CRITICAL: Not "pending" - wait for payment

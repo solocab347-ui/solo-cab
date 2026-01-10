@@ -170,8 +170,8 @@ const RegisterCongressDriver = () => {
         .from("drivers")
         .insert({
           user_id: newUserId,
-          license_number: "À compléter",
-          vehicle_model: "À compléter",
+          license_number: "",
+          vehicle_model: "",
           status: "pending",
           is_pioneer: true,
           pioneer_since: new Date().toISOString(),

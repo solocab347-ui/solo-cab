@@ -37,6 +37,7 @@ import ClientQRScanner from "@/components/client/ClientQRScanner";
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
+import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import ShareButtons from "@/components/ShareButtons";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ const ClientDashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [coursesSubTab, setCoursesSubTab] = useState<string | null>(null);
   const [devisFacturesSubTab, setDevisFacturesSubTab] = useState<string | null>(null);
+  const [showDriverSelection, setShowDriverSelection] = useState(false);
   const [stats, setStats] = useState({
     upcomingCourses: 0,
     pendingDevis: 0,
@@ -204,11 +206,29 @@ const ClientDashboard = () => {
   };
 
   const handleNewReservation = () => {
+    // Client exclusif : un seul chauffeur
     if (clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_id) {
       navigate(`/create-course?driver_id=${clientProfile.client.driver_id}`);
+      return;
+    }
+    
+    // Client libre avec chauffeurs associés
+    const driverIds = clientProfile?.client?.driver_ids || [];
+    
+    if (driverIds.length === 1) {
+      // Un seul chauffeur : aller directement à la création de course
+      navigate(`/create-course?driver_id=${driverIds[0]}`);
+    } else if (driverIds.length > 1) {
+      // Plusieurs chauffeurs : afficher le dialog de sélection
+      setShowDriverSelection(true);
     } else {
+      // Aucun chauffeur : aller sur la vitrine publique
       navigate("/chauffeurs");
     }
+  };
+
+  const handleDriverSelected = (driverId: string) => {
+    navigate(`/create-course?driver_id=${driverId}`);
   };
 
   if (loading) {
@@ -516,6 +536,15 @@ const ClientDashboard = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Dialog de sélection de chauffeur pour clients libres */}
+      <DriverSelectionDialog
+        open={showDriverSelection}
+        onOpenChange={setShowDriverSelection}
+        driverIds={clientProfile?.client?.driver_ids || []}
+        favoriteDriverId={clientProfile?.client?.favorite_driver_id}
+        onSelectDriver={handleDriverSelected}
+      />
     </div>
   );
 };
