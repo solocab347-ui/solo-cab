@@ -32,6 +32,7 @@ interface UnifiedQuote {
   time_price: number | null;
   evening_surcharge_amount: number | null;
   weekend_surcharge_amount: number | null;
+  peak_hours_surcharge_amount: number | null;
   discount_amount: number;
   promo_code: string | null;
   // Course info
@@ -296,6 +297,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           time_price: d.time_price,
           evening_surcharge_amount: d.evening_surcharge_amount,
           weekend_surcharge_amount: d.weekend_surcharge_amount,
+          peak_hours_surcharge_amount: d.peak_hours_surcharge_amount,
           discount_amount: d.discount_amount,
           promo_code: d.promo_code,
           pickup_address: d.courses?.pickup_address || "",
@@ -362,6 +364,7 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
           time_price: q.time_price,
           evening_surcharge_amount: q.evening_surcharge,
           weekend_surcharge_amount: q.weekend_surcharge,
+          peak_hours_surcharge_amount: 0, // Company quotes don't have peak hours surcharge yet
           discount_amount: 0,
           promo_code: null,
           pickup_address: req.pickup_address,
@@ -627,7 +630,8 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
     doc.text("TARIFICATION", 20, yPos);
     yPos += 8;
 
-    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0);
+    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0) +
+      (devis.peak_hours_surcharge_amount || 0) + (devis.evening_surcharge_amount || 0) + (devis.weekend_surcharge_amount || 0);
     const tvaRate = devis.time_price > 0 ? 20 : 10;
     const tvaAmount = subtotal * (tvaRate / 100);
     
@@ -679,7 +683,17 @@ const DriverDevisList = ({ driverId }: DriverDevisListProps) => {
         yPos += 9;
       }
       
-      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      // Afficher les augmentations heures de pointe/soir/weekend si présentes (version chauffeur uniquement)
+      if (devis.peak_hours_surcharge_amount && devis.peak_hours_surcharge_amount > 0) {
+        doc.setFillColor(255, 240, 220); // Couleur légèrement orangée
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0); // Orange pour l'augmentation
+        doc.text("Augmentation Heures de pointe", 25, yPos + 5);
+        doc.text(`+${devis.peak_hours_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       if (devis.evening_surcharge_amount && devis.evening_surcharge_amount > 0) {
         doc.setFillColor(255, 245, 220); // Couleur légèrement ambrée
         doc.rect(20, yPos, 170, 7, 'F');

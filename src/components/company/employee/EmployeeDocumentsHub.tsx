@@ -41,6 +41,7 @@ interface DevisData {
   time_price: number | null;
   evening_surcharge_amount: number | null;
   weekend_surcharge_amount: number | null;
+  peak_hours_surcharge_amount: number | null;
   discount_amount: number | null;
   promo_code: string | null;
   course: {
@@ -487,7 +488,8 @@ export const EmployeeDocumentsHub = ({
     doc.text("TARIFICATION", 20, yPos);
     yPos += 8;
 
-    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0);
+    const subtotal = (devis.base_price || 0) + (devis.distance_price || 0) + (devis.time_price || 0) +
+      (devis.peak_hours_surcharge_amount || 0) + (devis.evening_surcharge_amount || 0) + (devis.weekend_surcharge_amount || 0);
     const tvaRate = (devis.time_price && devis.time_price > 0) ? 20 : 10;
     const tvaAmount = subtotal * (tvaRate / 100);
 

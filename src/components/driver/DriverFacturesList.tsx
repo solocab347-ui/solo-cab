@@ -539,7 +539,17 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         yPos += 9;
       }
       
-      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
+      // Afficher les augmentations heures de pointe/soir/weekend si présentes (version chauffeur uniquement)
+      if (facture.devis?.peak_hours_surcharge_amount && facture.devis.peak_hours_surcharge_amount > 0) {
+        doc.setFillColor(255, 240, 220);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(204, 102, 0);
+        doc.text("Augmentation Heures de pointe", 25, yPos + 5);
+        doc.text(`+${facture.devis.peak_hours_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       if (facture.devis?.evening_surcharge_amount && facture.devis.evening_surcharge_amount > 0) {
         doc.setFillColor(255, 245, 220);
         doc.rect(20, yPos, 170, 7, 'F');
