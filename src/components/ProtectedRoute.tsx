@@ -111,7 +111,7 @@ export const ProtectedRoute = ({
     try {
       const { data: driver, error } = await supabase
         .from("drivers")
-        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id")
+        .select("status, subscription_paid, free_access_granted, free_access_type, free_access_end_date, is_pioneer, stripe_customer_id, created_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -133,6 +133,10 @@ export const ProtectedRoute = ({
         driver.free_access_end_date && 
         new Date(driver.free_access_end_date) > new Date();
 
+      // NOUVEAU: Vérifier si le chauffeur est dans sa période de grâce de 30 jours
+      const isInGracePeriod = driver.created_at && 
+        new Date(driver.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
       // CRITICAL: Pour les pionniers, vérifier s'ils ont un stripe_customer_id
       // S'ils n'en ont pas, ils doivent finaliser le paiement
       if (driver.is_pioneer && !driver.stripe_customer_id) {
@@ -142,20 +146,21 @@ export const ProtectedRoute = ({
         return;
       }
 
-      // Accès valide = payé OU accès gratuit illimité OU essai en cours
+      // Accès valide = payé OU accès gratuit illimité OU essai en cours OU période de grâce 30 jours
       const hasValidAccess = driver.subscription_paid || 
         driver.free_access_granted || 
-        hasActiveTrialAccess;
+        hasActiveTrialAccess ||
+        isInGracePeriod;
 
       if (!hasValidAccess) {
         logger.error("Accès refusé : paiement requis");
         setDriverStatus("payment_required");
-      } else if (driver.status === "on_hold" && !driver.free_access_granted && !hasActiveTrialAccess) {
+      } else if (driver.status === "on_hold" && !driver.free_access_granted && !hasActiveTrialAccess && !isInGracePeriod) {
         logger.error("Accès refusé : inscription incomplète");
         setDriverStatus("payment_required");
       } else if (hasValidAccess) {
         // ✅ Accès valide = accès direct au dashboard (plus de page d'attente)
-        logger.info("Accès accordé : validation automatique");
+        logger.info("Accès accordé : validation automatique (validé, pionnier, essai ou période de grâce)");
         setDriverStatus("validated");
       } else {
         setDriverStatus(driver.status);

@@ -91,6 +91,20 @@ export type Database = {
             foreignKeyName: "assistant_requests_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -173,6 +187,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -319,6 +347,20 @@ export type Database = {
             foreignKeyName: "city_pricing_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_pricing_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -453,6 +495,20 @@ export type Database = {
             foreignKeyName: "client_first_orders_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_first_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -551,6 +607,20 @@ export type Database = {
             foreignKeyName: "clients_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -587,6 +657,20 @@ export type Database = {
             columns: ["favorite_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -636,6 +720,20 @@ export type Database = {
             columns: ["preferred_fleet_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_preferred_fleet_driver_id_fkey"
+            columns: ["preferred_fleet_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_preferred_fleet_driver_id_fkey"
+            columns: ["preferred_fleet_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -934,6 +1032,20 @@ export type Database = {
             foreignKeyName: "company_course_quotes_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_quotes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -1093,6 +1205,20 @@ export type Database = {
             foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
             columns: ["accepted_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -1157,6 +1283,20 @@ export type Database = {
             columns: ["fleet_dispatched_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_fleet_dispatched_driver_id_fkey"
+            columns: ["fleet_dispatched_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_fleet_dispatched_driver_id_fkey"
+            columns: ["fleet_dispatched_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -1455,6 +1595,20 @@ export type Database = {
             foreignKeyName: "company_driver_agreements_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_driver_agreements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -1523,6 +1677,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -2136,6 +2304,20 @@ export type Database = {
             foreignKeyName: "company_payment_reminders_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payment_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -2277,6 +2459,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -2448,6 +2644,20 @@ export type Database = {
             foreignKeyName: "congress_registrations_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: true
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "congress_registrations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -2571,6 +2781,20 @@ export type Database = {
             foreignKeyName: "course_driver_exclusions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_driver_exclusions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -2680,6 +2904,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -2808,6 +3046,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_invitations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -2943,6 +3195,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_driver"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -3153,6 +3419,20 @@ export type Database = {
             foreignKeyName: "courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -3310,6 +3590,20 @@ export type Database = {
             foreignKeyName: "devis_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devis_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -3452,6 +3746,20 @@ export type Database = {
             foreignKeyName: "document_reminders_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reminders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -3545,6 +3853,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_availability_slots_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_availability_slots_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -3646,6 +3968,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_feedback_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -3804,6 +4140,20 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_a_id_fkey"
             columns: ["driver_a_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -3846,6 +4196,20 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_b_id_fkey"
             columns: ["driver_b_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -3882,6 +4246,20 @@ export type Database = {
             columns: ["proposed_by"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -3977,6 +4355,20 @@ export type Database = {
             foreignKeyName: "driver_schedules_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -4062,6 +4454,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -4188,6 +4594,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5016,6 +5436,20 @@ export type Database = {
             foreignKeyName: "factures_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -5219,6 +5653,20 @@ export type Database = {
             foreignKeyName: "fleet_course_escalations_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -5262,6 +5710,20 @@ export type Database = {
             columns: ["reassigned_to_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5380,6 +5842,20 @@ export type Database = {
             foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
             columns: ["assigned_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -5444,6 +5920,20 @@ export type Database = {
             columns: ["current_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5537,6 +6027,20 @@ export type Database = {
             foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_responses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -5604,6 +6108,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5706,6 +6224,20 @@ export type Database = {
             foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
             columns: ["declined_by_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
+            columns: ["declined_by_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -5749,6 +6281,20 @@ export type Database = {
             columns: ["reassigned_to_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_reassigned_to_driver_id_fkey"
+            columns: ["reassigned_to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5837,6 +6383,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_documents_archive_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -5987,6 +6547,20 @@ export type Database = {
             foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_indirect_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -6092,6 +6666,20 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -6294,6 +6882,20 @@ export type Database = {
             foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_partnerships_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -6416,6 +7018,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_indirect_payment_contracts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -6567,6 +7183,20 @@ export type Database = {
             columns: ["assigned_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_course_requests_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_course_requests_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -6731,6 +7361,20 @@ export type Database = {
             foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_drivers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -6818,6 +7462,20 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_manager_invitations_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -7344,6 +8002,20 @@ export type Database = {
             foreignKeyName: "fleet_partner_courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -7464,6 +8136,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partnership_payments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -7697,6 +8383,20 @@ export type Database = {
             foreignKeyName: "guest_registration_tokens_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -7780,6 +8480,20 @@ export type Database = {
             columns: ["used_by_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_tokens_used_by_driver_id_fkey"
+            columns: ["used_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -8006,6 +8720,20 @@ export type Database = {
             foreignKeyName: "partner_course_pool_claimed_by_driver_id_fkey"
             columns: ["claimed_by_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_claimed_by_driver_id_fkey"
+            columns: ["claimed_by_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_claimed_by_driver_id_fkey"
+            columns: ["claimed_by_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -8049,6 +8777,20 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -8194,6 +8936,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -8356,6 +9112,20 @@ export type Database = {
             foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
             columns: ["payment_confirmed_by"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
+            columns: ["payment_confirmed_by"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -8398,6 +9168,20 @@ export type Database = {
             foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
             columns: ["receiver_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -8434,6 +9218,20 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -8567,6 +9365,20 @@ export type Database = {
             foreignKeyName: "partner_payments_payer_driver_id_fkey"
             columns: ["payer_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_payments_payer_driver_id_fkey"
+            columns: ["payer_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_payments_payer_driver_id_fkey"
+            columns: ["payer_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -8603,6 +9415,20 @@ export type Database = {
             columns: ["receiver_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_payments_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_payments_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -8778,6 +9604,20 @@ export type Database = {
             foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
             columns: ["reported_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reported_driver_id_fkey"
+            columns: ["reported_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -8814,6 +9654,20 @@ export type Database = {
             columns: ["reporter_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_disputes_reporter_driver_id_fkey"
+            columns: ["reporter_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -9063,6 +9917,20 @@ export type Database = {
             foreignKeyName: "promotions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9174,6 +10042,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: true
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -9346,6 +10228,20 @@ export type Database = {
             foreignKeyName: "shared_courses_receiver_driver_id_fkey"
             columns: ["receiver_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9382,6 +10278,20 @@ export type Database = {
             columns: ["sender_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -9588,6 +10498,20 @@ export type Database = {
             foreignKeyName: "vehicle_documents_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9704,6 +10628,20 @@ export type Database = {
             foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
             columns: ["sender_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9790,6 +10728,20 @@ export type Database = {
             foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
             columns: ["accepted_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9854,6 +10806,20 @@ export type Database = {
             columns: ["fleet_dispatched_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_fleet_dispatched_driver_id_fkey"
+            columns: ["fleet_dispatched_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_course_requests_fleet_dispatched_driver_id_fkey"
+            columns: ["fleet_dispatched_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -9936,6 +10902,20 @@ export type Database = {
             foreignKeyName: "driver_partnerships_driver_a_id_fkey"
             columns: ["driver_a_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_a_id_fkey"
+            columns: ["driver_a_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -9972,6 +10952,20 @@ export type Database = {
             columns: ["driver_b_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_partnerships_driver_b_id_fkey"
+            columns: ["driver_b_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -10058,6 +11052,684 @@ export type Database = {
           },
         ]
       }
+      drivers_visible_to_companies: {
+        Row: {
+          airport_surcharge: number | null
+          auto_accept_from_partners: boolean | null
+          base_fare: number | null
+          base_rate: number | null
+          bio: string | null
+          can_create_courses: boolean | null
+          can_manage_clients: boolean | null
+          card_photo_url: string | null
+          company_address: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          course_counter: number | null
+          created_at: string | null
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
+          documents: Json | null
+          documents_deadline: string | null
+          documents_status: string | null
+          documents_submitted_at: string | null
+          driver_code: string | null
+          evening_surcharge: number | null
+          fleet_documents_deadline: string | null
+          fleet_documents_status: string | null
+          fleet_documents_submitted_at: string | null
+          fleet_manager_id: string | null
+          free_access_end_date: string | null
+          free_access_granted: boolean | null
+          free_access_start_date: string | null
+          free_access_type: string | null
+          gallery_photos: string[] | null
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
+          hourly_rate: number | null
+          id: string | null
+          invoice_counter: number | null
+          is_demo_account: boolean | null
+          is_fleet_driver: boolean | null
+          is_pioneer: boolean | null
+          license_number: string | null
+          max_daily_courses: number | null
+          max_passengers: number | null
+          minimum_price: number | null
+          nfc_tag_number: string | null
+          partner_invoice_counter: number | null
+          partner_order_counter: number | null
+          partnerships_suspended: boolean | null
+          partnerships_suspended_at: string | null
+          partnerships_suspended_reason: string | null
+          per_km_rate: number | null
+          pioneer_since: string | null
+          preferred_zones: string[] | null
+          public_profile_enabled: boolean | null
+          quote_counter: number | null
+          rating: number | null
+          registration_data: Json | null
+          registration_step: number | null
+          reservation_counter: number | null
+          service_description: string | null
+          services_offered: string[] | null
+          sharing_available: boolean | null
+          sharing_available_since: string | null
+          sharing_number: number | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          show_phone_for_sharing: boolean | null
+          show_pricing_partners: boolean | null
+          show_rating_for_sharing: boolean | null
+          show_rating_partners: boolean | null
+          show_rating_public: boolean | null
+          show_rides_for_sharing: boolean | null
+          siren: string | null
+          siret: string | null
+          smart_buffer_enabled: boolean | null
+          smart_buffer_fallback_action: string | null
+          smart_buffer_min_minutes: number | null
+          status: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id: string | null
+          stripe_subscription_paused: boolean | null
+          stripe_subscription_paused_at: string | null
+          subscription_end_date: string | null
+          subscription_paid: boolean | null
+          subscription_status: string | null
+          subscription_stripe_id: string | null
+          total_rides: number | null
+          tva_included: boolean | null
+          tva_number: string | null
+          tva_rate: number | null
+          updated_at: string | null
+          user_id: string | null
+          validation_date: string | null
+          vehicle_brand: string | null
+          vehicle_category: string[] | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
+          vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
+          visible_to_companies: boolean | null
+          visible_to_drivers: boolean | null
+          visible_to_fleet_managers: boolean | null
+          weekend_surcharge: number | null
+          working_sectors: string[] | null
+        }
+        Insert: {
+          airport_surcharge?: number | null
+          auto_accept_from_partners?: boolean | null
+          base_fare?: number | null
+          base_rate?: number | null
+          bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
+          card_photo_url?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          course_counter?: number | null
+          created_at?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
+          driver_code?: string | null
+          evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
+          fleet_manager_id?: string | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
+          gallery_photos?: string[] | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          invoice_counter?: number | null
+          is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
+          license_number?: string | null
+          max_daily_courses?: number | null
+          max_passengers?: number | null
+          minimum_price?: number | null
+          nfc_tag_number?: string | null
+          partner_invoice_counter?: number | null
+          partner_order_counter?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
+          per_km_rate?: number | null
+          pioneer_since?: string | null
+          preferred_zones?: string[] | null
+          public_profile_enabled?: boolean | null
+          quote_counter?: number | null
+          rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
+          reservation_counter?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          sharing_available?: boolean | null
+          sharing_available_since?: string | null
+          sharing_number?: number | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
+          siren?: string | null
+          siret?: string | null
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_rides?: number | null
+          tva_included?: boolean | null
+          tva_number?: string | null
+          tva_rate?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_date?: string | null
+          vehicle_brand?: string | null
+          vehicle_category?: string[] | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+          visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
+          visible_to_fleet_managers?: boolean | null
+          weekend_surcharge?: number | null
+          working_sectors?: string[] | null
+        }
+        Update: {
+          airport_surcharge?: number | null
+          auto_accept_from_partners?: boolean | null
+          base_fare?: number | null
+          base_rate?: number | null
+          bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
+          card_photo_url?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          course_counter?: number | null
+          created_at?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
+          driver_code?: string | null
+          evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
+          fleet_manager_id?: string | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
+          gallery_photos?: string[] | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          invoice_counter?: number | null
+          is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
+          license_number?: string | null
+          max_daily_courses?: number | null
+          max_passengers?: number | null
+          minimum_price?: number | null
+          nfc_tag_number?: string | null
+          partner_invoice_counter?: number | null
+          partner_order_counter?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
+          per_km_rate?: number | null
+          pioneer_since?: string | null
+          preferred_zones?: string[] | null
+          public_profile_enabled?: boolean | null
+          quote_counter?: number | null
+          rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
+          reservation_counter?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          sharing_available?: boolean | null
+          sharing_available_since?: string | null
+          sharing_number?: number | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
+          siren?: string | null
+          siret?: string | null
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_rides?: number | null
+          tva_included?: boolean | null
+          tva_number?: string | null
+          tva_rate?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_date?: string | null
+          vehicle_brand?: string | null
+          vehicle_category?: string[] | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+          visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
+          visible_to_fleet_managers?: boolean | null
+          weekend_surcharge?: number | null
+          working_sectors?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers_visible_to_fleet_managers: {
+        Row: {
+          airport_surcharge: number | null
+          auto_accept_from_partners: boolean | null
+          base_fare: number | null
+          base_rate: number | null
+          bio: string | null
+          can_create_courses: boolean | null
+          can_manage_clients: boolean | null
+          card_photo_url: string | null
+          company_address: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          course_counter: number | null
+          created_at: string | null
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
+          documents: Json | null
+          documents_deadline: string | null
+          documents_status: string | null
+          documents_submitted_at: string | null
+          driver_code: string | null
+          evening_surcharge: number | null
+          fleet_documents_deadline: string | null
+          fleet_documents_status: string | null
+          fleet_documents_submitted_at: string | null
+          fleet_manager_id: string | null
+          free_access_end_date: string | null
+          free_access_granted: boolean | null
+          free_access_start_date: string | null
+          free_access_type: string | null
+          gallery_photos: string[] | null
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
+          hourly_rate: number | null
+          id: string | null
+          invoice_counter: number | null
+          is_demo_account: boolean | null
+          is_fleet_driver: boolean | null
+          is_pioneer: boolean | null
+          license_number: string | null
+          max_daily_courses: number | null
+          max_passengers: number | null
+          minimum_price: number | null
+          nfc_tag_number: string | null
+          partner_invoice_counter: number | null
+          partner_order_counter: number | null
+          partnerships_suspended: boolean | null
+          partnerships_suspended_at: string | null
+          partnerships_suspended_reason: string | null
+          per_km_rate: number | null
+          pioneer_since: string | null
+          preferred_zones: string[] | null
+          public_profile_enabled: boolean | null
+          quote_counter: number | null
+          rating: number | null
+          registration_data: Json | null
+          registration_step: number | null
+          reservation_counter: number | null
+          service_description: string | null
+          services_offered: string[] | null
+          sharing_available: boolean | null
+          sharing_available_since: string | null
+          sharing_number: number | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          show_phone_for_sharing: boolean | null
+          show_pricing_partners: boolean | null
+          show_rating_for_sharing: boolean | null
+          show_rating_partners: boolean | null
+          show_rating_public: boolean | null
+          show_rides_for_sharing: boolean | null
+          siren: string | null
+          siret: string | null
+          smart_buffer_enabled: boolean | null
+          smart_buffer_fallback_action: string | null
+          smart_buffer_min_minutes: number | null
+          status: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id: string | null
+          stripe_subscription_paused: boolean | null
+          stripe_subscription_paused_at: string | null
+          subscription_end_date: string | null
+          subscription_paid: boolean | null
+          subscription_status: string | null
+          subscription_stripe_id: string | null
+          total_rides: number | null
+          tva_included: boolean | null
+          tva_number: string | null
+          tva_rate: number | null
+          updated_at: string | null
+          user_id: string | null
+          validation_date: string | null
+          vehicle_brand: string | null
+          vehicle_category: string[] | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
+          vehicle_model: string | null
+          vehicle_photos: string[] | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
+          visible_to_companies: boolean | null
+          visible_to_drivers: boolean | null
+          visible_to_fleet_managers: boolean | null
+          weekend_surcharge: number | null
+          working_sectors: string[] | null
+        }
+        Insert: {
+          airport_surcharge?: number | null
+          auto_accept_from_partners?: boolean | null
+          base_fare?: number | null
+          base_rate?: number | null
+          bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
+          card_photo_url?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          course_counter?: number | null
+          created_at?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
+          driver_code?: string | null
+          evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
+          fleet_manager_id?: string | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
+          gallery_photos?: string[] | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          invoice_counter?: number | null
+          is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
+          license_number?: string | null
+          max_daily_courses?: number | null
+          max_passengers?: number | null
+          minimum_price?: number | null
+          nfc_tag_number?: string | null
+          partner_invoice_counter?: number | null
+          partner_order_counter?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
+          per_km_rate?: number | null
+          pioneer_since?: string | null
+          preferred_zones?: string[] | null
+          public_profile_enabled?: boolean | null
+          quote_counter?: number | null
+          rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
+          reservation_counter?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          sharing_available?: boolean | null
+          sharing_available_since?: string | null
+          sharing_number?: number | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
+          siren?: string | null
+          siret?: string | null
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_rides?: number | null
+          tva_included?: boolean | null
+          tva_number?: string | null
+          tva_rate?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_date?: string | null
+          vehicle_brand?: string | null
+          vehicle_category?: string[] | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+          visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
+          visible_to_fleet_managers?: boolean | null
+          weekend_surcharge?: number | null
+          working_sectors?: string[] | null
+        }
+        Update: {
+          airport_surcharge?: number | null
+          auto_accept_from_partners?: boolean | null
+          base_fare?: number | null
+          base_rate?: number | null
+          bio?: string | null
+          can_create_courses?: boolean | null
+          can_manage_clients?: boolean | null
+          card_photo_url?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          course_counter?: number | null
+          created_at?: string | null
+          display_company_name?: boolean | null
+          display_driver_name?: boolean | null
+          documents?: Json | null
+          documents_deadline?: string | null
+          documents_status?: string | null
+          documents_submitted_at?: string | null
+          driver_code?: string | null
+          evening_surcharge?: number | null
+          fleet_documents_deadline?: string | null
+          fleet_documents_status?: string | null
+          fleet_documents_submitted_at?: string | null
+          fleet_manager_id?: string | null
+          free_access_end_date?: string | null
+          free_access_granted?: boolean | null
+          free_access_start_date?: string | null
+          free_access_type?: string | null
+          gallery_photos?: string[] | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
+          hourly_rate?: number | null
+          id?: string | null
+          invoice_counter?: number | null
+          is_demo_account?: boolean | null
+          is_fleet_driver?: boolean | null
+          is_pioneer?: boolean | null
+          license_number?: string | null
+          max_daily_courses?: number | null
+          max_passengers?: number | null
+          minimum_price?: number | null
+          nfc_tag_number?: string | null
+          partner_invoice_counter?: number | null
+          partner_order_counter?: number | null
+          partnerships_suspended?: boolean | null
+          partnerships_suspended_at?: string | null
+          partnerships_suspended_reason?: string | null
+          per_km_rate?: number | null
+          pioneer_since?: string | null
+          preferred_zones?: string[] | null
+          public_profile_enabled?: boolean | null
+          quote_counter?: number | null
+          rating?: number | null
+          registration_data?: Json | null
+          registration_step?: number | null
+          reservation_counter?: number | null
+          service_description?: string | null
+          services_offered?: string[] | null
+          sharing_available?: boolean | null
+          sharing_available_since?: string | null
+          sharing_number?: number | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
+          show_phone_for_sharing?: boolean | null
+          show_pricing_partners?: boolean | null
+          show_rating_for_sharing?: boolean | null
+          show_rating_partners?: boolean | null
+          show_rating_public?: boolean | null
+          show_rides_for_sharing?: boolean | null
+          siren?: string | null
+          siret?: string | null
+          smart_buffer_enabled?: boolean | null
+          smart_buffer_fallback_action?: string | null
+          smart_buffer_min_minutes?: number | null
+          status?: Database["public"]["Enums"]["driver_status"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_paused?: boolean | null
+          stripe_subscription_paused_at?: string | null
+          subscription_end_date?: string | null
+          subscription_paid?: boolean | null
+          subscription_status?: string | null
+          subscription_stripe_id?: string | null
+          total_rides?: number | null
+          tva_included?: boolean | null
+          tva_number?: string | null
+          tva_rate?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          validation_date?: string | null
+          vehicle_brand?: string | null
+          vehicle_category?: string[] | null
+          vehicle_color?: string | null
+          vehicle_equipment?: string[] | null
+          vehicle_model?: string | null
+          vehicle_photos?: string[] | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+          visible_to_companies?: boolean | null
+          visible_to_drivers?: boolean | null
+          visible_to_fleet_managers?: boolean | null
+          weekend_surcharge?: number | null
+          working_sectors?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_client_dashboard_view: {
         Row: {
           client_email: string | null
@@ -10110,6 +11782,20 @@ export type Database = {
             foreignKeyName: "clients_favorite_driver_id_fkey"
             columns: ["favorite_driver_id"]
             isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_favorite_driver_id_fkey"
+            columns: ["favorite_driver_id"]
+            isOneToOne: false
             referencedRelation: "fleet_searchable_drivers"
             referencedColumns: ["id"]
           },
@@ -10153,6 +11839,20 @@ export type Database = {
             columns: ["preferred_fleet_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_preferred_fleet_driver_id_fkey"
+            columns: ["preferred_fleet_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_preferred_fleet_driver_id_fkey"
+            columns: ["preferred_fleet_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -10268,6 +11968,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
             referencedColumns: ["id"]
           },
           {
@@ -11021,6 +12735,122 @@ export type Database = {
       get_driver_quote_request_ids: {
         Args: { _driver_id: string }
         Returns: string[]
+      }
+      get_drivers_with_full_access: {
+        Args: { limit_count?: number; visibility_field?: string }
+        Returns: {
+          airport_surcharge: number | null
+          auto_accept_from_partners: boolean | null
+          base_fare: number | null
+          base_rate: number | null
+          bio: string | null
+          can_create_courses: boolean | null
+          can_manage_clients: boolean | null
+          card_photo_url: string | null
+          company_address: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          course_counter: number | null
+          created_at: string
+          display_company_name: boolean | null
+          display_driver_name: boolean | null
+          documents: Json | null
+          documents_deadline: string | null
+          documents_status: string | null
+          documents_submitted_at: string | null
+          driver_code: string | null
+          evening_surcharge: number | null
+          fleet_documents_deadline: string | null
+          fleet_documents_status: string | null
+          fleet_documents_submitted_at: string | null
+          fleet_manager_id: string | null
+          free_access_end_date: string | null
+          free_access_granted: boolean | null
+          free_access_start_date: string | null
+          free_access_type: string | null
+          gallery_photos: string[] | null
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
+          hourly_rate: number | null
+          id: string
+          invoice_counter: number | null
+          is_demo_account: boolean | null
+          is_fleet_driver: boolean | null
+          is_pioneer: boolean | null
+          license_number: string
+          max_daily_courses: number | null
+          max_passengers: number
+          minimum_price: number | null
+          nfc_tag_number: string | null
+          partner_invoice_counter: number | null
+          partner_order_counter: number | null
+          partnerships_suspended: boolean | null
+          partnerships_suspended_at: string | null
+          partnerships_suspended_reason: string | null
+          per_km_rate: number | null
+          pioneer_since: string | null
+          preferred_zones: string[] | null
+          public_profile_enabled: boolean | null
+          quote_counter: number | null
+          rating: number | null
+          registration_data: Json | null
+          registration_step: number | null
+          reservation_counter: number | null
+          service_description: string | null
+          services_offered: string[] | null
+          sharing_available: boolean | null
+          sharing_available_since: string | null
+          sharing_number: number | null
+          show_email: boolean | null
+          show_phone: boolean | null
+          show_phone_for_sharing: boolean | null
+          show_pricing_partners: boolean | null
+          show_rating_for_sharing: boolean | null
+          show_rating_partners: boolean | null
+          show_rating_public: boolean | null
+          show_rides_for_sharing: boolean | null
+          siren: string | null
+          siret: string | null
+          smart_buffer_enabled: boolean | null
+          smart_buffer_fallback_action: string | null
+          smart_buffer_min_minutes: number | null
+          status: Database["public"]["Enums"]["driver_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_paused: boolean | null
+          stripe_subscription_paused_at: string | null
+          subscription_end_date: string | null
+          subscription_paid: boolean | null
+          subscription_status: string | null
+          subscription_stripe_id: string | null
+          total_rides: number | null
+          tva_included: boolean
+          tva_number: string | null
+          tva_rate: number | null
+          updated_at: string
+          user_id: string
+          validation_date: string | null
+          vehicle_brand: string | null
+          vehicle_category: string[] | null
+          vehicle_color: string | null
+          vehicle_equipment: string[] | null
+          vehicle_model: string
+          vehicle_photos: string[] | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
+          visible_to_companies: boolean | null
+          visible_to_drivers: boolean | null
+          visible_to_fleet_managers: boolean | null
+          weekend_surcharge: number | null
+          working_sectors: string[] | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "drivers"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_employee_company_id: { Args: { p_user_id: string }; Returns: string }
       get_employee_profile_for_course: {
