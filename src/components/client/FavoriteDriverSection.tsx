@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,14 +17,17 @@ import {
   Heart, 
   Check,
   Building2,
-  Calendar,
-  MapPin
+  ExternalLink,
+  MessageSquare,
+  CalendarPlus,
+  Share2,
+  Phone,
+  Mail
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { useLocale } from "@/hooks/useLocale";
+import ShareButtons from "@/components/ShareButtons";
 
 interface Driver {
   id: string;
@@ -34,9 +38,14 @@ interface Driver {
   display_driver_name: boolean;
   display_company_name: boolean;
   show_rating_public: boolean;
+  show_phone: boolean;
+  show_email: boolean;
+  user_id: string;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
+    phone: string | null;
+    email: string | null;
   };
 }
 
@@ -53,7 +62,7 @@ export function FavoriteDriverSection({
   driverIds,
   onFavoriteChange 
 }: FavoriteDriverSectionProps) {
-  const { t } = useLocale();
+  const navigate = useNavigate();
   const [favoriteDriver, setFavoriteDriver] = useState<Driver | null>(null);
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +89,10 @@ export function FavoriteDriverSection({
         display_driver_name,
         display_company_name,
         show_rating_public,
-        profiles:user_id(full_name, profile_photo_url)
+        show_phone,
+        show_email,
+        user_id,
+        profiles:user_id(full_name, profile_photo_url, phone, email)
       `;
 
       const { data: driversData, error } = await supabase
@@ -150,6 +162,26 @@ export function FavoriteDriverSection({
     return "Chauffeur VTC";
   };
 
+  const handleViewPublicProfile = (driverId: string) => {
+    navigate(`/chauffeur/${driverId}`);
+  };
+
+  const handleBookCourse = (driverId: string) => {
+    navigate(`/create-course?driver_id=${driverId}`);
+  };
+
+  const handleMessage = () => {
+    navigate("/client-dashboard?tab=messages");
+  };
+
+  const handleCall = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
+  const handleEmail = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
   if (loading) {
     return (
       <Card className="p-6 animate-pulse">
@@ -165,65 +197,132 @@ export function FavoriteDriverSection({
   return (
     <>
       <Card className="p-4 md:p-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="flex items-center gap-2 mb-4">
-          <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-          <h2 className="text-lg md:text-xl font-bold">Mon chauffeur favori</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+            <h2 className="text-lg md:text-xl font-bold">Mon chauffeur favori</h2>
+          </div>
+          {favoriteDriver && (
+            <ShareButtons
+              title={`Découvrez ${getDriverDisplayName(favoriteDriver)} sur SoloCab`}
+              message={`Je vous recommande mon chauffeur VTC ${getDriverDisplayName(favoriteDriver)} sur SoloCab ! Un service de qualité, ponctuel et professionnel. 🚗✨`}
+              url={`${window.location.origin}/chauffeur/${favoriteDriver.id}`}
+            />
+          )}
         </div>
         
         {favoriteDriver ? (
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Avatar className="w-16 h-16 md:w-20 md:h-20 border-2 border-primary/30">
-              <AvatarImage 
-                src={favoriteDriver.profiles?.profile_photo_url || undefined} 
-                alt={getDriverDisplayName(favoriteDriver)} 
-              />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl">
-                {getDriverDisplayName(favoriteDriver).charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
-                <h3 className="font-bold text-lg">{getDriverDisplayName(favoriteDriver)}</h3>
-                <Badge variant="default" className="bg-red-500 gap-1">
-                  <Heart className="w-3 h-3 fill-current" />
-                  Favori
-                </Badge>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Avatar className="w-16 h-16 md:w-20 md:h-20 border-2 border-primary/30">
+                <AvatarImage 
+                  src={favoriteDriver.profiles?.profile_photo_url || undefined} 
+                  alt={getDriverDisplayName(favoriteDriver)} 
+                />
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl">
+                  {getDriverDisplayName(favoriteDriver).charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                  <h3 className="font-bold text-lg">{getDriverDisplayName(favoriteDriver)}</h3>
+                  <Badge variant="default" className="bg-red-500 gap-1">
+                    <Heart className="w-3 h-3 fill-current" />
+                    Favori
+                  </Badge>
+                </div>
+                
+                {favoriteDriver.company_name && favoriteDriver.display_company_name && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center sm:justify-start mt-1">
+                    <Building2 className="w-3 h-3" />
+                    {favoriteDriver.company_name}
+                  </p>
+                )}
+                
+                <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
+                  {favoriteDriver.vehicle_brand && favoriteDriver.vehicle_model && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Car className="w-3 h-3" />
+                      {favoriteDriver.vehicle_brand} {favoriteDriver.vehicle_model}
+                    </Badge>
+                  )}
+                  {favoriteDriver.rating && favoriteDriver.rating > 0 && favoriteDriver.show_rating_public && (
+                    <Badge variant="outline" className="gap-1">
+                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                      {favoriteDriver.rating.toFixed(1)}
+                    </Badge>
+                  )}
+                </div>
               </div>
               
-              {favoriteDriver.company_name && favoriteDriver.display_company_name && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1 justify-center sm:justify-start mt-1">
-                  <Building2 className="w-3 h-3" />
-                  {favoriteDriver.company_name}
-                </p>
+              {allDrivers.length > 1 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowSelectDialog(true)}
+                  className="flex-shrink-0"
+                >
+                  Changer
+                </Button>
               )}
-              
-              <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
-                {favoriteDriver.vehicle_brand && favoriteDriver.vehicle_model && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Car className="w-3 h-3" />
-                    {favoriteDriver.vehicle_brand} {favoriteDriver.vehicle_model}
-                  </Badge>
-                )}
-                {favoriteDriver.rating && favoriteDriver.rating > 0 && favoriteDriver.show_rating_public && (
-                  <Badge variant="outline" className="gap-1">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    {favoriteDriver.rating.toFixed(1)}
-                  </Badge>
-                )}
-              </div>
             </div>
-            
-            {allDrivers.length > 1 && (
+
+            {/* Actions rapides */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
+              <Button 
+                size="sm"
+                onClick={() => handleBookCourse(favoriteDriver.id)}
+                className="gap-1"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                Réserver
+              </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setShowSelectDialog(true)}
-                className="flex-shrink-0"
+                onClick={handleMessage}
+                className="gap-1"
               >
-                Changer
+                <MessageSquare className="w-4 h-4" />
+                Message
               </Button>
-            )}
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => handleViewPublicProfile(favoriteDriver.id)}
+                className="gap-1"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Voir profil
+              </Button>
+
+              {favoriteDriver.show_phone && favoriteDriver.profiles?.phone && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={() => handleCall(favoriteDriver.profiles.phone!)}
+                  className="gap-1"
+                >
+                  <Phone className="w-4 h-4" />
+                  Appeler
+                </Button>
+              )}
+
+              {favoriteDriver.show_email && favoriteDriver.profiles?.email && (
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={() => handleEmail(favoriteDriver.profiles.email!)}
+                  className="gap-1"
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-center py-4">

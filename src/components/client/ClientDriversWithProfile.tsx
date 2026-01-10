@@ -2,13 +2,29 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Car, MessageSquare, MapPin, Star, Calendar, Palette, Award, Briefcase, Building2, User } from "lucide-react";
+import { 
+  Car, 
+  MessageSquare, 
+  MapPin, 
+  Star, 
+  Calendar, 
+  Palette, 
+  Award, 
+  Briefcase, 
+  Building2, 
+  ExternalLink,
+  Phone,
+  Mail,
+  CalendarPlus,
+  Share2
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getServiceLabel } from "@/lib/serviceLabels";
 import { useLocale } from "@/hooks/useLocale";
+import ShareButtons from "@/components/ShareButtons";
 
 interface Driver {
   id: string;
@@ -25,9 +41,13 @@ interface Driver {
   display_driver_name: boolean;
   display_company_name: boolean;
   show_rating_public: boolean;
+  show_phone: boolean;
+  show_email: boolean;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
+    phone: string | null;
+    email: string | null;
   };
 }
 
@@ -73,7 +93,9 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
         display_driver_name,
         display_company_name,
         show_rating_public,
-        profiles:user_id(full_name, profile_photo_url)
+        show_phone,
+        show_email,
+        profiles:user_id(full_name, profile_photo_url, phone, email)
       `;
 
       if (client.is_exclusive && client.driver_id) {
@@ -115,6 +137,18 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
     navigate(`/create-course?driver_id=${driverId}`);
   };
 
+  const handleViewPublicProfile = (driverId: string) => {
+    navigate(`/chauffeur/${driverId}`);
+  };
+
+  const handleCall = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
+  const handleEmail = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
   const getDriverDisplayName = (driver: Driver): { primary: string; secondary?: string } => {
     const fullName = driver.profiles?.full_name?.trim();
     const companyName = driver.company_name?.trim();
@@ -146,6 +180,13 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
       <Card className="p-8 text-center">
         <Car className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
         <p className="text-muted-foreground">Aucun chauffeur associé</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => navigate("/chauffeurs")}
+        >
+          Découvrir des chauffeurs
+        </Button>
       </Card>
     );
   }
@@ -162,10 +203,14 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
                 <img
                   src={driver.profiles.profile_photo_url}
                   alt={displayName.primary}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-primary/20"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-primary/20 cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleViewPublicProfile(driver.id)}
                 />
               ) : (
-                <div className="w-20 h-20 bg-gradient-dark rounded-full flex items-center justify-center border-2 border-primary/20">
+                <div 
+                  className="w-20 h-20 bg-gradient-dark rounded-full flex items-center justify-center border-2 border-primary/20 cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleViewPublicProfile(driver.id)}
+                >
                   <span className="text-2xl font-bold text-primary-foreground">
                     {displayName.primary.charAt(0).toUpperCase()}
                   </span>
@@ -175,7 +220,12 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="text-lg font-bold">{displayName.primary}</h3>
+                    <h3 
+                      className="text-lg font-bold cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => handleViewPublicProfile(driver.id)}
+                    >
+                      {displayName.primary}
+                    </h3>
                     {displayName.secondary && (
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Building2 className="w-3 h-3" />
@@ -183,12 +233,19 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
                       </p>
                     )}
                   </div>
-                  {driver.rating && driver.rating > 0 && driver.show_rating_public === true && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      {driver.rating.toFixed(1)}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {driver.rating && driver.rating > 0 && driver.show_rating_public === true && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        {driver.rating.toFixed(1)}
+                      </Badge>
+                    )}
+                    <ShareButtons
+                      title={`Découvrez ${displayName.primary} sur SoloCab`}
+                      message={`Je vous recommande mon chauffeur VTC ${displayName.primary} sur SoloCab ! Un service de qualité, ponctuel et professionnel. 🚗✨`}
+                      url={`${window.location.origin}/chauffeur/${driver.id}`}
+                    />
+                  </div>
                 </div>
 
                 {driver.total_rides && driver.total_rides > 0 && (
@@ -252,17 +309,38 @@ const ClientDriversWithProfile = ({ onViewProfile }: ClientDriversWithProfilePro
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => handleBooking(driver.id)}>
-                    Réserver une course
+                  <Button onClick={() => handleBooking(driver.id)} className="gap-1">
+                    <CalendarPlus className="w-4 h-4" />
+                    Réserver
                   </Button>
-                  <Button variant="outline" onClick={() => handleMessage(driver.id)}>
-                    <MessageSquare className="w-4 h-4 mr-2" />
+                  <Button variant="outline" onClick={() => handleMessage(driver.id)} className="gap-1">
+                    <MessageSquare className="w-4 h-4" />
                     Message
                   </Button>
-                  <Button variant="secondary" onClick={onViewProfile}>
-                    <User className="w-4 h-4 mr-2" />
-                    Voir profil complet
+                  <Button variant="secondary" onClick={() => handleViewPublicProfile(driver.id)} className="gap-1">
+                    <ExternalLink className="w-4 h-4" />
+                    Voir profil
                   </Button>
+                  {driver.show_phone && driver.profiles?.phone && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleCall(driver.profiles.phone!)}
+                      title="Appeler"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {driver.show_email && driver.profiles?.email && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleEmail(driver.profiles.email!)}
+                      title="Envoyer un email"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
