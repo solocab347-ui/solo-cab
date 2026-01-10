@@ -153,6 +153,7 @@ export const FleetIndirectPaymentContracts = ({ fleetManagerId }: FleetIndirectP
             const driver = drivers.find(d => d.id === c.driver_id);
             return {
               ...c,
+              clauses: c.clauses as Record<string, any> | null,
               driver: {
                 id: c.driver_id,
                 profile: profiles?.find(p => p.id === driver?.user_id)
@@ -172,7 +173,7 @@ export const FleetIndirectPaymentContracts = ({ fleetManagerId }: FleetIndirectP
             };
           });
 
-          setContracts(enrichedContracts);
+          setContracts(enrichedContracts as IndirectContract[]);
           setEligiblePartnerships(enrichedPartnerships);
         }
       } else {
