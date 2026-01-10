@@ -520,7 +520,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         doc.text(`${(facture.devis.base_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
         
         yPos += 7;
-        doc.text("Prix au kilomètre", 25, yPos + 5);
+        // Calculer le prix/km pour afficher le détail
+        const distanceKm = facture.distance_km || 0;
+        const perKmRate = distanceKm > 0 ? ((facture.devis.distance_price || 0) / distanceKm) : 0;
+        const priceLabel = distanceKm > 0 && perKmRate > 0 
+          ? `Prix au kilomètre (${distanceKm.toFixed(2)} km × ${perKmRate.toFixed(2)} €/km)`
+          : "Prix au kilomètre";
+        doc.text(priceLabel, 25, yPos + 5);
         doc.text(`${(facture.devis.distance_price || 0).toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
         
         yPos += 9;
