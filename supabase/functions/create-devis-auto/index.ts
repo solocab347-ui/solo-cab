@@ -115,7 +115,6 @@ Deno.serve(async (req) => {
             p_city_pricing_id: pricingInfo.city_pricing_id,
             p_distance_km: course.distance_km || 0,
             p_duration_minutes: course.duration_minutes || 0,
-            p_use_hourly_rate: use_hourly_rate,
             p_scheduled_date: course.scheduled_date
           });
 
