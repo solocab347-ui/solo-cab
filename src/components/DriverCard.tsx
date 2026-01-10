@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Car, Award, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { Star, MapPin, Car, Award, ChevronLeft, ChevronRight, UserPlus, UserCheck } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   Carousel,
@@ -35,9 +35,10 @@ interface DriverCardProps {
   };
   cardIndex?: number;
   onViewProfile?: (driverId: string) => void;
+  isRegistered?: boolean;
 }
 
-export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardProps) => {
+export const DriverCard = ({ driver, cardIndex = 0, onViewProfile, isRegistered = false }: DriverCardProps) => {
   // Forcer le rafraîchissement de l'image avec un key basé sur l'URL
   const imageKey = driver.profile_photo_url ? `${driver.id}-${driver.profile_photo_url.substring(0, 50)}` : driver.id;
   
@@ -66,8 +67,13 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile }: DriverCardP
     <Card className={`group overflow-hidden hover:shadow-elegant hover:shadow-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col border-2 ${cardColor} ${driver.is_pioneer ? 'ring-2 ring-amber-400/50' : ''}`}>
       {/* Large Profile Photo Section */}
       <div className="relative h-80 overflow-hidden bg-gradient-to-br from-foreground/5 via-background to-primary/10">
-        {/* Pioneer Badge - Top Left */}
-        {driver.is_pioneer && (
+        {/* Registered Badge - Top Left (highest priority) */}
+        {isRegistered ? (
+          <Badge className="absolute top-4 left-4 bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 shadow-lg z-10 gap-1.5">
+            <UserCheck className="w-3.5 h-3.5" />
+            Déjà inscrit
+          </Badge>
+        ) : driver.is_pioneer && (
           <Badge className="absolute top-4 left-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-lg z-10 gap-1">
             🏆 Pionnier
           </Badge>
