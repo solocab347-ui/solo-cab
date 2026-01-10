@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -771,53 +772,48 @@ const DriverDashboard = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="baseFare" className="text-white">Forfait de base (€)</Label>
-                  <Input
+                  <NumericInput
                     id="baseFare"
-                    type="text"
-                    inputMode="decimal"
                     value={baseFare}
-                    onChange={(e) => setBaseFare(e.target.value)}
+                    onChange={setBaseFare}
                     placeholder="10.00"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white">Prix de départ de la course</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="perKm" className="text-white">Prix par kilomètre (€)</Label>
-                  <Input
+                  <NumericInput
                     id="perKm"
-                    type="text"
-                    inputMode="decimal"
                     value={perKmRate}
-                    onChange={(e) => setPerKmRate(e.target.value)}
+                    onChange={setPerKmRate}
                     placeholder="1.50"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white">Coût par km parcouru</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="hourly" className="text-white">Tarif horaire (€)</Label>
-                  <Input
+                  <NumericInput
                     id="hourly"
-                    type="text"
-                    inputMode="decimal"
                     value={hourlyRate}
-                    onChange={(e) => setHourlyRate(e.target.value)}
+                    onChange={setHourlyRate}
                     placeholder="45.00"
-                    required
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white">Pour les mises à disposition (obligatoire)</p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="minimumPrice" className="text-white">Prix minimum par course (€)</Label>
-                  <Input
+                  <NumericInput
                     id="minimumPrice"
-                    type="text"
-                    inputMode="decimal"
                     value={minimumPrice}
-                    onChange={(e) => setMinimumPrice(e.target.value)}
+                    onChange={setMinimumPrice}
                     placeholder="15.00"
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white">Prix minimum pour les courses au km (si le calcul est inférieur, ce prix s'applique)</p>
                 </div>
@@ -826,14 +822,14 @@ const DriverDashboard = () => {
               <div className="grid md:grid-cols-2 gap-6 mt-6">
                 <div className="space-y-2">
                   <Label htmlFor="maxPassengers" className="text-white">Nombre maximum de passagers</Label>
-                  <Input
+                  <NumericInput
                     id="maxPassengers"
-                    type="number"
-                    min="1"
-                    max="20"
                     value={maxPassengers}
-                    onChange={(e) => setMaxPassengers(e.target.value)}
+                    onChange={setMaxPassengers}
                     placeholder="4"
+                    min={1}
+                    max={20}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white">Places disponibles (4 par défaut, augmentez pour van)</p>
                 </div>
@@ -867,26 +863,24 @@ const DriverDashboard = () => {
                 <div className="grid md:grid-cols-2 gap-6 border-t border-white/10 pt-6">
                   <div className="space-y-2">
                     <Label htmlFor="eveningSurcharge" className="text-white">Augmentation Soir (%)</Label>
-                    <Input
+                    <NumericInput
                       id="eveningSurcharge"
-                      type="text"
-                      inputMode="decimal"
                       value={eveningSurcharge}
-                      onChange={(e) => setEveningSurcharge(e.target.value)}
+                      onChange={setEveningSurcharge}
                       placeholder="0"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du soir (20h-6h). <span className="font-semibold">Exemples : 10%, 15%, 20%</span></p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="weekendSurcharge" className="text-white">Augmentation Weekend (%)</Label>
-                    <Input
+                    <NumericInput
                       id="weekendSurcharge"
-                      type="text"
-                      inputMode="decimal"
                       value={weekendSurcharge}
-                      onChange={(e) => setWeekendSurcharge(e.target.value)}
+                      onChange={setWeekendSurcharge}
                       placeholder="0"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                     />
                     <p className="text-xs text-white/70">Augmentation pour les courses du weekend (samedi & dimanche). <span className="font-semibold">Exemples : 10%, 20%, 25%</span></p>
                   </div>
@@ -897,14 +891,12 @@ const DriverDashboard = () => {
                   <Label htmlFor="airportSurcharge" className="text-white flex items-center gap-2">
                     ✈️ Forfait Aéroport (€)
                   </Label>
-                  <Input
+                  <NumericInput
                     id="airportSurcharge"
-                    type="text"
-                    inputMode="decimal"
                     value={airportSurcharge}
-                    onChange={(e) => setAirportSurcharge(e.target.value)}
+                    onChange={setAirportSurcharge}
                     placeholder="0"
-                    className="max-w-xs"
+                    className="max-w-xs bg-white/10 border-white/20 text-white placeholder:text-white/50"
                   />
                   <p className="text-xs text-white/70">
                     Forfait fixe ajouté automatiquement pour toutes les courses depuis/vers un aéroport français (Roissy CDG, Orly, Lyon Saint-Exupéry, Nice, Marseille, etc.)

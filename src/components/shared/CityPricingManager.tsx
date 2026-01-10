@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -486,22 +487,18 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                           <>
                             <div className="space-y-2">
                               <Label>Prise en charge (€)</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                              <NumericInput
                                 value={pricing.base_fare}
-                                onChange={(e) => updatePricing(pricing.id!, { base_fare: parseFloat(e.target.value) || 0 })}
+                                onChange={(value) => updatePricing(pricing.id!, { base_fare: parseFloat(value) || 0 })}
+                                placeholder="0"
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Prix au km (€)</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
+                              <NumericInput
                                 value={pricing.per_km_rate}
-                                onChange={(e) => updatePricing(pricing.id!, { per_km_rate: parseFloat(e.target.value) || 0 })}
+                                onChange={(value) => updatePricing(pricing.id!, { per_km_rate: parseFloat(value) || 0 })}
+                                placeholder="0"
                               />
                             </div>
                           </>
@@ -511,34 +508,29 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                               <Clock className="w-4 h-4" />
                               Tarif horaire (€/h)
                             </Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
+                            <NumericInput
                               value={pricing.hourly_rate}
-                              onChange={(e) => updatePricing(pricing.id!, { hourly_rate: parseFloat(e.target.value) || 0 })}
+                              onChange={(value) => updatePricing(pricing.id!, { hourly_rate: parseFloat(value) || 0 })}
+                              placeholder="0"
                             />
                           </div>
                         )}
                         <div className="space-y-2">
                           <Label>Prix minimum (€)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <NumericInput
                             value={pricing.minimum_price}
-                            onChange={(e) => updatePricing(pricing.id!, { minimum_price: parseFloat(e.target.value) || 0 })}
+                            onChange={(value) => updatePricing(pricing.id!, { minimum_price: parseFloat(value) || 0 })}
+                            placeholder="0"
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>TVA (%)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="30"
-                            step="0.1"
+                          <NumericInput
                             value={pricing.tva_rate}
-                            onChange={(e) => updatePricing(pricing.id!, { tva_rate: parseFloat(e.target.value) || 10 })}
+                            onChange={(value) => updatePricing(pricing.id!, { tva_rate: parseFloat(value) || 10 })}
+                            placeholder="10"
+                            min={0}
+                            max={30}
                           />
                         </div>
                       </div>
@@ -562,12 +554,12 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                             <Moon className="w-4 h-4" />
                             Majoration soirée (%) - 20h à 6h
                           </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
+                          <NumericInput
                             value={pricing.evening_surcharge}
-                            onChange={(e) => updatePricing(pricing.id!, { evening_surcharge: parseFloat(e.target.value) || 0 })}
+                            onChange={(value) => updatePricing(pricing.id!, { evening_surcharge: parseFloat(value) || 0 })}
+                            placeholder="0"
+                            min={0}
+                            max={100}
                           />
                         </div>
                         <div className="space-y-2">
@@ -575,12 +567,12 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                             <Calendar className="w-4 h-4" />
                             Majoration week-end (%)
                           </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
+                          <NumericInput
                             value={pricing.weekend_surcharge}
-                            onChange={(e) => updatePricing(pricing.id!, { weekend_surcharge: parseFloat(e.target.value) || 0 })}
+                            onChange={(value) => updatePricing(pricing.id!, { weekend_surcharge: parseFloat(value) || 0 })}
+                            placeholder="0"
+                            min={0}
+                            max={100}
                           />
                         </div>
                       </div>
@@ -620,13 +612,12 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                           </div>
                           <div className="space-y-2">
                             <Label>Multiplicateur</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="3"
-                              step="0.1"
+                            <NumericInput
                               value={pricing.peak_hours_multiplier}
-                              onChange={(e) => updatePricing(pricing.id!, { peak_hours_multiplier: parseFloat(e.target.value) || 1 })}
+                              onChange={(value) => updatePricing(pricing.id!, { peak_hours_multiplier: parseFloat(value) || 1 })}
+                              placeholder="1.5"
+                              min={1}
+                              max={3}
                             />
                             <p className="text-xs text-muted-foreground">
                               1.5 = +50%, 2.0 = +100%
@@ -668,12 +659,12 @@ export const CityPricingManager = ({ driverId, fleetManagerId }: CityPricingMana
                           </div>
                           <div className="space-y-2">
                             <Label>Réduction (%)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="50"
+                            <NumericInput
                               value={pricing.off_peak_discount}
-                              onChange={(e) => updatePricing(pricing.id!, { off_peak_discount: parseFloat(e.target.value) || 0 })}
+                              onChange={(value) => updatePricing(pricing.id!, { off_peak_discount: parseFloat(value) || 0 })}
+                              placeholder="0"
+                              min={0}
+                              max={50}
                             />
                           </div>
                         </div>

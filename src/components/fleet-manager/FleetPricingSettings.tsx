@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -143,22 +144,20 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="base_fare">Prise en charge (€)</Label>
-              <Input
+              <NumericInput
                 id="base_fare"
-                type="text"
-                inputMode="decimal"
-                value={pricing.base_fare || ""}
-                onChange={(e) => setPricing({ ...pricing, base_fare: parseFloat(e.target.value) || 0 })}
+                value={pricing.base_fare}
+                onChange={(value) => setPricing({ ...pricing, base_fare: parseFloat(value) || 0 })}
+                placeholder="0"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="per_km_rate">Prix au kilomètre (€/km)</Label>
-              <Input
+              <NumericInput
                 id="per_km_rate"
-                type="text"
-                inputMode="decimal"
-                value={pricing.per_km_rate || ""}
-                onChange={(e) => setPricing({ ...pricing, per_km_rate: parseFloat(e.target.value) || 0 })}
+                value={pricing.per_km_rate}
+                onChange={(value) => setPricing({ ...pricing, per_km_rate: parseFloat(value) || 0 })}
+                placeholder="0"
               />
             </div>
             <div className="space-y-2">
@@ -166,22 +165,20 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                 <Clock className="w-4 h-4" />
                 Tarif horaire (€/h) - Mise à disposition
               </Label>
-              <Input
+              <NumericInput
                 id="hourly_rate"
-                type="text"
-                inputMode="decimal"
-                value={pricing.hourly_rate || ""}
-                onChange={(e) => setPricing({ ...pricing, hourly_rate: parseFloat(e.target.value) || 0 })}
+                value={pricing.hourly_rate}
+                onChange={(value) => setPricing({ ...pricing, hourly_rate: parseFloat(value) || 0 })}
+                placeholder="0"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="minimum_price">Prix minimum (€)</Label>
-              <Input
+              <NumericInput
                 id="minimum_price"
-                type="text"
-                inputMode="decimal"
-                value={pricing.minimum_price || ""}
-                onChange={(e) => setPricing({ ...pricing, minimum_price: parseFloat(e.target.value) || 0 })}
+                value={pricing.minimum_price}
+                onChange={(value) => setPricing({ ...pricing, minimum_price: parseFloat(value) || 0 })}
+                placeholder="0"
               />
             </div>
           </div>
@@ -220,12 +217,11 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                   <Moon className="w-4 h-4" />
                   Majoration soirée (%) - 20h à 6h
                 </Label>
-                <Input
+                <NumericInput
                   id="evening_surcharge"
-                  type="text"
-                  inputMode="decimal"
-                  value={pricing.evening_surcharge || ""}
-                  onChange={(e) => setPricing({ ...pricing, evening_surcharge: parseFloat(e.target.value) || 0 })}
+                  value={pricing.evening_surcharge}
+                  onChange={(value) => setPricing({ ...pricing, evening_surcharge: parseFloat(value) || 0 })}
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-2">
@@ -233,12 +229,11 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
                   <Calendar className="w-4 h-4" />
                   Majoration week-end (%)
                 </Label>
-                <Input
+                <NumericInput
                   id="weekend_surcharge"
-                  type="text"
-                  inputMode="decimal"
-                  value={pricing.weekend_surcharge || ""}
-                  onChange={(e) => setPricing({ ...pricing, weekend_surcharge: parseFloat(e.target.value) || 0 })}
+                  value={pricing.weekend_surcharge}
+                  onChange={(value) => setPricing({ ...pricing, weekend_surcharge: parseFloat(value) || 0 })}
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -248,13 +243,12 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
               <Label htmlFor="airport_surcharge" className="flex items-center gap-2">
                 ✈️ Forfait Aéroport (€)
               </Label>
-              <Input
+              <NumericInput
                 id="airport_surcharge"
-                type="text"
-                inputMode="decimal"
                 value={pricing.airport_surcharge}
-                onChange={(e) => setPricing({ ...pricing, airport_surcharge: parseFloat(e.target.value) || 0 })}
+                onChange={(value) => setPricing({ ...pricing, airport_surcharge: parseFloat(value) || 0 })}
                 className="max-w-xs"
+                placeholder="0"
               />
               <p className="text-xs text-muted-foreground">
                 Forfait ajouté automatiquement pour les courses depuis/vers un aéroport français
@@ -278,15 +272,14 @@ export const FleetPricingSettings = ({ fleetManagerId }: FleetPricingSettingsPro
         <CardContent>
           <div className="space-y-2">
             <Label htmlFor="default_commission">Commission par défaut (%)</Label>
-            <Input
+            <NumericInput
               id="default_commission"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
               value={pricing.default_commission_percentage}
-              onChange={(e) => setPricing({ ...pricing, default_commission_percentage: parseFloat(e.target.value) || 0 })}
+              onChange={(value) => setPricing({ ...pricing, default_commission_percentage: parseFloat(value) || 0 })}
               className="max-w-xs"
+              min={0}
+              max={100}
+              placeholder="0"
             />
             <p className="text-sm text-muted-foreground">
               0% = pas de commission (chauffeurs salariés)
