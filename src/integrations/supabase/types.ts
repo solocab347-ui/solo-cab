@@ -10747,6 +10747,10 @@ export type Database = {
         Args: { p_payment_id: string }
         Returns: Json
       }
+      driver_has_full_access: {
+        Args: { driver_id_param: string }
+        Returns: boolean
+      }
       find_available_fleet_driver:
         | {
             Args: {
