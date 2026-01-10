@@ -12480,6 +12480,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      detect_paris_address: { Args: { p_address: string }; Returns: string }
       dispatch_company_course_to_fleet: {
         Args: { p_company_request_id: string; p_fleet_manager_id: string }
         Returns: Json
