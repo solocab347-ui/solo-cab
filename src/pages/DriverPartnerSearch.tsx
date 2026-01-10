@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,9 +25,12 @@ import {
   Loader2,
   Users,
   Building2,
-  Phone
+  Phone,
+  ArrowRight
 } from 'lucide-react';
 import { SharingAvailabilityToggle } from '@/components/driver/SharingAvailabilityToggle';
+import { useDriverPartnershipStatus } from '@/hooks/usePartnershipRequestStatus';
+import { PartnershipStatusBadge, PartnershipStatusMessage } from '@/components/driver/partnership/PartnershipStatusBadge';
 
 interface AvailableDriver {
   id: string;
@@ -100,6 +103,12 @@ export default function DriverPartnerSearch() {
   const [proposedCommission, setProposedCommission] = useState(10);
   const [proposedPaymentSchedule, setProposedPaymentSchedule] = useState('per_course');
   const [submitting, setSubmitting] = useState(false);
+
+  // IDs des chauffeurs trouvés pour vérifier les statuts
+  const driverIds = useMemo(() => drivers.map(d => d.id), [drivers]);
+  
+  // Hook pour récupérer les statuts des demandes de partenariat
+  const { getStatus, refresh: refreshStatuses } = useDriverPartnershipStatus(driverInfo?.id || null, driverIds);
 
   useEffect(() => {
     if (user?.id) {
@@ -210,17 +219,41 @@ export default function DriverPartnerSearch() {
   const proposePartnership = async () => {
     if (!selectedDriver || !driverInfo?.id) return;
 
+    // Vérifier le statut avant d'envoyer
+    const status = getStatus(selectedDriver.id);
+    if (status.status !== 'none') {
+      if (status.status === 'outgoing_pending') {
+        toast.error('Vous avez déjà envoyé une demande à ce chauffeur');
+      } else if (status.status === 'incoming_pending') {
+        toast.error('Ce chauffeur vous a déjà envoyé une demande. Consultez vos demandes reçues.');
+      } else if (status.status === 'active') {
+        toast.error('Vous avez déjà un partenariat actif avec ce chauffeur');
+      }
+      setProposalDialogOpen(false);
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Vérifier si un partenariat existe déjà
       const { data: existing } = await supabase
         .from('driver_partnerships')
-        .select('id')
+        .select('id, status, proposed_by')
         .or(`and(driver_a_id.eq.${driverInfo.id},driver_b_id.eq.${selectedDriver.id}),and(driver_a_id.eq.${selectedDriver.id},driver_b_id.eq.${driverInfo.id})`)
+        .in('status', ['pending', 'accepted', 'active'])
         .maybeSingle();
 
       if (existing) {
-        toast.error('Un partenariat existe déjà avec ce chauffeur');
+        if (existing.status === 'pending') {
+          if (existing.proposed_by === driverInfo.id) {
+            toast.error('Vous avez déjà envoyé une demande. En attente de réponse.');
+          } else {
+            toast.error('Ce chauffeur vous a déjà envoyé une demande.');
+          }
+        } else {
+          toast.error('Un partenariat existe déjà avec ce chauffeur');
+        }
+        setProposalDialogOpen(false);
+        refreshStatuses();
         return;
       }
 
@@ -235,25 +268,55 @@ export default function DriverPartnerSearch() {
 
       if (error) throw error;
 
-      toast.success(`Demande de partenariat envoyée à ${selectedDriver.full_name} !`);
+      toast.success(`Demande envoyée à ${selectedDriver.full_name} !`);
       setProposalDialogOpen(false);
       setSelectedDriver(null);
-      setProposedCommission(10);
+      refreshStatuses();
     } catch (error: any) {
       console.error('Error proposing partnership:', error);
-      if (error.code === '23505') {
-        toast.error('Un partenariat existe déjà avec ce chauffeur');
-      } else {
-        toast.error('Erreur lors de l\'envoi de la demande');
-      }
+      toast.error('Erreur lors de l\'envoi');
     } finally {
       setSubmitting(false);
     }
   };
 
   const openProposalDialog = (driver: AvailableDriver) => {
+    const status = getStatus(driver.id);
+    if (status.status === 'outgoing_pending') {
+      toast.info('Demande déjà envoyée. En attente de réponse.');
+      return;
+    }
+    if (status.status === 'incoming_pending') {
+      toast.info('Ce chauffeur vous a envoyé une demande. Consultez vos demandes reçues.');
+      return;
+    }
+    if (status.status === 'active') {
+      toast.info('Partenariat déjà actif.');
+      return;
+    }
     setSelectedDriver(driver);
     setProposalDialogOpen(true);
+  };
+
+  const renderActionButton = (driver: AvailableDriver) => {
+    const status = getStatus(driver.id);
+    
+    if (status.status === 'outgoing_pending') {
+      return <PartnershipStatusBadge status="outgoing_pending" compact />;
+    }
+    if (status.status === 'incoming_pending') {
+      return <PartnershipStatusBadge status="incoming_pending" compact />;
+    }
+    if (status.status === 'active') {
+      return <PartnershipStatusBadge status="active" compact />;
+    }
+    
+    return (
+      <Button className="w-full mt-4" onClick={() => openProposalDialog(driver)}>
+        <UserPlus className="h-4 w-4 mr-2" />
+        Proposer un partenariat
+      </Button>
+    );
   };
 
   if (loading) {
@@ -476,13 +539,7 @@ export default function DriverPartnerSearch() {
                       </div>
                     </div>
 
-                    <Button 
-                      className="w-full mt-4" 
-                      onClick={() => openProposalDialog(driver)}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Proposer un partenariat
-                    </Button>
+                    {renderActionButton(driver)}
                   </CardContent>
                 </Card>
               ))}
