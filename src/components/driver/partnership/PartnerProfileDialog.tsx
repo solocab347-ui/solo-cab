@@ -124,38 +124,23 @@ export function PartnerProfileDialog({
     
     setLoading(true);
     try {
-      const { data: driverData, error: driverError } = await supabase
-        .from('drivers')
-        .select(`
-          id,
-          user_id,
-          company_name,
-          bio,
-          rating,
-          total_rides,
-          working_sectors,
-          services_offered,
-          vehicle_equipment,
-          card_photo_url,
-          sharing_number,
-          show_phone_for_sharing,
-          show_email,
-          show_rating_for_sharing,
-          show_rides_for_sharing,
-          contact_phone,
-          contact_email
-        `)
-        .eq('id', driverId)
-        .single();
+      // Utiliser la fonction RPC SECURITY DEFINER pour contourner RLS
+      // et permettre l'accès aux profils des chauffeurs (validés, pionniers, période de grâce)
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_public_driver_profile_by_id', { driver_id_param: driverId });
+      
+      const driverDataArray = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : []);
+      
+      if (rpcError || driverDataArray.length === 0) {
+        console.error('Driver not found via RPC:', rpcError, 'Data:', rpcData);
+        setProfile(null);
+        return;
+      }
+      
+      // Cast explicite car les types supabase ne sont pas encore à jour après migration
+      const driverData = driverDataArray[0] as Record<string, unknown>;
 
-      if (driverError) throw driverError;
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name, profile_photo_url, phone, email')
-        .eq('id', driverData.user_id)
-        .single();
-
+      // Récupérer les véhicules séparément (pas de restriction RLS sur driver_vehicles pour le propriétaire)
       const { data: vehiclesData } = await supabase
         .from('driver_vehicles')
         .select('id, brand, model, color, category, max_passengers, photos, equipment')
@@ -163,13 +148,36 @@ export function PartnerProfileDialog({
         .eq('is_active', true)
         .order('is_favorite', { ascending: false });
 
+      // Mapper les données RPC vers le format DriverProfile
       setProfile({
-        ...driverData,
-        profile: profileData,
+        id: driverData.id as string,
+        user_id: driverData.user_id as string,
+        company_name: driverData.company_name as string | null,
+        bio: driverData.service_description as string | null,
+        rating: (driverData.rating as number) || 5,
+        total_rides: (driverData.total_rides as number) || 0,
+        working_sectors: (driverData.working_sectors as string[]) || [],
+        services_offered: (driverData.services_offered as string[]) || [],
+        vehicle_equipment: (driverData.vehicle_equipment as string[]) || [],
+        card_photo_url: driverData.profile_photo_url as string | null,
+        sharing_number: (driverData.sharing_number as number) || null,
+        show_phone_for_sharing: (driverData.show_phone_for_sharing as boolean) ?? false,
+        show_email: (driverData.show_email as boolean) ?? false,
+        show_rating_for_sharing: (driverData.show_rating_for_sharing as boolean) ?? true,
+        show_rides_for_sharing: (driverData.show_rides_for_sharing as boolean) ?? true,
+        contact_phone: driverData.contact_phone as string | null,
+        contact_email: driverData.contact_email as string | null,
+        profile: {
+          full_name: (driverData.profile_full_name as string) || 'Partenaire',
+          profile_photo_url: driverData.profile_photo_url as string | null,
+          phone: driverData.profile_phone as string | null,
+          email: driverData.profile_email as string | null,
+        },
         vehicles: vehiclesData || [],
       });
     } catch (error) {
       console.error('Error loading partner profile:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
