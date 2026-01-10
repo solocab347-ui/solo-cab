@@ -63,112 +63,76 @@ const PeakPeriodEditor = ({
   const currentPercentage = Math.round((period.multiplier - 1) * 100);
 
   return (
-    <div className="p-5 rounded-2xl bg-slate-50 border-2 border-slate-200 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{emoji}</span>
-          <h4 className="font-bold text-slate-900 text-lg">{label}</h4>
+    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+      {/* Header compact */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{emoji}</span>
+          <h4 className="font-semibold text-slate-800 text-sm">{label}</h4>
         </div>
         {canRemove && onRemove && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={onRemove}
-            className="text-red-600 border-red-300 hover:bg-red-50 h-9 px-3"
+            className="text-red-500 hover:bg-red-50 h-7 w-7 p-0"
           >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Supprimer
+            <Trash2 className="w-4 h-4" />
           </Button>
         )}
       </div>
       
-      {/* Form Grid */}
-      <div className="grid gap-5 md:grid-cols-3">
-        {/* Heure de début */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
-            Début
-          </label>
-          <Select
-            value={period.start || ""}
-            onValueChange={(value) => onChange({ ...period, start: value })}
-          >
-            <SelectTrigger className="h-14 bg-white border-2 border-slate-300 text-slate-900 font-bold text-xl rounded-xl shadow-sm">
-              <SelectValue placeholder="--:--" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_OPTIONS.map((time) => (
-                <SelectItem key={time} value={time} className="text-lg font-medium">
-                  {time}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Form compact - inline */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select
+          value={period.start || ""}
+          onValueChange={(value) => onChange({ ...period, start: value })}
+        >
+          <SelectTrigger className="h-9 w-20 bg-white border border-slate-300 text-slate-900 font-medium text-sm rounded-md">
+            <SelectValue placeholder="--:--" />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_OPTIONS.map((time) => (
+              <SelectItem key={time} value={time} className="text-sm">
+                {time}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
-        {/* Heure de fin */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
-            Fin
-          </label>
-          <Select
-            value={period.end || ""}
-            onValueChange={(value) => onChange({ ...period, end: value })}
-          >
-            <SelectTrigger className="h-14 bg-white border-2 border-slate-300 text-slate-900 font-bold text-xl rounded-xl shadow-sm">
-              <SelectValue placeholder="--:--" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_OPTIONS.map((time) => (
-                <SelectItem key={time} value={time} className="text-lg font-medium">
-                  {time}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <span className="text-slate-500 text-sm">→</span>
         
-        {/* Majoration */}
-        <div className="space-y-2">
-          <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
-            Majoration
-          </label>
-          <Select
-            value={period.multiplier.toString()}
-            onValueChange={(value) => onChange({ ...period, multiplier: parseFloat(value) })}
-          >
-            <SelectTrigger className="h-14 bg-emerald-50 border-2 border-emerald-400 rounded-xl shadow-sm">
-              <span className="inline-flex items-center justify-center bg-emerald-500 text-white font-bold text-lg px-4 py-1 rounded-lg">
-                +{currentPercentage}%
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {PERCENTAGE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  <span className="inline-flex items-center gap-2">
-                    <span className="bg-emerald-500 text-white font-bold px-3 py-1 rounded-md">
-                      {option.label}
-                    </span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Résumé */}
-      <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
-        <p className="text-center text-slate-800 font-medium">
-          ⏰ De <strong className="text-blue-700">{period.start || "--:--"}</strong>
-          {" "}à{" "}
-          <strong className="text-blue-700">{period.end || "--:--"}</strong>
-          {" "}→{" "}
-          <span className="inline-flex items-center bg-emerald-500 text-white font-bold px-3 py-1 rounded-lg">
-            +{currentPercentage}%
-          </span>
-        </p>
+        <Select
+          value={period.end || ""}
+          onValueChange={(value) => onChange({ ...period, end: value })}
+        >
+          <SelectTrigger className="h-9 w-20 bg-white border border-slate-300 text-slate-900 font-medium text-sm rounded-md">
+            <SelectValue placeholder="--:--" />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_OPTIONS.map((time) => (
+              <SelectItem key={time} value={time} className="text-sm">
+                {time}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select
+          value={period.multiplier.toString()}
+          onValueChange={(value) => onChange({ ...period, multiplier: parseFloat(value) })}
+        >
+          <SelectTrigger className="h-9 w-24 bg-emerald-50 border border-emerald-400 rounded-md">
+            <span className="text-emerald-700 font-bold text-sm">+{currentPercentage}%</span>
+          </SelectTrigger>
+          <SelectContent>
+            {PERCENTAGE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value.toString()}>
+                <span className="text-emerald-700 font-semibold">{option.label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -202,10 +166,10 @@ export const MultiplePeakHours = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Activation principale */}
-      <div className="flex items-center justify-between p-5 rounded-2xl bg-amber-50 border-2 border-amber-300">
-        <div className="flex items-center gap-4">
+    <div className="space-y-3">
+      {/* Activation principale - compact */}
+      <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-300">
+        <div className="flex items-center gap-3">
           <Switch
             checked={period1.enabled}
             onCheckedChange={(checked) => {
@@ -221,27 +185,27 @@ export const MultiplePeakHours = ({
                 onPeriod3Change({ enabled: false, start: null, end: null, multiplier: 1 });
               }
             }}
-            className="data-[state=checked]:bg-amber-500"
+            className="data-[state=checked]:bg-amber-500 scale-90"
           />
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-amber-600" />
-            <span className="font-bold text-slate-900 text-lg">Heures de pointe</span>
+            <TrendingUp className="w-4 h-4 text-amber-600" />
+            <span className="font-semibold text-slate-800 text-sm">Heures de pointe</span>
           </div>
         </div>
         {activePeriods > 0 && (
-          <span className="bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-full">
+          <Badge variant="secondary" className="bg-amber-500 text-white text-xs px-2 py-0.5">
             {activePeriods} période{activePeriods > 1 ? 's' : ''}
-          </span>
+          </Badge>
         )}
       </div>
 
-      {/* Périodes */}
+      {/* Périodes - compact */}
       {period1.enabled && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           <PeakPeriodEditor
             period={period1}
             onChange={onPeriod1Change}
-            label="Période 1 (matin)"
+            label="Matin"
             emoji="🌅"
             canRemove={false}
           />
@@ -250,7 +214,7 @@ export const MultiplePeakHours = ({
             <PeakPeriodEditor
               period={period2}
               onChange={onPeriod2Change}
-              label="Période 2 (midi)"
+              label="Midi"
               emoji="☀️"
               onRemove={handleRemovePeriod2}
               canRemove={true}
@@ -261,7 +225,7 @@ export const MultiplePeakHours = ({
             <PeakPeriodEditor
               period={period3}
               onChange={onPeriod3Change}
-              label="Période 3 (soir)"
+              label="Soir"
               emoji="🌙"
               onRemove={handleRemovePeriod3}
               canRemove={true}
@@ -271,20 +235,14 @@ export const MultiplePeakHours = ({
           {canAddMore && (
             <Button
               variant="outline"
+              size="sm"
               onClick={handleAddPeriod}
-              className="w-full h-14 gap-3 text-amber-700 border-2 border-dashed border-amber-400 hover:border-amber-500 hover:bg-amber-50 font-bold text-lg bg-white rounded-xl"
+              className="w-full h-8 gap-2 text-amber-700 border border-dashed border-amber-400 hover:bg-amber-50 text-xs font-medium bg-white rounded-lg"
             >
-              <Plus className="w-6 h-6" />
-              Ajouter une période ({3 - activePeriods} restante{3 - activePeriods > 1 ? 's' : ''})
+              <Plus className="w-3 h-3" />
+              + Période ({3 - activePeriods} restante{3 - activePeriods > 1 ? 's' : ''})
             </Button>
           )}
-
-          <div className="flex items-center gap-3 p-4 bg-slate-100 rounded-xl border border-slate-200">
-            <Clock className="w-5 h-5 text-slate-500" />
-            <p className="text-slate-700 font-medium">
-              Jusqu'à 3 périodes de majoration différentes
-            </p>
-          </div>
         </div>
       )}
     </div>
