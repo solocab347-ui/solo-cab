@@ -71,16 +71,40 @@ const GuestBooking = () => {
       if (!driverId) return;
       
       try {
+        // D'abord essayer get_safe_public_driver_data (pour chauffeurs validés)
+        let d = null;
         const { data: driverData, error } = await supabase
           .rpc('get_safe_public_driver_data', { driver_id_param: driverId });
         
-        if (error || !driverData || driverData.length === 0) {
-          toast.error("Chauffeur non trouvé");
-          navigate('/chauffeurs');
-          return;
+        if (!error && driverData && driverData.length > 0) {
+          d = driverData[0];
+        } else {
+          // Fallback: chercher directement dans la table drivers (pour pionniers/pending)
+          const { data: directDriver, error: directError } = await supabase
+            .from('drivers')
+            .select('id, company_name, display_driver_name, display_company_name, card_photo_url, user_id, is_pioneer, free_access_end_date, public_profile_enabled')
+            .eq('id', driverId)
+            .maybeSingle();
+          
+          if (directError || !directDriver) {
+            toast.error("Chauffeur non trouvé");
+            navigate('/chauffeurs');
+            return;
+          }
+          
+          // Vérifier que le pionnier a un essai actif ou profil public activé
+          const isPioneerActive = directDriver.is_pioneer && 
+            directDriver.free_access_end_date && 
+            new Date(directDriver.free_access_end_date) > new Date();
+          
+          if (!directDriver.public_profile_enabled && !isPioneerActive) {
+            toast.error("Ce chauffeur n'accepte pas de réservations");
+            navigate('/chauffeurs');
+            return;
+          }
+          
+          d = directDriver;
         }
-
-        const d = driverData[0];
         
         // Fetch profile info
         const { data: profileData } = await supabase

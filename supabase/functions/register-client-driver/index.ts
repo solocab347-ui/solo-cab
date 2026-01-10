@@ -50,10 +50,10 @@ serve(async (req) => {
       );
     }
 
-    // Verify driver exists and is validated
+    // Verify driver exists and is validated (or is a pioneer with active trial)
     const { data: driver, error: driverError } = await supabase
       .from("drivers")
-      .select("id, public_profile_enabled, status")
+      .select("id, public_profile_enabled, status, is_pioneer, free_access_end_date")
       .eq("id", driver_id)
       .single();
 
@@ -64,7 +64,12 @@ serve(async (req) => {
       );
     }
 
-    if (!driver.public_profile_enabled || driver.status !== "validated") {
+    // Allow validated drivers OR pioneers with active trial
+    const isPioneerActive = driver.is_pioneer && 
+      driver.free_access_end_date && 
+      new Date(driver.free_access_end_date) > new Date();
+
+    if (!driver.public_profile_enabled || (driver.status !== "validated" && !isPioneerActive)) {
       return new Response(
         JSON.stringify({ error: "Ce chauffeur n'accepte pas de nouveaux clients" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
