@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import ClientCoursesList from "@/components/client/ClientCoursesList";
 import ClientProfile from "@/components/client/ClientProfile";
 import ClientNotes from "@/components/client/ClientNotes";
-import ClientDriversWithProfile from "@/components/client/ClientDriversWithProfile";
+import ClientDriverManagement from "@/components/client/ClientDriverManagement";
 // ClientQRScanner removed - QR scanning handled via direct URL
 import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import ClientDriverProfile from "@/components/client/ClientDriverProfile";
@@ -433,7 +433,7 @@ const ClientDashboard = () => {
       case "notes":
         return <ClientNotes />;
       case "chauffeurs":
-        return <ClientDriversWithProfile onViewProfile={() => handleTabChange("profil-chauffeur")} />;
+        return <ClientDriverManagement onViewProfile={() => handleTabChange("profil-chauffeur")} />;
       case "profil-chauffeur":
         return <ClientDriverProfile />;
       case "compte":

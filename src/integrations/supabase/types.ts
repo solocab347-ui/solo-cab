@@ -428,6 +428,104 @@ export type Database = {
         }
         Relationships: []
       }
+      client_driver_blocks: {
+        Row: {
+          block_reason: string | null
+          blocked_by: string
+          client_id: string
+          created_at: string
+          driver_id: string
+          id: string
+        }
+        Insert: {
+          block_reason?: string | null
+          blocked_by: string
+          client_id: string
+          created_at?: string
+          driver_id: string
+          id?: string
+        }
+        Update: {
+          block_reason?: string | null
+          blocked_by?: string
+          client_id?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_driver_blocks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_client_dashboard_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_driver_blocks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_first_orders: {
         Row: {
           client_id: string

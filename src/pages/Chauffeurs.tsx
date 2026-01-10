@@ -778,6 +778,7 @@ const Chauffeurs = () => {
         driverId={selectedDriverId}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        isRegistered={selectedDriverId ? registeredDriverIds.includes(selectedDriverId) : false}
       />
     </div>
   );
