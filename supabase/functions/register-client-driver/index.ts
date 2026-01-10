@@ -147,6 +147,30 @@ serve(async (req) => {
       );
     }
 
+    // CRITIQUE: Récupérer et mettre à jour le téléphone depuis les métadonnées auth
+    const userMetadata = user.user_metadata || {};
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    
+    if (userMetadata.phone || userMetadata.address) {
+      console.log('📞 [CLIENT-DRIVER] Mise à jour téléphone/adresse depuis métadonnées:', userMetadata.phone);
+      const { error: profileUpdateError } = await supabaseService
+        .from('profiles')
+        .update({
+          phone: userMetadata.phone || null,
+          address: userMetadata.address || null
+        })
+        .eq('id', user.id);
+      
+      if (profileUpdateError) {
+        console.error('❌ Erreur mise à jour profil:', profileUpdateError);
+      } else {
+        console.log('✅ Profil mis à jour avec téléphone');
+      }
+    }
+
     // Create new free client (is_exclusive: false)
     const { data: newClient, error: insertError } = await supabase
       .from("clients")
@@ -162,11 +186,7 @@ serve(async (req) => {
     if (insertError) throw insertError;
 
     // CRITIQUE: Créer le rôle 'client' dans user_roles pour éviter les problèmes de redirection
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    
+    // supabaseService est déjà défini plus haut
     const { error: roleError } = await supabaseService
       .from("user_roles")
       .insert({

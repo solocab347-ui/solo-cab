@@ -107,6 +107,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // CRITIQUE: Récupérer et mettre à jour le téléphone depuis les métadonnées auth
+    // Les métadonnées sont passées lors du signUp mais le trigger handle_new_user peut échouer
+    const userMetadata = user.user_metadata || {};
+    if (userMetadata.phone || userMetadata.address) {
+      console.log('📞 [CLIENT-QR] Mise à jour téléphone/adresse depuis métadonnées:', userMetadata.phone);
+      const { error: profileUpdateError } = await serviceClient
+        .from('profiles')
+        .update({
+          phone: userMetadata.phone || null,
+          address: userMetadata.address || null
+        })
+        .eq('id', user.id);
+      
+      if (profileUpdateError) {
+        console.error('❌ Erreur mise à jour profil:', profileUpdateError);
+      } else {
+        console.log('✅ Profil mis à jour avec téléphone');
+      }
+    }
+
     // Create exclusive client with DUAL ASSOCIATION (driver_id + driver_ids)
     const { data: newClient, error: clientError } = await authClient
       .from('clients')
