@@ -589,21 +589,21 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               <span className="text-2xl font-bold text-orange-500">{devis.amount.toFixed(2)}€</span>
             </div>
             
-            {/* Bouton accepter pour devis pending dans la section En attente */}
+            {/* Bouton accepter pour devis pending dans la section En attente - TRÈS GRANDS */}
             {course.status === "pending" && devis.status === "pending" && (
-              <div className="flex flex-col sm:flex-row gap-3 mt-3">
+              <div className="flex flex-col gap-4 mt-4">
                 <Button
                   onClick={() => handleAcceptDevis(devis.id, course.id)}
-                  className="flex-1 bg-green-500 hover:bg-green-600 h-12 text-base font-medium"
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-lg shadow-green-500/30 min-h-[60px] text-lg"
                   size="lg"
                 >
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <CheckCircle className="w-7 h-7 mr-3" />
                   Accepter le devis
                 </Button>
                 <Button
                   onClick={() => setCancelCourseId(course.id)}
-                  variant="destructive"
-                  className="flex-1 h-12 text-base font-medium"
+                  variant="outline"
+                  className="w-full border-2 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground min-h-[48px] text-base font-medium"
                   size="lg"
                 >
                   <XCircle className="w-5 h-5 mr-2" />

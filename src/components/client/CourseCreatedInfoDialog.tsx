@@ -24,8 +24,9 @@ export function CourseCreatedInfoDialog({
   const navigate = useNavigate();
 
   const handleViewDevis = () => {
+    // Navigation directe vers les devis sans passer par le dashboard
+    navigate("/client-dashboard?tab=finances&subtab=devis", { replace: true });
     onClose();
-    navigate("/client-dashboard?tab=finances&subtab=devis");
   };
 
   return (
