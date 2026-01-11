@@ -48,6 +48,7 @@ import JoinCompany from "./pages/JoinCompany";
 import RegisterCongressDriver from "./pages/RegisterCongressDriver";
 import RegisterEmployeeFromTracking from "./pages/RegisterEmployeeFromTracking";
 import PioneerPayment from "./pages/PioneerPayment";
+import OurValues from "./pages/OurValues";
 import SafeMode from "./pages/SafeMode";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 // Lazy load heavy dashboards and authenticated pages
@@ -124,6 +125,7 @@ const App = () => (
               <Route path="/join-company" element={<JoinCompany />} />
               <Route path="/inscription-congres" element={<RegisterCongressDriver />} />
               <Route path="/pioneer-payment" element={<PioneerPayment />} />
+              <Route path="/nos-valeurs" element={<OurValues />} />
               <Route
                 path="/fleet-client-dashboard"
                 element={

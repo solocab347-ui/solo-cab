@@ -17,6 +17,7 @@ import { clientDashboardTranslations } from './clientDashboard';
 import { companyDashboardTranslations } from './companyDashboard';
 import { driverDashboardTranslations } from './driverDashboard';
 import { fleetPublicTranslations } from './fleetPublic';
+import { valuesTranslations } from './values';
 import type { Translations } from '../types';
 
 // Merge all translations
@@ -40,4 +41,5 @@ export const translations: Translations = {
   ...companyDashboardTranslations,
   ...driverDashboardTranslations,
   ...fleetPublicTranslations,
+  ...valuesTranslations,
 };
