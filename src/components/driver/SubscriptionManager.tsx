@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy } from "lucide-react";
+import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy, Settings, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import PioneerCancellationWarning from "./PioneerCancellationWarning";
 
 interface SubscriptionManagerProps {
   driverProfile: any;
@@ -15,15 +16,54 @@ interface SubscriptionManagerProps {
 
 const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: SubscriptionManagerProps) => {
   const [loading, setLoading] = useState(false);
+  const [managingSubscription, setManagingSubscription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(false); // Commence à false pour éviter le flickering
+  const [showPioneerWarning, setShowPioneerWarning] = useState(false);
 
   // Pioneer-specific values
   const isPioneer = driverProfile?.driver?.is_pioneer === true;
+  const pioneerStatusLost = driverProfile?.driver?.pioneer_status_lost === true;
   const pioneerTrialEnd = driverProfile?.driver?.free_access_end_date;
   const pioneerTrialDaysLeft = pioneerTrialEnd 
     ? Math.max(0, differenceInDays(new Date(pioneerTrialEnd), new Date())) 
     : null;
+
+  // Helper functions for portal management
+  const openCustomerPortal = async () => {
+    setManagingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      } else {
+        throw new Error("No portal URL received");
+      }
+    } catch (error: any) {
+      console.error("Error opening customer portal:", error);
+      toast.error("Erreur lors de l'ouverture du portail de gestion");
+    } finally {
+      setManagingSubscription(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (isPioneer && !pioneerStatusLost) {
+      setShowPioneerWarning(true);
+      return;
+    }
+    await openCustomerPortal();
+  };
+
+  const handlePioneerWarningConfirm = async () => {
+    setShowPioneerWarning(false);
+    await openCustomerPortal();
+  };
+
+  const handlePioneerWarningCancel = () => {
+    setShowPioneerWarning(false);
+    toast.success("Votre abonnement Pioneer est préservé ! 🏆");
+  };
 
   // NOUVEAU: Calcul synchrone du statut d'accès (évite le flickering)
   const calculateAccessStatus = () => {
@@ -136,8 +176,34 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      {/* Pioneer Cancellation Warning Dialog */}
+      <PioneerCancellationWarning
+        open={showPioneerWarning}
+        onOpenChange={setShowPioneerWarning}
+        onConfirm={handlePioneerWarningConfirm}
+        onCancel={handlePioneerWarningCancel}
+      />
+
+      {/* Pioneer Status Lost Alert */}
+      {pioneerStatusLost && (
+        <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
+            <div className="flex-1 w-full">
+              <h3 className="font-bold text-base sm:text-lg text-destructive mb-2">
+                Statut Pionnier Perdu
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                Votre abonnement Pioneer a été résilié et vous avez perdu le tarif préférentiel de 39,99€/mois.
+                Si vous souhaitez vous réabonner, le tarif standard de 49,99€/mois s'appliquera.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Pioneer Alert - Special for pioneers */}
-      {isPioneer && (
+      {isPioneer && !pioneerStatusLost && (
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500 flex-shrink-0" />
