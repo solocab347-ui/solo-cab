@@ -117,6 +117,48 @@ export type Database = {
           },
         ]
       }
+      blocked_ips: {
+        Row: {
+          block_count: number | null
+          blocked_by: string | null
+          blocked_until: string | null
+          created_at: string
+          first_blocked_at: string
+          id: string
+          ip_address: string
+          is_permanent: boolean | null
+          last_offense_at: string | null
+          notes: string | null
+          reason: string
+        }
+        Insert: {
+          block_count?: number | null
+          blocked_by?: string | null
+          blocked_until?: string | null
+          created_at?: string
+          first_blocked_at?: string
+          id?: string
+          ip_address: string
+          is_permanent?: boolean | null
+          last_offense_at?: string | null
+          notes?: string | null
+          reason: string
+        }
+        Update: {
+          block_count?: number | null
+          blocked_by?: string | null
+          blocked_until?: string | null
+          created_at?: string
+          first_blocked_at?: string
+          id?: string
+          ip_address?: string
+          is_permanent?: boolean | null
+          last_offense_at?: string | null
+          notes?: string | null
+          reason?: string
+        }
+        Relationships: []
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -10558,6 +10600,141 @@ export type Database = {
           },
         ]
       }
+      rate_limit_records: {
+        Row: {
+          block_until: string | null
+          created_at: string
+          endpoint: string | null
+          id: string
+          identifier: string
+          is_blocked: boolean | null
+          request_count: number | null
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          block_until?: string | null
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          identifier: string
+          is_blocked?: boolean | null
+          request_count?: number | null
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          block_until?: string | null
+          created_at?: string
+          endpoint?: string | null
+          id?: string
+          identifier?: string
+          is_blocked?: boolean | null
+          request_count?: number | null
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      security_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          affected_entity_id: string | null
+          affected_entity_type: string | null
+          alert_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_acknowledged: boolean | null
+          is_resolved: boolean | null
+          metadata: Json | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          alert_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          alert_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      security_audit_logs: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          request_method: string | null
+          request_path: string | null
+          risk_score: number | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       shared_courses: {
         Row: {
           accepted_at: string | null
@@ -10834,6 +11011,60 @@ export type Database = {
           platform?: string
           updated_at?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      suspicious_fingerprints: {
+        Row: {
+          associated_ips: string[] | null
+          associated_user_ids: string[] | null
+          fingerprint_hash: string
+          first_seen_at: string
+          flags: string[] | null
+          id: string
+          is_blocked: boolean | null
+          language: string | null
+          last_seen_at: string | null
+          notes: string | null
+          platform: string | null
+          risk_score: number | null
+          screen_resolution: string | null
+          timezone: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          associated_ips?: string[] | null
+          associated_user_ids?: string[] | null
+          fingerprint_hash: string
+          first_seen_at?: string
+          flags?: string[] | null
+          id?: string
+          is_blocked?: boolean | null
+          language?: string | null
+          last_seen_at?: string | null
+          notes?: string | null
+          platform?: string | null
+          risk_score?: number | null
+          screen_resolution?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          associated_ips?: string[] | null
+          associated_user_ids?: string[] | null
+          fingerprint_hash?: string
+          first_seen_at?: string
+          flags?: string[] | null
+          id?: string
+          is_blocked?: boolean | null
+          language?: string | null
+          last_seen_at?: string | null
+          notes?: string | null
+          platform?: string | null
+          risk_score?: number | null
+          screen_resolution?: string | null
+          timezone?: string | null
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -13074,6 +13305,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      cleanup_old_security_logs: { Args: never; Returns: undefined }
       create_client_via_qr: {
         Args: { _qr_code_id: string; _user_id: string }
         Returns: string
@@ -13100,6 +13332,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      create_security_alert: {
+        Args: {
+          p_affected_entity_id?: string
+          p_affected_entity_type?: string
+          p_alert_type: string
+          p_description?: string
+          p_metadata?: Json
+          p_severity: string
+          p_title: string
+        }
+        Returns: string
       }
       declare_fleet_course_payment_on_site: {
         Args: { p_course_id: string; p_payment_method?: string }
@@ -13836,6 +14080,7 @@ export type Database = {
         Args: { p_driver_id: string; p_fleet_manager_id: string }
         Returns: boolean
       }
+      is_ip_blocked: { Args: { check_ip: string }; Returns: boolean }
       is_valid_employee_invitation: {
         Args: { p_company_id: string; p_invitation_id: string }
         Returns: boolean
