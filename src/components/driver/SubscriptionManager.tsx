@@ -423,7 +423,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </ul>
           </div>
 
-          {isInactive && !hasFreeAccess && (
+          {/* Boutons d'action - Souscrire OU Gérer l'abonnement */}
+          {isInactive && !hasFreeAccess ? (
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
@@ -434,6 +435,25 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : '1 mois gratuit puis 49,99€/mois'}
               </span>
             </Button>
+          ) : (isActive || hasFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
+            <div className="space-y-3 pt-2">
+              <Button 
+                onClick={handleManageSubscription}
+                disabled={managingSubscription}
+                variant="outline"
+                className="w-full py-4 sm:py-5 text-sm sm:text-base border-primary/30 hover:bg-primary/10"
+              >
+                {managingSubscription ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Settings className="w-4 h-4 mr-2" />
+                )}
+                Gérer mon abonnement
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Modifier votre moyen de paiement, télécharger vos factures ou résilier votre abonnement
+              </p>
+            </div>
           )}
         </div>
       </Card>
