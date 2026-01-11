@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -244,7 +245,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         const [sharedResult, companyResult, requestsResult, receivedCountResult, completedCountResult] = await Promise.all([
           supabase
             .from("shared_courses")
-            .select(`course_id, sender_driver_id, receiver_driver_id, status`)
+            .select(`
+              course_id, 
+              sender_driver_id, 
+              receiver_driver_id, 
+              status,
+              receiver:drivers!shared_courses_receiver_driver_id_fkey(
+                id,
+                company_name,
+                profile_photo_url,
+                profiles(full_name, profile_photo_url)
+              )
+            `)
             .in("course_id", courseIds),
           supabase
             .from("company_courses")
@@ -507,6 +519,23 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     if (share.status === 'pending') return 'pending';
     if (['accepted', 'in_progress', 'completed'].includes(share.status)) return 'active';
     return null;
+  };
+
+  // Helper to get partner info for a shared course
+  const getSharePartnerInfo = (courseId: string): { name: string; photo: string | null; company: string | null } | null => {
+    const share = sharedCoursesData.find(sc => 
+      sc.course_id === courseId && 
+      sc.sender_driver_id === driverId &&
+      ['pending', 'accepted', 'in_progress'].includes(sc.status)
+    );
+    if (!share || !share.receiver) return null;
+    
+    const receiver = share.receiver;
+    const fullName = receiver.profiles?.full_name || receiver.company_name || 'Partenaire';
+    const photo = receiver.profiles?.profile_photo_url || receiver.profile_photo_url;
+    const company = receiver.company_name;
+    
+    return { name: fullName, photo, company };
   };
 
   const setupRealtimeSubscription = () => {
@@ -2667,6 +2696,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
               const isActivelySharingOrHandled = shareLockStatus === 'active' || handledByPartner;
               const courseTypeInfo = getCourseTypeInfo(course);
               const companyCourseInfo = getCompanyCourseInfo(course.id);
+              const sharePartnerInfo = getSharePartnerInfo(course.id);
               
               return (
               <Card key={course.id} className={cn(
@@ -2767,27 +2797,66 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                   {/* Message de verrouillage si partage en attente */}
                   {isPendingShare && (
                     <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm font-medium">Partage en attente de réponse</span>
+                      <div className="flex items-center gap-3">
+                        {sharePartnerInfo && (
+                          <Avatar className="h-10 w-10 border-2 border-amber-500/30">
+                            <AvatarImage src={sharePartnerInfo.photo || undefined} />
+                            <AvatarFallback className="bg-amber-500/20 text-amber-600">
+                              {sharePartnerInfo.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-sm font-medium">Partage en attente de réponse</span>
+                          </div>
+                          {sharePartnerInfo && (
+                            <p className="text-sm text-foreground mt-0.5 font-medium">
+                              {sharePartnerInfo.name}
+                              {sharePartnerInfo.company && sharePartnerInfo.company !== sharePartnerInfo.name && (
+                                <span className="text-xs text-muted-foreground ml-1">({sharePartnerInfo.company})</span>
+                              )}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Annulez le partage via le badge ci-dessus pour récupérer la course.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Vous avez envoyé cette course à un partenaire. En attente de sa réponse. 
-                        Annulez le partage via le badge ci-dessus pour récupérer la course.
-                      </p>
                     </div>
                   )}
 
                   {/* Message si course gérée par un partenaire (acceptée/en cours) */}
                   {isActivelySharingOrHandled && !isPendingShare && (
                     <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                      <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                        <Handshake className="w-4 h-4" />
-                        <span className="text-sm font-medium">Course confiée à un partenaire</span>
+                      <div className="flex items-center gap-3">
+                        {sharePartnerInfo && (
+                          <Avatar className="h-10 w-10 border-2 border-purple-500/30">
+                            <AvatarImage src={sharePartnerInfo.photo || undefined} />
+                            <AvatarFallback className="bg-purple-500/20 text-purple-600">
+                              {sharePartnerInfo.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                            <Handshake className="w-4 h-4" />
+                            <span className="text-sm font-medium">Course confiée à un partenaire</span>
+                          </div>
+                          {sharePartnerInfo && (
+                            <p className="text-sm text-foreground mt-0.5 font-medium">
+                              {sharePartnerInfo.name}
+                              {sharePartnerInfo.company && sharePartnerInfo.company !== sharePartnerInfo.name && (
+                                <span className="text-xs text-muted-foreground ml-1">({sharePartnerInfo.company})</span>
+                              )}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Le partenaire gère cette course. Vous recevrez votre commission à la fin.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Le partenaire gère cette course. Vous recevrez votre commission à la fin.
-                      </p>
                     </div>
                   )}
 
