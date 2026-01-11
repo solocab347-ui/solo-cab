@@ -47,7 +47,7 @@ export const CSP_DIRECTIVES = {
     'https://js.stripe.com',
     'https://hooks.stripe.com',
   ],
-  'frame-ancestors': ["'none'"], // Pas d'embedding (protection clickjacking)
+  'frame-ancestors': ["'self'", "https://lovable.dev", "https://*.lovable.dev", "https://*.lovableproject.com"], // Autoriser Lovable pour la prévisualisation
   'form-action': ["'self'"],
   'base-uri': ["'self'"],
   'object-src': ["'none'"],
@@ -72,8 +72,8 @@ export function buildCSPString(): string {
  * En-têtes de sécurité recommandés
  */
 export const SECURITY_HEADERS = {
-  // Protection contre le clickjacking
-  'X-Frame-Options': 'DENY',
+  // Protection contre le clickjacking (SAMEORIGIN pour permettre Lovable preview)
+  'X-Frame-Options': 'SAMEORIGIN',
   
   // Protection contre le MIME sniffing
   'X-Content-Type-Options': 'nosniff',
@@ -155,6 +155,38 @@ export function isInIframe(): boolean {
   }
 }
 
+// Domaines autorisés pour l'embedding (Lovable preview)
+const ALLOWED_IFRAME_DOMAINS = [
+  'lovable.dev',
+  'lovableproject.com',
+  'localhost',
+];
+
+/**
+ * Vérifier si le domaine parent est autorisé
+ */
+function isAllowedIframeDomain(): boolean {
+  try {
+    // En mode développement local, toujours autoriser
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return true;
+    }
+    
+    // Vérifier le referrer pour les iframes cross-origin
+    const referrer = document.referrer;
+    if (referrer) {
+      const referrerUrl = new URL(referrer);
+      return ALLOWED_IFRAME_DOMAINS.some(domain => 
+        referrerUrl.hostname === domain || referrerUrl.hostname.endsWith(`.${domain}`)
+      );
+    }
+    
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Bloquer l'exécution si dans une iframe non autorisée
  */
@@ -166,7 +198,12 @@ export function preventClickjacking(): void {
         return; // Même origine, OK
       }
     } catch {
-      // Cross-origin iframe, bloquer
+      // Cross-origin iframe, vérifier si autorisée
+    }
+
+    // Vérifier si le domaine parent est dans la liste autorisée
+    if (isAllowedIframeDomain()) {
+      return; // Domaine autorisé, OK
     }
 
     // Afficher un message et rediriger
