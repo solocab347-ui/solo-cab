@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Infinity,
 } from "lucide-react";
+import { SubscriptionManagementCard } from "@/components/subscription/SubscriptionManagementCard";
 
 interface FleetSubscriptionManagerProps {
   fleetManagerId: string;
@@ -532,6 +533,18 @@ export const FleetSubscriptionManager = ({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Section Gestion d'abonnement - Pour les abonnés actifs */}
+      {isSubscribed && !isFreeAccess && (
+        <SubscriptionManagementCard
+          userType="fleet_manager"
+          hasStripeCustomer={true}
+          isActive={isSubscribed}
+          nextBillingDate={subscriptionData?.subscription_end}
+          nextBillingAmount={billing?.total_monthly || billing?.next_billing_amount}
+          onAfterManage={checkSubscription}
+        />
       )}
     </div>
   );
