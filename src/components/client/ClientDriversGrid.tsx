@@ -334,6 +334,7 @@ export function ClientDriversGrid({
           display_company_name,
           show_rating_public,
           show_phone,
+          is_pioneer,
           profiles:user_id(full_name, profile_photo_url, phone)
         `)
         .in("id", driverIds);
