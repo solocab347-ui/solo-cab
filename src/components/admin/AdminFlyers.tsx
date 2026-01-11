@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2, CreditCard } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
 import { generateCompanyFlyer } from "@/lib/flyers/companyFlyerGenerator";
 import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
+import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup") => {
     setLoading(type);
     try {
       switch (type) {
@@ -30,6 +31,10 @@ const AdminFlyers = () => {
         case "revolut":
           await generateRevolutFlyer();
           toast.success("Flyer Revolut Business téléchargé !");
+          break;
+        case "sumup":
+          await generateSumupFlyer();
+          toast.success("Flyer SumUp téléchargé !");
           break;
       }
     } catch (error) {
@@ -72,6 +77,14 @@ const AdminFlyers = () => {
       icon: CreditCard,
       color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
       gradient: "from-indigo-500 to-blue-500",
+    },
+    {
+      id: "sumup" as const,
+      title: "Terminal SumUp",
+      description: "Flyer d'affiliation pour le terminal de paiement SumUp Solo Lite. Encaissez vos clients par CB facilement. 4 flyers par page A4.",
+      icon: Smartphone,
+      color: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
+      gradient: "from-teal-500 to-cyan-500",
     },
   ];
 
