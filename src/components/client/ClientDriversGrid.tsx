@@ -71,6 +71,7 @@ interface Driver {
   display_company_name: boolean;
   show_rating_public: boolean;
   show_phone: boolean;
+  is_pioneer?: boolean;
   profiles: {
     full_name: string;
     profile_photo_url: string | null;
@@ -145,12 +146,18 @@ function SortableDriverCard({
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </button>
 
-      {/* Favorite badge */}
-      {isFavorite && (
+      {/* Badges - Favoris ou Pionnier */}
+      {isFavorite ? (
         <div className="absolute top-3 left-3 z-10">
           <Badge className="bg-gradient-to-r from-red-500 to-rose-500 text-white gap-1 text-[10px] shadow-lg px-2">
             <Heart className="w-3 h-3 fill-current" />
             Favori
+          </Badge>
+        </div>
+      ) : driver.is_pioneer && (
+        <div className="absolute top-3 left-3 z-10">
+          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white gap-1 text-[10px] shadow-lg px-2">
+            🏆 Pionnier
           </Badge>
         </div>
       )}

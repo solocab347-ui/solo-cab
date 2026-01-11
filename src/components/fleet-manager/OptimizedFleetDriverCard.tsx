@@ -19,6 +19,7 @@ interface FleetDriver {
     vehicle_photos?: string[] | null;
     bio?: string | null;
     services_offered?: string[] | null;
+    is_pioneer?: boolean;
     profile?: {
       full_name: string;
       email: string;
@@ -107,8 +108,13 @@ export const OptimizedFleetDriverCard = memo(function OptimizedFleetDriverCard({
           </div>
         </div>
 
-        {/* Rating & Status */}
+        {/* Rating, Pioneer Badge & Status */}
         <div className="flex flex-col items-end gap-1 shrink-0">
+          {driverData?.is_pioneer && (
+            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
+              🏆 Pionnier
+            </Badge>
+          )}
           {driverData?.rating && driverData.rating > 0 && (
             <div className="flex items-center gap-1 text-warning">
               <Star className="w-3.5 h-3.5 fill-current" />

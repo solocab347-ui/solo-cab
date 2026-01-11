@@ -151,7 +151,14 @@ function ActiveAgreementCard({
               </AvatarFallback>
             </Avatar>
             <div>
-              <h4 className="font-semibold">{agreement.driverProfile?.full_name || "Chauffeur"}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">{agreement.driverProfile?.full_name || "Chauffeur"}</h4>
+                {agreement.driver?.is_pioneer && (
+                  <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
+                    🏆 Pionnier
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 {agreement.driver?.company_name} • {agreement.driver?.vehicle_brand} {agreement.driver?.vehicle_model}
               </p>

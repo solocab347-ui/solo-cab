@@ -79,6 +79,7 @@ interface SearchableDriver {
   show_phone: boolean | null;
   show_email: boolean | null;
   show_pricing_partners?: boolean | null;
+  is_pioneer?: boolean;
   contact_phone: string | null;
   contact_email: string | null;
   sharing_number?: number | null;
@@ -669,6 +670,11 @@ Cordialement`;
                             ? driver.company_name
                             : 'Chauffeur VTC'}
                         </h3>
+                        {(driver as any).is_pioneer && (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
+                            🏆 Pionnier
+                          </Badge>
+                        )}
                         {(driver as any).show_rating_partners !== false && driver.rating && driver.rating >= 4.5 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                             <Star className="h-3 w-3 fill-current mr-1" />
