@@ -169,19 +169,20 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.setFontSize(7);
   doc.setTextColor(...primaryBlue);
   doc.text("SASU SOLOCAB", stampX, stampY - 16, { align: "center" });
-  doc.text("★ DOCUMENT CERTIFIÉ ★", stampX, stampY - 10, { align: "center" });
+  doc.text("* DOCUMENT CERTIFIE *", stampX, stampY - 10, { align: "center" });
   
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.text("RCS PARIS", stampX, stampY + 12, { align: "center" });
   doc.text("994 176 576", stampX, stampY + 16, { align: "center" });
 
-  // Center of stamp - checkmark
+  // Center of stamp - checkmark (using simple V)
   doc.setFillColor(...primaryBlue);
   doc.circle(stampX, stampY, 8, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text("✓", stampX, stampY + 4, { align: "center" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("V", stampX, stampY + 3, { align: "center" });
 
   // Signature area - repositionnée
   doc.setFont("helvetica", "italic");
