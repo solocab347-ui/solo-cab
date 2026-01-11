@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Loader2, Save, Plus, Trash2, MapPin, Euro, Clock, 
-  Moon, Calendar, TrendingDown, ChevronDown, ChevronUp 
+  Moon, Calendar, TrendingDown, ChevronDown, ChevronUp, Info 
 } from "lucide-react";
 import {
   Select,
@@ -556,14 +556,13 @@ export const CityPricingManager = ({ driverId, fleetManagerId, onSave }: CityPri
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>TVA (%)</Label>
-                          <NumericInput
-                            value={pricing.tva_rate}
-                            onChange={(value) => updatePricing(pricing.id!, { tva_rate: parseFloat(value) || 10 })}
-                            placeholder="10"
-                            min={0}
-                            max={30}
-                          />
+                          <Label className="flex items-center gap-2">
+                            <Info className="w-4 h-4 text-info" />
+                            TVA appliquée
+                          </Label>
+                          <p className="text-sm text-muted-foreground bg-info/5 p-2 rounded border border-info/20">
+                            10% pour courses classiques • 20% pour mises à disposition
+                          </p>
                         </div>
                       </div>
                       <TvaToggle

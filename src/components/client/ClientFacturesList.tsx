@@ -61,7 +61,12 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
             passengers_count
           ),
           devis(
-            amount
+            amount,
+            time_price,
+            distance_price,
+            tva_rate,
+            tva_amount,
+            airport_fee
           ),
           clients!inner(
             profiles:user_id(full_name, phone, email)
@@ -180,10 +185,13 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     yPos += 8;
 
     const amount = facture.amount;
-    // TVA 10% par défaut pour les prestations VTC
-    const tvaRate = 10;
+    // Utiliser les valeurs stockées ou calculer selon le type de course
+    // 10% pour courses classiques, 20% pour mises à disposition
+    const isMiseADisposition = facture.devis?.time_price > 0 && (!facture.devis?.distance_price || facture.devis?.distance_price === 0);
+    const tvaRate = facture.tva_rate || facture.devis?.tva_rate || (isMiseADisposition ? 20 : 10);
     const subtotalHT = amount / (1 + tvaRate / 100);
-    const tvaAmount = amount - subtotalHT;
+    const tvaAmount = facture.tva_amount || facture.devis?.tva_amount || (amount - subtotalHT);
+    const airportFee = facture.airport_fee || facture.devis?.airport_fee || 0;
 
     doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
     doc.rect(20, yPos, 170, 8, 'F');
@@ -202,6 +210,16 @@ const ClientFacturesList = ({ clientId }: ClientFacturesListProps) => {
     doc.text(`${subtotalHT.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     
     yPos += 7;
+    
+    // Afficher frais aéroport si présents
+    if (airportFee > 0) {
+      doc.setFillColor(240, 248, 255);
+      doc.rect(20, yPos, 170, 7, 'F');
+      doc.text("Forfait Aéroport", 25, yPos + 5);
+      doc.text(`${airportFee.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+      yPos += 7;
+    }
+    
     doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
     doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
     
