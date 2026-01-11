@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy, Settings, Loader2 } from "lucide-react";
+import { CreditCard, Check, AlertCircle, Calendar, Gift, Trophy, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import PioneerCancellationWarning from "./PioneerCancellationWarning";
+import { SubscriptionManagementCard } from "@/components/subscription/SubscriptionManagementCard";
 
 interface SubscriptionManagerProps {
   driverProfile: any;
@@ -423,8 +424,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
             </ul>
           </div>
 
-          {/* Boutons d'action - Souscrire OU Gérer l'abonnement */}
-          {isInactive && !hasFreeAccess ? (
+          {/* Bouton d'action - Souscrire */}
+          {isInactive && !hasFreeAccess && (
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
@@ -435,28 +436,28 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 {isPioneer ? 'Activer - 39,99€/mois (offre Pionnier)' : '1 mois gratuit puis 49,99€/mois'}
               </span>
             </Button>
-          ) : (isActive || hasFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
-            <div className="space-y-3 pt-2">
-              <Button 
-                onClick={handleManageSubscription}
-                disabled={managingSubscription}
-                variant="outline"
-                className="w-full py-4 sm:py-5 text-sm sm:text-base border-primary/30 hover:bg-primary/10"
-              >
-                {managingSubscription ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Settings className="w-4 h-4 mr-2" />
-                )}
-                Gérer mon abonnement
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Modifier votre moyen de paiement, télécharger vos factures ou résilier votre abonnement
-              </p>
-            </div>
           )}
         </div>
       </Card>
+
+      {/* Section Gestion d'abonnement - Très visible et séparée */}
+      {(isActive || hasFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
+        <SubscriptionManagementCard
+          userType="driver"
+          hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
+          isActive={isActive || hasFreeAccess}
+          nextBillingDate={driverProfile?.driver?.subscription_end_date}
+          nextBillingAmount={isPioneer ? 39.99 : 49.99}
+          onBeforeOpenPortal={async () => {
+            if (isPioneer && !pioneerStatusLost) {
+              setShowPioneerWarning(true);
+              return false;
+            }
+            return true;
+          }}
+          onAfterManage={onSubscriptionUpdate}
+        />
+      )}
 
       {/* Comparison - Updated for pioneers */}
       {isInactive && !hasFreeAccess && !isPioneer && (
