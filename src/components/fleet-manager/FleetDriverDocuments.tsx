@@ -186,7 +186,8 @@ export const FleetDriverDocuments = ({
 
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${driverId}/${docKey}_${Date.now()}.${fileExt}`;
+      // Use userId (auth.uid()) for storage path to match RLS policy
+      const fileName = `${userId}/${docKey}_${Date.now()}.${fileExt}`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage

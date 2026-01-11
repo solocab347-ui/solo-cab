@@ -3997,6 +3997,39 @@ export type Database = {
           },
         ]
       }
+      document_types: {
+        Row: {
+          allows_multiple_files: boolean
+          can_be_updated_after_validation: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_required: boolean
+          label: string
+        }
+        Insert: {
+          allows_multiple_files?: boolean
+          can_be_updated_after_validation?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id: string
+          is_required?: boolean
+          label: string
+        }
+        Update: {
+          allows_multiple_files?: boolean
+          can_be_updated_after_validation?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_required?: boolean
+          label?: string
+        }
+        Relationships: []
+      }
       driver_availability_slots: {
         Row: {
           created_at: string | null
@@ -4089,6 +4122,123 @@ export type Database = {
           },
           {
             foreignKeyName: "driver_availability_slots_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_documents: {
+        Row: {
+          can_be_updated: boolean
+          created_at: string
+          document_type: string
+          driver_id: string
+          expires_at: string | null
+          file_name: string
+          file_url: string
+          id: string
+          is_locked: boolean
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          uploaded_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          can_be_updated?: boolean
+          created_at?: string
+          document_type: string
+          driver_id: string
+          expires_at?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          is_locked?: boolean
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          can_be_updated?: boolean
+          created_at?: string
+          document_type?: string
+          driver_id?: string
+          expires_at?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          is_locked?: boolean
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
