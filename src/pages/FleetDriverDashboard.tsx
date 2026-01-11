@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, isPast } from "date-fns";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 const FleetDriverDashboard = () => {
   const { signOut, user } = useAuth();
@@ -441,6 +442,13 @@ const FleetDriverDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="driver"
+        userName={driverProfile?.full_name}
+        userEmail={user?.email}
+      />
     </div>
   );
 };

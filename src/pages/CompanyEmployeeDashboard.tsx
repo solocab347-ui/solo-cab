@@ -49,6 +49,7 @@ import { CompanyInlineCourseCreation } from "@/components/company/CompanyInlineC
 import { EmployeeCoursesList } from "@/components/company/employee/EmployeeCoursesList";
 import { EmployeeBudgetGauge } from "@/components/company/employee/EmployeeBudgetGauge";
 import { EmployeeRoleUpgradeRequest } from "@/components/company-employee/EmployeeRoleUpgradeRequest";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 interface EmployeeData {
   id: string;
@@ -902,6 +903,13 @@ export default function CompanyEmployeeDashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="company_employee"
+        userName={employee?.user_name || undefined}
+        userEmail={user?.email}
+      />
     </div>
   );
 }

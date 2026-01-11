@@ -42,6 +42,7 @@ import ClientNotes from "@/components/client/ClientNotes";
 import ClientProfile from "@/components/client/ClientProfile";
 import { FleetClientDevisFactures } from "@/components/fleet-client/FleetClientDevisFactures";
 import { NotificationBell } from "@/components/NotificationBell";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 interface FleetInfo {
   id: string;
@@ -769,6 +770,13 @@ const FleetClientDashboard = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="client"
+        userName={userProfile?.full_name || undefined}
+        userEmail={user?.email}
+      />
     </div>
   );
 };
