@@ -173,7 +173,7 @@ const ClientDashboard = () => {
           .from("clients")
           .select(`
             *,
-            drivers:driver_id(
+            drivers:favorite_driver_id(
               id,
               company_name,
               vehicle_model,
@@ -184,6 +184,7 @@ const ClientDashboard = () => {
               display_company_name,
               show_rating_public,
               show_phone,
+              is_pioneer,
               profiles:user_id(full_name, profile_photo_url, phone)
             )
           `)
