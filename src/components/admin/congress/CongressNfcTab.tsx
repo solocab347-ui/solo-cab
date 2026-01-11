@@ -129,15 +129,31 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Barre de recherche */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher par nom, email, code chauffeur ou tag NFC..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        {/* Barre de recherche améliorée */}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom, email, code chauffeur (DRV-...), téléphone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                onClick={() => setSearchQuery("")}
+              >
+                <span className="sr-only">Effacer</span>
+                ×
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Recherche par : nom complet, adresse email, code chauffeur (DRV-XXXXXX), téléphone ou tag NFC
+          </p>
         </div>
         
         {filteredRegistrations.length !== registrations.length && (
@@ -339,6 +355,25 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
                   </TableRow>
                 );
               })}
+              {filteredRegistrations.length === 0 && registrations.length > 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <Search className="h-8 w-8 opacity-50" />
+                      <p>Aucun résultat pour "{searchQuery}"</p>
+                      <p className="text-xs">Essayez avec un nom, email, code chauffeur (DRV-...) ou numéro de téléphone</p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSearchQuery("")}
+                        className="mt-2"
+                      >
+                        Effacer la recherche
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
               {registrations.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
