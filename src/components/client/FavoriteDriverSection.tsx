@@ -165,9 +165,10 @@ export function FavoriteDriverSection({
   };
 
   const getVehicleDescription = (driver: Driver): string => {
+    // Affichage: modèle en premier, couleur à la fin
     const parts = [];
     if (driver.vehicle_brand) parts.push(driver.vehicle_brand);
-    if (driver.vehicle_model) parts.push(driver.vehicle_model);
+    if (driver.vehicle_model && driver.vehicle_model !== driver.vehicle_brand) parts.push(driver.vehicle_model);
     if (driver.vehicle_color) parts.push(driver.vehicle_color);
     return parts.join(' ') || '';
   };
