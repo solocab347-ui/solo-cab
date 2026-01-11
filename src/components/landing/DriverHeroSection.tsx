@@ -155,7 +155,7 @@ export const DriverHeroSection = () => {
       <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-600/5 border border-white/5">
         <p className="text-gray-300">
           <Star className="w-5 h-5 inline mr-2 text-amber-500" />
-          Déjà des centaines de chauffeurs nous font confiance
+          Rejoignez la première plateforme 100% indépendante
         </p>
         <Link to="/devenir-chauffeur">
           <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
