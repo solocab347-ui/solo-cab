@@ -35,7 +35,7 @@ import ClientDevisFactures from "@/components/client/ClientDevisFactures";
 import { FavoriteDriverSection } from "@/components/client/FavoriteDriverSection";
 import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog";
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
-import { ClientQuickActions } from "@/components/client/ClientQuickActions";
+import { ClientHomeView } from "@/components/client/ClientHomeView";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
 import { NoDriversBanner } from "@/components/client/NoDriversBanner";
 import { cn } from "@/lib/utils";
@@ -177,7 +177,14 @@ const ClientDashboard = () => {
               id,
               company_name,
               vehicle_model,
-              profiles:user_id(full_name, profile_photo_url)
+              vehicle_brand,
+              vehicle_color,
+              rating,
+              display_driver_name,
+              display_company_name,
+              show_rating_public,
+              show_phone,
+              profiles:user_id(full_name, profile_photo_url, phone)
             )
           `)
           .eq("user_id", user.id)
@@ -273,94 +280,13 @@ const ClientDashboard = () => {
     switch (activeTab) {
       case "accueil":
         return (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            {/* Banner for clients without drivers */}
-            {!clientProfile?.client?.is_exclusive && 
-             (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0) && (
-              <NoDriversBanner variant="full" />
-            )}
-
-            {/* Quick Actions Grid */}
-            <ClientQuickActions
-              onNewReservation={handleNewReservation}
-              onNavigate={handleTabChange}
-              stats={stats}
-              isExclusive={clientProfile?.client?.is_exclusive}
-              hasDrivers={
-                clientProfile?.client?.is_exclusive 
-                  ? !!clientProfile?.client?.driver_id 
-                  : (clientProfile?.client?.driver_ids?.length || 0) > 0
-              }
-            />
-
-            {/* Favorite Driver Section for free clients */}
-            {!clientProfile?.client?.is_exclusive && clientProfile?.client?.driver_ids?.length > 0 && (
-              <FavoriteDriverSection
-                clientId={clientProfile.client.id}
-                favoriteDriverId={clientProfile.client.favorite_driver_id}
-                driverIds={clientProfile.client.driver_ids}
-                onFavoriteChange={fetchClientProfile}
-              />
-            )}
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card 
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20"
-                onClick={() => handleTabChange("courses", "confirmed")}
-              >
-                <Clock className="w-5 h-5 text-blue-500 mb-2" />
-                <p className="text-2xl font-bold">{stats.upcomingCourses}</p>
-                <p className="text-xs text-muted-foreground">Courses à venir</p>
-              </Card>
-
-              <Card 
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20"
-                onClick={() => handleTabChange("courses", "pending")}
-              >
-                <FileText className="w-5 h-5 text-amber-500 mb-2" />
-                <p className="text-2xl font-bold">{stats.pendingDevis}</p>
-                <p className="text-xs text-muted-foreground">Devis en attente</p>
-              </Card>
-
-              <Card 
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20"
-                onClick={() => handleTabChange("devis-factures", "factures")}
-              >
-                <FileText className="w-5 h-5 text-green-500 mb-2" />
-                <p className="text-2xl font-bold">{stats.unpaidInvoices}</p>
-                <p className="text-xs text-muted-foreground">Factures impayées</p>
-              </Card>
-            </div>
-
-            {/* Exclusive client - show driver */}
-            {clientProfile?.client?.is_exclusive && clientProfile?.client?.drivers && (
-              <Card className="p-4 border-primary/20 bg-primary/5">
-                <div className="flex items-center gap-4">
-                  {clientProfile.client.drivers.profiles?.profile_photo_url ? (
-                    <img
-                      src={clientProfile.client.drivers.profiles.profile_photo_url}
-                      alt={clientProfile.client.drivers.profiles.full_name}
-                      className="w-14 h-14 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 bg-gradient-to-br from-primary to-orange-500 rounded-full flex items-center justify-center">
-                      <Car className="w-7 h-7 text-white" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <Badge variant="secondary" className="mb-1 text-[10px]">Chauffeur exclusif</Badge>
-                    <h3 className="font-bold">
-                      {clientProfile.client.drivers.profiles?.full_name || "Mon chauffeur"}
-                    </h3>
-                  </div>
-                  <Button size="sm" onClick={() => handleTabChange("chauffeurs")}>
-                    Voir profil
-                  </Button>
-                </div>
-              </Card>
-            )}
-          </div>
+          <ClientHomeView
+            clientProfile={clientProfile}
+            stats={stats}
+            onNewReservation={handleNewReservation}
+            onNavigate={handleTabChange}
+            onViewFavoriteDriver={() => handleTabChange("chauffeurs")}
+          />
         );
       case "courses":
         return clientProfile?.client?.id ? (
