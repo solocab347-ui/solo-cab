@@ -45,6 +45,7 @@ interface AvailableDriver {
   display_driver_name?: boolean;
   display_company_name?: boolean;
   show_rating_partners?: boolean;
+  is_pioneer?: boolean;
 }
 
 const FRENCH_DEPARTMENTS = [
@@ -435,6 +436,11 @@ export function PartnerSearchInline({ driverId }: Props) {
                             ? driver.company_name
                             : driver.full_name}
                         </span>
+                        {driver.is_pioneer && (
+                          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
+                            🏆 Pionnier
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="font-mono text-[10px]">
                           {driver.formatted_sharing_number}
                         </Badge>

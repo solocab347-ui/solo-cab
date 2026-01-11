@@ -493,12 +493,19 @@ const DriverCard = ({ driver, displayName, navigate, onRemove, onBlock, isExclus
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div>
-            <h3 
-              className="font-semibold text-lg cursor-pointer hover:text-primary transition-colors truncate"
-              onClick={() => navigate(`/chauffeur/${driver.id}`)}
-            >
-              {displayName}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 
+                className="font-semibold text-lg cursor-pointer hover:text-primary transition-colors truncate"
+                onClick={() => navigate(`/chauffeur/${driver.id}`)}
+              >
+                {displayName}
+              </h3>
+              {(driver as any).is_pioneer && (
+                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
+                  🏆 Pionnier
+                </Badge>
+              )}
+            </div>
             {driver.vehicle_brand && driver.vehicle_model && (
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Car className="w-3 h-3" />

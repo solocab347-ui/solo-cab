@@ -64,6 +64,7 @@ interface DriverProfile {
   show_email: boolean;
   show_rating_for_sharing: boolean;
   show_rides_for_sharing: boolean;
+  is_pioneer?: boolean;
   contact_phone: string | null;
   contact_email: string | null;
   profile: {
@@ -193,6 +194,7 @@ export function PartnerProfileDialog({
         show_email: (driverData.show_email as boolean) ?? false,
         show_rating_for_sharing: (driverData.show_rating_for_sharing as boolean) ?? true,
         show_rides_for_sharing: (driverData.show_rides_for_sharing as boolean) ?? true,
+        is_pioneer: (driverData.is_pioneer as boolean) ?? false,
         contact_phone: driverData.contact_phone as string | null,
         contact_email: driverData.contact_email as string | null,
         profile: {
@@ -275,6 +277,12 @@ export function PartnerProfileDialog({
 
                   {/* Badges stats - respecter la visibilité */}
                   <div className="flex flex-wrap gap-2 mt-4">
+                    {/* Badge Pionnier en premier */}
+                    {profile.is_pioneer && (
+                      <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0">
+                        🏆 Pionnier SoloCab
+                      </Badge>
+                    )}
                     {profile.sharing_number && (
                       <Badge variant="outline" className="font-mono bg-background/50">
                         <Hash className="h-3 w-3 mr-1" />
