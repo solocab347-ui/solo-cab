@@ -518,25 +518,25 @@ const DevisList = ({ clientId }: DevisListProps) => {
 
     return (
       <Card key={devis.id} className="p-6 hover:shadow-elegant transition-all">
-        {/* SECTION PRIORITAIRE: Boutons d'action en haut si en attente */}
+        {/* SECTION PRIORITAIRE: Boutons d'action en haut si en attente - TRÈS GRANDS */}
         {canAccept && (
-          <div className="flex flex-col sm:flex-row gap-3 mb-4 p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+          <div className="flex flex-col gap-4 mb-6 p-5 bg-orange-500/10 border-2 border-orange-500/40 rounded-xl">
             <Button
               onClick={() => handleAccept(devis.id)}
-              className="flex-1 bg-green-500 hover:bg-green-600 min-w-0"
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold shadow-lg shadow-green-500/30 min-h-[60px] text-lg"
               size="lg"
             >
-              <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span className="truncate">Accepter le devis</span>
+              <CheckCircle className="w-7 h-7 mr-3 flex-shrink-0" />
+              <span>Accepter le devis</span>
             </Button>
             <Button
               onClick={() => openRejectDialog(devis.id)}
-              variant="destructive"
-              className="flex-1 min-w-0"
+              variant="outline"
+              className="w-full border-2 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground min-h-[48px] text-base font-medium"
               size="lg"
             >
               <XCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span className="truncate">Refuser</span>
+              <span>Refuser</span>
             </Button>
           </div>
         )}
