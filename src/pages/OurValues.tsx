@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { generateValuesCharter } from "@/lib/valuesCharterGenerator";
+import logoSolocab from "@/assets/logo-solocab.png";
 
 interface ValueCardProps {
   icon: React.ReactNode;
@@ -102,7 +103,7 @@ const OurValues = () => {
             </Link>
             <div className="flex items-center gap-2">
               <img 
-                src="/lovable-uploads/6c28c297-ad6c-4a3c-babe-b3ebc774ed17.png" 
+                src={logoSolocab} 
                 alt="SoloCab Logo" 
                 className="h-8 w-auto"
               />
@@ -189,7 +190,7 @@ const OurValues = () => {
             <div className="relative inline-block mb-6">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
               <img 
-                src="/lovable-uploads/6c28c297-ad6c-4a3c-babe-b3ebc774ed17.png" 
+                src={logoSolocab} 
                 alt="SoloCab Official Stamp" 
                 className="relative h-24 w-auto mx-auto"
               />
