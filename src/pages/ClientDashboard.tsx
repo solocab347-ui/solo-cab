@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Car,
   ShieldOff,
+  Search,
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -36,6 +37,7 @@ import { DriverSelectionDialog } from "@/components/client/DriverSelectionDialog
 import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ClientQuickActions } from "@/components/client/ClientQuickActions";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
+import { NoDriversBanner } from "@/components/client/NoDriversBanner";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
@@ -272,12 +274,23 @@ const ClientDashboard = () => {
       case "accueil":
         return (
           <div className="space-y-6 max-w-4xl mx-auto">
+            {/* Banner for clients without drivers */}
+            {!clientProfile?.client?.is_exclusive && 
+             (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0) && (
+              <NoDriversBanner variant="full" />
+            )}
+
             {/* Quick Actions Grid */}
             <ClientQuickActions
               onNewReservation={handleNewReservation}
               onNavigate={handleTabChange}
               stats={stats}
               isExclusive={clientProfile?.client?.is_exclusive}
+              hasDrivers={
+                clientProfile?.client?.is_exclusive 
+                  ? !!clientProfile?.client?.driver_id 
+                  : (clientProfile?.client?.driver_ids?.length || 0) > 0
+              }
             />
 
             {/* Favorite Driver Section for free clients */}
@@ -362,49 +375,66 @@ const ClientDashboard = () => {
       case "notes":
         return <ClientNotes />;
       case "chauffeurs":
+        const hasNoDrivers = !clientProfile?.client?.is_exclusive && 
+          (!clientProfile?.client?.driver_ids || clientProfile.client.driver_ids.length === 0);
+        
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">
                 {clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs"}
               </h2>
+              {!clientProfile?.client?.is_exclusive && (
+                <Button
+                  onClick={() => navigate("/chauffeurs")}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Search className="w-4 h-4" />
+                  Ajouter un chauffeur
+                </Button>
+              )}
             </div>
-            
-            {clientProfile?.client?.id && (
-              <Tabs defaultValue="active" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="active" className="gap-2">
-                    <Users className="w-4 h-4" />
-                    Actifs
-                  </TabsTrigger>
-                  <TabsTrigger value="blocked" className="gap-2">
-                    <ShieldOff className="w-4 h-4" />
-                    Bloqués ({blockedDriversCount})
-                  </TabsTrigger>
-                </TabsList>
 
-                <TabsContent value="active">
-                  <ClientDriversGrid
-                    clientId={clientProfile.client.id}
-                    driverIds={clientProfile?.client?.is_exclusive ? 
-                      (clientProfile.client.driver_id ? [clientProfile.client.driver_id] : []) : 
-                      (clientProfile.client.driver_ids || [])}
-                    favoriteDriverId={clientProfile.client.favorite_driver_id}
-                    isExclusive={clientProfile?.client?.is_exclusive}
-                    onRefresh={fetchClientProfile}
-                  />
-                </TabsContent>
+            {hasNoDrivers ? (
+              <NoDriversBanner variant="full" />
+            ) : (
+              clientProfile?.client?.id && (
+                <Tabs defaultValue="active" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="active" className="gap-2">
+                      <Users className="w-4 h-4" />
+                      Actifs
+                    </TabsTrigger>
+                    <TabsTrigger value="blocked" className="gap-2">
+                      <ShieldOff className="w-4 h-4" />
+                      Bloqués ({blockedDriversCount})
+                    </TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="blocked">
-                  <BlockedDriversList 
-                    clientId={clientProfile.client.id} 
-                    onRefresh={() => {
-                      fetchClientProfile();
-                      fetchStats();
-                    }}
-                  />
-                </TabsContent>
-              </Tabs>
+                  <TabsContent value="active">
+                    <ClientDriversGrid
+                      clientId={clientProfile.client.id}
+                      driverIds={clientProfile?.client?.is_exclusive ? 
+                        (clientProfile.client.driver_id ? [clientProfile.client.driver_id] : []) : 
+                        (clientProfile.client.driver_ids || [])}
+                      favoriteDriverId={clientProfile.client.favorite_driver_id}
+                      isExclusive={clientProfile?.client?.is_exclusive}
+                      onRefresh={fetchClientProfile}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="blocked">
+                    <BlockedDriversList 
+                      clientId={clientProfile.client.id} 
+                      onRefresh={() => {
+                        fetchClientProfile();
+                        fetchStats();
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
+              )
             )}
           </div>
         );

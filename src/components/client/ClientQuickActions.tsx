@@ -29,6 +29,7 @@ interface ClientQuickActionsProps {
     unpaidInvoices: number;
   };
   isExclusive?: boolean;
+  hasDrivers?: boolean;
 }
 
 export function ClientQuickActions({
@@ -36,18 +37,21 @@ export function ClientQuickActions({
   onNavigate,
   stats,
   isExclusive,
+  hasDrivers = true,
 }: ClientQuickActionsProps) {
   const navigate = useNavigate();
 
   const quickActions: QuickAction[] = [
     {
       id: "new-course",
-      icon: CalendarPlus,
-      label: "Réserver",
-      sublabel: "une course",
-      gradient: "bg-gradient-to-br from-primary via-primary to-orange-500",
+      icon: hasDrivers ? CalendarPlus : Search,
+      label: hasDrivers ? "Réserver" : "Trouver",
+      sublabel: hasDrivers ? "une course" : "un chauffeur",
+      gradient: hasDrivers 
+        ? "bg-gradient-to-br from-primary via-primary to-orange-500"
+        : "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500",
       iconColor: "text-white",
-      onClick: onNewReservation,
+      onClick: hasDrivers ? onNewReservation : () => navigate("/chauffeurs"),
     },
     {
       id: "upcoming",

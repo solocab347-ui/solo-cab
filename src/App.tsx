@@ -41,6 +41,7 @@ import RegisterCompanyEmployee from "./pages/RegisterCompanyEmployee";
 import RegisterCourseInvitation from "./pages/RegisterCourseInvitation";
 import CompanyPartnership from "./pages/CompanyPartnership";
 import RegisterGuestClient from "./pages/RegisterGuestClient";
+import RegisterClient from "./pages/RegisterClient";
 import GuestEmployeeCourseTracking from "./pages/GuestEmployeeCourseTracking";
 import JoinCompany from "./pages/JoinCompany";
 import RegisterCongressDriver from "./pages/RegisterCongressDriver";
@@ -114,6 +115,7 @@ const App = () => (
               <Route path="/register-employee" element={<RegisterCompanyEmployee />} />
               <Route path="/register-course-invitation" element={<RegisterCourseInvitation />} />
               <Route path="/company-partnership/:code" element={<CompanyPartnership />} />
+              <Route path="/register-client" element={<RegisterClient />} />
               <Route path="/inscription-client" element={<RegisterGuestClient />} />
               <Route path="/suivi-course-entreprise" element={<GuestEmployeeCourseTracking />} />
               <Route path="/register-employee" element={<RegisterEmployeeFromTracking />} />
