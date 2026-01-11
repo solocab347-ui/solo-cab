@@ -129,7 +129,7 @@ const BackButton = ({ fleetManagerId, t }: { fleetManagerId: string | undefined,
       // Si c'est le propriétaire, retourner au dashboard
       navigate("/fleet-dashboard");
     } else {
-      // Sinon, retourner à la vitrine publique
+      // Sinon, retourner à la page d'accueil
       navigate("/chauffeurs");
     }
   };
@@ -355,7 +355,7 @@ const FleetPublicProfile = () => {
           guest_name: bookingData.guestName,
           guest_phone: bookingData.guestPhone,
           guest_email: bookingData.guestEmail || null,
-          notes: `[Réservation via vitrine flotte: ${fleetManager?.company_name}]${bookingData.notes ? `\n${bookingData.notes}` : ''}`,
+          notes: `[Réservation via profil flotte: ${fleetManager?.company_name}]${bookingData.notes ? `\n${bookingData.notes}` : ''}`,
           is_guest_booking: true,
           guest_tracking_token: crypto.randomUUID(),
           status: courseStatus,

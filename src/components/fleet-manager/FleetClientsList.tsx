@@ -297,7 +297,7 @@ export const FleetClientsList = ({ clients }: FleetClientsListProps) => {
               <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
               <p className="text-muted-foreground mb-4">Aucun client inscrit pour le moment</p>
               <p className="text-sm text-muted-foreground">
-                Créez une invitation ci-dessus ou partagez votre vitrine publique
+                Créez une invitation ci-dessus ou partagez votre profil public (QR code/lien)
               </p>
             </div>
           ) : filteredClients.length === 0 ? (

@@ -277,7 +277,7 @@ export const FleetHome = memo(function FleetHome({
             className="gap-1.5 text-xs"
           >
             <Eye className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Vitrine</span>
+            <span className="hidden sm:inline">Profil</span>
             <ExternalLink className="w-3 h-3" />
           </Button>
         </div>
@@ -312,7 +312,7 @@ export const FleetHome = memo(function FleetHome({
             onClick={() => onTabChange("settings")}
             icon={Globe}
             iconBgClass="bg-muted text-muted-foreground"
-            label="Vitrine"
+            label="Profil"
           />
         </div>
 

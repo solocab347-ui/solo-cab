@@ -187,10 +187,10 @@ export const FleetStorefrontManager = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
-          Gestion de la vitrine
+          Gestion du profil public
         </CardTitle>
         <CardDescription>
-          Choisissez quels chauffeurs apparaissent sur votre vitrine publique et dans quel ordre
+          Choisissez quels chauffeurs apparaissent sur votre profil partageable et dans quel ordre
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

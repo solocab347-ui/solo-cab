@@ -281,9 +281,9 @@ export const FleetPublicProfileSettings = ({
                 <Globe className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">Profil Public</h2>
+                <h2 className="text-xl font-semibold">Profil Public Partageable</h2>
                 <p className="text-sm text-muted-foreground">
-                  Personnalisez votre vitrine pour attirer des clients
+                  Personnalisez votre profil pour attirer des clients via votre lien/QR code
                 </p>
               </div>
             </div>
@@ -586,12 +586,12 @@ export const FleetPublicProfileSettings = ({
         </CardContent>
       </Card>
 
-      {/* Drivers Visibility on Storefront */}
+      {/* Drivers Visibility on Public Profile */}
       <Card>
         <CardHeader>
           <CardTitle>Visibilité des chauffeurs</CardTitle>
           <CardDescription>
-            Décidez si vos chauffeurs apparaissent sur votre vitrine
+            Décidez si vos chauffeurs apparaissent sur votre profil partageable
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -599,7 +599,7 @@ export const FleetPublicProfileSettings = ({
             <div className="flex-1">
               <Label className="text-base font-medium">Afficher les chauffeurs</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Vos chauffeurs seront visibles sur votre page publique
+                Vos chauffeurs seront visibles sur votre profil public (accessible via votre lien/QR code)
               </p>
             </div>
             <Switch checked={showDrivers} onCheckedChange={setShowDrivers} />
@@ -609,7 +609,7 @@ export const FleetPublicProfileSettings = ({
             <div className="p-4 bg-success/10 rounded-xl border border-success/20">
               <p className="text-sm text-success flex items-center gap-2">
                 <span className="text-lg">✓</span>
-                Vos chauffeurs apparaissent sur votre profil public
+                Vos chauffeurs apparaissent sur votre profil partageable
               </p>
             </div>
           )}
