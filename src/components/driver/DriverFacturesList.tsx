@@ -141,7 +141,11 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
             discount_amount,
             promo_code,
             evening_surcharge_amount,
-            weekend_surcharge_amount
+            weekend_surcharge_amount,
+            peak_hours_surcharge_amount,
+            tva_rate,
+            tva_amount,
+            airport_fee
           )
         `)
         .eq("driver_id", driverId)
@@ -478,11 +482,13 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
     doc.text("TARIFICATION", 20, yPos);
     yPos += 8;
 
-    // Calculate TVA - use devis time_price if available, otherwise default to 10%
+    // Calculate TVA - priorité: valeurs stockées > détection automatique
     const amount = facture.amount;
-    const tvaRate = facture.devis?.time_price && facture.devis.time_price > 0 ? 20 : 10;
+    const isMiseADisposition = facture.devis?.time_price && facture.devis.time_price > 0 && (!facture.devis?.distance_price || facture.devis.distance_price === 0);
+    const tvaRate = facture.tva_rate || facture.devis?.tva_rate || (isMiseADisposition ? 20 : 10);
     const subtotalHT = amount / (1 + tvaRate / 100);
-    const tvaAmount = amount - subtotalHT;
+    const tvaAmount = facture.tva_amount || facture.devis?.tva_amount || (amount - subtotalHT);
+    const airportFee = facture.airport_fee || facture.devis?.airport_fee || 0;
 
     if (!forClient) {
       // Driver version - detailed breakdown
@@ -570,6 +576,17 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         doc.setTextColor(0, 0, 0);
       }
       
+      // Afficher frais aéroport si présents
+      if (airportFee > 0) {
+        doc.setFillColor(240, 248, 255);
+        doc.rect(20, yPos, 170, 7, 'F');
+        doc.setTextColor(30, 144, 255);
+        doc.text("Forfait Aéroport", 25, yPos + 5);
+        doc.text(`+${airportFee.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
+        yPos += 7;
+        doc.setTextColor(0, 0, 0);
+      }
+      
       doc.setFillColor(240, 240, 240);
       doc.rect(20, yPos, 170, 7, 'F');
       doc.setFont(undefined, 'bold');
@@ -580,6 +597,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
       
       // Afficher la réduction si code promo appliqué
       if ((facture.promo_code || facture.devis?.promo_code) && (facture.discount_amount > 0 || facture.devis?.discount_amount > 0)) {
+        doc.setFont(undefined, 'normal');
         const discountAmount = facture.discount_amount || facture.devis?.discount_amount || 0;
         const promoCode = facture.promo_code || facture.devis?.promo_code || '';
         doc.setTextColor(46, 125, 50); // Vert pour la réduction
@@ -589,27 +607,7 @@ const DriverFacturesList = ({ driverId }: DriverFacturesListProps) => {
         doc.setTextColor(0, 0, 0);
       }
       
-      // Afficher les augmentations soir/weekend si présentes (version chauffeur uniquement)
-      if (facture.devis?.evening_surcharge_amount && facture.devis.evening_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Soir", 25, yPos + 5);
-        doc.text(`+${facture.devis.evening_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
-      if (facture.devis?.weekend_surcharge_amount && facture.devis.weekend_surcharge_amount > 0) {
-        doc.setFillColor(255, 245, 220);
-        doc.rect(20, yPos, 170, 7, 'F');
-        doc.setTextColor(204, 102, 0);
-        doc.text("Augmentation Weekend", 25, yPos + 5);
-        doc.text(`+${facture.devis.weekend_surcharge_amount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
-        yPos += 7;
-        doc.setTextColor(0, 0, 0);
-      }
-      
+      doc.setFont(undefined, 'normal');
       doc.text(`TVA (${tvaRate}%)`, 25, yPos + 5);
       doc.text(`${tvaAmount.toFixed(2)} €`, 175, yPos + 5, { align: 'right' });
       

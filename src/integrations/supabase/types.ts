@@ -3640,6 +3640,7 @@ export type Database = {
       devis: {
         Row: {
           accepted_at: string | null
+          airport_fee: number | null
           amount: number
           base_price: number
           client_id: string | null
@@ -3658,12 +3659,15 @@ export type Database = {
           quote_number: string | null
           status: Database["public"]["Enums"]["devis_status"]
           time_price: number | null
+          tva_amount: number | null
+          tva_rate: number | null
           updated_at: string
           valid_until: string
           weekend_surcharge_amount: number | null
         }
         Insert: {
           accepted_at?: string | null
+          airport_fee?: number | null
           amount: number
           base_price: number
           client_id?: string | null
@@ -3682,12 +3686,15 @@ export type Database = {
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
+          tva_amount?: number | null
+          tva_rate?: number | null
           updated_at?: string
           valid_until: string
           weekend_surcharge_amount?: number | null
         }
         Update: {
           accepted_at?: string | null
+          airport_fee?: number | null
           amount?: number
           base_price?: number
           client_id?: string | null
@@ -3706,6 +3713,8 @@ export type Database = {
           quote_number?: string | null
           status?: Database["public"]["Enums"]["devis_status"]
           time_price?: number | null
+          tva_amount?: number | null
+          tva_rate?: number | null
           updated_at?: string
           valid_until?: string
           weekend_surcharge_amount?: number | null
@@ -5521,6 +5530,7 @@ export type Database = {
       }
       factures: {
         Row: {
+          airport_fee: number | null
           amount: number
           client_id: string | null
           company_employee_id: string | null
@@ -5538,9 +5548,12 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           promo_code: string | null
           stripe_payment_id: string | null
+          tva_amount: number | null
+          tva_rate: number | null
           updated_at: string
         }
         Insert: {
+          airport_fee?: number | null
           amount: number
           client_id?: string | null
           company_employee_id?: string | null
@@ -5558,9 +5571,12 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           promo_code?: string | null
           stripe_payment_id?: string | null
+          tva_amount?: number | null
+          tva_rate?: number | null
           updated_at?: string
         }
         Update: {
+          airport_fee?: number | null
           amount?: number
           client_id?: string | null
           company_employee_id?: string | null
@@ -5578,6 +5594,8 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           promo_code?: string | null
           stripe_payment_id?: string | null
+          tva_amount?: number | null
+          tva_rate?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -13234,6 +13252,10 @@ export type Database = {
       get_course_sharing_status: {
         Args: { p_course_id: string; p_driver_id: string }
         Returns: Json
+      }
+      get_course_tva_rate: {
+        Args: { p_is_hourly_rate?: boolean }
+        Returns: number
       }
       get_current_driver_id: { Args: never; Returns: string }
       get_driver_clients_count: {
