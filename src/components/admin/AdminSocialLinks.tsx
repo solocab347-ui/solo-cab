@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Facebook, Linkedin, Instagram, Save } from "lucide-react";
+import { Facebook, Linkedin, Instagram, Youtube, Twitter, Save } from "lucide-react";
 
 interface SocialLink {
   id: string;
@@ -15,6 +15,20 @@ interface SocialLink {
   display_order: number;
   is_active: boolean;
 }
+
+// Icône TikTok personnalisée
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+  </svg>
+);
 
 const AdminSocialLinks = () => {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -72,7 +86,7 @@ const AdminSocialLinks = () => {
       }
 
       toast.success("Liens des réseaux sociaux mis à jour avec succès");
-      fetchSocialLinks(); // Recharger pour synchroniser
+      fetchSocialLinks();
     } catch (error: any) {
       console.error("Error saving social links:", error);
       toast.error("Erreur lors de la sauvegarde: " + error.message);
@@ -89,13 +103,27 @@ const AdminSocialLinks = () => {
         return <Linkedin className="w-5 h-5 text-blue-700" />;
       case "instagram":
         return <Instagram className="w-5 h-5 text-pink-600" />;
+      case "tiktok":
+        return <TikTokIcon className="w-5 h-5 text-foreground" />;
+      case "youtube":
+        return <Youtube className="w-5 h-5 text-red-600" />;
+      case "twitter":
+        return <Twitter className="w-5 h-5 text-sky-500" />;
       default:
         return null;
     }
   };
 
   const getPlatformLabel = (platform: string) => {
-    return platform.charAt(0).toUpperCase() + platform.slice(1);
+    const labels: Record<string, string> = {
+      facebook: "Facebook",
+      linkedin: "LinkedIn",
+      instagram: "Instagram",
+      tiktok: "TikTok",
+      youtube: "YouTube",
+      twitter: "X (Twitter)",
+    };
+    return labels[platform.toLowerCase()] || platform.charAt(0).toUpperCase() + platform.slice(1);
   };
 
   if (isLoading) {
