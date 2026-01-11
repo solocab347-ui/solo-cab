@@ -17,17 +17,17 @@ import {
   Heart, 
   Check,
   Building2,
-  ExternalLink,
   MessageSquare,
   CalendarPlus,
   Phone,
   Mail,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from "lucide-react";
+import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
 interface Driver {
   id: string;
   company_name: string | null;
@@ -68,6 +68,8 @@ export function FavoriteDriverSection({
   const [loading, setLoading] = useState(true);
   const [changing, setChanging] = useState(false);
   const [showSelectDialog, setShowSelectDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDrivers();
@@ -205,7 +207,13 @@ export function FavoriteDriverSection({
           
           <div className="relative p-4 flex items-center gap-4">
             {/* Avatar with favorite badge */}
-            <div className="relative flex-shrink-0">
+            <div 
+              className="relative flex-shrink-0 cursor-pointer group"
+              onClick={() => {
+                setSelectedDriverId(favoriteDriver.id);
+                setShowProfileDialog(true);
+              }}
+            >
               <Avatar className="w-14 h-14 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
                 <AvatarImage 
                   src={favoriteDriver.profiles?.profile_photo_url || undefined} 
@@ -215,6 +223,9 @@ export function FavoriteDriverSection({
                   {getDriverDisplayName(favoriteDriver).charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Eye className="w-4 h-4 text-white" />
+              </div>
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
                 <Heart className="w-3 h-3 text-white fill-white" />
               </div>
@@ -390,6 +401,14 @@ export function FavoriteDriverSection({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Profile Dialog */}
+      <DriverProfileDialog
+        driverId={selectedDriverId}
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        isRegistered={true}
+      />
     </>
   );
 }

@@ -1,6 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   CalendarPlus,
   Clock,
@@ -8,7 +6,6 @@ import {
   MessageSquare,
   Users,
   Search,
-  Car,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +14,8 @@ interface QuickAction {
   icon: React.ElementType;
   label: string;
   sublabel?: string;
-  color: string;
-  bgColor: string;
+  gradient: string;
+  iconColor: string;
   onClick: () => void;
   badge?: number;
 }
@@ -48,16 +45,16 @@ export function ClientQuickActions({
       icon: CalendarPlus,
       label: "Réserver",
       sublabel: "une course",
-      color: "text-white",
-      bgColor: "bg-gradient-to-br from-primary to-orange-500",
+      gradient: "bg-gradient-to-br from-primary via-primary to-orange-500",
+      iconColor: "text-white",
       onClick: onNewReservation,
     },
     {
       id: "upcoming",
       icon: Clock,
       label: "À venir",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      gradient: "bg-gradient-to-br from-sky-400/20 to-blue-500/20 dark:from-sky-500/30 dark:to-blue-600/30",
+      iconColor: "text-sky-600 dark:text-sky-400",
       onClick: () => onNavigate("courses", "confirmed"),
       badge: stats.upcomingCourses,
     },
@@ -65,8 +62,8 @@ export function ClientQuickActions({
       id: "devis",
       icon: FileText,
       label: "Devis",
-      color: "text-amber-600",
-      bgColor: "bg-amber-50 dark:bg-amber-900/20",
+      gradient: "bg-gradient-to-br from-amber-400/20 to-orange-500/20 dark:from-amber-500/30 dark:to-orange-600/30",
+      iconColor: "text-amber-600 dark:text-amber-400",
       onClick: () => onNavigate("courses", "pending"),
       badge: stats.pendingDevis,
     },
@@ -74,16 +71,16 @@ export function ClientQuickActions({
       id: "messages",
       icon: MessageSquare,
       label: "Messages",
-      color: "text-purple-600",
-      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      gradient: "bg-gradient-to-br from-violet-400/20 to-purple-500/20 dark:from-violet-500/30 dark:to-purple-600/30",
+      iconColor: "text-violet-600 dark:text-violet-400",
       onClick: () => onNavigate("messages"),
     },
     {
       id: "drivers",
       icon: Users,
       label: isExclusive ? "Chauffeur" : "Chauffeurs",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
+      gradient: "bg-gradient-to-br from-emerald-400/20 to-teal-500/20 dark:from-emerald-500/30 dark:to-teal-600/30",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       onClick: () => onNavigate("chauffeurs"),
     },
     ...(!isExclusive
@@ -92,8 +89,8 @@ export function ClientQuickActions({
             id: "discover",
             icon: Search,
             label: "Découvrir",
-            color: "text-pink-600",
-            bgColor: "bg-pink-50 dark:bg-pink-900/20",
+            gradient: "bg-gradient-to-br from-rose-400/20 to-pink-500/20 dark:from-rose-500/30 dark:to-pink-600/30",
+            iconColor: "text-rose-600 dark:text-rose-400",
             onClick: () => navigate("/chauffeurs"),
           },
         ]
@@ -107,22 +104,37 @@ export function ClientQuickActions({
           key={action.id}
           onClick={action.onClick}
           className={cn(
-            "relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-200",
-            "hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg",
-            action.bgColor
+            "relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-300",
+            "hover:scale-[1.03] active:scale-[0.97] hover:shadow-xl",
+            "border border-transparent",
+            action.id === "new-course" 
+              ? "hover:shadow-primary/25" 
+              : "hover:border-border/50",
+            action.gradient
           )}
         >
           {action.badge !== undefined && action.badge > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1.5 shadow-lg animate-pulse">
               {action.badge > 9 ? "9+" : action.badge}
             </span>
           )}
-          <action.icon className={cn("w-7 h-7 mb-2", action.color)} />
-          <span className={cn("text-xs font-medium text-center", action.id === "new-course" ? "text-white" : "text-foreground")}>
+          <div className={cn(
+            "w-12 h-12 rounded-xl flex items-center justify-center mb-2",
+            action.id === "new-course" ? "bg-white/20" : "bg-background/60 backdrop-blur-sm"
+          )}>
+            <action.icon className={cn("w-6 h-6", action.iconColor)} />
+          </div>
+          <span className={cn(
+            "text-xs font-semibold text-center leading-tight",
+            action.id === "new-course" ? "text-white" : "text-foreground"
+          )}>
             {action.label}
           </span>
           {action.sublabel && (
-            <span className={cn("text-[10px] opacity-80", action.id === "new-course" ? "text-white" : "text-muted-foreground")}>
+            <span className={cn(
+              "text-[10px] mt-0.5",
+              action.id === "new-course" ? "text-white/80" : "text-muted-foreground"
+            )}>
               {action.sublabel}
             </span>
           )}
