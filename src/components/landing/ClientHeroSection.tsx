@@ -148,7 +148,7 @@ export const ClientHeroSection = () => {
       <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center p-4 rounded-xl bg-gradient-to-r from-pink-500/5 to-purple-600/5 border border-white/5">
         <p className="text-gray-300">
           <Star className="w-5 h-5 inline mr-2 text-amber-500" />
-          Rejoignez des milliers de clients satisfaits
+          Découvrez une nouvelle façon de voyager
         </p>
         <Link to="/chauffeurs">
           <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white">
