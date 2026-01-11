@@ -85,6 +85,7 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             company_address,
             siret,
             vehicle_model,
+            vehicle_brand,
             vehicle_color,
             profiles:user_id(full_name, phone, profile_photo_url)
           ),
@@ -515,17 +516,18 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
             )}
             <div>
               <h3 className="font-bold">{course.drivers?.profiles?.full_name || ''}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                 {(() => {
-                  const model = course.drivers?.vehicle_model;
+                  // Utiliser vehicle_model ou vehicle_brand comme fallback
+                  const model = course.drivers?.vehicle_model || course.drivers?.vehicle_brand;
                   const color = course.drivers?.vehicle_color;
-                  const vehicleDisplay = [model, color].filter(Boolean).join(' ');
+                  const vehicleDisplay = [color, model].filter(Boolean).join(' • ');
                   return vehicleDisplay ? <span>{vehicleDisplay}</span> : null;
                 })()}
                 {course.course_number && (
                   <>
                     <span>•</span>
-                    <span className="text-premium">{course.course_number}</span>
+                    <span className="text-premium font-medium">{course.course_number}</span>
                   </>
                 )}
               </div>
@@ -602,6 +604,19 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
                   <XCircle className="w-5 h-5 mr-2" />
                   Refuser
                 </Button>
+              </div>
+            )}
+
+            {/* Message d'attente de confirmation du chauffeur */}
+            {course.status === "pending" && devis.status === "accepted" && (
+              <div className="mt-3 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                <div className="flex items-center gap-2 text-orange-500">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">En attente de confirmation</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vous avez accepté ce devis. Le chauffeur doit maintenant confirmer sa disponibilité pour cette course.
+                </p>
               </div>
             )}
             
