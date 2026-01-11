@@ -5898,6 +5898,33 @@ export type Database = {
           },
         ]
       }
+      feedback_response_templates: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          message: string
+          title: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message: string
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          title?: string
+        }
+        Relationships: []
+      }
       fleet_client_invitations: {
         Row: {
           client_id: string | null
@@ -11129,6 +11156,139 @@ export type Database = {
             columns: ["resolved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_feedback: {
+        Row: {
+          browser_info: string | null
+          created_at: string
+          description: string
+          feedback_type: string
+          id: string
+          page_url: string | null
+          priority: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_email: string | null
+          user_id: string
+          user_name: string | null
+          user_type: string
+        }
+        Insert: {
+          browser_info?: string | null
+          created_at?: string
+          description: string
+          feedback_type: string
+          id?: string
+          page_url?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_email?: string | null
+          user_id: string
+          user_name?: string | null
+          user_type: string
+        }
+        Update: {
+          browser_info?: string | null
+          created_at?: string
+          description?: string
+          feedback_type?: string
+          id?: string
+          page_url?: string | null
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string
+          user_name?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
+      user_feedback_attachments: {
+        Row: {
+          created_at: string
+          feedback_id: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_id: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          feedback_id?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_attachments_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "user_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_feedback_responses: {
+        Row: {
+          admin_id: string
+          admin_name: string | null
+          created_at: string
+          feedback_id: string
+          id: string
+          is_template: boolean | null
+          message: string
+        }
+        Insert: {
+          admin_id: string
+          admin_name?: string | null
+          created_at?: string
+          feedback_id: string
+          id?: string
+          is_template?: boolean | null
+          message: string
+        }
+        Update: {
+          admin_id?: string
+          admin_name?: string | null
+          created_at?: string
+          feedback_id?: string
+          id?: string
+          is_template?: boolean | null
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_responses_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "user_feedback"
             referencedColumns: ["id"]
           },
         ]
