@@ -20,6 +20,7 @@ import {
   Zap,
   Building2,
   Truck,
+  Heart,
 } from "lucide-react";
 
 const Index = () => {
@@ -83,6 +84,25 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Values Banner - Prominent section */}
+      <section className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border-b border-amber-500/20">
+        <div className="container mx-auto px-4 py-4">
+          <Link to="/nos-valeurs" className="flex items-center justify-center gap-3 group">
+            <div className="flex items-center gap-2 text-amber-400">
+              <Heart className="w-5 h-5 fill-amber-400" />
+              <span className="font-bold text-lg">Nos Valeurs</span>
+            </div>
+            <span className="text-gray-300 hidden sm:inline">
+              L'humain avant le profit • Technologie au service de l'humain • Relations saines
+            </span>
+            <div className="flex items-center gap-1 text-amber-400 group-hover:text-amber-300 transition-colors">
+              <span className="text-sm font-medium">Découvrir</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+        </div>
+      </section>
 
       {/* Hero Section */}
       <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
@@ -345,6 +365,11 @@ const Index = () => {
               <h4 className="font-bold mb-4 text-white">Légal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>
+                  <Link to="/mentions-legales" className="hover:text-white transition-colors">
+                    Mentions légales
+                  </Link>
+                </li>
+                <li>
                   <Link to="/privacy-policy" className="hover:text-white transition-colors">
                     Politique de confidentialité
                   </Link>
@@ -352,6 +377,11 @@ const Index = () => {
                 <li>
                   <Link to="/terms-of-service" className="hover:text-white transition-colors">
                     CGU
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/nos-valeurs" className="hover:text-white transition-colors">
+                    Nos valeurs
                   </Link>
                 </li>
               </ul>

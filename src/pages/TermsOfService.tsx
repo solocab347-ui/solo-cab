@@ -243,8 +243,12 @@ const TermsOfService = () => {
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">Article 12 - Contact</h2>
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                <p><strong>SoloCab</strong></p>
-                <p>Email : contact@solocab.fr</p>
+                <p><strong>SOLOCAB</strong></p>
+                <p>Société par actions simplifiée à associé unique (SASU)</p>
+                <p>RCS Paris : 994 176 576</p>
+                <p>Siège social : 10 rue de Penthièvre, 75008 Paris</p>
+                <p>Représentée par Monsieur Kanoute Abdallah, Président</p>
+                <p className="pt-2">Email : contact@solocab.fr</p>
                 <p>Site web : https://solocab.fr</p>
               </div>
             </section>
