@@ -225,39 +225,43 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   const engagements = [
     {
       title: "L'Humain Avant le Profit",
-      text: "SoloCab s'engage à toujours placer les intérêts des chauffeurs, gestionnaires et clients avant la recherche du profit. Chaque décision est guidée par son impact sur les personnes.",
+      text: "SoloCab s'engage à toujours placer les intérêts des chauffeurs indépendants, gestionnaires de flotte et clients avant la recherche du profit. Chaque décision est guidée par son impact sur les personnes.",
     },
     {
-      title: "La Technologie au Service de l'Humain",
-      text: "La technologie doit servir l'humain et non l'inverse. Nos outils sont conçus pour simplifier le quotidien des professionnels du VTC, pas pour les asservir à des algorithmes.",
+      title: "La Technologie au Service de l'Indépendant",
+      text: "La technologie doit servir l'entrepreneur indépendant et non l'inverse. Nos outils sont conçus pour simplifier le quotidien des professionnels VTC indépendants, pas pour les asservir à des algorithmes opaques.",
     },
     {
       title: "Les Meilleurs Outils Technologiques",
-      text: "SoloCab s'engage à mettre à disposition les outils les plus performants et innovants pour accompagner le développement des chauffeurs et gestionnaires de flotte.",
+      text: "SoloCab s'engage à mettre à disposition des chauffeurs indépendants et gestionnaires de flotte les outils les plus performants et innovants pour développer leur activité en toute autonomie.",
     },
     {
-      title: "Visibilité pour Tous les Acteurs",
-      text: "Nous nous engageons à donner de la visibilité aux chauffeurs et gestionnaires pour leur permettre d'acquérir de nouveaux clients et développer leur activité.",
+      title: "Visibilité pour les Indépendants",
+      text: "Nous nous engageons à offrir une visibilité équitable à chaque chauffeur indépendant et gestionnaire de flotte, leur permettant d'acquérir de nouveaux clients et de développer leur activité librement.",
     },
     {
-      title: "Relations Saines entre Partenaires",
-      text: "SoloCab s'engage à créer et maintenir des relations saines, équilibrées et transparentes entre tous les collaborateurs et partenaires de la plateforme.",
+      title: "Relations Saines entre Partenaires Indépendants",
+      text: "SoloCab s'engage à créer et maintenir des relations saines, équilibrées et transparentes entre tous les indépendants et partenaires de la plateforme, dans le respect mutuel et l'équité.",
     },
     {
       title: "L'Union Face à la Confusion",
-      text: "Là où les grandes plateformes ont semé la confusion et la division, SoloCab s'engage à créer de l'union et de la solidarité entre les professionnels du VTC.",
+      text: "Là où les grandes plateformes ont semé la confusion et la division, SoloCab s'engage à créer de l'union et de la solidarité entre les professionnels indépendants du VTC.",
     },
     {
       title: "Partenariats Gagnant-Gagnant",
-      text: "Nos partenariats sont conçus pour bénéficier autant au chauffeur qui envoie qu'à celui qui reçoit. Fini l'esprit de compétition, place à l'esprit d'union et de partage.",
+      text: "Nos partenariats entre indépendants sont conçus pour bénéficier autant au chauffeur qui partage qu'à celui qui reçoit. Fini l'esprit de compétition déloyale, place à l'entraide et au partage équitable.",
     },
     {
-      title: "Écoute des Travailleurs",
-      text: "SoloCab s'engage à maintenir un dialogue permanent avec les organisations syndicales et représentants des travailleurs pour tout changement majeur.",
+      title: "Dialogue avec les Organisations Syndicales",
+      text: "SoloCab s'engage à maintenir un dialogue permanent avec les organisations syndicales représentant les travailleurs indépendants du VTC. En concertation avec eux, nous garantissons des prix de course minimum dignes et des commissions de partage plafonnées, pour ne jamais reproduire les dérives des grandes plateformes.",
+    },
+    {
+      title: "Protection des Indépendants",
+      text: "SoloCab s'engage à défendre les intérêts des chauffeurs indépendants face aux pratiques abusives du marché. Nous garantissons une transparence totale sur les tarifs et refusons toute course en dessous des seuils de rentabilité définis avec les représentants de la profession.",
     },
     {
       title: "Fidélité à Nos Valeurs",
-      text: "SoloCab s'engage à rester fidèle à ces valeurs fondamentales, quelles que soient les pressions du marché. Cette charte en est le témoignage officiel.",
+      text: "SoloCab s'engage à rester fidèle à ces valeurs fondamentales, quelles que soient les pressions du marché. Cette charte constitue notre engagement solennel envers la communauté des indépendants du VTC.",
     },
   ];
 
