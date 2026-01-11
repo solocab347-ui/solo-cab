@@ -168,6 +168,27 @@ export function useCourseCreation() {
         return null;
       }
 
+      // VALIDATION 8: Vérifier si le client a bloqué ce chauffeur
+      const { data: blockData } = await supabase
+        .from("client_driver_blocks")
+        .select("id, blocked_by")
+        .eq("client_id", clientId)
+        .eq("driver_id", driverId)
+        .maybeSingle();
+
+      if (blockData) {
+        logger.warn("Client has blocked this driver", { clientId, driverId, blockedBy: blockData.blocked_by });
+        if (blockData.blocked_by === "client") {
+          toast.error("Ce client ne souhaite plus recevoir vos demandes de course.", {
+            description: "Le client a bloqué votre compte. Vous pouvez le supprimer de votre liste de clients.",
+            duration: 6000,
+          });
+        } else {
+          toast.error("Une restriction bloque la création de course avec ce client.");
+        }
+        return { blocked: true, clientId };
+      }
+
       // Vérifier l'association client-driver (dual association)
       const isAssociated =
         clientData.driver_id === driverId ||

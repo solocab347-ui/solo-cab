@@ -34,6 +34,8 @@ import {
   Trash2,
   Search,
   Loader2,
+  Eye,
+  MoreVertical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,7 +50,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ClientBlockDriverDialog } from "./ClientBlockDriverDialog";
+import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 
 interface Driver {
   id: string;
@@ -77,6 +87,7 @@ interface SortableDriverCardProps {
   onCall: (phone: string) => void;
   onRemove: (driver: Driver) => void;
   onBlock: (driver: Driver) => void;
+  onViewProfile: (id: string) => void;
 }
 
 function SortableDriverCard({
@@ -89,6 +100,7 @@ function SortableDriverCard({
   onCall,
   onRemove,
   onBlock,
+  onViewProfile,
 }: SortableDriverCardProps) {
   const {
     attributes,
@@ -105,120 +117,151 @@ function SortableDriverCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const vehicleInfo = driver.vehicle_brand || driver.vehicle_model;
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative p-4 transition-all hover:shadow-md",
-        isFavorite && "ring-2 ring-red-500/50 bg-red-500/5"
+        "relative overflow-hidden transition-all duration-300 hover:shadow-xl group",
+        isFavorite 
+          ? "ring-2 ring-red-500 bg-gradient-to-br from-red-500/10 via-card to-orange-500/5" 
+          : "bg-gradient-to-br from-card via-card to-muted/30 hover:ring-1 hover:ring-primary/30"
       )}
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="absolute top-2 right-2 p-1 rounded hover:bg-muted cursor-grab active:cursor-grabbing"
+        className="absolute top-3 right-3 p-1.5 rounded-lg bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing z-10"
       >
         <GripVertical className="w-4 h-4 text-muted-foreground" />
       </button>
 
       {/* Favorite badge */}
       {isFavorite && (
-        <Badge className="absolute top-2 left-2 bg-red-500 text-white gap-1 text-[10px]">
-          <Heart className="w-3 h-3 fill-current" />
-          Favori
-        </Badge>
+        <div className="absolute top-3 left-3 z-10">
+          <Badge className="bg-gradient-to-r from-red-500 to-rose-500 text-white gap-1 text-[10px] shadow-lg px-2">
+            <Heart className="w-3 h-3 fill-current" />
+            Favori
+          </Badge>
+        </div>
       )}
 
-      <div className="flex flex-col items-center text-center pt-4">
-        <Avatar className="w-16 h-16 mb-3 ring-2 ring-border">
-          <AvatarImage
-            src={driver.profiles?.profile_photo_url || undefined}
-            alt={displayName}
-          />
-          <AvatarFallback className="bg-gradient-to-br from-primary to-orange-500 text-white text-lg">
-            {displayName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-
-        <h3 className="font-semibold text-sm truncate w-full mb-1">
-          {displayName}
-        </h3>
-
-        {driver.rating && driver.rating > 0 && driver.show_rating_public && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-            {driver.rating.toFixed(1)}
+      <div className="p-5">
+        {/* Avatar section */}
+        <div className="flex flex-col items-center text-center mb-4">
+          <div 
+            className="relative cursor-pointer group/avatar"
+            onClick={() => onViewProfile(driver.id)}
+          >
+            <Avatar className="w-20 h-20 ring-4 ring-background shadow-xl">
+              <AvatarImage
+                src={driver.profiles?.profile_photo_url || undefined}
+                alt={displayName}
+                className="object-cover"
+              />
+              <AvatarFallback className="bg-gradient-to-br from-primary via-primary to-orange-500 text-white text-2xl font-bold">
+                {displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+              <Eye className="w-5 h-5 text-white" />
+            </div>
           </div>
-        )}
 
-        {driver.vehicle_brand && driver.vehicle_model && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
-            <Car className="w-3 h-3" />
-            {driver.vehicle_brand}
-          </p>
-        )}
+          <h3 className="font-bold text-base mt-3 truncate w-full">
+            {displayName}
+          </h3>
 
-        {/* Quick actions */}
-        <div className="flex items-center justify-center gap-1 mb-3">
+          <div className="flex items-center gap-2 mt-1">
+            {driver.rating && driver.rating > 0 && driver.show_rating_public && (
+              <Badge variant="secondary" className="gap-1 text-xs px-2 py-0.5 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                <Star className="w-3 h-3 fill-current" />
+                {driver.rating.toFixed(1)}
+              </Badge>
+            )}
+            {vehicleInfo && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Car className="w-3 h-3" />
+                {vehicleInfo}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Primary actions */}
+        <div className="flex items-center justify-center gap-2 mb-3">
           <Button
             size="sm"
-            variant="default"
-            className="h-8 px-2"
             onClick={() => onBook(driver.id)}
+            className="h-9 px-4 bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 text-white shadow-lg"
           >
-            <CalendarPlus className="w-3.5 h-3.5" />
+            <CalendarPlus className="w-4 h-4 mr-1.5" />
+            Réserver
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-8 px-2"
             onClick={onMessage}
+            className="h-9 w-9 p-0"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
+            <MessageSquare className="w-4 h-4" />
           </Button>
           {driver.show_phone && driver.profiles?.phone && (
             <Button
               size="sm"
               variant="outline"
-              className="h-8 px-2 text-green-600"
               onClick={() => onCall(driver.profiles.phone!)}
+              className="h-9 w-9 p-0 text-green-600 border-green-500/30 hover:bg-green-500/10"
             >
-              <Phone className="w-3.5 h-3.5" />
+              <Phone className="w-4 h-4" />
             </Button>
           )}
         </div>
 
-        {/* Actions menu */}
-        <div className="flex items-center gap-1 w-full">
+        {/* Secondary actions */}
+        <div className="flex items-center justify-center gap-1 pt-2 border-t border-border/50">
           {!isFavorite && (
             <Button
               size="sm"
               variant="ghost"
-              className="flex-1 h-7 text-xs text-red-500 hover:text-red-600"
+              className="h-8 px-3 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
               onClick={() => onSetFavorite(driver.id)}
             >
-              <Heart className="w-3 h-3 mr-1" />
+              <Heart className="w-3.5 h-3.5 mr-1" />
               Favori
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() => onRemove(driver)}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs text-destructive"
-            onClick={() => onBlock(driver)}
-          >
-            <Ban className="w-3 h-3" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48">
+              <DropdownMenuItem onClick={() => onViewProfile(driver.id)}>
+                <Eye className="w-4 h-4 mr-2" />
+                Voir le profil
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onRemove(driver)}
+                className="text-muted-foreground"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Retirer
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onBlock(driver)}
+                className="text-destructive"
+              >
+                <Ban className="w-4 h-4 mr-2" />
+                Bloquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </Card>
@@ -247,6 +290,8 @@ export function ClientDriversGrid({
   const [driverToRemove, setDriverToRemove] = useState<Driver | null>(null);
   const [driverToBlock, setDriverToBlock] = useState<Driver | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
@@ -281,7 +326,6 @@ export function ClientDriversGrid({
         .in("id", driverIds);
 
       if (data) {
-        // Trier selon l'ordre actuel
         const sorted = orderedIds
           .map((id) => data.find((d: any) => d.id === id))
           .filter(Boolean) as Driver[];
@@ -313,13 +357,11 @@ export function ClientDriversGrid({
 
       setOrderedIds(newOrder);
       
-      // Réordonner les drivers localement
       const sorted = newOrder
         .map((id) => drivers.find((d) => d.id === id))
         .filter(Boolean) as Driver[];
       setDrivers(sorted);
 
-      // Sauvegarder l'ordre dans la base
       try {
         await supabase
           .from("clients")
@@ -397,65 +439,101 @@ export function ClientDriversGrid({
     }
   };
 
+  const handleViewProfile = (driverId: string) => {
+    setSelectedDriverId(driverId);
+    setShowProfileDialog(true);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </div>
       </div>
     );
   }
 
   if (isExclusive) {
-    // Exclusive client - simplified view
     const driver = drivers[0];
     if (!driver) return null;
 
     return (
-      <Card className="p-6">
-        <div className="flex items-center gap-4">
-          <Avatar className="w-16 h-16">
-            <AvatarImage src={driver.profiles?.profile_photo_url || undefined} />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-orange-500 text-white text-lg">
-              {getDriverDisplayName(driver).charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <Badge variant="secondary" className="mb-2">
-              Chauffeur exclusif
-            </Badge>
-            <h3 className="font-bold text-lg">{getDriverDisplayName(driver)}</h3>
-            {driver.vehicle_brand && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <Car className="w-3 h-3" />
-                {driver.vehicle_brand} {driver.vehicle_model}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              size="sm"
-              onClick={() => navigate(`/create-course?driver_id=${driver.id}`)}
+      <>
+        <Card className="p-6 bg-gradient-to-br from-primary/5 via-card to-orange-500/5 border-primary/20">
+          <div className="flex items-center gap-5">
+            <div 
+              className="relative cursor-pointer group"
+              onClick={() => handleViewProfile(driver.id)}
             >
-              <CalendarPlus className="w-4 h-4 mr-1" />
-              Réserver
-            </Button>
+              <Avatar className="w-20 h-20 ring-4 ring-primary/20">
+                <AvatarImage src={driver.profiles?.profile_photo_url || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-orange-500 text-white text-2xl">
+                  {getDriverDisplayName(driver).charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Eye className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <Badge className="mb-2 bg-gradient-to-r from-primary to-orange-500 text-white">
+                Chauffeur exclusif
+              </Badge>
+              <h3 className="font-bold text-xl">{getDriverDisplayName(driver)}</h3>
+              {driver.vehicle_brand && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                  <Car className="w-4 h-4" />
+                  {driver.vehicle_brand} {driver.vehicle_model}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => navigate(`/create-course?driver_id=${driver.id}`)}
+                className="bg-gradient-to-r from-primary to-orange-500 hover:opacity-90"
+              >
+                <CalendarPlus className="w-4 h-4 mr-2" />
+                Réserver
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleViewProfile(driver.id)}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Profil
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+
+        <DriverProfileDialog
+          driverId={selectedDriverId}
+          open={showProfileDialog}
+          onOpenChange={setShowProfileDialog}
+          isRegistered={true}
+        />
+      </>
     );
   }
 
   if (drivers.length === 0) {
     return (
-      <Card className="p-8 text-center">
-        <Car className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="font-medium mb-2">Aucun chauffeur</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Découvrez des chauffeurs VTC près de chez vous
+      <Card className="p-12 text-center border-dashed border-2">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+          <Car className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-lg mb-2">Aucun chauffeur</h3>
+        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          Découvrez des chauffeurs VTC de qualité près de chez vous
         </p>
-        <Button onClick={() => navigate("/chauffeurs")} className="gap-2">
+        <Button 
+          onClick={() => navigate("/chauffeurs")} 
+          className="gap-2 bg-gradient-to-r from-primary to-orange-500 hover:opacity-90"
+        >
           <Search className="w-4 h-4" />
-          Découvrir
+          Découvrir des chauffeurs
         </Button>
       </Card>
     );
@@ -463,21 +541,18 @@ export function ClientDriversGrid({
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Glissez pour réorganiser • Cliquez sur ❤️ pour définir le favori
-            </p>
-          </div>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <p className="text-sm text-muted-foreground">
+            Glissez pour réorganiser • Cliquez sur la photo pour voir le profil
+          </p>
           <Button
             size="sm"
-            variant="outline"
             onClick={() => navigate("/chauffeurs")}
-            className="gap-2"
+            className="gap-2 bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 text-white"
           >
             <Plus className="w-4 h-4" />
-            Ajouter
+            Ajouter un chauffeur
           </Button>
         </div>
 
@@ -487,7 +562,7 @@ export function ClientDriversGrid({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {drivers.map((driver) => (
                 <SortableDriverCard
                   key={driver.id}
@@ -500,6 +575,7 @@ export function ClientDriversGrid({
                   onCall={(phone) => (window.location.href = `tel:${phone}`)}
                   onRemove={setDriverToRemove}
                   onBlock={setDriverToBlock}
+                  onViewProfile={handleViewProfile}
                 />
               ))}
             </div>
@@ -516,7 +592,7 @@ export function ClientDriversGrid({
           <AlertDialogHeader>
             <AlertDialogTitle>Retirer ce chauffeur ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous pourrez le retrouver sur la vitrine publique.
+              Ce chauffeur sera retiré de votre liste. Vous pourrez le retrouver sur la vitrine publique.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -524,7 +600,7 @@ export function ClientDriversGrid({
             <AlertDialogAction
               onClick={handleRemoveDriver}
               disabled={isProcessing}
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isProcessing && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Retirer
@@ -540,6 +616,14 @@ export function ClientDriversGrid({
         driverName={driverToBlock ? getDriverDisplayName(driverToBlock) : ""}
         onBlock={handleBlockDriver}
         isLoading={isProcessing}
+      />
+
+      {/* Profile Dialog */}
+      <DriverProfileDialog
+        driverId={selectedDriverId}
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        isRegistered={true}
       />
     </>
   );
