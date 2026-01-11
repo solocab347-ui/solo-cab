@@ -39,6 +39,8 @@ import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
 import { PioneerBadge } from "@/components/ui/PioneerBadge";
+import { LibertyGuide } from "@/components/onboarding/LibertyGuide";
+import { LibertyFloatingButton } from "@/components/onboarding/LibertyFloatingButton";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
@@ -81,6 +83,7 @@ const DriverDashboard = () => {
   const [loadingQR, setLoadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
+  const [showLibertyGuide, setShowLibertyGuide] = useState(false);
   
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
@@ -1232,6 +1235,23 @@ const DriverDashboard = () => {
       
       {/* Assistant virtuel Max */}
       <DriverAssistant />
+      
+      {/* Liberty Guide - bouton flottant et guide */}
+      <LibertyFloatingButton 
+        onClick={() => setShowLibertyGuide(true)} 
+        hasUnreadTips={!localStorage.getItem("liberty-guide-completed")}
+      />
+      <LibertyGuide 
+        isOpen={showLibertyGuide} 
+        onClose={() => setShowLibertyGuide(false)}
+        onNavigate={(path) => {
+          const tabMatch = path.match(/tab=(\w+)/);
+          if (tabMatch) {
+            setActiveTab(tabMatch[1]);
+          }
+          setShowLibertyGuide(false);
+        }}
+      />
     </div>
   );
 };
