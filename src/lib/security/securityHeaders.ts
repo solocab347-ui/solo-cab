@@ -189,36 +189,46 @@ function isAllowedIframeDomain(): boolean {
 
 /**
  * Bloquer l'exécution si dans une iframe non autorisée
+ * IMPORTANT: Cette fonction ne bloque JAMAIS les utilisateurs normaux
+ * Elle ne s'active que pour les tentatives d'embedding malveillantes
  */
 export function preventClickjacking(): void {
-  if (isInIframe()) {
-    // Vérifier si c'est une iframe autorisée (même origine)
-    try {
-      if (window.top && window.top.location.hostname === window.location.hostname) {
-        return; // Même origine, OK
-      }
-    } catch {
-      // Cross-origin iframe, vérifier si autorisée
-    }
-
-    // Vérifier si le domaine parent est dans la liste autorisée
-    if (isAllowedIframeDomain()) {
-      return; // Domaine autorisé, OK
-    }
-
-    // Afficher un message et rediriger
-    document.body.innerHTML = `
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
-        <div style="text-align: center;">
-          <h1 style="color: #e53e3e;">Accès non autorisé</h1>
-          <p>Cette page ne peut pas être affichée dans un cadre externe.</p>
-          <a href="${window.location.href}" target="_top" style="color: #3182ce;">
-            Ouvrir dans une nouvelle fenêtre
-          </a>
-        </div>
-      </div>
-    `;
+  // Si l'utilisateur accède directement à l'app (pas dans une iframe)
+  // => AUCUNE restriction, accès normal
+  if (!isInIframe()) {
+    return;
   }
+
+  // Nous sommes dans une iframe - vérifier si c'est autorisé
+  // Cas 1: Même origine (toujours OK)
+  try {
+    if (window.top && window.top.location.hostname === window.location.hostname) {
+      return; // Même origine, OK
+    }
+  } catch {
+    // Cross-origin, continuer la vérification
+  }
+
+  // Cas 2: Domaine autorisé (Lovable, localhost)
+  if (isAllowedIframeDomain()) {
+    return; // Domaine autorisé, OK
+  }
+
+  // Cas 3: Iframe non autorisée - site externe tente d'intégrer SoloCab
+  // SEUL ce cas est bloqué - les utilisateurs normaux ne le verront JAMAIS
+  console.warn('[Security] Tentative d\'embedding non autorisée bloquée');
+  
+  document.body.innerHTML = `
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; background: #0f172a; color: white;">
+      <div style="text-align: center; padding: 2rem;">
+        <h1 style="color: #f87171; margin-bottom: 1rem;">Accès non autorisé</h1>
+        <p style="margin-bottom: 1.5rem;">Cette page ne peut pas être affichée dans un cadre externe.</p>
+        <a href="${window.location.href}" target="_top" style="color: #60a5fa; text-decoration: none; padding: 0.75rem 1.5rem; border: 1px solid #60a5fa; border-radius: 0.5rem;">
+          Ouvrir SoloCab
+        </a>
+      </div>
+    </div>
+  `;
 }
 
 /**

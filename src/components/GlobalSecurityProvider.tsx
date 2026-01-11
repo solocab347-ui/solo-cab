@@ -184,48 +184,55 @@ const installClipboardProtection = () => {
 };
 
 // Protection contre les iframes malveillantes
+// IMPORTANT: Cette protection ne bloque PAS les utilisateurs normaux
+// Elle ne s'active QUE si quelqu'un essaie d'intégrer SoloCab dans son propre site malveillant
 const installFramebusting = () => {
-  if (window.self !== window.top) {
-    // Nous sommes dans une iframe
-    try {
-      // Vérifier si le parent est autorisé
-      const parentOrigin = document.referrer;
-      const allowedOrigins = [
-        window.location.origin,
-        'https://lovable.dev',
-        'https://gptengineer.app',
-      ];
+  // Si l'utilisateur accède directement à l'app (pas dans une iframe), rien à faire
+  if (window.self === window.top) {
+    return; // Accès normal, aucune restriction
+  }
 
-      const isAllowed = allowedOrigins.some((origin) =>
-        parentOrigin.startsWith(origin)
-      );
+  // Nous sommes dans une iframe - vérifier si c'est autorisé
+  try {
+    const parentOrigin = document.referrer;
+    
+    // Liste des domaines autorisés à embarquer SoloCab
+    const allowedOrigins = [
+      window.location.origin, // Même origine
+      'https://lovable.dev',
+      'https://gptengineer.app',
+      'http://localhost',
+      'https://localhost',
+    ];
 
-      if (!isAllowed) {
-        console.warn('[Security] Iframe non autorisée détectée');
-        logSecurityEvent({
-          eventType: 'blocked_request',
-          details: {
-            type: 'unauthorized_iframe',
-            parentOrigin,
-            currentOrigin: window.location.origin,
-          },
-        });
-        
-        // Tenter de sortir de l'iframe
-        if (window.top) {
-          window.top.location.href = window.self.location.href;
-        }
-      }
-    } catch (e) {
-      // Accès cross-origin bloqué - c'est une iframe malveillante
+    // Vérifier si l'iframe parent est autorisée
+    const isAllowed = !parentOrigin || allowedOrigins.some((origin) =>
+      parentOrigin.startsWith(origin) || 
+      parentOrigin.includes('lovable') || 
+      parentOrigin.includes('lovableproject')
+    );
+
+    if (!isAllowed) {
+      console.warn('[Security] Iframe non autorisée détectée - site externe tente d\'intégrer SoloCab');
       logSecurityEvent({
         eventType: 'blocked_request',
         details: {
-          type: 'malicious_iframe_detected',
-          error: 'Cross-origin access denied',
+          type: 'unauthorized_iframe',
+          parentOrigin,
+          currentOrigin: window.location.origin,
         },
       });
+      
+      // Rediriger vers l'app principale plutôt que bloquer
+      if (window.top) {
+        window.top.location.href = window.self.location.href;
+      }
     }
+  } catch (e) {
+    // Accès cross-origin bloqué par le navigateur
+    // Cela arrive uniquement avec des iframes cross-origin non autorisées
+    // Les utilisateurs normaux ne rencontreront JAMAIS cette situation
+    console.warn('[Security] Tentative d\'embedding cross-origin détectée');
   }
 };
 
