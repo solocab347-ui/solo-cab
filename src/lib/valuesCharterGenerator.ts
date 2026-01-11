@@ -1,4 +1,27 @@
 import jsPDF from "jspdf";
+import logoSolocab from "@/assets/logo-solocab.png";
+
+// Helper function to load image as base64
+const loadImageAsBase64 = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } else {
+        reject(new Error("Could not get canvas context"));
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+};
 
 export const generateValuesCharter = async (t: (key: string) => string) => {
   const doc = new jsPDF({
@@ -19,6 +42,14 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   const grayColor: [number, number, number] = [80, 80, 90];
   const lightGray: [number, number, number] = [240, 240, 245];
 
+  // Load logo
+  let logoBase64: string | null = null;
+  try {
+    logoBase64 = await loadImageAsBase64(logoSolocab);
+  } catch (e) {
+    console.error("Could not load logo:", e);
+  }
+
   // ========== PAGE 1 - COVER PAGE ==========
   
   // Background gradient effect (subtle)
@@ -34,21 +65,23 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.setLineWidth(1.5);
   doc.line(0, 8, pageWidth, 8);
 
-  // Company Logo area - Circle with SoloCab
+  // Company Logo area - Real logo
   const logoY = 40;
-  doc.setFillColor(...primaryBlue);
-  doc.circle(pageWidth / 2, logoY, 22, "F");
-  
-  // Inner circle
-  doc.setFillColor(255, 255, 255);
-  doc.circle(pageWidth / 2, logoY, 18, "F");
-  
-  // Logo text
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(...primaryBlue);
-  doc.text("SOLO", pageWidth / 2, logoY - 2, { align: "center" });
-  doc.text("CAB", pageWidth / 2, logoY + 5, { align: "center" });
+  if (logoBase64) {
+    // Add the real logo image
+    doc.addImage(logoBase64, "PNG", pageWidth / 2 - 20, logoY - 18, 40, 36);
+  } else {
+    // Fallback to text if logo fails to load
+    doc.setFillColor(...primaryBlue);
+    doc.circle(pageWidth / 2, logoY, 22, "F");
+    doc.setFillColor(255, 255, 255);
+    doc.circle(pageWidth / 2, logoY, 18, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...primaryBlue);
+    doc.text("SOLO", pageWidth / 2, logoY - 2, { align: "center" });
+    doc.text("CAB", pageWidth / 2, logoY + 5, { align: "center" });
+  }
 
   // Main Title with shadow effect
   doc.setFont("helvetica", "bold");
