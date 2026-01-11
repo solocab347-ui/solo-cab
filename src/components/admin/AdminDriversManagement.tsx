@@ -309,62 +309,67 @@ const AdminDriversManagement = () => {
   };
 
   const renderDriverCard = (driver: Driver) => (
-    <Card key={driver.id} className="hover:shadow-elegant transition-all">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          {driver.profiles.profile_photo_url ? (
-            <img
-              src={driver.profiles.profile_photo_url}
-              alt={driver.profiles.full_name}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-16 h-16 bg-gradient-dark rounded-full flex items-center justify-center">
-              <span className="text-2xl text-primary-foreground font-bold">
-                {driver.profiles.full_name.charAt(0)}
-              </span>
-            </div>
-          )}
+    <Card key={driver.id} className="hover:shadow-elegant transition-all overflow-hidden">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          {/* Avatar + Info */}
+          <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+            {driver.profiles.profile_photo_url ? (
+              <img
+                src={driver.profiles.profile_photo_url}
+                alt={driver.profiles.full_name}
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-dark rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-xl sm:text-2xl text-primary-foreground font-bold">
+                  {driver.profiles.full_name.charAt(0)}
+                </span>
+              </div>
+            )}
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <h3 className="font-bold text-lg">{driver.profiles.full_name}</h3>
-              {driver.sharing_number && (
-                <Badge variant="outline" className="font-mono text-xs">
-                  #{driver.sharing_number}
-                </Badge>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h3 className="font-bold text-base sm:text-lg truncate">{driver.profiles.full_name}</h3>
+                {driver.sharing_number && (
+                  <Badge variant="outline" className="font-mono text-xs">
+                    #{driver.sharing_number}
+                  </Badge>
+                )}
+                {driver.is_pioneer && (
+                  <Badge className="bg-amber-500 text-white gap-1">
+                    <Crown className="w-3 h-3" />
+                    Pionnier
+                  </Badge>
+                )}
+                {getStatusBadge(driver.status)}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{driver.profiles.email}</p>
+              {driver.profiles.phone && (
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">📱 {driver.profiles.phone}</p>
               )}
-              {driver.is_pioneer && (
-                <Badge className="bg-amber-500 text-white gap-1">
-                  <Crown className="w-3 h-3" />
-                  Pionnier
-                </Badge>
+              {driver.company_name && (
+                <p className="text-xs sm:text-sm font-medium mb-1 truncate">🏢 {driver.company_name}</p>
               )}
-              {getStatusBadge(driver.status)}
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">
+                🚗 {driver.vehicle_model} • 📄 {driver.license_number}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                📅 Inscrit le {format(new Date(driver.created_at), "d MMMM yyyy", { locale: fr })}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mb-1">{driver.profiles.email}</p>
-            {driver.profiles.phone && (
-              <p className="text-sm text-muted-foreground mb-2">📱 {driver.profiles.phone}</p>
-            )}
-            {driver.company_name && (
-              <p className="text-sm font-medium mb-2">🏢 {driver.company_name}</p>
-            )}
-            <p className="text-sm text-muted-foreground mb-2">
-              🚗 {driver.vehicle_model} • 📄 {driver.license_number}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              📅 Inscrit le {format(new Date(driver.created_at), "d MMMM yyyy", { locale: fr })}
-            </p>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* Action buttons - responsive grid */}
+          <div className="flex flex-wrap sm:flex-col gap-2 sm:flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => viewDocuments(driver)}
+              className="flex-1 sm:flex-initial"
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Documents
+              <FileText className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Documents</span>
             </Button>
 
             {driver.status === "pending" && (
@@ -375,9 +380,10 @@ const AdminDriversManagement = () => {
                   onClick={() =>
                     setActionDialog({ open: true, action: "validate", driver })
                   }
+                  className="flex-1 sm:flex-initial"
                 >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Valider
+                  <CheckCircle className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Valider</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -385,9 +391,10 @@ const AdminDriversManagement = () => {
                   onClick={() =>
                     setActionDialog({ open: true, action: "on_hold", driver })
                   }
+                  className="flex-1 sm:flex-initial"
                 >
-                  <Clock className="w-4 h-4 mr-2" />
-                  Mettre en attente
+                  <Clock className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Attente</span>
                 </Button>
                 <Button
                   variant="destructive"
@@ -395,9 +402,10 @@ const AdminDriversManagement = () => {
                   onClick={() =>
                     setActionDialog({ open: true, action: "reject", driver })
                   }
+                  className="flex-1 sm:flex-initial"
                 >
-                  <X className="w-4 h-4 mr-2" />
-                  Refuser
+                  <X className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Refuser</span>
                 </Button>
               </>
             )}
@@ -410,9 +418,10 @@ const AdminDriversManagement = () => {
                   onClick={() =>
                     setActionDialog({ open: true, action: "validate", driver })
                   }
+                  className="flex-1 sm:flex-initial"
                 >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Valider
+                  <CheckCircle className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Valider</span>
                 </Button>
                 <Button
                   variant="destructive"
@@ -420,9 +429,10 @@ const AdminDriversManagement = () => {
                   onClick={() =>
                     setActionDialog({ open: true, action: "reject", driver })
                   }
+                  className="flex-1 sm:flex-initial"
                 >
-                  <X className="w-4 h-4 mr-2" />
-                  Refuser
+                  <X className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Refuser</span>
                 </Button>
               </>
             )}
@@ -434,9 +444,10 @@ const AdminDriversManagement = () => {
                 onClick={() =>
                   setActionDialog({ open: true, action: "delete", driver })
                 }
+                className="flex-1 sm:flex-initial"
               >
-                <X className="w-4 h-4 mr-2" />
-                Supprimer
+                <X className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Supprimer</span>
               </Button>
             )}
           </div>

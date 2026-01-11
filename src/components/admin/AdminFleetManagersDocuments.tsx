@@ -201,19 +201,21 @@ export const AdminFleetManagersDocuments = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="w-5 h-5" />
-                Gestionnaires de Flotte - Documents
-              </CardTitle>
-              <CardDescription>
-                Validez les documents des gestionnaires de flotte
-              </CardDescription>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+            <div className="flex items-start gap-2">
+              <Truck className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <CardTitle className="text-base sm:text-lg">
+                  Gestionnaires de Flotte - Documents
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Validez les documents des gestionnaires de flotte
+                </CardDescription>
+              </div>
             </div>
             {pendingCount > 0 && (
-              <Badge variant="destructive" className="text-lg px-3 py-1">
+              <Badge variant="destructive" className="text-sm sm:text-lg px-2 sm:px-3 py-1 self-start sm:self-auto">
                 {pendingCount} à vérifier
               </Badge>
             )}
@@ -261,44 +263,48 @@ export const AdminFleetManagersDocuments = () => {
                 return (
                   <div
                     key={fm.id}
-                    className={`p-4 border rounded-lg ${
+                    className={`p-3 sm:p-4 border rounded-lg overflow-hidden ${
                       fm.documents_status === "submitted"
                         ? "border-amber-500/50 bg-amber-500/5"
                         : ""
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Building2 className="w-6 h-6 text-primary" />
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                      {/* Icon + Info */}
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                          <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-medium">{fm.company_name}</p>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">{fm.company_name}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {fm.contact_name} - {fm.contact_email}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             SIRET: {fm.siret}
                           </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
                               <FileText className="w-3 h-3 mr-1" />
                               {docCount}/5 documents
                             </Badge>
                             {deadlineInfo && fm.documents_status === "pending" && (
                               <Badge
                                 variant={deadlineInfo.isExpired ? "destructive" : "outline"}
+                                className="text-xs"
                               >
                                 <Clock className="w-3 h-3 mr-1" />
                                 {deadlineInfo.isExpired
-                                  ? "Délai dépassé"
-                                  : `${deadlineInfo.daysRemaining}j restants`}
+                                  ? "Expiré"
+                                  : `${deadlineInfo.daysRemaining}j`}
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-start">
                         {getStatusBadge(fm.documents_status)}
                         {(fm.documents_status === "submitted" || docCount > 0) && (
                           <Button
@@ -306,8 +312,8 @@ export const AdminFleetManagersDocuments = () => {
                             size="sm"
                             onClick={() => openReviewDialog(fm)}
                           >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Examiner
+                            <Eye className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Examiner</span>
                           </Button>
                         )}
                       </div>
