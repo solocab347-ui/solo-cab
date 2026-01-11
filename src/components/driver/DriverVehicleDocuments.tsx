@@ -16,7 +16,8 @@ import {
   Loader2, 
   Eye, 
   Trash2,
-  Car
+  Car,
+  ShieldCheck
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -39,6 +40,13 @@ interface VehicleDocument {
   uploaded_at: string | null;
 }
 
+interface FleetValidation {
+  document_type: string;
+  document_url: string;
+  validated_at: string;
+  fleet_manager_id: string;
+}
+
 interface DriverVehicleDocumentsProps {
   driverId: string;
   driverName: string;
@@ -54,6 +62,7 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
   const [documents, setDocuments] = useState<Record<string, VehicleDocument[]>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [fleetValidations, setFleetValidations] = useState<FleetValidation[]>([]);
 
   useEffect(() => {
     fetchVehiclesAndDocuments();
@@ -91,12 +100,26 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
         });
         setDocuments(groupedDocs);
       }
+
+      // Fetch fleet validations for this driver
+      const { data: validationsData } = await supabase
+        .from("fleet_driver_document_validations")
+        .select("document_type, document_url, validated_at, fleet_manager_id")
+        .eq("driver_id", driverId)
+        .eq("status", "validated");
+
+      setFleetValidations(validationsData || []);
     } catch (error) {
       console.error("Error fetching vehicles and documents:", error);
       toast.error("Erreur lors du chargement");
     } finally {
       setLoading(false);
     }
+  };
+
+  const isDocumentValidatedByFleet = (docType: string, docUrl: string | null) => {
+    if (!docUrl) return false;
+    return fleetValidations.some(v => v.document_type === docType && v.document_url === docUrl);
   };
 
   const handleFileUpload = async (vehicleId: string, docType: string, file: File) => {
@@ -180,6 +203,12 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
       const doc = documents[vehicleId]?.find(d => d.document_type === docType);
       if (!doc) return;
 
+      // Check if validated by fleet - cannot delete if validated
+      if (doc.document_url && isDocumentValidatedByFleet(docType, doc.document_url)) {
+        toast.error("Ce document a été validé par le gestionnaire et ne peut plus être supprimé.");
+        return;
+      }
+
       await supabase
         .from("driver_vehicle_documents")
         .update({
@@ -224,14 +253,18 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
         const allDocsSubmitted = VEHICLE_DOCUMENT_TYPES.every(
           dt => vehicleDocs.find(d => d.document_type === dt.key && d.document_url)
         );
+        const allDocsValidatedByFleet = VEHICLE_DOCUMENT_TYPES.every(dt => {
+          const doc = vehicleDocs.find(d => d.document_type === dt.key);
+          return doc?.document_url && isDocumentValidatedByFleet(dt.key, doc.document_url);
+        });
         const allDocsValidated = VEHICLE_DOCUMENT_TYPES.every(
           dt => vehicleDocs.find(d => d.document_type === dt.key && d.status === "validated")
-        );
+        ) || allDocsValidatedByFleet;
 
         return (
           <Card key={vehicle.id}>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-primary/10">
                     <Car className="w-5 h-5 text-primary" />
@@ -267,29 +300,37 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
               {VEHICLE_DOCUMENT_TYPES.map(docType => {
                 const doc = vehicleDocs.find(d => d.document_type === docType.key);
                 const hasDoc = doc?.document_url;
-                const isValidated = doc?.status === "validated";
+                const isValidatedByFleet = hasDoc && isDocumentValidatedByFleet(docType.key, doc.document_url);
+                const isValidated = doc?.status === "validated" || isValidatedByFleet;
                 const isRejected = doc?.status === "rejected";
                 const isUploading = uploading === `${vehicle.id}-${docType.key}`;
 
                 return (
                   <div
                     key={docType.key}
-                    className={`flex items-center justify-between p-4 border rounded-lg ${
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg ${
+                      isValidated ? 'border-green-500/30 bg-green-500/5' :
                       isRejected ? 'border-red-500/30 bg-red-500/5' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       {isValidated ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <ShieldCheck className="w-5 h-5 text-green-500 flex-shrink-0" />
                       ) : hasDoc ? (
-                        <FileText className="w-5 h-5 text-blue-500" />
+                        <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
+                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
                       )}
-                      <div>
-                        <p className="font-medium">{docType.label}</p>
-                        <p className="text-sm text-muted-foreground">{docType.description}</p>
-                        {doc?.uploaded_at && (
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{docType.label}</p>
+                        <p className="text-sm text-muted-foreground truncate">{docType.description}</p>
+                        {isValidated && (
+                          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Validé par le gestionnaire
+                          </p>
+                        )}
+                        {doc?.uploaded_at && !isValidated && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Téléchargé le {format(new Date(doc.uploaded_at), "dd/MM/yyyy")}
                           </p>
@@ -303,7 +344,7 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {hasDoc ? (
                         <>
                           <Button
@@ -351,6 +392,15 @@ export const DriverVehicleDocuments = ({ driverId, driverName }: DriverVehicleDo
                   </div>
                 );
               })}
+
+              {allDocsValidated && (
+                <Alert className="bg-green-500/10 border-green-500/30">
+                  <ShieldCheck className="w-4 h-4 text-green-600" />
+                  <AlertDescription className="text-green-700">
+                    Tous les documents de ce véhicule ont été validés par votre gestionnaire de flotte.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         );
