@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
@@ -671,9 +672,7 @@ Cordialement`;
                             : 'Chauffeur VTC'}
                         </h3>
                         {(driver as any).is_pioneer && (
-                          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
-                            🏆 Pionnier
-                          </Badge>
+                          <PioneerBadge size="xs" />
                         )}
                         {(driver as any).show_rating_partners !== false && driver.rating && driver.rating >= 4.5 && (
                           <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">

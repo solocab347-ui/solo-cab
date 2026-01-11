@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star, Car } from "lucide-react";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 
 interface FleetDriver {
   id: string;
@@ -111,9 +112,7 @@ export const OptimizedFleetDriverCard = memo(function OptimizedFleetDriverCard({
         {/* Rating, Pioneer Badge & Status */}
         <div className="flex flex-col items-end gap-1 shrink-0">
           {driverData?.is_pioneer && (
-            <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
-              🏆 Pionnier
-            </Badge>
+            <PioneerBadge size="xs" />
           )}
           {driverData?.rating && driverData.rating > 0 && (
             <div className="flex items-center gap-1 text-warning">

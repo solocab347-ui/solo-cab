@@ -38,6 +38,7 @@ import DriverPlanning from "@/components/driver/DriverPlanning";
 import { UnifiedPartnershipHub } from "@/components/driver/UnifiedPartnershipHub";
 import { GuestBookingsList } from "@/components/driver/GuestBookingsList";
 import { DriverDocuments } from "@/components/driver/DriverDocuments";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
 import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
@@ -423,11 +424,7 @@ const DriverDashboard = () => {
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium text-foreground">{driverProfile?.full_name || t('driverDashboard.driver')}</span>
               {driverProfile?.driver?.is_pioneer ? (
-                <Badge 
-                  className="text-xs bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-md"
-                >
-                  🏆 Pionnier
-                </Badge>
+                <PioneerBadge size="sm" />
               ) : (
                 <Badge 
                   variant="outline" 

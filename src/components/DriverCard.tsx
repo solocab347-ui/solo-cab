@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Car, Award, ChevronLeft, ChevronRight, UserPlus, UserCheck } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import {
   Carousel,
   CarouselContent,
@@ -74,9 +75,9 @@ export const DriverCard = ({ driver, cardIndex = 0, onViewProfile, isRegistered 
             Déjà inscrit
           </Badge>
         ) : driver.is_pioneer && (
-          <Badge className="absolute top-4 left-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 shadow-lg z-10 gap-1">
-            🏆 Pionnier
-          </Badge>
+          <div className="absolute top-4 left-4 z-10">
+            <PioneerBadge size="sm" />
+          </div>
         )}
         
         {/* Distance Badge - Top Right */}
