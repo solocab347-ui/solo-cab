@@ -417,110 +417,109 @@ const ChauffeurProfile = () => {
           </Card>
         )}
 
-          {/* Secteurs d'activité */}
-          {driver.working_sectors && driver.working_sectors.length > 0 && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                Secteurs d'activité
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {driver.working_sectors.map((sector) => (
-                  <Badge key={sector} variant="outline" className="text-sm">
-                    {sector}
-                  </Badge>
+        {/* Secteurs d'activité */}
+        {driver.working_sectors && driver.working_sectors.length > 0 && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Secteurs d'activité
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {driver.working_sectors.map((sector) => (
+                <Badge key={sector} variant="outline" className="text-sm">
+                  {sector}
+                </Badge>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Photos du véhicule */}
+        {driver.vehicle_photos && driver.vehicle_photos.length > 0 && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Car className="w-5 h-5 text-primary" />
+              Photos du véhicule
+            </h2>
+            <Carousel className="w-full" opts={{ align: "start", loop: true }}>
+              <CarouselContent className="-ml-4">
+                {driver.vehicle_photos.map((photo, index) => (
+                  <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <div className="relative aspect-video rounded-xl overflow-hidden shadow-lg">
+                      <img 
+                        src={photo} 
+                        alt={`Véhicule ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CarouselItem>
                 ))}
-              </div>
-            </Card>
-          )}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </Card>
+        )}
 
-          {/* Photos du véhicule */}
-          {driver.vehicle_photos && driver.vehicle_photos.length > 0 && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Car className="w-5 h-5 text-primary" />
-                Photos du véhicule
-              </h2>
-              <Carousel className="w-full" opts={{ align: "start", loop: true }}>
-                <CarouselContent className="-ml-4">
-                  {driver.vehicle_photos.map((photo, index) => (
-                    <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                      <div className="relative aspect-video rounded-xl overflow-hidden shadow-lg">
-                        <img 
-                          src={photo} 
-                          alt={`Véhicule ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </Card>
-          )}
-
-          {/* Galerie */}
-          {driver.gallery_photos && driver.gallery_photos.length > 0 && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6">Galerie</h2>
-              <Carousel className="w-full" opts={{ align: "start", loop: true }}>
-                <CarouselContent className="-ml-4">
-                  {driver.gallery_photos.map((photo, index) => (
-                    <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                      <div className="relative aspect-square rounded-xl overflow-hidden shadow-lg">
-                        <img 
-                          src={photo} 
-                          alt={`Galerie ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </Card>
-          )}
-
-          {/* Services */}
-          {driver.services_offered && driver.services_offered.length > 0 && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6">Services proposés</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {driver.services_offered.map((service) => {
-                  const serviceConfig = DRIVER_SERVICES.find(s => s.id === service);
-                  return (
-                    <div key={service} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <div className="text-2xl">{serviceConfig?.icon || "✓"}</div>
-                      <span className="font-medium">{serviceConfig?.label || service}</span>
+        {/* Galerie */}
+        {driver.gallery_photos && driver.gallery_photos.length > 0 && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4">Galerie</h2>
+            <Carousel className="w-full" opts={{ align: "start", loop: true }}>
+              <CarouselContent className="-ml-4">
+                {driver.gallery_photos.map((photo, index) => (
+                  <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <div className="relative aspect-square rounded-xl overflow-hidden shadow-lg">
+                      <img 
+                        src={photo} 
+                        alt={`Galerie ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </Card>
+        )}
 
-          {/* Équipements */}
-          {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6">Équipements du véhicule</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {driver.vehicle_equipment.map((equipment) => {
-                  const equipmentConfig = VEHICLE_EQUIPMENT.find(e => e.id === equipment);
-                  return (
-                    <div key={equipment} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <div className="text-2xl">{equipmentConfig?.icon || "✓"}</div>
-                      <span className="font-medium">{equipmentConfig?.label || equipment}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-        </div>
+        {/* Services */}
+        {driver.services_offered && driver.services_offered.length > 0 && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4">Services proposés</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {driver.services_offered.map((service) => {
+                const serviceConfig = DRIVER_SERVICES.find(s => s.id === service);
+                return (
+                  <div key={service} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="text-2xl">{serviceConfig?.icon || "✓"}</div>
+                    <span className="font-medium">{serviceConfig?.label || service}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* Équipements */}
+        {driver.vehicle_equipment && driver.vehicle_equipment.length > 0 && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4">Équipements du véhicule</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {driver.vehicle_equipment.map((equipment) => {
+                const equipmentConfig = VEHICLE_EQUIPMENT.find(e => e.id === equipment);
+                return (
+                  <div key={equipment} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="text-2xl">{equipmentConfig?.icon || "✓"}</div>
+                    <span className="font-medium">{equipmentConfig?.label || equipment}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );
