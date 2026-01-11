@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2 } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
 import { generateCompanyFlyer } from "@/lib/flyers/companyFlyerGenerator";
+import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut") => {
     setLoading(type);
     try {
       switch (type) {
@@ -25,6 +26,10 @@ const AdminFlyers = () => {
         case "company":
           await generateCompanyFlyer();
           toast.success("Flyer Entreprises téléchargé !");
+          break;
+        case "revolut":
+          await generateRevolutFlyer();
+          toast.success("Flyer Revolut Business téléchargé !");
           break;
       }
     } catch (error) {
@@ -59,6 +64,14 @@ const AdminFlyers = () => {
       icon: Building2,
       color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
       gradient: "from-orange-500 to-red-500",
+    },
+    {
+      id: "revolut" as const,
+      title: "Revolut Business",
+      description: "Flyer d'affiliation Revolut Business avec lien pour ouvrir un compte pro, liens de paiement, outils de comptabilité. 4 flyers par page A4.",
+      icon: CreditCard,
+      color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+      gradient: "from-indigo-500 to-blue-500",
     },
   ];
 
