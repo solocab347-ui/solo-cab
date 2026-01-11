@@ -58,6 +58,7 @@ import { BillingWarningBanner } from "@/components/company/BillingWarningBanner"
 import { CompanyPartnershipQRCode } from "@/components/company/CompanyPartnershipQRCode";
 import { CompanyAdministratorsManager } from "@/components/company/CompanyAdministratorsManager";
 import { EmployeeUpgradeRequestsManager } from "@/components/company/EmployeeUpgradeRequestsManager";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { Link } from "react-router-dom";
 
 interface Company {
@@ -309,6 +310,13 @@ export default function CompanyDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="company"
+        userName={company.contact_name}
+        userEmail={company.contact_email}
+      />
     </div>
   );
 }

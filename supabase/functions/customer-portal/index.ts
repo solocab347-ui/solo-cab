@@ -17,6 +17,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse request body for action type
+  let action: string | null = null;
+  try {
+    const body = await req.json();
+    action = body?.action || null;
+  } catch {
+    // No body or invalid JSON, that's fine
+  }
+
   try {
     logStep("Function started");
 
@@ -65,12 +74,22 @@ serve(async (req) => {
       const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
       const origin = req.headers.get("origin") || "https://solocab.fr";
       
-      const portalSession = await stripe.billingPortal.sessions.create({
+      // Build portal session config based on action
+      const portalConfig: any = {
         customer: fleetManager.stripe_customer_id,
         return_url: `${origin}/fleet-dashboard`,
-      });
+      };
+
+      // Add flow_data for specific actions
+      if (action === "payment_method") {
+        portalConfig.flow_data = {
+          type: "payment_method_update",
+        };
+      }
       
-      logStep("Fleet manager portal session created", { url: portalSession.url });
+      const portalSession = await stripe.billingPortal.sessions.create(portalConfig);
+      
+      logStep("Fleet manager portal session created", { url: portalSession.url, action });
       
       return new Response(JSON.stringify({ url: portalSession.url }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -85,14 +104,25 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const origin = req.headers.get("origin") || "https://solocab.fr";
     
-    const portalSession = await stripe.billingPortal.sessions.create({
+    // Build portal session config based on action
+    const portalConfig: any = {
       customer: driver.stripe_customer_id,
       return_url: `${origin}/driver-dashboard?tab=subscription`,
-    });
+    };
+
+    // Add flow_data for specific actions
+    if (action === "payment_method") {
+      portalConfig.flow_data = {
+        type: "payment_method_update",
+      };
+    }
+    
+    const portalSession = await stripe.billingPortal.sessions.create(portalConfig);
     
     logStep("Driver portal session created", { 
       url: portalSession.url,
-      isPioneer: driver.is_pioneer 
+      isPioneer: driver.is_pioneer,
+      action 
     });
 
     return new Response(JSON.stringify({ 

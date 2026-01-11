@@ -46,22 +46,22 @@ export const SubscriptionManagementCard = ({
   const [loading, setLoading] = useState(false);
 
   const handleOpenPortal = async (action?: "payment_method" | "cancel" | "invoices") => {
-    // Callback optionnel avant ouverture (ex: avertissement Pioneer)
-    if (onBeforeOpenPortal) {
+    // Callback optionnel avant ouverture (ex: avertissement Pioneer) - uniquement pour cancel
+    if (action === "cancel" && onBeforeOpenPortal) {
       const shouldContinue = await onBeforeOpenPortal();
       if (!shouldContinue) return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { data, error } = await supabase.functions.invoke("customer-portal", {
+        body: { action }
+      });
       
       if (error) throw error;
       
       if (data?.url) {
-        // Ajouter un paramètre d'action si spécifié (Stripe le supporte via flow_data)
-        let url = data.url;
-        window.open(url, "_blank");
+        window.open(data.url, "_blank");
         
         // Rafraîchir après un délai
         setTimeout(() => {

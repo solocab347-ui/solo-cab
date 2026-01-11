@@ -38,6 +38,7 @@ import { MessagingInterface } from "@/components/messaging/MessagingInterface";
 import { ClientHomeView } from "@/components/client/ClientHomeView";
 import { ClientDriversGrid } from "@/components/client/ClientDriversGrid";
 import { NoDriversBanner } from "@/components/client/NoDriversBanner";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { cn } from "@/lib/utils";
 
 const ClientDashboard = () => {
@@ -456,6 +457,13 @@ const ClientDashboard = () => {
         driverIds={clientProfile?.client?.driver_ids || []}
         favoriteDriverId={clientProfile?.client?.favorite_driver_id}
         onSelectDriver={handleDriverSelected}
+      />
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="client"
+        userName={clientProfile?.full_name}
+        userEmail={clientProfile?.email}
       />
     </div>
   );

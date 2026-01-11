@@ -79,6 +79,7 @@ import FleetDevisList from "@/components/fleet-manager/FleetDevisList";
 import FleetFacturesList from "@/components/fleet-manager/FleetFacturesList";
 import logoSolocab from "@/assets/logo-solocab.png";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 
 interface FleetManager {
   id: string;
@@ -1152,6 +1153,13 @@ const FleetManagerDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Feedback Widget */}
+      <FeedbackWidget 
+        userType="fleet_manager"
+        userName={userProfile?.full_name || fleetManager.contact_name}
+        userEmail={fleetManager.contact_email}
+      />
     </div>
   );
 };
