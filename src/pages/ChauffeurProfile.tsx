@@ -240,135 +240,107 @@ const ChauffeurProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* En-tête */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
-          </Link>
-          <NavigationHeader showBack={true} showHome={true} />
-        </div>
-      </header>
+      {/* Hero Header avec photo en grand */}
+      <div className="relative">
+        {/* Background sombre */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.1),transparent_50%)]" />
+        
+        {/* Navigation */}
+        <header className="relative z-10 border-b border-white/10">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-3">
+              <img src={logo} alt="SoloCab" className="w-12 h-12 object-contain" />
+            </Link>
+            <NavigationHeader showBack={true} showHome={true} />
+          </div>
+        </header>
 
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        {/* Boutons de navigation */}
-        <div className="flex gap-3 mb-6">
-          <Button
-            onClick={() => navigate("/login")}
-            variant="outline"
-            className="flex-1"
-          >
-            Retour à la connexion
-          </Button>
-          <Button
-            onClick={() => navigate("/client-dashboard")}
-            className="flex-1 bg-gradient-premium"
-          >
-            Espace Client
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          {/* Profil principal */}
-          <Card className="p-8 shadow-lg">
-            <div className="flex flex-col items-center text-center gap-8">
-              {/* Photo de profil */}
-              <div className="relative">
-                <div className="w-56 h-56 bg-gradient-premium rounded-full flex items-center justify-center text-white text-7xl font-bold shadow-2xl ring-4 ring-primary/20 overflow-hidden">
-                  {driver.profile_photo_url ? (
-                    <img
-                      src={driver.profile_photo_url}
-                      alt={driver.full_name}
-                      className="w-full h-full object-cover object-center"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const parent = e.currentTarget.parentElement;
-                        if (parent && !parent.querySelector('span')) {
-                          const initial = document.createElement('span');
-                          initial.className = 'text-7xl font-bold';
-                          initial.textContent = driver.full_name.charAt(0).toUpperCase();
-                          parent.appendChild(initial);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span>{driver.full_name.charAt(0).toUpperCase()}</span>
-                  )}
+        {/* Profile Hero */}
+        <div className="relative z-10 container mx-auto px-4 py-16 max-w-4xl">
+          <div className="flex flex-col items-center text-center">
+            {/* Photo de profil */}
+            <div className="relative mb-6">
+              <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden ring-4 ring-white/20 shadow-2xl bg-gradient-to-br from-primary to-amber-500">
+                {driver.profile_photo_url ? (
+                  <img
+                    src={driver.profile_photo_url}
+                    alt={driver.full_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white text-6xl font-light">
+                    {driver.full_name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              {driver.is_pioneer && (
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                  <PioneerBadge size="md" className="shadow-xl" />
                 </div>
-                {(driver as any).is_pioneer && (
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                    <PioneerBadge size="md" className="shadow-md" />
-                  </div>
-                )}
-                {!((driver as any).is_pioneer) && driver.total_rides > 0 && (
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-primary px-4 py-2 rounded-full shadow-lg">
-                    <span className="text-sm font-bold text-primary-foreground">Chauffeur Professionnel</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Informations */}
-              <div className="w-full space-y-4">
-                <h1 className="text-4xl font-bold bg-gradient-dark bg-clip-text text-transparent">
-                  {displayName}
-                </h1>
-                
-                {driver.total_rides > 0 && (
-                  <div className="flex items-center justify-center gap-8">
-                    {/* Afficher la note uniquement si show_rating_public est true */}
-                    {(driver as any).show_rating_public !== false && (
-                      <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
-                        <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
-                        <span className="font-bold text-xl">
-                          {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-full">
-                      <Award className="w-6 h-6 text-primary" />
-                      <span className="font-semibold text-lg">{driver.total_rides} course{driver.total_rides > 1 ? "s" : ""}</span>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Véhicule */}
-                {(() => {
-                  const hasValidBrand = driver.vehicle_brand && !driver.vehicle_brand.toLowerCase().includes('compléter');
-                  const hasValidModel = driver.vehicle_model && !driver.vehicle_model.toLowerCase().includes('compléter');
-                  const hasValidColor = driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter');
-                  const hasValidYear = driver.vehicle_year && driver.vehicle_year > 1900;
-                  
-                  if (!hasValidBrand && !hasValidModel) return null;
-                  
-                  return (
-                    <div className="flex items-center justify-center gap-3 bg-muted/30 px-6 py-3 rounded-full">
-                      <Car className="w-6 h-6 text-primary" />
-                      <span className="font-semibold text-lg">
-                        {hasValidBrand && `${driver.vehicle_brand} `}
-                        {hasValidModel && driver.vehicle_model}
-                        {hasValidYear && ` (${driver.vehicle_year})`}
-                        {hasValidColor && ` · ${driver.vehicle_color}`}
-                      </span>
-                    </div>
-                  );
-                })()}
-              </div>
+              )}
             </div>
+            
+            {/* Nom */}
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              {displayName}
+            </h1>
+            
+            {/* Stats */}
+            {driver.total_rides > 0 && (
+              <div className="flex items-center gap-4 mb-6">
+                {(driver as any).show_rating_public !== false && driver.rating > 0 && (
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    <span className="font-semibold text-white">{driver.rating.toFixed(1)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <Award className="w-5 h-5 text-white/70" />
+                  <span className="text-white">{driver.total_rides} courses</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Véhicule */}
+            {(() => {
+              const hasValidBrand = driver.vehicle_brand && !driver.vehicle_brand.toLowerCase().includes('compléter');
+              const hasValidModel = driver.vehicle_model && !driver.vehicle_model.toLowerCase().includes('compléter');
+              const hasValidColor = driver.vehicle_color && !driver.vehicle_color.toLowerCase().includes('compléter');
+              const hasValidYear = driver.vehicle_year && driver.vehicle_year > 1900;
+              
+              if (!hasValidBrand && !hasValidModel) return null;
+              
+              return (
+                <div className="flex items-center gap-2 text-white/70 mb-8">
+                  <Car className="w-5 h-5" />
+                  <span>
+                    {hasValidBrand && `${driver.vehicle_brand} `}
+                    {hasValidModel && driver.vehicle_model}
+                    {hasValidYear && ` (${driver.vehicle_year})`}
+                    {hasValidColor && ` · ${driver.vehicle_color}`}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Boutons d'action */}
-            <div className="w-full mt-8 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
               <Button
                 onClick={handleRegisterWithDriver}
                 disabled={registering}
                 size="lg"
-                className="w-full bg-gradient-premium hover:opacity-90"
+                className="flex-1 bg-gradient-to-r from-primary to-amber-500 hover:opacity-90 shadow-lg shadow-primary/30"
               >
                 {registering ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Inscription en cours...</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Inscription...</>
                 ) : (
                   <>
                     <UserPlus className="w-5 h-5 mr-2" />
-                    S'inscrire avec ce chauffeur
+                    S'inscrire
                   </>
                 )}
               </Button>
@@ -377,58 +349,73 @@ const ChauffeurProfile = () => {
                 onClick={() => navigate(`/reservation-rapide/${id}`)}
                 variant="outline"
                 size="lg"
-                className="w-full"
+                className="flex-1 border-white/20 text-white hover:bg-white/10"
               >
                 <Car className="w-5 h-5 mr-2" />
-                Réserver sans s'inscrire
+                Réserver
               </Button>
             </div>
+          </div>
+        </div>
+        
+        {/* Transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      </div>
+
+      {/* Contenu */}
+      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        {/* Navigation rapide */}
+        <div className="flex gap-3 -mt-16 relative z-20">
+          <Button
+            onClick={() => navigate("/chauffeurs")}
+            variant="outline"
+            className="flex-1 bg-card shadow-lg"
+          >
+            Voir d'autres chauffeurs
+          </Button>
+          <Button
+            onClick={() => navigate("/client-dashboard")}
+            className="flex-1 bg-card shadow-lg text-foreground hover:bg-accent"
+            variant="outline"
+          >
+            Mon espace client
+          </Button>
+        </div>
+
+        {/* Description */}
+        {driver.service_description && driver.service_description.trim() && 
+         !driver.service_description.toLowerCase().includes('compléter') && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4">À propos</h2>
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {driver.service_description}
+            </p>
           </Card>
+        )}
 
-          {/* Description */}
-          {driver.service_description && driver.service_description.trim() && 
-           !driver.service_description.toLowerCase().includes('compléter') && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-4">À propos</h2>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {driver.service_description}
-              </p>
-            </Card>
-          )}
-
-          {/* Contact */}
-          {((driver.show_phone && driver.phone) || (driver.show_email && driver.email)) && (
-            <Card className="p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Phone className="w-5 h-5 text-primary" />
-                Contact
-              </h2>
-              <div className="space-y-4">
-                {driver.show_phone && driver.phone && (
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
-                    <Phone className="w-5 h-5 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Téléphone</div>
-                      <a href={`tel:${driver.phone}`} className="font-semibold text-lg hover:text-primary">
-                        {driver.phone}
-                      </a>
-                    </div>
-                  </div>
-                )}
-                {driver.show_email && driver.email && (
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
-                    <Mail className="w-5 h-5 text-primary" />
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">Email</div>
-                      <a href={`mailto:${driver.email}`} className="font-semibold text-lg hover:text-primary break-all">
-                        {driver.email}
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
+        {/* Contact */}
+        {((driver.show_phone && driver.phone) || (driver.show_email && driver.email)) && (
+          <Card className="p-6 md:p-8 border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Phone className="w-5 h-5 text-primary" />
+              Contact
+            </h2>
+            <div className="space-y-3">
+              {driver.show_phone && driver.phone && (
+                <a href={`tel:${driver.phone}`} className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                  <Phone className="w-5 h-5 text-primary" />
+                  <span className="font-medium">{driver.phone}</span>
+                </a>
+              )}
+              {driver.show_email && driver.email && (
+                <a href={`mailto:${driver.email}`} className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                  <Mail className="w-5 h-5 text-primary" />
+                  <span className="font-medium break-all">{driver.email}</span>
+                </a>
+              )}
+            </div>
+          </Card>
+        )}
 
           {/* Secteurs d'activité */}
           {driver.working_sectors && driver.working_sectors.length > 0 && (
