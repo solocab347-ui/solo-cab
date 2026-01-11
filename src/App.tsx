@@ -13,6 +13,7 @@ import { LoadingFallback } from "@/components/LoadingFallback";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { PushNotificationListener } from "@/components/PushNotificationListener";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
+import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 
 
 // Eager load public pages
@@ -80,17 +81,18 @@ const DriverPartnerSearch = lazy(() => import("./pages/DriverPartnerSearch"));
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          
-          <PWAInstallBanner />
-          <PushNotificationListener />
-          <NotificationPermissionPrompt />
-          <EmergencyReset />
-          <ErrorBoundary>
+    <GlobalSecurityProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            
+            <PWAInstallBanner />
+            <PushNotificationListener />
+            <NotificationPermissionPrompt />
+            <EmergencyReset />
+            <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -375,6 +377,7 @@ const App = () => (
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>
+  </GlobalSecurityProvider>
   </QueryClientProvider>
 );
 
