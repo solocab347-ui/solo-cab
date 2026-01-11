@@ -55,6 +55,7 @@ interface DriverProfile {
   display_company_name: boolean;
   show_phone: boolean;
   show_email: boolean;
+  show_rating_public: boolean;
   vehicle_equipment: string[];
   services_offered: string[];
   vehicle_photos: string[];
@@ -183,6 +184,7 @@ export const DriverProfileDialog = ({
           gallery_photos: driverData.gallery_photos || [],
           show_phone: driverData.show_phone ?? false,
           show_email: driverData.show_email ?? false,
+          show_rating_public: driverData.show_rating_public ?? true,
           display_driver_name: driverData.display_driver_name ?? true,
           display_company_name: driverData.display_company_name ?? true,
           // Données du profil utilisateur (viennent de la RPC)
@@ -308,11 +310,11 @@ export const DriverProfileDialog = ({
                 {driver.total_rides > 0 && (
                   <div className="flex items-center justify-center gap-6">
                     {/* Afficher la note uniquement si show_rating_public est true */}
-                    {(driver as any).show_rating_public !== false && (
+                    {driver.show_rating_public && driver.rating > 0 && (
                       <div className="flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-full">
                         <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                         <span className="font-bold text-lg">
-                          {driver.rating > 0 ? driver.rating.toFixed(1) : "Nouveau"}
+                          {driver.rating.toFixed(1)}
                         </span>
                       </div>
                     )}
