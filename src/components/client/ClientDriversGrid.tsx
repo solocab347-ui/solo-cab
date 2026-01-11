@@ -65,6 +65,7 @@ interface Driver {
   company_name: string | null;
   vehicle_model: string;
   vehicle_brand: string | null;
+  vehicle_color: string | null;
   rating: number | null;
   display_driver_name: boolean;
   display_company_name: boolean;
@@ -117,7 +118,12 @@ function SortableDriverCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const vehicleInfo = driver.vehicle_brand || driver.vehicle_model;
+  // Affichage: marque + modèle + couleur
+  const vehicleParts = [];
+  if (driver.vehicle_brand) vehicleParts.push(driver.vehicle_brand);
+  if (driver.vehicle_model && driver.vehicle_model !== driver.vehicle_brand) vehicleParts.push(driver.vehicle_model);
+  if (driver.vehicle_color) vehicleParts.push(driver.vehicle_color);
+  const vehicleInfo = vehicleParts.join(' ');
 
   return (
     <Card
@@ -316,6 +322,7 @@ export function ClientDriversGrid({
           company_name,
           vehicle_model,
           vehicle_brand,
+          vehicle_color,
           rating,
           display_driver_name,
           display_company_name,
@@ -482,10 +489,10 @@ export function ClientDriversGrid({
                 Chauffeur exclusif
               </Badge>
               <h3 className="font-bold text-xl">{getDriverDisplayName(driver)}</h3>
-              {driver.vehicle_brand && (
+              {(driver.vehicle_brand || driver.vehicle_model) && (
                 <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                   <Car className="w-4 h-4" />
-                  {driver.vehicle_brand} {driver.vehicle_model}
+                  {[driver.vehicle_brand, driver.vehicle_model !== driver.vehicle_brand ? driver.vehicle_model : null, driver.vehicle_color].filter(Boolean).join(' ')}
                 </p>
               )}
             </div>

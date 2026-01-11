@@ -518,10 +518,15 @@ const ClientCoursesList = ({ clientId, defaultTab }: ClientCoursesListProps) => 
               <h3 className="font-bold">{course.drivers?.profiles?.full_name || ''}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                 {(() => {
-                  // Utiliser vehicle_model ou vehicle_brand comme fallback
-                  const model = course.drivers?.vehicle_model || course.drivers?.vehicle_brand;
+                  // Affichage: modèle/marque en premier, couleur à la fin
+                  const brand = course.drivers?.vehicle_brand;
+                  const model = course.drivers?.vehicle_model;
                   const color = course.drivers?.vehicle_color;
-                  const vehicleDisplay = [color, model].filter(Boolean).join(' • ');
+                  const vehicleParts = [];
+                  if (brand) vehicleParts.push(brand);
+                  if (model && model !== brand) vehicleParts.push(model);
+                  if (color) vehicleParts.push(color);
+                  const vehicleDisplay = vehicleParts.join(' ');
                   return vehicleDisplay ? <span>{vehicleDisplay}</span> : null;
                 })()}
                 {course.course_number && (

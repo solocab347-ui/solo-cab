@@ -125,6 +125,7 @@ export function SharedCoursePartnerInfo({ courseId, userId }: Props) {
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Car className="h-3 w-3" />
                 <span>
+                  {/* Affichage: modèle en premier, couleur à la fin */}
                   {[partnerInfo.partner_vehicle_model, partnerInfo.partner_vehicle_color]
                     .filter(Boolean)
                     .join(' ')}
