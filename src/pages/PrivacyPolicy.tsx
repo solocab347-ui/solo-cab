@@ -178,8 +178,11 @@ const PrivacyPolicy = () => {
                 vos droits, vous pouvez nous contacter :
               </p>
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                <p><strong>SoloCab</strong></p>
-                <p>Email : contact@solocab.fr</p>
+                <p><strong>SOLOCAB</strong></p>
+                <p>Société par actions simplifiée à associé unique (SASU)</p>
+                <p>RCS Paris : 994 176 576</p>
+                <p>Siège social : 10 rue de Penthièvre, 75008 Paris</p>
+                <p className="pt-2">Email : contact@solocab.fr</p>
                 <p>Site web : https://solocab.fr</p>
               </div>
               <p className="text-sm text-muted-foreground">
