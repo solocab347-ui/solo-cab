@@ -389,13 +389,13 @@ const Chauffeurs = () => {
     <div className="min-h-screen bg-background">
       {/* Navigation for logged-in clients */}
       {user && userRole === 'client' && (
-        <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-500 sticky top-0 z-50">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 sticky top-0 z-50 border-b border-white/10">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/client-dashboard')}
-              className="text-white hover:bg-white/20 gap-2"
+              className="text-white/80 hover:text-white hover:bg-white/10 gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour
@@ -404,69 +404,87 @@ const Chauffeurs = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/client-dashboard')}
-              className="text-white hover:bg-white/20 gap-2"
+              className="text-white/80 hover:text-white hover:bg-white/10 gap-2"
             >
               <Home className="w-4 h-4" />
-              Mon tableau de bord
+              Mon espace
             </Button>
           </div>
         </div>
       )}
       
-      {/* Hero Section with Gradient */}
-      <div className="bg-gradient-to-r from-purple-600 via-violet-600 to-blue-500 text-white">
-        <div className="container mx-auto px-4 py-16 text-center">
-          <div className="flex justify-center mb-6">
-            <SocialLinks variant="compact" className="text-white" />
+      {/* Hero Section - Luxueux et Moderne */}
+      <div className="relative overflow-hidden">
+        {/* Background avec effet de profondeur */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
+        
+        {/* Grille décorative subtile */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:72px_72px]" />
+        
+        <div className="relative container mx-auto px-4 py-20 md:py-28">
+          <div className="flex justify-center mb-8">
+            <SocialLinks variant="compact" className="text-white/60" />
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            {t('chauffeurs.title')}
-          </h1>
-          <div className="flex items-center justify-center gap-6 flex-wrap">
-            <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 px-6 py-2 text-base">
-              <Car className="w-5 h-5 mr-2" />
-              {t('chauffeurs.premiumService')}
+          
+          <div className="text-center max-w-4xl mx-auto">
+            <Badge className="mb-6 bg-white/10 text-white/90 border-white/20 backdrop-blur-sm px-4 py-1.5">
+              <Car className="w-4 h-4 mr-2" />
+              Service VTC Premium
             </Badge>
-            <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0 px-6 py-2 text-base">
-              <MapPin className="w-5 h-5 mr-2" />
-              {t('chauffeurs.allFrance')}
-            </Badge>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
+              Trouvez votre{" "}
+              <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+                chauffeur privé
+              </span>
+            </h1>
+            
+            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10">
+              Des professionnels d'exception à votre service. 
+              Réservez votre trajet en toute simplicité.
+            </p>
+            
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-5 py-2.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-white/80 text-sm">Chauffeurs disponibles 24/7</span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-5 py-2.5">
+                <MapPin className="w-4 h-4 text-amber-400" />
+                <span className="text-white/80 text-sm">{t('chauffeurs.allFrance')}</span>
+              </div>
+            </div>
           </div>
         </div>
+        
+        {/* Dégradé de transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="container mx-auto px-4 -mt-8 pb-12">
-        {/* Important Alert */}
-        <Card className="mb-8 bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
-          <div className="p-6 flex items-start gap-4">
-            <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
-            <div>
-              <p className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                {t('chauffeurs.advanceBookingRequired')}
-              </p>
-              <p className="text-amber-800 dark:text-amber-200">
-                {t('chauffeurs.bookingSteps')}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Search Box */}
-        <Card className="mb-8 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
+      <div className="container mx-auto px-4 py-12">
+        {/* Search Box - Design épuré */}
+        <Card className="mb-10 shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-lg shadow-primary/25">
                 <Search className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
+              <div>
+                <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
+                <p className="text-sm text-muted-foreground">Recherchez par ville ou adresse</p>
+              </div>
             </div>
 
-            {/* Filtres de recherche - EN HAUT */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {/* Filtres de recherche */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               {/* Inclure les flottes */}
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 transition-colors hover:bg-muted/50">
                 <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-emerald-600" />
+                  </div>
                   <div>
                     <Label htmlFor="include-fleets-top" className="text-sm font-medium cursor-pointer">
                       Flottes VTC
@@ -483,29 +501,31 @@ const Chauffeurs = () => {
                 />
               </div>
               
-              {/* Chauffeurs indépendants (toujours actif) */}
-              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+              {/* Chauffeurs indépendants */}
+              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                 <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
                   <div>
                     <Label className="text-sm font-medium">
                       Chauffeurs indépendants
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Toujours inclus dans la recherche
+                      Toujours inclus
                     </p>
                   </div>
                 </div>
-                <Badge variant="default" className="bg-primary">Actif</Badge>
+                <Badge variant="default" className="bg-primary/90">Actif</Badge>
               </div>
             </div>
 
             {/* Search Mode Tabs */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-3 mb-8">
               <Button
                 variant={searchMode === "city" ? "default" : "outline"}
                 onClick={() => setSearchMode("city")}
-                className={searchMode === "city" ? "bg-gradient-to-r from-purple-600 to-blue-500" : ""}
+                className={searchMode === "city" ? "bg-gradient-to-r from-slate-800 to-slate-700 border-0 shadow-lg" : ""}
               >
                 <MapPin className="w-4 h-4 mr-2" />
                 {t('chauffeurs.byCity')}
@@ -513,7 +533,7 @@ const Chauffeurs = () => {
               <Button
                 variant={searchMode === "address" ? "default" : "outline"}
                 onClick={() => setSearchMode("address")}
-                className={searchMode === "address" ? "bg-gradient-to-r from-purple-600 to-blue-500" : ""}
+                className={searchMode === "address" ? "bg-gradient-to-r from-slate-800 to-slate-700 border-0 shadow-lg" : ""}
               >
                 <Navigation className="w-4 h-4 mr-2" />
                 {t('chauffeurs.byAddress')}
@@ -524,19 +544,15 @@ const Chauffeurs = () => {
             {searchMode === "city" && (
               <div className="space-y-6">
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <MapPin className="w-4 h-4 text-purple-600" />
+                  <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                    <MapPin className="w-4 h-4 text-primary" />
                     {t('chauffeurs.searchByCity')}
                   </label>
                   <CityAutocomplete
                     value={citySearch}
                     onChange={(city, coords) => {
-                      console.log("🔄 City onChange appelé:", { city, coords });
                       setCitySearch(city);
                       setCityCoordinates(coords || null);
-                      if (coords) {
-                        console.log("✅ Coordonnées ville définies:", coords);
-                      }
                     }}
                     placeholder={t('chauffeurs.typeAndSelectCity')}
                   />
@@ -550,109 +566,84 @@ const Chauffeurs = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">{t('chauffeurs.searchRadius')}</label>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
-                        <span className="text-3xl font-bold text-white">{radiusCity[0]}</span>
-                        <span className="text-sm text-white/90 font-medium">km</span>
-                      </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 rounded-full shadow-lg">
+                      <span className="text-2xl font-bold text-white">{radiusCity[0]}</span>
+                      <span className="text-sm text-white/80">km</span>
                     </div>
                   </div>
-                  <div className="relative pt-2 pb-4">
-                    <Slider
-                      value={radiusCity}
-                      onValueChange={setRadiusCity}
-                      min={5}
-                      max={50}
-                      step={5}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                      <span>5 km</span>
-                      <span>25 km</span>
-                      <span>50 km</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <MapPin className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <p>
-                      Recherche jusqu'à <span className="font-semibold text-purple-700 dark:text-purple-400">{radiusCity[0]} km</span> autour de la ville sélectionnée
-                    </p>
+                  <Slider
+                    value={radiusCity}
+                    onValueChange={setRadiusCity}
+                    min={5}
+                    max={50}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>5 km</span>
+                    <span>25 km</span>
+                    <span>50 km</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Address + Radius Search */}
+            {/* Address Search */}
             {searchMode === "address" && (
               <div className="space-y-6">
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Navigation className="w-4 h-4 text-purple-600" />
+                  <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                    <Navigation className="w-4 h-4 text-primary" />
                     Recherche par adresse
                   </label>
                   <AddressAutocomplete
                     value={addressSearch}
                     onChange={(address, coords) => {
-                      console.log("🔄 Address onChange appelé:", { address, coords });
                       setAddressSearch(address);
                       setAddressCoordinates(coords || null);
-                      if (coords) {
-                        console.log("✅ Coordonnées adresse définies:", coords);
-                      }
                     }}
-                    placeholder="Tapez et SÉLECTIONNEZ une adresse dans la liste"
+                    placeholder="Tapez et sélectionnez une adresse"
                   />
                   {addressSearch && !addressCoordinates && (
                     <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
-                      Sélectionnez une adresse dans la liste qui apparaît
+                      Sélectionnez une adresse dans la liste
                     </p>
                   )}
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">Rayon de recherche</label>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-lg">
-                        <span className="text-3xl font-bold text-white">{radiusAddress[0]}</span>
-                        <span className="text-sm text-white/90 font-medium">km</span>
-                      </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 rounded-full shadow-lg">
+                      <span className="text-2xl font-bold text-white">{radiusAddress[0]}</span>
+                      <span className="text-sm text-white/80">km</span>
                     </div>
                   </div>
-                  <div className="relative pt-2 pb-4">
-                    <Slider
-                      value={radiusAddress}
-                      onValueChange={setRadiusAddress}
-                      min={5}
-                      max={50}
-                      step={5}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between mt-3 text-xs text-muted-foreground">
-                      <span>5 km</span>
-                      <span>25 km</span>
-                      <span>50 km</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
-                    <Navigation className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                    <p>
-                      Recherche jusqu'à <span className="font-semibold text-purple-700 dark:text-purple-400">{radiusAddress[0]} km</span> autour de l'adresse saisie
-                    </p>
+                  <Slider
+                    value={radiusAddress}
+                    onValueChange={setRadiusAddress}
+                    min={5}
+                    max={50}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>5 km</span>
+                    <span>25 km</span>
+                    <span>50 km</span>
                   </div>
                 </div>
               </div>
             )}
 
-
             {/* Search Button */}
             <Button
               onClick={handleSearch}
               disabled={loading}
-              className="w-full mt-6 h-14 text-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+              className="w-full mt-8 h-14 text-lg font-semibold bg-gradient-to-r from-primary via-primary to-amber-500 hover:opacity-90 shadow-lg shadow-primary/25 transition-all"
             >
               <Search className="w-5 h-5 mr-2" />
-              {loading ? "Recherche en cours..." : "Rechercher"}
+              {loading ? "Recherche en cours..." : "Rechercher un chauffeur"}
             </Button>
           </div>
         </Card>
@@ -661,42 +652,46 @@ const Chauffeurs = () => {
         {searchPerformed && (
           <>
             {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <div className="text-center py-16">
+                <div className="inline-block w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="text-muted-foreground">Recherche des chauffeurs disponibles...</p>
               </div>
             ) : drivers.length === 0 ? (
-              <Card className="p-12 text-center">
-                <Car className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mb-2">Aucun chauffeur indépendant trouvé</h3>
-                <p className="text-muted-foreground mb-4">
-                  Essayez d'élargir votre zone de recherche ou de changer de ville
+              <Card className="p-16 text-center border-0 bg-muted/30">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                  <Car className="w-10 h-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Aucun chauffeur trouvé</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Essayez d'élargir votre zone de recherche ou de modifier vos critères
                 </p>
               </Card>
             ) : (
               <>
-                {/* Section chauffeurs indépendants */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold">
-                        Chauffeurs indépendants
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {drivers.length} résultat{drivers.length > 1 ? "s" : ""} - Priorité donnée aux chauffeurs indépendants
-                      </p>
+                {/* Section résultats */}
+                <div className="mb-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-lg">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold">
+                          Chauffeurs disponibles
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {drivers.length} professionnel{drivers.length > 1 ? "s" : ""} près de chez vous
+                        </p>
+                      </div>
                     </div>
                     {totalPages > 1 && (
-                      <Badge variant="outline" className="ml-auto">
+                      <Badge variant="outline" className="text-sm">
                         Page {currentPage}/{totalPages}
                       </Badge>
                     )}
                   </div>
                   
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {paginatedDrivers.map((driver, index) => (
                       <DriverCard
                         key={driver.id}
@@ -712,7 +707,7 @@ const Chauffeurs = () => {
                   </div>
                   
                   {totalPages > 1 && (
-                    <div className="mt-8">
+                    <div className="mt-10">
                       <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -726,54 +721,55 @@ const Chauffeurs = () => {
               </>
             )}
             
-            {/* Section flottes VTC après les résultats si activée */}
+            {/* Section flottes */}
             {includeFleets && (
-              <div className="mt-8 pt-8 border-t">
+              <div className="mt-12 pt-12 border-t border-border/50">
                 <FleetShowcaseSection />
               </div>
             )}
           </>
         )}
 
-        {/* Default View - Before Search */}
+        {/* Default View */}
         {!searchPerformed && (
           <>
-            {/* Section Flottes VTC */}
             <FleetShowcaseSection />
             
-            <div className="text-center py-16">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mx-auto mb-6">
-                <Search className="w-12 h-12 text-purple-600" />
+            <div className="text-center py-20">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-amber-500/10 flex items-center justify-center mx-auto mb-8">
+                <Search className="w-12 h-12 text-primary/60" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Recherchez un chauffeur indépendant</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Utilisez la recherche ci-dessus pour trouver des chauffeurs VTC indépendants près de chez vous.
-                Recherche par ville ou par adresse avec rayon personnalisable.
+              <h3 className="text-2xl font-bold mb-4">Trouvez votre chauffeur idéal</h3>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                Utilisez la recherche ci-dessus pour découvrir les chauffeurs VTC professionnels disponibles dans votre région.
               </p>
             </div>
           </>
         )}
       </div>
 
-      {/* Footer with Links */}
-      <div className="border-t border-border mt-12 py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center gap-4">
+      {/* Footer élégant */}
+      <footer className="border-t border-border/50 bg-muted/30">
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col items-center gap-6">
             <SocialLinks variant="compact" />
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-8 text-sm text-muted-foreground">
               <Link to="/login" className="hover:text-foreground transition-colors">
-                Connexion Chauffeur
+                Espace Chauffeur
               </Link>
-              <span>•</span>
-              <Link to="/login" className="hover:text-foreground transition-colors">
+              <span className="w-1 h-1 rounded-full bg-border" />
+              <Link to="/register-driver" className="hover:text-foreground transition-colors">
                 Devenir Chauffeur
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground/60">
+              © {new Date().getFullYear()} SoloCab - Service VTC Premium
+            </p>
           </div>
         </div>
-      </div>
+      </footer>
 
-      {/* Dialog pour afficher le profil du chauffeur */}
+      {/* Profile Dialog */}
       <DriverProfileDialog
         driverId={selectedDriverId}
         open={dialogOpen}
