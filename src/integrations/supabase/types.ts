@@ -6797,6 +6797,118 @@ export type Database = {
           },
         ]
       }
+      fleet_driver_document_validations: {
+        Row: {
+          created_at: string
+          document_name: string | null
+          document_type: string
+          document_url: string
+          driver_id: string
+          fleet_manager_id: string
+          id: string
+          notes: string | null
+          original_uploaded_at: string | null
+          status: string
+          updated_at: string
+          validated_at: string
+          validated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name?: string | null
+          document_type: string
+          document_url: string
+          driver_id: string
+          fleet_manager_id: string
+          id?: string
+          notes?: string | null
+          original_uploaded_at?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string
+          validated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string | null
+          document_type?: string
+          document_url?: string
+          driver_id?: string
+          fleet_manager_id?: string
+          id?: string
+          notes?: string | null
+          original_uploaded_at?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string
+          validated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_document_validations_fleet_manager_id_fkey"
+            columns: ["fleet_manager_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_managers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_driver_documents_archive: {
         Row: {
           archived_at: string | null
