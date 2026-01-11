@@ -48,7 +48,6 @@ interface Driver {
   id: string;
   user_id: string;
   company_name: string | null;
-  profile_photo_url: string | null;
   documents: Record<string, any> | null;
   documents_status: string;
   documents_submitted_at: string | null;
@@ -60,6 +59,7 @@ interface Driver {
     full_name: string;
     email: string;
     phone: string | null;
+    profile_photo_url: string | null;
   } | null;
 }
 
@@ -181,7 +181,7 @@ export const AdminDriverDocumentsManagement = () => {
           vehicle_brand,
           vehicle_model,
           created_at,
-          profiles:user_id(full_name, email, phone)
+          profiles:user_id(full_name, email, phone, profile_photo_url)
         `)
         .order("documents_submitted_at", { ascending: false, nullsFirst: false });
 
@@ -745,7 +745,7 @@ export const AdminDriverDocumentsManagement = () => {
                     onClick={() => toggleDriverExpand(driver.id)}
                   >
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={driver.profile_photo_url || undefined} />
+                      <AvatarImage src={driver.profiles?.profile_photo_url || undefined} />
                       <AvatarFallback>
                         {(driver.profiles?.full_name || driver.company_name || "?").charAt(0).toUpperCase()}
                       </AvatarFallback>
@@ -821,10 +821,10 @@ export const AdminDriverDocumentsManagement = () => {
                                   <div className="flex items-center gap-1">
                                     <span className="text-sm font-medium truncate">{config.label}</span>
                                     {config.canUpdateAfterValidation && (
-                                      <Unlock className="w-3 h-3 text-blue-500 flex-shrink-0" title="Peut être mis à jour" />
+                                      <span title="Peut être mis à jour"><Unlock className="w-3 h-3 text-blue-500 flex-shrink-0" /></span>
                                     )}
                                     {isLocked && !config.canUpdateAfterValidation && (
-                                      <Lock className="w-3 h-3 text-gray-500 flex-shrink-0" title="Verrouillé" />
+                                      <span title="Verrouillé"><Lock className="w-3 h-3 text-gray-500 flex-shrink-0" /></span>
                                     )}
                                   </div>
                                   <p className="text-xs text-muted-foreground">{config.description}</p>
