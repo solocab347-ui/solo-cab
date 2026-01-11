@@ -385,10 +385,10 @@ const Chauffeurs = () => {
   // La vitrine est maintenant ouverte au public
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Navigation for logged-in clients */}
       {user && userRole === 'client' && (
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 sticky top-0 z-50 border-b border-white/10">
+        <div className="bg-black/50 backdrop-blur-lg sticky top-0 z-50 border-b border-white/10">
           <div className="container mx-auto px-4 py-3 flex items-center justify-between">
             <Button 
               variant="ghost" 
@@ -412,15 +412,10 @@ const Chauffeurs = () => {
         </div>
       )}
       
-      {/* Hero Section - Luxueux et Moderne */}
-      <div className="relative overflow-hidden">
-        {/* Background avec effet de profondeur */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
-        
-        {/* Grille décorative subtile */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:72px_72px]" />
+      {/* Hero Section - Couleurs SoloCab */}
+      <div className="relative overflow-hidden bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
+        {/* Effet radial subtil */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.1),transparent_50%)]" />
         
         <div className="relative container mx-auto px-4 py-10 md:py-14">
           <div className="flex justify-center mb-8">
@@ -459,20 +454,20 @@ const Chauffeurs = () => {
         </div>
         
         {/* Dégradé de transition */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0f1e35] to-transparent" />
       </div>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 bg-gradient-to-b from-[#0f1e35] to-[#1a2942]">
         {/* Search Box - Design épuré */}
-        <Card className="mb-10 shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+        <Card className="mb-10 shadow-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
           <div className="p-6 md:p-8">
             <div className="flex items-center gap-4 mb-8">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center shadow-lg shadow-primary/25">
                 <Search className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">{t('chauffeurs.findYourDriver')}</h2>
-                <p className="text-sm text-muted-foreground">Recherchez par ville ou adresse</p>
+                <h2 className="text-2xl font-bold text-white">{t('chauffeurs.findYourDriver')}</h2>
+                <p className="text-sm text-gray-400">Recherchez par ville ou adresse</p>
               </div>
             </div>
 
@@ -683,11 +678,11 @@ const Chauffeurs = () => {
         {/* Default View */}
         {!searchPerformed && (
           <div className="text-center py-20">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-amber-500/10 flex items-center justify-center mx-auto mb-8">
-              <Search className="w-12 h-12 text-primary/60" />
+            <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-8">
+              <Search className="w-12 h-12 text-amber-400/60" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">Trouvez votre chauffeur idéal</h3>
-            <p className="text-muted-foreground max-w-lg mx-auto">
+            <h3 className="text-2xl font-bold mb-4 text-white">Trouvez votre chauffeur idéal</h3>
+            <p className="text-gray-400 max-w-lg mx-auto">
               Utilisez la recherche ci-dessus pour découvrir les chauffeurs VTC professionnels disponibles dans votre région.
             </p>
           </div>
@@ -695,20 +690,20 @@ const Chauffeurs = () => {
       </div>
 
       {/* Footer élégant */}
-      <footer className="border-t border-border/50 bg-muted/30">
+      <footer className="border-t border-white/10 bg-[#0a1628]">
         <div className="container mx-auto px-4 py-10">
           <div className="flex flex-col items-center gap-6">
             <SocialLinks variant="compact" />
-            <div className="flex items-center gap-8 text-sm text-muted-foreground">
-              <Link to="/login" className="hover:text-foreground transition-colors">
+            <div className="flex items-center gap-8 text-sm text-gray-400">
+              <Link to="/login" className="hover:text-white transition-colors">
                 Espace Chauffeur
               </Link>
-              <span className="w-1 h-1 rounded-full bg-border" />
-              <Link to="/register-driver" className="hover:text-foreground transition-colors">
+              <span className="w-1 h-1 rounded-full bg-white/20" />
+              <Link to="/register-driver" className="hover:text-white transition-colors">
                 Devenir Chauffeur
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-gray-500">
               © {new Date().getFullYear()} SoloCab - Service VTC Premium
             </p>
           </div>
