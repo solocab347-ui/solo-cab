@@ -266,8 +266,15 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   ];
 
   engagements.forEach((engagement, index) => {
-    // Check if we need a new page
-    if (yPosition > pageHeight - 45) {
+    // Calculer la hauteur nécessaire pour cet engagement
+    const tempSplitText = doc.splitTextToSize(engagement.text, contentWidth - 14);
+    const engagementHeight = 8 + tempSplitText.length * 4.5 + 8;
+    
+    // Check if we need a new page (avec marge pour l'attestation si c'est le dernier)
+    const isLast = index === engagements.length - 1;
+    const neededSpace = isLast ? engagementHeight + 70 : engagementHeight;
+    
+    if (yPosition + neededSpace > pageHeight - 15) {
       doc.addPage();
       
       // Header band on new page
@@ -304,11 +311,15 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
     const splitText = doc.splitTextToSize(engagement.text, contentWidth - 14);
     doc.text(splitText, margin + 14, yPosition);
     
-    yPosition += splitText.length * 4.5 + 10;
+    yPosition += splitText.length * 4.5 + 8;
   });
 
   // ========== FINAL SECTION - ATTESTATION ==========
-  if (yPosition > pageHeight - 70) {
+  // Ajouter un peu d'espace avant l'attestation
+  yPosition += 5;
+  
+  // Vérifier si on a besoin d'une nouvelle page pour l'attestation
+  if (yPosition + 60 > pageHeight - 15) {
     doc.addPage();
     
     doc.setFillColor(...primaryBlue);
@@ -320,9 +331,7 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
     yPosition = 25;
   }
 
-  // Attestation box
-  yPosition = Math.max(yPosition, pageHeight - 65);
-  
+  // Attestation box - positionnée juste après le dernier engagement
   doc.setFillColor(248, 250, 255);
   doc.roundedRect(margin, yPosition, contentWidth, 50, 4, 4, "F");
   doc.setDrawColor(...primaryBlue);
