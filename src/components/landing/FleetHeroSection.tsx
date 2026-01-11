@@ -76,7 +76,7 @@ export const FleetHeroSection = () => {
 
   const benefits = [
     "Gérez tous vos chauffeurs",
-    "Page publique de votre flotte",
+    "Profil partageable (QR code/lien)",
     "Contrats entreprises",
     "Dispatch automatique",
   ];

@@ -566,7 +566,8 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
   const handleAcceptCourse = async (courseId: string) => {
     try {
-      // Optimistic update - keep course in place
+      // Optimistic update - passer à "accepted" 
+      // Dans notre workflow : client accepte devis → chauffeur accepte course = "accepted"
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "accepted" as const } : c
       ));
@@ -574,7 +575,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       // Récupérer les infos du client pour la notification
       const course = courses.find(c => c.id === courseId);
 
-      // Chauffeur accepte une course créée par le client
+      // Chauffeur accepte la course = elle devient ACCEPTED
       const { error } = await supabase
         .from("courses")
         .update({ status: "accepted" })
@@ -588,13 +589,13 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
       // Notifier l'entreprise si la course est liée à une entreprise
       await notifyCompanyForCourse(courseId, 'accepted');
 
-      toast.success("Course acceptée et confirmée !");
+      toast.success("Course confirmée !");
       
-      // Ne PAS recharger pour garder la course à sa place
-      // await fetchCourses();
+      // Forcer un refresh pour mettre à jour l'UI correctement
+      await fetchCourses();
     } catch (error: any) {
       console.error("Error accepting course:", error);
-      toast.error("Erreur lors de l'acceptation de la course");
+      toast.error("Erreur lors de la confirmation de la course");
       // Revert on error
       await fetchCourses();
     }

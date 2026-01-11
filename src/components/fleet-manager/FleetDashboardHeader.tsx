@@ -152,7 +152,7 @@ export const FleetDashboardHeader = ({
           <div className="mt-4 flex items-center gap-2 text-sm">
             <div className="flex items-center gap-2 bg-success/10 text-success px-3 py-1.5 rounded-full border border-success/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Vitrine publique activée</span>
+              <span>Profil public activé</span>
             </div>
           </div>
         )}

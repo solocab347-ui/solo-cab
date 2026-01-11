@@ -494,7 +494,7 @@ export const FleetSettingsHub = ({ fleetManagerId, companyName, onUpdate }: Flee
                 <Globe className="w-5 h-5" />
                 Profil public
               </CardTitle>
-              <CardDescription>Ce qui apparaît sur votre vitrine</CardDescription>
+              <CardDescription>Ce qui apparaît sur votre profil partageable</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <VisibilityToggle
