@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,8 @@ import {
   ChevronUp,
   ExternalLink,
   User,
-  Copy
+  Copy,
+  ArrowLeft
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -147,6 +149,7 @@ const DOCUMENT_CONFIG: Record<string, {
 
 export const AdminDriverDocumentsManagement = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -674,6 +677,17 @@ export const AdminDriverDocumentsManagement = () => {
       </Dialog>
 
       <div className="space-y-6">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin-dashboard")}
+          className="mb-2"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Retour
+        </Button>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className={`cursor-pointer transition-all ${statusFilter === "all" ? "ring-2 ring-primary" : "hover:border-primary/50"}`} onClick={() => setStatusFilter("all")}>
