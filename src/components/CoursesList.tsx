@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useTransition } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { subscriptionManager } from "@/lib/subscriptionManager";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake, Building2, Truck, User, Phone } from "lucide-react";
+import { MapPin, Calendar, Users, CheckCircle, XCircle, Clock, FileText, Play, StopCircle, Download, Share2, MessageCircle, Mail, Filter, X, AlertTriangle, Navigation, Handshake, Building2, Truck, User, Phone, Loader2 } from "lucide-react";
 import { CourseNavigationButtons } from "@/components/course/CourseNavigationButtons";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -47,6 +47,9 @@ interface CoursesListProps {
 }
 
 const isDriver = true; // Assuming this is driver dashboard
+
+// État de chargement pour les boutons d'action
+type ActionState = 'idle' | 'loading';
 
 const CoursesList = ({ driverId }: CoursesListProps) => {
   const { user } = useAuth();
@@ -120,6 +123,27 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
   
   // SYSTÈME DE FIGEMENT: Capture l'ordre initial des courses pour maintenir leur position
   const [confirmedCoursesOrder, setConfirmedCoursesOrder] = useState<Map<string, number>>(new Map());
+  
+  // OPTIMISATION RÉACTIVITÉ: État de chargement par course pour feedback visuel immédiat
+  const [actionInProgress, setActionInProgress] = useState<Map<string, ActionState>>(new Map());
+  const [isPending, startTransition] = useTransition();
+  
+  // Helpers pour gérer l'état de chargement par course
+  const setActionLoading = useCallback((courseId: string, loading: boolean) => {
+    setActionInProgress(prev => {
+      const next = new Map(prev);
+      if (loading) {
+        next.set(courseId, 'loading');
+      } else {
+        next.delete(courseId);
+      }
+      return next;
+    });
+  }, []);
+  
+  const isActionLoading = useCallback((courseId: string) => {
+    return actionInProgress.get(courseId) === 'loading';
+  }, [actionInProgress]);
 
   useEffect(() => {
     fetchCourses();
@@ -593,18 +617,17 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
     }
   };
 
-  const handleAcceptCourse = async (courseId: string) => {
+  const handleAcceptCourse = useCallback(async (courseId: string) => {
+    if (isActionLoading(courseId)) return;
+    setActionLoading(courseId, true);
+    
     try {
-      // Optimistic update - passer à "accepted" 
-      // Dans notre workflow : client accepte devis → chauffeur accepte course = "accepted"
+      // Mise à jour optimiste IMMÉDIATE - feedback visuel instantané
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "accepted" as const } : c
       ));
 
-      // Récupérer les infos du client pour la notification
-      const course = courses.find(c => c.id === courseId);
-
-      // Chauffeur accepte la course = elle devient ACCEPTED
+      // Exécution en background sans bloquer l'UI
       const { error } = await supabase
         .from("courses")
         .update({ status: "accepted" })
@@ -612,34 +635,34 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
-      // Ne pas dupliquer les notifications ici
-
-      // Notifier l'entreprise si la course est liée à une entreprise
-      await notifyCompanyForCourse(courseId, 'accepted');
+      // Notifier l'entreprise en background (ne bloque pas)
+      notifyCompanyForCourse(courseId, 'accepted').catch(console.error);
 
       toast.success("Course confirmée !");
       
-      // Forcer un refresh pour mettre à jour l'UI correctement
-      await fetchCourses();
+      // Refresh en background avec transition pour éviter le freeze
+      startTransition(() => {
+        fetchCourses();
+      });
     } catch (error: any) {
       console.error("Error accepting course:", error);
       toast.error("Erreur lors de la confirmation de la course");
-      // Revert on error
-      await fetchCourses();
+      // Revert en cas d'erreur
+      fetchCourses();
+    } finally {
+      setActionLoading(courseId, false);
     }
-  };
+  }, [isActionLoading, setActionLoading, notifyCompanyForCourse]);
 
-  const handleStartCourse = async (courseId: string) => {
+  const handleStartCourse = useCallback(async (courseId: string) => {
+    if (isActionLoading(courseId)) return;
+    setActionLoading(courseId, true);
+    
     try {
-      // SÉCURITÉ: Mise à jour optimiste SANS re-fetch pour maintenir la position
-      // La course reste exactement à sa position même si son statut change
+      // Mise à jour optimiste IMMÉDIATE
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "in_progress" as const } : c
       ));
-
-      // Récupérer les infos du client pour la notification
-      const course = courses.find(c => c.id === courseId);
 
       const { error } = await supabase
         .from("courses")
@@ -648,18 +671,18 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
 
       if (error) throw error;
 
-      // Note: Les notifications sont gérées par les triggers de base de données (unified_notify_course_status_change)
-
-      toast.success("Course commencée !");
+      toast.success("Course démarrée !");
     } catch (error: any) {
       console.error("Error starting course:", error);
       toast.error("Erreur lors du démarrage de la course");
-      // En cas d'erreur, revenir au statut précédent SANS changer la position
+      // Revert sans re-fetch pour garder la position
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, status: "accepted" as const } : c
       ));
+    } finally {
+      setActionLoading(courseId, false);
     }
-  };
+  }, [isActionLoading, setActionLoading]);
 
   const handleEndCourse = (courseId: string) => {
     setSelectedCourseId(courseId);
@@ -2868,9 +2891,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           variant="default"
                           size="sm"
                           onClick={() => handleStartCourse(course.id)}
+                          disabled={isActionLoading(course.id)}
                           className="flex-1"
                         >
-                          <Play className="w-4 h-4 mr-2" />
+                          {isActionLoading(course.id) ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Play className="w-4 h-4 mr-2" />
+                          )}
                           Commencer
                         </Button>
                       )}
@@ -2879,9 +2907,14 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                           variant="default"
                           size="sm"
                           onClick={() => handleEndCourse(course.id)}
+                          disabled={isActionLoading(course.id)}
                           className="flex-1"
                         >
-                          <StopCircle className="w-4 h-4 mr-2" />
+                          {isActionLoading(course.id) ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <StopCircle className="w-4 h-4 mr-2" />
+                          )}
                           Terminer
                         </Button>
                       )}
@@ -2889,6 +2922,7 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleCancelCourse(course.id)}
+                        disabled={isActionLoading(course.id)}
                         className="flex-1"
                       >
                         <XCircle className="w-4 h-4 mr-2" />
