@@ -39,6 +39,7 @@ import {
   Zap,
   Trophy,
 } from 'lucide-react';
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { getServiceLabel, getServiceIcon } from '@/lib/serviceLabels';
 import { getDriverGlobalStats, DriverGlobalStats } from '@/hooks/useDriverGlobalStats';
 
@@ -279,9 +280,7 @@ export function PartnerProfileDialog({
                   <div className="flex flex-wrap gap-2 mt-4">
                     {/* Badge Pionnier en premier */}
                     {profile.is_pioneer && (
-                      <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0">
-                        🏆 Pionnier SoloCab
-                      </Badge>
+                      <PioneerBadge size="sm" />
                     )}
                     {profile.sharing_number && (
                       <Badge variant="outline" className="font-mono bg-background/50">

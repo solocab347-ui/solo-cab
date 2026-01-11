@@ -30,6 +30,7 @@ import {
   Plus,
   MessageSquare,
 } from "lucide-react";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -501,9 +502,7 @@ const DriverCard = ({ driver, displayName, navigate, onRemove, onBlock, isExclus
                 {displayName}
               </h3>
               {(driver as any).is_pioneer && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
-                  🏆 Pionnier
-                </Badge>
+                <PioneerBadge size="xs" />
               )}
             </div>
             {driver.vehicle_brand && driver.vehicle_model && (

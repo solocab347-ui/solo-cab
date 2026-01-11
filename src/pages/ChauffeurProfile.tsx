@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { VEHICLE_EQUIPMENT, DRIVER_SERVICES } from "@/lib/vehicleEquipment";
 import { getDriverGlobalStats } from "@/hooks/useDriverGlobalStats";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 
 interface DriverProfile {
   id: string;
@@ -295,8 +296,8 @@ const ChauffeurProfile = () => {
                   )}
                 </div>
                 {(driver as any).is_pioneer && (
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 rounded-full shadow-lg">
-                    <span className="text-sm font-bold text-white">🏆 Pionnier SoloCab</span>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                    <PioneerBadge size="md" className="shadow-md" />
                   </div>
                 )}
                 {!((driver as any).is_pioneer) && driver.total_rides > 0 && (

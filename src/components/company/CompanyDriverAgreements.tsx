@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CompanyDriverSearch } from "./CompanyDriverSearch";
 import { CompanyFleetPartnerships } from "./CompanyFleetPartnerships";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { PartnershipPaymentManager } from "@/components/shared/PartnershipPaymentManager";
 import { PartnershipTerminationManager } from "@/components/shared/PartnershipTerminationManager";
 import { PartnershipRejectDialog } from "@/components/shared/PartnershipRejectDialog";
@@ -154,9 +155,7 @@ function ActiveAgreementCard({
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold">{agreement.driverProfile?.full_name || "Chauffeur"}</h4>
                 {agreement.driver?.is_pioneer && (
-                  <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
-                    🏆 Pionnier
-                  </Badge>
+                  <PioneerBadge size="xs" />
                 )}
               </div>
               <p className="text-sm text-muted-foreground">

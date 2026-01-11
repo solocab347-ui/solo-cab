@@ -159,20 +159,16 @@ export function ClientHomeView({
         </Card>
       </div>
 
-      {/* Quick Actions - Grid adapté selon type de client */}
+      {/* Quick Actions - Full width grid */}
       <div className="space-y-2">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
           Accès rapide
         </h3>
-        <div className={cn(
-          "grid gap-2",
-          isExclusive ? "grid-cols-4" : "flex overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide"
-        )}>
+        <div className="grid grid-cols-4 gap-2">
           <QuickActionButton
             icon={MessageSquare}
             label="Messages"
             variant="primary"
-            fullWidth={isExclusive}
             onClick={() => onNavigate("messages")}
           />
           <QuickActionButton
@@ -180,34 +176,20 @@ export function ClientHomeView({
             label="Factures"
             badge={stats.unpaidInvoices > 0 ? stats.unpaidInvoices : undefined}
             variant="success"
-            fullWidth={isExclusive}
             onClick={() => onNavigate("devis-factures", "factures")}
           />
           <QuickActionButton
             icon={MapPin}
             label="Historique"
             variant="muted"
-            fullWidth={isExclusive}
             onClick={() => onNavigate("courses", "completed")}
           />
-          {/* Accès adapté au type de client */}
-          {isExclusive ? (
-            <QuickActionButton
-              icon={Users}
-              label="Chauffeurs"
-              variant="accent"
-              fullWidth={true}
-              onClick={() => onNavigate("chauffeurs")}
-            />
-          ) : (
-            <QuickActionButton
-              icon={Globe}
-              label="Vitrine"
-              variant="accent"
-              fullWidth={false}
-              onClick={() => navigate("/chauffeurs")}
-            />
-          )}
+          <QuickActionButton
+            icon={Globe}
+            label="Vitrine"
+            variant="accent"
+            onClick={() => navigate("/chauffeurs")}
+          />
         </div>
       </div>
 
@@ -337,7 +319,6 @@ interface QuickActionButtonProps {
   label: string;
   variant: "primary" | "success" | "muted" | "accent";
   badge?: number;
-  fullWidth?: boolean;
   onClick: () => void;
 }
 
@@ -364,16 +345,15 @@ const variantStyles = {
   },
 };
 
-function QuickActionButton({ icon: Icon, label, variant, badge, fullWidth, onClick }: QuickActionButtonProps) {
+function QuickActionButton({ icon: Icon, label, variant, badge, onClick }: QuickActionButtonProps) {
   const styles = variantStyles[variant];
   
   return (
     <button
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200",
+        "relative flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl transition-all duration-200 w-full",
         "active:scale-95",
-        fullWidth ? "w-full" : "min-w-[80px] flex-shrink-0",
         styles.bg,
         styles.hover
       )}

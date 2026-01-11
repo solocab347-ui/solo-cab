@@ -38,6 +38,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -156,9 +157,7 @@ function SortableDriverCard({
         </div>
       ) : driver.is_pioneer && (
         <div className="absolute top-3 left-3 z-10">
-          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white gap-1 text-[10px] shadow-lg px-2">
-            🏆 Pionnier
-          </Badge>
+          <PioneerBadge size="xs" />
         </div>
       )}
 

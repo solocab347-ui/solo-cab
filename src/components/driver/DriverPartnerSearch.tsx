@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PartnershipSignatureConfirmation } from '@/components/shared/PartnershipSignatureConfirmation';
+import { PioneerBadge } from "@/components/ui/PioneerBadge";
 import { 
   Search, 
   UserPlus, 
@@ -506,9 +507,7 @@ Cordialement.`;
                             : driver.full_name}
                         </span>
                         {(driver as any).is_pioneer && (
-                          <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0 text-[10px] px-1.5 py-0">
-                            🏆 Pionnier
-                          </Badge>
+                          <PioneerBadge size="xs" />
                         )}
                         <Badge variant="outline" className="font-mono text-[10px]">
                           {driver.formatted_sharing_number}
