@@ -53,7 +53,7 @@ const drawFlyer = (
   logoBase64: string,
   qrCodeBase64: string
 ) => {
-  const margin = 6;
+  const margin = 5;
   const innerWidth = width - margin * 2;
   const innerX = x + margin;
   const innerY = y + margin;
@@ -68,47 +68,47 @@ const drawFlyer = (
 
   // ========== HEADER SECTION ==========
   doc.setFillColor(...revolutBlue);
-  doc.rect(x, y, width, 38, "F");
+  doc.rect(x, y, width, 32, "F");
 
   // SoloCab logo top left
   try {
-    doc.addImage(logoBase64, "PNG", innerX + 2, innerY + 2, 20, 10);
+    doc.addImage(logoBase64, "PNG", innerX + 2, innerY + 1, 18, 9);
   } catch (e) {
     console.log("Logo not loaded");
   }
 
   // Gold decorative line
   doc.setDrawColor(...accentGold);
-  doc.setLineWidth(1.5);
-  doc.line(x, y + 38, x + width, y + 38);
+  doc.setLineWidth(1);
+  doc.line(x, y + 32, x + width, y + 32);
 
   // Header text
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(...accentGold);
-  doc.text("RECOMMANDATION SOLOCAB", innerX + innerWidth / 2, innerY + 6, { align: "center" });
+  doc.text("RECOMMANDATION SOLOCAB", innerX + innerWidth / 2, innerY + 5, { align: "center" });
 
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setTextColor(...white);
-  doc.text("COMPTE PRO REVOLUT", innerX + innerWidth / 2, innerY + 18, { align: "center" });
+  doc.text("COMPTE PRO REVOLUT", innerX + innerWidth / 2, innerY + 14, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.text("Outils bancaires modernes pour chauffeurs VTC", innerX + innerWidth / 2, innerY + 26, { align: "center" });
+  doc.setFontSize(7);
+  doc.text("Outils bancaires modernes pour chauffeurs VTC", innerX + innerWidth / 2, innerY + 21, { align: "center" });
 
-  doc.setFontSize(6);
+  doc.setFontSize(5);
   doc.setTextColor(...accentGold);
-  doc.text("Lien d'affiliation - Soutenez SoloCab", innerX + innerWidth / 2, innerY + 32, { align: "center" });
+  doc.text("Lien d'affiliation - Soutenez SoloCab", innerX + innerWidth / 2, innerY + 26, { align: "center" });
 
   // ========== MAIN CONTENT ==========
-  let yPos = y + 44;
+  let yPos = y + 37;
 
   // Subtitle
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...revolutBlue);
   doc.text("Pourquoi choisir Revolut Business ?", innerX + innerWidth / 2, yPos, { align: "center" });
-  yPos += 8;
+  yPos += 6;
 
   // Benefits list with proper icons (no emojis)
   const benefits = [
@@ -116,7 +116,7 @@ const drawFlyer = (
     { icon: "+", text: "Envoyez des liens de paiement par SMS" },
     { icon: "+", text: "Comptabilite simplifiee integree" },
     { icon: "+", text: "Cartes virtuelles et physiques gratuites" },
-    { icon: "+", text: "Paiements internationaux sans frais caches" },
+    { icon: "+", text: "Paiements internationaux sans frais" },
     { icon: "+", text: "Application mobile intuitive" },
   ];
 
@@ -124,71 +124,70 @@ const drawFlyer = (
     // Alternating background
     if (index % 2 === 0) {
       doc.setFillColor(...lightBg);
-      doc.roundedRect(innerX, yPos - 1, innerWidth, 8, 1, 1, "F");
+      doc.roundedRect(innerX, yPos - 1, innerWidth, 7, 1, 1, "F");
     }
 
     // Icon circle
     doc.setFillColor(...revolutLight);
-    doc.circle(innerX + 5, yPos + 2.5, 2.5, "F");
+    doc.circle(innerX + 4, yPos + 2, 2, "F");
     
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setTextColor(...white);
-    doc.text(benefit.icon, innerX + 5, yPos + 4, { align: "center" });
+    doc.text(benefit.icon, innerX + 4, yPos + 3.2, { align: "center" });
 
     // Text
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(6);
     doc.setTextColor(...darkText);
-    doc.text(benefit.text, innerX + 12, yPos + 4);
+    doc.text(benefit.text, innerX + 10, yPos + 3);
 
-    yPos += 9;
+    yPos += 7.5;
   });
 
   // ========== HIGHLIGHT BOX ==========
-  yPos += 2;
+  yPos += 1;
   doc.setFillColor(...revolutLight);
-  doc.roundedRect(innerX, yPos, innerWidth, 16, 2, 2, "F");
+  doc.roundedRect(innerX, yPos, innerWidth, 12, 2, 2, "F");
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(...white);
-  doc.text("LIENS DE PAIEMENT", innerX + innerWidth / 2, yPos + 6, { align: "center" });
+  doc.text("LIENS DE PAIEMENT", innerX + innerWidth / 2, yPos + 5, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text("Demandez le paiement directement a vos clients", innerX + innerWidth / 2, yPos + 11, { align: "center" });
-  doc.text("par SMS ou email - Simple et rapide !", innerX + innerWidth / 2, yPos + 14.5, { align: "center" });
+  doc.setFontSize(5.5);
+  doc.text("Demandez le paiement a vos clients par SMS/email", innerX + innerWidth / 2, yPos + 9.5, { align: "center" });
 
   // ========== QR CODE SECTION ==========
-  yPos = y + height - 48;
+  yPos = y + height - 40;
   doc.setFillColor(...revolutBlue);
-  doc.rect(x, yPos, width, 48, "F");
+  doc.rect(x, yPos, width, 40, "F");
 
   // QR Code
-  const qrSize = 28;
+  const qrSize = 24;
   const qrX = innerX + (innerWidth - qrSize) / 2;
   try {
-    doc.addImage(qrCodeBase64, "PNG", qrX, yPos + 4, qrSize, qrSize);
+    doc.addImage(qrCodeBase64, "PNG", qrX, yPos + 3, qrSize, qrSize);
   } catch (e) {
     console.log("QR code not loaded");
   }
 
   // Text below QR
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
+  doc.setFontSize(6);
   doc.setTextColor(...accentGold);
-  doc.text("SCANNEZ POUR VOUS INSCRIRE", innerX + innerWidth / 2, yPos + 35, { align: "center" });
+  doc.text("SCANNEZ POUR VOUS INSCRIRE", innerX + innerWidth / 2, yPos + 29, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5);
   doc.setTextColor(...white);
-  doc.text("business.revolut.com", innerX + innerWidth / 2, yPos + 39.5, { align: "center" });
+  doc.text("business.revolut.com", innerX + innerWidth / 2, yPos + 33, { align: "center" });
 
   // Affiliate notice
-  doc.setFontSize(5);
+  doc.setFontSize(4.5);
   doc.setTextColor(...accentGold);
-  doc.text("Lien d'affiliation SoloCab - Votre inscription nous soutient !", innerX + innerWidth / 2, yPos + 44, { align: "center" });
+  doc.text("Lien d'affiliation SoloCab - Votre inscription nous soutient !", innerX + innerWidth / 2, yPos + 37, { align: "center" });
 
   // Border around the flyer
   doc.setDrawColor(180, 180, 180);
