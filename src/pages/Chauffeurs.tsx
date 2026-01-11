@@ -3,12 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { DriverCard } from "@/components/DriverCard";
-import { Car, Search, MapPin, AlertTriangle, Navigation, Lock, Building2, Users, ArrowLeft, Home } from "lucide-react";
+import { Car, Search, MapPin, AlertTriangle, Navigation, Lock, Users, ArrowLeft, Home } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePaginatedData } from "@/hooks/usePaginatedQuery";
@@ -18,7 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
 import { DriverProfileDialog } from "@/components/DriverProfileDialog";
 import SocialLinks from "@/components/SocialLinks";
-import FleetShowcaseSection from "@/components/public/FleetShowcaseSection";
+
 
 interface PublicDriver {
   id: string;
@@ -126,7 +125,7 @@ const Chauffeurs = () => {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [includeFleets, setIncludeFleets] = useState(false); // Flottes exclues par défaut
+  
   const [registeredDriverIds, setRegisteredDriverIds] = useState<string[]>([]); // IDs des chauffeurs associés
   const navigate = useNavigate();
 
@@ -423,7 +422,7 @@ const Chauffeurs = () => {
         {/* Grille décorative subtile */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:72px_72px]" />
         
-        <div className="relative container mx-auto px-4 py-20 md:py-28">
+        <div className="relative container mx-auto px-4 py-10 md:py-14">
           <div className="flex justify-center mb-8">
             <SocialLinks variant="compact" className="text-white/60" />
           </div>
@@ -477,48 +476,6 @@ const Chauffeurs = () => {
               </div>
             </div>
 
-            {/* Filtres de recherche */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-              {/* Inclure les flottes */}
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 transition-colors hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <Label htmlFor="include-fleets-top" className="text-sm font-medium cursor-pointer">
-                      Flottes VTC
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Inclure les gestionnaires de flotte
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="include-fleets-top"
-                  checked={includeFleets}
-                  onCheckedChange={setIncludeFleets}
-                />
-              </div>
-              
-              {/* Chauffeurs indépendants */}
-              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">
-                      Chauffeurs indépendants
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Toujours inclus
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="default" className="bg-primary/90">Actif</Badge>
-              </div>
-            </div>
 
             {/* Search Mode Tabs */}
             <div className="flex gap-3 mb-8">
@@ -720,31 +677,20 @@ const Chauffeurs = () => {
                 </div>
               </>
             )}
-            
-            {/* Section flottes */}
-            {includeFleets && (
-              <div className="mt-12 pt-12 border-t border-border/50">
-                <FleetShowcaseSection />
-              </div>
-            )}
           </>
         )}
 
         {/* Default View */}
         {!searchPerformed && (
-          <>
-            <FleetShowcaseSection />
-            
-            <div className="text-center py-20">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-amber-500/10 flex items-center justify-center mx-auto mb-8">
-                <Search className="w-12 h-12 text-primary/60" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Trouvez votre chauffeur idéal</h3>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                Utilisez la recherche ci-dessus pour découvrir les chauffeurs VTC professionnels disponibles dans votre région.
-              </p>
+          <div className="text-center py-20">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-amber-500/10 flex items-center justify-center mx-auto mb-8">
+              <Search className="w-12 h-12 text-primary/60" />
             </div>
-          </>
+            <h3 className="text-2xl font-bold mb-4">Trouvez votre chauffeur idéal</h3>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Utilisez la recherche ci-dessus pour découvrir les chauffeurs VTC professionnels disponibles dans votre région.
+            </p>
+          </div>
         )}
       </div>
 
