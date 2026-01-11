@@ -586,6 +586,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_first_orders_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "client_first_orders_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -1373,6 +1380,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_course_requests_final_course_id_fkey"
+            columns: ["final_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "company_course_requests_fleet_agreement_id_fkey"
             columns: ["fleet_agreement_id"]
             isOneToOne: false
@@ -1510,6 +1524,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "company_courses_employee_id_fkey"
@@ -1903,6 +1924,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_employee_course_invitations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "company_employee_course_invitations_request_id_fkey"
@@ -2872,6 +2900,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_driver_exclusions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "course_driver_exclusions_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -2999,6 +3034,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_escalations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "course_escalations_driver_id_fkey"
@@ -3143,6 +3185,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_invitations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "course_invitations_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -3285,11 +3334,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "course_queue_conflicting_course_id_fkey"
+            columns: ["conflicting_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "course_queue_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_queue_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "fk_driver"
@@ -3684,6 +3747,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "devis_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "devis_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -3801,6 +3871,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
         ]
       }
@@ -4449,6 +4526,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "driver_schedules_blocked_by_course_id_fkey"
+            columns: ["blocked_by_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "driver_schedules_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -4798,6 +4882,7 @@ export type Database = {
           max_passengers: number
           minimum_price: number | null
           nfc_tag_number: string | null
+          partner_course_counter: number | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null
@@ -4905,6 +4990,7 @@ export type Database = {
           max_passengers?: number
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
@@ -5012,6 +5098,7 @@ export type Database = {
           max_passengers?: number
           minimum_price?: number | null
           nfc_tag_number?: string | null
+          partner_course_counter?: number | null
           partner_invoice_counter?: number | null
           partner_order_counter?: number | null
           partnerships_suspended?: boolean | null
@@ -5403,6 +5490,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "expense_reports_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "expense_reports_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
@@ -5521,6 +5615,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "factures_devis_id_fkey"
@@ -5745,6 +5846,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_course_escalations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "fleet_course_escalations_driver_id_fkey"
@@ -6011,6 +6119,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_dispatch_queue_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "fleet_dispatch_queue_course_request_id_fkey"
@@ -6316,6 +6431,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_driver_declined_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "fleet_driver_declined_courses_declined_by_driver_id_fkey"
@@ -7360,6 +7482,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_manager_course_requests_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "fleet_manager_course_requests_fleet_manager_id_fkey"
             columns: ["fleet_manager_id"]
             isOneToOne: false
@@ -7937,6 +8066,7 @@ export type Database = {
           driver_commission_paid_at: string | null
           driver_commission_paid_to_fleet: boolean | null
           driver_commission_to_fleet: number | null
+          driver_course_number: string | null
           driver_id: string
           driver_notified_at: string | null
           earnings_for_driver: number | null
@@ -7951,6 +8081,7 @@ export type Database = {
           fleet_to_driver_payment_sent: boolean | null
           fleet_to_driver_payment_sent_at: string | null
           id: string
+          partner_reference_number: string | null
           partnership_id: string
           payment_declared_at: string | null
           payment_declared_by_driver: boolean | null
@@ -7987,6 +8118,7 @@ export type Database = {
           driver_commission_paid_at?: string | null
           driver_commission_paid_to_fleet?: boolean | null
           driver_commission_to_fleet?: number | null
+          driver_course_number?: string | null
           driver_id: string
           driver_notified_at?: string | null
           earnings_for_driver?: number | null
@@ -8001,6 +8133,7 @@ export type Database = {
           fleet_to_driver_payment_sent?: boolean | null
           fleet_to_driver_payment_sent_at?: string | null
           id?: string
+          partner_reference_number?: string | null
           partnership_id: string
           payment_declared_at?: string | null
           payment_declared_by_driver?: boolean | null
@@ -8037,6 +8170,7 @@ export type Database = {
           driver_commission_paid_at?: string | null
           driver_commission_paid_to_fleet?: boolean | null
           driver_commission_to_fleet?: number | null
+          driver_course_number?: string | null
           driver_id?: string
           driver_notified_at?: string | null
           earnings_for_driver?: number | null
@@ -8051,6 +8185,7 @@ export type Database = {
           fleet_to_driver_payment_sent?: boolean | null
           fleet_to_driver_payment_sent_at?: string | null
           id?: string
+          partner_reference_number?: string | null
           partnership_id?: string
           payment_declared_at?: string | null
           payment_declared_by_driver?: boolean | null
@@ -8094,6 +8229,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_partner_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "fleet_partner_courses_driver_id_fkey"
@@ -8475,6 +8617,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_registration_tokens_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "guest_registration_tokens_driver_id_fkey"
@@ -8877,6 +9026,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_course_pool_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
             columns: ["sender_driver_id"]
             isOneToOne: false
@@ -9116,6 +9272,13 @@ export type Database = {
             foreignKeyName: "partner_invoices_shared_course_id_fkey"
             columns: ["shared_course_id"]
             isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["shared_course_id"]
+          },
+          {
+            foreignKeyName: "partner_invoices_shared_course_id_fkey"
+            columns: ["shared_course_id"]
+            isOneToOne: false
             referencedRelation: "shared_courses"
             referencedColumns: ["id"]
           },
@@ -9206,6 +9369,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_order_documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "partner_order_documents_payment_confirmed_by_fkey"
             columns: ["payment_confirmed_by"]
             isOneToOne: false
@@ -9372,6 +9542,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_order_documents_shared_course_id_fkey"
+            columns: ["shared_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["shared_course_id"]
           },
           {
             foreignKeyName: "partner_order_documents_shared_course_id_fkey"
@@ -9618,6 +9795,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partnership_course_commissions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "partnership_course_commissions_partnership_id_fkey"
             columns: ["partnership_id"]
             isOneToOne: false
@@ -9862,6 +10046,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_confirmation_reminders_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "payment_confirmation_reminders_employee_id_fkey"
@@ -10219,11 +10410,13 @@ export type Database = {
           declined_at: string | null
           earnings_for_receiver: number | null
           id: string
+          partner_reference_number: string | null
           partnership_id: string
           payment_method_used: string | null
           payment_settled: boolean | null
           payment_settled_at: string | null
           pool_group_id: string | null
+          receiver_course_number: string | null
           receiver_driver_id: string
           receiver_notified_at: string | null
           sender_driver_id: string
@@ -10252,11 +10445,13 @@ export type Database = {
           declined_at?: string | null
           earnings_for_receiver?: number | null
           id?: string
+          partner_reference_number?: string | null
           partnership_id: string
           payment_method_used?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           pool_group_id?: string | null
+          receiver_course_number?: string | null
           receiver_driver_id: string
           receiver_notified_at?: string | null
           sender_driver_id: string
@@ -10285,11 +10480,13 @@ export type Database = {
           declined_at?: string | null
           earnings_for_receiver?: number | null
           id?: string
+          partner_reference_number?: string | null
           partnership_id?: string
           payment_method_used?: string | null
           payment_settled?: boolean | null
           payment_settled_at?: string | null
           pool_group_id?: string | null
+          receiver_course_number?: string | null
           receiver_driver_id?: string
           receiver_notified_at?: string | null
           sender_driver_id?: string
@@ -10306,6 +10503,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "shared_courses_partnership_id_fkey"
@@ -10506,6 +10710,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unassigned_fleet_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "unassigned_fleet_courses_fleet_manager_id_fkey"
@@ -10722,6 +10933,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "partner_course_pool_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "partner_course_pool_sender_driver_id_fkey"
             columns: ["sender_driver_id"]
             isOneToOne: false
@@ -10899,6 +11117,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "company_course_requests_final_course_id_fkey"
+            columns: ["final_course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "company_course_requests_fleet_agreement_id_fkey"
             columns: ["fleet_agreement_id"]
             isOneToOne: false
@@ -10980,6 +11205,141 @@ export type Database = {
           total_factures: number | null
         }
         Relationships: []
+      }
+      driver_partner_courses_view: {
+        Row: {
+          commission_amount: number | null
+          course_amount: number | null
+          course_id: string | null
+          course_status: Database["public"]["Enums"]["course_status"] | null
+          destination_address: string | null
+          distance_km: number | null
+          earnings_for_receiver: number | null
+          my_reference: string | null
+          original_reference: string | null
+          pickup_address: string | null
+          receiver_driver_id: string | null
+          scheduled_date: string | null
+          sender_company: string | null
+          sender_driver_id: string | null
+          sender_name: string | null
+          shared_course_id: string | null
+          shared_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_receiver_driver_id_fkey"
+            columns: ["receiver_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_courses_sender_driver_id_fkey"
+            columns: ["sender_driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_partnership_balances: {
         Row: {
@@ -12068,6 +12428,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fleet_partner_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "driver_partner_courses_view"
+            referencedColumns: ["course_id"]
+          },
+          {
             foreignKeyName: "fleet_partner_courses_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -12723,6 +13090,10 @@ export type Database = {
       format_sharing_number: { Args: { _number: number }; Returns: string }
       generate_course_number: { Args: { _driver_id: string }; Returns: string }
       generate_invoice_number: { Args: { _driver_id: string }; Returns: string }
+      generate_partner_reference_number: {
+        Args: { _driver_id: string }
+        Returns: string
+      }
       generate_periodic_payment_summaries: { Args: never; Returns: undefined }
       generate_quote_number: { Args: { _driver_id: string }; Returns: string }
       generate_reservation_number: {
@@ -12926,6 +13297,7 @@ export type Database = {
           max_passengers: number
           minimum_price: number | null
           nfc_tag_number: string | null
+          partner_course_counter: number | null
           partner_invoice_counter: number | null
           partner_order_counter: number | null
           partnerships_suspended: boolean | null

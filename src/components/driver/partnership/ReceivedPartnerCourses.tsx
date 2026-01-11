@@ -53,6 +53,8 @@ interface ReceivedCourse {
   course_status: string;
   course_number: string | null;
   shared_status: string;
+  // Partner reference number (PART-XXX) - receiver's own reference
+  partner_reference_number: string | null;
   // Sender info
   sender_name: string;
   sender_photo: string | null;
@@ -91,6 +93,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
           status,
           created_at,
           completed_at,
+          partner_reference_number,
           courses!inner(
             pickup_address,
             destination_address,
@@ -146,6 +149,7 @@ export function ReceivedPartnerCourses({ driverId }: Props) {
             course_status: course.status,
             course_number: course.course_number,
             shared_status: item.status,
+            partner_reference_number: (item as any).partner_reference_number,
             sender_name: profile?.full_name || 'Partenaire',
             sender_photo: senderPhoto,
             sender_company: driverData.company_name,
@@ -397,9 +401,17 @@ function CourseCard({
           </div>
           <div className="text-right">
             {getStatusBadge(course.shared_status === 'in_progress' ? 'in_progress' : course.course_status)}
-            {course.course_number && (
+            {/* Display partner reference number (PART-XXX) as primary, original course_number as secondary */}
+            {course.partner_reference_number ? (
+              <div className="mt-1">
+                <p className="text-xs font-mono font-semibold text-primary">#{course.partner_reference_number}</p>
+                {course.course_number && (
+                  <p className="text-[10px] text-muted-foreground font-mono">Orig: {course.course_number}</p>
+                )}
+              </div>
+            ) : course.course_number ? (
               <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course_number}</p>
-            )}
+            ) : null}
           </div>
         </div>
 

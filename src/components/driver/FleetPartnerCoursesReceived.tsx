@@ -26,6 +26,7 @@ interface FleetPartnerCourse {
   status: string;
   sharing_mode: string;
   created_at: string;
+  partner_reference_number: string | null;
   course: {
     id: string;
     pickup_address: string;
@@ -34,6 +35,7 @@ interface FleetPartnerCourse {
     passengers_count: number;
     notes: string | null;
     status: string;
+    course_number: string | null;
   };
   fleet_manager: {
     id: string;
@@ -83,6 +85,7 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
         .from('fleet_partner_courses')
         .select(`
           *,
+          partner_reference_number,
           course:courses(
             id,
             pickup_address,
@@ -90,7 +93,8 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
             scheduled_date,
             passengers_count,
             notes,
-            status
+            status,
+            course_number
           ),
           fleet_manager:fleet_managers(
             id,
@@ -276,7 +280,20 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
                       </p>
                     </div>
                   </div>
-                  {getStatusBadge(course.status)}
+                  <div className="text-right">
+                    {getStatusBadge(course.status)}
+                    {/* Display partner reference number if available */}
+                    {course.partner_reference_number ? (
+                      <div className="mt-1">
+                        <p className="text-xs font-mono font-semibold text-primary">#{course.partner_reference_number}</p>
+                        {course.course?.course_number && (
+                          <p className="text-[10px] text-muted-foreground font-mono">Orig: {course.course.course_number}</p>
+                        )}
+                      </div>
+                    ) : course.course?.course_number ? (
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course.course_number}</p>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Course details */}
@@ -381,7 +398,15 @@ export function FleetPartnerCoursesReceived({ driverId }: FleetPartnerCoursesRec
                       </p>
                     </div>
                   </div>
-                  {getStatusBadge(course.status)}
+                  <div className="text-right">
+                    {getStatusBadge(course.status)}
+                    {/* Display partner reference number if available */}
+                    {course.partner_reference_number ? (
+                      <p className="text-xs font-mono font-semibold text-primary mt-1">#{course.partner_reference_number}</p>
+                    ) : course.course?.course_number ? (
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">#{course.course.course_number}</p>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
