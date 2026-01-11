@@ -78,26 +78,25 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.setTextColor(...primaryBlue);
   doc.text("SASU SOLOCAB", pageWidth / 2, 118, { align: "center" });
 
-  // Legal info box
+  // Legal info box - plus compact
   doc.setFillColor(...lightGray);
-  doc.roundedRect(margin + 15, 128, contentWidth - 30, 25, 3, 3, "F");
+  doc.roundedRect(margin + 15, 128, contentWidth - 30, 20, 3, 3, "F");
   doc.setDrawColor(...primaryBlue);
   doc.setLineWidth(0.3);
-  doc.roundedRect(margin + 15, 128, contentWidth - 30, 25, 3, 3, "S");
+  doc.roundedRect(margin + 15, 128, contentWidth - 30, 20, 3, 3, "S");
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...grayColor);
-  doc.text("Société par Actions Simplifiée au capital de 200 EUR", pageWidth / 2, 137, { align: "center" });
-  doc.text("RCS Paris : 994 176 576 | SIRET : 994 176 576 00014", pageWidth / 2, 144, { align: "center" });
-  doc.text("Siège social : 10 rue de Penthièvre, 75008 Paris", pageWidth / 2, 151, { align: "center" });
+  doc.text("RCS Paris : 994 176 576 | SIRET : 994 176 576 00014", pageWidth / 2, 138, { align: "center" });
+  doc.text("Siège social : 10 rue de Penthièvre, 75008 Paris", pageWidth / 2, 145, { align: "center" });
 
-  // Vision statement
+  // Vision statement - repositionné
   doc.setFont("helvetica", "italic");
   doc.setFontSize(13);
   doc.setTextColor(...darkColor);
   const vision = "« Pour un monde VTC plus humain et solidaire »";
-  doc.text(vision, pageWidth / 2, 170, { align: "center" });
+  doc.text(vision, pageWidth / 2, 162, { align: "center" });
 
   // Decorative corner elements
   const cornerSize = 15;
@@ -120,9 +119,9 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.line(pageWidth - margin, pageHeight - margin - 20, pageWidth - margin, pageHeight - margin - 20 - cornerSize);
   doc.line(pageWidth - margin, pageHeight - margin - 20, pageWidth - margin - cornerSize, pageHeight - margin - 20);
 
-  // Official stamp area
+  // Official stamp area - repositionné plus haut
   const stampX = pageWidth / 2;
-  const stampY = 210;
+  const stampY = 195;
   
   // Outer stamp circle
   doc.setDrawColor(...primaryBlue);
@@ -151,11 +150,11 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.setFontSize(14);
   doc.text("✓", stampX, stampY + 4, { align: "center" });
 
-  // Signature area
+  // Signature area - repositionnée
   doc.setFont("helvetica", "italic");
   doc.setFontSize(10);
   doc.setTextColor(...darkColor);
-  doc.text("Le Président,", pageWidth / 2, 250, { align: "center" });
+  doc.text("Le Président,", pageWidth / 2, 235, { align: "center" });
 
   // Signature line simulation
   doc.setDrawColor(...darkColor);
@@ -163,7 +162,7 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   
   // Stylized signature "A. Kanouté"
   const sigX = pageWidth / 2 - 15;
-  const sigY = 262;
+  const sigY = 247;
   
   // "A" stylized
   doc.setDrawColor(40, 40, 60);
@@ -182,12 +181,12 @@ export const generateValuesCharter = async (t: (key: string) => string) => {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...darkColor);
-  doc.text("Abdallah KANOUTÉ", pageWidth / 2, 272, { align: "center" });
+  doc.text("Abdallah KANOUTÉ", pageWidth / 2, 257, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...grayColor);
-  doc.text("Président de SASU SoloCab", pageWidth / 2, 278, { align: "center" });
+  doc.text("Président de SASU SoloCab", pageWidth / 2, 263, { align: "center" });
 
   // Footer
   doc.setDrawColor(...primaryBlue);
