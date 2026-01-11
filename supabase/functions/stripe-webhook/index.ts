@@ -131,23 +131,36 @@ serve(async (req) => {
       const metadata = subscription.metadata || {};
       const driverId = metadata.driver_id;
       const fleetManagerId = metadata.fleet_manager_id;
+      const wasPioneer = metadata.is_pioneer === "true";
 
       // Driver subscription cancelled
       if (driverId && metadata.type !== "fleet_manager_subscription") {
+        // IMPORTANT: If the driver was a Pioneer and cancels, they lose the Pioneer status permanently
+        const updateData: Record<string, unknown> = {
+          subscription_status: "canceled",
+          subscription_stripe_id: null,
+          subscription_end_date: null,
+          subscription_paid: false,
+          // Record cancellation date for grace period logic
+          subscription_canceled_at: new Date().toISOString(),
+        };
+
+        // If Pioneer cancels after trial/subscription ends, they lose Pioneer status
+        if (wasPioneer) {
+          updateData.pioneer_status_lost = true;
+          updateData.pioneer_status_lost_at = new Date().toISOString();
+          logStep("Pioneer driver cancelled - will lose Pioneer status if not resubscribed", { driverId });
+        }
+
         const { error } = await supabaseClient
           .from("drivers")
-          .update({
-            subscription_status: "canceled",
-            subscription_stripe_id: null,
-            subscription_end_date: null,
-            subscription_paid: false,
-          })
+          .update(updateData)
           .eq("id", driverId);
 
         if (error) {
           logStep("ERROR cancelling driver subscription", { error: error.message });
         } else {
-          logStep("Driver subscription cancelled", { driverId });
+          logStep("Driver subscription cancelled", { driverId, wasPioneer });
         }
       }
       
@@ -161,6 +174,7 @@ serve(async (req) => {
             subscription_stripe_id: null,
             subscription_end_date: null,
             subscription_paid: false,
+            subscription_canceled_at: new Date().toISOString(),
           })
           .eq("id", fmId);
 
