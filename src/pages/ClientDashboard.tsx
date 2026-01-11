@@ -247,10 +247,10 @@ const ClientDashboard = () => {
   const menuItems = [
     { id: "accueil", label: "Accueil", icon: Home },
     { id: "courses", label: "Mes courses", icon: Clock },
+    { id: "chauffeurs", label: clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "devis-factures", label: "Devis & Factures", icon: FileText },
     { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
-    { id: "chauffeurs", label: clientProfile?.client?.is_exclusive ? "Mon chauffeur" : "Mes chauffeurs", icon: Users },
     { id: "compte", label: "Mon compte", icon: User },
   ];
 
