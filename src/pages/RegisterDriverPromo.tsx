@@ -522,6 +522,16 @@ const RegisterDriverPromo = () => {
               </p>
             </div>
 
+            {/* Information empreinte bancaire */}
+            <Alert className="mb-6 bg-blue-500/10 border-blue-500/30">
+              <Shield className="w-5 h-5 text-blue-500" />
+              <AlertDescription className="text-sm">
+                <strong>Aucun prélèvement immédiat :</strong> Il s'agit d'une simple empreinte bancaire de <strong>0€</strong> pour 
+                enregistrer vos coordonnées de paiement. Vous ne serez prélevé qu'après vos 30 jours d'essai gratuit, 
+                et uniquement si vous décidez de rester abonné.
+              </AlertDescription>
+            </Alert>
+
             <Button
               onClick={handleStep2Payment}
               disabled={loading}
