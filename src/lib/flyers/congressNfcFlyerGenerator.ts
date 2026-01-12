@@ -96,14 +96,17 @@ async function drawFullPageFlyer(
   doc.setFontSize(16);
   doc.text('2026', pageWidth - margin - 26, 33, { align: 'center' });
   
-  // ========== BANDEAU GRATUIT - VIOLET (Indépendance) ==========
+  // ========== BANDEAU GRATUIT - VERT ==========
   let currentY = 62;
   
-  doc.setFillColor(...violet);
+  const green: [number, number, number] = [34, 197, 94];
+  const lightGreen: [number, number, number] = [74, 222, 128];
+  
+  doc.setFillColor(...green);
   doc.roundedRect(margin, currentY, pageWidth - margin * 2, 32, 5, 5, 'F');
   
   // Effet lumineux
-  doc.setFillColor(159, 112, 255);
+  doc.setFillColor(...lightGreen);
   doc.roundedRect(margin, currentY, pageWidth - margin * 2, 10, 5, 0, 'F');
   doc.rect(margin, currentY + 5, pageWidth - margin * 2, 5, 'F');
   
