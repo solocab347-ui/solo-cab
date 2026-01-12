@@ -366,6 +366,23 @@ const FleetPublicProfile = () => {
 
       if (courseError) throw courseError;
 
+      // Générer automatiquement le devis (sera auto-accepté car guest booking)
+      if (driverIdToUse && course.id) {
+        console.log('🔄 Génération automatique du devis pour guest booking flotte...');
+        const { error: devisError } = await supabase.functions.invoke('create-devis-auto', {
+          body: {
+            course_id: course.id,
+            driver_id: driverIdToUse
+          }
+        });
+
+        if (devisError) {
+          console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
+        } else {
+          console.log('✅ Devis généré et auto-accepté avec succès');
+        }
+      }
+
       // En mode manuel (pas de dispatch auto), ajouter à la file d'attente pour le gestionnaire
       if (!isAutoAssigned && !fleetManager?.auto_dispatch_enabled) {
         await supabase

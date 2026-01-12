@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
-      .select('*, clients(user_id, id), promo_code, discount_amount')
+      .select('*, clients(user_id, id), promo_code, discount_amount, is_guest_booking, guest_estimated_price')
       .eq('id', course_id)
       .single();
 
@@ -69,6 +69,15 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Course introuvable', details: courseError?.message }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // LOGIQUE MÉTIER: Pour les guest bookings, le client a déjà vu et accepté le prix
+    // en soumettant sa demande, donc le devis sera automatiquement accepté
+    const isGuestBooking = course.is_guest_booking === true;
+    const autoAcceptDevis = isGuestBooking;
+    
+    if (isGuestBooking) {
+      console.log('👤 Guest booking détecté - le devis sera auto-accepté');
     }
 
     // Vérifier si c'est une course d'entreprise (company_courses)
@@ -107,7 +116,8 @@ Deno.serve(async (req) => {
       distance_km: course.distance_km,
       duration_minutes: course.duration_minutes,
       pickup_address: course.pickup_address,
-      destination_address: course.destination_address
+      destination_address: course.destination_address,
+      is_guest_booking: isGuestBooking
     });
 
     // Déterminer quel type de tarification appliquer (ville ou classique)
@@ -287,6 +297,10 @@ Deno.serve(async (req) => {
 
         console.log(`📋 Numéro de réservation généré: ${reservationNumber}`);
 
+        // Déterminer le statut du devis: auto-accepté pour les guests, pending sinon
+        const devisStatus = autoAcceptDevis ? 'accepted' : 'pending';
+        console.log(`📋 Statut du devis: ${devisStatus} (autoAccept: ${autoAcceptDevis})`);
+
         // Try to create devis with unified reservation number and promo
         const { data: createdDevis, error: devisError } = await supabaseClient
           .from('devis')
@@ -307,7 +321,7 @@ Deno.serve(async (req) => {
             weekend_surcharge_amount: pricing.surcharge_weekend || 0,
             peak_hours_surcharge_amount: pricing.peak_adjustment || 0, // Majoration heures de pointe
             valid_until: validUntil.toISOString(),
-            status: 'pending',
+            status: devisStatus, // 'accepted' pour guest, 'pending' sinon
           })
           .select()
           .single();

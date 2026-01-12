@@ -233,10 +233,26 @@ const GuestBooking = () => {
           guest_phone: guestPhone.trim(),
           guest_estimated_price: estimatedPrice
         })
-        .select('guest_tracking_token')
+        .select('id, guest_tracking_token')
         .single();
 
       if (error) throw error;
+
+      // Générer automatiquement le devis (sera auto-accepté car guest booking)
+      console.log('🔄 Génération automatique du devis pour guest booking...');
+      const { error: devisError } = await supabase.functions.invoke('create-devis-auto', {
+        body: {
+          course_id: data.id,
+          driver_id: driver.id
+        }
+      });
+
+      if (devisError) {
+        console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
+        // Ne pas bloquer la navigation, le chauffeur pourra générer manuellement si besoin
+      } else {
+        console.log('✅ Devis généré et auto-accepté avec succès');
+      }
 
       toast.success("Demande de réservation envoyée !");
       
