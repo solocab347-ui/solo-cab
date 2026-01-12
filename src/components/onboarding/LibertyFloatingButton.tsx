@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, HelpCircle, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sparkles, HelpCircle, X, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LibertyFloatingButtonProps {
@@ -10,18 +9,94 @@ interface LibertyFloatingButtonProps {
   className?: string;
 }
 
+// Check if guide has incomplete steps
+const checkIncompleteSteps = (): boolean => {
+  const saved = localStorage.getItem("liberty-guide-progress");
+  if (!saved) return true; // No progress = incomplete
+  
+  const { completed } = JSON.parse(saved);
+  if (!completed || completed.length === 0) return true;
+  
+  // Total steps in the guide (17 steps across all sections)
+  const TOTAL_STEPS = 17;
+  return completed.length < TOTAL_STEPS;
+};
+
 export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className }: LibertyFloatingButtonProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
+  
+  // Check if the guide was dismissed and if there are incomplete steps
+  useEffect(() => {
+    const dismissedAt = localStorage.getItem("liberty-guide-dismissed-at");
+    const hasIncomplete = checkIncompleteSteps();
+    
+    if (dismissedAt && hasIncomplete) {
+      const dismissedTime = new Date(dismissedAt).getTime();
+      const now = Date.now();
+      const hoursSinceDismiss = (now - dismissedTime) / (1000 * 60 * 60);
+      
+      // Show reminder after 1 hour if there are incomplete steps
+      if (hoursSinceDismiss >= 1) {
+        setShowReminder(true);
+        setIsMinimized(false);
+      } else {
+        setIsMinimized(true);
+      }
+    } else if (!hasIncomplete) {
+      // Guide completed, stay minimized
+      setIsMinimized(true);
+    }
+  }, []);
 
-  if (isDismissed) return null;
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    localStorage.setItem("liberty-guide-dismissed-at", new Date().toISOString());
+    setIsMinimized(true);
+    setShowReminder(false);
+  };
+
+  const handleExpand = () => {
+    setIsMinimized(false);
+    setShowReminder(false);
+  };
+
+  // Minimized state - small icon that can be expanded
+  if (isMinimized) {
+    return (
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className={cn("fixed bottom-24 right-4 z-40", className)}
+      >
+        <motion.button
+          onClick={handleExpand}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-lg"
+        >
+          <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+            <ChevronUp className="w-5 h-5 text-amber-400" />
+          </div>
+        </motion.button>
+        {showReminder && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse"
+          />
+        )}
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      className={cn("fixed bottom-6 right-6 z-40", className)}
+      className={cn("fixed bottom-24 right-4 z-40", className)}
     >
       <AnimatePresence>
         {isHovered && (
@@ -63,7 +138,7 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
         </div>
 
         {/* Notification badge */}
-        {hasUnreadTips && (
+        {(hasUnreadTips || showReminder) && (
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -81,12 +156,9 @@ export const LibertyFloatingButton = ({ onClick, hasUnreadTips = true, className
         />
       </motion.button>
 
-      {/* Dismiss button */}
+      {/* Dismiss button - visible on hover */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsDismissed(true);
-        }}
+        onClick={handleDismiss}
         className="absolute -top-2 -left-2 w-6 h-6 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center border border-slate-600 transition-colors opacity-0 group-hover:opacity-100"
       >
         <X className="w-3 h-3 text-white" />
