@@ -9242,6 +9242,8 @@ export type Database = {
           is_read: boolean
           link: string | null
           message: string
+          push_sent: boolean | null
+          push_sent_at: string | null
           title: string
           type: string
           updated_at: string
@@ -9254,6 +9256,8 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message: string
+          push_sent?: boolean | null
+          push_sent_at?: string | null
           title: string
           type?: string
           updated_at?: string
@@ -9266,6 +9270,8 @@ export type Database = {
           is_read?: boolean
           link?: string | null
           message?: string
+          push_sent?: boolean | null
+          push_sent_at?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -13640,6 +13646,28 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      create_notification_with_push: {
+        Args: {
+          p_category?: string
+          p_link?: string
+          p_message: string
+          p_title: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      create_notifications_batch: {
+        Args: {
+          p_category?: string
+          p_link?: string
+          p_message: string
+          p_title: string
+          p_type?: string
+          p_user_ids: string[]
+        }
+        Returns: string[]
       }
       create_security_alert: {
         Args: {

@@ -14,7 +14,24 @@ export type NotificationType =
   | 'info'
   | 'success'
   | 'warning'
-  | 'error';
+  | 'error'
+  | 'admin'
+  | 'company';
+
+export type NotificationCategory = 
+  | 'course_request'
+  | 'course_accepted'
+  | 'course_completed'
+  | 'course_cancelled'
+  | 'devis'
+  | 'facture'
+  | 'partnership'
+  | 'company_partnership'
+  | 'fleet_course'
+  | 'payment'
+  | 'registration'
+  | 'documents'
+  | 'subscription';
 
 interface NotificationPayload {
   userId: string;
@@ -22,18 +39,30 @@ interface NotificationPayload {
   message: string;
   type: NotificationType;
   link?: string;
+  category?: NotificationCategory;
+  sendPush?: boolean; // Envoyer aussi en push (app fermée)
 }
 
 /**
  * Service centralisé pour créer des notifications
  * Les notifications sont automatiquement poussées via realtime aux utilisateurs connectés
+ * ET via push notifications si sendPush=true (ou par défaut pour les types importants)
  */
 export const notificationService = {
   /**
    * Crée une notification pour un utilisateur
+   * Envoie automatiquement une push notification pour les types importants
    */
   async create(payload: NotificationPayload): Promise<boolean> {
     try {
+      // Types qui déclenchent automatiquement une push notification
+      const pushTypes: NotificationType[] = [
+        'course', 'devis', 'facture', 'payment', 'partnership', 'fleet', 'warning', 'error'
+      ];
+      
+      const shouldSendPush = payload.sendPush ?? pushTypes.includes(payload.type);
+      
+      // Insérer la notification en base (le trigger enverra le push automatiquement)
       const { error } = await supabase
         .from('notifications')
         .insert({
@@ -42,6 +71,7 @@ export const notificationService = {
           message: payload.message,
           type: payload.type,
           link: payload.link || '/notifications',
+          category: payload.category,
           is_read: false
         });
 
@@ -50,10 +80,58 @@ export const notificationService = {
         return false;
       }
 
-      logger.info('Notification créée:', { userId: payload.userId, title: payload.title });
+      // Si push supplémentaire requis, appeler l'edge function
+      if (shouldSendPush) {
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              user_id: payload.userId,
+              title: payload.title,
+              message: payload.message,
+              link: payload.link || '/notifications',
+              tag: payload.type
+            }
+          });
+        } catch (pushError) {
+          // Ne pas bloquer si le push échoue
+          logger.warn('Push notification failed (non-blocking):', pushError);
+        }
+      }
+
+      logger.info('Notification créée:', { userId: payload.userId, title: payload.title, push: shouldSendPush });
       return true;
     } catch (error) {
       logger.error('Erreur service notification:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Crée plusieurs notifications en batch
+   */
+  async createBatch(userIds: string[], title: string, message: string, type: NotificationType, link?: string, category?: NotificationCategory): Promise<boolean> {
+    try {
+      const notifications = userIds.map(userId => ({
+        user_id: userId,
+        title,
+        message,
+        type,
+        link: link || '/notifications',
+        category,
+        is_read: false
+      }));
+
+      const { error } = await supabase.from('notifications').insert(notifications);
+      
+      if (error) {
+        logger.error('Erreur création batch notifications:', error);
+        return false;
+      }
+
+      logger.info('Batch notifications créées:', { count: userIds.length, title });
+      return true;
+    } catch (error) {
+      logger.error('Erreur batch notification:', error);
       return false;
     }
   },
@@ -713,6 +791,290 @@ export const notificationService = {
       message: `${driverName} propose ${newCommission} de commission`,
       type: 'partnership',
       link: '/fleet-dashboard?tab=partnerships'
+    });
+  },
+
+  // ========================================
+  // NOTIFICATIONS GESTIONNAIRES DE FLOTTE
+  // ========================================
+
+  async notifyFleetNewCourseRequest(fleetManagerUserId: string, companyName: string, courseDate: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🏢 Nouvelle demande entreprise',
+      message: `${companyName} demande une course le ${courseDate}`,
+      type: 'course',
+      link: '/fleet-dashboard?tab=requests',
+      category: 'fleet_course'
+    });
+  },
+
+  async notifyFleetCourseAcceptedByDriver(fleetManagerUserId: string, driverName: string, courseDate: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '✅ Course acceptée',
+      message: `${driverName} a accepté la course du ${courseDate}`,
+      type: 'success',
+      link: '/fleet-dashboard?tab=courses',
+      category: 'fleet_course'
+    });
+  },
+
+  async notifyFleetCourseDeclinedByDriver(fleetManagerUserId: string, driverName: string, courseDate: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '❌ Course refusée',
+      message: `${driverName} a refusé la course du ${courseDate}`,
+      type: 'warning',
+      link: '/fleet-dashboard?tab=courses',
+      category: 'fleet_course'
+    });
+  },
+
+  async notifyFleetCourseCompleted(fleetManagerUserId: string, driverName: string, clientName: string, amount: number) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🏁 Course terminée',
+      message: `${driverName} a terminé la course de ${clientName} (${amount.toFixed(2)}€)`,
+      type: 'success',
+      link: '/fleet-dashboard?tab=courses',
+      category: 'fleet_course'
+    });
+  },
+
+  async notifyFleetDriverDocumentUploaded(fleetManagerUserId: string, driverName: string, documentType: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '📄 Document chauffeur uploadé',
+      message: `${driverName} a téléchargé: ${documentType}`,
+      type: 'info',
+      link: '/fleet-dashboard?tab=drivers',
+      category: 'documents'
+    });
+  },
+
+  async notifyFleetNewDriverJoined(fleetManagerUserId: string, driverName: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🚗 Nouveau chauffeur',
+      message: `${driverName} a rejoint votre flotte`,
+      type: 'success',
+      link: '/fleet-dashboard?tab=drivers',
+      category: 'registration'
+    });
+  },
+
+  async notifyFleetDriverLeft(fleetManagerUserId: string, driverName: string, reason?: string) {
+    return this.create({
+      userId: fleetManagerUserId,
+      title: '🚪 Chauffeur a quitté la flotte',
+      message: reason ? `${driverName} a quitté: ${reason}` : `${driverName} a quitté la flotte`,
+      type: 'warning',
+      link: '/fleet-dashboard?tab=drivers'
+    });
+  },
+
+  // ========================================
+  // NOTIFICATIONS ADMIN
+  // ========================================
+
+  async notifyAdminNewDriver(adminUserId: string, driverName: string) {
+    return this.create({
+      userId: adminUserId,
+      title: '🚗 Nouvelle inscription chauffeur',
+      message: `${driverName} vient de s'inscrire`,
+      type: 'admin',
+      link: '/admin-dashboard?section=users&tab=drivers',
+      category: 'registration'
+    });
+  },
+
+  async notifyAdminNewFleetManager(adminUserId: string, managerName: string) {
+    return this.create({
+      userId: adminUserId,
+      title: '🚐 Nouveau gestionnaire de flotte',
+      message: `${managerName} vient de s'inscrire`,
+      type: 'admin',
+      link: '/admin-dashboard?section=users&tab=fleet',
+      category: 'registration'
+    });
+  },
+
+  async notifyAdminNewCompany(adminUserId: string, companyName: string) {
+    return this.create({
+      userId: adminUserId,
+      title: '🏢 Nouvelle entreprise',
+      message: `${companyName} vient de s'inscrire`,
+      type: 'admin',
+      link: '/admin-dashboard?section=users&tab=companies',
+      category: 'registration'
+    });
+  },
+
+  async notifyAdminDocumentsSubmitted(adminUserId: string, driverName: string, userType: 'driver' | 'fleet') {
+    return this.create({
+      userId: adminUserId,
+      title: '📄 Documents à valider',
+      message: `${driverName} a soumis ses documents`,
+      type: 'admin',
+      link: userType === 'driver' 
+        ? '/admin-dashboard?section=users&tab=drivers' 
+        : '/admin-dashboard?section=users&tab=fleet',
+      category: 'documents'
+    });
+  },
+
+  async notifyAdminSubscriptionCancelled(adminUserId: string, userName: string, userType: string) {
+    return this.create({
+      userId: adminUserId,
+      title: '❌ Abonnement annulé',
+      message: `${userName} (${userType}) a annulé son abonnement`,
+      type: 'warning',
+      link: '/admin-dashboard?section=subscriptions',
+      category: 'subscription'
+    });
+  },
+
+  async notifyAdminAssistantRequest(adminUserId: string, driverName: string, question: string) {
+    return this.create({
+      userId: adminUserId,
+      title: '❓ Question chauffeur',
+      message: `${driverName}: ${question.substring(0, 50)}...`,
+      type: 'admin',
+      link: '/admin-dashboard?section=support'
+    });
+  },
+
+  // ========================================
+  // NOTIFICATIONS CLIENTS
+  // ========================================
+
+  async notifyClientCourseConfirmed(clientUserId: string, driverName: string, courseDate: string) {
+    return this.create({
+      userId: clientUserId,
+      title: '✅ Réservation confirmée',
+      message: `${driverName} a confirmé votre course du ${courseDate}`,
+      type: 'success',
+      link: '/client-dashboard',
+      category: 'course_accepted'
+    });
+  },
+
+  async notifyClientDriverEnRoute(clientUserId: string, driverName: string, eta?: string) {
+    return this.create({
+      userId: clientUserId,
+      title: '🚗 Chauffeur en route',
+      message: eta ? `${driverName} arrive dans ${eta}` : `${driverName} est en route vers vous`,
+      type: 'info',
+      link: '/client-dashboard'
+    });
+  },
+
+  async notifyClientDriverArrived(clientUserId: string, driverName: string) {
+    return this.create({
+      userId: clientUserId,
+      title: '📍 Chauffeur arrivé',
+      message: `${driverName} est arrivé à votre point de départ`,
+      type: 'info',
+      link: '/client-dashboard'
+    });
+  },
+
+  async notifyClientRideStarted(clientUserId: string) {
+    return this.create({
+      userId: clientUserId,
+      title: '🚕 Course démarrée',
+      message: 'Votre course a commencé. Bon voyage !',
+      type: 'info',
+      link: '/client-dashboard'
+    });
+  },
+
+  async notifyClientRideCompleted(clientUserId: string, amount: number) {
+    return this.create({
+      userId: clientUserId,
+      title: '🏁 Course terminée',
+      message: `Votre course est terminée. Montant: ${amount.toFixed(2)}€`,
+      type: 'success',
+      link: '/client-dashboard',
+      category: 'course_completed'
+    });
+  },
+
+  async notifyClientPaymentReminder(clientUserId: string, driverName: string, amount: number, invoiceNumber: string) {
+    return this.create({
+      userId: clientUserId,
+      title: '⏰ Rappel de paiement',
+      message: `Facture ${invoiceNumber} de ${amount.toFixed(2)}€ en attente`,
+      type: 'warning',
+      link: '/client-dashboard',
+      category: 'payment'
+    });
+  },
+
+  // ========================================
+  // NOTIFICATIONS GÉNÉRALES
+  // ========================================
+
+  async notifyDocumentValidated(userId: string, documentType: string) {
+    return this.create({
+      userId,
+      title: '✅ Document validé',
+      message: `Votre ${documentType} a été validé`,
+      type: 'success',
+      category: 'documents'
+    });
+  },
+
+  async notifyDocumentRejected(userId: string, documentType: string, reason?: string) {
+    return this.create({
+      userId,
+      title: '❌ Document rejeté',
+      message: reason ? `${documentType} rejeté: ${reason}` : `Votre ${documentType} a été rejeté`,
+      type: 'warning',
+      category: 'documents'
+    });
+  },
+
+  async notifySubscriptionExpiring(userId: string, daysLeft: number) {
+    return this.create({
+      userId,
+      title: '⏰ Abonnement bientôt expiré',
+      message: `Votre abonnement expire dans ${daysLeft} jours`,
+      type: 'warning',
+      category: 'subscription'
+    });
+  },
+
+  async notifySubscriptionRenewed(userId: string) {
+    return this.create({
+      userId,
+      title: '✅ Abonnement renouvelé',
+      message: 'Votre abonnement a été renouvelé avec succès',
+      type: 'success',
+      category: 'subscription'
+    });
+  },
+
+  async notifyFreeAccessGranted(userId: string, type: 'unlimited' | 'limited', endDate?: string) {
+    return this.create({
+      userId,
+      title: '🎁 Accès gratuit accordé',
+      message: type === 'unlimited' 
+        ? 'Vous bénéficiez d\'un accès gratuit illimité'
+        : `Accès gratuit jusqu'au ${endDate}`,
+      type: 'success',
+      category: 'subscription'
+    });
+  },
+
+  async notifyFreeAccessExpiring(userId: string, daysLeft: number) {
+    return this.create({
+      userId,
+      title: '⏰ Accès gratuit bientôt expiré',
+      message: `Votre accès gratuit expire dans ${daysLeft} jours`,
+      type: 'warning',
+      category: 'subscription'
     });
   }
 };
