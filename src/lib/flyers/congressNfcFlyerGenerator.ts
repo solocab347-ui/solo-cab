@@ -56,314 +56,288 @@ async function drawFullPageFlyer(
   const pageWidth = 210;
   const pageHeight = 297;
   const centerX = pageWidth / 2;
-  const margin = 15;
+  const margin = 12;
   
-  // Couleurs SoloCab - Indépendance & Reprise de contrôle
+  // Couleurs SoloCab - Indépendance, Confiance, Liberté
   const darkBlue: [number, number, number] = [26, 26, 46];
-  const accentBlue: [number, number, number] = [59, 130, 246];
-  const violet: [number, number, number] = [139, 92, 246];
-  const orange: [number, number, number] = [249, 115, 22];
+  const accentBlue: [number, number, number] = [59, 130, 246]; // Confiance
+  const violet: [number, number, number] = [139, 92, 246]; // Indépendance
+  const orange: [number, number, number] = [249, 115, 22]; // Énergie, Action
   const white: [number, number, number] = [255, 255, 255];
-  const lightGray: [number, number, number] = [245, 247, 250];
+  const lightGray: [number, number, number] = [248, 250, 252];
   const darkText: [number, number, number] = [30, 30, 40];
   const mutedText: [number, number, number] = [100, 100, 115];
-  const green: [number, number, number] = [16, 185, 129];
   
   // ========== FOND BLANC ==========
   doc.setFillColor(...white);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
   
   // ========== EN-TÊTE PREMIUM ==========
-  // Fond principal
   doc.setFillColor(...darkBlue);
-  doc.rect(0, 0, pageWidth, 58, 'F');
+  doc.rect(0, 0, pageWidth, 52, 'F');
   
-  // Bandes décoratives
+  // Bandes décoratives - couleurs de l'indépendance
   doc.setFillColor(...violet);
-  doc.rect(0, 58, pageWidth, 3, 'F');
+  doc.rect(0, 52, pageWidth, 2.5, 'F');
   
   doc.setFillColor(...orange);
-  doc.rect(0, 61, pageWidth, 2, 'F');
+  doc.rect(0, 54.5, pageWidth, 2, 'F');
   
   // Logo SoloCab
   try {
-    doc.addImage(logoBase64, 'PNG', margin, 12, 45, 22);
+    doc.addImage(logoBase64, 'PNG', margin, 10, 42, 21);
   } catch (e) {
-    // Fallback texte si logo non chargé
     doc.setTextColor(...white);
-    doc.setFontSize(24);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('SOLOCAB', margin, 28);
+    doc.text('SOLOCAB', margin, 25);
   }
   
   // Slogan
-  doc.setTextColor(200, 200, 220);
-  doc.setFontSize(10);
+  doc.setTextColor(180, 180, 200);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
-  doc.text('L\'indépendance au service de l\'excellence', margin, 42);
+  doc.text('L\'independance au service de l\'excellence', margin, 38);
   
-  // Badge Congrès VTC élégant
+  // Badge Congrès VTC
   doc.setFillColor(...orange);
-  doc.roundedRect(pageWidth - margin - 58, 10, 58, 28, 4, 4, 'F');
-  
-  // Bordure dorée simulée
-  doc.setDrawColor(255, 215, 0);
-  doc.setLineWidth(1);
-  doc.roundedRect(pageWidth - margin - 58, 10, 58, 28, 4, 4, 'S');
+  doc.roundedRect(pageWidth - margin - 52, 10, 52, 26, 4, 4, 'F');
   
   doc.setTextColor(...white);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('CONGRES VTC', pageWidth - margin - 29, 22, { align: 'center' });
-  doc.setFontSize(16);
-  doc.text('2026', pageWidth - margin - 29, 32, { align: 'center' });
+  doc.text('CONGRES VTC', pageWidth - margin - 26, 21, { align: 'center' });
+  doc.setFontSize(15);
+  doc.text('2026', pageWidth - margin - 26, 31, { align: 'center' });
   
-  // ========== BANDEAU GRATUIT IMPACTANT ==========
-  let currentY = 75;
+  // ========== BANDEAU GRATUIT - VIOLET (Indépendance) ==========
+  let currentY = 66;
   
-  // Fond vert avec effet gradient simulé
-  doc.setFillColor(...green);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 38, 6, 6, 'F');
+  doc.setFillColor(...violet);
+  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 32, 5, 5, 'F');
   
-  // Effet lumineux en haut
-  doc.setFillColor(34, 197, 150);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 12, 6, 0, 'F');
-  doc.rect(margin, currentY + 6, pageWidth - margin * 2, 6, 'F');
-  
-  // Étoiles décoratives
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text('★', margin + 12, currentY + 22);
-  doc.text('★', pageWidth - margin - 12, currentY + 22, { align: 'right' });
+  // Effet lumineux
+  doc.setFillColor(159, 112, 255);
+  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 10, 5, 0, 'F');
+  doc.rect(margin, currentY + 5, pageWidth - margin * 2, 5, 'F');
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(32);
+  doc.setFontSize(28);
   doc.setTextColor(...white);
-  doc.text('100% GRATUIT', centerX, currentY + 22, { align: 'center' });
+  doc.text('100% GRATUIT', centerX, currentY + 18, { align: 'center' });
   
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('OFFERT A CHAQUE CHAUFFEUR VTC AU CONGRES', centerX, currentY + 33, { align: 'center' });
+  doc.setFontSize(11);
+  doc.text('OFFERT A CHAQUE CHAUFFEUR VTC AU CONGRES', centerX, currentY + 27, { align: 'center' });
   
   // ========== TITRE PRINCIPAL ==========
-  currentY += 52;
+  currentY += 42;
   
   doc.setTextColor(...darkBlue);
-  doc.setFontSize(28);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('Votre Kit NFC Professionnel', centerX, currentY, { align: 'center' });
   
-  currentY += 10;
-  doc.setFontSize(13);
+  currentY += 8;
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedText);
   doc.text('Connectez vos clients en un simple scan !', centerX, currentY, { align: 'center' });
   
   // ========== ZONE ILLUSTRATIONS NFC ==========
-  currentY += 15;
+  currentY += 10;
   
-  // Fond élégant
   doc.setFillColor(...lightGray);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 68, 8, 8, 'F');
-  
-  // Bordure subtile
-  doc.setDrawColor(220, 220, 230);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 68, 8, 8, 'S');
+  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 55, 6, 6, 'F');
   
   // ===== PLAQUE NFC (gauche) =====
-  const plateWidth = 75;
-  const plateHeight = 48;
+  const plateWidth = 70;
+  const plateHeight = 40;
   const plateX = margin + 12;
-  const plateY = currentY + 8;
-  
-  // Ombre portée
-  doc.setFillColor(160, 160, 180);
-  doc.roundedRect(plateX + 3, plateY + 3, plateWidth, plateHeight, 5, 5, 'F');
-  
-  // Plaque principale
-  doc.setFillColor(...darkBlue);
-  doc.roundedRect(plateX, plateY, plateWidth, plateHeight, 5, 5, 'F');
-  
-  // Bandeau violet en haut
-  doc.setFillColor(...violet);
-  doc.roundedRect(plateX, plateY, plateWidth, 10, 5, 0, 'F');
-  doc.rect(plateX, plateY + 5, plateWidth, 5, 'F');
-  
-  // Logo SoloCab miniature sur plaque
-  try {
-    doc.addImage(logoBase64, 'PNG', plateX + plateWidth / 2 - 15, plateY + 14, 30, 15);
-  } catch (e) {
-    doc.setTextColor(...white);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SOLOCAB', plateX + plateWidth / 2, plateY + 24, { align: 'center' });
-  }
-  
-  // Texte
-  doc.setTextColor(200, 200, 220);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Scannez pour me contacter', plateX + plateWidth / 2, plateY + 35, { align: 'center' });
-  
-  // Icône NFC stylisée
-  doc.setDrawColor(...accentBlue);
-  doc.setLineWidth(1.2);
-  doc.circle(plateX + plateWidth / 2, plateY + 42, 3);
-  doc.setLineWidth(0.8);
-  doc.circle(plateX + plateWidth / 2, plateY + 42, 5.5);
-  
-  // Label
-  doc.setTextColor(...darkText);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PLAQUE NFC', plateX + plateWidth / 2, currentY + 63, { align: 'center' });
-  
-  // ===== CARTE NFC (droite) =====
-  const cardWidth = 65;
-  const cardHeight = 42;
-  const cardX = pageWidth - margin - cardWidth - 12;
-  const cardY = currentY + 11;
+  const plateY = currentY + 6;
   
   // Ombre
-  doc.setFillColor(160, 160, 180);
-  doc.roundedRect(cardX + 3, cardY + 3, cardWidth, cardHeight, 4, 4, 'F');
+  doc.setFillColor(180, 180, 195);
+  doc.roundedRect(plateX + 2, plateY + 2, plateWidth, plateHeight, 4, 4, 'F');
   
-  // Carte principale - bleu accentué
-  doc.setFillColor(...accentBlue);
-  doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 4, 4, 'F');
+  // Plaque - Bleu foncé
+  doc.setFillColor(...darkBlue);
+  doc.roundedRect(plateX, plateY, plateWidth, plateHeight, 4, 4, 'F');
   
-  // Bande orange en haut
-  doc.setFillColor(...orange);
-  doc.roundedRect(cardX, cardY, cardWidth, 8, 4, 0, 'F');
-  doc.rect(cardX, cardY + 4, cardWidth, 4, 'F');
+  // Bandeau violet
+  doc.setFillColor(...violet);
+  doc.roundedRect(plateX, plateY, plateWidth, 8, 4, 0, 'F');
+  doc.rect(plateX, plateY + 4, plateWidth, 4, 'F');
   
-  // Logo sur carte
+  // Logo sur plaque
   try {
-    doc.addImage(logoBase64, 'PNG', cardX + cardWidth / 2 - 12, cardY + 12, 24, 12);
+    doc.addImage(logoBase64, 'PNG', plateX + plateWidth / 2 - 14, plateY + 11, 28, 14);
   } catch (e) {
     doc.setTextColor(...white);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('SOLOCAB', cardX + cardWidth / 2, cardY + 20, { align: 'center' });
+    doc.text('SOLOCAB', plateX + plateWidth / 2, plateY + 20, { align: 'center' });
   }
   
-  // Texte carte
-  doc.setTextColor(230, 230, 255);
+  // Texte
+  doc.setTextColor(180, 180, 200);
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.text('Carte NFC Pro', cardX + cardWidth / 2, cardY + 30, { align: 'center' });
+  doc.text('Scannez pour me contacter', plateX + plateWidth / 2, plateY + 30, { align: 'center' });
   
   // Icône NFC
-  doc.setDrawColor(...white);
-  doc.setLineWidth(0.8);
-  doc.circle(cardX + cardWidth / 2, cardY + 36, 2.5);
-  doc.circle(cardX + cardWidth / 2, cardY + 36, 4.5);
+  doc.setDrawColor(...accentBlue);
+  doc.setLineWidth(1);
+  doc.circle(plateX + plateWidth / 2, plateY + 36, 2.5);
+  doc.setLineWidth(0.7);
+  doc.circle(plateX + plateWidth / 2, plateY + 36, 4.5);
   
   // Label
   doc.setTextColor(...darkText);
-  doc.setFontSize(12);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('CARTE NFC', cardX + cardWidth / 2, currentY + 63, { align: 'center' });
+  doc.text('PLAQUE NFC', plateX + plateWidth / 2, currentY + 51, { align: 'center' });
+  
+  // ===== CARTE NFC (droite) =====
+  const cardWidth = 60;
+  const cardHeight = 36;
+  const cardX = pageWidth - margin - cardWidth - 12;
+  const cardY = currentY + 8;
+  
+  // Ombre
+  doc.setFillColor(180, 180, 195);
+  doc.roundedRect(cardX + 2, cardY + 2, cardWidth, cardHeight, 3, 3, 'F');
+  
+  // Carte - Bleu accentué
+  doc.setFillColor(...accentBlue);
+  doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 3, 3, 'F');
+  
+  // Bande orange
+  doc.setFillColor(...orange);
+  doc.roundedRect(cardX, cardY, cardWidth, 7, 3, 0, 'F');
+  doc.rect(cardX, cardY + 3, cardWidth, 4, 'F');
+  
+  // Logo sur carte
+  try {
+    doc.addImage(logoBase64, 'PNG', cardX + cardWidth / 2 - 11, cardY + 10, 22, 11);
+  } catch (e) {
+    doc.setTextColor(...white);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SOLOCAB', cardX + cardWidth / 2, cardY + 18, { align: 'center' });
+  }
+  
+  // Texte
+  doc.setTextColor(220, 220, 240);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Carte NFC Pro', cardX + cardWidth / 2, cardY + 26, { align: 'center' });
+  
+  // Icône NFC
+  doc.setDrawColor(...white);
+  doc.setLineWidth(0.7);
+  doc.circle(cardX + cardWidth / 2, cardY + 31, 2);
+  doc.circle(cardX + cardWidth / 2, cardY + 31, 3.5);
+  
+  // Label
+  doc.setTextColor(...darkText);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CARTE NFC', cardX + cardWidth / 2, currentY + 51, { align: 'center' });
   
   // ========== SECTION AVANTAGES ==========
-  currentY += 78;
+  currentY += 62;
   
-  // Titre section
-  doc.setFillColor(...violet);
-  doc.roundedRect(centerX - 70, currentY, 140, 12, 3, 3, 'F');
+  // Titre section - Orange
+  doc.setFillColor(...orange);
+  doc.roundedRect(centerX - 65, currentY, 130, 10, 3, 3, 'F');
   
   doc.setTextColor(...white);
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Pourquoi prendre votre kit NFC ?', centerX, currentY + 8.5, { align: 'center' });
+  doc.text('Pourquoi prendre votre kit NFC ?', centerX, currentY + 7, { align: 'center' });
   
-  currentY += 20;
+  currentY += 16;
   
   const advantages = [
-    { text: 'Vos clients scannent et accèdent directement à votre profil', color: accentBlue },
-    { text: 'Inscription client en 1 clic depuis leur téléphone', color: violet },
-    { text: 'Plaque à poser dans votre véhicule (pare-brise, appuie-tête)', color: orange },
-    { text: 'Carte à garder sur vous pour vos rencontres professionnelles', color: accentBlue },
-    { text: 'Fidélisez votre clientèle sans effort supplémentaire', color: violet },
-    { text: 'Reprenez le contrôle de votre relation client !', color: orange },
+    { text: 'Vos clients scannent et accedent a votre profil', color: accentBlue },
+    { text: 'Inscription client en 1 clic depuis leur telephone', color: violet },
+    { text: 'Plaque a poser dans votre vehicule', color: orange },
+    { text: 'Carte a garder sur vous pour vos rencontres pro', color: accentBlue },
+    { text: 'Fidelisez votre clientele sans effort', color: violet },
+    { text: 'Reprenez le controle de votre relation client !', color: orange },
   ];
   
   for (const advantage of advantages) {
-    // Cercle coloré avec effet
+    // Cercle coloré
     doc.setFillColor(...advantage.color);
-    doc.circle(margin + 8, currentY + 1.5, 4.5, 'F');
+    doc.circle(margin + 6, currentY + 1.2, 3.5, 'F');
     
     // Checkmark
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(9);
     doc.setTextColor(...white);
-    doc.text('✓', margin + 8, currentY + 3.5, { align: 'center' });
+    doc.text('V', margin + 6, currentY + 2.8, { align: 'center' });
     
-    // Texte avantage
+    // Texte
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(...darkText);
-    doc.text(advantage.text, margin + 18, currentY + 3);
+    doc.text(advantage.text, margin + 14, currentY + 2.5);
     
-    currentY += 11;
+    currentY += 9;
   }
   
   // ========== QR CODE SECTION ==========
-  currentY += 5;
+  currentY += 4;
   
-  // Cadre QR code élégant
+  // Cadre QR code
   doc.setFillColor(...white);
-  doc.roundedRect(centerX - 50, currentY, 100, 55, 6, 6, 'F');
+  doc.roundedRect(centerX - 42, currentY, 84, 45, 5, 5, 'F');
   
-  // Double bordure
+  // Bordure violet
   doc.setDrawColor(...violet);
-  doc.setLineWidth(2);
-  doc.roundedRect(centerX - 50, currentY, 100, 55, 6, 6, 'S');
+  doc.setLineWidth(1.5);
+  doc.roundedRect(centerX - 42, currentY, 84, 45, 5, 5, 'S');
   
-  doc.setDrawColor(...accentBlue);
-  doc.setLineWidth(1);
-  doc.roundedRect(centerX - 48, currentY + 2, 96, 51, 5, 5, 'S');
-  
-  const qrSize = 38;
+  const qrSize = 32;
   const qrX = centerX - qrSize / 2;
-  doc.addImage(qrCodeDataUrl, 'PNG', qrX, currentY + 6, qrSize, qrSize);
+  doc.addImage(qrCodeDataUrl, 'PNG', qrX, currentY + 4, qrSize, qrSize);
   
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...accentBlue);
-  doc.text('Scannez pour vous inscrire sur SoloCab', centerX, currentY + 50, { align: 'center' });
+  doc.text('Scannez pour vous inscrire sur SoloCab', centerX, currentY + 41, { align: 'center' });
   
-  // ========== PIED DE PAGE PREMIUM ==========
-  const footerY = pageHeight - 32;
+  // ========== PIED DE PAGE ==========
+  const footerY = pageHeight - 26;
   
   doc.setFillColor(...darkBlue);
-  doc.rect(0, footerY, pageWidth, 32, 'F');
+  doc.rect(0, footerY, pageWidth, 26, 'F');
   
   // Bandes décoratives
   doc.setFillColor(...orange);
-  doc.rect(0, footerY, pageWidth, 3, 'F');
+  doc.rect(0, footerY, pageWidth, 2.5, 'F');
   
   doc.setFillColor(...violet);
-  doc.rect(0, footerY + 3, pageWidth, 2, 'F');
+  doc.rect(0, footerY + 2.5, pageWidth, 1.5, 'F');
   
-  // Logo en pied de page
+  // Logo pied de page
   try {
-    doc.addImage(logoBase64, 'PNG', margin, footerY + 10, 35, 17);
+    doc.addImage(logoBase64, 'PNG', margin, footerY + 7, 30, 15);
   } catch (e) {
     doc.setTextColor(...white);
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('SOLOCAB', margin + 17, footerY + 20);
+    doc.text('SOLOCAB', margin + 15, footerY + 16);
   }
   
   // Texte pied de page
   doc.setTextColor(...white);
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('STAND SOLOCAB - CONGRES VTC 2026', pageWidth - margin, footerY + 14, { align: 'right' });
+  doc.text('STAND SOLOCAB - CONGRES VTC 2026', pageWidth - margin, footerY + 12, { align: 'right' });
   
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Venez récupérer votre kit NFC 100% gratuit !', pageWidth - margin, footerY + 24, { align: 'right' });
+  doc.text('Venez recuperer votre kit NFC 100% gratuit !', pageWidth - margin, footerY + 21, { align: 'right' });
 }
