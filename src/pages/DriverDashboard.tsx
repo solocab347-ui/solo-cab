@@ -85,6 +85,19 @@ const DriverDashboard = () => {
   const [partnershipInitialTab, setPartnershipInitialTab] = useState<'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices' | undefined>(undefined);
   const [showLibertyGuide, setShowLibertyGuide] = useState(false);
   
+  // Ouvrir automatiquement le guide Liberty au premier login
+  useEffect(() => {
+    const isFirstLogin = localStorage.getItem("liberty-first-login");
+    if (isFirstLogin === "true") {
+      // Attendre que le dashboard soit chargé
+      const timer = setTimeout(() => {
+        setShowLibertyGuide(true);
+        localStorage.removeItem("liberty-first-login");
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+  
   // Use unified partnership notification count hook
   const { count: partnershipNotificationCount, markPartnershipNotificationsAsRead } = usePartnershipNotificationCount(driverProfile?.driver?.id || null);
 

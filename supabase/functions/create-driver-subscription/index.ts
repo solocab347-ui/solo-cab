@@ -210,7 +210,7 @@ serve(async (req) => {
           type: "driver_subscription",
         },
       },
-      success_url: `${origin}/registration-success?driver_id=${driver_id}`,
+      success_url: `${origin}/driver-welcome?driver_id=${driver_id}&pioneer=false`,
       cancel_url: `${origin}/register-driver-promo`,
       metadata: {
         driver_id: driver_id,

@@ -49,6 +49,7 @@ import RegisterCongressDriver from "./pages/RegisterCongressDriver";
 import RegisterEmployeeFromTracking from "./pages/RegisterEmployeeFromTracking";
 import PioneerPayment from "./pages/PioneerPayment";
 import OurValues from "./pages/OurValues";
+import DriverWelcome from "./pages/DriverWelcome";
 import MentionsLegales from "./pages/MentionsLegales";
 import SafeMode from "./pages/SafeMode";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
@@ -127,6 +128,7 @@ const App = () => (
               <Route path="/inscription-congres" element={<RegisterCongressDriver />} />
               <Route path="/pioneer-payment" element={<PioneerPayment />} />
               <Route path="/nos-valeurs" element={<OurValues />} />
+              <Route path="/driver-welcome" element={<DriverWelcome />} />
               <Route path="/mentions-legales" element={<MentionsLegales />} />
               <Route
                 path="/fleet-client-dashboard"

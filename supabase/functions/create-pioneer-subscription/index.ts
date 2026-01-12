@@ -102,8 +102,8 @@ serve(async (req) => {
         },
       },
       payment_method_collection: "always",
-      success_url: `${origin}/driver-pending-validation?subscription=success`,
-      cancel_url: `${origin}/driver-pending-validation?subscription=cancelled`,
+      success_url: `${origin}/driver-welcome?driver_id=${driver.id}&pioneer=true`,
+      cancel_url: `${origin}/pioneer-payment?cancelled=true`,
       metadata: {
         driver_id: driver.id,
         is_pioneer: "true",
