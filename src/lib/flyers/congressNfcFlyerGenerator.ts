@@ -115,8 +115,8 @@ async function drawFullPageFlyer(
   doc.setTextColor(...white);
   doc.text('100% GRATUIT', centerX, currentY + 17, { align: 'center' });
   
-  doc.setFontSize(10);
-  doc.text('OFFERT A CHAQUE CHAUFFEUR VTC AU CONGRES', centerX, currentY + 27, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text('OFFERT A CHAQUE CHAUFFEUR VTC POUR TOUTE INSCRIPTION SUR SOLOCAB', centerX, currentY + 27, { align: 'center' });
   
   // ========== TITRE PRINCIPAL ==========
   currentY += 40;
