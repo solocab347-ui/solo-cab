@@ -205,12 +205,28 @@ const PioneerPayment = () => {
               </ul>
             </div>
 
+            {/* Bank Imprint Note */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <CreditCard className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                    Aucun prélèvement immédiat
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Il s'agit d'une simple empreinte bancaire de <strong>0€</strong> pour enregistrer 
+                    vos coordonnées de paiement. Vous ne serez prélevé qu'après vos 30 jours d'essai gratuit, 
+                    et uniquement si vous décidez de rester abonné.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Security Note */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
               <Shield className="w-4 h-4 flex-shrink-0" />
               <span>
-                Paiement sécurisé par Stripe. Aucun prélèvement pendant les 30 jours d'essai.
-                Annulable à tout moment.
+                Paiement sécurisé par Stripe. Annulable à tout moment.
               </span>
             </div>
 
