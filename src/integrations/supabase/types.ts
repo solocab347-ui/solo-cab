@@ -14113,6 +14113,7 @@ export type Database = {
         Returns: {
           created_at: string
           destination_address: string
+          devis_amount: number
           driver_avatar_url: string
           driver_company: string
           driver_name: string
@@ -14122,6 +14123,7 @@ export type Database = {
           id: string
           is_shared_course: boolean
           pickup_address: string
+          quote_number: string
           scheduled_date: string
           shared_drivers: Json
           status: string

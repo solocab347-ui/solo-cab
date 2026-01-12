@@ -33,6 +33,8 @@ interface BookingInfo {
   created_at: string;
   is_shared_course: boolean;
   shared_drivers: SharedDriver[];
+  devis_amount: number | null;
+  quote_number: string | null;
 }
 
 const GuestBookingTracking = () => {
@@ -72,7 +74,9 @@ const GuestBookingTracking = () => {
           driver_avatar_url: rawBooking.driver_avatar_url,
           created_at: rawBooking.created_at,
           is_shared_course: rawBooking.is_shared_course ?? false,
-          shared_drivers: sharedDrivers
+          shared_drivers: sharedDrivers,
+          devis_amount: rawBooking.devis_amount,
+          quote_number: rawBooking.quote_number
         };
         setBooking(parsedBooking);
       } else {
@@ -257,12 +261,22 @@ const GuestBookingTracking = () => {
               </div>
             </div>
 
-            {booking.guest_estimated_price && (
+            {/* Afficher le prix du devis si disponible, sinon l'estimation */}
+            {(booking.devis_amount || booking.guest_estimated_price) && (
               <div className="bg-muted/50 rounded-lg p-4 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Prix estimé</span>
+                  <div>
+                    <span className="text-muted-foreground">
+                      {booking.devis_amount ? "Prix du devis" : "Prix estimé"}
+                    </span>
+                    {booking.quote_number && (
+                      <p className="text-xs text-muted-foreground">
+                        Réf: {booking.quote_number}
+                      </p>
+                    )}
+                  </div>
                   <span className="text-xl font-bold text-primary">
-                    {booking.guest_estimated_price.toFixed(2)} €
+                    {(booking.devis_amount || booking.guest_estimated_price)?.toFixed(2)} €
                   </span>
                 </div>
               </div>
