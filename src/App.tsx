@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -230,7 +230,11 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              {/* Route /driver-pending-validation SUPPRIMÉE - Les chauffeurs accèdent directement au dashboard */}
+              {/* Redirection de l'ancienne route /driver-pending-validation vers le dashboard */}
+              <Route
+                path="/driver-pending-validation"
+                element={<Navigate to="/driver-dashboard" replace />}
+              />
               <Route
                 path="/client-dashboard"
                 element={
