@@ -63,7 +63,7 @@ export const CongressRegistrationsTab = () => {
 
       const { data: registrationsData, error: registrationsError } = await supabase
         .from("congress_registrations")
-        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer, nfc_tag_number, public_profile_enabled, driver_code)`)
+        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer, nfc_tag_number, public_profile_enabled, driver_code, shipping_address, shipping_city, shipping_postal_code)`)
         .order("registered_at", { ascending: false });
 
       if (registrationsError) throw registrationsError;

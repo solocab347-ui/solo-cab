@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Crown, Users, Tag, Loader2, Phone, Mail, Copy, ExternalLink, User, Search } from "lucide-react";
+import { Crown, Users, Tag, Loader2, Phone, Mail, Copy, ExternalLink, User, Search, Package, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +30,9 @@ interface CongressRegistration {
     nfc_tag_number?: string | null;
     public_profile_enabled?: boolean | null;
     driver_code?: string | null;
+    shipping_address?: string | null;
+    shipping_city?: string | null;
+    shipping_postal_code?: string | null;
   } | null;
   profile?: {
     full_name: string | null;
@@ -47,6 +52,62 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
   const [isUpdatingNfc, setIsUpdatingNfc] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // État pour le mode expédition
+  const [requireShippingAddress, setRequireShippingAddress] = useState(false);
+  const [isLoadingShippingSetting, setIsLoadingShippingSetting] = useState(true);
+  const [isUpdatingShippingSetting, setIsUpdatingShippingSetting] = useState(false);
+
+  // Charger le paramètre d'expédition au montage
+  useEffect(() => {
+    const loadShippingSetting = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("id", "nfc_require_shipping_address")
+          .single();
+        
+        if (error) throw error;
+        setRequireShippingAddress((data?.value as any)?.enabled || false);
+      } catch (err) {
+        console.error("Erreur chargement paramètre expédition:", err);
+      } finally {
+        setIsLoadingShippingSetting(false);
+      }
+    };
+    loadShippingSetting();
+  }, []);
+
+  // Basculer le mode expédition
+  const toggleShippingMode = async () => {
+    setIsUpdatingShippingSetting(true);
+    const newValue = !requireShippingAddress;
+    
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ 
+          value: { enabled: newValue },
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", "nfc_require_shipping_address");
+      
+      if (error) throw error;
+      
+      setRequireShippingAddress(newValue);
+      toast.success(
+        newValue 
+          ? "Mode expédition activé - Les nouveaux inscrits devront fournir leur adresse postale"
+          : "Mode expédition désactivé - L'adresse postale n'est plus demandée"
+      );
+    } catch (err) {
+      console.error("Erreur mise à jour paramètre:", err);
+      toast.error("Erreur lors de la mise à jour");
+    } finally {
+      setIsUpdatingShippingSetting(false);
+    }
+  };
 
   // Filtrer les inscriptions par nom, email ou code chauffeur
   const filteredRegistrations = useMemo(() => {
@@ -118,17 +179,70 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Inscriptions Pionniers ({registrations.length})
-        </CardTitle>
-        <CardDescription>
-          Gérez les tags NFC pour chaque chauffeur inscrit - Le lien profil public servira à programmer le badge NFC
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-4">
+      {/* Carte Mode Expédition */}
+      <Card className={requireShippingAddress ? "border-orange-500/50 bg-orange-500/5" : ""}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Package className="h-5 w-5" />
+            Mode Expédition Plaques NFC
+          </CardTitle>
+          <CardDescription>
+            Quand vous n'avez plus de plaques sur place, activez ce mode pour demander l'adresse postale aux nouveaux inscrits
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {requireShippingAddress ? (
+                  <span className="text-orange-600 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Mode expédition ACTIVÉ
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Mode expédition désactivé
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {requireShippingAddress 
+                  ? "Les nouveaux inscrits doivent fournir leur adresse postale pour recevoir leur plaque NFC"
+                  : "Vous distribuez les plaques NFC sur place"}
+              </p>
+            </div>
+            <Switch
+              checked={requireShippingAddress}
+              onCheckedChange={toggleShippingMode}
+              disabled={isLoadingShippingSetting || isUpdatingShippingSetting}
+            />
+          </div>
+          
+          {requireShippingAddress && (
+            <Alert className="mt-4 bg-orange-500/10 border-orange-500/30">
+              <Package className="h-4 w-4 text-orange-500" />
+              <AlertDescription className="text-sm">
+                <strong>Mode actif :</strong> Le formulaire d'inscription demande maintenant l'adresse d'expédition 
+                (adresse, ville, code postal). Vous pourrez voir ces adresses dans la liste ci-dessous.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Carte principale des inscriptions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Inscriptions Pionniers ({registrations.length})
+          </CardTitle>
+          <CardDescription>
+            Gérez les tags NFC pour chaque chauffeur inscrit - Le lien profil public servira à programmer le badge NFC
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
         {/* Barre de recherche améliorée */}
         <div className="space-y-2">
           <div className="relative">
@@ -169,6 +283,7 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
                 <TableHead>Code Chauffeur</TableHead>
                 <TableHead>Chauffeur</TableHead>
                 <TableHead>Contact</TableHead>
+                {requireShippingAddress && <TableHead>Adresse Expédition</TableHead>}
                 <TableHead>Lien Profil Public</TableHead>
                 <TableHead>Tag NFC</TableHead>
                 <TableHead>Inscription</TableHead>
@@ -178,6 +293,7 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
             <TableBody>
               {filteredRegistrations.map((reg) => {
                 const profileLink = getPublicProfileLink(reg.driver_id);
+                const hasShippingAddress = reg.driver?.shipping_address && reg.driver?.shipping_city && reg.driver?.shipping_postal_code;
                 return (
                   <TableRow key={reg.id}>
                     <TableCell>
@@ -217,6 +333,23 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
                         )}
                       </div>
                     </TableCell>
+                    {requireShippingAddress && (
+                      <TableCell>
+                        {hasShippingAddress ? (
+                          <div className="text-xs space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-orange-500" />
+                              <span className="font-medium">{reg.driver?.shipping_address}</span>
+                            </div>
+                            <div className="text-muted-foreground">
+                              {reg.driver?.shipping_postal_code} {reg.driver?.shipping_city}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Non renseignée</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate block">
@@ -357,7 +490,7 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
               })}
               {filteredRegistrations.length === 0 && registrations.length > 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={requireShippingAddress ? 8 : 7} className="text-center text-muted-foreground py-8">
                     <div className="flex flex-col items-center gap-2">
                       <Search className="h-8 w-8 opacity-50" />
                       <p>Aucun résultat pour "{searchQuery}"</p>
@@ -376,7 +509,7 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
               )}
               {registrations.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={requireShippingAddress ? 8 : 7} className="text-center text-muted-foreground py-8">
                     Aucune inscription pour le moment
                   </TableCell>
                 </TableRow>
@@ -384,7 +517,8 @@ export const CongressNfcTab = ({ registrations, onUpdate }: CongressNfcTabProps)
             </TableBody>
           </Table>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, ArrowRight, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, ArrowRight, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
 
 const RegisterDriverPromo = () => {
@@ -29,8 +29,39 @@ const RegisterDriverPromo = () => {
   const [companyName, setCompanyName] = useState("");
   const [siret, setSiret] = useState("");
 
+  // Adresse d'expédition NFC
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingPostalCode, setShippingPostalCode] = useState("");
+  
+  // Mode expédition (chargé depuis system_settings)
+  const [requireShippingAddress, setRequireShippingAddress] = useState(false);
+  const [isLoadingShippingSetting, setIsLoadingShippingSetting] = useState(true);
+
   const [userId, setUserId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
+
+  // Charger le paramètre d'expédition au montage
+  useEffect(() => {
+    const loadShippingSetting = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("id", "nfc_require_shipping_address")
+          .single();
+        
+        if (!error && data) {
+          setRequireShippingAddress((data.value as any)?.enabled || false);
+        }
+      } catch (err) {
+        console.error("Erreur chargement paramètre expédition:", err);
+      } finally {
+        setIsLoadingShippingSetting(false);
+      }
+    };
+    loadShippingSetting();
+  }, []);
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +75,18 @@ const RegisterDriverPromo = () => {
     if (password.length < 6) {
       toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
+    }
+
+    // Validation adresse d'expédition si mode activé
+    if (requireShippingAddress) {
+      if (!shippingAddress.trim() || !shippingCity.trim() || !shippingPostalCode.trim()) {
+        toast.error("Veuillez remplir tous les champs d'adresse d'expédition pour recevoir votre plaque NFC");
+        return;
+      }
+      if (!/^\d{5}$/.test(shippingPostalCode.trim())) {
+        toast.error("Le code postal doit contenir 5 chiffres");
+        return;
+      }
     }
     
     setLoading(true);
@@ -77,18 +120,28 @@ const RegisterDriverPromo = () => {
 
       // Create driver profile - SECURITY: status = "on_hold" until payment confirmed
       // This prevents users from bypassing payment step
+      const driverInsertData: any = {
+        user_id: newUserId,
+        license_number: licenseNumber || "",
+        vehicle_model: vehicleModel || "",
+        company_name: companyName || null,
+        siret: siret || null,
+        status: "on_hold", // CRITICAL: Not "pending" - wait for payment
+        subscription_status: "payment_required",
+        registration_step: 2,
+      };
+
+      // Ajouter l'adresse d'expédition si mode activé
+      if (requireShippingAddress && shippingAddress.trim()) {
+        driverInsertData.shipping_address = shippingAddress.trim();
+        driverInsertData.shipping_city = shippingCity.trim();
+        driverInsertData.shipping_postal_code = shippingPostalCode.trim();
+        driverInsertData.shipping_country = "France";
+      }
+
       const { data: driverData, error: driverError } = await supabase
         .from("drivers")
-        .insert({
-          user_id: newUserId,
-          license_number: licenseNumber || "",
-          vehicle_model: vehicleModel || "",
-          company_name: companyName || null,
-          siret: siret || null,
-          status: "on_hold", // CRITICAL: Not "pending" - wait for payment
-          subscription_status: "payment_required",
-          registration_step: 2,
-        })
+        .insert(driverInsertData)
         .select()
         .single();
 
@@ -339,7 +392,62 @@ const RegisterDriverPromo = () => {
                 </div>
               </div>
 
-              <Button type="submit" disabled={loading} className="w-full">
+              {/* Section adresse d'expédition NFC - affichée uniquement si mode activé */}
+              {requireShippingAddress && (
+                <div className="border-t pt-4 mt-4">
+                  <Alert className="mb-4 bg-orange-500/10 border-orange-500/30">
+                    <Package className="w-5 h-5 text-orange-500" />
+                    <AlertDescription className="text-sm">
+                      <strong>🎁 Plaque NFC offerte !</strong> Renseignez votre adresse postale pour recevoir 
+                      gratuitement votre plaque NFC professionnelle par courrier.
+                    </AlertDescription>
+                  </Alert>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-orange-500" />
+                    Adresse d'expédition de votre plaque NFC *
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="shippingAddress">Adresse complète *</Label>
+                      <Input
+                        id="shippingAddress"
+                        type="text"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        required
+                        placeholder="123 rue de la Liberté, Bât A"
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="shippingPostalCode">Code postal *</Label>
+                        <Input
+                          id="shippingPostalCode"
+                          type="text"
+                          value={shippingPostalCode}
+                          onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                          required
+                          placeholder="75001"
+                          maxLength={5}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="shippingCity">Ville *</Label>
+                        <Input
+                          id="shippingCity"
+                          type="text"
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          required
+                          placeholder="Paris"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" disabled={loading || isLoadingShippingSetting} className="w-full">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Continuer vers le paiement
               </Button>
