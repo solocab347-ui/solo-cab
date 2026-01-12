@@ -42,6 +42,7 @@ interface CongressRegistration {
     subscription_paid?: boolean | null;
     stripe_customer_id?: string | null;
     status?: string | null;
+    free_access_type?: string | null;
   } | null;
   profile?: {
     full_name: string | null;
@@ -73,7 +74,7 @@ export const CongressRegistrationsTab = () => {
 
       const { data: registrationsData, error: registrationsError } = await supabase
         .from("congress_registrations")
-        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer, nfc_tag_number, public_profile_enabled, driver_code, shipping_address, shipping_city, shipping_postal_code, subscription_paid, stripe_customer_id, status)`)
+        .select(`*, driver:drivers(id, license_number, contact_phone, contact_email, is_pioneer, nfc_tag_number, public_profile_enabled, driver_code, shipping_address, shipping_city, shipping_postal_code, subscription_paid, stripe_customer_id, status, free_access_type)`)
         .order("registered_at", { ascending: false });
 
       if (registrationsError) throw registrationsError;
@@ -100,10 +101,28 @@ export const CongressRegistrationsTab = () => {
         profile: reg.user_id ? profilesMap[reg.user_id] || null : null
       })) as CongressRegistration[];
 
-      // SECURITY: Séparer les inscriptions payées des incomplètes
-      // Seuls les chauffeurs avec subscription_paid = true ont finalisé le paiement
-      const paid = enrichedRegistrations.filter(reg => reg.driver?.subscription_paid === true);
-      const incomplete = enrichedRegistrations.filter(reg => reg.driver?.subscription_paid !== true);
+      // LOGIQUE CORRIGÉE: Considérer comme "payé" les chauffeurs qui ont:
+      // 1. subscription_paid = true (paiement classique) OU
+      // 2. stripe_customer_id existe ET is_pioneer = true ET free_access_type = 'trial' 
+      //    (pionnier ayant fait l'empreinte bancaire de 0€)
+      const hasCompletedPayment = (driver: CongressRegistration['driver']) => {
+        if (!driver) return false;
+        
+        // Cas 1: Paiement classique validé
+        if (driver.subscription_paid === true) return true;
+        
+        // Cas 2: Pionnier avec empreinte bancaire (stripe_customer_id créé)
+        // Pour les pionniers, la présence du stripe_customer_id indique qu'ils ont 
+        // complété le checkout Stripe (empreinte de 0€)
+        if (driver.stripe_customer_id && driver.is_pioneer) {
+          return true;
+        }
+        
+        return false;
+      };
+
+      const paid = enrichedRegistrations.filter(reg => hasCompletedPayment(reg.driver));
+      const incomplete = enrichedRegistrations.filter(reg => !hasCompletedPayment(reg.driver));
 
       setPaidRegistrations(paid);
       setIncompleteRegistrations(incomplete);
@@ -246,7 +265,7 @@ const IncompleteRegistrationsCard = ({ registrations }: { registrations: Congres
                       {hasStripeCustomer ? (
                         <Badge variant="outline" className="gap-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
                           <CreditCard className="h-3 w-3" />
-                          Paiement échoué/abandonné
+                          Checkout abandonné
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 bg-red-500/10 text-red-600 border-red-500/30">
