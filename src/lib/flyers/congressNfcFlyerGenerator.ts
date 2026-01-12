@@ -121,7 +121,7 @@ async function drawFullPageFlyer(
   doc.setTextColor(...darkBlue);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
-  doc.text('Votre Kit NFC Professionnel', centerX, currentY, { align: 'center' });
+  doc.text('Votre Kit NFC Professionnel Gratuit', centerX, currentY, { align: 'center' });
   
   currentY += 8;
   doc.setFontSize(12);
