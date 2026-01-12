@@ -32,6 +32,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SÉCURITÉ CRITIQUE: Vérifier si un devis existe déjà pour cette course
+    // Cela évite les doublons en cas de retries du frontend
+    const { data: existingDevis, error: existingDevisError } = await supabaseClient
+      .from('devis')
+      .select('id, quote_number, amount, status')
+      .eq('course_id', course_id)
+      .eq('driver_id', driver_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingDevis) {
+      console.log('⚠️ Devis existant trouvé, retour immédiat:', existingDevis);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          devis: existingDevis,
+          already_exists: true 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get course details avec code promo - utiliser LEFT JOIN pour supporter les guest bookings
     console.log('🔍 Récupération de la course:', course_id);
     
