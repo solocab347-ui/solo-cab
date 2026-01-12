@@ -5103,6 +5103,10 @@ export type Database = {
           sharing_available: boolean | null
           sharing_available_since: string | null
           sharing_number: number | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
@@ -5211,6 +5215,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -5319,6 +5327,10 @@ export type Database = {
           sharing_available?: boolean | null
           sharing_available_since?: string | null
           sharing_number?: number | null
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_country?: string | null
+          shipping_postal_code?: string | null
           show_email?: boolean | null
           show_phone?: boolean | null
           show_phone_for_sharing?: boolean | null
@@ -11207,6 +11219,30 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          description: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          id: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       unassigned_fleet_courses: {
         Row: {
           attempts: number | null
@@ -14005,6 +14041,10 @@ export type Database = {
           sharing_available: boolean | null
           sharing_available_since: string | null
           sharing_number: number | null
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_country: string | null
+          shipping_postal_code: string | null
           show_email: boolean | null
           show_phone: boolean | null
           show_phone_for_sharing: boolean | null
