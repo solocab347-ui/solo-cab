@@ -79,7 +79,7 @@ const RegistrationSuccess = () => {
 
           if (driverData?.profiles?.email) {
             console.log("📧 Envoi email bienvenue...");
-            await supabase.functions.invoke("send-email", {
+          await supabase.functions.invoke("send-email", {
               body: {
                 to: driverData.profiles.email,
                 type: "driver_welcome",
@@ -90,6 +90,11 @@ const RegistrationSuccess = () => {
 
           toast.success("Inscription complétée avec accès gratuit !");
           setLoading(false);
+          
+          // Rediriger vers la page de bienvenue
+          setTimeout(() => {
+            navigate(`/driver-welcome?driver_id=${driverId}&pioneer=false`);
+          }, 1500);
           return;
         }
 
@@ -170,6 +175,11 @@ const RegistrationSuccess = () => {
 
         toast.success("Inscription terminée avec succès !");
         console.log("🎉 INSCRIPTION COMPLETE");
+        
+        // Rediriger vers la page de bienvenue après succès
+        setTimeout(() => {
+          navigate(`/driver-welcome?driver_id=${driverId}&pioneer=false`);
+        }, 1500);
         
       } catch (error: any) {
         console.error("💥 ERREUR VALIDATION:", error);
