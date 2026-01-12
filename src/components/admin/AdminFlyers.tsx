@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone } from "lucide-react";
+import { Download, FileText, Users, Building2, Network, Loader2, CreditCard, Smartphone, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { generateEcosystemFlyer } from "@/lib/flyers/ecosystemFlyerGenerator";
 import { generateDriverFlyer } from "@/lib/flyers/driverFlyerGenerator";
 import { generateCompanyFlyer } from "@/lib/flyers/companyFlyerGenerator";
 import { generateRevolutFlyer } from "@/lib/flyers/revolutFlyerGenerator";
 import { generateSumupFlyer } from "@/lib/flyers/sumupFlyerGenerator";
+import { generateCongressNfcFlyer } from "@/lib/flyers/congressNfcFlyerGenerator";
 
 const AdminFlyers = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup") => {
+  const handleDownload = async (type: "ecosystem" | "driver" | "company" | "revolut" | "sumup" | "congress-nfc") => {
     setLoading(type);
     try {
       switch (type) {
@@ -35,6 +36,10 @@ const AdminFlyers = () => {
         case "sumup":
           await generateSumupFlyer();
           toast.success("Flyer SumUp téléchargé !");
+          break;
+        case "congress-nfc":
+          await generateCongressNfcFlyer();
+          toast.success("Flyer Congrès NFC téléchargé !");
           break;
       }
     } catch (error) {
@@ -85,6 +90,14 @@ const AdminFlyers = () => {
       icon: Smartphone,
       color: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
       gradient: "from-teal-500 to-cyan-500",
+    },
+    {
+      id: "congress-nfc" as const,
+      title: "Congrès VTC - NFC Gratuit",
+      description: "Flyer promotionnel pour le congrès VTC : plaque NFC et carte NFC GRATUITES offertes à chaque chauffeur. 4 flyers par page A4.",
+      icon: Gift,
+      color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      gradient: "from-amber-500 to-yellow-500",
     },
   ];
 
