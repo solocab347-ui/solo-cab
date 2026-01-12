@@ -44,8 +44,9 @@ async function drawFullPageFlyer(
   const centerX = pageWidth / 2;
   const margin = 12;
   
-  // Couleurs SoloCab - Indépendance, Confiance, Liberté
-  const darkBlue: [number, number, number] = [26, 26, 46];
+  // Couleurs SoloCab - Claires et modernes
+  const lightBlue: [number, number, number] = [147, 197, 253]; // Bleu clair
+  const lightViolet: [number, number, number] = [196, 181, 253]; // Violet clair
   const accentBlue: [number, number, number] = [59, 130, 246]; // Confiance
   const violet: [number, number, number] = [139, 92, 246]; // Indépendance
   const orange: [number, number, number] = [249, 115, 22]; // Énergie, Action
@@ -53,13 +54,14 @@ async function drawFullPageFlyer(
   const lightGray: [number, number, number] = [248, 250, 252];
   const darkText: [number, number, number] = [30, 30, 40];
   const mutedText: [number, number, number] = [100, 100, 115];
+  const softBlue: [number, number, number] = [96, 165, 250]; // Bleu doux header
   
   // ========== FOND BLANC ==========
   doc.setFillColor(...white);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
   
-  // ========== EN-TÊTE PREMIUM ==========
-  doc.setFillColor(...darkBlue);
+  // ========== EN-TÊTE - Couleurs claires SoloCab ==========
+  doc.setFillColor(...softBlue);
   doc.rect(0, 0, pageWidth, 50, 'F');
   
   // Bandes décoratives - couleurs de l'indépendance
@@ -121,7 +123,7 @@ async function drawFullPageFlyer(
   // ========== TITRE PRINCIPAL ==========
   currentY += 40;
   
-  doc.setTextColor(...darkBlue);
+  doc.setTextColor(...accentBlue);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('Votre Kit NFC Professionnel Gratuit', centerX, currentY, { align: 'center' });
@@ -148,8 +150,8 @@ async function drawFullPageFlyer(
   doc.setFillColor(170, 170, 190);
   doc.roundedRect(plateX + 2, plateY + 2, plateWidth, plateHeight, 4, 4, 'F');
   
-  // Plaque - Bleu foncé
-  doc.setFillColor(...darkBlue);
+  // Plaque - Bleu accentué
+  doc.setFillColor(...accentBlue);
   doc.roundedRect(plateX, plateY, plateWidth, plateHeight, 4, 4, 'F');
   
   // Bandeau violet
@@ -279,7 +281,7 @@ async function drawFullPageFlyer(
   // ========== PIED DE PAGE ==========
   const footerY = pageHeight - 30;
   
-  doc.setFillColor(...darkBlue);
+  doc.setFillColor(...softBlue);
   doc.rect(0, footerY, pageWidth, 30, 'F');
   
   // Bandes décoratives
