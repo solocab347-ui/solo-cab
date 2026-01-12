@@ -33,6 +33,9 @@ interface CongressRegistration {
     shipping_address?: string | null;
     shipping_city?: string | null;
     shipping_postal_code?: string | null;
+    subscription_paid?: boolean | null;
+    stripe_customer_id?: string | null;
+    status?: string | null;
   } | null;
   profile?: {
     full_name: string | null;
