@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,10 @@ const CreateFleetCourse = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  
+  // PROTECTION ANTI-DOUBLE-SUBMIT
+  const isSubmittingRef = useRef(false);
+  const lastSubmitRef = useRef<number>(0);
   
   const [fleetManagerId, setFleetManagerId] = useState<string | null>(null);
   const [favoriteDriverId, setFavoriteDriverId] = useState<string | null>(null);
@@ -212,6 +216,16 @@ const CreateFleetCourse = () => {
       return;
     }
 
+    // PROTECTION ANTI-DOUBLE-SUBMIT
+    const now = Date.now();
+    if (isSubmittingRef.current || (now - lastSubmitRef.current) < 5000) {
+      console.warn("⚠️ Double-submit bloqué");
+      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
+      return;
+    }
+    
+    isSubmittingRef.current = true;
+    lastSubmitRef.current = now;
     setSubmitting(true);
     
     try {
@@ -399,6 +413,7 @@ const CreateFleetCourse = () => {
       toast.error("Erreur lors de la création de la course");
     } finally {
       setSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 

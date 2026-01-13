@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,14 +24,28 @@ export interface CourseCreationParams {
 }
 
 /**
+ * Génère une clé unique pour identifier une requête de course (anti-doublon)
+ */
+const generateCourseKey = (params: CourseCreationParams): string => {
+  return `${params.clientId || 'guest'}-${params.driverId}-${params.pickupAddress}-${params.destinationAddress}-${params.scheduledDate}`;
+};
+
+/**
  * Hook sécurisé pour la création de courses
  * Gère validation, erreurs et création avec devis automatique
+ * PROTECTION ANTI-DOUBLE-SUBMIT: Empêche les créations multiples
  */
 export function useCourseCreation() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // PROTECTION ANTI-DOUBLE-SUBMIT
+  const isSubmittingRef = useRef(false);
+  const lastSubmitKeyRef = useRef<string | null>(null);
+  const lastSubmitTimeRef = useRef<number>(0);
+  const DEBOUNCE_MS = 5000; // 5 secondes minimum entre deux soumissions identiques
 
-  const createCourse = async (params: CourseCreationParams) => {
+  const createCourse = useCallback(async (params: CourseCreationParams) => {
     const {
       userId,
       clientId,
@@ -48,6 +62,28 @@ export function useCourseCreation() {
       durationHours,
       paymentMethodPreference,
     } = params;
+
+    // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si une soumission est déjà en cours
+    if (isSubmittingRef.current) {
+      logger.warn("⚠️ Double-submit bloqué: soumission déjà en cours");
+      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
+      return null;
+    }
+
+    // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si c'est la même requête dans un court délai
+    const courseKey = generateCourseKey(params);
+    const now = Date.now();
+    
+    if (lastSubmitKeyRef.current === courseKey && (now - lastSubmitTimeRef.current) < DEBOUNCE_MS) {
+      logger.warn("⚠️ Double-submit bloqué: même requête dans les 5 dernières secondes", { courseKey });
+      toast.warning("Cette demande a déjà été envoyée. Veuillez patienter...");
+      return null;
+    }
+
+    // Marquer comme en cours de soumission
+    isSubmittingRef.current = true;
+    lastSubmitKeyRef.current = courseKey;
+    lastSubmitTimeRef.current = now;
 
     setLoading(true);
 
@@ -349,8 +385,10 @@ export function useCourseCreation() {
       return null;
     } finally {
       setLoading(false);
+      // PROTECTION ANTI-DOUBLE-SUBMIT: Libérer le verrou
+      isSubmittingRef.current = false;
     }
-  };
+  }, [navigate]);
 
   return { createCourse, loading };
 }
