@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -165,6 +165,11 @@ const FleetPublicProfile = () => {
   const [selectedDriver, setSelectedDriver] = useState<FleetDriver | null>(null);
   const [bookingType, setBookingType] = useState<"specific" | "available">("specific");
   const [bookingLoading, setBookingLoading] = useState(false);
+  
+  // PROTECTION ANTI-DOUBLE-SUBMIT
+  const isBookingRef = useRef(false);
+  const lastBookingRef = useRef<number>(0);
+  
   const [bookingData, setBookingData] = useState({
     pickupAddress: "",
     pickupLatitude: null as number | null,
@@ -302,6 +307,16 @@ const FleetPublicProfile = () => {
       return;
     }
 
+    // PROTECTION ANTI-DOUBLE-SUBMIT
+    const now = Date.now();
+    if (isBookingRef.current || (now - lastBookingRef.current) < 5000) {
+      console.warn("⚠️ Double-submit bloqué");
+      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
+      return;
+    }
+    
+    isBookingRef.current = true;
+    lastBookingRef.current = now;
     setBookingLoading(true);
     try {
       const scheduledDateTime = new Date(`${bookingData.scheduledDate}T${bookingData.scheduledTime}`);
@@ -449,6 +464,7 @@ const FleetPublicProfile = () => {
       toast.error(error.message || "Erreur lors de la réservation");
     } finally {
       setBookingLoading(false);
+      isBookingRef.current = false;
     }
   };
 
