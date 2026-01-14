@@ -1,6 +1,6 @@
 /**
- * Configuration React Query OPTIMISÉE pour connexion et latence
- * Cache intelligent + timeout réduits + retry optimisé
+ * Configuration React Query ROBUSTE
+ * Optimisée pour connexions variables et récupération d'erreurs
  */
 
 import { QueryClient } from '@tanstack/react-query';
@@ -8,26 +8,44 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache équilibré pour fraîcheur des données
-      staleTime: 5 * 60 * 1000, // 5 minutes (réduit de 10)
-      gcTime: 15 * 60 * 1000, // 15 minutes (réduit de 30)
+      // Cache généreux pour éviter les requêtes inutiles
+      staleTime: 5 * 60 * 1000, // 5 minutes - données considérées fraîches
+      gcTime: 30 * 60 * 1000, // 30 minutes - garder en cache
       
-      // Refetch sélectif pour données critiques
-      refetchOnWindowFocus: false,
-      refetchOnMount: 'always', // Activé pour éviter données stales
-      refetchOnReconnect: true, // Activé pour récupérer après déconnexion
+      // Refetch intelligent
+      refetchOnWindowFocus: false, // Éviter les refetch intempestifs
+      refetchOnMount: 'always', // Toujours vérifier au montage
+      refetchOnReconnect: true, // Refetch après reconnexion
       
-      // Retry optimisé - plus rapide
-      retry: 1,
-      retryDelay: (attemptIndex) => Math.min(500 * (attemptIndex + 1), 1500),
+      // Retry robuste avec backoff
+      retry: 3,
+      retryDelay: (attemptIndex) => {
+        // Backoff exponentiel: 1s, 2s, 4s (max)
+        return Math.min(1000 * Math.pow(2, attemptIndex), 4000);
+      },
       
-      // Network mode optimisé
-      networkMode: 'online',
+      // Mode réseau intelligent
+      networkMode: 'offlineFirst', // Utiliser le cache si offline
+      
+      // Timeout implicite géré par connectionOptimizer
     },
     mutations: {
-      retry: 1,
-      retryDelay: 500,
-      networkMode: 'online',
+      // Mutations plus strictes
+      retry: 2,
+      retryDelay: (attemptIndex) => {
+        return Math.min(500 * Math.pow(2, attemptIndex), 2000);
+      },
+      networkMode: 'online', // Mutations requièrent une connexion
     },
   },
 });
+
+// Fonction pour invalider le cache après reconnexion
+export function invalidateCriticalQueries() {
+  // Invalider les données critiques qui peuvent être devenues stales
+  queryClient.invalidateQueries({ queryKey: ['user-roles'] });
+  queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+  queryClient.invalidateQueries({ queryKey: ['client-profile'] });
+  queryClient.invalidateQueries({ queryKey: ['courses'] });
+  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+}

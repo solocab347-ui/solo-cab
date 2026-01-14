@@ -1,88 +1,126 @@
 /**
  * Hook pour surveiller et afficher l'état de connexion
+ * Version robuste avec indicateurs clairs
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   getConnectionState, 
   connectionRecovery, 
-  pingConnection 
+  pingConnection,
+  onConnectionChange,
+  ConnectionInfo
 } from '@/lib/connectionOptimizer';
 
 interface ConnectionStatus {
   isOnline: boolean;
   isStable: boolean;
-  latency: 'fast' | 'slow' | 'offline';
+  isSlow: boolean;
+  isRecovering: boolean;
+  latency: number;
   lastCheck: number;
+  consecutiveFailures: number;
 }
 
 export function useConnectionStatus() {
-  const [status, setStatus] = useState<ConnectionStatus>({
-    isOnline: navigator.onLine,
-    isStable: true,
-    latency: 'fast',
-    lastCheck: Date.now(),
-  });
-  const [isRecovering, setIsRecovering] = useState(false);
-
-  // Mettre à jour le statut
-  const updateStatus = useCallback(async () => {
+  const [status, setStatus] = useState<ConnectionStatus>(() => {
     const state = getConnectionState();
-    
-    setStatus({
+    return {
       isOnline: state.state !== 'offline',
       isStable: state.state === 'online',
-      latency: state.state === 'online' ? 'fast' : state.state === 'unstable' ? 'slow' : 'offline',
-      lastCheck: Date.now(),
+      isSlow: state.state === 'slow',
+      isRecovering: state.state === 'recovering',
+      latency: state.averageLatency,
+      lastCheck: state.lastCheck,
+      consecutiveFailures: state.consecutiveFailures,
+    };
+  });
+  
+  const [isManualRecovering, setIsManualRecovering] = useState(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Convertir ConnectionInfo en ConnectionStatus
+  const updateFromInfo = useCallback((info: ConnectionInfo) => {
+    setStatus({
+      isOnline: info.state !== 'offline',
+      isStable: info.state === 'online',
+      isSlow: info.state === 'slow',
+      isRecovering: info.state === 'recovering',
+      latency: info.averageLatency,
+      lastCheck: info.lastCheck,
+      consecutiveFailures: info.consecutiveFailures,
     });
   }, []);
 
-  // Forcer une reconnexion
+  // Forcer une reconnexion manuelle
   const forceReconnect = useCallback(async () => {
-    setIsRecovering(true);
+    if (isManualRecovering) return false;
+    
+    setIsManualRecovering(true);
     try {
       const success = await connectionRecovery.attemptRecovery();
-      await updateStatus();
+      // Mettre à jour le status après recovery
+      updateFromInfo(getConnectionState());
       return success;
     } finally {
-      setIsRecovering(false);
+      setIsManualRecovering(false);
     }
-  }, [updateStatus]);
+  }, [isManualRecovering, updateFromInfo]);
+
+  // Rafraîchir manuellement le status
+  const refresh = useCallback(async () => {
+    const { connected, latency } = await pingConnection();
+    updateFromInfo(getConnectionState());
+    return connected;
+  }, [updateFromInfo]);
 
   useEffect(() => {
-    // Écouter les changements de connexion
+    // S'abonner aux changements d'état de connexion
+    unsubscribeRef.current = onConnectionChange(updateFromInfo);
+
+    // Écouter les événements réseau natifs
     const handleOnline = () => {
-      setStatus(prev => ({ ...prev, isOnline: true }));
-      updateStatus();
+      setStatus(prev => ({ ...prev, isOnline: true, isRecovering: true }));
     };
 
     const handleOffline = () => {
-      setStatus(prev => ({ ...prev, isOnline: false, isStable: false, latency: 'offline' }));
+      setStatus(prev => ({ 
+        ...prev, 
+        isOnline: false, 
+        isStable: false, 
+        isSlow: false,
+        isRecovering: false 
+      }));
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     // Écouter les changements de recovery
-    const unsubscribe = connectionRecovery.onStateChange((state) => {
+    const unsubscribeRecovery = connectionRecovery.onStateChange((state) => {
       if (state === 'recovered') {
-        updateStatus();
+        updateFromInfo(getConnectionState());
+      } else if (state === 'recovering') {
+        setStatus(prev => ({ ...prev, isRecovering: true }));
+      } else if (state === 'failed' || state === 'offline') {
+        setStatus(prev => ({ ...prev, isRecovering: false, isOnline: false }));
       }
     });
-
-    // Check initial
-    updateStatus();
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      unsubscribe();
+      unsubscribeRef.current?.();
+      unsubscribeRecovery();
     };
-  }, [updateStatus]);
+  }, [updateFromInfo]);
 
   return {
     ...status,
-    isRecovering,
+    isManualRecovering,
     forceReconnect,
-    refresh: updateStatus,
+    refresh,
   };
 }
+
+// Type export pour utilisation externe
+export type { ConnectionInfo };
