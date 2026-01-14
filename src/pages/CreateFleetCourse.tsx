@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,9 @@ import { validateCoordinates } from "@/lib/courseValidation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
 import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
+import { useSubmitProtection } from "@/hooks/useSubmitProtection";
+import { withRetry } from "@/lib/asyncUtils";
+import { handleError } from "@/lib/errorHandler";
 
 interface FleetDriver {
   id: string;
@@ -38,11 +41,9 @@ const CreateFleetCourse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   
-  // PROTECTION ANTI-DOUBLE-SUBMIT
-  const isSubmittingRef = useRef(false);
-  const lastSubmitRef = useRef<number>(0);
+  // PROTECTION ANTI-DOUBLE-SUBMIT via hook centralisé
+  const { isSubmitting: submitting, protectedSubmit } = useSubmitProtection();
   
   const [fleetManagerId, setFleetManagerId] = useState<string | null>(null);
   const [favoriteDriverId, setFavoriteDriverId] = useState<string | null>(null);
@@ -216,32 +217,18 @@ const CreateFleetCourse = () => {
       return;
     }
 
-    // PROTECTION ANTI-DOUBLE-SUBMIT
-    const now = Date.now();
-    if (isSubmittingRef.current || (now - lastSubmitRef.current) < 5000) {
-      console.warn("⚠️ Double-submit bloqué");
-      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
-      return;
-    }
-    
-    isSubmittingRef.current = true;
-    lastSubmitRef.current = now;
-    setSubmitting(true);
-    
-    try {
+    await protectedSubmit(async () => {
       // Déterminer le chauffeur avec dispatch intelligent
       let assignedDriverId: string | null = null;
       const scheduledDateTime = new Date(scheduledDate);
-      let estimatedDuration = 60; // Durée estimée par défaut en minutes
+      let estimatedDuration = 60;
       
-      // Récupérer les paramètres de dispatch du gestionnaire
       const { data: fleetSettings } = await supabase
         .from("fleet_managers")
         .select("smart_buffer_enabled, smart_buffer_min_minutes")
         .eq("id", fleetManagerId)
         .single();
       
-      // Si buffer intelligent activé, calculer via edge function
       if (fleetSettings?.smart_buffer_enabled && pickupCoordinates && destinationCoordinates) {
         try {
           const { data: bufferData } = await supabase.functions.invoke("calculate-smart-buffer", {
@@ -256,18 +243,12 @@ const CreateFleetCourse = () => {
               minBuffer: fleetSettings.smart_buffer_min_minutes || 15
             }
           });
-          
-          if (bufferData?.totalDuration) {
-            estimatedDuration = bufferData.totalDuration;
-            console.log(`Buffer intelligent calculé: ${estimatedDuration} min`);
-          }
+          if (bufferData?.totalDuration) estimatedDuration = bufferData.totalDuration;
         } catch (bufferError) {
-          console.error("Erreur calcul buffer intelligent:", bufferError);
-          // Continuer avec la durée par défaut
+          console.error("Erreur calcul buffer:", bufferError);
         }
       }
       
-      // Fonction pour vérifier la disponibilité d'un chauffeur
       const checkDriverAvailability = async (driverId: string): Promise<boolean> => {
         const { data, error } = await supabase.rpc('check_driver_availability', {
           p_driver_id: driverId,
@@ -277,43 +258,27 @@ const CreateFleetCourse = () => {
         return !error && data === true;
       };
 
-      // Trouver un chauffeur disponible avec fallback intelligent
       const findAvailableDriver = async (): Promise<string | null> => {
-        // Utiliser la fonction de dispatch intelligent
         const { data: availableDriverId, error } = await supabase.rpc('find_available_fleet_driver', {
           p_fleet_manager_id: fleetManagerId,
           p_scheduled_date: scheduledDateTime.toISOString(),
           p_duration_minutes: estimatedDuration,
           p_excluded_driver_id: null
         });
-        
-        if (!error && availableDriverId) {
-          return availableDriverId;
-        }
-        
-        // Fallback : chercher parmi les chauffeurs locaux
+        if (!error && availableDriverId) return availableDriverId;
         for (const driver of drivers) {
-          const isAvailable = await checkDriverAvailability(driver.id);
-          if (isAvailable) return driver.id;
+          if (await checkDriverAvailability(driver.id)) return driver.id;
         }
         return null;
       };
       
       if (selectedDriverId === "random") {
-        // Dispatch intelligent : trouver un chauffeur disponible
         assignedDriverId = await findAvailableDriver();
-        if (!assignedDriverId) {
-          toast.error("Aucun chauffeur disponible pour ce créneau");
-          setSubmitting(false);
-          return;
-        }
+        if (!assignedDriverId) throw new Error("Aucun chauffeur disponible pour ce créneau");
       } else if (selectedDriverId === "favorite" && favoriteDriverId) {
-        // Vérifier si le chauffeur favori est disponible
-        const isFavoriteAvailable = await checkDriverAvailability(favoriteDriverId);
-        if (isFavoriteAvailable) {
+        if (await checkDriverAvailability(favoriteDriverId)) {
           assignedDriverId = favoriteDriverId;
         } else {
-          // Le favori n'est pas dispo, chercher un remplaçant
           toast.info("Votre chauffeur favori n'est pas disponible, recherche d'un remplaçant...");
           const { data: replacementId } = await supabase.rpc('find_available_fleet_driver', {
             p_fleet_manager_id: fleetManagerId,
@@ -321,100 +286,75 @@ const CreateFleetCourse = () => {
             p_duration_minutes: estimatedDuration,
             p_excluded_driver_id: favoriteDriverId
           });
-          
           if (replacementId) {
             assignedDriverId = replacementId;
             toast.success("Un chauffeur de remplacement a été assigné");
           } else {
-            toast.error("Aucun chauffeur disponible pour ce créneau");
-            setSubmitting(false);
-            return;
+            throw new Error("Aucun chauffeur disponible pour ce créneau");
           }
         }
       } else if (selectedDriverId !== "favorite" && selectedDriverId !== "random") {
-        // Chauffeur spécifique sélectionné
-        const isSelectedAvailable = await checkDriverAvailability(selectedDriverId);
-        if (isSelectedAvailable) {
+        if (await checkDriverAvailability(selectedDriverId)) {
           assignedDriverId = selectedDriverId;
         } else {
-          toast.error("Ce chauffeur n'est pas disponible pour ce créneau. Veuillez en choisir un autre.");
-          setSubmitting(false);
-          return;
+          throw new Error("Ce chauffeur n'est pas disponible pour ce créneau");
         }
       }
       
-      if (!assignedDriverId) {
-        toast.error("Aucun chauffeur disponible");
-        setSubmitting(false);
-        return;
-      }
+      if (!assignedDriverId) throw new Error("Aucun chauffeur disponible");
 
-      // Sanitize inputs
-      const sanitizedPickup = sanitizeAddress(pickupAddress);
-      const sanitizedDestination = sanitizeAddress(destinationAddress);
-      const sanitizedNotes = sanitizeString(notes);
-      const sanitizedPassengers = sanitizeInteger(passengersCount, 1, getMaxPassengers());
-
-      // Créer la course
       const { data: course, error: courseError } = await supabase
         .from("courses")
         .insert({
           client_id: clientId,
           driver_id: assignedDriverId,
-          pickup_address: sanitizedPickup,
+          pickup_address: sanitizeAddress(pickupAddress),
           pickup_latitude: pickupCoordinates?.latitude,
           pickup_longitude: pickupCoordinates?.longitude,
-          destination_address: sanitizedDestination,
+          destination_address: sanitizeAddress(destinationAddress),
           destination_latitude: destinationCoordinates?.latitude,
           destination_longitude: destinationCoordinates?.longitude,
           scheduled_date: scheduledDate,
-          passengers_count: sanitizedPassengers,
-          notes: sanitizedNotes,
+          passengers_count: sanitizeInteger(passengersCount, 1, getMaxPassengers()),
+          notes: sanitizeString(notes),
           status: "pending",
           created_by_user_id: user.id,
           payment_method_requested: paymentMethodPreference !== "not_specified" ? paymentMethodPreference : null,
-          fleet_manager_id: fleetManagerId, // Marquer la course comme appartenant à ce gestionnaire
+          fleet_manager_id: fleetManagerId,
         })
         .select()
         .single();
 
       if (courseError) throw courseError;
 
-      // Créer automatiquement un devis via edge function
-      try {
-        await supabase.functions.invoke("create-devis-auto", {
-          body: { courseId: course.id }
-        });
-      } catch (devisError) {
-        console.error("Error creating devis:", devisError);
-      }
+      // Créer devis avec retry
+      await withRetry(
+        async () => {
+          const result = await supabase.functions.invoke("create-devis-auto", { body: { courseId: course.id } });
+          if (result.error) throw result.error;
+          return result;
+        },
+        { maxRetries: 3, context: "Création devis fleet" }
+      ).catch(e => console.warn("Devis auto failed:", e));
 
-      // Notifier le chauffeur
-      const { data: driverData } = await supabase
-        .from("drivers")
-        .select("user_id")
-        .eq("id", assignedDriverId)
-        .single();
-
+      // Notifier le chauffeur (non bloquant)
+      const { data: driverData } = await supabase.from("drivers").select("user_id").eq("id", assignedDriverId).single();
       if (driverData?.user_id) {
-        await supabase.from("notifications").insert({
+        supabase.from("notifications").insert({
           user_id: driverData.user_id,
           title: "Nouvelle demande de course",
-          message: `Course de ${sanitizedPickup} à ${sanitizedDestination}`,
+          message: `Course de ${sanitizeAddress(pickupAddress)} à ${sanitizeAddress(destinationAddress)}`,
           type: "course_request",
           link: "/fleet-driver-dashboard?tab=courses"
-        });
+        }).then(() => {}).catch(() => {});
       }
 
       toast.success("Demande de course envoyée !");
       navigate("/fleet-client-dashboard");
-    } catch (error: any) {
-      console.error("Error creating course:", error);
-      toast.error("Erreur lors de la création de la course");
-    } finally {
-      setSubmitting(false);
-      isSubmittingRef.current = false;
-    }
+      return course;
+    }).catch((error) => {
+      handleError(error, "Création course fleet");
+    });
   };
 
   if (loading) {
