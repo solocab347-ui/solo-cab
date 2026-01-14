@@ -14,6 +14,7 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { PushNotificationListener } from "@/components/PushNotificationListener";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
+import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 
 
 // Eager load public pages
@@ -95,6 +96,7 @@ const App = () => (
             <PushNotificationListener />
             <NotificationPermissionPrompt />
             <EmergencyReset />
+            <ConnectionIndicator />
             <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Index />} />

@@ -115,23 +115,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let timeoutCleared = false;
     let refreshRetryCount = 0;
     let isInitializing = true; // Flag pour ignorer les événements pendant l'init
-    const MAX_REFRESH_RETRIES = 3;
+    const MAX_REFRESH_RETRIES = 2; // Réduit de 3 à 2 pour accélérer
 
-    // TIMEOUT DE SÉCURITÉ: garantir loading=false après 3 secondes MAX (réduit de 5s)
+    // TIMEOUT DE SÉCURITÉ ULTRA-RAPIDE: 2 secondes MAX pour éviter les blocages
     const safetyTimeout = setTimeout(() => {
       if (isMounted && !timeoutCleared) {
-        logger.warn("SAFETY TIMEOUT - forcing loading to false");
+        logger.warn("SAFETY TIMEOUT - forcing loading to false after 2s");
         isInitializing = false;
         setLoading(false);
       }
-    }, 3000);
+    }, 2000); // Réduit de 3s à 2s
 
-    // Fonction pour gérer l'échec du refresh token avec retry
+    // Fonction pour gérer l'échec du refresh token avec retry RAPIDE
     const handleRefreshFailure = async () => {
       refreshRetryCount++;
       
       if (refreshRetryCount <= MAX_REFRESH_RETRIES) {
-        const backoffDelay = Math.min(1000 * Math.pow(2, refreshRetryCount - 1), 5000);
+        // Backoff plus rapide: 500ms, puis 1s max
+        const backoffDelay = Math.min(500 * refreshRetryCount, 1000);
         logger.warn(`Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES}`, { backoffDelay });
         
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
@@ -212,10 +213,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Init rapide avec batch des états pour éviter les flash
+    // Init ULTRA-RAPIDE avec timeout par requête
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Timeout rapide pour getSession
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
+          setTimeout(() => resolve({ data: { session: null } }), 1500) // 1.5s max
+        );
+        
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (!isMounted) return;
         
@@ -223,13 +230,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Batch state updates pour éviter les re-renders multiples
         if (session?.user) {
-          // Récupérer le rôle AVANT de mettre à jour les états
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id);
+          // Récupérer TOUTES les données en PARALLÈLE avec timeout
+          const dataTimeout = 1500; // 1.5s max par requête
           
-          const roles = roleData?.map((r) => r.role) || [];
+          const [rolesResult, employeeResult] = await Promise.all([
+            Promise.race([
+              supabase.from("user_roles").select("role").eq("user_id", session.user.id),
+              new Promise<{ data: null; error: null }>((resolve) => 
+                setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
+              )
+            ]),
+            Promise.race([
+              supabase.from("company_employees").select("id, is_active").eq("user_id", session.user.id).eq("is_active", true).maybeSingle(),
+              new Promise<{ data: null; error: null }>((resolve) => 
+                setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
+              )
+            ])
+          ]);
+          
+          const roles = (rolesResult?.data as any[])?.map((r: any) => r.role) || [];
           const primaryRole: UserRole = roles.includes("admin") 
             ? "admin" 
             : roles.includes("fleet_manager")
@@ -242,17 +261,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ? "client"
             : null;
           
-          // Vérifier si c'est un employé d'entreprise pour les clients
-          let employeeStatus = false;
-          if (primaryRole === "client") {
-            const { data: empData } = await supabase
-              .from("company_employees")
-              .select("id, is_active")
-              .eq("user_id", session.user.id)
-              .eq("is_active", true)
-              .maybeSingle();
-            employeeStatus = !!empData;
-          }
+          const employeeStatus = primaryRole === "client" && !!employeeResult?.data;
           
           // Une seule mise à jour groupée
           setSession(session);
