@@ -5,14 +5,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Configuration des timeouts optimisés
+// Configuration des timeouts optimisés pour réseaux mobiles lents
 const CONNECTION_CONFIG = {
-  AUTH_TIMEOUT: 2500, // Timeout auth réduit de 3s à 2.5s
-  QUERY_TIMEOUT: 4000, // Timeout queries standard
+  AUTH_TIMEOUT: 6000, // Timeout auth augmenté pour mobile 3G/4G lent
+  QUERY_TIMEOUT: 3000, // Timeout queries réduit pour fail-fast
   REALTIME_RECONNECT_DELAY: 1000,
-  MAX_RETRIES: 2,
-  RETRY_DELAY: 500,
+  MAX_RETRIES: 1, // Un seul retry pour éviter les blocages
+  RETRY_DELAY: 300, // Délai court entre retries
+  PING_INTERVAL: 20000, // Vérification connexion toutes les 20s
 } as const;
+
+export { CONNECTION_CONFIG };
 
 // État de connexion global
 let connectionState: 'online' | 'offline' | 'unstable' = 'online';
