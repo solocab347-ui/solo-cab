@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import { Calendar, Clock, MapPin, User, Phone, Mail, Car, AlertTriangle, UserPlu
 import { calculateRoute } from "@/lib/geocoding";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logo from "@/assets/logo-solocab.png";
+import { useSubmitProtection, generateSubmitKey } from "@/hooks/useSubmitProtection";
+import { withRetry } from "@/lib/asyncUtils";
+import { handleError } from "@/lib/errorHandler";
 
 interface DriverInfo {
   id: string;
@@ -35,11 +38,9 @@ const GuestBooking = () => {
   
   const [driver, setDriver] = useState<DriverInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   
-  // PROTECTION ANTI-DOUBLE-SUBMIT
-  const isSubmittingRef = useRef(false);
-  const lastSubmitRef = useRef<number>(0);
+  // PROTECTION ANTI-DOUBLE-SUBMIT via hook centralisé
+  const { isSubmitting: submitting, protectedSubmit } = useSubmitProtection();
   
   // Form fields
   const [guestName, setGuestName] = useState("");
@@ -211,19 +212,8 @@ const GuestBooking = () => {
       return;
     }
 
-    // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si déjà en cours
-    const now = Date.now();
-    if (isSubmittingRef.current || (now - lastSubmitRef.current) < 5000) {
-      console.warn("⚠️ Double-submit bloqué");
-      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
-      return;
-    }
-    
-    isSubmittingRef.current = true;
-    lastSubmitRef.current = now;
-    setSubmitting(true);
-    
-    try {
+    // Utiliser le hook de protection centralisé
+    await protectedSubmit(async () => {
       const { data, error } = await supabase
         .from('courses')
         .insert({
@@ -252,34 +242,34 @@ const GuestBooking = () => {
 
       if (error) throw error;
 
-      // Générer automatiquement le devis (sera auto-accepté car guest booking)
+      // Générer automatiquement le devis avec retry
       console.log('🔄 Génération automatique du devis pour guest booking...');
-      const { error: devisError } = await supabase.functions.invoke('create-devis-auto', {
-        body: {
-          course_id: data.id,
-          driver_id: driver.id
-        }
-      });
-
-      if (devisError) {
-        console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
-        // Ne pas bloquer la navigation, le chauffeur pourra générer manuellement si besoin
-      } else {
+      await withRetry(
+        async () => {
+          const result = await supabase.functions.invoke('create-devis-auto', {
+            body: {
+              course_id: data.id,
+              driver_id: driver.id
+            }
+          });
+          if (result.error) throw result.error;
+          return result;
+        },
+        { maxRetries: 3, context: 'Création devis guest booking' }
+      ).then(() => {
         console.log('✅ Devis généré et auto-accepté avec succès');
-      }
+      }).catch((devisError) => {
+        console.error('⚠️ Erreur génération devis (non bloquant):', devisError);
+      });
 
       toast.success("Demande de réservation envoyée !");
       
       // Redirect to tracking page
       navigate(`/reservation-suivi/${data.guest_tracking_token}`);
-      
-    } catch (error: any) {
-      console.error("Error creating guest booking:", error);
-      toast.error("Erreur lors de la création de la réservation");
-    } finally {
-      setSubmitting(false);
-      isSubmittingRef.current = false;
-    }
+      return data;
+    }).catch((error) => {
+      handleError(error, "Création réservation invité");
+    });
   };
 
   const getDriverDisplayName = () => {

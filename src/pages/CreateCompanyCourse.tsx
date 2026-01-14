@@ -15,6 +15,9 @@ import { geocodeAddress } from "@/lib/geocoding";
 import { validateCoordinates } from "@/lib/courseValidation";
 import { sanitizeAddress, sanitizeString, sanitizeInteger } from "@/lib/inputSanitizer";
 import { CoursePaymentMethodSelector } from "@/components/shared/CoursePaymentMethodSelector";
+import { useSubmitProtection, generateSubmitKey } from "@/hooks/useSubmitProtection";
+import { withRetry } from "@/lib/asyncUtils";
+import { handleError } from "@/lib/errorHandler";
 
 export default function CreateCompanyCourse() {
   const [searchParams] = useSearchParams();
@@ -22,7 +25,7 @@ export default function CreateCompanyCourse() {
   const { user } = useAuth();
 
   const driverId = searchParams.get("driver_id");
-  const [loading, setLoading] = useState(false);
+  const { isSubmitting, protectedSubmit } = useSubmitProtection();
   const [pickupAddress, setPickupAddress] = useState("");
   const [pickupCoordinates, setPickupCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -77,8 +80,16 @@ export default function CreateCompanyCourse() {
       return;
     }
 
-    setLoading(true);
-    try {
+    // Générer une clé unique pour cette soumission
+    const submitKey = generateSubmitKey({
+      pickupAddress,
+      destinationAddress,
+      scheduledDate,
+      driverId,
+      companyId: company.id,
+    });
+
+    await protectedSubmit(async () => {
       // Créer la course
       const { data: course, error: courseError } = await supabase
         .from("courses")
@@ -113,16 +124,19 @@ export default function CreateCompanyCourse() {
 
       if (linkError) throw linkError;
 
-      // Créer le devis automatiquement
-      try {
-        await supabase.functions.invoke("create-devis-auto", {
-          body: { course_id: course.id, driver_id: driverId }
-        });
-      } catch (e) {
-        console.warn("Devis auto failed:", e);
-      }
+      // Créer le devis automatiquement avec retry
+      await withRetry(
+        async () => {
+          const result = await supabase.functions.invoke("create-devis-auto", {
+            body: { course_id: course.id, driver_id: driverId }
+          });
+          if (result.error) throw result.error;
+          return result;
+        },
+        { maxRetries: 3, context: "Création devis auto" }
+      ).catch(e => console.warn("Devis auto failed:", e));
 
-      // Notifier le chauffeur
+      // Notifier le chauffeur (non bloquant)
       const { data: driverData } = await supabase
         .from("drivers")
         .select("user_id")
@@ -130,23 +144,26 @@ export default function CreateCompanyCourse() {
         .single();
 
       if (driverData?.user_id) {
-        await supabase.from("notifications").insert({
-          user_id: driverData.user_id,
-          title: "Nouvelle demande entreprise",
-          message: `${company.company_name} demande une course`,
-          type: "course_request",
-          link: "/driver-dashboard?tab=courses",
-        });
+        // Fire-and-forget notification
+        (async () => {
+          try {
+            await supabase.from("notifications").insert({
+              user_id: driverData.user_id,
+              title: "Nouvelle demande entreprise",
+              message: `${company.company_name} demande une course`,
+              type: "course_request",
+              link: "/driver-dashboard?tab=courses",
+            });
+          } catch {}
+        })();
       }
 
       toast.success("Demande envoyée au chauffeur");
       navigate("/company-dashboard?tab=reservations");
-    } catch (error: any) {
-      console.error("Error:", error);
-      toast.error("Erreur lors de la création");
-    } finally {
-      setLoading(false);
-    }
+      return course;
+    }).catch((error) => {
+      handleError(error, "Création course entreprise");
+    });
   };
 
   return (
@@ -244,8 +261,8 @@ export default function CreateCompanyCourse() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Envoi en cours..." : "Envoyer la demande"}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Envoi en cours..." : "Envoyer la demande"}
             </Button>
           </form>
         </Card>
