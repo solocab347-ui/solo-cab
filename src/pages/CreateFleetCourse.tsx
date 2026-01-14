@@ -340,13 +340,13 @@ const CreateFleetCourse = () => {
       // Notifier le chauffeur (non bloquant)
       const { data: driverData } = await supabase.from("drivers").select("user_id").eq("id", assignedDriverId).single();
       if (driverData?.user_id) {
-        supabase.from("notifications").insert({
+        void supabase.from("notifications").insert({
           user_id: driverData.user_id,
           title: "Nouvelle demande de course",
           message: `Course de ${sanitizeAddress(pickupAddress)} à ${sanitizeAddress(destinationAddress)}`,
           type: "course_request",
           link: "/fleet-driver-dashboard?tab=courses"
-        }).then(() => {}).catch(() => {});
+        });
       }
 
       toast.success("Demande de course envoyée !");
