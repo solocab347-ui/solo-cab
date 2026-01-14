@@ -1,6 +1,6 @@
 /**
- * Configuration React Query ULTRA-OPTIMISÉE pour performances maximales
- * Cache agressif + refetch minimal pour fluidité
+ * Configuration React Query OPTIMISÉE pour connexion et latence
+ * Cache intelligent + timeout réduits + retry optimisé
  */
 
 import { QueryClient } from '@tanstack/react-query';
@@ -8,24 +8,25 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache ULTRA agressif pour performances max
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes en mémoire
+      // Cache équilibré pour fraîcheur des données
+      staleTime: 5 * 60 * 1000, // 5 minutes (réduit de 10)
+      gcTime: 15 * 60 * 1000, // 15 minutes (réduit de 30)
       
-      // Désactiver TOUS les refetch automatiques pour performances
+      // Refetch sélectif pour données critiques
       refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
+      refetchOnMount: 'always', // Activé pour éviter données stales
+      refetchOnReconnect: true, // Activé pour récupérer après déconnexion
       
-      // Retry minimal
+      // Retry optimisé - plus rapide
       retry: 1,
-      retryDelay: 1000,
+      retryDelay: (attemptIndex) => Math.min(500 * (attemptIndex + 1), 1500),
       
-      // Network mode optimized
+      // Network mode optimisé
       networkMode: 'online',
     },
     mutations: {
-      retry: false,
+      retry: 1,
+      retryDelay: 500,
       networkMode: 'online',
     },
   },
