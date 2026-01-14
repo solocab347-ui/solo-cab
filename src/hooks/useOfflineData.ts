@@ -4,7 +4,7 @@
  * Supporte: clients, chauffeurs, gestionnaires de flotte, entreprises, collaborateurs
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -15,6 +15,9 @@ import {
   OfflineFleetDriver,
   OfflineCompanyEmployee 
 } from '@/lib/offlineCache';
+import { connectionRecovery } from '@/lib/connectionOptimizer';
+import { invalidateCriticalQueries } from '@/lib/queryClient';
+import { toast } from 'sonner';
 
 interface UseOfflineDataReturn {
   isOnline: boolean;
@@ -50,26 +53,52 @@ export const useOfflineData = (): UseOfflineDataReturn => {
   const [companyEmployees, setCompanyEmployees] = useState<OfflineCompanyEmployee[]>([]);
   const [stats, setStats] = useState({ clients: 0, courses: 0, drivers: 0, lastSync: null as string | null });
 
+  const hasSyncedOnReconnect = useRef(false);
+
   // Écouter les changements de connectivité
   useEffect(() => {
     const handleOnline = () => {
       console.log('[OfflineData] Connexion rétablie');
       setIsOnline(true);
       setIsOfflineMode(false);
+      
+      // Sync automatique au retour de connexion (une seule fois)
+      if (!hasSyncedOnReconnect.current) {
+        hasSyncedOnReconnect.current = true;
+        toast.info('Connexion rétablie - synchronisation en cours...');
+        // Attendre 2s pour que la connexion se stabilise
+        setTimeout(() => {
+          syncNow();
+          invalidateCriticalQueries();
+        }, 2000);
+      }
     };
 
     const handleOffline = () => {
-      console.log('[OfflineData] Connexion perdue - Mode sans échec activé');
+      console.log('[OfflineData] Connexion perdue - Mode hors ligne activé');
       setIsOnline(false);
       setIsOfflineMode(true);
+      hasSyncedOnReconnect.current = false;
+      toast.warning('Mode hors ligne activé', {
+        description: 'Les données en cache restent accessibles',
+      });
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Écouter les récupérations de connexion
+    const unsubscribe = connectionRecovery.onStateChange((state) => {
+      if (state === 'recovered' && !hasSyncedOnReconnect.current) {
+        hasSyncedOnReconnect.current = true;
+        syncNow();
+      }
+    });
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      unsubscribe();
     };
   }, []);
 

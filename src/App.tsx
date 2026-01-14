@@ -15,8 +15,7 @@ import { PushNotificationListener } from "@/components/PushNotificationListener"
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
-
-
+import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 // Eager load public pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -97,6 +96,7 @@ const App = () => (
             <NotificationPermissionPrompt />
             <EmergencyReset />
             <ConnectionIndicator />
+            <OfflineSyncIndicator />
             <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Index />} />
