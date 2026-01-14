@@ -365,17 +365,10 @@ const ChauffeurProfile = () => {
       {/* Contenu */}
       <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
         {/* Navigation rapide */}
-        <div className="flex gap-3 -mt-16 relative z-20">
-          <Button
-            onClick={() => navigate("/chauffeurs")}
-            variant="outline"
-            className="flex-1 bg-card shadow-lg"
-          >
-            Voir d'autres chauffeurs
-          </Button>
+        <div className="flex justify-center -mt-16 relative z-20">
           <Button
             onClick={() => navigate("/client-dashboard")}
-            className="flex-1 bg-card shadow-lg text-foreground hover:bg-accent"
+            className="bg-card shadow-lg text-foreground hover:bg-accent px-8"
             variant="outline"
           >
             Mon espace client
