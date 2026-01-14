@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logger } from "@/lib/productionLogger";
+import { 
+  instantSignIn, 
+  instantGetSession, 
+  instantSignOut, 
+  getNavigationPath,
+  clearAuthCache 
+} from "@/lib/instantAuth";
 
 type UserRole = "admin" | "driver" | "client" | "company" | "fleet_manager" | null;
 
@@ -112,27 +119,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutCleared = false;
+    let isInitializing = true;
     let refreshRetryCount = 0;
-    let isInitializing = true; // Flag pour ignorer les événements pendant l'init
-    const MAX_REFRESH_RETRIES = 3;
+    const MAX_REFRESH_RETRIES = 2; // Moins de retries pour rapidité
 
-    // TIMEOUT DE SÉCURITÉ: 5 secondes - assez long pour les réseaux lents
+    // TIMEOUT DE SÉCURITÉ ULTRA-COURT: 3 secondes pour UX fluide
     const safetyTimeout = setTimeout(() => {
-      if (isMounted && !timeoutCleared) {
-        logger.warn("SAFETY TIMEOUT - forcing loading to false after 5s");
+      if (isMounted && isInitializing) {
+        logger.warn("SAFETY TIMEOUT - forcing loading to false after 3s");
         isInitializing = false;
         setLoading(false);
       }
-    }, 5000); // 5s pour les réseaux lents
+    }, 3000);
 
-    // Fonction pour gérer l'échec du refresh token avec retry RAPIDE
+    // Fonction pour gérer l'échec du refresh token - RAPIDE
     const handleRefreshFailure = async () => {
       refreshRetryCount++;
       
       if (refreshRetryCount <= MAX_REFRESH_RETRIES) {
-        // Backoff plus rapide: 500ms, puis 1s max
-        const backoffDelay = Math.min(500 * refreshRetryCount, 1000);
+        const backoffDelay = Math.min(300 * refreshRetryCount, 600);
         logger.warn(`Refresh token failed, retry ${refreshRetryCount}/${MAX_REFRESH_RETRIES}`, { backoffDelay });
         
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
@@ -151,40 +156,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return await handleRefreshFailure();
       } else {
         logger.error("Max refresh retries reached, clearing session");
+        clearAuthCache();
         setUser(null);
         setSession(null);
         setUserRole(null);
         setUserRoles([]);
-        localStorage.removeItem('sb-iyothopplhbwcfrpxryc-auth-token');
         toast.error("Session expirée, veuillez vous reconnecter");
         navigate("/login");
         return false;
       }
     };
 
-    // Auth state listener - IGNORE les événements pendant l'initialisation
+    // Auth state listener - SIMPLIFIÉ
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return;
         
-        // IGNORER les événements pendant l'init pour éviter les doubles mises à jour
+        // IGNORER les événements pendant l'init
         if (isInitializing && (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) {
-          logger.info("Auth event ignored during init", { event });
           return;
         }
         
-        logger.info("Auth event processing", { event });
-        
-        // Gestion spécifique de l'erreur de refresh token
+        // Gestion de l'échec du refresh token
         if (event === "TOKEN_REFRESHED" && !session) {
-          logger.warn("Token refresh failed, attempting recovery");
           setTimeout(() => handleRefreshFailure(), 0);
           return;
         }
         
-        // Gestion de l'expiration de session
+        // Déconnexion
         if (event === "SIGNED_OUT") {
-          logger.info("User signed out");
+          clearAuthCache();
           setUser(null);
           setSession(null);
           setUserRole(null);
@@ -192,12 +193,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
-        // Reset retry counter on successful auth events
+        // Reset retry counter
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           refreshRetryCount = 0;
         }
         
-        // Mise à jour synchrone uniquement pour SIGNED_IN post-init
+        // Mise à jour pour SIGNED_IN post-init
         if (event === "SIGNED_IN" && !isInitializing) {
           setSession(session);
           setUser(session?.user ?? null);
@@ -213,82 +214,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Init avec timeouts ROBUSTES
+    // INIT INSTANTANÉ avec le nouveau système
     const initAuth = async () => {
+      const startTime = Date.now();
+      
       try {
-        // Timeout généreux pour getSession
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
-          setTimeout(() => resolve({ data: { session: null } }), 4000) // 4s
-        );
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        const result = await instantGetSession();
         
         if (!isMounted) return;
         
-        logger.info("Session init", { found: !!session });
+        logger.info("Instant auth init", { 
+          found: !!result.user, 
+          fromCache: result.fromCache,
+          duration: Date.now() - startTime 
+        });
         
-        // Batch state updates pour éviter les re-renders multiples
-        if (session?.user) {
-          // Récupérer TOUTES les données en PARALLÈLE avec timeout généreux
-          const dataTimeout = 4000; // 4s par requête
-          
-          const [rolesResult, employeeResult] = await Promise.all([
-            Promise.race([
-              supabase.from("user_roles").select("role").eq("user_id", session.user.id),
-              new Promise<{ data: null; error: null }>((resolve) => 
-                setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
-              )
-            ]),
-            Promise.race([
-              supabase.from("company_employees").select("id, is_active").eq("user_id", session.user.id).eq("is_active", true).maybeSingle(),
-              new Promise<{ data: null; error: null }>((resolve) => 
-                setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
-              )
-            ])
-          ]);
-          
-          const roles = (rolesResult?.data as any[])?.map((r: any) => r.role) || [];
-          const primaryRole: UserRole = roles.includes("admin") 
-            ? "admin" 
-            : roles.includes("fleet_manager")
-            ? "fleet_manager"
-            : roles.includes("company")
-            ? "company"
-            : roles.includes("driver")
-            ? "driver"
-            : roles.includes("client")
-            ? "client"
-            : null;
-          
-          const employeeStatus = primaryRole === "client" && !!employeeResult?.data;
-          
-          // Une seule mise à jour groupée
-          setSession(session);
-          setUser(session.user);
-          setUserRoles(roles);
-          setUserRole(primaryRole);
-          setIsCompanyEmployee(employeeStatus);
-          setIsCompanyEmployeeChecked(true); // CRITIQUE: Marquer comme vérifié après le batch
-        } else {
-          setSession(null);
-          setUser(null);
-          setUserRoles([]);
-          setUserRole(null);
-          setIsCompanyEmployee(false);
-          setIsCompanyEmployeeChecked(true); // Pas d'utilisateur = pas de vérification nécessaire
-        }
+        // Mise à jour groupée de tous les états
+        setSession(result.session);
+        setUser(result.user);
+        setUserRoles(result.roles);
+        setUserRole(result.role as UserRole);
+        setIsCompanyEmployee(result.isEmployee);
+        setIsCompanyEmployeeChecked(true);
+        
       } catch (error) {
         logger.error("Init error", { error });
+        setIsCompanyEmployeeChecked(true);
       } finally {
         if (isMounted) {
-          timeoutCleared = true;
           clearTimeout(safetyTimeout);
-          // Marquer l'init terminée AVANT de changer loading
           isInitializing = false;
           setIsInitialized(true);
           setLoading(false);
-          logger.info("Auth init complete");
+          logger.info("Auth init complete", { duration: Date.now() - startTime });
         }
       }
     };
@@ -298,7 +256,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       isMounted = false;
       isInitializing = false;
-      timeoutCleared = true;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
@@ -368,99 +325,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    // Timeouts ROBUSTES pour éviter les faux échecs
-    const AUTH_TIMEOUT = 15000; // 15s pour l'auth
-    const DATA_TIMEOUT = 8000; // 8s pour les données additionnelles
-    
     try {
-      // Étape 1: Authentification avec timeout généreux
-      const authPromise = supabase.auth.signInWithPassword({ email, password });
-      const authTimeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Connexion trop lente - vérifiez votre réseau")), AUTH_TIMEOUT)
-      );
+      // Utiliser le nouveau système d'authentification instantanée
+      const result = await instantSignIn(email, password);
       
-      const { data, error } = await Promise.race([authPromise, authTimeoutPromise]) as Awaited<typeof authPromise>;
-
-      if (error) throw error;
-      if (!data.user) throw new Error("Erreur de connexion");
-
-      const userId = data.user.id;
-
-      // Étape 2: Récupérer les données en parallèle avec timeout généreux
-      const [rolesResult, driverResult, employeeResult] = await Promise.all([
-        Promise.race([
-          supabase.from("user_roles").select("role").eq("user_id", userId),
-          new Promise<{ data: null; error: null }>((resolve) => 
-            setTimeout(() => resolve({ data: null, error: null }), DATA_TIMEOUT)
-          )
-        ]),
-        Promise.race([
-          supabase.from("drivers").select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id").eq("user_id", userId).maybeSingle(),
-          new Promise<{ data: null; error: null }>((resolve) => 
-            setTimeout(() => resolve({ data: null, error: null }), DATA_TIMEOUT)
-          )
-        ]),
-        Promise.race([
-          supabase.from("company_employees").select("id").eq("user_id", userId).eq("is_active", true).maybeSingle(),
-          new Promise<{ data: null; error: null }>((resolve) => 
-            setTimeout(() => resolve({ data: null, error: null }), DATA_TIMEOUT)
-          )
-        ])
-      ]);
-
-      // Traiter les rôles (fallback si timeout)
-      const roles = (rolesResult?.data as any[])?.map((r: any) => r.role) || [];
-      const role: UserRole = roles.includes("admin") 
-        ? "admin" 
-        : roles.includes("fleet_manager")
-        ? "fleet_manager"
-        : roles.includes("company")
-        ? "company"
-        : roles.includes("driver")
-        ? "driver"
-        : roles.includes("client")
-        ? "client"
-        : null;
-
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur de connexion');
+      }
+      
       // Mettre à jour les états
-      setSession(data.session);
-      setUser(data.user);
-      setUserRoles(roles);
-      setUserRole(role);
-      
-      const isEmployee = !!employeeResult?.data;
-      setIsCompanyEmployee(isEmployee);
+      setSession(result.session);
+      setUser(result.user);
+      setUserRoles(result.roles);
+      setUserRole(result.role as UserRole);
+      setIsCompanyEmployee(result.isEmployee);
       setIsCompanyEmployeeChecked(true);
 
       // Toast de succès
-      const roleLabel = role === "admin" ? "Administrateur" : role === "fleet_manager" ? "Gestionnaire de flotte" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
+      const roleLabel = result.role === "admin" ? "Administrateur" 
+        : result.role === "fleet_manager" ? "Gestionnaire de flotte" 
+        : result.role === "driver" ? "Chauffeur" 
+        : result.role === "client" ? "Client" 
+        : "Utilisateur";
+      
       toast.success("Connexion réussie !", {
         description: `Bienvenue ${roleLabel} !`,
         duration: 2000,
       });
 
-      // Navigation rapide basée sur le rôle
-      if (role === "admin") {
-        navigate("/admin-dashboard", { replace: true });
-      } else if (role === "fleet_manager") {
-        navigate("/fleet-dashboard", { replace: true });
-      } else if (role === "driver") {
-        const driverData = driverResult?.data;
-        if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
-          navigate("/pioneer-payment", { replace: true });
-        } else if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
-          navigate("/fleet-driver-dashboard", { replace: true });
-        } else {
-          navigate("/driver-dashboard", { replace: true });
+      // Récupérer les données driver si nécessaire pour la navigation
+      let driverData: any = null;
+      if (result.role === "driver" && result.user) {
+        try {
+          const { data } = await supabase
+            .from("drivers")
+            .select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id")
+            .eq("user_id", result.user.id)
+            .maybeSingle();
+          driverData = data;
+        } catch {
+          // Ignorer - utiliser navigation par défaut
         }
-      } else if (role === "company") {
-        navigate("/company-dashboard", { replace: true });
-      } else if (role === "client") {
-        navigate(isEmployee ? "/company-employee-dashboard" : "/client-dashboard", { replace: true });
-      } else {
-        // Fallback: si pas de rôle trouvé (timeout), aller au dashboard par défaut
-        navigate("/client-dashboard", { replace: true });
       }
+
+      // Navigation instantanée
+      const path = getNavigationPath(result.role, result.isEmployee, driverData);
+      navigate(path, { replace: true });
     } catch (error: any) {
       logger.error("Signin error", { error });
       
@@ -484,15 +394,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      // Utiliser le nouveau système de déconnexion instantanée
+      await instantSignOut();
       
-      // Ignorer les erreurs "session_not_found" car la session peut déjà être expirée
-      // Ce n'est pas une vraie erreur - l'utilisateur est déjà déconnecté
-      if (error && !error.message?.includes("session_not_found")) {
-        throw error;
-      }
-      
-      // Nettoyage local toujours effectué (même si session déjà expirée côté serveur)
+      // Nettoyage local
       setUser(null);
       setSession(null);
       setUserRole(null);
@@ -502,7 +407,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate("/login");
       toast.success("Déconnexion réussie", {
         description: "À bientôt sur SoloCab !",
-        duration: 3000,
+        duration: 2000,
       });
     } catch (error: any) {
       logger.error("Signout error", { error });
