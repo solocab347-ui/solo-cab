@@ -3723,6 +3723,72 @@ export type Database = {
           },
         ]
       }
+      detected_errors: {
+        Row: {
+          created_at: string | null
+          detected_at: string | null
+          detected_by: string | null
+          driver_id: string | null
+          entity_id: string
+          entity_type: string
+          error_context: Json | null
+          fix_details: Json | null
+          fix_solution_id: string | null
+          fixed_at: string | null
+          id: string
+          pattern_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_at?: string | null
+          detected_by?: string | null
+          driver_id?: string | null
+          entity_id: string
+          entity_type: string
+          error_context?: Json | null
+          fix_details?: Json | null
+          fix_solution_id?: string | null
+          fixed_at?: string | null
+          id?: string
+          pattern_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_at?: string | null
+          detected_by?: string | null
+          driver_id?: string | null
+          entity_id?: string
+          entity_type?: string
+          error_context?: Json | null
+          fix_details?: Json | null
+          fix_solution_id?: string | null
+          fixed_at?: string | null
+          id?: string
+          pattern_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detected_errors_fix_solution_id_fkey"
+            columns: ["fix_solution_id"]
+            isOneToOne: false
+            referencedRelation: "error_solutions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "detected_errors_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devis: {
         Row: {
           accepted_at: string | null
@@ -5551,6 +5617,50 @@ export type Database = {
           },
         ]
       }
+      entity_dependencies: {
+        Row: {
+          auto_create: boolean | null
+          auto_create_solution_id: string | null
+          child_entity: string
+          condition: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          parent_entity: string
+          relationship_type: string
+        }
+        Insert: {
+          auto_create?: boolean | null
+          auto_create_solution_id?: string | null
+          child_entity: string
+          condition?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_entity: string
+          relationship_type: string
+        }
+        Update: {
+          auto_create?: boolean | null
+          auto_create_solution_id?: string | null
+          child_entity?: string
+          condition?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_entity?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_dependencies_auto_create_solution_id_fkey"
+            columns: ["auto_create_solution_id"]
+            isOneToOne: false
+            referencedRelation: "error_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_learnings: {
         Row: {
           auto_fix_enabled: boolean | null
@@ -5598,6 +5708,54 @@ export type Database = {
           is_active?: boolean | null
           last_occurrence_at?: string | null
           occurrences?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      error_patterns: {
+        Row: {
+          auto_fix_enabled: boolean | null
+          created_at: string | null
+          description: string | null
+          detection_query: string | null
+          entity_type: string
+          id: string
+          is_active: boolean | null
+          last_occurrence_at: string | null
+          occurrences_count: number | null
+          pattern_code: string
+          pattern_name: string
+          severity: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_fix_enabled?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          detection_query?: string | null
+          entity_type: string
+          id?: string
+          is_active?: boolean | null
+          last_occurrence_at?: string | null
+          occurrences_count?: number | null
+          pattern_code: string
+          pattern_name: string
+          severity?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_fix_enabled?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          detection_query?: string | null
+          entity_type?: string
+          id?: string
+          is_active?: boolean | null
+          last_occurrence_at?: string | null
+          occurrences_count?: number | null
+          pattern_code?: string
+          pattern_name?: string
+          severity?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -5667,6 +5825,68 @@ export type Database = {
           user_role?: string | null
         }
         Relationships: []
+      }
+      error_solutions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          fix_function: string | null
+          fix_query: string | null
+          id: string
+          is_active: boolean | null
+          pattern_id: string | null
+          priority: number | null
+          solution_code: string
+          solution_name: string
+          success_rate: number | null
+          successful_fixes: number | null
+          total_attempts: number | null
+          updated_at: string | null
+          validation_query: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          fix_function?: string | null
+          fix_query?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern_id?: string | null
+          priority?: number | null
+          solution_code: string
+          solution_name: string
+          success_rate?: number | null
+          successful_fixes?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          validation_query?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          fix_function?: string | null
+          fix_query?: string | null
+          id?: string
+          is_active?: boolean | null
+          pattern_id?: string | null
+          priority?: number | null
+          solution_code?: string
+          solution_name?: string
+          success_rate?: number | null
+          successful_fixes?: number | null
+          total_attempts?: number | null
+          updated_at?: string | null
+          validation_query?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "error_solutions_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "error_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expense_report_reminders: {
         Row: {
@@ -11365,6 +11585,30 @@ export type Database = {
         }
         Relationships: []
       }
+      system_health_metrics: {
+        Row: {
+          id: string
+          metric_data: Json | null
+          metric_name: string
+          metric_value: number | null
+          recorded_at: string | null
+        }
+        Insert: {
+          id?: string
+          metric_data?: Json | null
+          metric_name: string
+          metric_value?: number | null
+          recorded_at?: string | null
+        }
+        Update: {
+          id?: string
+          metric_data?: Json | null
+          metric_name?: string
+          metric_value?: number | null
+          recorded_at?: string | null
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -11607,6 +11851,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      validation_rules: {
+        Row: {
+          auto_fix_solution_id: string | null
+          created_at: string | null
+          description: string | null
+          entity_type: string
+          error_message: string
+          id: string
+          is_active: boolean | null
+          is_blocking: boolean | null
+          rule_code: string
+          rule_name: string
+          trigger_event: string
+          validation_query: string
+        }
+        Insert: {
+          auto_fix_solution_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          entity_type: string
+          error_message: string
+          id?: string
+          is_active?: boolean | null
+          is_blocking?: boolean | null
+          rule_code: string
+          rule_name: string
+          trigger_event: string
+          validation_query: string
+        }
+        Update: {
+          auto_fix_solution_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          entity_type?: string
+          error_message?: string
+          id?: string
+          is_active?: boolean | null
+          is_blocking?: boolean | null
+          rule_code?: string
+          rule_name?: string
+          trigger_event?: string
+          validation_query?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validation_rules_auto_fix_solution_id_fkey"
+            columns: ["auto_fix_solution_id"]
+            isOneToOne: false
+            referencedRelation: "error_solutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_documents: {
         Row: {
@@ -13569,6 +13866,14 @@ export type Database = {
         }
         Returns: string
       }
+      auto_calculate_commission: {
+        Args: { p_course_id: string }
+        Returns: boolean
+      }
+      auto_create_invoice_for_course: {
+        Args: { p_course_id: string }
+        Returns: boolean
+      }
       auto_create_missing_invoices: { Args: never; Returns: number }
       auto_dispatch_fleet_course: {
         Args: { p_course_id: string }
@@ -13835,6 +14140,15 @@ export type Database = {
         Returns: {
           message: string
           success: boolean
+        }[]
+      }
+      detect_and_fix_errors: {
+        Args: never
+        Returns: {
+          entities_fixed: number
+          entities_found: number
+          errors_logged: number
+          pattern_code: string
         }[]
       }
       detect_city_from_address: { Args: { p_address: string }; Returns: string }
@@ -14464,6 +14778,7 @@ export type Database = {
           client_photo: string
         }[]
       }
+      get_system_health_report: { Args: never; Returns: Json }
       get_user_client_id_secure: {
         Args: { user_uuid: string }
         Returns: string
@@ -14594,6 +14909,18 @@ export type Database = {
         }[]
       }
       refresh_driver_statistics: { Args: never; Returns: undefined }
+      register_error_pattern: {
+        Args: {
+          p_description: string
+          p_detection_query: string
+          p_entity_type: string
+          p_fix_function?: string
+          p_pattern_code: string
+          p_pattern_name: string
+          p_severity?: string
+        }
+        Returns: string
+      }
       remove_user_role: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
