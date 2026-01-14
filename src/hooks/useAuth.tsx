@@ -368,78 +368,123 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error("Erreur de connexion");
-
-      const userId = data.user.id;
-
-      // OPTIMISATION: Récupérer toutes les données en PARALLÈLE
-      const [rolesResult, driverResult, employeeResult] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("drivers").select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id").eq("user_id", userId).maybeSingle(),
-        supabase.from("company_employees").select("id").eq("user_id", userId).eq("is_active", true).maybeSingle()
-      ]);
-
-      // Traiter les rôles
-      const roles = rolesResult.data?.map((r) => r.role) || [];
-      const role: UserRole = roles.includes("admin") 
-        ? "admin" 
-        : roles.includes("fleet_manager")
-        ? "fleet_manager"
-        : roles.includes("company")
-        ? "company"
-        : roles.includes("driver")
-        ? "driver"
-        : roles.includes("client")
-        ? "client"
-        : null;
-
-      // Mettre à jour les états immédiatement
-      setUserRoles(roles);
-      setUserRole(role);
+    // Timeout de 8 secondes max pour toute l'opération de connexion
+    const SIGNIN_TIMEOUT = 8000;
+    
+    const signInWithTimeout = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), SIGNIN_TIMEOUT);
       
-      const isEmployee = !!employeeResult.data;
-      setIsCompanyEmployee(isEmployee);
-      setIsCompanyEmployeeChecked(true);
+      try {
+        // Étape 1: Authentification avec timeout
+        const authPromise = supabase.auth.signInWithPassword({ email, password });
+        const authTimeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Connexion trop lente - vérifiez votre réseau")), 6000)
+        );
+        
+        const { data, error } = await Promise.race([authPromise, authTimeoutPromise]) as Awaited<typeof authPromise>;
 
-      // Toast de succès
-      const roleLabel = role === "admin" ? "Administrateur" : role === "fleet_manager" ? "Gestionnaire de flotte" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
-      toast.success("Connexion réussie !", {
-        description: `Bienvenue ${roleLabel} !`,
-        duration: 2000,
-      });
+        if (error) throw error;
+        if (!data.user) throw new Error("Erreur de connexion");
 
-      // Navigation rapide basée sur le rôle
-      if (role === "admin") {
-        navigate("/admin-dashboard", { replace: true });
-      } else if (role === "fleet_manager") {
-        navigate("/fleet-dashboard", { replace: true });
-      } else if (role === "driver") {
-        const driverData = driverResult.data;
-        if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
-          navigate("/pioneer-payment", { replace: true });
-        } else if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
-          navigate("/fleet-driver-dashboard", { replace: true });
+        const userId = data.user.id;
+
+        // Étape 2: Récupérer les données en parallèle avec timeout court (2s)
+        const dataTimeout = 2000;
+        const [rolesResult, driverResult, employeeResult] = await Promise.all([
+          Promise.race([
+            supabase.from("user_roles").select("role").eq("user_id", userId),
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
+            )
+          ]),
+          Promise.race([
+            supabase.from("drivers").select("is_fleet_driver, fleet_manager_id, is_pioneer, stripe_customer_id").eq("user_id", userId).maybeSingle(),
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
+            )
+          ]),
+          Promise.race([
+            supabase.from("company_employees").select("id").eq("user_id", userId).eq("is_active", true).maybeSingle(),
+            new Promise<{ data: null; error: null }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: null }), dataTimeout)
+            )
+          ])
+        ]);
+
+        // Traiter les rôles (fallback si timeout)
+        const roles = (rolesResult?.data as any[])?.map((r: any) => r.role) || [];
+        const role: UserRole = roles.includes("admin") 
+          ? "admin" 
+          : roles.includes("fleet_manager")
+          ? "fleet_manager"
+          : roles.includes("company")
+          ? "company"
+          : roles.includes("driver")
+          ? "driver"
+          : roles.includes("client")
+          ? "client"
+          : null;
+
+        // Mettre à jour les états
+        setSession(data.session);
+        setUser(data.user);
+        setUserRoles(roles);
+        setUserRole(role);
+        
+        const isEmployee = !!employeeResult?.data;
+        setIsCompanyEmployee(isEmployee);
+        setIsCompanyEmployeeChecked(true);
+
+        // Toast de succès
+        const roleLabel = role === "admin" ? "Administrateur" : role === "fleet_manager" ? "Gestionnaire de flotte" : role === "driver" ? "Chauffeur" : role === "client" ? "Client" : "Utilisateur";
+        toast.success("Connexion réussie !", {
+          description: `Bienvenue ${roleLabel} !`,
+          duration: 2000,
+        });
+
+        // Navigation rapide basée sur le rôle
+        if (role === "admin") {
+          navigate("/admin-dashboard", { replace: true });
+        } else if (role === "fleet_manager") {
+          navigate("/fleet-dashboard", { replace: true });
+        } else if (role === "driver") {
+          const driverData = driverResult?.data;
+          if (driverData?.is_pioneer && !driverData?.stripe_customer_id) {
+            navigate("/pioneer-payment", { replace: true });
+          } else if (driverData?.is_fleet_driver && driverData?.fleet_manager_id) {
+            navigate("/fleet-driver-dashboard", { replace: true });
+          } else {
+            navigate("/driver-dashboard", { replace: true });
+          }
+        } else if (role === "company") {
+          navigate("/company-dashboard", { replace: true });
+        } else if (role === "client") {
+          navigate(isEmployee ? "/company-employee-dashboard" : "/client-dashboard", { replace: true });
         } else {
-          navigate("/driver-dashboard", { replace: true });
+          // Fallback: si pas de rôle trouvé (timeout), aller au dashboard par défaut
+          navigate("/client-dashboard", { replace: true });
         }
-      } else if (role === "company") {
-        navigate("/company-dashboard", { replace: true });
-      } else if (role === "client") {
-        navigate(isEmployee ? "/company-employee-dashboard" : "/client-dashboard", { replace: true });
-      } else {
-        navigate("/", { replace: true });
+      } finally {
+        clearTimeout(timeoutId);
       }
+    };
+    
+    try {
+      await signInWithTimeout();
     } catch (error: any) {
       logger.error("Signin error", { error });
+      
+      // Message d'erreur adapté
+      let errorMessage = "Vérifiez votre email et mot de passe";
+      if (error.message?.includes("trop lente") || error.message?.includes("abort")) {
+        errorMessage = "Connexion lente - réessayez ou vérifiez votre réseau";
+      } else if (error.message?.includes("Invalid login")) {
+        errorMessage = "Email ou mot de passe incorrect";
+      }
+      
       toast.error("Connexion échouée", {
-        description: error.message || "Vérifiez votre email et mot de passe",
+        description: errorMessage,
         duration: 4000,
       });
       throw error;
