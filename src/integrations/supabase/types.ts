@@ -14457,6 +14457,10 @@ export type Database = {
         Args: { _role: string; _user_id: string }
         Returns: undefined
       }
+      repair_all_missing_factures: {
+        Args: { p_driver_id?: string }
+        Returns: Json
+      }
       repair_driver_counter: {
         Args: { _driver_id: string }
         Returns: {
@@ -14466,6 +14470,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      repair_missing_facture: { Args: { p_course_id: string }; Returns: Json }
       return_course_to_fleet_manager: {
         Args: { p_course_id: string; p_reason: string }
         Returns: boolean

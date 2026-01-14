@@ -172,10 +172,36 @@ export const useOptimisticCourseActions = (
 
       if (updateError) throw updateError;
 
-      // Generate facture in background (ne bloque pas l'UI)
-      supabase.functions.invoke('create-facture-auto', {
-        body: { course_id: courseId, payment_method: paymentMethod }
-      }).catch(err => console.warn('Facture background error:', err));
+      // Generate facture avec retry automatique
+      const generateFacture = async (retryCount = 0): Promise<void> => {
+        try {
+          const { data, error } = await supabase.functions.invoke('create-facture-auto', {
+            body: { course_id: courseId, payment_method: paymentMethod }
+          });
+          
+          if (error) {
+            console.error('[completeCourse] Facture error:', error);
+            if (retryCount < 2) {
+              console.log(`[completeCourse] Retry ${retryCount + 1}/2...`);
+              await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+              return generateFacture(retryCount + 1);
+            }
+            // Après 2 retries, créer une notification pour le chauffeur
+            console.error('[completeCourse] Facture creation failed after retries');
+          } else {
+            console.log('[completeCourse] Facture created:', data?.facture?.id);
+          }
+        } catch (err) {
+          console.error('[completeCourse] Facture exception:', err);
+          if (retryCount < 2) {
+            await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+            return generateFacture(retryCount + 1);
+          }
+        }
+      };
+      
+      // Exécuter en background mais avec retry
+      generateFacture();
 
       setCourses(prev => prev.map(c => 
         c.id === courseId ? { ...c, _optimistic: false } : c

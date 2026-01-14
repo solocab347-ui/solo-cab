@@ -788,15 +788,42 @@ const CoursesList = ({ driverId }: CoursesListProps) => {
         }
       }
 
-      // Generate facture automatically
-      const { data, error: factureError } = await supabase.functions.invoke("create-facture-auto", {
-        body: {
-          course_id: selectedCourseId,
-          payment_method: paymentMethod
-        }
-      });
+      // Generate facture automatically avec retry
+      let factureData = null;
+      let factureCreated = false;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          console.log(`[handleCompleteCourse] Tentative création facture ${attempt + 1}/3`);
+          const { data, error: factureError } = await supabase.functions.invoke("create-facture-auto", {
+            body: {
+              course_id: selectedCourseId,
+              payment_method: paymentMethod
+            }
+          });
 
-      if (factureError) throw factureError;
+          if (factureError) {
+            console.error(`[handleCompleteCourse] Erreur tentative ${attempt + 1}:`, factureError);
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+              continue;
+            }
+            throw factureError;
+          }
+          
+          factureData = data;
+          factureCreated = true;
+          console.log("[handleCompleteCourse] Facture créée:", data?.facture?.id);
+          break;
+        } catch (err: any) {
+          console.error(`[handleCompleteCourse] Exception tentative ${attempt + 1}:`, err);
+          if (attempt >= 2) {
+            // Après 3 tentatives, on continue quand même (course complétée mais facture manquante)
+            console.error("[handleCompleteCourse] Échec création facture après 3 tentatives");
+            toast.warning("Course terminée mais facture non générée. Contactez le support.");
+          }
+        }
+      }
 
       // Si paiement reçu sur place pour course entreprise, marquer la facture comme payée ET créer note de frais
       if (isSelectedCourseCompany && companyPaymentStatus === "received") {
