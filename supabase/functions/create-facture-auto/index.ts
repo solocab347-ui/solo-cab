@@ -320,8 +320,72 @@ serve(async (req) => {
       }
     }
     
+    // ROBUSTESSE: Pour les courses sans devis (guest bookings ou autres), créer automatiquement un devis
     if (!acceptedDevis) {
-      throw new Error("Aucun devis trouvé pour cette course. Veuillez d'abord créer un devis.");
+      console.log("[CREATE-FACTURE-AUTO] ⚠️ No devis found, attempting to create one automatically");
+      
+      // Récupérer les tarifs du chauffeur pour calculer un prix
+      const { data: driverInfo } = await supabase
+        .from("drivers")
+        .select("rate_per_km, base_rate, hourly_rate, tva_rate, reservation_counter")
+        .eq("id", course.driver_id)
+        .single();
+      
+      if (driverInfo) {
+        const distanceKm = course.distance_km || 0;
+        const durationMinutes = course.duration_minutes || 0;
+        
+        // Calcul simple du prix
+        const basePrice = driverInfo.base_rate || 5;
+        const distancePrice = distanceKm * (driverInfo.rate_per_km || 2.5);
+        const totalPrice = course.guest_estimated_price || (basePrice + distancePrice);
+        
+        // Générer un numéro de réservation
+        const counter = (driverInfo.reservation_counter || 0) + 1;
+        const quoteNumber = `RES-${String(counter).padStart(3, '0')}`;
+        
+        // Incrémenter le compteur
+        await supabase
+          .from("drivers")
+          .update({ reservation_counter: counter })
+          .eq("id", course.driver_id);
+        
+        // Créer le devis
+        const { data: emergencyDevis, error: emergencyDevisError } = await supabase
+          .from("devis")
+          .insert({
+            course_id: course_id,
+            driver_id: course.driver_id,
+            client_id: course.client_id || null,
+            amount: totalPrice,
+            base_price: basePrice,
+            distance_price: distancePrice,
+            time_price: 0,
+            discount_amount: 0,
+            status: "accepted",
+            accepted_at: new Date().toISOString(),
+            valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            quote_number: quoteNumber
+          })
+          .select()
+          .single();
+        
+        if (emergencyDevisError) {
+          console.error("[CREATE-FACTURE-AUTO] Emergency devis creation failed:", emergencyDevisError);
+          throw new Error("Impossible de créer un devis automatique pour cette course");
+        }
+        
+        // Mettre à jour la course avec le numéro
+        await supabase
+          .from("courses")
+          .update({ course_number: quoteNumber })
+          .eq("id", course_id);
+        
+        acceptedDevis = emergencyDevis;
+        console.log("[CREATE-FACTURE-AUTO] ✅ Emergency devis created:", emergencyDevis.id, quoteNumber);
+      } else {
+        throw new Error("Aucun devis trouvé et impossible de récupérer les tarifs du chauffeur");
+      }
     }
 
     // Use the SAME reservation number as the devis for the invoice
