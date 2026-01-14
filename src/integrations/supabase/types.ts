@@ -117,6 +117,50 @@ export type Database = {
           },
         ]
       }
+      auto_fix_logs: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          error_message: string | null
+          fix_applied: string
+          id: string
+          learning_id: string | null
+          success: boolean | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          error_message?: string | null
+          fix_applied: string
+          id?: string
+          learning_id?: string | null
+          success?: boolean | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          error_message?: string | null
+          fix_applied?: string
+          id?: string
+          learning_id?: string | null
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_fix_logs_learning_id_fkey"
+            columns: ["learning_id"]
+            isOneToOne: false
+            referencedRelation: "error_learnings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_ips: {
         Row: {
           block_count: number | null
@@ -5507,6 +5551,57 @@ export type Database = {
           },
         ]
       }
+      error_learnings: {
+        Row: {
+          auto_fix_enabled: boolean | null
+          auto_fix_function: string | null
+          created_at: string | null
+          description: string
+          error_pattern: string
+          error_type: string
+          first_detected_at: string | null
+          fix_failure_count: number | null
+          fix_success_count: number | null
+          id: string
+          is_active: boolean | null
+          last_occurrence_at: string | null
+          occurrences: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_fix_enabled?: boolean | null
+          auto_fix_function?: string | null
+          created_at?: string | null
+          description: string
+          error_pattern: string
+          error_type: string
+          first_detected_at?: string | null
+          fix_failure_count?: number | null
+          fix_success_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_occurrence_at?: string | null
+          occurrences?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_fix_enabled?: boolean | null
+          auto_fix_function?: string | null
+          created_at?: string | null
+          description?: string
+          error_pattern?: string
+          error_type?: string
+          first_detected_at?: string | null
+          fix_failure_count?: number | null
+          fix_success_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_occurrence_at?: string | null
+          occurrences?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       error_reports: {
         Row: {
           additional_context: Json | null
@@ -9043,6 +9138,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      health_checks: {
+        Row: {
+          check_name: string
+          check_type: string
+          created_at: string | null
+          id: string
+          interval_minutes: number | null
+          is_enabled: boolean | null
+          last_issues_fixed: number | null
+          last_issues_found: number | null
+          last_run_at: string | null
+          next_run_at: string | null
+          total_fixes: number | null
+          total_runs: number | null
+        }
+        Insert: {
+          check_name: string
+          check_type: string
+          created_at?: string | null
+          id?: string
+          interval_minutes?: number | null
+          is_enabled?: boolean | null
+          last_issues_fixed?: number | null
+          last_issues_found?: number | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          total_fixes?: number | null
+          total_runs?: number | null
+        }
+        Update: {
+          check_name?: string
+          check_type?: string
+          created_at?: string | null
+          id?: string
+          interval_minutes?: number | null
+          is_enabled?: boolean | null
+          last_issues_fixed?: number | null
+          last_issues_found?: number | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          total_fixes?: number | null
+          total_runs?: number | null
+        }
+        Relationships: []
       }
       invitation_tokens: {
         Row: {
@@ -13429,6 +13569,7 @@ export type Database = {
         }
         Returns: string
       }
+      auto_create_missing_invoices: { Args: never; Returns: number }
       auto_dispatch_fleet_course: {
         Args: { p_course_id: string }
         Returns: {
@@ -14474,6 +14615,14 @@ export type Database = {
       return_course_to_fleet_manager: {
         Args: { p_course_id: string; p_reason: string }
         Returns: boolean
+      }
+      run_health_checks: {
+        Args: never
+        Returns: {
+          check_name: string
+          issues_fixed: number
+          issues_found: number
+        }[]
       }
       search_available_partners: {
         Args: {
