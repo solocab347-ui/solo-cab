@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateCoordinates } from "@/lib/courseValidation";
@@ -23,13 +23,27 @@ export interface DirectCourseParams {
 }
 
 /**
+ * Génère une clé unique pour identifier une requête de course directe (anti-doublon)
+ */
+const generateDirectCourseKey = (params: DirectCourseParams): string => {
+  return `direct-${params.driverId}-${params.guestPhone}-${params.pickupAddress}-${params.scheduledDate}`;
+};
+
+/**
  * Hook pour créer des courses confirmées directement pour des clients non inscrits
  * Ces courses sont confirmées immédiatement avec un devis auto-accepté
+ * PROTECTION ANTI-DOUBLE-SUBMIT: Empêche les créations multiples
  */
 export function useDirectCourseCreation() {
   const [loading, setLoading] = useState(false);
+  
+  // PROTECTION ANTI-DOUBLE-SUBMIT
+  const isSubmittingRef = useRef(false);
+  const lastSubmitKeyRef = useRef<string | null>(null);
+  const lastSubmitTimeRef = useRef<number>(0);
+  const DEBOUNCE_MS = 5000; // 5 secondes minimum entre deux soumissions identiques
 
-  const createDirectCourse = async (params: DirectCourseParams) => {
+  const createDirectCourse = useCallback(async (params: DirectCourseParams) => {
     const {
       driverId,
       guestName,
@@ -46,6 +60,28 @@ export function useDirectCourseCreation() {
       courseType = "classic",
       durationHours,
     } = params;
+
+    // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si une soumission est déjà en cours
+    if (isSubmittingRef.current) {
+      logger.warn("⚠️ Double-submit bloqué: soumission déjà en cours (direct course)");
+      toast.warning("Veuillez patienter, votre demande est en cours de traitement...");
+      return null;
+    }
+
+    // PROTECTION ANTI-DOUBLE-SUBMIT: Vérifier si c'est la même requête dans un court délai
+    const courseKey = generateDirectCourseKey(params);
+    const now = Date.now();
+    
+    if (lastSubmitKeyRef.current === courseKey && (now - lastSubmitTimeRef.current) < DEBOUNCE_MS) {
+      logger.warn("⚠️ Double-submit bloqué: même requête dans les 5 dernières secondes", { courseKey });
+      toast.warning("Cette demande a déjà été envoyée. Veuillez patienter...");
+      return null;
+    }
+
+    // Marquer comme en cours de soumission
+    isSubmittingRef.current = true;
+    lastSubmitKeyRef.current = courseKey;
+    lastSubmitTimeRef.current = now;
 
     setLoading(true);
 
@@ -283,8 +319,10 @@ export function useDirectCourseCreation() {
       return null;
     } finally {
       setLoading(false);
+      // PROTECTION ANTI-DOUBLE-SUBMIT: Libérer le verrou
+      isSubmittingRef.current = false;
     }
-  };
+  }, []);
 
   return { createDirectCourse, loading };
 }
