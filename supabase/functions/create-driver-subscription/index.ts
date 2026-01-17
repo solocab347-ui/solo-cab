@@ -122,66 +122,10 @@ serve(async (req) => {
       console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ New customer created:", customerId);
     }
 
-    // Create Stripe recurring subscription product and price
-    console.log("[CREATE-DRIVER-SUBSCRIPTION] 🔍 Creating/fetching recurring price...");
-    
-    // Check if product already exists
-    const products = await stripe.products.list({ 
-      limit: 10,
-      active: true 
-    });
-    
-    let productId: string;
-    const existingProduct = products.data.find((p: any) => p.name === "Abonnement SoloCab - Chauffeur VTC");
-    
-    if (existingProduct) {
-      productId = existingProduct.id;
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Using existing product:", productId);
-    } else {
-      // Create product
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] 📝 Creating new product...");
-      const product = await stripe.products.create({
-        name: "Abonnement SoloCab - Chauffeur VTC",
-        description: "Abonnement mensuel à la plateforme SoloCab pour chauffeurs VTC",
-        metadata: {
-          platform: "solocab",
-          type: "driver_subscription"
-        }
-      });
-      productId = product.id;
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ New product created:", productId);
-    }
-    
-    // Check if recurring price exists for this product
-    const prices = await stripe.prices.list({ 
-      product: productId, 
-      limit: 10,
-      active: true
-    });
-    
-    let priceId: string | undefined = prices.data.find(
-      (p: any) => p.recurring?.interval === "month" && p.unit_amount === 4999
-    )?.id;
-    
-    if (!priceId) {
-      // Create recurring monthly price
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] 📝 Creating new recurring price...");
-      const price = await stripe.prices.create({
-        product: productId,
-        unit_amount: 4999, // 49.99€
-        currency: "eur",
-        recurring: {
-          interval: "month",
-        },
-        metadata: {
-          platform: "solocab"
-        }
-      });
-      priceId = price.id;
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ New recurring price created:", priceId);
-    } else {
-      console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Using existing recurring price:", priceId);
-    }
+    // Utiliser le produit et prix existants pour l'abonnement 9.99€/mois
+    // Produit: prod_ToCaKWphCKGShD - Prix: price_1SqaBl34nJZKnmmIKC7vYZy5
+    const priceId = "price_1SqaBl34nJZKnmmIKC7vYZy5";
+    console.log("[CREATE-DRIVER-SUBSCRIPTION] ✅ Using subscription price 9.99€/month:", priceId);
 
     // Get origin for redirect URLs avec validation
     const origin = req.headers.get("origin");
