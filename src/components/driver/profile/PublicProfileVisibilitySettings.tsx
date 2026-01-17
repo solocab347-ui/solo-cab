@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Users, Building2, Truck, Star, Euro, Globe, Phone } from 'lucide-react';
+import { Eye, EyeOff, Users, Star, Euro, Globe, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PUBLIC_DRIVERS_QUERY_KEY, PUBLIC_DRIVER_PROFILE_KEY } from '@/hooks/usePublicDriverProfile';
@@ -25,8 +25,6 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
   
   // Visibility states synced with driverProfile
   const [visibleToDrivers, setVisibleToDrivers] = useState(false);
-  const [visibleToCompanies, setVisibleToCompanies] = useState(false);
-  const [visibleToFleetManagers, setVisibleToFleetManagers] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [showRatingPublic, setShowRatingPublic] = useState(false);
@@ -37,8 +35,6 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
   useEffect(() => {
     if (driverProfile) {
       setVisibleToDrivers(driverProfile.visible_to_drivers ?? false);
-      setVisibleToCompanies(driverProfile.visible_to_companies ?? false);
-      setVisibleToFleetManagers(driverProfile.visible_to_fleet_managers ?? false);
       setShowPhone(driverProfile.show_phone ?? false);
       setShowEmail(driverProfile.show_email ?? false);
       setShowRatingPublic(driverProfile.show_rating_public ?? false);
@@ -64,12 +60,6 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
       switch (field) {
         case 'visible_to_drivers':
           setVisibleToDrivers(value);
-          break;
-        case 'visible_to_companies':
-          setVisibleToCompanies(value);
-          break;
-        case 'visible_to_fleet_managers':
-          setVisibleToFleetManagers(value);
           break;
         case 'show_phone':
           setShowPhone(value);
@@ -142,12 +132,12 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
         </CardContent>
       </Card>
 
-      {/* Visibilité par type de partenaire */}
+      {/* Visibilité pour les partenaires chauffeurs */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
-            Visibilité par type de partenaire
+            Visibilité pour les partenaires
           </CardTitle>
           <CardDescription>
             Choisissez qui peut vous trouver et vous proposer des partenariats
@@ -159,7 +149,7 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
               <Users className="h-5 w-5 text-blue-500" />
               <div>
                 <Label htmlFor="visible-drivers-public" className="font-medium">
-                  Visible pour les chauffeurs
+                  Visible pour les chauffeurs partenaires
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   Les autres chauffeurs peuvent vous proposer des partenariats
@@ -170,50 +160,6 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
               id="visible-drivers-public"
               checked={visibleToDrivers}
               onCheckedChange={(value) => updateSetting('visible_to_drivers', value)}
-              disabled={loading}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-purple-500" />
-              <div>
-                <Label htmlFor="visible-companies-public" className="font-medium">
-                  Visible pour les entreprises
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Les entreprises peuvent vous proposer des contrats
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="visible-companies-public"
-              checked={visibleToCompanies}
-              onCheckedChange={(value) => updateSetting('visible_to_companies', value)}
-              disabled={loading}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <Truck className="h-5 w-5 text-orange-500" />
-              <div>
-                <Label htmlFor="visible-fleet-public" className="font-medium">
-                  Visible pour les gestionnaires de flotte
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Les gestionnaires de flotte peuvent vous proposer de rejoindre leur réseau
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="visible-fleet-public"
-              checked={visibleToFleetManagers}
-              onCheckedChange={(value) => updateSetting('visible_to_fleet_managers', value)}
               disabled={loading}
             />
           </div>
@@ -317,10 +263,10 @@ export const PublicProfileVisibilitySettings: React.FC<PublicProfileVisibilitySe
               <Star className="h-5 w-5 text-amber-500" />
               <div>
                 <Label htmlFor="show-rating-partners-setting" className="font-medium">
-                  Afficher ma note aux partenaires
+                  Afficher ma note aux partenaires chauffeurs
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Vos partenaires (chauffeurs, entreprises, flottes) peuvent voir votre note
+                  Vos partenaires chauffeurs peuvent voir votre note
                 </p>
               </div>
             </div>
