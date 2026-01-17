@@ -213,7 +213,7 @@ const RegisterDriverPromo = () => {
                 <span className="text-5xl font-bold text-green-500">GRATUIT</span>
               </div>
               <p className="text-lg text-muted-foreground">
-                1 mois d'essai gratuit, puis <span className="font-semibold text-foreground">49,99€/mois</span>
+                1 mois d'essai gratuit, puis <span className="font-semibold text-foreground">9,99€/mois</span>
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 Testez toutes les fonctionnalités sans engagement pendant 30 jours
@@ -518,7 +518,7 @@ const RegisterDriverPromo = () => {
                 <span className="font-bold text-2xl text-green-500">GRATUIT</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                Puis 49,99€/mois - Sans engagement
+                Puis 9,99€/mois - Sans engagement
               </p>
             </div>
 

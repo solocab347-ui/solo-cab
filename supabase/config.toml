@@ -203,3 +203,9 @@ verify_jwt = true
 
 [functions.create-shared-course-payment]
 verify_jwt = true
+
+[functions.create-nfc-plate-order]
+verify_jwt = false
+
+[functions.track-nfc-order]
+verify_jwt = false

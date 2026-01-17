@@ -41,6 +41,9 @@ import OurValues from "./pages/OurValues";
 import DriverWelcome from "./pages/DriverWelcome";
 import MentionsLegales from "./pages/MentionsLegales";
 import SafeMode from "./pages/SafeMode";
+import NfcPlatePage from "./pages/NfcPlatePage";
+import NfcPlateOrderSuccess from "./pages/NfcPlateOrderSuccess";
+import TrackNfcOrder from "./pages/TrackNfcOrder";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
 
 // Lazy load heavy dashboards and authenticated pages
@@ -101,6 +104,9 @@ const App = () => (
               <Route path="/driver-welcome" element={<DriverWelcome />} />
               <Route path="/mentions-legales" element={<MentionsLegales />} />
               <Route path="/safe-mode" element={<SafeMode />} />
+              <Route path="/plaque-nfc" element={<NfcPlatePage />} />
+              <Route path="/plaque-nfc/success" element={<NfcPlateOrderSuccess />} />
+              <Route path="/suivi-plaque-nfc" element={<TrackNfcOrder />} />
               
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
