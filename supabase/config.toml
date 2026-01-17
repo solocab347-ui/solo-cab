@@ -209,3 +209,6 @@ verify_jwt = false
 
 [functions.track-nfc-order]
 verify_jwt = false
+
+[functions.send-nfc-status-email]
+verify_jwt = false

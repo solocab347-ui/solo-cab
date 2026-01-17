@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -45,6 +46,8 @@ import {
   Mail,
   Phone,
   QrCode,
+  Send,
+  AlertCircle,
 } from "lucide-react";
 
 interface NfcOrder {
@@ -68,6 +71,8 @@ interface NfcOrder {
   created_at: string;
   amount: number;
   notes: string | null;
+  with_subscription: boolean;
+  tracking_token: string;
 }
 
 const AdminNfcOrdersManager = () => {
@@ -77,6 +82,7 @@ const AdminNfcOrdersManager = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<NfcOrder | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
 
   // Update form
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -119,10 +125,16 @@ const AdminNfcOrdersManager = () => {
         updates.tracking_number = trackingNumber;
       }
 
+      const statusChanged = newStatus && newStatus !== selectedOrder.delivery_status;
+
       if (newStatus) {
         updates.delivery_status = newStatus;
         if (newStatus === "shipped") {
           updates.shipped_at = new Date().toISOString();
+          // Estimation de livraison à 7 jours
+          const estimatedDate = new Date();
+          estimatedDate.setDate(estimatedDate.getDate() + 7);
+          updates.estimated_delivery_date = estimatedDate.toISOString().split('T')[0];
         } else if (newStatus === "delivered") {
           updates.delivered_at = new Date().toISOString();
         }
@@ -135,7 +147,31 @@ const AdminNfcOrdersManager = () => {
 
       if (error) throw error;
 
-      toast.success("Commande mise à jour");
+      // Envoyer l'email si demandé et si le statut a changé
+      if (sendEmail && statusChanged && ["preparing", "shipped", "delivered"].includes(newStatus)) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke("send-nfc-status-email", {
+            body: {
+              order_id: selectedOrder.id,
+              new_status: newStatus,
+              tracking_number: trackingNumber || null,
+            },
+          });
+
+          if (emailError) {
+            console.error("Email error:", emailError);
+            toast.warning("Commande mise à jour mais échec de l'envoi d'email");
+          } else {
+            toast.success(`Commande mise à jour et email envoyé à ${selectedOrder.email}`);
+          }
+        } catch (emailErr) {
+          console.error("Email send error:", emailErr);
+          toast.warning("Commande mise à jour mais échec de l'envoi d'email");
+        }
+      } else {
+        toast.success("Commande mise à jour");
+      }
+
       setSelectedOrder(null);
       fetchOrders();
     } catch (error: any) {
