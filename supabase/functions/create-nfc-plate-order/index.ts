@@ -12,8 +12,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-NFC-PLATE-ORDER] ${step}${detailsStr}`);
 };
 
-// Prix de la plaque NFC Coutras
-const NFC_PLATE_PRICE_ID = "price_1SqaCu34nJZKnmmIbgUaYK8K";
+// Prix des plaques NFC
+const NFC_PLATE_PRICES = {
+  large: {
+    priceId: "price_1SqaCu34nJZKnmmIbgUaYK8K",
+    name: "Plaque NFC Plastique (Grande)",
+    amount: 29.99,
+  },
+  small: {
+    priceId: "price_1Sqdz534nJZKnmmItg1y3Nck",
+    name: "Plaque NFC Bois (Petite)",
+    amount: 14.99,
+  },
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,12 +59,17 @@ serve(async (req) => {
       shipping_country = "France",
       driver_id,
       with_subscription = false,
+      plate_type = "large", // "large" ou "small"
     } = body;
 
     // Validation
     if (!email || !first_name || !last_name || !shipping_address || !shipping_city || !shipping_postal_code) {
       throw new Error("Tous les champs obligatoires doivent être remplis");
     }
+
+    // Récupérer le bon prix selon le type de plaque
+    const plateConfig = NFC_PLATE_PRICES[plate_type as keyof typeof NFC_PLATE_PRICES] || NFC_PLATE_PRICES.large;
+    logStep("Plate type selected", { plate_type, plateConfig });
 
     // Générer un numéro de commande unique
     const orderNumber = `NFC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
@@ -90,6 +106,8 @@ serve(async (req) => {
         driver_id: driver_id || null,
         qr_code_link: qrCodeLink,
         with_subscription,
+        plate_type, // Stocker le type de plaque
+        amount: plateConfig.amount, // Stocker le montant
         payment_status: "pending",
         delivery_status: "pending",
         estimated_delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -102,7 +120,7 @@ serve(async (req) => {
       throw new Error(`Erreur création commande: ${orderError.message}`);
     }
 
-    logStep("Order created", { orderId: order.id });
+    logStep("Order created", { orderId: order.id, plate_type });
 
     // Chercher ou créer le customer Stripe
     const customers = await stripe.customers.list({ email, limit: 1 });
@@ -137,17 +155,18 @@ serve(async (req) => {
       customer: customerId,
       line_items: [
         {
-          price: NFC_PLATE_PRICE_ID,
+          price: plateConfig.priceId,
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${origin}/nfc-plate-order-success?order=${orderNumber}&token=${order.tracking_token}`,
+      success_url: `${origin}/plaque-nfc/success?order=${orderNumber}&token=${order.tracking_token}`,
       cancel_url: `${origin}/plaque-nfc?canceled=true`,
       metadata: {
         order_id: order.id,
         order_number: orderNumber,
         type: "nfc_plate_order",
+        plate_type: plate_type,
       },
       shipping_address_collection: {
         allowed_countries: ["FR"],

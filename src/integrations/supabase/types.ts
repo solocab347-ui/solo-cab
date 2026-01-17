@@ -9598,6 +9598,7 @@ export type Database = {
           order_number: string
           payment_status: string
           phone: string | null
+          plate_type: string | null
           qr_code_link: string | null
           shipped_at: string | null
           shipping_address: string
@@ -9628,6 +9629,7 @@ export type Database = {
           order_number: string
           payment_status?: string
           phone?: string | null
+          plate_type?: string | null
           qr_code_link?: string | null
           shipped_at?: string | null
           shipping_address: string
@@ -9658,6 +9660,7 @@ export type Database = {
           order_number?: string
           payment_status?: string
           phone?: string | null
+          plate_type?: string | null
           qr_code_link?: string | null
           shipped_at?: string | null
           shipping_address?: string
