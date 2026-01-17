@@ -194,3 +194,12 @@ verify_jwt = false
 
 [functions.manage-driver-free-access]
 verify_jwt = true
+
+[functions.stripe-connect-onboarding]
+verify_jwt = true
+
+[functions.stripe-connect-status]
+verify_jwt = true
+
+[functions.create-shared-course-payment]
+verify_jwt = true

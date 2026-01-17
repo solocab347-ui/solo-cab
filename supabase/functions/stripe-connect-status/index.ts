@@ -1,0 +1,125 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[STRIPE-CONNECT-STATUS] ${step}${detailsStr}`);
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
+  try {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header");
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData.user) throw new Error("User not authenticated");
+
+    const userId = userData.user.id;
+
+    // Get driver record
+    const { data: driver, error: driverError } = await supabaseClient
+      .from("drivers")
+      .select("id, stripe_connect_account_id, stripe_connect_status")
+      .eq("user_id", userId)
+      .single();
+
+    if (driverError || !driver) {
+      throw new Error("Driver not found");
+    }
+
+    if (!driver.stripe_connect_account_id) {
+      return new Response(
+        JSON.stringify({
+          connected: false,
+          status: "not_connected",
+          charges_enabled: false,
+          payouts_enabled: false,
+          details_submitted: false,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // Get account status from Stripe
+    const account = await stripe.accounts.retrieve(driver.stripe_connect_account_id);
+    
+    logStep("Account status retrieved", {
+      accountId: account.id,
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      detailsSubmitted: account.details_submitted,
+    });
+
+    // Determine status
+    let status = "pending";
+    if (account.charges_enabled && account.payouts_enabled) {
+      status = "active";
+    } else if (account.details_submitted) {
+      status = "pending_verification";
+    }
+
+    // Update driver record
+    await supabaseClient
+      .from("drivers")
+      .update({
+        stripe_connect_status: status,
+        stripe_connect_onboarding_completed: account.details_submitted,
+        stripe_connect_details_submitted: account.details_submitted,
+        stripe_connect_charges_enabled: account.charges_enabled,
+        stripe_connect_payouts_enabled: account.payouts_enabled,
+        stripe_connect_updated_at: new Date().toISOString(),
+      })
+      .eq("id", driver.id);
+
+    return new Response(
+      JSON.stringify({
+        connected: true,
+        status,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+        account_id: account.id,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message: errorMessage });
+
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
+});

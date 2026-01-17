@@ -450,6 +450,128 @@ serve(async (req) => {
           logStep("Email error (non-blocking)", { error: String(emailError) });
         }
       }
+
+      // CASE 4: Shared course payment
+      if (metadata.type === "shared_course_payment" && metadata.shared_course_id) {
+        const sharedCourseId = metadata.shared_course_id;
+        const courseId = metadata.course_id;
+        const senderDriverId = metadata.sender_driver_id;
+        const receiverDriverId = metadata.receiver_driver_id;
+        const commissionAmount = parseFloat(metadata.commission_amount || "0");
+        const senderStripeAccount = metadata.sender_stripe_account;
+
+        logStep("Shared course payment completed", { 
+          sharedCourseId, 
+          courseId, 
+          commissionAmount,
+          senderStripeAccount 
+        });
+
+        // Update shared course payment record
+        await supabaseClient
+          .from("shared_course_payments")
+          .update({
+            stripe_payment_intent_id: session.payment_intent as string,
+            status: "paid",
+            payment_captured_at: new Date().toISOString(),
+          })
+          .eq("stripe_checkout_session_id", session.id);
+
+        // Update shared course status
+        await supabaseClient
+          .from("shared_courses")
+          .update({
+            payment_status: "paid",
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", sharedCourseId);
+
+        // Update course status
+        await supabaseClient
+          .from("courses")
+          .update({ status: "completed" })
+          .eq("id", courseId);
+
+        // Transfer commission to sender driver's Stripe account
+        if (senderStripeAccount && commissionAmount > 0) {
+          try {
+            const transfer = await stripe.transfers.create({
+              amount: Math.round(commissionAmount * 100), // In cents
+              currency: "eur",
+              destination: senderStripeAccount,
+              metadata: {
+                shared_course_id: sharedCourseId,
+                type: "partner_commission",
+              },
+            });
+
+            logStep("Commission transferred to sender", { 
+              transferId: transfer.id, 
+              amount: commissionAmount 
+            });
+
+            // Update payment record with transfer info
+            await supabaseClient
+              .from("shared_course_payments")
+              .update({
+                stripe_transfer_to_sender_id: transfer.id,
+                status: "completed",
+                transfer_completed_at: new Date().toISOString(),
+              })
+              .eq("stripe_checkout_session_id", session.id);
+
+            // Update shared course
+            await supabaseClient
+              .from("shared_courses")
+              .update({ payment_status: "transferred" })
+              .eq("id", sharedCourseId);
+
+            // Notify sender driver
+            const { data: senderData } = await supabaseClient
+              .from("drivers")
+              .select("user_id")
+              .eq("id", senderDriverId)
+              .single();
+
+            if (senderData?.user_id) {
+              await supabaseClient.from("notifications").insert({
+                user_id: senderData.user_id,
+                title: "💰 Commission reçue",
+                message: `Vous avez reçu ${commissionAmount.toFixed(2)}€ de commission pour une course partagée.`,
+                type: "info",
+              });
+            }
+          } catch (transferError) {
+            logStep("Transfer error", { error: String(transferError) });
+            // Mark as pending transfer
+            await supabaseClient
+              .from("shared_course_payments")
+              .update({
+                status: "transfer_pending",
+                error_message: String(transferError),
+              })
+              .eq("stripe_checkout_session_id", session.id);
+          }
+        }
+
+        // Notify receiver driver
+        const { data: receiverData } = await supabaseClient
+          .from("drivers")
+          .select("user_id")
+          .eq("id", receiverDriverId)
+          .single();
+
+        if (receiverData?.user_id) {
+          const receiverAmount = (parseFloat(session.amount_total?.toString() || "0") / 100) - commissionAmount;
+          await supabaseClient.from("notifications").insert({
+            user_id: receiverData.user_id,
+            title: "✅ Paiement course partagée reçu",
+            message: `Le client a payé. Vous gardez ${receiverAmount.toFixed(2)}€ après commission partenaire.`,
+            type: "info",
+          });
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
