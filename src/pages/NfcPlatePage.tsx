@@ -22,13 +22,40 @@ import {
   QrCode,
   Users,
   Zap,
+  TreeDeciduous,
 } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
+import nfcPlateLarge from "@/assets/nfc-plate-large-clean.png";
+import nfcPlateSmall from "@/assets/nfc-plate-small-clean.png";
+
+type PlateType = "large" | "small";
+
+const PLATES = {
+  large: {
+    name: "Plaque NFC Plastique",
+    subtitle: "Format carré - Grande",
+    description: "Plaque carrée en plastique noir premium avec QR code intégré",
+    material: "Plastique",
+    price: 29.99,
+    priceId: "price_1SqaCu34nJZKnmmIbgUaYK8K",
+    image: nfcPlateLarge,
+  },
+  small: {
+    name: "Plaque NFC Bois",
+    subtitle: "Format ovale - Compacte",
+    description: "Plaque ovale en bois naturel, élégante et écologique",
+    material: "Bois naturel",
+    price: 14.99,
+    priceId: "price_1Sqdz534nJZKnmmItg1y3Nck",
+    image: nfcPlateSmall,
+  },
+};
 
 const NfcPlatePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [selectedPlate, setSelectedPlate] = useState<PlateType>("large");
 
   // Formulaire
   const [formData, setFormData] = useState({
@@ -64,7 +91,10 @@ const NfcPlatePage = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("create-nfc-plate-order", {
-        body: formData,
+        body: {
+          ...formData,
+          plate_type: selectedPlate,
+        },
       });
 
       if (error) throw error;
@@ -102,6 +132,8 @@ const NfcPlatePage = () => {
     },
   ];
 
+  const currentPlate = PLATES[selectedPlate];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
       {/* Header */}
@@ -128,9 +160,9 @@ const NfcPlatePage = () => {
             LIVRAISON EN 5-7 JOURS
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Plaque NFC VTC{" "}
+            Plaques NFC VTC{" "}
             <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-              Coutras
+              SoloCab
             </span>
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
@@ -142,24 +174,91 @@ const NfcPlatePage = () => {
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Product showcase */}
           <div className="space-y-6">
-            <Card className="p-8 bg-gradient-to-br from-orange-500/10 to-red-600/10 border-orange-500/30">
-              <div className="flex items-center justify-center mb-6">
-                <div className="w-48 h-32 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-2xl">
-                  <div className="text-center text-white">
-                    <Wifi className="w-12 h-12 mx-auto mb-2" />
-                    <span className="font-bold">NFC COUTRAS</span>
-                  </div>
+            {/* Plate selection */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedPlate("large")}
+                className={`relative p-4 rounded-xl border-2 transition-all ${
+                  selectedPlate === "large"
+                    ? "border-orange-500 bg-orange-500/10"
+                    : "border-white/20 bg-white/5 hover:border-white/40"
+                }`}
+              >
+                {selectedPlate === "large" && (
+                  <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs">
+                    Sélectionné
+                  </Badge>
+                )}
+                <img
+                  src={nfcPlateLarge}
+                  alt="Plaque grande"
+                  className="w-full h-24 object-contain mb-3"
+                />
+                <p className="text-white font-semibold text-sm">Plastique</p>
+                <p className="text-orange-400 font-bold">29,99€</p>
+              </button>
+
+              <button
+                onClick={() => setSelectedPlate("small")}
+                className={`relative p-4 rounded-xl border-2 transition-all ${
+                  selectedPlate === "small"
+                    ? "border-green-500 bg-green-500/10"
+                    : "border-white/20 bg-white/5 hover:border-white/40"
+                }`}
+              >
+                {selectedPlate === "small" && (
+                  <Badge className="absolute -top-2 -right-2 bg-green-500 text-white text-xs">
+                    Sélectionné
+                  </Badge>
+                )}
+                <img
+                  src={nfcPlateSmall}
+                  alt="Plaque petite"
+                  className="w-full h-24 object-contain mb-3"
+                />
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <TreeDeciduous className="w-3 h-3 text-green-400" />
+                  <p className="text-white font-semibold text-sm">Bois</p>
                 </div>
+                <p className="text-green-400 font-bold">14,99€</p>
+              </button>
+            </div>
+
+            {/* Selected product card */}
+            <Card className={`p-8 border transition-all ${
+              selectedPlate === "large" 
+                ? "bg-gradient-to-br from-orange-500/10 to-red-600/10 border-orange-500/30"
+                : "bg-gradient-to-br from-green-500/10 to-emerald-600/10 border-green-500/30"
+            }`}>
+              <div className="flex items-center justify-center mb-6">
+                <img
+                  src={currentPlate.image}
+                  alt={currentPlate.name}
+                  className="w-48 h-48 object-contain"
+                />
               </div>
               
               <div className="text-center">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <span className="text-5xl font-bold text-white">29,99€</span>
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                <h3 className="text-xl font-bold text-white mb-2">{currentPlate.name}</h3>
+                <p className="text-gray-400 mb-4">{currentPlate.description}</p>
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <span className="text-5xl font-bold text-white">{currentPlate.price.toFixed(2)}€</span>
+                  <Badge className={`${selectedPlate === "large" ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-green-500/20 text-green-400 border-green-500/30"}`}>
                     TTC
                   </Badge>
                 </div>
                 <p className="text-gray-400">Paiement unique - Pas d'abonnement</p>
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <Badge variant="outline" className="text-gray-400 border-gray-600">
+                    {currentPlate.material}
+                  </Badge>
+                  {selectedPlate === "small" && (
+                    <Badge variant="outline" className="text-green-400 border-green-500/50">
+                      <TreeDeciduous className="w-3 h-3 mr-1" />
+                      Écologique
+                    </Badge>
+                  )}
+                </div>
               </div>
             </Card>
 
@@ -167,7 +266,7 @@ const NfcPlatePage = () => {
             <div className="grid grid-cols-2 gap-4">
               {features.map((feature, index) => (
                 <Card key={index} className="p-4 bg-white/5 border-white/10">
-                  <feature.icon className="w-8 h-8 text-orange-500 mb-3" />
+                  <feature.icon className={`w-8 h-8 mb-3 ${selectedPlate === "large" ? "text-orange-500" : "text-green-500"}`} />
                   <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
                   <p className="text-sm text-gray-400">{feature.description}</p>
                 </Card>
@@ -232,9 +331,13 @@ const NfcPlatePage = () => {
 
                 <Button
                   onClick={() => setShowOrderForm(true)}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-6 text-lg"
+                  className={`w-full py-6 text-lg text-white ${
+                    selectedPlate === "large"
+                      ? "bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                      : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                  }`}
                 >
-                  Commander maintenant - 29,99€
+                  Commander maintenant - {currentPlate.price.toFixed(2)}€
                 </Button>
 
                 <p className="text-xs text-center text-gray-500 mt-4">
@@ -251,6 +354,19 @@ const NfcPlatePage = () => {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Retour
                 </Button>
+
+                {/* Selected plate summary */}
+                <div className={`flex items-center gap-4 p-4 rounded-lg mb-6 ${
+                  selectedPlate === "large" ? "bg-orange-500/10 border border-orange-500/30" : "bg-green-500/10 border border-green-500/30"
+                }`}>
+                  <img src={currentPlate.image} alt={currentPlate.name} className="w-16 h-16 object-contain" />
+                  <div>
+                    <p className="text-white font-semibold">{currentPlate.name}</p>
+                    <p className={`font-bold ${selectedPlate === "large" ? "text-orange-400" : "text-green-400"}`}>
+                      {currentPlate.price.toFixed(2)}€
+                    </p>
+                  </div>
+                </div>
 
                 <h2 className="text-2xl font-bold text-white mb-6">
                   Informations de livraison
@@ -313,7 +429,7 @@ const NfcPlatePage = () => {
 
                   <div className="pt-4 border-t border-white/10">
                     <div className="flex items-center gap-2 mb-4">
-                      <MapPin className="w-5 h-5 text-orange-500" />
+                      <MapPin className={`w-5 h-5 ${selectedPlate === "large" ? "text-orange-500" : "text-green-500"}`} />
                       <span className="font-medium text-white">Adresse de livraison</span>
                     </div>
 
@@ -367,14 +483,18 @@ const NfcPlatePage = () => {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-6 text-lg"
+                    className={`w-full py-6 text-lg text-white ${
+                      selectedPlate === "large"
+                        ? "bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                        : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                    }`}
                   >
                     {loading ? (
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
                     ) : (
                       <Package className="w-5 h-5 mr-2" />
                     )}
-                    Payer 29,99€
+                    Payer {currentPlate.price.toFixed(2)}€
                   </Button>
 
                   <p className="text-xs text-center text-gray-500">
@@ -387,14 +507,18 @@ const NfcPlatePage = () => {
             {/* Track order */}
             <Card className="mt-6 p-6 bg-white/5 border-white/10">
               <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-orange-500" />
+                <Package className={`w-5 h-5 ${selectedPlate === "large" ? "text-orange-500" : "text-green-500"}`} />
                 Suivre ma commande
               </h3>
               <p className="text-sm text-gray-400 mb-4">
                 Vous avez déjà commandé ? Entrez votre numéro de commande ou consultez l'email de confirmation.
               </p>
-              <Link to="/track-nfc-order">
-                <Button variant="outline" className="w-full border-orange-500/50 text-orange-400 hover:bg-orange-500/10">
+              <Link to="/suivi-plaque-nfc">
+                <Button variant="outline" className={`w-full ${
+                  selectedPlate === "large" 
+                    ? "border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                    : "border-green-500/50 text-green-400 hover:bg-green-500/10"
+                }`}>
                   Suivre ma commande
                 </Button>
               </Link>
