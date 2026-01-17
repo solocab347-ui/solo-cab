@@ -10,24 +10,24 @@ import logo from "@/assets/logo-solocab.png";
 import SocialLinks from "@/components/SocialLinks";
 import { ClientHeroSection } from "@/components/landing/ClientHeroSection";
 import { DriverHeroSection } from "@/components/landing/DriverHeroSection";
-import { CompanyHeroSection } from "@/components/landing/CompanyHeroSection";
-import { FleetHeroSection } from "@/components/landing/FleetHeroSection";
 import {
   Car,
   Users,
   ArrowRight,
   Search,
   Zap,
-  Building2,
-  Truck,
   Heart,
+  Handshake,
+  Star,
+  Shield,
+  DollarSign,
 } from "lucide-react";
 
 const Index = () => {
   const { user, userRole, loading } = useAuth();
   const { t } = useLocale();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<"clients" | "drivers" | "companies" | "fleet">("clients");
+  const [activeView, setActiveView] = useState<"clients" | "drivers">("clients");
 
   useEffect(() => {
     // Redirect authenticated users to their dashboard - only after loading is complete
@@ -36,8 +36,6 @@ const Index = () => {
         driver: "/driver-dashboard",
         client: "/client-dashboard",
         admin: "/admin-dashboard",
-        fleet_manager: "/fleet-dashboard",
-        company: "/company-dashboard",
       };
       
       const route = dashboardRoutes[userRole];
@@ -55,8 +53,6 @@ const Index = () => {
       </div>
     );
   }
-
-  // Features are now in individual components
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0f1e35] to-[#1a2942]">
@@ -107,56 +103,32 @@ const Index = () => {
       {/* Hero Section */}
       <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
         <div className="container mx-auto px-4">
-          {/* Toggle Buttons - Always 2 rows */}
+          {/* Toggle Buttons - Simplified to 2 options */}
           <div className="flex justify-center mb-12">
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10 max-w-lg w-full">
+            <div className="flex gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
-                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
+                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Users className="w-4 h-4 flex-shrink-0" />
+                <Users className="w-5 h-5" />
                 <span>{t('landing.forClients')}</span>
               </button>
               <button
                 onClick={() => setActiveView("drivers")}
                 className={cn(
-                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
+                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
-                <Car className="w-4 h-4 flex-shrink-0" />
+                <Car className="w-5 h-5" />
                 <span>{t('landing.forDrivers')}</span>
-              </button>
-              <button
-                onClick={() => setActiveView("companies")}
-                className={cn(
-                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
-                  activeView === "companies"
-                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                )}
-              >
-                <Building2 className="w-4 h-4 flex-shrink-0" />
-                <span>{t('landing.forCompanies')}</span>
-              </button>
-              <button
-                onClick={() => setActiveView("fleet")}
-                className={cn(
-                  "px-4 py-3 rounded-md font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap",
-                  activeView === "fleet"
-                    ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                )}
-              >
-                <Truck className="w-4 h-4 flex-shrink-0" />
-                <span>{t('landing.fleetManager')}</span>
               </button>
             </div>
           </div>
@@ -166,12 +138,6 @@ const Index = () => {
 
           {/* Drivers View */}
           {activeView === "drivers" && <DriverHeroSection />}
-
-          {/* Companies View */}
-          {activeView === "companies" && <CompanyHeroSection />}
-
-          {/* Fleet Manager View */}
-          {activeView === "fleet" && <FleetHeroSection />}
         </div>
       </section>
 
@@ -251,39 +217,35 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Extra CTA for Companies and Fleet Managers */}
+      {/* Driver Partnership Feature */}
       <section className="py-16 bg-[#1a2942]">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Company CTA */}
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-gradient-to-br from-emerald-500/10 to-teal-600/10 border-emerald-500/20">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4">
-                <Building2 className="w-8 h-8 text-white" />
+          <div className="max-w-4xl mx-auto">
+            <Card className="p-8 text-center bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border-indigo-500/20">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+                <Handshake className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold mb-2 text-white">Vous êtes une entreprise ?</h3>
-              <p className="text-gray-400 mb-4 text-sm">
-                Centralisez les déplacements de vos collaborateurs avec un compte entreprise dédié
+              <h3 className="text-2xl font-bold mb-3 text-white">Partage de courses entre chauffeurs</h3>
+              <p className="text-gray-400 mb-6 max-w-2xl mx-auto">
+                Créez des partenariats avec d'autres chauffeurs indépendants. Partagez vos courses quand vous n'êtes pas disponible et recevez des courses de vos partenaires.
               </p>
-              <Link to="/register-company">
-                <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white">
-                  Créer un compte entreprise
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </Card>
-
-            {/* Fleet Manager CTA */}
-            <Card className="p-8 text-center hover:shadow-elegant transition-all bg-gradient-to-br from-indigo-500/10 to-violet-600/10 border-indigo-500/20">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-4">
-                <Truck className="w-8 h-8 text-white" />
+              <div className="flex flex-wrap justify-center gap-4 mb-6">
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <Shield className="w-4 h-4 text-green-500" />
+                  Partenariats de confiance
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  Commission négociable
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  Développez votre réseau
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-white">Gestionnaire de flotte ?</h3>
-              <p className="text-gray-400 mb-4 text-sm">
-                Gérez plusieurs chauffeurs et développez votre activité avec notre plateforme
-              </p>
-              <Link to="/register-fleet">
-                <Button className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white">
-                  Créer ma flotte VTC
+              <Link to="/devenir-chauffeur">
+                <Button className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white">
+                  En savoir plus
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -338,7 +300,7 @@ const Index = () => {
               <h4 className="font-bold mb-4 text-white">Chauffeurs</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>
-                  <Link to="/chauffeurs" className="hover:text-white transition-colors">
+                  <Link to="/devenir-chauffeur" className="hover:text-white transition-colors">
                     Devenir chauffeur
                   </Link>
                 </li>
@@ -358,6 +320,11 @@ const Index = () => {
                     Trouver un chauffeur
                   </Link>
                 </li>
+                <li>
+                  <Link to="/register-client" className="hover:text-white transition-colors">
+                    Créer un compte
+                  </Link>
+                </li>
               </ul>
             </div>
 
@@ -375,22 +342,19 @@ const Index = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/terms-of-service" className="hover:text-white transition-colors">
-                    CGU
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/nos-valeurs" className="hover:text-white transition-colors">
-                    Nos valeurs
+                  <Link to="/cgv" className="hover:text-white transition-colors">
+                    CGV
                   </Link>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} SoloCab. Tous droits réservés.</p>
-            <SocialLinks variant="compact" />
+          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-500">
+              © 2024 SoloCab. Tous droits réservés.
+            </p>
+            <SocialLinks variant="compact" iconSize={18} />
           </div>
         </div>
       </footer>

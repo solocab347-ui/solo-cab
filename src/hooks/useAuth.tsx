@@ -12,7 +12,7 @@ import {
   clearAuthCache 
 } from "@/lib/instantAuth";
 
-type UserRole = "admin" | "driver" | "client" | "company" | "fleet_manager" | null;
+type UserRole = "admin" | "driver" | "client" | null;
 
 interface AuthContextType {
   user: User | null;
@@ -75,13 +75,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const roles = data?.map((r) => r.role) || [];
       
-      // Set primary role (priority: admin > fleet_manager > company > driver > client)
+      // Set primary role (priority: admin > driver > client)
       const primaryRole: UserRole = roles.includes("admin") 
         ? "admin" 
-        : roles.includes("fleet_manager")
-        ? "fleet_manager"
-        : roles.includes("company")
-        ? "company"
         : roles.includes("driver")
         ? "driver"
         : roles.includes("client")
@@ -343,7 +339,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Toast de succès
       const roleLabel = result.role === "admin" ? "Administrateur" 
-        : result.role === "fleet_manager" ? "Gestionnaire de flotte" 
         : result.role === "driver" ? "Chauffeur" 
         : result.role === "client" ? "Client" 
         : "Utilisateur";

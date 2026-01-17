@@ -1,12 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, Calendar, UserX } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus, QrCode, Calculator, TrendingUp, Car, Users, CheckCircle2, Star, UserX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, startOfMonth, endOfDay, endOfMonth } from "date-fns";
-import { useCommissionReminders } from "@/hooks/useCommissionReminders";
-import { CommissionReminderBanner } from "./CommissionReminderBanner";
 
 interface DriverHomeProps {
   driverProfile: any;
@@ -33,13 +30,6 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
     monthRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
-  
-  // Commission reminders
-  const {
-    reminders,
-    markAsPaid,
-    dismissReminder,
-  } = useCommissionReminders(driverProfile?.driver?.id || null);
 
   useEffect(() => {
     let mounted = true;
@@ -168,17 +158,6 @@ export const DriverHome = ({ driverProfile, onTabChange }: DriverHomeProps) => {
           )}
         </div>
       </div>
-
-      {/* Commission Reminders */}
-      {reminders.length > 0 && (
-        <div className="animate-fade-in">
-          <CommissionReminderBanner
-            reminders={reminders}
-            onMarkAsPaid={markAsPaid}
-            onDismiss={dismissReminder}
-          />
-        </div>
-      )}
 
       {/* Accès Rapide */}
       <div className="animate-fade-in">

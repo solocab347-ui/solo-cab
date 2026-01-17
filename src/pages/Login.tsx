@@ -69,10 +69,6 @@ const Login = () => {
         path = "/admin-dashboard";
       } else if (userRole === "driver") {
         path = "/driver-dashboard";
-      } else if (userRole === "fleet_manager") {
-        path = "/fleet-manager-dashboard";
-      } else if (userRole === "company") {
-        path = "/company-dashboard";
       } else if (userRole === "client") {
         path = "/client-dashboard";
       } else {

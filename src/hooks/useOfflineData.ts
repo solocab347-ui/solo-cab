@@ -694,22 +694,9 @@ export const useOfflineData = (): UseOfflineDataReturn => {
         await syncClientData(user.id);
       } else if (userRole === 'driver') {
         await syncDriverData(user.id, user.email);
-      } else if (userRole === 'fleet_manager') {
-        await syncFleetManagerData(user.id);
-      } else if (userRole === 'company') {
-        await syncCompanyData(user.id);
-      } else {
-        // Vérifier si c'est un collaborateur
-        const { data: employee } = await supabase
-          .from('company_employees')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
-
-        if (employee) {
-          await syncEmployeeData(user.id);
-        }
+      } else if (userRole === 'admin') {
+        // Admin: sync minimal ou rien
+        console.log('[OfflineData] Admin sync skipped');
       }
 
       // Sauvegarder les métadonnées
