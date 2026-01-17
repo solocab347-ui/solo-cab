@@ -12,8 +12,8 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-PIONEER-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// Pioneer price ID - 39.99€/month with 30-day free trial
-const PIONEER_PRICE_ID = "price_1Smxbk34nJZKnmmI5KyFBGQ5";
+// Pioneer price ID - 9.99€/month with 30-day free trial (same as standard drivers)
+const PIONEER_PRICE_ID = "price_1SqaBl34nJZKnmmIKC7vYZy5";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
