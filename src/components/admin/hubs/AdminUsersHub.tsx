@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, Trash2 } from "lucide-react";
+import { Users, Trash2 } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
-import { AdminFleetManagersDocuments } from "../AdminFleetManagersDocuments";
 import AdminUserCleanup from "../AdminUserCleanup";
 
 const AdminUsersHub = () => {
-  const [activeTab, setActiveTab] = useState<"drivers" | "fleet" | "cleanup">("drivers");
+  const [activeTab, setActiveTab] = useState<"drivers" | "cleanup">("drivers");
 
   return (
     <div className="space-y-4">
@@ -23,16 +22,6 @@ const AdminUsersHub = () => {
           <span className="sm:hidden">Chauff.</span>
         </Button>
         <Button
-          variant={activeTab === "fleet" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("fleet")}
-          className="gap-2"
-        >
-          <Building2 className="w-4 h-4" />
-          <span className="hidden sm:inline">Gestionnaires</span>
-          <span className="sm:hidden">Flottes</span>
-        </Button>
-        <Button
           variant={activeTab === "cleanup" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("cleanup")}
@@ -46,7 +35,6 @@ const AdminUsersHub = () => {
 
       {/* Contenu */}
       {activeTab === "drivers" && <AdminDriversManagement />}
-      {activeTab === "fleet" && <AdminFleetManagersDocuments />}
       {activeTab === "cleanup" && <AdminUserCleanup />}
     </div>
   );
