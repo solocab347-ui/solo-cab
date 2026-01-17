@@ -10,6 +10,7 @@ import logo from "@/assets/logo-solocab.png";
 import SocialLinks from "@/components/SocialLinks";
 import { ClientHeroSection } from "@/components/landing/ClientHeroSection";
 import { DriverHeroSection } from "@/components/landing/DriverHeroSection";
+import { NfcHeroSection } from "@/components/landing/NfcHeroSection";
 import {
   Car,
   Users,
@@ -21,13 +22,14 @@ import {
   Star,
   Shield,
   DollarSign,
+  CreditCard,
 } from "lucide-react";
 
 const Index = () => {
   const { user, userRole, loading } = useAuth();
   const { t } = useLocale();
   const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<"clients" | "drivers">("clients");
+  const [activeView, setActiveView] = useState<"clients" | "drivers" | "nfc">("clients");
 
   useEffect(() => {
     // Redirect authenticated users to their dashboard - only after loading is complete
@@ -69,6 +71,9 @@ const Index = () => {
             <Link to="/devenir-chauffeur" className="text-gray-400 hover:text-white transition-colors">
               {t('landing.becomeDriver')}
             </Link>
+            <Link to="/plaque-nfc" className="text-gray-400 hover:text-white transition-colors">
+              Plaque NFC
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <SocialLinks variant="compact" iconSize={20} />
@@ -103,32 +108,47 @@ const Index = () => {
       {/* Hero Section */}
       <section className="py-20 md:py-32 bg-gradient-to-b from-[#0a1628] to-[#0f1e35]">
         <div className="container mx-auto px-4">
-          {/* Toggle Buttons - Simplified to 2 options */}
+          {/* Toggle Buttons - 3 options aligned */}
           <div className="flex justify-center mb-12">
-            <div className="flex gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10">
+            <div className="flex flex-wrap justify-center gap-2 rounded-lg bg-white/5 p-2 backdrop-blur-sm border border-white/10">
               <button
                 onClick={() => setActiveView("clients")}
                 className={cn(
-                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "clients"
                     ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
                 <Users className="w-5 h-5" />
-                <span>{t('landing.forClients')}</span>
+                <span className="hidden sm:inline">{t('landing.forClients')}</span>
+                <span className="sm:hidden">Clients</span>
               </button>
               <button
                 onClick={() => setActiveView("drivers")}
                 className={cn(
-                  "px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
                   activeView === "drivers"
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 )}
               >
                 <Car className="w-5 h-5" />
-                <span>{t('landing.forDrivers')}</span>
+                <span className="hidden sm:inline">{t('landing.forDrivers')}</span>
+                <span className="sm:hidden">Chauffeurs</span>
+              </button>
+              <button
+                onClick={() => setActiveView("nfc")}
+                className={cn(
+                  "px-4 sm:px-6 py-3 rounded-md font-medium transition-all duration-300 flex items-center gap-2",
+                  activeView === "nfc"
+                    ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <CreditCard className="w-5 h-5" />
+                <span className="hidden sm:inline">Plaque NFC</span>
+                <span className="sm:hidden">NFC</span>
               </button>
             </div>
           </div>
@@ -138,6 +158,9 @@ const Index = () => {
 
           {/* Drivers View */}
           {activeView === "drivers" && <DriverHeroSection />}
+
+          {/* NFC View */}
+          {activeView === "nfc" && <NfcHeroSection />}
         </div>
       </section>
 
