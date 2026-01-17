@@ -6,12 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Send, Star, Car, AlertTriangle, Hash, Phone, UserCheck } from 'lucide-react';
+import { Users, Send, Star, Car, AlertTriangle, Hash, Phone, UserCheck, CreditCard, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useStripeConnectStatus } from '@/hooks/useStripeConnectStatus';
 
 interface Partner {
   id: string;
@@ -73,6 +74,9 @@ export function ShareCourseWithPartnerDialog({
   const [notifyClient, setNotifyClient] = useState(true);
   const [clientMessage, setClientMessage] = useState('');
   const [shareMode, setShareMode] = useState<ShareMode>('choose');
+  
+  // Check Stripe Connect status
+  const { isReady: stripeReady, isNotConnected: stripeNotConnected } = useStripeConnectStatus(driverId);
 
   useEffect(() => {
     if (open && driverId) {
