@@ -16,6 +16,7 @@ import { NotificationPermissionPrompt } from "@/components/NotificationPermissio
 import { GlobalSecurityProvider } from "@/components/GlobalSecurityProvider";
 import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
+
 // Eager load public pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -29,47 +30,26 @@ import RegisterDriverPromo from "./pages/RegisterDriverPromo";
 import RegistrationSuccess from "./pages/RegistrationSuccess";
 import PioneerTest from "./pages/PioneerTest";
 import NotFound from "./pages/NotFound";
-import RegisterCompany from "./pages/RegisterCompany";
-import RegisterFleetManager from "./pages/RegisterFleetManager";
-import FleetManagerLanding from "./pages/FleetManagerLanding";
 import GuestBooking from "./pages/GuestBooking";
 import GuestBookingTracking from "./pages/GuestBookingTracking";
-import RegisterDriverFleet from "./pages/RegisterDriverFleet";
-import FleetPublicProfile from "./pages/FleetPublicProfile";
-import RegisterClientFleet from "./pages/RegisterClientFleet";
-import RegisterClientFleetInvitation from "./pages/RegisterClientFleetInvitation";
-import RegisterCompanyEmployee from "./pages/RegisterCompanyEmployee";
 import RegisterCourseInvitation from "./pages/RegisterCourseInvitation";
-import CompanyPartnership from "./pages/CompanyPartnership";
 import RegisterGuestClient from "./pages/RegisterGuestClient";
 import RegisterClient from "./pages/RegisterClient";
-import GuestEmployeeCourseTracking from "./pages/GuestEmployeeCourseTracking";
-import JoinCompany from "./pages/JoinCompany";
 import RegisterCongressDriver from "./pages/RegisterCongressDriver";
-import RegisterEmployeeFromTracking from "./pages/RegisterEmployeeFromTracking";
 import PioneerPayment from "./pages/PioneerPayment";
 import OurValues from "./pages/OurValues";
 import DriverWelcome from "./pages/DriverWelcome";
 import MentionsLegales from "./pages/MentionsLegales";
 import SafeMode from "./pages/SafeMode";
 import { SafeModeIndicator } from "@/components/SafeModeIndicator";
-// Lazy load heavy dashboards and authenticated pages
-const FleetDriverDashboard = lazy(() => import("./pages/FleetDriverDashboard"));
-const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
-const CompanyEmployeeDashboard = lazy(() => import("./pages/CompanyEmployeeDashboard"));
-const FleetManagerDashboard = lazy(() => import("./pages/FleetManagerDashboard"));
-const FleetClientDashboard = lazy(() => import("./pages/FleetClientDashboard"));
-const CreateCompanyCourse = lazy(() => import("./pages/CreateCompanyCourse"));
 
 // Lazy load heavy dashboards and authenticated pages
 const DriverDashboard = lazy(() => import("./pages/DriverDashboard"));
 const DriverCreateCourse = lazy(() => import("./pages/DriverCreateCourse"));
 const DriverCreateDirectCourse = lazy(() => import("./pages/DriverCreateDirectCourse"));
-// DriverPendingValidation SUPPRIMÉ - Tous les chauffeurs accèdent directement au dashboard
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const CreateCourse = lazy(() => import("./pages/CreateCourse"));
-const CreateFleetCourse = lazy(() => import("./pages/CreateFleetCourse"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const ClientProfileView = lazy(() => import("./pages/ClientProfileView"));
@@ -109,61 +89,19 @@ const App = () => (
               <Route path="/register-driver" element={<RegisterDriver />} />
               <Route path="/register-driver-promo" element={<RegisterDriverPromo />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
-              <Route path="/register-company" element={<RegisterCompany />} />
-              <Route path="/register-fleet" element={<RegisterFleetManager />} />
-              <Route path="/devenir-gestionnaire-flotte" element={<FleetManagerLanding />} />
               <Route path="/pioneer-test" element={<PioneerTest />} />
               <Route path="/reservation-rapide/:driverId" element={<GuestBooking />} />
               <Route path="/reservation-suivi/:token" element={<GuestBookingTracking />} />
-              <Route path="/register-driver-fleet" element={<RegisterDriverFleet />} />
-              <Route path="/flotte/:id" element={<FleetPublicProfile />} />
-              <Route path="/register-client-fleet" element={<RegisterClientFleet />} />
-              <Route path="/inscription-client-flotte" element={<RegisterClientFleetInvitation />} />
-              <Route path="/register-employee" element={<RegisterCompanyEmployee />} />
               <Route path="/register-course-invitation" element={<RegisterCourseInvitation />} />
-              <Route path="/company-partnership/:code" element={<CompanyPartnership />} />
               <Route path="/register-client" element={<RegisterClient />} />
               <Route path="/inscription-client" element={<RegisterGuestClient />} />
-              <Route path="/suivi-course-entreprise" element={<GuestEmployeeCourseTracking />} />
-              <Route path="/register-employee" element={<RegisterEmployeeFromTracking />} />
-              <Route path="/join-company" element={<JoinCompany />} />
               <Route path="/inscription-congres" element={<RegisterCongressDriver />} />
               <Route path="/pioneer-payment" element={<PioneerPayment />} />
               <Route path="/nos-valeurs" element={<OurValues />} />
               <Route path="/driver-welcome" element={<DriverWelcome />} />
               <Route path="/mentions-legales" element={<MentionsLegales />} />
-              <Route
-                path="/fleet-client-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["client"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <FleetClientDashboard />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/create-fleet-course"
-                element={
-                  <ProtectedRoute allowedRoles={["client"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ErrorBoundary>
-                        <CreateFleetCourse />
-                      </ErrorBoundary>
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fleet-driver-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["driver"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <FleetDriverDashboard />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/safe-mode" element={<SafeMode />} />
+              
               <Route path="/create-course" element={
                 <ProtectedRoute allowedRoles={["client"]}>
                   <Suspense fallback={<LoadingFallback />}>
@@ -242,7 +180,7 @@ const App = () => (
               <Route
                 path="/client-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={["client"]} blockCompanyEmployees>
+                  <ProtectedRoute allowedRoles={["client"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <ClientDashboard />
                     </Suspense>
@@ -259,53 +197,11 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/company-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["company"]} requireCompanyAdmin>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <CompanyDashboard />
-                  </Suspense>
-                </ProtectedRoute>
-              }
-              />
-              <Route
-                path="/company-employee-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["client"]} requireCompanyEmployee={true}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <CompanyEmployeeDashboard />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/create-company-course"
-                element={
-                  <ProtectedRoute allowedRoles={["company"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ErrorBoundary>
-                        <CreateCompanyCourse />
-                      </ErrorBoundary>
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/fleet-dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["fleet_manager"]}>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <FleetManagerDashboard />
-                    </Suspense>
-                  </ProtectedRoute>
-                }
-              />
-              {/* Routes pour notifications - accessible à tous */}
+              {/* Routes pour notifications - accessible à driver, client et admin */}
               <Route
                 path="/notifications"
                 element={
-                  <ProtectedRoute allowedRoles={["driver", "client", "admin", "fleet_manager", "company"]}>
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <Notifications />
                     </Suspense>
@@ -315,7 +211,7 @@ const App = () => (
               <Route
                 path="/notification-settings"
                 element={
-                  <ProtectedRoute allowedRoles={["driver", "client", "admin", "fleet_manager", "company"]}>
+                  <ProtectedRoute allowedRoles={["driver", "client", "admin"]}>
                     <Suspense fallback={<LoadingFallback />}>
                       <NotificationSettings />
                     </Suspense>
@@ -379,17 +275,35 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              {/* Mode sans échec - accessible toujours */}
-              <Route path="/safe-mode" element={<SafeMode />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              
+              {/* Redirections des anciennes routes company/fleet vers accueil */}
+              <Route path="/register-company" element={<Navigate to="/" replace />} />
+              <Route path="/register-fleet" element={<Navigate to="/" replace />} />
+              <Route path="/devenir-gestionnaire-flotte" element={<Navigate to="/" replace />} />
+              <Route path="/register-driver-fleet" element={<Navigate to="/" replace />} />
+              <Route path="/flotte/:id" element={<Navigate to="/" replace />} />
+              <Route path="/register-client-fleet" element={<Navigate to="/" replace />} />
+              <Route path="/inscription-client-flotte" element={<Navigate to="/" replace />} />
+              <Route path="/register-employee" element={<Navigate to="/" replace />} />
+              <Route path="/company-partnership/:code" element={<Navigate to="/" replace />} />
+              <Route path="/suivi-course-entreprise" element={<Navigate to="/" replace />} />
+              <Route path="/join-company" element={<Navigate to="/" replace />} />
+              <Route path="/fleet-client-dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/create-fleet-course" element={<Navigate to="/" replace />} />
+              <Route path="/fleet-driver-dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/company-dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/company-employee-dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/create-company-course" element={<Navigate to="/" replace />} />
+              <Route path="/fleet-dashboard" element={<Navigate to="/" replace />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ErrorBoundary>
             <SafeModeIndicator />
-          </ErrorBoundary>
-        </TooltipProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </GlobalSecurityProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </GlobalSecurityProvider>
   </QueryClientProvider>
 );
 

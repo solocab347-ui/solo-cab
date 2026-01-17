@@ -7,20 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Users, 
-  Building2, 
-  Briefcase,
   Settings,
   AlertTriangle,
   Loader2
 } from 'lucide-react';
 
-// Sub-components
+// Sub-components - Only driver partnerships now (companies and fleets removed)
 import { DriverPartnershipsTab } from './partnership/DriverPartnershipsTab';
-import { CompanyPartnershipsTab } from './partnership/CompanyPartnershipsTab';
-import { FleetPartnershipsTab } from './partnership/FleetPartnershipsTab';
 import { PartnershipSettings } from './partnership/PartnershipSettings';
 
-type MainTab = 'drivers' | 'companies' | 'fleets' | 'settings';
+type MainTab = 'drivers' | 'settings';
 
 interface UnifiedPartnershipHubProps {
   initialDriverSubTab?: 'list' | 'search' | 'received' | 'sent' | 'payments' | 'invoices';
@@ -32,12 +28,9 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState<MainTab>('drivers');
   const [canShare, setCanShare] = useState(true);
-  const [isFleetDriver, setIsFleetDriver] = useState(false);
   
   // Stats for badges
   const [driverPartnersCount, setDriverPartnersCount] = useState(0);
-  const [companyAgreementsCount, setCompanyAgreementsCount] = useState(0);
-  const [fleetPartnershipsCount, setFleetPartnershipsCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -57,7 +50,7 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
     setLoading(true);
     const { data, error } = await supabase
       .from('drivers')
-      .select('id, sharing_number, is_fleet_driver, fleet_manager_id')
+      .select('id, sharing_number')
       .eq('user_id', user?.id)
       .single();
 
@@ -67,7 +60,6 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
       return;
     }
     setDriverInfo(data);
-    setIsFleetDriver(data.is_fleet_driver || data.fleet_manager_id !== null);
     setLoading(false);
   };
 
@@ -80,51 +72,15 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
   const loadStats = async () => {
     if (!driverInfo?.id) return;
 
-    // Count active driver partnerships
-    const { count: driverCount } = await supabase
-      .from('driver_partnerships')
-      .select('*', { count: 'exact', head: true })
-      .or(`driver_a_id.eq.${driverInfo.id},driver_b_id.eq.${driverInfo.id}`)
-      .eq('status', 'active');
-
-    // Count company agreements
-    const { count: companyCount } = await supabase
-      .from('company_driver_agreements')
-      .select('*', { count: 'exact', head: true })
-      .eq('driver_id', driverInfo.id)
-      .eq('status', 'accepted');
-
-    // Count fleet partnerships  
-    const { count: fleetCount } = await supabase
-      .from('fleet_driver_partnerships')
-      .select('*', { count: 'exact', head: true })
-      .eq('driver_id', driverInfo.id)
-      .eq('status', 'accepted');
-
-    // Pending requests across all types (for badges)
+    // Pending requests for driver partnerships (for badges)
     const { count: driverPending } = await supabase
       .from('driver_partnerships')
       .select('*', { count: 'exact', head: true })
       .or(`driver_a_id.eq.${driverInfo.id},driver_b_id.eq.${driverInfo.id}`)
       .eq('status', 'pending');
 
-    const { count: companyPending } = await supabase
-      .from('company_driver_agreements')
-      .select('*', { count: 'exact', head: true })
-      .eq('driver_id', driverInfo.id)
-      .eq('status', 'pending');
-
-    const { count: fleetPending } = await supabase
-      .from('fleet_driver_partnerships')
-      .select('*', { count: 'exact', head: true })
-      .eq('driver_id', driverInfo.id)
-      .eq('status', 'pending');
-
-    // Use pending counts for badges (not total active partnerships)
     setDriverPartnersCount(driverPending || 0);
-    setCompanyAgreementsCount(companyPending || 0);
-    setFleetPartnershipsCount(fleetPending || 0);
-    setPendingCount((driverPending || 0) + (companyPending || 0) + (fleetPending || 0));
+    setPendingCount(driverPending || 0);
   };
 
   if (loading) {
@@ -162,56 +118,27 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
                 </span>
               </div>
               <span className="text-xs text-warning/80 underline hover:text-warning">
-                Aller aux Chauffeurs →
+                Voir les demandes →
               </span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Main Navigation - Horizontal scroll on mobile */}
+      {/* Main Navigation */}
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-2">
-            <TabsList className="flex w-full h-auto bg-transparent gap-1 overflow-x-auto">
+            <TabsList className="flex w-full h-auto bg-transparent gap-1">
               <TabsTrigger 
                 value="drivers" 
                 className="relative flex-1 min-w-0 flex flex-col items-center gap-1 py-2 px-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
-                disabled={isFleetDriver}
               >
                 <Users className="h-5 w-5 text-primary" />
-                <span className="text-xs font-medium truncate">Chauffeurs</span>
+                <span className="text-xs font-medium truncate">Chauffeurs partenaires</span>
                 {driverPartnersCount > 0 && (
                   <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] bg-orange-500 hover:bg-orange-500">
                     {driverPartnersCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              
-              <TabsTrigger 
-                value="companies" 
-                className="relative flex-1 min-w-0 flex flex-col items-center gap-1 py-2 px-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
-                disabled={isFleetDriver}
-              >
-                <Building2 className="h-5 w-5 text-blue-400" />
-                <span className="text-xs font-medium truncate">Entreprises</span>
-                {companyAgreementsCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] bg-blue-500 hover:bg-blue-500">
-                    {companyAgreementsCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
-
-              <TabsTrigger 
-                value="fleets" 
-                className="relative flex-1 min-w-0 flex flex-col items-center gap-1 py-2 px-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:border-primary/50 border border-transparent transition-all"
-                disabled={isFleetDriver}
-              >
-                <Briefcase className="h-5 w-5 text-emerald-400" />
-                <span className="text-xs font-medium truncate">Flottes</span>
-                {fleetPartnershipsCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-[10px] bg-emerald-500 hover:bg-emerald-500">
-                    {fleetPartnershipsCount}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -234,20 +161,6 @@ export function UnifiedPartnershipHub({ initialDriverSubTab }: UnifiedPartnershi
               driverId={driverInfo.id} 
               initialSubTab={initialDriverSubTab}
             />
-          )}
-        </TabsContent>
-
-        {/* Company Partnerships */}
-        <TabsContent value="companies" className="mt-4">
-          {driverInfo?.id && (
-            <CompanyPartnershipsTab driverId={driverInfo.id} />
-          )}
-        </TabsContent>
-
-        {/* Fleet Partnerships */}
-        <TabsContent value="fleets" className="mt-4">
-          {driverInfo?.id && (
-            <FleetPartnershipsTab driverId={driverInfo.id} />
           )}
         </TabsContent>
 

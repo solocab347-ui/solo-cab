@@ -43,16 +43,9 @@ import { LibertyGuide } from "@/components/onboarding/LibertyGuide";
 import { LibertyFloatingButton } from "@/components/onboarding/LibertyFloatingButton";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
-import { DriverFleetPartnerships } from "@/components/driver/DriverFleetPartnerships";
-import { DriverCompanyAgreements } from "@/components/driver/DriverCompanyAgreements";
 import { PioneerBanner } from "@/components/driver/PioneerBanner";
-import { DriverCompanyPayments } from "@/components/driver/DriverCompanyPayments";
-import { DriverFleetCommissions } from "@/components/driver/DriverFleetCommissions";
-import { FleetRemovalNotice } from "@/components/driver/FleetRemovalNotice";
 import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
-import { DriverDispatchRequests } from "@/components/driver/DriverDispatchRequests";
-// DriverCompanyCourseRequests removed - company quotes now integrated in DriverDevisList
 import { CityPricingManager } from "@/components/shared/CityPricingManager";
 import { TvaToggle } from "@/components/pricing/TvaToggle";
 import { NavigationHeader } from "@/components/NavigationHeader";
@@ -503,10 +496,6 @@ const DriverDashboard = () => {
           />
         )}
 
-        {/* Fleet Removal Notice - popup pour chauffeurs supprimés d'une flotte */}
-        {user?.id && driverProfile?.driver?.id && (
-          <FleetRemovalNotice userId={user.id} driverId={driverProfile.driver.id} />
-        )}
 
         {/* Course Queue Alert - Alerte file d'attente intelligente */}
         {driverProfile?.driver?.id && (
@@ -701,12 +690,6 @@ const DriverDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Dispatch Requests Tab - Missions reçues des gestionnaires */}
-          <TabsContent value="dispatch">
-            {driverProfile?.driver?.id && (
-              <DriverDispatchRequests driverId={driverProfile.driver.id} />
-            )}
-          </TabsContent>
 
           {/* Messages Tab */}
           <TabsContent value="messages">
