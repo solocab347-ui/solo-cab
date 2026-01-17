@@ -9582,6 +9582,156 @@ export type Database = {
           },
         ]
       }
+      nfc_plate_orders: {
+        Row: {
+          amount: number
+          created_at: string
+          delivered_at: string | null
+          delivery_status: string
+          driver_id: string | null
+          email: string
+          estimated_delivery_date: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          order_number: string
+          payment_status: string
+          phone: string | null
+          qr_code_link: string | null
+          shipped_at: string | null
+          shipping_address: string
+          shipping_city: string
+          shipping_country: string
+          shipping_postal_code: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          subscription_id: string | null
+          tracking_number: string | null
+          tracking_token: string | null
+          updated_at: string
+          user_id: string | null
+          with_subscription: boolean | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string
+          driver_id?: string | null
+          email: string
+          estimated_delivery_date?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          order_number: string
+          payment_status?: string
+          phone?: string | null
+          qr_code_link?: string | null
+          shipped_at?: string | null
+          shipping_address: string
+          shipping_city: string
+          shipping_country?: string
+          shipping_postal_code: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          subscription_id?: string | null
+          tracking_number?: string | null
+          tracking_token?: string | null
+          updated_at?: string
+          user_id?: string | null
+          with_subscription?: boolean | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          delivered_at?: string | null
+          delivery_status?: string
+          driver_id?: string | null
+          email?: string
+          estimated_delivery_date?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          order_number?: string
+          payment_status?: string
+          phone?: string | null
+          qr_code_link?: string | null
+          shipped_at?: string | null
+          shipping_address?: string
+          shipping_city?: string
+          shipping_country?: string
+          shipping_postal_code?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          subscription_id?: string | null
+          tracking_number?: string | null
+          tracking_token?: string | null
+          updated_at?: string
+          user_id?: string | null
+          with_subscription?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_data_isolation"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_statistics"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_available_for_sharing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers_visible_to_fleet_managers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_searchable_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nfc_plate_orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string | null
