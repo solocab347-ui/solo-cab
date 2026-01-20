@@ -4,30 +4,35 @@ import { NavigationHeader } from "@/components/NavigationHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Crown, Users, Mail, Phone, MapPin, Calendar, TrendingUp } from "lucide-react";
+import { ArrowLeft, Crown, Users, Mail, Phone, MapPin, Calendar, TrendingUp, FileText, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import DriverClientDevisFactures from "@/components/driver/DriverClientDevisFactures";
 
 const ClientProfileView = () => {
   const navigate = useNavigate();
   const { clientId } = useParams();
   const { user } = useAuth();
   const [client, setClient] = useState<any>(null);
+  const [driver, setDriver] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"profil" | "documents">("profil");
   const [stats, setStats] = useState({
     totalCourses: 0,
     completedCourses: 0,
   });
 
   useEffect(() => {
-    if (clientId) {
+    if (clientId && user) {
       fetchClientProfile();
       fetchClientStats();
+      fetchDriverInfo();
     }
-  }, [clientId]);
+  }, [clientId, user]);
 
   const fetchClientProfile = async () => {
     try {
@@ -53,6 +58,22 @@ const ClientProfileView = () => {
       toast.error("Erreur lors du chargement du profil");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDriverInfo = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      setDriver(data);
+    } catch (error) {
+      console.error("Error fetching driver info:", error);
     }
   };
 
@@ -184,32 +205,64 @@ const ClientProfileView = () => {
           </div>
         </Card>
 
-        {/* Statistiques - Informations financières masquées aux chauffeurs */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card className="p-6 bg-gradient-to-br from-blue-500 to-cyan-600 border-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-white/80">Courses totales</p>
-                <p className="text-3xl font-bold text-white">{stats.totalCourses}</p>
-              </div>
-            </div>
-          </Card>
+        {/* Tabs: Profil / Documents */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "profil" | "documents")}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger 
+              value="profil" 
+              className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Profil
+            </TabsTrigger>
+            <TabsTrigger 
+              value="documents"
+              className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Devis & Factures
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="p-6 bg-gradient-to-br from-green-500 to-emerald-600 border-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-white/80">Courses terminées</p>
-                <p className="text-3xl font-bold text-white">{stats.completedCourses}</p>
-              </div>
+          <TabsContent value="profil" className="mt-6">
+            {/* Statistiques */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="p-6 bg-gradient-to-br from-blue-500 to-cyan-600 border-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/80">Courses totales</p>
+                    <p className="text-3xl font-bold text-white">{stats.totalCourses}</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-gradient-to-br from-green-500 to-emerald-600 border-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-white/80">Courses terminées</p>
+                    <p className="text-3xl font-bold text-white">{stats.completedCourses}</p>
+                  </div>
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-6">
+            {driver ? (
+              <DriverClientDevisFactures clientId={clientId!} driverId={driver.id} />
+            ) : (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Chargement des informations...</p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
