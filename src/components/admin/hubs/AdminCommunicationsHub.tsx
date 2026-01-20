@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mail, Share2, FileText } from "lucide-react";
+import { Mail, Share2, FileText, Receipt } from "lucide-react";
 import AdminEmails from "../AdminEmails";
 import AdminSocialLinks from "../AdminSocialLinks";
 import AdminFlyers from "../AdminFlyers";
+import AdminBillingDocuments from "../AdminBillingDocuments";
 
 const AdminCommunicationsHub = () => {
-  const [activeTab, setActiveTab] = useState<"emails" | "social" | "flyers">("emails");
+  const [activeTab, setActiveTab] = useState<"emails" | "social" | "flyers" | "billing">("emails");
 
   return (
     <div className="space-y-4">
@@ -40,12 +41,23 @@ const AdminCommunicationsHub = () => {
           <FileText className="w-4 h-4" />
           Flyers
         </Button>
+        <Button
+          variant={activeTab === "billing" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("billing")}
+          className="gap-2"
+        >
+          <Receipt className="w-4 h-4" />
+          <span className="hidden sm:inline">Devis & Factures</span>
+          <span className="sm:hidden">Devis</span>
+        </Button>
       </div>
 
       {/* Contenu */}
       {activeTab === "emails" && <AdminEmails />}
       {activeTab === "social" && <AdminSocialLinks />}
       {activeTab === "flyers" && <AdminFlyers />}
+      {activeTab === "billing" && <AdminBillingDocuments />}
     </div>
   );
 };
