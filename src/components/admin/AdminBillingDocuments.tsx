@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Download, Plus, Trash2, Euro } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { FileText, Download, Plus, Trash2, Euro, Percent } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
@@ -43,6 +44,8 @@ interface GeneratedDocument {
   totalTTC: number;
   createdAt: Date;
   items: LineItem[];
+  depositAmount?: number;
+  balanceAmount?: number;
 }
 
 const AdminBillingDocuments = () => {
@@ -53,6 +56,10 @@ const AdminBillingDocuments = () => {
   const [notes, setNotes] = useState("");
   const [tvaRate, setTvaRate] = useState(20);
   const [validityDays, setValidityDays] = useState(30);
+  
+  // Acompte
+  const [enableDeposit, setEnableDeposit] = useState(true);
+  const [depositPercent, setDepositPercent] = useState(30);
   
   const [items, setItems] = useState<LineItem[]>([
     { id: "1", description: "", quantity: 1, unitPrice: 0, isMonthly: false }
@@ -80,6 +87,18 @@ const AdminBillingDocuments = () => {
     ));
   };
 
+  // Calculs séparés pour prestations uniques et mensuelles
+  const getOneTimeItems = () => items.filter(item => !item.isMonthly);
+  const getMonthlyItems = () => items.filter(item => item.isMonthly);
+
+  const calculateOneTimeSubtotal = () => {
+    return getOneTimeItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
+  const calculateMonthlySubtotal = () => {
+    return getMonthlyItems().reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  };
+
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   };
@@ -90,6 +109,22 @@ const AdminBillingDocuments = () => {
 
   const calculateTotal = () => {
     return calculateSubtotal() + calculateTVA();
+  };
+
+  // Calculs acompte (uniquement sur les prestations uniques, pas mensuelles)
+  const calculateOneTimeTotalTTC = () => {
+    const ht = calculateOneTimeSubtotal();
+    return ht + (ht * tvaRate / 100);
+  };
+
+  const calculateDeposit = () => {
+    if (!enableDeposit) return 0;
+    return calculateOneTimeTotalTTC() * (depositPercent / 100);
+  };
+
+  const calculateBalance = () => {
+    if (!enableDeposit) return calculateOneTimeTotalTTC();
+    return calculateOneTimeTotalTTC() - calculateDeposit();
   };
 
   const generateDocumentNumber = (type: "devis" | "facture") => {
@@ -116,7 +151,7 @@ const AdminBillingDocuments = () => {
     const contentWidth = pageWidth - 2 * margin;
 
     // Header - SoloCab Logo Area
-    doc.setFillColor(30, 64, 175); // Blue
+    doc.setFillColor(30, 64, 175);
     doc.rect(0, 0, pageWidth, 35, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -249,7 +284,7 @@ const AdminBillingDocuments = () => {
 
     // Totals
     yPos += 10;
-    const totalsX = pageWidth - margin - 70;
+    const totalsX = pageWidth - margin - 80;
 
     doc.setDrawColor(200, 200, 200);
     doc.line(totalsX, yPos, pageWidth - margin, yPos);
@@ -269,12 +304,54 @@ const AdminBillingDocuments = () => {
 
     yPos += 8;
     doc.setFillColor(30, 64, 175);
-    doc.roundedRect(totalsX - 5, yPos - 6, 75, 12, 2, 2, "F");
+    doc.roundedRect(totalsX - 5, yPos - 6, 85, 12, 2, 2, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("TOTAL TTC :", totalsX, yPos + 2);
     doc.text(`${calculateTotal().toFixed(2)} €`, pageWidth - margin - 3, yPos + 2, { align: "right" });
+
+    // Payment Schedule (if deposit enabled and one-time items exist)
+    if (enableDeposit && getOneTimeItems().length > 0) {
+      yPos += 20;
+      
+      doc.setFillColor(255, 250, 240);
+      doc.roundedRect(margin, yPos, contentWidth, 45, 3, 3, "F");
+      doc.setDrawColor(251, 191, 36);
+      doc.roundedRect(margin, yPos, contentWidth, 45, 3, 3, "S");
+
+      doc.setTextColor(180, 83, 9);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("ÉCHÉANCIER DE PAIEMENT", margin + 5, yPos + 10);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+
+      // Acompte
+      yPos += 18;
+      doc.setFont("helvetica", "bold");
+      doc.text(`Acompte (${depositPercent}%) - À la commande :`, margin + 10, yPos);
+      doc.setTextColor(34, 197, 94);
+      doc.text(`${calculateDeposit().toFixed(2)} € TTC`, pageWidth - margin - 10, yPos, { align: "right" });
+
+      // Solde
+      yPos += 10;
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Solde (${100 - depositPercent}%) - À la livraison :`, margin + 10, yPos);
+      doc.setTextColor(59, 130, 246);
+      doc.text(`${calculateBalance().toFixed(2)} € TTC`, pageWidth - margin - 10, yPos, { align: "right" });
+
+      // Note mensuel
+      if (getMonthlyItems().length > 0) {
+        yPos += 10;
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.text(`+ Frais mensuels : ${calculateMonthlySubtotal().toFixed(2)} € HT/mois (${(calculateMonthlySubtotal() * (1 + tvaRate/100)).toFixed(2)} € TTC/mois)`, margin + 10, yPos);
+      }
+    }
 
     // Notes
     if (notes) {
@@ -316,7 +393,9 @@ const AdminBillingDocuments = () => {
       total: calculateSubtotal(),
       totalTTC: calculateTotal(),
       createdAt: new Date(),
-      items: [...items]
+      items: [...items],
+      depositAmount: enableDeposit ? calculateDeposit() : undefined,
+      balanceAmount: enableDeposit ? calculateBalance() : undefined
     };
 
     setDocuments(prev => [newDocument, ...prev]);
@@ -341,13 +420,16 @@ const AdminBillingDocuments = () => {
     ]);
     setTvaRate(20);
     setValidityDays(30);
+    setEnableDeposit(true);
+    setDepositPercent(30);
+    setNotes("Acompte de 30% à la commande pour démarrer le développement.\nSolde de 70% à la livraison de l'application.\nAssistance mensuelle facturée à partir du mois suivant la mise en production.");
     toast.success("Formulaire pré-rempli pour le projet Cameroun");
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <FileText className="w-6 h-6 text-primary" />
@@ -431,7 +513,7 @@ const AdminBillingDocuments = () => {
               </Button>
             </div>
 
-            {items.map((item, index) => (
+            {items.map((item) => (
               <div key={item.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
                 <div className="flex items-center gap-2">
                   <Input
@@ -512,6 +594,51 @@ const AdminBillingDocuments = () => {
             )}
           </div>
 
+          {/* Deposit Options */}
+          {documentType === "devis" && getOneTimeItems().length > 0 && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Percent className="w-5 h-5 text-amber-600" />
+                  <Label className="font-semibold">Acompte</Label>
+                </div>
+                <Switch
+                  checked={enableDeposit}
+                  onCheckedChange={setEnableDeposit}
+                />
+              </div>
+              
+              {enableDeposit && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm">Pourcentage d'acompte</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={depositPercent}
+                        onChange={(e) => setDepositPercent(parseInt(e.target.value) || 30)}
+                        className="w-20"
+                      />
+                      <span>%</span>
+                    </div>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Acompte à la commande :</span>
+                      <span className="font-semibold text-green-600">{calculateDeposit().toFixed(2)} € TTC</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Solde à la livraison :</span>
+                      <span className="font-semibold text-blue-600">{calculateBalance().toFixed(2)} € TTC</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <Label>Notes / Conditions</Label>
@@ -525,6 +652,19 @@ const AdminBillingDocuments = () => {
 
           {/* Totals & Generate */}
           <div className="bg-primary/5 p-4 rounded-lg space-y-2">
+            {getOneTimeItems().length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>Prestations uniques HT</span>
+                <span>{calculateOneTimeSubtotal().toFixed(2)} €</span>
+              </div>
+            )}
+            {getMonthlyItems().length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>Frais mensuels HT</span>
+                <span>{calculateMonthlySubtotal().toFixed(2)} €/mois</span>
+              </div>
+            )}
+            <Separator />
             <div className="flex justify-between">
               <span>Sous-total HT</span>
               <span className="font-medium">{calculateSubtotal().toFixed(2)} €</span>
@@ -538,6 +678,19 @@ const AdminBillingDocuments = () => {
               <span>Total TTC</span>
               <span className="text-primary">{calculateTotal().toFixed(2)} €</span>
             </div>
+            {enableDeposit && getOneTimeItems().length > 0 && documentType === "devis" && (
+              <>
+                <Separator />
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>→ À payer maintenant ({depositPercent}%)</span>
+                  <span className="font-bold">{calculateDeposit().toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between text-sm text-blue-600">
+                  <span>→ À payer à la livraison ({100 - depositPercent}%)</span>
+                  <span className="font-bold">{calculateBalance().toFixed(2)} €</span>
+                </div>
+              </>
+            )}
           </div>
 
           <Button onClick={generatePDF} className="w-full gap-2" size="lg">
@@ -575,24 +728,38 @@ const AdminBillingDocuments = () => {
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="p-3 bg-muted/50 rounded-lg flex items-center justify-between"
+                    className="p-3 bg-muted/50 rounded-lg"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={doc.type === "devis" ? "default" : "secondary"}>
-                          {doc.type.toUpperCase()}
-                        </Badge>
-                        <span className="font-medium">{doc.number}</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={doc.type === "devis" ? "default" : "secondary"}>
+                            {doc.type.toUpperCase()}
+                          </Badge>
+                          <span className="font-medium">{doc.number}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{doc.clientName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {doc.createdAt.toLocaleDateString("fr-FR")}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{doc.clientName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.createdAt.toLocaleDateString("fr-FR")}
-                      </p>
+                      <div className="text-right">
+                        <p className="font-bold">{doc.totalTTC.toFixed(2)} €</p>
+                        <p className="text-xs text-muted-foreground">TTC</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold">{doc.totalTTC.toFixed(2)} €</p>
-                      <p className="text-xs text-muted-foreground">TTC</p>
-                    </div>
+                    {doc.depositAmount && (
+                      <div className="mt-2 pt-2 border-t text-xs space-y-1">
+                        <div className="flex justify-between text-green-600">
+                          <span>Acompte :</span>
+                          <span>{doc.depositAmount.toFixed(2)} €</span>
+                        </div>
+                        <div className="flex justify-between text-blue-600">
+                          <span>Solde :</span>
+                          <span>{doc.balanceAmount?.toFixed(2)} €</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
