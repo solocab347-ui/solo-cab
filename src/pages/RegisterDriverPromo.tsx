@@ -453,8 +453,8 @@ const RegisterDriverPromo = () => {
       {/* Payment redirect overlay - shown immediately when user clicks pay */}
       <PaymentRedirectOverlay isVisible={showPaymentOverlay} />
       
-      <div className="min-h-screen bg-background py-8 px-4">
-      <div className="container max-w-2xl mx-auto">
+      <div className="min-h-screen bg-background py-6 px-3 sm:px-4 overflow-x-hidden">
+      <div className="w-full max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <img src={logo} alt="SoloCab" className="w-14 h-14 mx-auto mb-3 object-contain" />
@@ -573,31 +573,29 @@ const RegisterDriverPromo = () => {
           <Card className="p-6">
             <h2 className="text-xl font-bold mb-4">Étape 1 : Vos informations</h2>
             <form onSubmit={handleStep1} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="fullName" className="text-sm">Nom complet *</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    placeholder="Jean Dupont"
-                    className="h-10"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone" className="text-sm">Téléphone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    placeholder="06 12 34 56 78"
-                    className="h-10"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="fullName" className="text-sm">Nom complet *</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  placeholder="Jean Dupont"
+                  className="h-11"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone" className="text-sm">Téléphone *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  placeholder="06 12 34 56 78"
+                  className="h-11"
+                />
               </div>
               
               <div>
@@ -609,54 +607,52 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="jean@example.com"
-                  className="h-10"
+                  className="h-11"
                 />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="password" className="text-sm">Mot de passe *</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="Min. 6 caractères"
-                      minLength={6}
-                      className="h-10 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+              <div>
+                <Label htmlFor="password" className="text-sm">Mot de passe *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Min. 6 caractères"
+                    minLength={6}
+                    className="h-11 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
-                <div>
-                  <Label htmlFor="confirmPassword" className="text-sm">Confirmer *</Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      placeholder="Confirmer le mot de passe"
-                      minLength={6}
-                      className="h-10 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword" className="text-sm">Confirmer le mot de passe *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    placeholder="Confirmer le mot de passe"
+                    minLength={6}
+                    className="h-11 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
               
@@ -825,30 +821,28 @@ const RegisterDriverPromo = () => {
                       className="h-9 text-sm"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
-                      <Input
-                        id="shippingPostalCode"
-                        type="text"
-                        value={shippingPostalCode}
-                        onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                        placeholder="75001"
-                        maxLength={5}
-                        className="h-9 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
-                      <Input
-                        id="shippingCity"
-                        type="text"
-                        value={shippingCity}
-                        onChange={(e) => setShippingCity(e.target.value)}
-                        placeholder="Paris"
-                        className="h-9 text-sm"
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
+                    <Input
+                      id="shippingPostalCode"
+                      type="text"
+                      value={shippingPostalCode}
+                      onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                      placeholder="75001"
+                      maxLength={5}
+                      className="h-10 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
+                    <Input
+                      id="shippingCity"
+                      type="text"
+                      value={shippingCity}
+                      onChange={(e) => setShippingCity(e.target.value)}
+                      placeholder="Paris"
+                      className="h-10 text-sm"
+                    />
                   </div>
                 </div>
               )}
@@ -1013,18 +1007,18 @@ const RegisterDriverPromo = () => {
         )}
 
         {/* Benefits footer */}
-        <div className="mt-6 grid grid-cols-3 gap-2">
-          <Card className="p-3 text-center">
-            <Shield className="w-6 h-6 text-premium mx-auto mb-1" />
-            <p className="font-medium text-xs">Sécurisé</p>
+        <div className="mt-6 flex justify-center gap-3 flex-wrap">
+          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
+            <Shield className="w-5 h-5 text-premium mx-auto mb-1" />
+            <p className="font-medium text-[10px]">Sécurisé</p>
           </Card>
-          <Card className="p-3 text-center">
-            <CheckCircle className="w-6 h-6 text-success mx-auto mb-1" />
-            <p className="font-medium text-xs">Sans engagement</p>
+          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
+            <CheckCircle className="w-5 h-5 text-success mx-auto mb-1" />
+            <p className="font-medium text-[10px]">Sans engagement</p>
           </Card>
-          <Card className="p-3 text-center">
-            <TrendingUp className="w-6 h-6 text-premium mx-auto mb-1" />
-            <p className="font-medium text-xs">Accès direct</p>
+          <Card className="p-2.5 text-center min-w-[90px] flex-1 max-w-[120px]">
+            <TrendingUp className="w-5 h-5 text-premium mx-auto mb-1" />
+            <p className="font-medium text-[10px]">Accès direct</p>
           </Card>
         </div>
       </div>
