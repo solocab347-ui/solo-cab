@@ -175,12 +175,11 @@ const PioneerPayment = () => {
             <div className="text-center py-4 border-y border-amber-500/20">
               <p className="text-sm text-muted-foreground mb-2">Après l'essai</p>
               <div className="flex items-center justify-center gap-3">
-                <span className="text-2xl line-through text-muted-foreground">49,99€</span>
-                <span className="text-4xl font-bold text-amber-500">39,99€</span>
+                <span className="text-4xl font-bold text-amber-500">9,99€</span>
                 <span className="text-muted-foreground">/mois</span>
               </div>
               <Badge className="mt-2 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
-                Tarif garanti à vie !
+                Tarif unique pour tous les chauffeurs
               </Badge>
             </div>
 
