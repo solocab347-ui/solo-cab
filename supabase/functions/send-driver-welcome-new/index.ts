@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TRIAL_DAYS = 30; // Nombre de jours pour soumettre les documents (1 mois)
+const DOCUMENTS_DEADLINE_DAYS = 7; // Nombre de jours pour soumettre les documents
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,7 +46,7 @@ serve(async (req) => {
     console.log("[DRIVER-WELCOME-NEW] Driver found:", driver.profiles.email);
 
     const deadlineDate = new Date();
-    deadlineDate.setDate(deadlineDate.getDate() + TRIAL_DAYS);
+    deadlineDate.setDate(deadlineDate.getDate() + DOCUMENTS_DEADLINE_DAYS);
     const formattedDeadline = deadlineDate.toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -91,7 +91,7 @@ serve(async (req) => {
               </div>
               
               <div class="warning-box">
-                <p><strong>⚠️ IMPORTANT : Action requise sous ${TRIAL_DAYS} jours</strong></p>
+                <p><strong>⚠️ IMPORTANT : Action requise sous ${DOCUMENTS_DEADLINE_DAYS} jours</strong></p>
                 <p>Pour conserver votre accès et commencer à recevoir des courses, vous devez soumettre vos documents professionnels <strong>avant le ${formattedDeadline}</strong>.</p>
               </div>
               

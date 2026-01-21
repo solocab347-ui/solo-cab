@@ -49,7 +49,7 @@ serve(async (req) => {
       subject = "⚠️ Votre paiement SoloCab n'a pas pu être effectué";
       html = `
         <h1>Bonjour ${driver.profiles.full_name},</h1>
-        <p>Nous avons tenté de prélever votre abonnement mensuel SoloCab de 49,99€, mais le paiement n'a pas pu être effectué.</p>
+        <p>Nous avons tenté de prélever votre abonnement mensuel SoloCab de 9,99€, mais le paiement n'a pas pu être effectué.</p>
         
         <div style="background: #fef2f2; border: 2px solid #dc2626; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <h2 style="color: #dc2626; margin-top: 0;">⚠️ Action requise</h2>
@@ -86,7 +86,7 @@ serve(async (req) => {
       subject = "🔔 Rappel - Prochain prélèvement SoloCab dans 3 jours";
       html = `
         <h1>Bonjour ${driver.profiles.full_name},</h1>
-        <p>Votre prochain prélèvement mensuel SoloCab de <strong>49,99€</strong> aura lieu dans 3 jours.</p>
+        <p>Votre prochain prélèvement mensuel SoloCab de <strong>9,99€</strong> aura lieu dans 3 jours.</p>
         
         <div style="background: #f0fdf4; border: 2px solid #16a34a; padding: 16px; border-radius: 8px; margin: 20px 0;">
           <h2 style="color: #16a34a; margin-top: 0;">✅ Tout est en ordre</h2>
@@ -102,7 +102,7 @@ serve(async (req) => {
 
         <h2>📊 Votre abonnement</h2>
         <p>
-          <strong>Tarif :</strong> 49,99€/mois<br>
+          <strong>Tarif :</strong> 9,99€/mois<br>
           <strong>Avantages :</strong> 0% de commission, clients illimités, QR code personnalisé, profil public
         </p>
         
