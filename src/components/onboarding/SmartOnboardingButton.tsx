@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ChevronUp, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePWABanner } from "@/contexts/PWABannerContext";
 
 interface SmartOnboardingButtonProps {
   onClick: () => void;
@@ -18,9 +19,13 @@ export const SmartOnboardingButton = ({
   profileCompletion,
   className 
 }: SmartOnboardingButtonProps) => {
+  const { isBannerVisible } = usePWABanner();
   const [isHovered, setIsHovered] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
+  
+  // Position dynamique selon la bannière PWA
+  const bottomPosition = isBannerVisible ? "bottom-32" : "bottom-24";
   
   // Check if profile is incomplete and show reminder
   useEffect(() => {
@@ -70,7 +75,7 @@ export const SmartOnboardingButton = ({
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className={cn("fixed bottom-24 right-4 z-40", className)}
+        className={cn("fixed right-4 z-40 transition-all duration-300", bottomPosition, className)}
       >
         <motion.button
           onClick={handleExpand}
@@ -100,7 +105,7 @@ export const SmartOnboardingButton = ({
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      className={cn("fixed bottom-24 right-4 z-40", className)}
+      className={cn("fixed right-4 z-40 transition-all duration-300", bottomPosition, className)}
     >
       <AnimatePresence>
         {isHovered && (

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Bot, X, Send, Minimize2, Maximize2, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { usePWABanner } from '@/contexts/PWABannerContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,6 +14,7 @@ interface Message {
 }
 
 export const DriverAssistant = () => {
+  const { isBannerVisible } = usePWABanner();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -203,11 +205,14 @@ export const DriverAssistant = () => {
     }
   };
 
+  // Position dynamique selon la bannière PWA
+  const bottomClass = isBannerVisible ? "bottom-24" : "bottom-6";
+
   if (!isOpen) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50 p-0"
+        className={`fixed ${bottomClass} right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50 p-0 transition-all duration-300`}
         aria-label="Ouvrir l'assistant Liberty"
       >
         <Bot className="h-6 w-6" />
@@ -217,7 +222,7 @@ export const DriverAssistant = () => {
 
   return (
     <Card 
-      className={`fixed bottom-6 right-6 bg-card shadow-2xl z-50 flex flex-col transition-all duration-300 ${
+      className={`fixed ${bottomClass} right-6 bg-card shadow-2xl z-50 flex flex-col transition-all duration-300 ${
         isMinimized 
           ? 'w-80 h-16' 
           : 'w-[95vw] sm:w-96 h-[600px] max-h-[85vh]'

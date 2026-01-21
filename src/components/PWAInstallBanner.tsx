@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { usePWABanner } from "@/contexts/PWABannerContext";
 
 type Platform = 'ios' | 'android' | 'desktop';
 
@@ -72,6 +73,13 @@ export const PWAInstallBanner = () => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const hasPromptRef = useRef(false);
+  const { setBannerVisible } = usePWABanner();
+
+  // Synchroniser l'état de la bannière avec le context
+  useEffect(() => {
+    setBannerVisible(showBanner);
+    return () => setBannerVisible(false);
+  }, [showBanner, setBannerVisible]);
 
   useEffect(() => {
     const detectedPlatform = detectPlatform();

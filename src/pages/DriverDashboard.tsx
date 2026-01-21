@@ -420,7 +420,7 @@ const DriverDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-bg">
+    <div className="min-h-screen bg-gradient-bg pb-20" data-main-content>
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50 shadow-elegant">
         <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
