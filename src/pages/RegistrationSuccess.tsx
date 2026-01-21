@@ -244,7 +244,7 @@ const RegistrationSuccess = () => {
                 </h2>
               </div>
               <p className="text-gray-700 mb-4">
-                Vous avez <strong>14 jours</strong> pour soumettre vos documents professionnels via votre espace personnel.
+                Vous avez <strong>7 jours</strong> pour soumettre vos documents professionnels via votre espace personnel.
                 Passé ce délai, votre accès sera temporairement bloqué jusqu'à l'envoi de vos documents.
               </p>
               <ul className="text-left text-sm text-gray-700 space-y-2">

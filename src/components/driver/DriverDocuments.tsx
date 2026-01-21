@@ -39,19 +39,49 @@ interface DocumentsData {
 
 const REQUIRED_DOCUMENTS = [
   {
-    key: "vtc_card",
-    label: "Carte professionnelle VTC",
-    description: "Carte VTC recto/verso en cours de validité",
+    key: "vtc_card_recto",
+    label: "Carte professionnelle VTC (Recto)",
+    description: "Face avant de votre carte VTC en cours de validité",
+    group: "vtc_card",
+    isRecto: true,
   },
   {
-    key: "driving_license",
-    label: "Permis de conduire",
-    description: "Permis B recto/verso en cours de validité",
+    key: "vtc_card_verso",
+    label: "Carte professionnelle VTC (Verso)",
+    description: "Face arrière de votre carte VTC",
+    group: "vtc_card",
+    isVerso: true,
+    optional: true, // Optionnel car certaines cartes n'ont rien au verso
   },
   {
-    key: "id_card",
-    label: "Pièce d'identité",
-    description: "CNI ou passeport en cours de validité",
+    key: "driving_license_recto",
+    label: "Permis de conduire (Recto)",
+    description: "Face avant du permis B en cours de validité",
+    group: "driving_license",
+    isRecto: true,
+  },
+  {
+    key: "driving_license_verso",
+    label: "Permis de conduire (Verso)",
+    description: "Face arrière du permis B",
+    group: "driving_license",
+    isVerso: true,
+    optional: true, // Optionnel
+  },
+  {
+    key: "id_card_recto",
+    label: "Pièce d'identité (Recto)",
+    description: "Face avant de votre CNI ou passeport",
+    group: "id_card",
+    isRecto: true,
+  },
+  {
+    key: "id_card_verso",
+    label: "Pièce d'identité (Verso)",
+    description: "Face arrière de votre CNI (optionnel pour passeport)",
+    group: "id_card",
+    isVerso: true,
+    optional: true, // Optionnel car un passeport n'a pas de verso
   },
   {
     key: "vehicle_registration",
@@ -153,10 +183,10 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
         },
       };
 
-      // Check if all documents are uploaded
-      const allUploaded = REQUIRED_DOCUMENTS.every(
-        (doc) => newDocuments[doc.key]?.url
-      );
+      // Check if all required (non-optional) documents are uploaded
+      const allUploaded = REQUIRED_DOCUMENTS
+        .filter(doc => !(doc as any).optional) // Only check required documents
+        .every((doc) => newDocuments[doc.key]?.url);
 
       const { error: updateError } = await supabase
         .from("drivers")
@@ -240,11 +270,18 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
         message: "Délai expiré ! Votre accès aux fonctionnalités est bloqué jusqu'à validation de vos documents.",
         expired: true,
       };
-    } else if (daysRemaining <= 7) {
+    } else if (daysRemaining <= 3) {
       return {
         variant: "destructive" as const,
         icon: AlertTriangle,
-        message: `Attention ! Plus que ${daysRemaining} jour(s) pour soumettre vos documents avant blocage de votre compte.`,
+        message: `Urgent ! Plus que ${daysRemaining} jour(s) pour soumettre vos documents avant blocage de votre compte.`,
+        expired: false,
+      };
+    } else if (daysRemaining <= 7) {
+      return {
+        variant: "default" as const,
+        icon: Clock,
+        message: `${daysRemaining} jours restants pour soumettre vos documents (avant le ${format(deadline, "dd MMMM yyyy", { locale: fr })})`,
         expired: false,
       };
     } else {
@@ -266,7 +303,9 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
   }
 
   const deadlineInfo = getDeadlineInfo();
-  const uploadedCount = REQUIRED_DOCUMENTS.filter((doc) => documents[doc.key]?.url).length;
+  const requiredDocs = REQUIRED_DOCUMENTS.filter(doc => !(doc as any).optional);
+  const uploadedRequiredCount = requiredDocs.filter((doc) => documents[doc.key]?.url).length;
+  const uploadedTotalCount = REQUIRED_DOCUMENTS.filter((doc) => documents[doc.key]?.url).length;
 
   return (
     <Card>
@@ -296,7 +335,7 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
             {documentsStatus === "validated" && "Validés"}
             {documentsStatus === "submitted" && "En attente de validation"}
             {documentsStatus === "rejected" && "Rejetés"}
-            {documentsStatus === "pending" && `${uploadedCount}/${REQUIRED_DOCUMENTS.length} documents`}
+            {documentsStatus === "pending" && `${uploadedRequiredCount}/${requiredDocs.length} requis`}
           </Badge>
         </div>
       </CardHeader>
@@ -356,7 +395,14 @@ export const DriverDocuments = ({ driverId, userId }: DriverDocumentsProps) => {
                     <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
                   )}
                   <div>
-                    <p className="font-medium">{doc.label}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{doc.label}</p>
+                      {(doc as any).optional && (
+                        <Badge variant="outline" className="text-xs bg-muted/50">
+                          Optionnel
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{doc.description}</p>
                     {uploadedDoc && (
                       <p className="text-xs text-muted-foreground mt-1">

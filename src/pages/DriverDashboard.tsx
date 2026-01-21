@@ -445,22 +445,37 @@ const DriverDashboard = () => {
               {driverProfile?.driver?.is_pioneer ? (
                 <PioneerBadge size="sm" />
               ) : (
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs border ${
-                    driverProfile?.driver?.free_access_granted 
-                      ? "border-success/50 text-success bg-success/10" 
+                <div className="flex flex-col items-end gap-0.5">
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs border ${
+                      driverProfile?.driver?.free_access_granted 
+                        ? "border-success/50 text-success bg-success/10" 
+                        : driverProfile?.driver?.subscription_status === "active" 
+                          ? "border-primary/50 text-primary bg-primary/10"
+                          : driverProfile?.driver?.subscription_status === "past_due"
+                            ? "border-amber-500/50 text-amber-500 bg-amber-500/10"
+                            : "border-destructive/50 text-destructive bg-destructive/10"
+                    }`}
+                  >
+                    {driverProfile?.driver?.free_access_granted 
+                      ? t('driverDashboard.freeAccess') 
                       : driverProfile?.driver?.subscription_status === "active" 
-                        ? "border-primary/50 text-primary bg-primary/10"
-                        : "border-muted-foreground/50 text-muted-foreground bg-muted"
-                  }`}
-                >
-                  {driverProfile?.driver?.free_access_granted 
-                    ? t('driverDashboard.freeAccess') 
-                    : driverProfile?.driver?.subscription_status === "active" 
-                      ? t('driverDashboard.active') 
-                      : t('driverDashboard.inactive')}
-                </Badge>
+                        ? t('driverDashboard.active') 
+                        : driverProfile?.driver?.subscription_status === "past_due"
+                          ? "Paiement en retard"
+                          : t('driverDashboard.inactive')}
+                  </Badge>
+                  {/* Explication du statut inactif */}
+                  {!driverProfile?.driver?.free_access_granted && 
+                   driverProfile?.driver?.subscription_status !== "active" && (
+                    <span className="text-[10px] text-muted-foreground max-w-32 text-right">
+                      {driverProfile?.driver?.subscription_status === "past_due" 
+                        ? "Réglez votre abonnement" 
+                        : "Abonnement non actif"}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
             <Link to="/rgpd-data">
