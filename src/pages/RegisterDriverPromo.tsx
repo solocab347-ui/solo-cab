@@ -327,13 +327,34 @@ const RegisterDriverPromo = () => {
                     <label htmlFor="wantsPlate" className="flex items-center gap-2 cursor-pointer">
                       <Package className="w-4 h-4 text-premium" />
                       <span className="font-medium text-sm">Commander une Plaque NFC Pro</span>
-                      <Badge variant="outline" className="ml-auto text-xs">
+                      <Badge variant="outline" className="ml-auto text-xs bg-premium/10 border-premium/30 text-premium">
                         {PLATE_PRICE}€
                       </Badge>
                     </label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Plaque NFC professionnelle liée à votre profil, livrée chez vous
-                    </p>
+                    
+                    {/* Avantages de la plaque NFC */}
+                    <div className="mt-2 space-y-1.5">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CheckCircle className="w-3 h-3 text-success shrink-0" />
+                        Liée directement à votre profil chauffeur
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CheckCircle className="w-3 h-3 text-success shrink-0" />
+                        Les clients s'inscrivent en 1 scan, accès direct
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CheckCircle className="w-3 h-3 text-success shrink-0" />
+                        ~50 clients potentiels/mois voient votre plaque
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CheckCircle className="w-3 h-3 text-success shrink-0" />
+                        Installation facile (autocollant inclus)
+                      </p>
+                      <p className="text-xs text-premium font-medium flex items-center gap-1.5 mt-2">
+                        <Package className="w-3 h-3 shrink-0" />
+                        Expédition sous 5-7 jours ouvrés
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -527,7 +548,7 @@ const RegisterDriverPromo = () => {
           </Card>
           <Card className="p-3 text-center">
             <TrendingUp className="w-6 h-6 text-premium mx-auto mb-1" />
-            <p className="font-medium text-xs">Validation 24-48h</p>
+            <p className="font-medium text-xs">Accès direct</p>
           </Card>
         </div>
       </div>
