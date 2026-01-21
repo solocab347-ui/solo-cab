@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const RegisterDriverPromo = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -41,6 +42,48 @@ const RegisterDriverPromo = () => {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
+
+  // Check if user is already logged in and has a driver profile
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          console.log("[RegisterDriverPromo] User already logged in:", session.user.email);
+          setUserId(session.user.id);
+          
+          // Check if driver profile exists
+          const { data: existingDriver } = await supabase
+            .from("drivers")
+            .select("id, subscription_status")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          
+          if (existingDriver) {
+            console.log("[RegisterDriverPromo] Driver exists:", existingDriver.id);
+            setDriverId(existingDriver.id);
+            
+            // If subscription already paid, redirect to dashboard
+            if (existingDriver.subscription_status === "active" || existingDriver.subscription_status === "trialing") {
+              toast.info("Vous avez déjà un abonnement actif");
+              navigate("/driver-dashboard");
+              return;
+            }
+            
+            // Otherwise go to step 2 for payment
+            setCurrentStep(2);
+          }
+        }
+      } catch (error) {
+        console.error("[RegisterDriverPromo] Session check error:", error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,6 +228,18 @@ const RegisterDriverPromo = () => {
   };
 
   const totalToPay = getSubscriptionPrice() + (wantsPlate ? PLATE_PRICE : 0);
+
+  // Afficher un loader pendant l'initialisation
+  if (initializing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-premium" />
+          <p className="text-sm text-muted-foreground mt-2">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
