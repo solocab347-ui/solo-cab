@@ -98,59 +98,82 @@ const DriverClientsList = ({ driverId }: DriverClientsListProps) => {
   }, [searchTerm, clientTypeFilter, dateFilterType, selectedDate, dateRangeStart, dateRangeEnd, clients]);
 
   const fetchClients = async () => {
-    try {
-      // Optimisation: Sélectionner colonnes nécessaires uniquement
-      const { data, error } = await supabase
-        .from("clients")
-        .select(`
-          id,
-          user_id,
-          driver_id,
-          driver_ids,
-          is_exclusive,
-          created_at,
-          profiles!inner(full_name, email, phone, profile_photo_url)
-        `)
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
-        .order("created_at", { ascending: false })
-        .limit(500); // Max 500 clients par driver
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const attemptFetch = async (): Promise<void> => {
+      try {
+        // Requête avec timeout plus court
+        const { data, error } = await supabase
+          .from("clients")
+          .select(`
+            id,
+            user_id,
+            driver_id,
+            driver_ids,
+            is_exclusive,
+            created_at,
+            profiles(full_name, email, phone, profile_photo_url)
+          `)
+          .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`)
+          .order("created_at", { ascending: false })
+          .limit(200); // Limite réduite pour performance
 
-      if (error) {
-        console.error("Error fetching clients:", error);
-        throw error;
+        if (error) {
+          console.error("Error fetching clients:", error);
+          throw error;
+        }
+
+        // Filtrer les clients sans profil (données orphelines)
+        const validClients = (data || []).filter(c => c.profiles);
+
+        // Batch count simplifié - seulement si on a des clients
+        let clientsWithCourses = validClients.map(client => ({
+          ...client,
+          completed_courses_count: 0,
+        }));
+
+        if (validClients.length > 0) {
+          const clientIds = validClients.map(c => c.id);
+          const { data: coursesCounts } = await supabase
+            .from("courses")
+            .select("client_id")
+            .in("client_id", clientIds)
+            .eq("status", "completed")
+            .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
+
+          const countsMap = new Map<string, number>();
+          coursesCounts?.forEach(c => {
+            countsMap.set(c.client_id, (countsMap.get(c.client_id) || 0) + 1);
+          });
+
+          clientsWithCourses = validClients.map(client => ({
+            ...client,
+            completed_courses_count: countsMap.get(client.id) || 0,
+          }));
+        }
+
+        setClients(clientsWithCourses);
+        setFilteredClients(clientsWithCourses);
+      } catch (error: any) {
+        console.error(`Erreur chargement clients (tentative ${retryCount + 1}):`, error);
+        
+        if (retryCount < maxRetries - 1) {
+          retryCount++;
+          await new Promise(r => setTimeout(r, 1000 * retryCount));
+          return attemptFetch();
+        }
+        
+        // Après 3 tentatives, afficher liste vide sans bloquer
+        setClients([]);
+        setFilteredClients([]);
+        toast.error("Impossible de charger les clients. Réessayez plus tard.");
+      } finally {
+        setLoading(false);
       }
-
-      console.log("Clients fetched:", data?.length || 0);
-
-      // Optimisation: Batch count queries - ONLY count completed courses
-      const clientIds = (data || []).map(c => c.id);
-      const { data: coursesCounts } = await supabase
-        .from("courses")
-        .select("client_id")
-        .in("client_id", clientIds)
-        .eq("status", "completed") // Only count actually completed courses
-        .or(`driver_id.eq.${driverId},driver_ids.cs.{${driverId}}`);
-
-      // Map counts
-      const countsMap = new Map<string, number>();
-      coursesCounts?.forEach(c => {
-        countsMap.set(c.client_id, (countsMap.get(c.client_id) || 0) + 1);
-      });
-
-      const clientsWithCourses = (data || []).map(client => ({
-        ...client,
-        completed_courses_count: countsMap.get(client.id) || 0,
-      }));
-
-      console.log("Clients with courses:", clientsWithCourses.length);
-      setClients(clientsWithCourses);
-      setFilteredClients(clientsWithCourses);
-    } catch (error: any) {
-      console.error("Error fetching clients:", error);
-      toast.error("Erreur lors du chargement des clients");
-    } finally {
-      setLoading(false);
-    }
+    };
+    
+    await attemptFetch();
   };
 
   const handleDeleteClick = (client: any) => {
