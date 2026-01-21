@@ -14930,6 +14930,17 @@ export type Database = {
           success: boolean
         }[]
       }
+      detect_and_fix_data_issues: {
+        Args: never
+        Returns: {
+          entity_id: string
+          entity_type: string
+          fix_applied: string
+          fix_success: boolean
+          issue_description: string
+          issue_type: string
+        }[]
+      }
       detect_and_fix_errors: {
         Args: never
         Returns: {
@@ -14952,6 +14963,15 @@ export type Database = {
       driver_has_full_access: {
         Args: { driver_id_param: string }
         Returns: boolean
+      }
+      ensure_driver_profile_visibility: {
+        Args: { target_driver_id?: string }
+        Returns: {
+          action_taken: string
+          driver_id: string
+          driver_name: string
+          issue_found: string
+        }[]
       }
       find_available_fleet_driver:
         | {
