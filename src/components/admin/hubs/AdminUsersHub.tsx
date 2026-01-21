@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Trash2 } from "lucide-react";
+import { Users, Trash2, Tag } from "lucide-react";
 import AdminDriversManagement from "../AdminDriversManagement";
 import AdminUserCleanup from "../AdminUserCleanup";
+import AdminDriversNfcManager from "../AdminDriversNfcManager";
 
 const AdminUsersHub = () => {
-  const [activeTab, setActiveTab] = useState<"drivers" | "cleanup">("drivers");
+  const [activeTab, setActiveTab] = useState<"drivers" | "nfc" | "cleanup">("drivers");
 
   return (
     <div className="space-y-4">
@@ -22,6 +23,16 @@ const AdminUsersHub = () => {
           <span className="sm:hidden">Chauff.</span>
         </Button>
         <Button
+          variant={activeTab === "nfc" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("nfc")}
+          className="gap-2"
+        >
+          <Tag className="w-4 h-4" />
+          <span className="hidden sm:inline">Gestion NFC</span>
+          <span className="sm:hidden">NFC</span>
+        </Button>
+        <Button
           variant={activeTab === "cleanup" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("cleanup")}
@@ -35,6 +46,7 @@ const AdminUsersHub = () => {
 
       {/* Contenu */}
       {activeTab === "drivers" && <AdminDriversManagement />}
+      {activeTab === "nfc" && <AdminDriversNfcManager />}
       {activeTab === "cleanup" && <AdminUserCleanup />}
     </div>
   );
