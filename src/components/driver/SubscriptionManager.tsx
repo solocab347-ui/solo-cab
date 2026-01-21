@@ -69,12 +69,16 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   // NOUVEAU: Calcul synchrone du statut d'accès (évite le flickering)
   const calculateAccessStatus = () => {
     const driver = driverProfile?.driver;
-    if (!driver) return { hasFullAccess: false, isInGracePeriod: false };
+    if (!driver) return { hasFullAccess: false, isInTrialPeriod: false, trialDaysLeft: 0 };
 
     const now = new Date();
     const createdAt = driver.created_at ? new Date(driver.created_at) : null;
-    const gracePeriodEnd = createdAt ? new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
-    const isInGracePeriod = gracePeriodEnd ? now < gracePeriodEnd : false;
+    
+    // Période d'essai de 14 jours pour tous les nouveaux inscrits (non-pionniers)
+    const trialPeriodEnd = createdAt ? new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) : null;
+    const isInTrialPeriod = trialPeriodEnd ? now < trialPeriodEnd : false;
+    const trialDaysLeft = trialPeriodEnd ? Math.max(0, Math.ceil((trialPeriodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+    const trialEndDate = trialPeriodEnd;
 
     const freeAccessEndDate = driver.free_access_end_date ? new Date(driver.free_access_end_date) : null;
     const isPioneerTrialActive = driver.is_pioneer && 
@@ -82,17 +86,18 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       freeAccessEndDate && 
       freeAccessEndDate > now;
 
-    const hasFreeAccess = driver.free_access_granted || 
+    // Accès gratuit accordé par admin
+    const hasAdminFreeAccess = driver.free_access_granted === true || 
       (driver.free_access_type === "unlimited");
 
     const hasFullAccess = 
       driver.subscription_status === "active" ||
       driver.subscription_paid === true ||
-      isInGracePeriod ||
+      (isInTrialPeriod && !driver.is_pioneer) || // Essai 14 jours pour non-pionniers
       isPioneerTrialActive ||
-      hasFreeAccess;
+      hasAdminFreeAccess;
 
-    return { hasFullAccess, isInGracePeriod };
+    return { hasFullAccess, isInTrialPeriod, trialDaysLeft, trialEndDate, hasAdminFreeAccess };
   };
 
   const localAccessStatus = calculateAccessStatus();
@@ -155,7 +160,14 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
   const isActive = localAccessStatus.hasFullAccess || effectiveStatus === "active" || subscriptionStatus?.is_free_access || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isInactive = !isActive && effectiveStatus === "inactive" && !subscriptionStatus?.is_free_access && !(isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0);
   const isPastDue = effectiveStatus === "past_due";
-  const hasFreeAccess = driverProfile?.driver?.free_access_granted || (isPioneer && pioneerTrialDaysLeft !== null && pioneerTrialDaysLeft > 0) || localAccessStatus.isInGracePeriod;
+  
+  // Accès gratuit admin
+  const hasAdminFreeAccess = localAccessStatus.hasAdminFreeAccess || driverProfile?.driver?.free_access_granted;
+  // Période d'essai 14 jours pour non-pionniers
+  const isInTrialPeriod = localAccessStatus.isInTrialPeriod && !isPioneer && !hasAdminFreeAccess;
+  const trialDaysLeft = localAccessStatus.trialDaysLeft || 0;
+  const trialEndDate = localAccessStatus.trialEndDate;
+  
   const freeAccessEndDate = driverProfile?.driver?.free_access_end_date;
   const freeAccessType = driverProfile?.driver?.free_access_type;
 
@@ -248,8 +260,41 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Regular Free Access Alert - Only for non-pioneers */}
-      {hasFreeAccess && !isPioneer && (
+      {/* Trial Period Alert - 14 jours pour nouveaux inscrits non-pionniers */}
+      {isInTrialPeriod && !isPioneer && (
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500">
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+            <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" />
+            <div className="flex-1 w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-base sm:text-lg text-blue-600 dark:text-blue-400">
+                  🎉 Période d'Essai Gratuit
+                </h3>
+                <Badge className="bg-blue-500 text-white">
+                  {trialDaysLeft} jour{trialDaysLeft > 1 ? "s" : ""} restant{trialDaysLeft > 1 ? "s" : ""}
+                </Badge>
+              </div>
+              <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
+                <p>
+                  Profitez de <strong>14 jours d'accès complet gratuit</strong> pour découvrir toutes les fonctionnalités de SoloCab.
+                </p>
+                {trialEndDate && (
+                  <p>
+                    <span className="font-medium">Fin de l'essai :</span>{" "}
+                    {format(new Date(trialEndDate), "d MMMM yyyy", { locale: fr })}
+                  </p>
+                )}
+                <p className="pt-2 text-blue-600 dark:text-blue-400 font-medium">
+                  💡 À la fin de l'essai : seulement 9,99€/mois pour continuer
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Admin Free Access Alert - Only for admin-granted free access (not trial) */}
+      {hasAdminFreeAccess && !isPioneer && (
         <Card className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/10 border-green-500">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-green-500 flex-shrink-0" />
@@ -288,8 +333,8 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
         </Card>
       )}
 
-      {/* Status Alert */}
-      {isInactive && !hasFreeAccess && (
+      {/* Status Alert - Only when truly inactive (no trial, no free access) */}
+      {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
         <Card className="p-4 sm:p-6 bg-destructive/10 border-destructive">
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
             <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-destructive flex-shrink-0" />
@@ -345,7 +390,12 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
               <Trophy className="w-3 h-3 mr-1" />
               Pionnier
             </Badge>
-          ) : hasFreeAccess ? (
+          ) : isInTrialPeriod ? (
+            <Badge className="bg-blue-500 self-start">
+              <Calendar className="w-3 h-3 mr-1" />
+              Essai Gratuit
+            </Badge>
+          ) : hasAdminFreeAccess ? (
             <Badge className="bg-green-500 self-start">
               <Gift className="w-3 h-3 mr-1" />
               Accès Gratuit
@@ -368,7 +418,15 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
                 <span className="font-bold text-sm sm:text-base text-amber-400">Tarif préférentiel</span>
               </div>
             </div>
-          ) : !hasFreeAccess && (
+          ) : isInTrialPeriod ? (
+            <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
+              <span className="text-xs sm:text-sm text-gray-300">Période d'essai</span>
+              <div className="flex flex-col items-end">
+                <Badge className="bg-blue-500 mb-1">{trialDaysLeft} jour{trialDaysLeft > 1 ? 's' : ''} restant{trialDaysLeft > 1 ? 's' : ''}</Badge>
+                <span className="font-bold text-sm sm:text-base text-white">puis 9,99€ / mois</span>
+              </div>
+            </div>
+          ) : !hasAdminFreeAccess && (
             <div className="flex flex-col sm:flex-row justify-between gap-1 sm:gap-0 py-2 sm:py-3 border-b border-white/10">
               <span className="text-xs sm:text-sm text-gray-300">Offre</span>
               <div className="flex flex-col items-end">
@@ -390,7 +448,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
 
           <div className="bg-white/5 rounded-lg p-3 sm:p-4 space-y-2 border border-white/10">
             <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3 text-white">
-              {hasFreeAccess ? "✓ Vous avez accès à :" : "✓ Inclus dans l'abonnement :"}
+              {(isInTrialPeriod || hasAdminFreeAccess) ? "✓ Vous avez accès à :" : "✓ Inclus dans l'abonnement :"}
             </h4>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
               <li className="flex items-center gap-2">
@@ -425,7 +483,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
           </div>
 
           {/* Bouton d'action - Souscrire */}
-          {isInactive && !hasFreeAccess && (
+          {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && (
             <Button 
               onClick={handleSubscribe} 
               disabled={loading}
@@ -441,11 +499,11 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       </Card>
 
       {/* Section Gestion d'abonnement - Très visible et séparée */}
-      {(isActive || hasFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
+      {(isActive || isInTrialPeriod || hasAdminFreeAccess) && driverProfile?.driver?.stripe_customer_id && (
         <SubscriptionManagementCard
           userType="driver"
           hasStripeCustomer={!!driverProfile?.driver?.stripe_customer_id}
-          isActive={isActive || hasFreeAccess}
+          isActive={isActive || isInTrialPeriod || hasAdminFreeAccess}
           nextBillingDate={driverProfile?.driver?.subscription_end_date}
           nextBillingAmount={9.99}
           onBeforeOpenPortal={async () => {
@@ -460,7 +518,7 @@ const SubscriptionManager = ({ driverProfile, onSubscriptionUpdate }: Subscripti
       )}
 
       {/* Comparison - Updated for pioneers */}
-      {isInactive && !hasFreeAccess && !isPioneer && (
+      {isInactive && !isInTrialPeriod && !hasAdminFreeAccess && !isPioneer && (
         <Card className="p-3 sm:p-6 bg-gradient-premium overflow-hidden">
           <h4 className="font-bold text-sm sm:text-lg text-premium-foreground mb-2 sm:mb-4 text-center sm:text-left">
             💰 Économisez jusqu'à 15 000€/an
