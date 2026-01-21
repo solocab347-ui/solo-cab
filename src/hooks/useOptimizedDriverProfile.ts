@@ -19,6 +19,8 @@ const calculateAccessStatus = (driver: any) => {
       hasFreeAccess: false,
       gracePeriodDaysLeft: 0,
       pioneerTrialDaysLeft: 0,
+      isDocumentsBlocked: false,
+      documentsAccessOnly: false,
     };
   }
 
@@ -40,12 +42,21 @@ const calculateAccessStatus = (driver: any) => {
   const hasFreeAccess = driver.free_access_granted || 
     (driver.free_access_type === "unlimited");
 
-  const hasFullAccess = 
+  // Vérifier si l'accès est bloqué à cause des documents non soumis
+  const isDocumentsBlocked = driver.documents_access_blocked === true;
+  
+  // Si documents bloqués, l'utilisateur n'a accès qu'aux documents et abonnement
+  const documentsAccessOnly = isDocumentsBlocked && 
+    driver.documents_status !== "submitted" && 
+    driver.documents_status !== "validated";
+
+  const hasFullAccess = !documentsAccessOnly && (
     driver.subscription_status === "active" ||
     driver.subscription_paid === true ||
     isInGracePeriod ||
     isPioneerTrialActive ||
-    hasFreeAccess;
+    hasFreeAccess
+  );
 
   return {
     hasFullAccess,
@@ -54,6 +65,8 @@ const calculateAccessStatus = (driver: any) => {
     hasFreeAccess,
     gracePeriodDaysLeft,
     pioneerTrialDaysLeft,
+    isDocumentsBlocked,
+    documentsAccessOnly,
   };
 };
 

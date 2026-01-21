@@ -44,6 +44,7 @@ import { SmartOnboardingButton } from "@/components/onboarding/SmartOnboardingBu
 import { useDriverProfileCompletion } from "@/hooks/useDriverProfileCompletion";
 import { UnifiedDocumentsHub } from "@/components/driver/documents/UnifiedDocumentsHub";
 import { DocumentWarningBanner } from "@/components/driver/DocumentWarningBanner";
+import { DocumentsBlockedOverlay } from "@/components/driver/DocumentsBlockedOverlay";
 import { PioneerBanner } from "@/components/driver/PioneerBanner";
 import { CourseQueueAlert } from "@/components/driver/CourseQueueAlert";
 import { CourseQueueManager } from "@/components/driver/CourseQueueManager";
@@ -409,6 +410,18 @@ const DriverDashboard = () => {
       setLoading(false);
     }
   };
+
+  // Si l'accès est bloqué pour documents non soumis, afficher l'overlay restreint
+  if (accessStatus.documentsAccessOnly && driverProfile?.driver?.id && user?.id) {
+    return (
+      <DocumentsBlockedOverlay
+        driverId={driverProfile.driver.id}
+        userId={user.id}
+        driverProfile={driverProfile}
+        onSubscriptionUpdate={() => queryClient.invalidateQueries({ queryKey: ['driver-profile-optimized'] })}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-bg">
