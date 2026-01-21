@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Sparkles, ArrowRight, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles, Car, Crown, Shield, TrendingUp, Eye, EyeOff, FileText, Package, MapPin, CreditCard } from "lucide-react";
 import logo from "@/assets/logo-solocab.png";
+
+const PLATE_PRICE = 29.99;
+const SUBSCRIPTION_PRICE = 9.99;
 
 const RegisterDriverPromo = () => {
   const navigate = useNavigate();
@@ -18,55 +22,25 @@ const RegisterDriverPromo = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // All info in step 1
+  // Étape 1 - Informations obligatoires
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [licenseNumber, setLicenseNumber] = useState("");
-  const [vehicleModel, setVehicleModel] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [siret, setSiret] = useState("");
 
-  // Adresse d'expédition NFC
+  // Option plaque NFC
+  const [wantsPlate, setWantsPlate] = useState(false);
   const [shippingAddress, setShippingAddress] = useState("");
   const [shippingCity, setShippingCity] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
-  
-  // Mode expédition (chargé depuis system_settings)
-  const [requireShippingAddress, setRequireShippingAddress] = useState(false);
-  const [isLoadingShippingSetting, setIsLoadingShippingSetting] = useState(true);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [driverId, setDriverId] = useState<string | null>(null);
 
-  // Charger le paramètre d'expédition au montage
-  useEffect(() => {
-    const loadShippingSetting = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("system_settings")
-          .select("value")
-          .eq("id", "nfc_require_shipping_address")
-          .single();
-        
-        if (!error && data) {
-          setRequireShippingAddress((data.value as any)?.enabled || false);
-        }
-      } catch (err) {
-        console.error("Erreur chargement paramètre expédition:", err);
-      } finally {
-        setIsLoadingShippingSetting(false);
-      }
-    };
-    loadShippingSetting();
-  }, []);
-
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation des mots de passe
     if (password !== confirmPassword) {
       toast.error("Les mots de passe ne correspondent pas");
       return;
@@ -77,10 +51,10 @@ const RegisterDriverPromo = () => {
       return;
     }
 
-    // Validation adresse d'expédition si mode activé
-    if (requireShippingAddress) {
+    // Validation adresse si plaque commandée
+    if (wantsPlate) {
       if (!shippingAddress.trim() || !shippingCity.trim() || !shippingPostalCode.trim()) {
-        toast.error("Veuillez remplir tous les champs d'adresse d'expédition pour recevoir votre plaque NFC");
+        toast.error("Veuillez remplir tous les champs d'adresse pour recevoir votre plaque NFC");
         return;
       }
       if (!/^\d{5}$/.test(shippingPostalCode.trim())) {
@@ -92,7 +66,6 @@ const RegisterDriverPromo = () => {
     setLoading(true);
 
     try {
-      // Sign up user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -118,21 +91,16 @@ const RegisterDriverPromo = () => {
 
       if (profileError) throw profileError;
 
-      // Create driver profile - SECURITY: status = "on_hold" until payment confirmed
-      // This prevents users from bypassing payment step
+      // Create driver profile
       const driverInsertData: any = {
         user_id: newUserId,
-        license_number: licenseNumber || "",
-        vehicle_model: vehicleModel || "",
-        company_name: companyName || null,
-        siret: siret || null,
-        status: "on_hold", // CRITICAL: Not "pending" - wait for payment
+        status: "on_hold",
         subscription_status: "payment_required",
         registration_step: 2,
       };
 
-      // Ajouter l'adresse d'expédition si mode activé
-      if (requireShippingAddress && shippingAddress.trim()) {
+      // Ajouter l'adresse d'expédition si plaque commandée
+      if (wantsPlate && shippingAddress.trim()) {
         driverInsertData.shipping_address = shippingAddress.trim();
         driverInsertData.shipping_city = shippingCity.trim();
         driverInsertData.shipping_postal_code = shippingPostalCode.trim();
@@ -177,15 +145,19 @@ const RegisterDriverPromo = () => {
     setLoading(true);
 
     try {
-      // Create Stripe checkout with promo
       const { data, error } = await supabase.functions.invoke("create-driver-subscription", {
-        body: { driver_id: driverId },
+        body: { 
+          driver_id: driverId,
+          with_plate: wantsPlate,
+          shipping_address: wantsPlate ? shippingAddress.trim() : null,
+          shipping_city: wantsPlate ? shippingCity.trim() : null,
+          shipping_postal_code: wantsPlate ? shippingPostalCode.trim() : null,
+        },
       });
 
       if (error) throw error;
       if (!data?.url) throw new Error("URL de paiement non générée");
 
-      // Redirect to Stripe
       window.location.href = data.url;
     } catch (error: any) {
       console.error("Erreur step 2:", error);
@@ -194,53 +166,50 @@ const RegisterDriverPromo = () => {
     }
   };
 
+  const totalToPay = wantsPlate ? PLATE_PRICE : 0;
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
-      <div className="container max-w-4xl mx-auto">
-        {/* Header with promo */}
-        <div className="text-center mb-8">
-          <img src={logo} alt="SoloCab" className="w-16 h-16 mx-auto mb-4 object-contain" />
+    <div className="min-h-screen bg-background py-8 px-4">
+      <div className="container max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <img src={logo} alt="SoloCab" className="w-14 h-14 mx-auto mb-3 object-contain" />
           
-          {/* Promo banner */}
-          <div className="mb-6 relative">
-            <div className="absolute inset-0 bg-gradient-premium opacity-10 blur-xl"></div>
-            <Card className="relative border-premium/30 bg-gradient-to-br from-premium/5 to-background p-6">
-              <Badge className="mb-3 bg-gradient-premium text-premium-foreground shadow-premium">
+          <div className="mb-4">
+            <Card className="border-premium/30 bg-gradient-to-br from-premium/5 to-background p-4">
+              <Badge className="mb-2 bg-gradient-premium text-premium-foreground shadow-premium text-xs">
                 <Sparkles className="w-3 h-3 mr-1" />
-                OFFRE DE LANCEMENT - 14 JOURS GRATUITS
+                14 JOURS GRATUITS
               </Badge>
-              <div className="flex items-center justify-center gap-4 mb-2">
-                <span className="text-5xl font-bold text-green-500">GRATUIT</span>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <span className="text-3xl font-bold text-green-500">GRATUIT</span>
               </div>
-              <p className="text-lg text-muted-foreground">
-                14 jours d'essai gratuit, puis <span className="font-semibold text-foreground">9,99€/mois</span>
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Testez toutes les fonctionnalités sans engagement pendant 14 jours
+              <p className="text-sm text-muted-foreground">
+                puis <span className="font-semibold text-foreground">{SUBSCRIPTION_PRICE}€/mois</span>
               </p>
             </Card>
           </div>
 
-          <h1 className="text-3xl font-bold mb-2">Inscription Chauffeur VTC</h1>
-          <p className="text-muted-foreground">Rejoignez SoloCab et développez votre activité</p>
+          <h1 className="text-2xl font-bold mb-1">Inscription Chauffeur VTC</h1>
+          <p className="text-sm text-muted-foreground">Rejoignez SoloCab et développez votre activité</p>
         </div>
 
-        {/* Progress indicator - 2 steps */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        {/* Progress indicator */}
+        <div className="flex items-center justify-center gap-2 mb-6">
           {[1, 2].map((step) => (
             <div key={step} className="flex items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
                   currentStep >= step
                     ? "bg-gradient-premium text-premium-foreground"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
+                {currentStep > step ? <CheckCircle className="w-4 h-4" /> : step}
               </div>
               {step < 2 && (
                 <div
-                  className={`w-16 h-1 mx-2 ${
+                  className={`w-12 h-1 mx-1 ${
                     currentStep > step ? "bg-gradient-premium" : "bg-muted"
                   }`}
                 />
@@ -249,14 +218,14 @@ const RegisterDriverPromo = () => {
           ))}
         </div>
 
-        {/* Step 1: Account + Driver Info */}
+        {/* Step 1: Account Info */}
         {currentStep === 1 && (
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Étape 1 : Vos informations</h2>
+          <Card className="p-6">
+            <h2 className="text-xl font-bold mb-4">Étape 1 : Vos informations</h2>
             <form onSubmit={handleStep1} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="fullName">Nom complet *</Label>
+                  <Label htmlFor="fullName" className="text-sm">Nom complet *</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -264,10 +233,11 @@ const RegisterDriverPromo = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     placeholder="Jean Dupont"
+                    className="h-10"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Label htmlFor="phone" className="text-sm">Téléphone *</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -275,11 +245,13 @@ const RegisterDriverPromo = () => {
                     onChange={(e) => setPhone(e.target.value)}
                     required
                     placeholder="06 12 34 56 78"
+                    className="h-10"
                   />
                 </div>
               </div>
+              
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" className="text-sm">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -287,11 +259,13 @@ const RegisterDriverPromo = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="jean@example.com"
+                  className="h-10"
                 />
               </div>
-              <div className="grid md:grid-cols-2 gap-4">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="password">Mot de passe *</Label>
+                  <Label htmlFor="password" className="text-sm">Mot de passe *</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -299,21 +273,21 @@ const RegisterDriverPromo = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      placeholder="Minimum 6 caractères"
+                      placeholder="Min. 6 caractères"
                       minLength={6}
-                      className="pr-10"
+                      className="h-10 pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="confirmPassword">Confirmer *</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm">Confirmer *</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -323,247 +297,237 @@ const RegisterDriverPromo = () => {
                       required
                       placeholder="Confirmer le mot de passe"
                       minLength={6}
-                      className="pr-10"
+                      className="h-10 pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               </div>
+              
               {confirmPassword && password !== confirmPassword && (
-                <p className="text-sm text-destructive">Les mots de passe ne correspondent pas</p>
+                <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
               )}
 
-              {/* Driver info section */}
+              {/* Option Plaque NFC */}
               <div className="border-t pt-4 mt-4">
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <Car className="w-4 h-4" />
-                  Informations professionnelles (optionnel)
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Vous pourrez compléter ces informations plus tard dans votre espace personnel.
-                </p>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="licenseNumber">Numéro de carte VTC</Label>
-                    <Input
-                      id="licenseNumber"
-                      type="text"
-                      value={licenseNumber}
-                      onChange={(e) => setLicenseNumber(e.target.value)}
-                      placeholder="VTC123456"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="vehicleModel">Modèle de véhicule</Label>
-                    <Input
-                      id="vehicleModel"
-                      type="text"
-                      value={vehicleModel}
-                      onChange={(e) => setVehicleModel(e.target.value)}
-                      placeholder="Mercedes Classe E"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="companyName">Nom de l'entreprise</Label>
-                    <Input
-                      id="companyName"
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="VTC Transport"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="siret">SIRET</Label>
-                    <Input
-                      id="siret"
-                      type="text"
-                      value={siret}
-                      onChange={(e) => setSiret(e.target.value)}
-                      placeholder="123 456 789 00010"
-                    />
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="wantsPlate"
+                    checked={wantsPlate}
+                    onCheckedChange={(checked) => setWantsPlate(checked === true)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="wantsPlate" className="flex items-center gap-2 cursor-pointer">
+                      <Package className="w-4 h-4 text-premium" />
+                      <span className="font-medium text-sm">Commander une Plaque NFC Pro</span>
+                      <Badge variant="outline" className="ml-auto text-xs">
+                        {PLATE_PRICE}€
+                      </Badge>
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Plaque NFC professionnelle liée à votre profil, livrée chez vous
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Section adresse d'expédition NFC - affichée uniquement si mode activé */}
-              {requireShippingAddress && (
-                <div className="border-t pt-4 mt-4">
-                  <Alert className="mb-4 bg-orange-500/10 border-orange-500/30">
-                    <Package className="w-5 h-5 text-orange-500" />
-                    <AlertDescription className="text-sm">
-                      <strong>🎁 Plaque NFC offerte !</strong> Renseignez votre adresse postale pour recevoir 
-                      gratuitement votre plaque NFC professionnelle par courrier.
-                    </AlertDescription>
-                  </Alert>
-                  <h3 className="font-medium mb-3 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-orange-500" />
-                    Adresse d'expédition de votre plaque NFC *
-                  </h3>
-                  <div className="space-y-4">
+                {/* Adresse de livraison si plaque commandée */}
+                {wantsPlate && (
+                  <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-premium" />
+                      Adresse de livraison
+                    </h4>
                     <div>
-                      <Label htmlFor="shippingAddress">Adresse complète *</Label>
+                      <Label htmlFor="shippingAddress" className="text-xs">Adresse complète *</Label>
                       <Input
                         id="shippingAddress"
                         type="text"
                         value={shippingAddress}
                         onChange={(e) => setShippingAddress(e.target.value)}
-                        required
+                        required={wantsPlate}
                         placeholder="123 rue de la Liberté, Bât A"
+                        className="h-9 text-sm"
                       />
                     </div>
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label htmlFor="shippingPostalCode">Code postal *</Label>
+                        <Label htmlFor="shippingPostalCode" className="text-xs">Code postal *</Label>
                         <Input
                           id="shippingPostalCode"
                           type="text"
                           value={shippingPostalCode}
                           onChange={(e) => setShippingPostalCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                          required
+                          required={wantsPlate}
                           placeholder="75001"
                           maxLength={5}
+                          className="h-9 text-sm"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="shippingCity">Ville *</Label>
+                        <Label htmlFor="shippingCity" className="text-xs">Ville *</Label>
                         <Input
                           id="shippingCity"
                           type="text"
                           value={shippingCity}
                           onChange={(e) => setShippingCity(e.target.value)}
-                          required
+                          required={wantsPlate}
                           placeholder="Paris"
+                          className="h-9 text-sm"
                         />
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              <Button type="submit" disabled={loading || isLoadingShippingSetting} className="w-full">
+              <Button type="submit" disabled={loading} className="w-full h-11">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Continuer vers le paiement
+                Continuer vers le récapitulatif
               </Button>
             </form>
           </Card>
         )}
 
-        {/* Step 2: Payment */}
+        {/* Step 2: Récapitulatif et paiement */}
         {currentStep === 2 && (
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">Étape 2 : Finaliser l'inscription</h2>
+          <Card className="p-6">
+            <h2 className="text-xl font-bold mb-4">Étape 2 : Récapitulatif</h2>
             
-            <Alert className="mb-6 bg-green-500/10 border-green-500/30">
-              <Sparkles className="w-5 h-5 text-green-500" />
-              <AlertDescription className="text-sm">
-                <strong>Offre spéciale :</strong> Profitez d'un mois d'essai gratuit pour tester toutes les fonctionnalités !
-              </AlertDescription>
-            </Alert>
+            {/* Résumé de la commande */}
+            <div className="bg-muted/30 rounded-lg p-4 mb-4 space-y-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Votre commande
+              </h3>
+              
+              {/* Abonnement */}
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <div>
+                  <p className="font-medium text-sm">Abonnement SoloCab</p>
+                  <p className="text-xs text-muted-foreground">14 jours d'essai gratuit</p>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-green-500/10 text-green-600 border-green-500/30">
+                    GRATUIT
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    puis {SUBSCRIPTION_PRICE}€/mois
+                  </p>
+                </div>
+              </div>
 
-            {/* Information sur les documents */}
-            <Alert className="mb-6 bg-amber-500/10 border-amber-500/30">
-              <FileText className="w-5 h-5 text-amber-500" />
-              <AlertDescription className="text-sm">
-                <strong>Documents requis :</strong> Après votre inscription, vous aurez <strong>14 jours</strong> pour 
-                soumettre vos documents professionnels (carte VTC, permis, assurance, etc.) via votre espace personnel.
-              </AlertDescription>
-            </Alert>
+              {/* Plaque NFC si commandée */}
+              {wantsPlate && (
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <div>
+                    <p className="font-medium text-sm flex items-center gap-2">
+                      <Package className="w-4 h-4 text-premium" />
+                      Plaque NFC Pro
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Livraison : {shippingCity}
+                    </p>
+                  </div>
+                  <p className="font-semibold">{PLATE_PRICE}€</p>
+                </div>
+              )}
 
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start gap-3">
-                <Car className="w-5 h-5 text-premium mt-1" />
-                <div>
-                  <p className="font-semibold">Plateforme complète</p>
-                  <p className="text-sm text-muted-foreground">Gestion de courses, clients, devis et factures</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Crown className="w-5 h-5 text-premium mt-1" />
-                <div>
-                  <p className="font-semibold">Clients exclusifs via QR Code</p>
-                  <p className="text-sm text-muted-foreground">Fidélisez votre clientèle</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-premium mt-1" />
-                <div>
-                  <p className="font-semibold">Profil public</p>
-                  <p className="text-sm text-muted-foreground">Soyez visible sur notre vitrine</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <TrendingUp className="w-5 h-5 text-premium mt-1" />
-                <div>
-                  <p className="font-semibold">Support prioritaire</p>
-                  <p className="text-sm text-muted-foreground">Assistance rapide et personnalisée</p>
-                </div>
+              {/* Total */}
+              <div className="flex justify-between items-center pt-2">
+                <p className="font-bold">Total à payer aujourd'hui</p>
+                <p className={`font-bold text-xl ${totalToPay === 0 ? 'text-green-500' : ''}`}>
+                  {totalToPay === 0 ? 'GRATUIT' : `${totalToPay.toFixed(2)}€`}
+                </p>
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-muted-foreground">Essai gratuit</span>
-                <Badge className="bg-green-500">14 jours</Badge>
-              </div>
-              <div className="h-px bg-border my-3"></div>
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-lg">Période d'essai</span>
-                <span className="font-bold text-2xl text-green-500">GRATUIT</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Puis 9,99€/mois - Sans engagement
-              </p>
-            </div>
-
-            {/* Information empreinte bancaire */}
-            <Alert className="mb-6 bg-blue-500/10 border-blue-500/30">
-              <Shield className="w-5 h-5 text-blue-500" />
-              <AlertDescription className="text-sm">
-                <strong>Aucun prélèvement immédiat :</strong> Il s'agit d'une simple empreinte bancaire de <strong>0€</strong> pour 
-                enregistrer vos coordonnées de paiement. Vous ne serez prélevé qu'après vos 14 jours d'essai gratuit, 
-                et uniquement si vous décidez de rester abonné.
+            {/* Info empreinte bancaire */}
+            <Alert className="mb-4 bg-blue-500/10 border-blue-500/30">
+              <Shield className="w-4 h-4 text-blue-500" />
+              <AlertDescription className="text-xs">
+                {wantsPlate ? (
+                  <>
+                    <strong>Paiement sécurisé :</strong> Vous serez débité de <strong>{PLATE_PRICE}€</strong> pour 
+                    la plaque NFC. L'abonnement commencera après vos 14 jours d'essai gratuit.
+                  </>
+                ) : (
+                  <>
+                    <strong>Empreinte bancaire 0€ :</strong> Aucun prélèvement immédiat. 
+                    Vous ne serez débité qu'après vos 14 jours d'essai gratuit.
+                  </>
+                )}
               </AlertDescription>
             </Alert>
+
+            {/* Documents info */}
+            <Alert className="mb-4 bg-amber-500/10 border-amber-500/30">
+              <FileText className="w-4 h-4 text-amber-500" />
+              <AlertDescription className="text-xs">
+                <strong>Documents requis :</strong> Après votre inscription, vous aurez <strong>7 jours</strong> pour 
+                soumettre vos documents professionnels via votre espace.
+              </AlertDescription>
+            </Alert>
+
+            {/* Avantages */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2 text-sm">
+                <Car className="w-4 h-4 text-premium" />
+                <span>Gestion complète de votre activité</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Crown className="w-4 h-4 text-premium" />
+                <span>QR Code personnel pour vos clients</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4 text-premium" />
+                <span>Facturation automatique</span>
+              </div>
+            </div>
 
             <Button
               onClick={handleStep2Payment}
               disabled={loading}
-              className="w-full bg-gradient-premium text-premium-foreground shadow-premium"
-              size="lg"
+              className="w-full h-11 bg-gradient-premium text-premium-foreground shadow-premium"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-              Procéder au paiement sécurisé
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {wantsPlate ? `Payer ${PLATE_PRICE}€ et commencer l'essai` : "Valider l'empreinte bancaire (0€)"}
             </Button>
 
-            <p className="text-xs text-center text-muted-foreground mt-4">
-              Paiement sécurisé par Stripe. Vous serez redirigé vers la page de paiement.
+            <p className="text-xs text-center text-muted-foreground mt-3">
+              Paiement sécurisé par Stripe
             </p>
+
+            {/* Bouton retour */}
+            <Button
+              variant="ghost"
+              onClick={() => setCurrentStep(1)}
+              className="w-full mt-2 text-sm"
+            >
+              ← Modifier mes informations
+            </Button>
           </Card>
         )}
 
-        {/* Benefits */}
-        <div className="mt-8 grid md:grid-cols-3 gap-4">
-          <Card className="p-4 text-center">
-            <Shield className="w-8 h-8 text-premium mx-auto mb-2" />
-            <p className="font-semibold text-sm">Paiement sécurisé</p>
-            <p className="text-xs text-muted-foreground">Stripe SSL</p>
+        {/* Benefits footer */}
+        <div className="mt-6 grid grid-cols-3 gap-2">
+          <Card className="p-3 text-center">
+            <Shield className="w-6 h-6 text-premium mx-auto mb-1" />
+            <p className="font-medium text-xs">Sécurisé</p>
           </Card>
-          <Card className="p-4 text-center">
-            <CheckCircle className="w-8 h-8 text-success mx-auto mb-2" />
-            <p className="font-semibold text-sm">Sans engagement</p>
-            <p className="text-xs text-muted-foreground">Résiliable à tout moment</p>
+          <Card className="p-3 text-center">
+            <CheckCircle className="w-6 h-6 text-success mx-auto mb-1" />
+            <p className="font-medium text-xs">Sans engagement</p>
           </Card>
-          <Card className="p-4 text-center">
-            <TrendingUp className="w-8 h-8 text-premium mx-auto mb-2" />
-            <p className="font-semibold text-sm">Validation rapide</p>
-            <p className="text-xs text-muted-foreground">Sous 24-48h</p>
+          <Card className="p-3 text-center">
+            <TrendingUp className="w-6 h-6 text-premium mx-auto mb-1" />
+            <p className="font-medium text-xs">Validation 24-48h</p>
           </Card>
         </div>
       </div>
